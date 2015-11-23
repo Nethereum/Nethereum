@@ -1,0 +1,1 @@
+@dnx --appbase "%~dp0." Microsoft.Dnx.ApplicationHost Ethereum.RPC.Sample %*

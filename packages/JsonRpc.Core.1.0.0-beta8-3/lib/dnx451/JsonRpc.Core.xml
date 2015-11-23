@@ -1,0 +1,259 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JsonRpc.Core</name>
+    </assembly>
+    <members>
+        <member name="T:edjCase.JsonRpc.Core.RpcErrorCode">
+            <summary>
+            Error codes for different Rpc errors
+            </summary>
+        </member>
+        <member name="F:edjCase.JsonRpc.Core.JsonRpcContants.JsonRpcVersion">
+            <summary>
+            Version of Json Rpc protocol being used
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcException">
+            <summary>
+            Base Rpc server exception that contains Rpc specfic error info
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcException.ErrorCode">
+            <summary>
+            Rpc error code that corresponds to the documented integer codes
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcException.RpcData">
+            <summary>
+            Custom data attached to the error if needed
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcException.#ctor(edjCase.JsonRpc.Core.RpcErrorCode,System.String,System.Object)">
+            <param name="errorCode">Rpc error code</param>
+            <param name="message">Error message</param>
+            <param name="data">Custom data if needed for error response</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcException.#ctor(edjCase.JsonRpc.Core.RpcError)">
+            <param name="error">Rpc error to make into an exception</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcInvalidRequestException">
+            <summary>
+            Exception for invalid request formats or malformed requests
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcInvalidRequestException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcAmbiguousMethodException">
+            <summary>
+            Exception for requests that match multiple methods for invoking
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcMethodNotFoundException">
+            <summary>
+            Exception for requests that match no methods for invoking
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcInvalidParametersException">
+            <summary>
+            Exception for requests that match a method but have invalid parameters
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcUnknownException">
+            <summary>
+            Exception for requests that have an unexpected or unknown exception thrown
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcUnknownException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcParseException">
+            <summary>
+            Exception for requests that have parsing error
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcParseException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcRequest">
+            <summary>
+            Model representing a Rpc request
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcRequest.#ctor(System.String,System.String,System.Object[])">
+            <param name="id">Request id</param>
+            <param name="method">Target method name</param>
+            <param name="parameterList">List of parameters for the target method</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcRequest.#ctor(System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <param name="id">Request id</param>
+            <param name="method">Target method name</param>
+            <param name="parameterMap">Map of parameter name to parameter value for the target method</param>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.Id">
+            <summary>
+            Request Id (Optional)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.JsonRpcVersion">
+            <summary>
+            Version of the JsonRpc to be used (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.Method">
+            <summary>
+            Name of the target method (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.RawParameters">
+            <summary>
+            Parameters to invoke the method with (Optional)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.ParameterList">
+            <summary>
+            Gets the raw parameters as an object array
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcRequest.ParameterMap">
+            <summary>
+            Gets the raw parameters as a parameter map
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcResponse.#ctor(System.Object)">
+            <param name="id">Request id</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcResponse.#ctor(System.Object,edjCase.JsonRpc.Core.RpcError)">
+            <param name="id">Request id</param>
+            <param name="error">Request error</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcResponse.#ctor(System.Object,System.Object)">
+            <param name="id">Request id</param>
+            <param name="result">Response result object</param>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcResponse.Id">
+            <summary>
+            Request id (Required but nullable)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcResponse.JsonRpcVersion">
+            <summary>
+            Rpc request version (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcResponse.Result">
+            <summary>
+            Reponse result object (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcResponse.Error">
+            <summary>
+            Error from processing Rpc request (Required)
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.RpcError">
+            <summary>
+            Model to represent an Rpc response error
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcError.#ctor(edjCase.JsonRpc.Core.RpcException)">
+            <param name="exception">Exception from Rpc request</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.RpcError.#ctor(edjCase.JsonRpc.Core.RpcErrorCode,System.String,System.Object)">
+            <param name="code">Rpc error code</param>
+            <param name="message">Error message</param>
+            <param name="data">Optional error data</param>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcError.Code">
+            <summary>
+            Rpc error code (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcError.Message">
+            <summary>
+            Error message (Required)
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Core.RpcError.Data">
+            <summary>
+            Error data (Optional)
+            </summary>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter">
+            <summary>
+            Converter to convert and enforce the id to be a string, number or null
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter.WriteJson(Newtonsoft.Json.JsonWriter,System.Object,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            Writes the value of the id to json format
+            </summary>
+            <param name="writer">Json writer</param>
+            <param name="value">Value to be converted to json format</param>
+            <param name="serializer">Json serializer</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter.ReadJson(Newtonsoft.Json.JsonReader,System.Type,System.Object,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            Read the json format and return the correct object type/value for it
+            </summary>
+            <param name="reader">Json reader</param>
+            <param name="objectType">Type of property being set</param>
+            <param name="existingValue">The current value of the property being set</param>
+            <param name="serializer">Json serializer</param>
+            <returns>The object value of the converted json value</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter.ValidateValue(System.Object)">
+            <summary>
+            Validates that the value is a string, number or null and converts emtpy strings to null
+            </summary>
+            <param name="value"></param>
+            <exception cref="T:edjCase.JsonRpc.Core.RpcInvalidRequestException">Thrown when value is not a string, number or null</exception>
+            <returns>The same value or null if it is a string and empty</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter.CanConvert(System.Type)">
+            <summary>
+            Determines if the type can be convertered with this converter
+            </summary>
+            <param name="objectType">Type of the object</param>
+            <returns>True if the converter converts the specified type, otherwise False</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcIdJsonConverter.IsNumericType(System.Type)">
+            <summary>
+            Determines if the type is a number
+            </summary>
+            <param name="type">Type of the object</param>
+            <returns>True if the type is a number, otherwise False</returns>
+        </member>
+        <member name="T:edjCase.JsonRpc.Core.JsonConverters.RpcParametersJsonConverter">
+            <summary>
+            Json converter for Rpc parameters
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcParametersJsonConverter.WriteJson(Newtonsoft.Json.JsonWriter,System.Object,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            Writes the value of the parameters to json format
+            </summary>
+            <param name="writer">Json writer</param>
+            <param name="value">Value to be converted to json format</param>
+            <param name="serializer">Json serializer</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcParametersJsonConverter.ReadJson(Newtonsoft.Json.JsonReader,System.Type,System.Object,Newtonsoft.Json.JsonSerializer)">
+            <summary>
+            Read the json format and return the correct object type/value for it
+            </summary>
+            <param name="reader">Json reader</param>
+            <param name="objectType">Type of property being set</param>
+            <param name="existingValue">The current value of the property being set</param>
+            <param name="serializer">Json serializer</param>
+            <returns>The object value of the converted json value</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Core.JsonConverters.RpcParametersJsonConverter.CanConvert(System.Type)">
+            <summary>
+            Determines if the type can be convertered with this converter
+            </summary>
+            <param name="objectType">Type of the object</param>
+            <returns>True if the converter converts the specified type, otherwise False</returns>
+        </member>
+    </members>
+</doc>

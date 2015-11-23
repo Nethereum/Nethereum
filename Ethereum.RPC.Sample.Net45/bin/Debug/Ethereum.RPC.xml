@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ethereum.RPC</name>
+    </assembly>
+    <members>
+        <!-- Badly formed XML comment ignored for member "T:Ethereum.RPC.Web3ClientVersion" -->
+        <!-- Badly formed XML comment ignored for member "T:Ethereum.RPC.Web3Sha3" -->
+    </members>
+</doc>

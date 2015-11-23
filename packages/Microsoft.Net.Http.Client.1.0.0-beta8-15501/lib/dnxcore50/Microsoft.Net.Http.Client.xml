@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Net.Http.Client</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Net.Http.Client.ApmStream">
+            <summary>
+            Summary description for ApmStream
+            </summary>
+        </member>
+        <member name="F:Microsoft.Net.Http.Client.RedirectMode.None">
+            <summary>
+            Do not follow redirects.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Net.Http.Client.RedirectMode.NoDowngrade">
+            <summary>
+            Disallows redirecting from HTTPS to HTTP
+            </summary>
+        </member>
+        <member name="F:Microsoft.Net.Http.Client.RedirectMode.All">
+            <summary>
+            Follow all redirects
+            </summary>
+        </member>
+    </members>
+</doc>

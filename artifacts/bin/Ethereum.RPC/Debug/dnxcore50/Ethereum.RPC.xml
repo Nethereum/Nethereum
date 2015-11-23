@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ethereum.RPC</name>
+    </assembly>
+    <members>
+        <!-- Badly formed XML comment ignored for member "T:Ethereum.RPC.Web3ClientVersion" -->
+        <!-- Badly formed XML comment ignored for member "T:Ethereum.RPC.Web3Sha3" -->
+        <!-- Badly formed XML comment ignored for member "T:Ethereum.RPC.EthCompileSolidity" -->
+        <member name="T:Ethereum.RPC.SendTransaction.TransactionInput">
+            <summary>
+            Object - The transaction object
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.From">
+            <summary>
+             DATA, 20 Bytes - The address the transaction is send from.
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.To">
+            <summary>
+            DATA, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.Gas">
+            <summary>
+            QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return unused gas.
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.GasPrice">
+            <summary>
+            gasPrice: QUANTITY - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.Value">
+            <summary>
+            value: QUANTITY - (optional) Integer of the value send with this transaction
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.Data">
+            <summary>
+            data: DATA - (optional) The compiled code of a contract
+            </summary>
+        </member>
+        <member name="P:Ethereum.RPC.SendTransaction.TransactionInput.Nonce">
+            <summary>
+            nonce: QUANTITY - (optional) Integer of a nonce. This allows to overwrite your own pending transactions that use the same nonce.
+            </summary>
+        </member>
+    </members>
+</doc>

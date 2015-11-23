@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JsonRpc.Client</name>
+    </assembly>
+    <members>
+        <member name="T:edjCase.JsonRpc.Client.RpcClient">
+            <summary>
+            A client for making rpc requests and receiving rpc responses
+            </summary>
+        </member>
+        <member name="P:edjCase.JsonRpc.Client.RpcClient.BaseUrl">
+            <summary>
+            Base url for the rpc server
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClient.#ctor(System.Uri,System.Net.Http.Headers.AuthenticationHeaderValue)">
+            <param name="baseUrl">Base url for the rpc server</param>
+            <param name="authHeaderValue">Http authentication header for rpc request</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClient.SendRequestAsync(edjCase.JsonRpc.Core.RpcRequest,System.String)">
+            <summary>
+            Sends the specified rpc request to the server
+            </summary>
+            <param name="request">Single rpc request that will goto the rpc server</param>
+            <param name="route">(Optional) Route that will append to the base url if the request method call is not located at the base route</param>
+            <returns>The rpc response for the sent request</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClient.SendRequestAsync(System.String,System.String,System.Object[])">
+            <summary>
+            Sends the specified rpc request to the server (Wrapper for other SendRequestAsync)
+            </summary>
+            <param name="method">Rpc method that is to be called</param>
+            <param name="route">(Optional) Route that will append to the base url if the request method call is not located at the base route</param>
+            <param name="paramList">List of parameters (in order) for the rpc method</param>
+            <returns>The rpc response for the sent request</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClient.SendBulkRequestAsync(System.Collections.Generic.IEnumerable{edjCase.JsonRpc.Core.RpcRequest},System.String)">
+            <summary>
+            Sends the specified rpc requests to the server
+            </summary>
+            <param name="requests">Multiple rpc requests that will goto the rpc server</param>
+            <param name="route">(Optional) Route that will append to the base url if the requests method call is not located at the base route</param>
+            <returns>The rpc responses for the sent requests</returns>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClient.SendAsync``2(``0,System.String)">
+            <summary>
+            Sends the a http request to the server, posting the request in json format
+            </summary>
+            <param name="request">Request object that will goto the rpc server</param>
+            <param name="route">(Optional) Route that will append to the base url if the request method call is not located at the base route</param>
+            <returns>The response for the sent request</returns>
+        </member>
+        <member name="T:edjCase.JsonRpc.Client.RpcClientException">
+            <summary>
+            Base exception that is thrown from an error that was caused by the client
+            for the rpc request (not caused by rpc server)
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientException.#ctor(System.String,System.Exception)">
+            <param name="message">Error message</param>
+            <param name="innerException">Inner exception</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Client.RpcClientUnknownException">
+            <summary>
+            Exception for all unknown exceptions that were thrown by the client
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientUnknownException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientUnknownException.#ctor(System.String,System.Exception)">
+            <param name="message">Error message</param>
+            <param name="innerException">Inner exception</param>
+        </member>
+        <member name="T:edjCase.JsonRpc.Client.RpcClientParseException">
+            <summary>
+            Exception for all parsing exceptions that were thro
+            </summary>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientParseException.#ctor(System.String)">
+            <param name="message">Error message</param>
+        </member>
+        <member name="M:edjCase.JsonRpc.Client.RpcClientParseException.#ctor(System.String,System.Exception)">
+            <param name="message">Error message</param>
+            <param name="innerException">Inner exception</param>
+        </member>
+    </members>
+</doc>

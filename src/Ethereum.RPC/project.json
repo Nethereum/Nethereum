@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0-*",
+  "description": "Ethereum.RPC Class Library",
+  "authors": [ "juanf" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+  "frameworks": {
+    "dnx451": { },
+    "dnxcore50": {
+      "dependencies": {
+        "Microsoft.CSharp": "4.0.1-beta-23409",
+        "System.Collections": "4.0.11-beta-23409",
+        "System.Linq": "4.0.1-beta-23409",
+        "System.Runtime": "4.0.21-beta-23409",
+        "System.Threading": "4.0.11-beta-23409"
+      }
+    },
+   "net45": {}
+  },
+  "dependencies": {
+    "Newtonsoft.Json": "8.0.1-beta3",
+    "RPCRequestResponseHandlers": "1.0.0-*"
+  
+  }
+}
