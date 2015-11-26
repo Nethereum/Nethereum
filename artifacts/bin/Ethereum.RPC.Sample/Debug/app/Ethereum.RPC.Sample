@@ -1,1 +1,0 @@
-dnx --appbase "$(dirname $0)" Microsoft.Dnx.ApplicationHost Ethereum.RPC.Sample $@
