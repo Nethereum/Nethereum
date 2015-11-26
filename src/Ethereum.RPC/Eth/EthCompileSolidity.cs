@@ -1,4 +1,7 @@
-﻿using System;
+﻿using edjCase.JsonRpc.Client;
+using edjCase.JsonRpc.Core;
+using RPCRequestResponseHandlers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,10 +22,10 @@ namespace Ethereum.RPC
     ///DATA - The compiled source code.
     ///
     ///Example
-    ///// Request
+    /// Request
     ///curl -X POST --data '{"jsonrpc":"2.0","method":"eth_compileSolidity","params":["contract test { function multiply(uint a) returns(uint d) {   return a * 7;   } }"],"id":1}'
     ///
-    ///// Result
+    /// Result
     ///{
     ///  "id":1,
     ///  "jsonrpc": "2.0",

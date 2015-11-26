@@ -3432,7 +3432,7 @@
     "runtime.win7.System.IO.Compression/4.0.1-beta-23409": {
       "type": "package",
       "serviceable": true,
-      "sha512": "m5Uqb+rZb/Yv9huRQgKxBjG7/KcsK1jeoaM/rQXmFil8kcaUYg71Ba6tInoPfUm7a1ZEYX/56KvslcdxD1olbA==",
+      "sha512": "LJ9yVmz0ufKfaK3bPW1VAQ5p6RhNCSMGcSOtBlAi0vN3p8iEp2RCMuzppQpkQlNe8JXKikUvkheUEJJmz3CAZA==",
       "files": [
         "lib/net45/_._",
         "lib/win8/_._",
@@ -3460,7 +3460,7 @@
     "runtime.win7.System.Private.Uri/4.0.1-beta-23409": {
       "type": "package",
       "serviceable": true,
-      "sha512": "9mcAednoAbDrL5t/GBPYFCfrxYaGxfvpkSkAt3LWQeCH0rp4PlJpOQNtIALcyCfG4lD+z0YBAXEQsZmMVs6C+Q==",
+      "sha512": "DuShsPp9slm2buJjxbBeKycZbs0nP0KWlm/ZGRDDFcfwgbAXp1ncd7e0dqHPSRl8P0Gg0aj8WYHIIKBJbIfbAg==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Private.Uri.4.0.1-beta-23409.nupkg",
@@ -3474,7 +3474,7 @@
     "runtime.win7.System.Threading/4.0.11-beta-23409": {
       "type": "package",
       "serviceable": true,
-      "sha512": "KUUz+kNOK8ZEaCDERH/lS8RCVN9ww79xSAjWhs1/7pyN43727Xoh4GGODA0BUV3dAmBMvxMQVgDPwi/Ylvj/YQ==",
+      "sha512": "V9BYsks+TUXbB52ze7t9OM5KB8aD/KuvRml9arSfToJdZMo7zYSTrcj8xCRuIE7ClFCyNplJzs53zYA9qQi8zw==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Threading.4.0.11-beta-23409.nupkg",
@@ -3507,7 +3507,7 @@
     },
     "runtime.win7-x64.System.IO.Compression.clrcompression/4.0.1-beta-23409": {
       "type": "package",
-      "sha512": "//2uA6wD7v7KN0UzDUrlJ1skQ+WWXYyBgHHmTqOzbdxgldzZj3bIrzV+JKUk/Cqp6J6qrv2zPB87x0wRmMaoRg==",
+      "sha512": "QMa7nSASFZZOoM+b0sKDVCTx5j5TKTScQNvt48Fk4VYMTTnyscR6nHxaKqmhsbPgXqDyQF7G56S2xJd6KtderA==",
       "files": [
         "runtime.win7-x64.System.IO.Compression.clrcompression.4.0.1-beta-23409.nupkg",
         "runtime.win7-x64.System.IO.Compression.clrcompression.4.0.1-beta-23409.nupkg.sha512",
@@ -3518,7 +3518,7 @@
     },
     "runtime.win7-x86.System.IO.Compression.clrcompression/4.0.1-beta-23409": {
       "type": "package",
-      "sha512": "6HO3H3NE0UlkZmxy9yhQOynOslte/ia8pDpiWxZxWEkK7Bxf7jdyGd9UL3OY2EStwOpOr7jMV6STH6NN8aTO6Q==",
+      "sha512": "uYbTF8tljtG8xtU7oAYHc18LDnzjZ/ukCnKEnSnn4uMMwxXvIoNgLKgASw9GmwV9KC0pC8RGdZTBT+ypph2/mw==",
       "files": [
         "runtime.win7-x86.System.IO.Compression.clrcompression.4.0.1-beta-23409.nupkg",
         "runtime.win7-x86.System.IO.Compression.clrcompression.4.0.1-beta-23409.nupkg.sha512",
@@ -3907,7 +3907,7 @@
     "System.IO.Compression/4.0.1-beta-23409": {
       "type": "package",
       "serviceable": true,
-      "sha512": "vO39Ec/ger0ou20vcq8F1oumde6BScm+yg342lH5+cIWb+FOFFNtR0K4kUup+xoPM6XBQI3gXkXJRNZ/XCUDEw==",
+      "sha512": "zICw1/9Hmsv6JiU3RHPzwKf3py7pyO6vCmZQDjuTCgjRQuDPYG4ok/7X6nWX+CXhgVpq8wEnkXh9DmRwlltQ5g==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",

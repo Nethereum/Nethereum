@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace RPCRequestResponseHandlers
 {
  
+
     public class RpcRequestResponseHandlerNoParam<TResponse>
     {
         public string MethodName { get; }
@@ -16,7 +17,7 @@ namespace RPCRequestResponseHandlers
             this.MethodName = methodName;
         }
 
-        public async Task<TResponse> SendRequestAsync(RpcClient client, string id)
+        public virtual async Task<TResponse> SendRequestAsync(RpcClient client, string id)
         {
             var response = await client.SendRequestAsync(BuildRequest(id));
             if (response.HasError) throw new RPCResponseException(response);

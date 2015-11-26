@@ -25,7 +25,7 @@ namespace Ethereum.RPC
         eth_getUncleCountByBlockNumber,
         eth_getCode,
         eth_sign,
-        eth_sendTransaction,
+        eth_sendTransaction, //done
         eth_sendRawTransaction,
         eth_call,
         eth_estimateGas,
@@ -39,7 +39,7 @@ namespace Ethereum.RPC
         eth_getUncleByBlockNumberAndIndex,
         eth_getCompilers,
         eth_compileLLL,
-        eth_compileSolidity,
+        eth_compileSolidity, //done
         eth_compileSerpent,
         eth_newFilter,
         eth_newBlockFilter,
@@ -65,7 +65,11 @@ namespace Ethereum.RPC
         shh_uninstallFilter,
         shh_getFilterChanges,
         shh_getMessages,
-        web3_clientVersion,
-        web3_sha3
+        web3_clientVersion, //done
+        web3_sha3, //done
+        net_version,
+        net_peerCount,
+        eth_coinBase,
+        eth_isSyncing
     }
 }

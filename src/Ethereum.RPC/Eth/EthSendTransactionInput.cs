@@ -12,7 +12,7 @@ namespace Ethereum.RPC.SendTransaction {
     /// Object - The transaction object
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public class TransactionInput { 
+    public class EthSendTransactionInput { 
 
         /// <summary>
         ///  DATA, 20 Bytes - The address the transaction is send from.

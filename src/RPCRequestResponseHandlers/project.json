@@ -16,7 +16,7 @@
         "System.Threading": "4.0.11-beta-23409"
       }
     },
-    "net45": {}
+    "net45": { }
   },
   "dependencies": {
     "JsonRpc.Client": "1.0.0-beta8-3"
