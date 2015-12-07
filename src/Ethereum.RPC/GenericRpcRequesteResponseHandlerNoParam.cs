@@ -24,6 +24,17 @@ namespace Ethereum.RPC
         {
             return Convert.ToInt64(hex, 16);
         }
+
+        public static Int64? ConvertHexToNullableInt64(this string hex)
+        {
+            if (hex == null) return null;
+            return hex.ConvertHexToInt64();
+        }
+
+        public static string ConvertInt64ToHex(this Int64? input)
+        {
+            return string.Format("0x{0:X}", input);
+        }
     }
 
     public class GenericRpcRequestResponseHandlerNoParamInt

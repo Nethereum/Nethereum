@@ -37,23 +37,19 @@ namespace Ethereum.RPC {
 
         public Int64? StartingBlock
         {
-            get { return ConvertToHex(StartingBlockHex); }
+            get { return StartingBlockHex.ConvertHexToNullableInt64(); }
         }
 
         public Int64? HighestBlock
         {
-            get { return ConvertToHex(HighestBlockHex); }
+            get { return HighestBlockHex.ConvertHexToNullableInt64(); }
         }
 
         public Int64? CurrentBlock
         {
-            get { return ConvertToHex(CurrentBlockHex); }
+            get { return CurrentBlockHex.ConvertHexToNullableInt64(); }
         }
 
-        private Int64? ConvertToHex(string input)
-        {
-            if (input == null) return null;
-            return input.ConvertHexToInt64();
-        }
+       
     }
 }

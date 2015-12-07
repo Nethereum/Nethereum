@@ -57,16 +57,10 @@ namespace Ethereum.RPC
         public new async Task<EthSyncingOutput> SendRequestAsync(RpcClient client, string id = Constants.DEFAULT_REQUEST_ID)
         {
             var response = await base.SendRequestAsync(client, id);
-            if (response == false) return new EthSyncingOutput { Synching = response };
-            else
-            {
-                var ethSynching = new EthSyncingOutput { Synching = true, CurrentBlockHex = response.currentBlock, HighestBlockHex = response.highestBlock, StartingBlockHex = response.startingBlock };
-              
-               return ethSynching;
-            }
 
+            if (response is bool && response == false) return new EthSyncingOutput { Synching = response };
+
+            return new EthSyncingOutput { Synching = true, CurrentBlockHex = response.currentBlock, HighestBlockHex = response.highestBlock, StartingBlockHex = response.startingBlock };
         }
-        
-
     }
 }

@@ -68,8 +68,6 @@ namespace Ethereum.RPC
         web3_clientVersion, //done
         web3_sha3, //done
         net_version,
-        net_peerCount,
-        eth_coinBase,
-        eth_isSyncing
+        net_peerCount
     }
 }

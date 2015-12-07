@@ -14,22 +14,22 @@ namespace Ethereum.RPC.Sample
 {
     public class Program
     {
-        
 
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
-           
+
             RpcClient client = new RpcClient(new Uri("http://localhost:8545/"));
 
-            Type testerType = typeof(IRPCRequestTester);
+            Type testerType = typeof (IRPCRequestTester);
             var assembly = testerType.GetTypeInfo().Assembly;
             var types = assembly.GetTypes();
 
             foreach (var type in types)
             {
-                if(typeof(IRPCRequestTester).IsAssignableFrom(type) && type != typeof(IRPCRequestTester))
+                if (typeof (IRPCRequestTester).IsAssignableFrom(type) && type != typeof (IRPCRequestTester))
                 {
-                    var tester = (IRPCRequestTester)Activator.CreateInstance(type);
+                    var tester = (IRPCRequestTester) Activator.CreateInstance(type);
                     try
                     {
 
@@ -54,7 +54,8 @@ namespace Ethereum.RPC.Sample
             Console.WriteLine();
             Console.Write("------------------------");
             Console.WriteLine();
-            if (result != null) {
+            if (result != null)
+            {
                 IEnumerable array = result as IEnumerable;
                 if (array != null && !(result is String))
                 {
@@ -76,9 +77,10 @@ namespace Ethereum.RPC.Sample
             if (IsSimpleType(input.GetType())) return input.ToString();
 
             var props = input.GetType().GetProperties();
-            if (props.Length > 0) {
+            if (props.Length > 0)
+            {
                 var sb = new StringBuilder();
-                foreach(var p in props)
+                foreach (var p in props)
                 {
                     sb.AppendLine(p.Name + ": " + p.GetValue(input, null));
                 }
@@ -93,10 +95,13 @@ namespace Ethereum.RPC.Sample
 
         public static bool IsSimpleType(Type type)
         {
-            return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type.Equals(typeof(string)) || type.Equals(typeof(decimal));
+            return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type.Equals(typeof (string)) ||
+                   type.Equals(typeof (decimal));
         }
 
-        public class Web3Sha3Tester : IRPCRequestTester
+    }
+
+    public class Web3Sha3Tester : IRPCRequestTester
         {
             public dynamic ExecuteTest(RpcClient client)
             {
@@ -125,6 +130,61 @@ namespace Ethereum.RPC.Sample
             }
         }
 
+        //0xcb047ad59c623b7c76226b7df0afda258847bd96eaf4089363644f3db280d6eb
+        public class EthExecuteFunctionTester : IRPCRequestTester
+        {
+            /*
+
+         curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sendTransaction","params":[{"from":"0x65180b8c813457b21dad6cc6363d195231b4d2e9","data":"0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056"}],"id":1}' http://localhost:8545
+
+         */
+            public dynamic ExecuteTest(RpcClient client)
+            {
+                var contractByteCode = "0xc6888fa10000000000000000000000000000000000000000000000000000000000000045";
+                var to = "0x32eb97b8ad202b072fd9066c03878892426320ed";
+                var ethSendTransation = new EthSendTransaction();
+                var transactionInput = new EthSendTransactionInput();
+                transactionInput.Data = contractByteCode;
+                transactionInput.To = to;
+                transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
+                return ethSendTransation.SendRequestAsync(client, transactionInput).Result;
+
+            }
+            public Type GetRequestType()
+            {
+                return typeof(EthExecuteFunctionTester);
+            }
+        }
+
+
+        public class EthCallTester : IRPCRequestTester
+        {
+            /*
+
+         curl -X POST --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"from":"0x65180b8c813457b21dad6cc6363d195231b4d2e9","data":"0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056"}],"id":1}' http://localhost:8545
+
+         */
+            public dynamic ExecuteTest(RpcClient client)
+            {
+                //function multiply , input 69
+                var contractByteCode = "0xc6888fa10000000000000000000000000000000000000000000000000000000000000045";
+                var to = "0x32eb97b8ad202b072fd9066c03878892426320ed";
+                var ethSendTransation = new EthCall();
+                var transactionInput = new EthSendTransactionInput();
+                transactionInput.Data = contractByteCode;
+                transactionInput.To = to;
+                transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
+                return ethSendTransation.SendRequestAsync(client, transactionInput).Result;
+                //result
+                // 0x00000000000000000000000000000000000000000000000000000000000001e3
+                //483
+            }
+            public Type GetRequestType()
+            {
+                return typeof(EthCallTester);
+            }
+        }
+
         public class EthSendTransactionTester : IRPCRequestTester
         {
             /*
@@ -149,5 +209,5 @@ namespace Ethereum.RPC.Sample
         }
 
 
-    }
+    
 }
