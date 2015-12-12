@@ -37,10 +37,10 @@ namespace Ethereum.RPC.ABI
 
         public static ABIType CreateABIType(string typeName)
         {
-            //if (typeName.Contains("["))
-            //{
-            //    return ArrayType.CreateABIType(typeName);
-            //}
+            if (typeName.Contains("["))
+            {
+                return ArrayType.CreateABIType(typeName);
+            }
             if ("bool".Equals(typeName))
             {
                 return new BoolType();

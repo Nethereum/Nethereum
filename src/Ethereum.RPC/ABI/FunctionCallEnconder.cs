@@ -10,6 +10,8 @@ namespace Ethereum.RPC.ABI
 
         public string Encode(params object[] parameters)
         {
+
+            //TODO dynamic types
             var parametersEncoded = "";
             for (var i = 0; i < FunctionTypes.Length; i++)
             {
