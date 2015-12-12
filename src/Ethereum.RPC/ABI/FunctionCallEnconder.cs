@@ -1,7 +1,6 @@
 using Ethereum.ABI.Tests.DNX;
-using Ethereum.RPC.Tests;
 
-namespace Ethereum.RPC.Sample.ContractTest
+namespace Ethereum.RPC.ABI
 {
     public class FunctionCallEnconder
     {

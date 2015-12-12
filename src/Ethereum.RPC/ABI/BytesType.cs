@@ -1,34 +1,9 @@
 using System;
-using Ethereum.RPC.Tests;
 using System.Linq;
+using Ethereum.ABI.Tests.DNX;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.ABI
 {
-
-    public class StringType : BytesType
-    {
-        public StringType() : base("string")
-        {
-        }
-
-        public override byte[] Encode(object value)
-        {
-            if (!(value is string))
-            {
-                throw new Exception("String value expected for type 'string'");
-            }
-
-            var bytes = System.Text.Encoding.UTF8.GetBytes((string) value);
-            //We don't need to check Endian for UTF8
-            return base.Encode(bytes, false);
-        }
-
-        public override object Decode(byte[] encoded)
-        {
-            return System.Text.Encoding.UTF8.GetString(encoded, 0, encoded.Length);
-        }
-    }
-
     public class BytesType : ABIType
     {
         protected internal BytesType(string name) : base(name)

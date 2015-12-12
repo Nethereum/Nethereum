@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Ethereum.RPC.Tests;
+using Ethereum.ABI.Tests.DNX;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.ABI
 {
     public class IntType : ABIType
     {
@@ -67,22 +68,49 @@ namespace Ethereum.ABI.Tests.DNX
 
         public virtual object DecodeString(string value)
         {
-            string valueString = (string) value;
-            if (valueString.StartsWith("0x"))
+           
+            if (!value.StartsWith("0x"))
             {
-                valueString = valueString.Substring(2);
+               // valueString = valueString.Substring(2);
+                value = "0x" + value;
             }
 
-            //Force unsigned  when doing string conversion
-            valueString = "0" + valueString;
+            //////Force unsigned  when doing string conversion
+            ////valueString = "0" + valueString;
 
-            var bigInt = BigInteger.Parse(valueString, System.Globalization.NumberStyles.HexNumber);
+         //   var bigInt = BigInteger.Parse(valueString, System.Globalization.NumberStyles.HexNumber);
+            var bigInt = Decode(value.HexStringToByteArray());
             return bigInt;
         }
 
         public override object Decode(byte[] encoded)
         {
-            return new System.Numerics.BigInteger(encoded);
+            bool paddedPrefix = true;
+            var unpaddedBytes = new List<byte>();
+             
+            foreach (byte item in encoded)
+            {
+
+                if (!(item == 0 || item == 0xFF) && paddedPrefix)
+                {
+                    paddedPrefix = false;
+                }
+
+                if (!paddedPrefix)
+                {
+                    unpaddedBytes.Add(item);
+                }
+            }
+
+            if (!unpaddedBytes.Any()) unpaddedBytes.Add(encoded.Last());
+
+            if (BitConverter.IsLittleEndian)
+            {
+
+                encoded = unpaddedBytes.ToArray().Reverse().ToArray();
+            }
+
+            return new BigInteger(encoded);
         }
 
         public static byte[] EncodeInt(int i)

@@ -1,7 +1,6 @@
 using System;
-using Ethereum.ABI.Tests.DNX;
 
-namespace Ethereum.RPC.Tests
+namespace Ethereum.RPC.ABI
 {
     /// <summary>
     /// Generic ABI type
@@ -54,14 +53,14 @@ namespace Ethereum.RPC.Tests
             {
                 return new AddressType();
             }
-            //if ("string".Equals(typeName))
-            //{
-            //    return new StringType();
-            //}
-            //if ("bytes".Equals(typeName))
-            //{
-            //    return new BytesType();
-            //}
+            if ("string".Equals(typeName))
+            {
+                return new StringType();
+            }
+            if ("bytes".Equals(typeName))
+            {
+                return new BytesType();
+            }
             //if (typeName.StartsWith("bytes", StringComparison.Ordinal))
             //{
             //    return new Bytes32Type(typeName);

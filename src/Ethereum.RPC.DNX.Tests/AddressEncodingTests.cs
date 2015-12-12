@@ -1,3 +1,4 @@
+using Ethereum.RPC.ABI;
 using Xunit;
 
 namespace Ethereum.ABI.Tests.DNX

@@ -95,8 +95,8 @@ namespace Ethereum.RPC.Sample
 
         public static bool IsSimpleType(Type type)
         {
-            return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type.Equals(typeof (string)) ||
-                   type.Equals(typeof (decimal));
+            return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type == typeof (string) ||
+                   type == typeof (decimal);
         }
 
     }

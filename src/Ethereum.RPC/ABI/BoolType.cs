@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.ABI
 {
     public class BoolType : IntType
     {
@@ -20,14 +20,14 @@ namespace Ethereum.ABI.Tests.DNX
 
         public override object Decode(byte[] encoded)
         {
-            var decodedBitInt = (BigInteger)base.Decode(encoded);
-            return Convert.ToBoolean(Convert.ToInt32(decodedBitInt.ToString()));
+            var decodedBitInt = base.Decode(encoded);
+            BigInteger unboxed = (BigInteger)decodedBitInt;
+            return Convert.ToBoolean((int)unboxed);
         }
 
         public override object DecodeString(string value)
         {
-            var decodedBitInt = (BigInteger) base.DecodeString(value);
-            return Convert.ToBoolean(Convert.ToInt32(decodedBitInt.ToString()));
+            return base.DecodeString(value);
         }
     }
 }

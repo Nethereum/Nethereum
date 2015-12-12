@@ -1,4 +1,5 @@
 using System.Numerics;
+using Ethereum.RPC.ABI;
 using Xunit;
 
 namespace Ethereum.ABI.Tests.DNX
@@ -21,7 +22,13 @@ namespace Ethereum.ABI.Tests.DNX
             Assert.Equal("0000000000000000000000000000000000000000000000000000000000000045", result);
         }
 
-      
+        [Fact]
+        public virtual void ShouldEncodeNegativeInt()
+        {
+            IntType intType = new IntType("int");
+            var result = intType.Encode(-1234567).ToHexString();
+            Assert.Equal("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed2979", result);
+        }
 
         [Fact]
         public virtual void ShouldDecodeString()
@@ -31,7 +38,32 @@ namespace Ethereum.ABI.Tests.DNX
             Assert.Equal(new BigInteger(483), result);
         }
 
-       
+        [Fact]
+        public virtual void ShouldDecodeNegativeIntString()
+        {
+            IntType intType = new IntType("int");
+            var result = intType.DecodeString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed2979");
+            Assert.Equal(new BigInteger(-1234567), result);
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeByteArray()
+        {
+            IntType intType = new IntType("int");
+            var bytes = intType.Encode(100000569);
+            var result = intType.Decode(bytes);
+            Assert.Equal(new BigInteger(100000569), result);
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeNegativeByteArray()
+        {
+            IntType intType = new IntType("int");
+            var bytes = intType.Encode(-100000569);
+            var result = intType.Decode(bytes);
+            Assert.Equal(new BigInteger(-100000569), result);
+        }
+
         [Fact]
         public virtual void ShouldDecodeStringLength()
         {

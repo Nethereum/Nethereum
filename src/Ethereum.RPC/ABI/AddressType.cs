@@ -1,6 +1,7 @@
 using System;
+using Ethereum.ABI.Tests.DNX;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.ABI
 {
     public class AddressType : IntType
     {
