@@ -1,13 +1,7 @@
-﻿using edjCase.JsonRpc.Client;
-using edjCase.JsonRpc.Core;
-using RPCRequestResponseHandlers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.Threading.Tasks;
+using edjCase.JsonRpc.Client;
 
-namespace Ethereum.RPC
+namespace Ethereum.RPC.Eth
 {
     ///<Summary>
     /// eth_syncing

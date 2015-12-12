@@ -1,5 +1,5 @@
 using System;
-using Ethereum.ABI.Tests.DNX;
+using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
 {

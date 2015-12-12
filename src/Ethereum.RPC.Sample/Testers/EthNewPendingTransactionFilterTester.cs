@@ -1,6 +1,7 @@
 
 using edjCase.JsonRpc.Client;
 using System;
+using Ethereum.RPC.Eth;
 
 namespace Ethereum.RPC.Sample.Testers
 {

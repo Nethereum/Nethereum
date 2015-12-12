@@ -1,4 +1,5 @@
 using System.Text;
+using Ethereum.RPC.Util;
 using Xunit;
 
 namespace Ethereum.ABI.Tests.DNX

@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using Ethereum.ABI.Tests.DNX;
+using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
 {

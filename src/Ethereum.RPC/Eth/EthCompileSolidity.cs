@@ -1,12 +1,10 @@
-﻿using edjCase.JsonRpc.Client;
+﻿using System;
+using System.Threading.Tasks;
+using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
 using RPCRequestResponseHandlers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Ethereum.RPC
+namespace Ethereum.RPC.Eth
 {
     /// <summary>
     ///

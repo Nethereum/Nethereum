@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Ethereum.RPC
+namespace Ethereum.RPC.Generic
 {
     public class BlockParameter
     {

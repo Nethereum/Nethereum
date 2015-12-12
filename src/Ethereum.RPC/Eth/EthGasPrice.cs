@@ -1,7 +1,5 @@
 
-using System;
-
-namespace Ethereum.RPC
+namespace Ethereum.RPC.Eth
 {
 
     ///<Summary>

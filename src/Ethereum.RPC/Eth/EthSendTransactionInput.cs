@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace Ethereum.RPC.SendTransaction { 
+namespace Ethereum.RPC.Eth { 
 
     /// <summary>
     /// Object - The transaction object

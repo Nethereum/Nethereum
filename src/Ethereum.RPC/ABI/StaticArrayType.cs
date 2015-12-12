@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using Ethereum.ABI.Tests.DNX;
+using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
 {
@@ -40,7 +40,7 @@ namespace Ethereum.RPC.ABI
 
         public override object Decode(byte[] encoded)
         {
-            throw new NotImplementedException();
+           throw new NotImplementedException();//if()
         }
 
         public override int FixedSize => ElementType.FixedSize * Size;

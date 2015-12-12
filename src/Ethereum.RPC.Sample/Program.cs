@@ -1,5 +1,4 @@
 ﻿using edjCase.JsonRpc.Client;
-using Ethereum.RPC.SendTransaction;
 using RPCRequestResponseHandlers;
 using System;
 using System.Collections;
@@ -9,6 +8,8 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Ethereum.RPC.Eth;
+using Ethereum.RPC.Web3;
 
 namespace Ethereum.RPC.Sample
 {

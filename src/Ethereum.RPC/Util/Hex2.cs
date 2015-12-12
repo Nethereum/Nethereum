@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.Util
 {
     public static class Hex2
     {

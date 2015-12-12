@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ethereum.RPC
+namespace Ethereum.RPC.Web3
 {
 
     ///<Summary>

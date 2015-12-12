@@ -1,6 +1,6 @@
 using System;
 
-namespace Ethereum.ABI.Tests.DNX
+namespace Ethereum.RPC.Util
 {
     public class ByteUtil
     {
