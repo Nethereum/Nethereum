@@ -24,8 +24,17 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeString()
         {
             var stringType = new StringType();
-            var result = stringType.Encode("MonkeyVeryLongString");
-            Assert.Equal("MonkeyVeryLongString", stringType.Decode(result));
+            var result = stringType.Encode("MonkeyMediumSizeString");
+            Assert.Equal("MonkeyMediumSizeString", stringType.Decode(result));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeLongString()
+        {
+            var stringType = new StringType();
+            var longString = "MonkeyVeryLongStringmljalkdjflksjf lkdfjlsfjalkfjlsflskfjlsflsfjasdfjlsjflksfjlskjf fjlskfjlsjfs fkj lakdflsjfsa fafd sa";
+            var result = stringType.Encode(longString);
+            Assert.Equal(longString, stringType.Decode(result));
         }
     }
 }

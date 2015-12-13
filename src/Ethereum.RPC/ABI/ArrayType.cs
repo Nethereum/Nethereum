@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Ethereum.RPC.ABI
@@ -49,6 +50,36 @@ namespace Ethereum.RPC.ABI
             {
                 throw new Exception("Array value expected for type " + Name);
             }
+        }
+
+        public override object Decode(byte[] encoded)
+        {
+
+            if (!ElementType.IsDynamic())
+            {            
+                return DecodeStaticElementType(encoded);
+            }
+            else
+            {
+                throw new NotSupportedException("Arrays containing Dynamic Types are not supported");
+            }
+        }
+
+        protected virtual object DecodeStaticElementType(byte[] encoded)
+        {
+            var decoded = new List<object>();
+
+            var currentIndex = 0;
+
+            while (currentIndex != encoded.Length)
+            {
+                var encodedElement = encoded.Skip(currentIndex).Take(ElementType.FixedSize).ToArray();
+                decoded.Add(ElementType.Decode(encodedElement));
+                var newIndex = currentIndex + ElementType.FixedSize;
+                currentIndex = newIndex;
+            }
+
+            return decoded;
         }
 
         public abstract byte[] EncodeList(IList l);

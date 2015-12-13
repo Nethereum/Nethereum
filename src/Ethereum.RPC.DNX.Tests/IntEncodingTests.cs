@@ -32,6 +32,15 @@ namespace Ethereum.ABI.Tests.DNX
         }
 
         [Fact]
+        public virtual void ShouldEncodeUInt()
+        {
+            IntType intType = new IntType("uint");
+            uint given = 1234567;
+            var result = intType.Encode(given).ToHexString();
+            Assert.Equal("000000000000000000000000000000000000000000000000000000000012d687", result);
+        }
+
+        [Fact]
         public virtual void ShouldDecodeString()
         {
             IntType intType = new IntType("int");
@@ -72,5 +81,7 @@ namespace Ethereum.ABI.Tests.DNX
             var result = intType.DecodeString("0x0000000000000000000000000000000000000000000000000000000000000020");
             Assert.Equal(new BigInteger(32), result);
         }
+
+
     }
 }

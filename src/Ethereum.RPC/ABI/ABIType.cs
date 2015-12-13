@@ -1,4 +1,5 @@
 using System;
+using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
 {
@@ -27,13 +28,7 @@ namespace Ethereum.RPC.ABI
         /// The canonical type name (used for the method signature creation)
         /// E.g. 'int' - canonical 'int256'
         /// </summary>
-        public virtual string CanonicalName
-        {
-            get
-            {
-                return Name;
-            }
-        }
+        public virtual string CanonicalName => Name;
 
         public static ABIType CreateABIType(string typeName)
         {
@@ -65,7 +60,17 @@ namespace Ethereum.RPC.ABI
             //{
             //    return new Bytes32Type(typeName);
             //}
-            throw new Exception("Unknown type: " + typeName);
+            throw new ArgumentException("Unknown type: " + typeName);
+        }
+
+        public virtual object DecodeString(string value)
+        {
+            if (!value.StartsWith("0x"))
+            {
+                value = "0x" + value;
+            }
+
+            return Decode(value.HexStringToByteArray());
         }
 
         /// <summary>
@@ -76,12 +81,11 @@ namespace Ethereum.RPC.ABI
         public abstract object Decode(byte[] encoded);
 
         /// <returns> fixed size in bytes or negative value if the type is dynamic </returns>
-        public virtual int FixedSize
+        public virtual int FixedSize => 32;
+
+        public bool IsDynamic()
         {
-            get
-            {
-                return 32;
-            }
+            return FixedSize < 0;
         }
 
         public override string ToString()

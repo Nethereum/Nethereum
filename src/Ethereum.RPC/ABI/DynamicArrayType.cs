@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
@@ -25,7 +26,8 @@ namespace Ethereum.RPC.ABI
 
         public override object Decode(byte[] encoded)
         {
-            throw new NotImplementedException();
+            //Skip the length of the array, just pass the array values
+            return base.Decode(encoded.Skip(32).ToArray());
         }
 
         public override int FixedSize => -1;

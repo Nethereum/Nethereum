@@ -30,30 +30,17 @@ namespace Ethereum.RPC.ABI
 
         public override byte[] Encode(object value)
         {
-            System.Numerics.BigInteger bigInt;
+            BigInteger bigInt;
 
-            if(value is string)
+            var stringValue = value as string;
+
+            if (stringValue != null)
             {
-                bigInt = (BigInteger)DecodeString((string)value);
+                bigInt = (BigInteger) DecodeString(stringValue);
             }
-            //if (value is string)
-            //{
-            //    string s = ((string)value).ToLower().Trim();
-            //    int radix = 10;
-            //    if (s.StartsWith("0x", StringComparison.Ordinal))
-            //    {
-            //        s = s.Substring(2);
-            //        radix = 16;
-            //    }
-            //    else if (s.Contains("a") || s.Contains("b") || s.Contains("c") || s.Contains("d") || s.Contains("e") || s.Contains("f"))
-            //    {
-            //        radix = 16;
-            //    }
-            //    bigInt = new BigInteger(s, radix);
-            //}
             else if (value is BigInteger)
             {
-                bigInt = (BigInteger)value;
+                bigInt = (BigInteger) value;
             }
             else if (value.IsNumber())
             {
@@ -66,22 +53,7 @@ namespace Ethereum.RPC.ABI
             return EncodeInt(bigInt);
         }
 
-        public virtual object DecodeString(string value)
-        {
-           
-            if (!value.StartsWith("0x"))
-            {
-               // valueString = valueString.Substring(2);
-                value = "0x" + value;
-            }
-
-            //////Force unsigned  when doing string conversion
-            ////valueString = "0" + valueString;
-
-         //   var bigInt = BigInteger.Parse(valueString, System.Globalization.NumberStyles.HexNumber);
-            var bigInt = Decode(value.HexStringToByteArray());
-            return bigInt;
-        }
+       
 
         public override object Decode(byte[] encoded)
         {
@@ -90,7 +62,6 @@ namespace Ethereum.RPC.ABI
              
             foreach (byte item in encoded)
             {
-
                 if (!(item == 0 || item == 0xFF) && paddedPrefix)
                 {
                     paddedPrefix = false;
@@ -106,7 +77,6 @@ namespace Ethereum.RPC.ABI
 
             if (BitConverter.IsLittleEndian)
             {
-
                 encoded = unpaddedBytes.ToArray().Reverse().ToArray();
             }
 
@@ -115,9 +85,9 @@ namespace Ethereum.RPC.ABI
 
         public static byte[] EncodeInt(int i)
         {
-            return EncodeInt(new System.Numerics.BigInteger(i));
+            return EncodeInt(new BigInteger(i));
         }
-        public static byte[] EncodeInt(System.Numerics.BigInteger bigInt)
+        public static byte[] EncodeInt(BigInteger bigInt)
         {
             byte[] ret = new byte[32];
 

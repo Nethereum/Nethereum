@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
@@ -38,10 +40,6 @@ namespace Ethereum.RPC.ABI
             return ByteUtil.Merge(elems);
         }
 
-        public override object Decode(byte[] encoded)
-        {
-           throw new NotImplementedException();//if()
-        }
 
         public override int FixedSize => ElementType.FixedSize * Size;
     }
