@@ -9,7 +9,7 @@ Work in progress, have a look at the different test projects for usage.
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis
 
 ##Example of Deploying and calling a function
-<pre>
+```csharp
  public dynamic ExecuteTest(RpcClient client)
         {
             //The compiled solidity contract to be deployed
@@ -64,4 +64,4 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
            
 
         }
-</pre>
+```
