@@ -27,7 +27,8 @@ namespace Ethereum.RPC.ABI
             }
             byte[] bb = (byte[])value;
             byte[] ret = new byte[((bb.Length - 1) / 32 + 1) * 32]; // padding 32 bytes
-                                                                    //It should always be Big Endian.
+            
+            //It should always be Big Endian.
             if (BitConverter.IsLittleEndian && checkEndian)
             {
                 bb = bb.Reverse().ToArray();
@@ -40,7 +41,8 @@ namespace Ethereum.RPC.ABI
 
         public override object Decode(byte[] encoded)
         {
-            throw new System.NotSupportedException();
+            return encoded.Skip(32).Take(EncoderDecoderHelpes.GetNumberOfBytes(encoded)).ToArray();
+
         }
 
         public override int FixedSize

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Ethereum.RPC.ABI;
 
 namespace Ethereum.RPC.ABI
@@ -26,11 +24,9 @@ namespace Ethereum.RPC.ABI
 
         public override object Decode(byte[] encoded)
         {
-            var numberOfBytesEncoded = encoded.Take(32);
-            var numberOfBytes = new IntType("int").Decode(numberOfBytesEncoded.ToArray());
-            var unboxed = (BigInteger) numberOfBytes;
-            return System.Text.Encoding.UTF8.GetString(encoded, 32, (int) unboxed);
+            return System.Text.Encoding.UTF8.GetString(encoded, 32, EncoderDecoderHelpes.GetNumberOfBytes(encoded));
         }
 
+       
     }
 }

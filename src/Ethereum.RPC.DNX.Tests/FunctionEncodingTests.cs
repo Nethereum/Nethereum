@@ -12,7 +12,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams = new[] {CreateParam("int", "a")}
+                InputsParameters = new[] {CreateParam("int", "a")}
             };
             var result = functionCallEncoder.EncodeRequest(69);
             Assert.Equal("0xc6888fa10000000000000000000000000000000000000000000000000000000000000045", result);
@@ -24,7 +24,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams = new[] {CreateParam("address", "a")}
+                InputsParameters = new[] {CreateParam("address", "a")}
             };
 
             var result = functionCallEncoder.EncodeRequest("1234567890abcdef1234567890abcdef12345678");
@@ -37,7 +37,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams = new[] {CreateParam("bool", "a")}
+                InputsParameters = new[] {CreateParam("bool", "a")}
             };
             var result = functionCallEncoder.EncodeRequest(true);
             Assert.Equal("0xc6888fa10000000000000000000000000000000000000000000000000000000000000001", result);
@@ -49,7 +49,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams = new[] {CreateParam("address", "a"), CreateParam("int", "b"), CreateParam("int", "c")}
+                InputsParameters = new[] {CreateParam("address", "a"), CreateParam("int", "b"), CreateParam("int", "c")}
             };
             var result = functionCallEncoder.EncodeRequest("1234567890abcdef1234567890abcdef12345678", 69, 69);
             Assert.Equal("0xc6888fa10000000000000000000000001234567890abcdef1234567890abcdef1234567800000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000045", result);
@@ -65,7 +65,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams = new[] {CreateParam("string", "a"), CreateParam("int", "b"), CreateParam("string", "c")}
+                InputsParameters = new[] {CreateParam("string", "a"), CreateParam("int", "b"), CreateParam("string", "c")}
             };
             var result = functionCallEncoder.EncodeRequest("hello", 69, "world");
             Assert.Equal("0x" + functionCallEncoder.FunctionSha3Encoded + paramsEncoded, result);
@@ -81,7 +81,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                InputsParams =
+                InputsParameters =
                     new[] {CreateParam("string", "a"), CreateParam("uint[20]", "b"), CreateParam("string", "c")}
             };
 
@@ -105,7 +105,7 @@ namespace Ethereum.ABI.Tests.DNX
             var functionCallEncoder = new FunctionCallEnconder
             {
                 FunctionSha3Encoded = "c6888fa1",
-                OutputParams = 
+                OutputParameters = 
                     new[] { CreateParam("string", "a"), CreateParam("uint[20]", "b"), CreateParam("string", "c") }
             };
 
@@ -122,9 +122,9 @@ namespace Ethereum.ABI.Tests.DNX
 
         }
 
-        public Param CreateParam(string type, string name)
+        public Parameter CreateParam(string type, string name)
         {
-            return new Param() {Type = ABIType.CreateABIType(type), Name = name};
+            return new Parameter() {Type = ABIType.CreateABIType(type), Name = name};
         }
     }
 }

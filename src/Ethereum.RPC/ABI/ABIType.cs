@@ -56,10 +56,10 @@ namespace Ethereum.RPC.ABI
             {
                 return new BytesType();
             }
-            //if (typeName.StartsWith("bytes", StringComparison.Ordinal))
-            //{
-            //    return new Bytes32Type(typeName);
-            //}
+            if (typeName.StartsWith("bytes", StringComparison.Ordinal))
+            {
+                return new Bytes32Type(typeName);
+            }
             throw new ArgumentException("Unknown type: " + typeName);
         }
 
