@@ -22,7 +22,7 @@ namespace Ethereum.RPC.ABI
         public object Result { get; set; }
     }
 
-    public class FunctionCallEnconder
+    public class FunctionCallEncoder
     {
         public string FunctionSha3Encoded { get; set; }
 

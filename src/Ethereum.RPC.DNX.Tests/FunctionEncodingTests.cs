@@ -9,7 +9,7 @@ namespace Ethereum.ABI.Tests.DNX
         [Fact]
         public virtual void ShouldEncodeInt()
         {
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters = new[] {CreateParam("int", "a")}
@@ -21,7 +21,7 @@ namespace Ethereum.ABI.Tests.DNX
         [Fact]
         public virtual void ShouldEncodeAddress()
         {
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters = new[] {CreateParam("address", "a")}
@@ -34,7 +34,7 @@ namespace Ethereum.ABI.Tests.DNX
         [Fact]
         public virtual void ShouldEncodeBool()
         {
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters = new[] {CreateParam("bool", "a")}
@@ -46,7 +46,7 @@ namespace Ethereum.ABI.Tests.DNX
         [Fact]
         public virtual void ShouldEncodeMultipleTypes()
         {
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters = new[] {CreateParam("address", "a"), CreateParam("int", "b"), CreateParam("int", "c")}
@@ -62,7 +62,7 @@ namespace Ethereum.ABI.Tests.DNX
              var paramsEncoded =
             "0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000004500000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
 
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters = new[] {CreateParam("string", "a"), CreateParam("int", "b"), CreateParam("string", "c")}
@@ -78,7 +78,7 @@ namespace Ethereum.ABI.Tests.DNX
             var paramsEncoded =
                 "00000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000003944700000000000000000000000000000000000000000000000000000000000394480000000000000000000000000000000000000000000000000000000000039449000000000000000000000000000000000000000000000000000000000003944a000000000000000000000000000000000000000000000000000000000003944b000000000000000000000000000000000000000000000000000000000003944c000000000000000000000000000000000000000000000000000000000003944d000000000000000000000000000000000000000000000000000000000003944e000000000000000000000000000000000000000000000000000000000003944f0000000000000000000000000000000000000000000000000000000000039450000000000000000000000000000000000000000000000000000000000003945100000000000000000000000000000000000000000000000000000000000394520000000000000000000000000000000000000000000000000000000000039453000000000000000000000000000000000000000000000000000000000003945400000000000000000000000000000000000000000000000000000000000394550000000000000000000000000000000000000000000000000000000000039456000000000000000000000000000000000000000000000000000000000003945700000000000000000000000000000000000000000000000000000000000394580000000000000000000000000000000000000000000000000000000000039459000000000000000000000000000000000000000000000000000000000003945a0000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
 
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 InputsParameters =
@@ -102,7 +102,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeMultipleTypesIncludingDynamicStringAndIntArray()
         {
           
-            var functionCallEncoder = new FunctionCallEnconder
+            var functionCallEncoder = new FunctionCallEncoder
             {
                 FunctionSha3Encoded = "c6888fa1",
                 OutputParameters = 

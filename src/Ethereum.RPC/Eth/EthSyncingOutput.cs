@@ -2,14 +2,6 @@
 using Newtonsoft.Json;
 
 namespace Ethereum.RPC.Eth {
-
-    public class EthTransactionReceipt
-    {
-       //tst 
-    }  
-
-
-
     /// <summary>
     /// Object - The transaction object
     /// </summary>
