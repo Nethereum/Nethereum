@@ -10,9 +10,9 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
 
 ##Example of deploying a contract and calling a function
 ```csharp
- public dynamic ExecuteTest(RpcClient client)
+ public Task<dynamic> ExecuteTest(RpcClient client)
         {
-            //The compiled solidity contract to be deployed
+           //The compiled solidity contract to be deployed
             //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
             var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
 
@@ -23,7 +23,7 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the hash
-            var transactionHash =  ethSendTransation.SendRequestAsync(client, transactionInput).Result;
+            var transactionHash =  await ethSendTransation.SendRequestAsync(client, transactionInput);
             
             //the contract should be mining now
 
@@ -33,7 +33,7 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                receipt = ethGetTransactionReceipt.SendRequestAsync(client, transactionHash).Result;
+                receipt = await ethGetTransactionReceipt.SendRequestAsync(client, transactionHash);
             }
 
             //Encode and build function parameters 
@@ -55,13 +55,11 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
             // rpc method to do the call
             var ethCall = new EthCall();
             // call and get the result
-            var resultFunction = ethCall.SendRequestAsync(client, transactionInput).Result;
+            var resultFunction = await ethCall.SendRequestAsync(client, transactionInput);
             // decode the output
-            var output = (BigInteger)function.DecodeOutput(resultFunction)[0].Result;
+            var output =  (BigInteger)function.DecodeOutput(resultFunction)[0].Result;
             //visual test 
             return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + (int)output  + " and should be 483";
-
-           
 
         }
 ```
