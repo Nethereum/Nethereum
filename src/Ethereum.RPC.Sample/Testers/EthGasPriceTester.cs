@@ -1,16 +1,17 @@
 
 using edjCase.JsonRpc.Client;
 using System;
+using System.Threading.Tasks;
 using Ethereum.RPC.Eth;
 
 namespace Ethereum.RPC.Sample.Testers
 {
     public class EthGasPriceTester : IRPCRequestTester
     {
-        public dynamic ExecuteTest(RpcClient client)
+        public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGasPrice = new EthGasPrice();
-            return ethGasPrice.SendRequestAsync(client).Result;
+            return await ethGasPrice.SendRequestAsync(client);
         }
 
         public Type GetRequestType()

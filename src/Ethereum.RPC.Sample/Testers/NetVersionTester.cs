@@ -1,16 +1,17 @@
 
 using edjCase.JsonRpc.Client;
 using System;
+using System.Threading.Tasks;
 using Ethereum.RPC.Net;
 
 namespace Ethereum.RPC.Sample.Testers
 {
     public class NetVersionTester : IRPCRequestTester
     {
-        public dynamic ExecuteTest(RpcClient client)
+        public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var netVersion = new NetVersion();
-            return netVersion.SendRequestAsync(client).Result;
+            return await netVersion.SendRequestAsync(client);
         }
 
         public Type GetRequestType()

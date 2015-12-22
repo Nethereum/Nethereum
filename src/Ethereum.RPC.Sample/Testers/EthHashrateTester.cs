@@ -1,16 +1,17 @@
 
 using edjCase.JsonRpc.Client;
 using System;
+using System.Threading.Tasks;
 using Ethereum.RPC.Eth;
 
 namespace Ethereum.RPC.Sample.Testers
 {
     public class EthHashrateTester : IRPCRequestTester
     {
-        public dynamic ExecuteTest(RpcClient client)
+        public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethHashrate = new EthHashrate();
-            return ethHashrate.SendRequestAsync(client).Result;
+            return await ethHashrate.SendRequestAsync(client);
         }
 
         public Type GetRequestType()
