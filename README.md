@@ -16,7 +16,7 @@ This is an example of all the stages required to deploy and call a contract usin
 
 Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity)
 
-ABI encoding and decoding is currently tested on windows with BigEndian support. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
+ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
 
 
 
@@ -74,10 +74,16 @@ ABI encoding and decoding is currently tested on windows with BigEndian support.
 
         }
 ```
+### Running on Linux
+* Install DNX following the [asp.net guide](http://docs.asp.net/en/latest/getting-started/installing-on-linux.html). (Use coreclr)
+* Run dnu restore at the solution level, to restore all packages and dependencies.
+    ```dnu restore ```
+* Compile using only dnxcore 
+    ```dnu build --framework dnxcore50 ```
+* Run using dnx (ie dnx text, dnx run)
 
 ### Current TODO
 This is the current TODO list in order of priority 
-* Test in Linux Endianism
 * Filters, Events and Logging, together with and end to end example for reference on how Ethereum works.
 * BigIntegers everywhere as opposed to long / int64
 * Complete other RPC methods.
