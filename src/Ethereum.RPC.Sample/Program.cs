@@ -14,13 +14,9 @@ namespace Ethereum.RPC.Sample
     public class Program
     {
 
-#if DNX451
         public static void Main(string[] args)
         {
-#else
-        public static async void Main(string[] args)
-        {
-#endif
+
             RpcClient client = new RpcClient(new Uri("http://localhost:8545/"));
 
             Type testerType = typeof (IRPCRequestTester);
@@ -34,11 +30,8 @@ namespace Ethereum.RPC.Sample
                     var tester = (IRPCRequestTester) Activator.CreateInstance(type);
                     try
                     {
-#if DNX451
                         var testerResult = tester.ExecuteTestAsync(client).Result;
-#else
-                        var testerResult = await tester.ExecuteTestAsync(client);
-#endif
+                        
                         ConsoleOutputResult(testerResult, tester.GetRequestType());
                     }
                     catch (Exception ex)
