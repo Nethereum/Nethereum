@@ -10,7 +10,7 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
 
 ##Example of deploying a contract and calling a function
 
-This is an example of all the stages required to deploy and call a contract using the JSON RPC API.
+This is an example of all the stages required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
 
 Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/).
 
