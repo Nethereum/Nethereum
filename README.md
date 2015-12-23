@@ -83,4 +83,4 @@ This is the current TODO list in order of priority
 * Introduction of different services for Account, Blockchain, Contract creation, Transaction / Call submission (ie Transfer, Contract call)
 * Code generate Contract / Function to simplify usage 
 * Example of unit testing contracts (.net driven)
-* Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) tests for solidity driven.
+* Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
