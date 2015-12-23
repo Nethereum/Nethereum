@@ -4,11 +4,20 @@
 
 Ethereum RPC Client Library in .Net C#, Web3.js in .net.
 
-Work in progress, have a look at the different test projects for usage. 
+Work in progress, consider this as a working spike for different rpc commands, including calling contracts. Have a look at the different test projects for usage. 
 
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis
 
 ##Example of deploying a contract and calling a function
+
+This is an example of all the stages required to deploy and call a contract using the JSON RPC API.
+
+Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/).
+
+ABI encoding and decoding is currently tested on windows with BigEndian support. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
+
+
+
 ```csharp
  public Task<dynamic> ExecuteTest(RpcClient client)
         {
@@ -63,3 +72,15 @@ To startup a development chain you can use https://github.com/juanfranblanco/Eth
 
         }
 ```
+
+### Current TODO
+This is the current TODO list in order of priority 
+* Test in Linux Endianism
+* Filters, Events and Logging, together with and end to end example for reference.
+* Complete other RPC methods.
+* Refactor 
+* ABI is currently implemented following the structure of ethereumj, so both can be used as a point of reference. Encoding and Decoding is slightly different due .Net little Endian. Instead of using objects, generics could be use for the return types to avoid boxing and unboxing, this will diverge both implementations.
+* Introduction of different services for Account, Blockchain, Contract creation, Transaction / Call submission (ie Transfer, Contract call)
+* Code generate Contract / Function to simplify usage 
+* Example of unit testing contracts (.net driven)
+* Or use dapple / dappsys tests for solidity driven.
