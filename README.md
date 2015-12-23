@@ -76,7 +76,7 @@ ABI encoding and decoding is currently tested on windows with BigEndian support.
 ### Current TODO
 This is the current TODO list in order of priority 
 * Test in Linux Endianism
-* Filters, Events and Logging, together with and end to end example for reference.
+* Filters, Events and Logging, together with and end to end example for reference on how Ethereum works.
 * Complete other RPC methods.
 * Refactor 
 * ABI is currently implemented following the structure of ethereumj, so both can be used as a point of reference. Encoding and Decoding is slightly different due .Net little Endian. Instead of using objects, generics could be use for the return types to avoid boxing and unboxing, this will diverge both implementations.
