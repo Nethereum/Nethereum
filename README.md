@@ -6,7 +6,7 @@ Ethereum RPC Client Library in .Net C#, Web3.js in .net.
 
 Work in progress, consider this as a working spike for different rpc commands, including calling contracts. Have a look at the different test projects for usage. 
 
-To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis
+To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
 
 ##Example of deploying a contract and calling a function
 
