@@ -8,6 +8,8 @@ Ethereum RPC Client Library in .Net C#, Web3.js in .net.
 
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
 
+Sugestions, ideas, please raise an issue. Want to collaborate, create a pull request.
+
 ##Example of deploying a contract and calling a function
 
 This is an example of all the stages required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
