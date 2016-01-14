@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Numerics;
+using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.Generic
 {
@@ -16,7 +18,7 @@ namespace Ethereum.RPC.Generic
             blockNumber
         }
 
-        public Int64? BlockNumber { get; private set; }
+        public string BlockNumber { get; private set; }
 
         public BlockParameterType ParameterType { get; private set; }
 
@@ -24,7 +26,7 @@ namespace Ethereum.RPC.Generic
         {
             if(ParameterType == BlockParameterType.blockNumber)
             {
-                return BlockNumber.ConvertInt64ToHex();
+                return BlockNumber;
             }
             return ParameterType.ToString();
         }
@@ -36,7 +38,7 @@ namespace Ethereum.RPC.Generic
             BlockNumber = null;
         }
 
-        public void SetValue(Int64 blockNumber) 
+        public void SetValue(string blockNumber) 
         {
             this.ParameterType = BlockParameterType.blockNumber;
             this.BlockNumber = blockNumber;

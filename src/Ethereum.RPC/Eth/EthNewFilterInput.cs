@@ -10,6 +10,11 @@ namespace Ethereum.RPC.Eth
     public class EthNewFilterInput
     {
 
+        public EthNewFilterInput()
+        {
+            FromBlockParameter = new BlockParameter();
+            ToBlockParameter = new BlockParameter();
+        }
         /// <summary>
         /// QUANTITY|TAG - (optional, default: "latest") Integer block number, or "latest" for the last mined block or "pending", "earliest" for not yet mined transactions.
         /// </summary>
@@ -37,6 +42,6 @@ namespace Ethereum.RPC.Eth
         /// </summary>
         /// <see cref="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI#events"/>
         [JsonProperty(PropertyName = "topics")]
-        public dynamic[] Topics { get; set; }
+        public object[] Topics { get; set; }
     }
 }
