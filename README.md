@@ -14,7 +14,7 @@ Sugestions, ideas, please raise an issue. Want to collaborate, create a pull req
 
 This is an example of all the stages required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
 
-Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity)
+Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
 
 ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
 
