@@ -183,8 +183,9 @@ This is the current TODO list in order of priority
 * ~~ABI encoding, contract deployment, contract transaction and calls example, together with an end to end example on how Ethereum works~~.
 * ~~Windows / Linux deployment and unit test~~
 * ~~Filters, Events and Logging, together with and end to end example for reference on how Ethereum works.~~
-* Refactor 
-* BigIntegers everywhere as opposed to long / int64
+* ~~Refactor~~ 
+* ~~BigIntegers everywhere as opposed to long / int64~~
+* Refactor more
 * ABI is currently implemented following the structure of ethereumj, so both can be used as a point of reference. Encoding and Decoding is slightly different due .Net little Endian. Instead of using objects, generics could be use for the return types to avoid boxing and unboxing, this will diverge both implementations.
 * Complete other RPC methods.
 * Introduction of different services for Account, Blockchain, Contract creation, Transaction / Call submission (ie Transfer, Contract call)
