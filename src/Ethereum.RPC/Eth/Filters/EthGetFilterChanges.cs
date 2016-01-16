@@ -63,11 +63,11 @@ namespace Ethereum.RPC
         {
             public EthGetFilterChangesForEthNewFilter() : base(ApiMethods.eth_getFilterChanges.ToString()) { }
 
-            public async Task<EthNewFilterLog[]> SendRequestAsync(RpcClient client, string filterId, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<EthNewFilterLog[]> SendRequestAsync(RpcClient client, HexBigInteger filterId, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return await base.SendRequestAsync(client, id, filterId);
             }
-            public RpcRequest BuildRequest(string filterId, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(HexBigInteger filterId, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return base.BuildRequest(id, filterId);
             }

@@ -51,11 +51,11 @@ namespace Ethereum.RPC
 ///   "result": "0x1" // 1
 /// }    
     ///</Summary>
-    public class EthNewFilter : RpcRequestResponseHandler<String>
+    public class EthNewFilter : RpcRequestResponseHandler<HexBigInteger>
         {
             public EthNewFilter() : base(ApiMethods.eth_newFilter.ToString()) { }
 
-            public async Task<String> SendRequestAsync(RpcClient client, EthNewFilterInput ethNewFilterInput, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync(RpcClient client, EthNewFilterInput ethNewFilterInput, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return await base.SendRequestAsync(client, id, ethNewFilterInput);
             }

@@ -16,7 +16,7 @@ namespace Ethereum.RPC.Eth
         ///  QUANTITY - integer of the log index position in the block. null when its pending log.
         /// </summary>
         [JsonProperty(PropertyName = "logIndex")]
-        public string LogIndexHex { get; set; }
+        public HexBigInteger LogIndex { get; set; }
 
         /// <summary>
         /// DATA, 32 Bytes - hash of the transactions this log was created from. null when its pending log.DATA, 32 Bytes - hash of the transaction.
@@ -28,19 +28,19 @@ namespace Ethereum.RPC.Eth
         /// QUANTITY - integer of the transactions index position log was created from. null when its pending log.
         /// </summary>
         [JsonProperty(PropertyName = "transactionIndex")]
-        public string TransactionIndexHex { get; set; }
+        public HexBigInteger TransactionIndex { get; set; }
 
         /// <summary>
         /// DATA, 32 Bytes - hash of the block where this log was in. null when its pending. null when its pending log.
         /// </summary>
         [JsonProperty(PropertyName = "blockHash")]
-        public string BlockHashHex { get; set; }
+        public string BlockHash { get; set; }
 
         /// <summary>
         /// QUANTITY - the block number where this log was in. null when its pending. null when its pending log.
         /// </summary>
         [JsonProperty(PropertyName = "blockNumber")]
-        public string BlockNumberHex { get; set; }
+        public HexBigInteger BlockNumber { get; set; }
 
         /// <summary>
         /// DATA, 20 Bytes - address from which this log originated.
@@ -62,22 +62,6 @@ namespace Ethereum.RPC.Eth
         [JsonProperty(PropertyName = "topics")]
         public dynamic[] Topics { get; set; }
 
-        /// <summary>
-        /// QUANTITY - integer of the transactions index position in the block.
-        /// </summary>
-        public BigInteger? TransactionIndex => TransactionIndexHex?.ConvertBigEndianHexToBigInteger();
-
-        ///// <summary>
-        ///// DATA, 32 Bytes - hash of the block where this transaction was in.
-        ///// </summary>
-
-        public BigInteger? BlockHash => BlockHashHex?.ConvertBigEndianHexToBigInteger();
-
-        ///// <summary>
-        ///// QUANTITY - block number where this transaction was in.
-        ///// </summary>
-
-        public BigInteger? BlockNumber => BlockNumberHex?.ConvertBigEndianHexToBigInteger();
 
     }
 }
