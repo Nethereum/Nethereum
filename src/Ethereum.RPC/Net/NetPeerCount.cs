@@ -27,7 +27,7 @@ namespace Ethereum.RPC.Net
 ///   "result": "0x2" // 2
 /// }    
     ///</Summary>
-    public class NetPeerCount : GenericRpcRequestResponseHandlerNoParamInt
+    public class NetPeerCount : GenericRpcRequestResponseHandlerNoParamBigInt
     {
             public NetPeerCount() : base(ApiMethods.net_peerCount.ToString()) { }
     }

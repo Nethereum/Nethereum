@@ -27,7 +27,7 @@ namespace Ethereum.RPC.Eth
 ///   "result": "0x1" // 1
 /// }    
     ///</Summary>
-    public class EthNewBlockFilter : GenericRpcRequestResponseHandlerNoParamInt
+    public class EthNewBlockFilter : GenericRpcRequestResponseHandlerNoParamBigInt
     {
             public EthNewBlockFilter() : base(ApiMethods.eth_newBlockFilter.ToString()) { }
     }

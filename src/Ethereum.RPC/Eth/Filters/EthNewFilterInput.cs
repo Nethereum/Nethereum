@@ -12,24 +12,21 @@ namespace Ethereum.RPC.Eth
 
         public EthNewFilterInput()
         {
-            FromBlockParameter = new BlockParameter();
-            ToBlockParameter = new BlockParameter();
+            FromBlock = new BlockParameter();
+            ToBlock = new BlockParameter();
         }
+       
         /// <summary>
         /// QUANTITY|TAG - (optional, default: "latest") Integer block number, or "latest" for the last mined block or "pending", "earliest" for not yet mined transactions.
         /// </summary>
         [JsonProperty(PropertyName = "fromBlock")]
-        public string FromBlock => FromBlockParameter.GetRPCParam();
-
-        public BlockParameter FromBlockParameter { get; set; }
+        public BlockParameter FromBlock { get; set; }
 
         /// <summary>
         /// QUANTITY|TAG - (optional, default: "latest") Integer block number, or "latest" for the last mined block or "pending", "earliest" for not yet mined transactions.
         /// </summary>
         [JsonProperty(PropertyName = "toBlock")]
-        public string ToBlock => ToBlockParameter.GetRPCParam();
-
-        public BlockParameter ToBlockParameter { get; set; }
+        public BlockParameter ToBlock { get; set; }
 
         /// <summary>
         /// address: DATA|Array, 20 Bytes - (optional) Contract address or a list of addresses from which logs should originate.

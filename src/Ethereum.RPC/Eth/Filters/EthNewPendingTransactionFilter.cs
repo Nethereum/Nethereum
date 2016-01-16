@@ -27,9 +27,10 @@ namespace Ethereum.RPC.Eth
 ///   "result": "0x1" // 1
 /// }    
     ///</Summary>
-    public class EthNewPendingTransactionFilter : GenericRpcRequestResponseHandlerNoParamInt
-    {
-            public EthNewPendingTransactionFilter() : base(ApiMethods.eth_newPendingTransactionFilter.ToString()) { }
+    public class EthNewPendingTransactionFilter : GenericRpcRequestResponseHandlerNoParamBigInt
+    { 
+
+        public EthNewPendingTransactionFilter() : base(ApiMethods.eth_newPendingTransactionFilter.ToString()) { }
     }
 
 }

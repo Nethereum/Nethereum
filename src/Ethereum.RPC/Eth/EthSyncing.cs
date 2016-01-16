@@ -54,7 +54,12 @@ namespace Ethereum.RPC.Eth
 
             if (response is bool && response == false) return new EthSyncingOutput { Synching = response };
 
-            return new EthSyncingOutput { Synching = true, CurrentBlockHex = response.currentBlock, HighestBlockHex = response.highestBlock, StartingBlockHex = response.startingBlock };
+            return new EthSyncingOutput {
+                                         Synching = true,
+                                         CurrentBlock = new HexBigInteger(response.currentBlock),
+                                         HighestBlock = new HexBigInteger(response.highestBlock),
+                                         StartingBlock = new HexBigInteger(response.startingBlock)
+                                        };
         }
     }
 }

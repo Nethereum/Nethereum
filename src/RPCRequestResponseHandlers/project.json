@@ -19,6 +19,6 @@
     "net45": { }
   },
   "dependencies": {
-    "JsonRpc.Client": "1.0.0-beta8-3"
+    "JsonRpc.Client": "1.0.0-rc1-3"
   }
 }

@@ -25,23 +25,4 @@ namespace Ethereum.RPC.Eth
 
 
     }
-
-     public class EthCall : RpcRequestResponseHandler<String>
-    {
-        public EthCall() : base(ApiMethods.eth_call.ToString())
-        {
-
-        }
-
-        public async Task<String> SendRequestAsync(RpcClient client, EthSendTransactionInput transactionInput, string id = Constants.DEFAULT_REQUEST_ID)
-        {
-            return await base.SendRequestAsync(client, id, transactionInput, "latest");
-        }
-        public RpcRequest BuildRequest(EthSendTransactionInput transactionInput, string id = Constants.DEFAULT_REQUEST_ID)
-        {
-            return base.BuildRequest(id, transactionInput, "latest");
-        }
-
-
-    }
 }

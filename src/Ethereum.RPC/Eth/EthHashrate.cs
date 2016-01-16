@@ -27,7 +27,7 @@ namespace Ethereum.RPC.Eth
 ///   "result": "0x38a"
 /// }    
     ///</Summary>
-    public class EthHashrate : GenericRpcRequestResponseHandlerNoParamInt
+    public class EthHashrate : GenericRpcRequestResponseHandlerNoParamBigInt
     {
             public EthHashrate() : base(ApiMethods.eth_hashrate.ToString()) { }
     }

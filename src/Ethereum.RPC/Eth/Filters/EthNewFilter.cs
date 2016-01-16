@@ -64,6 +64,5 @@ namespace Ethereum.RPC
                 return base.BuildRequest(id, ethNewFilterInput);
             }
         }
-
     }
 

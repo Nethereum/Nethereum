@@ -54,13 +54,13 @@ namespace Ethereum.RPC.Sample
             }
 
             //sha3 the event call, we can use this to validate our topics 
-            var eventCall = Encoding.ASCII.GetBytes("Multiplied(uint256,address)").ToHexString();
+            var eventCall = Encoding.UTF8.GetBytes("Multiplied(uint256,address)").ToHexString();
             var eventCallSh3 = await new Web3.Web3Sha3().SendRequestAsync(client, eventCall);
             //create a filter 
             //just listen to anything no more filter topics (ie int indexed number)
             var ethFilterInput = new EthNewFilterInput();
-            ethFilterInput.FromBlockParameter.SetValue(receipt.BlockNumberHex);
-            ethFilterInput.ToBlockParameter.SetValue(BlockParameter.BlockParameterType.latest);
+            ethFilterInput.FromBlock.SetValue(receipt.BlockNumber);
+            ethFilterInput.ToBlock = BlockParameter.CreateLatest();
             ethFilterInput.Address = new [] { receipt.ContractAddress};
            //no topics
             //ethFilterInput.Topics = new object[]{};

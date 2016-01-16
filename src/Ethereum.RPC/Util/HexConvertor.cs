@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Ethereum.RPC.Util;
+using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Ethereum.RPC
 {
@@ -21,9 +24,15 @@ namespace Ethereum.RPC
             return $"0x{input:X}";
         }
 
-        public static BigInteger ConvertHexToBigInteger(this string hex)
+        public static BigInteger ConvertBigEndianHexToBigInteger(this string hex)
         {
-            return new BigInteger(hex.HexStringToByteArray());
+            var encoded = hex.HexStringToByteArray();
+
+            if (BitConverter.IsLittleEndian)
+            {
+                encoded = encoded.ToArray().Reverse().ToArray();
+            }
+            return new BigInteger(encoded);
         }
     }
 }

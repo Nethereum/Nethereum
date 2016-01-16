@@ -24,19 +24,19 @@ namespace Ethereum.RPC.Eth {
         /// QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return unused gas.
         /// </summary>
         [JsonProperty(PropertyName = "gas")]
-        public int? Gas { get; set; }
+        public HexBigInteger Gas { get; set; }
 
         /// <summary>
         /// gasPrice: QUANTITY - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
         /// </summary>
         [JsonProperty(PropertyName = "gasPrice")]
-        public int? GasPrice { get; set; }
+        public HexBigInteger GasPrice { get; set; }
 
         /// <summary>
         /// value: QUANTITY - (optional) Integer of the value send with this transaction
         /// </summary>
         [JsonProperty(PropertyName = "value")]
-        public int? Value { get; set; }
+        public HexBigInteger Value { get; set; }
         /// <summary>
         /// data: DATA - (optional) The compiled code of a contract
         /// </summary>
@@ -47,7 +47,7 @@ namespace Ethereum.RPC.Eth {
         /// nonce: QUANTITY - (optional) Integer of a nonce. This allows to overwrite your own pending transactions that use the same nonce.
         /// </summary>
         [JsonProperty(PropertyName = "nonce")]
-        public int? Nonce { get; set; }
+        public HexBigInteger Nonce { get; set; }
 
     }
 }

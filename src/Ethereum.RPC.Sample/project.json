@@ -7,9 +7,7 @@
   "licenseUrl": "",
 
   "dependencies": {
-    "Ethereum.RPC": "1.0.0-*",
-    "JsonRpc.Client": "1.0.0-beta8-3"
-  },
+    "Ethereum.RPC": "1.0.0-*"  },
 
   "commands": {
     "Ethereum.RPC.Sample": "Ethereum.RPC.Sample"

@@ -35,7 +35,7 @@ namespace Ethereum.RPC.ABI
 
         public static string DecodeString(byte[] encoded)
         {
-            return System.Text.Encoding.UTF8.GetString(encoded);
+            return System.Text.Encoding.UTF8.GetString(encoded, 0, encoded.Length);
         }
 
         public static BigInteger DecodeBigInteger(byte[] encoded)

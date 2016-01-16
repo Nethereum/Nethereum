@@ -27,7 +27,7 @@ namespace Ethereum.RPC.Eth
 ///   "result": "0x4b7" // 1207
 /// }    
     ///</Summary>
-    public class EthBlockNumber : GenericRpcRequestResponseHandlerNoParamInt
+    public class EthBlockNumber : GenericRpcRequestResponseHandlerNoParamBigInt
     {
             public EthBlockNumber() : base(ApiMethods.eth_blockNumber.ToString()) { }
     }

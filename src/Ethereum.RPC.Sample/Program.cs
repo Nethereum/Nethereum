@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -94,7 +95,7 @@ namespace Ethereum.RPC.Sample
         public static bool IsSimpleType(Type type)
         {
             return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type == typeof (string) ||
-                   type == typeof (decimal);
+                   type == typeof (decimal) || type == typeof(BigInteger);
         }
 
     }
