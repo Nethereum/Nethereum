@@ -6,7 +6,13 @@ namespace Ethereum.RPC
     {
         protected IHexConvertor<T> convertor;
 
-        public HexRPCType(string hexValue, IHexConvertor<T> convertor)
+        protected HexRPCType(IHexConvertor<T> convertor)
+        {
+            this.convertor = convertor;
+            
+        }
+
+        public HexRPCType(IHexConvertor<T> convertor, string hexValue)
         {
             this.convertor = convertor;
             InitialiseFromHex(hexValue);            
@@ -15,7 +21,7 @@ namespace Ethereum.RPC
         public HexRPCType(T value, IHexConvertor<T> convertor)
         {
             this.convertor = convertor;
-            InitialiseFromValue(value);            
+            InitialiseFromValue(value);
         }
 
         protected string hexValue;

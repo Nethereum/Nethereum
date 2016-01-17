@@ -37,12 +37,12 @@ namespace Ethereum.RPC.Web3
 
         }
 
-        public async Task<String> SendRequestAsync(RpcClient client, string valueToConvertHex, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<String> SendRequestAsync(RpcClient client, HexString valueToConvertHex, string id = Constants.DEFAULT_REQUEST_ID)
         {
             return await base.SendRequestAsync(client, id, valueToConvertHex);
         }
 
-        public RpcRequest BuildRequest(string valueToConvert, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(HexString valueToConvert, string id = Constants.DEFAULT_REQUEST_ID)
         {
             return base.BuildRequest(id, valueToConvert);
         }

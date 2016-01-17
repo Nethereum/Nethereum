@@ -14,7 +14,7 @@ namespace Ethereum.RPC
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            return HexRPCTypeFactory.GetHexRPCType<TValue>((string)reader.Value);
+            return HexTypeFactory.CreateFromHex<TValue>((string)reader.Value);
         }
 
         public override bool CanConvert(Type objectType)
