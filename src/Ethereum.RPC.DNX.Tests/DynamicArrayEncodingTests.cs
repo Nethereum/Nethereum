@@ -25,7 +25,7 @@ namespace Ethereum.ABI.Tests.DNX
             var arrayType = ArrayType.CreateABIType("uint[]");
 
             //when
-            var result = arrayType.Encode(listArray).ToHexString();
+            var result = arrayType.Encode(listArray).ToHex();
 
             //then
             //starts at 2 0000000000000000000000000000000000000000000000000000000000000020;

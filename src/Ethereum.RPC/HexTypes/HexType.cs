@@ -63,7 +63,7 @@ namespace Ethereum.RPC
 
         public byte[] ToHexByteArray()
         {
-            return HexValue.HexStringToByteArray();
+            return HexValue.HexToByteArray();
         }
 
         public static implicit operator byte[] (HexRPCType<T> hexRpcType)

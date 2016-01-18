@@ -11,7 +11,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldEncodeStrings()
         {
             IntType intType = new IntType("int");
-            var result2 = intType.Encode("1234567890abcdef1234567890abcdef12345678").ToHexString();
+            var result2 = intType.Encode("1234567890abcdef1234567890abcdef12345678").ToHex();
             Assert.Equal("0000000000000000000000001234567890abcdef1234567890abcdef12345678", result2);
         }
 
@@ -19,7 +19,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldEncodeInt()
         {
             IntType intType = new IntType("int");
-            var result = intType.Encode(69).ToHexString();
+            var result = intType.Encode(69).ToHex();
             Assert.Equal("0000000000000000000000000000000000000000000000000000000000000045", result);
         }
 
@@ -27,7 +27,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldEncodeNegativeInt()
         {
             IntType intType = new IntType("int");
-            var result = intType.Encode(-1234567).ToHexString();
+            var result = intType.Encode(-1234567).ToHex();
             Assert.Equal("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed2979", result);
         }
 
@@ -36,7 +36,7 @@ namespace Ethereum.ABI.Tests.DNX
         {
             IntType intType = new IntType("uint");
             uint given = 1234567;
-            var result = intType.Encode(given).ToHexString();
+            var result = intType.Encode(given).ToHex();
             Assert.Equal("000000000000000000000000000000000000000000000000000000000012d687", result);
         }
 

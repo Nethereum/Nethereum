@@ -23,7 +23,7 @@ namespace Ethereum.RPC.ABI
             {
                 if (addr[i] != 0)
                 {
-                    throw new Exception("Invalid address (should be 20 bytes length): " + addr.ToHexString());
+                    throw new Exception("Invalid address (should be 20 bytes length): " + addr.ToHex());
                 }
             }
             return addr;

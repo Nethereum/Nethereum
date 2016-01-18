@@ -3,26 +3,18 @@ using System.Linq;
 
 namespace Ethereum.RPC.Util
 {
-    public static class Hex2
+    public static class HexByteConvertorExtensions
     {
-        public static string ToHexString(this byte[] value)
+        public static string ToHex(this byte[] value)
         {
             return string.Concat(value.Select(b => b.ToString("x2")));
         }
-
-        //public static byte[] HexStringToByteArray(this string hex)
-        //{
-        //    return Enumerable.Range(0, hex.Length)
-        //                     .Where(x => x % 2 == 0)
-        //                     .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-        //                     .ToArray();
-        //}
 
         //From article http://blogs.msdn.com/b/heikkiri/archive/2012/07/17/hex-string-to-corresponding-byte-array.aspx
 
         private static readonly byte[] Empty = new byte[0];
 
-        public static byte[] HexStringToByteArray(this string value)
+        public static byte[] HexToByteArray(this string value)
         {
             byte[] bytes = null;
             if (String.IsNullOrEmpty(value))
@@ -31,7 +23,7 @@ namespace Ethereum.RPC.Util
             {
                 int string_length = value.Length;
                 int character_index = (value.StartsWith("0x", StringComparison.Ordinal)) ? 2 : 0;
-                    // Does the string define leading HEX indicator '0x'. Adjust starting index accordingly.               
+                // Does the string define leading HEX indicator '0x'. Adjust starting index accordingly.               
                 int number_of_characters = string_length - character_index;
 
                 bool add_leading_zero = false;
@@ -84,19 +76,6 @@ namespace Ethereum.RPC.Util
             return value;
         }
 
-        public static bool IsNumber(this object value)
-        {
-            return value is sbyte
-                   || value is byte
-                   || value is short
-                   || value is ushort
-                   || value is int
-                   || value is uint
-                   || value is long
-                   || value is ulong
-                   || value is float
-                   || value is double
-                   || value is decimal;
-        }
+        
     }
 }

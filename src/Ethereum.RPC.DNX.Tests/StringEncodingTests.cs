@@ -16,7 +16,7 @@ namespace Ethereum.ABI.Tests.DNX
             //4d6f6e6b65790000000000000000000000000000000000000000000000000000 Monkey byte array utf8 encoded
             
             var stringType = new StringType();
-            var result = stringType.Encode("Monkey").ToHexString();
+            var result = stringType.Encode("Monkey").ToHex();
             Assert.Equal(monkeyEncoded, result);
         }
 

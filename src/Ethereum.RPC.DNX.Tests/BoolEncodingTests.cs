@@ -10,7 +10,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldEncodeTrue()
         {
             var boolType = new BoolType();
-            var result = boolType.Encode(true).ToHexString();
+            var result = boolType.Encode(true).ToHex();
             Assert.Equal("0000000000000000000000000000000000000000000000000000000000000001", result);
         }
 
@@ -18,7 +18,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldEncodeFalse()
         {
             var boolType = new BoolType();
-            var result = boolType.Encode(false).ToHexString();
+            var result = boolType.Encode(false).ToHex();
             Assert.Equal("0000000000000000000000000000000000000000000000000000000000000000", result);
         }
 

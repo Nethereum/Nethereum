@@ -70,7 +70,7 @@ namespace Ethereum.RPC.ABI
                 value = "0x" + value;
             }
 
-            return Decode(value.HexStringToByteArray());
+            return Decode(value.HexToByteArray());
         }
 
         /// <summary>

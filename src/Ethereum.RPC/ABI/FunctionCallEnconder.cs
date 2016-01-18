@@ -31,7 +31,7 @@ namespace Ethereum.RPC.ABI
 
         public string EncodeRequest(params object[] parametersValues)
         {
-            var parametersEncoded = EncodeParameters(parametersValues).ToHexString();
+            var parametersEncoded = EncodeParameters(parametersValues).ToHex();
 
             var prefix = "0x";
 
@@ -95,7 +95,7 @@ namespace Ethereum.RPC.ABI
         public List<ParameterOutputResult> DecodeOutput(string output)
         {
             var results = new List<ParameterOutputResult>();
-            byte[] outputBytes = output.HexStringToByteArray();
+            byte[] outputBytes = output.HexToByteArray();
 
             var currentIndex = 0;
 
