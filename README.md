@@ -185,7 +185,7 @@ This is the current TODO list in order of priority
 * ~~Filters, Events and Logging, together with and end to end example for reference on how Ethereum works.~~
 * ~~Refactor~~ 
 * ~~BigIntegers everywhere as opposed to long / int64~~
-* ~~Refactor more~~
+* ~~Hex Types (BigInteger, String) to simplify Rpc encoding~~
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
 * Events decoding as per Functions.
 * Complete other RPC methods.
