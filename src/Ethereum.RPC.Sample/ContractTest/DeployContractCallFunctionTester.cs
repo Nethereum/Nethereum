@@ -40,15 +40,15 @@ namespace Ethereum.RPC.Sample
 
             //Encode and build function parameters 
             var function = new ABI.FunctionCallEncoder();
-            
+
             //Input the function method Sha3Encoded (4 bytes) 
-            function.FunctionSha3Encoded = "c6888fa1";
-            //Define input and output parameters
-            function.InputsParameters = new []{new Parameter() {Name = "a", Type = ABIType.CreateABIType("uint")}};
-            function.OutputParameters = new []{new Parameter() {Type = ABIType.CreateABIType("uint")}};
+            var sha3Signature = "c6888fa1";
+            //Define input parameters
+            var inputParameters = new[] { new Parameter("uint", "a") };
             //encode the function call (function + parameter input)
+           
             //using 69 as the input
-            var functionCall = function.EncodeRequest(69);
+            var functionCall = function.EncodeRequest(sha3Signature, inputParameters, 69);
             //reuse the transaction input, (just the address) 
             //the destination address is the contract address
             transactionInput.To = receipt.ContractAddress;
@@ -59,7 +59,8 @@ namespace Ethereum.RPC.Sample
             // call and get the result
             var resultFunction = await ethCall.SendRequestAsync(client, transactionInput);
             // decode the output
-            var output =  (BigInteger)function.DecodeOutput(resultFunction)[0].Result;
+            var functionDecoder = new FunctionCallDecoder();
+            var output =  (BigInteger)functionDecoder.DecodeOutput(resultFunction, new Parameter("uint"))[0].Result;
             //visual test 
             return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + (int)output  + " and should be 483";
 

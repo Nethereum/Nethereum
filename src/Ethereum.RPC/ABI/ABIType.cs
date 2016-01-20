@@ -8,7 +8,8 @@ namespace Ethereum.RPC.ABI
     /// </summary>
     public abstract class ABIType
     {
-
+        protected ITypeDecoder Decoder { get; set; }
+        protected ITypeEncoder Encoder { get; set; }
 
         public ABIType(string name)
         {
@@ -63,22 +64,15 @@ namespace Ethereum.RPC.ABI
             throw new ArgumentException("Unknown type: " + typeName);
         }
 
-        public virtual object DecodeString(string value)
-        {
-            if (!value.StartsWith("0x"))
-            {
-                value = "0x" + value;
-            }
-
-            return Decode(value.HexToByteArray());
-        }
 
         /// <summary>
         /// Encodes the value according to specific type rules </summary>
         /// <param name="value"> </param>
-        public abstract byte[] Encode(object value);
+        public byte[] Encode(object value)
+        {
+            return Encoder.Encode(value);
+        }
 
-        public abstract object Decode(byte[] encoded);
 
         /// <returns> fixed size in bytes or negative value if the type is dynamic </returns>
         public virtual int FixedSize => 32;
@@ -91,6 +85,26 @@ namespace Ethereum.RPC.ABI
         public override string ToString()
         {
             return Name;
+        }
+
+        public object Decode(byte[] encoded, Type type)
+        {
+           return Decoder.Decode(encoded, type);
+        }
+
+        public object Decode(string encoded, Type type)
+        {
+            return Decoder.Decode(encoded, type);
+        }
+
+        public T Decode<T>(string encoded)
+        {
+            return Decoder.Decode<T>(encoded);
+        }
+
+        public T Decode<T>(byte[] encoded)
+        {
+            return Decoder.Decode<T>(encoded);
         }
     }
 }

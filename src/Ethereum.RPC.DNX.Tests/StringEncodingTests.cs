@@ -25,7 +25,7 @@ namespace Ethereum.ABI.Tests.DNX
         {
             var stringType = new StringType();
             var result = stringType.Encode("MonkeyMediumSizeString");
-            Assert.Equal("MonkeyMediumSizeString", stringType.Decode(result));
+            Assert.Equal("MonkeyMediumSizeString", stringType.Decode<string>(result));
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Ethereum.ABI.Tests.DNX
             var stringType = new StringType();
             var longString = "MonkeyVeryLongStringmljalkdjflksjf lkdfjlsfjalkfjlsflskfjlsflsfjasdfjlsjflksfjlskjf fjlskfjlsjfs fkj lakdflsjfsa fafd sa";
             var result = stringType.Encode(longString);
-            Assert.Equal(longString, stringType.Decode(result));
+            Assert.Equal(longString, stringType.Decode<string>(result));
         }
     }
 }

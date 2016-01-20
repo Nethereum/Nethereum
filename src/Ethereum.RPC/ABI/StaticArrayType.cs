@@ -1,8 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Ethereum.RPC.Util;
 
 namespace Ethereum.RPC.ABI
 {
@@ -13,6 +11,8 @@ namespace Ethereum.RPC.ABI
         public StaticArrayType(string name) : base(name)
         {
             IntialiseSize(name);
+            Decoder = new ArrayTypeDecoder(ElementType);
+            Encoder = new StaticArrayTypeEncoder(ElementType, Size);
         }
 
         private void IntialiseSize(string name)
@@ -23,23 +23,7 @@ namespace Ethereum.RPC.ABI
             Size = int.Parse(dim);
         }
 
-        public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";
-
-        public override byte[] EncodeList(IList l)
-        {
-            if (l.Count != Size)
-            {
-                throw new Exception("List size (" + l.Count + ") != " + Size + " for type " + Name);
-            }
-
-            byte[][] elems = new byte[Size][];
-            for (var i = 0; i < l.Count; i++)
-            {
-                elems[i] = ElementType.Encode(l[i]);
-            }
-            return ByteUtil.Merge(elems);
-        }
-
+        public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";       
 
         public override int FixedSize => ElementType.FixedSize * Size;
     }

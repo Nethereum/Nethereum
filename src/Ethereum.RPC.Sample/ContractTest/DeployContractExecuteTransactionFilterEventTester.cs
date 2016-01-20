@@ -106,15 +106,14 @@ namespace Ethereum.RPC.Sample
         {
             var transactionInput = new EthSendTransactionInput();
             var ethSendTransaction = new EthSendTransaction();
-            var function = new ABI.FunctionCallEncoder();
-
+            var function = new FunctionCallEncoder();
             //Input the function method Sha3Encoded (4 bytes) 
-            function.FunctionSha3Encoded = "c6888fa1";
-            //Define input and output parameters
-            function.InputsParameters = new[] {new Parameter() {Name = "a", Type = ABIType.CreateABIType("uint")}};
+            var sha3Signature = "c6888fa1";
+            //Define input parameters
+            var inputParameters =  new[] { new Parameter("uint", "a") } ;
             //encode the function call (function + parameter input)
             //using 69 as the input
-            var functionCall = function.EncodeRequest(69);
+            var functionCall = function.EncodeRequest(sha3Signature, inputParameters, 69);
             transactionInput.From = addressFrom;
             //the destination address is the contract address
             transactionInput.To = contractAddress;

@@ -44,7 +44,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeString()
         {
             IntType intType = new IntType("int");
-            var result = intType.DecodeString("0x00000000000000000000000000000000000000000000000000000000000001e3");
+            var result = intType.Decode<BigInteger>("0x00000000000000000000000000000000000000000000000000000000000001e3");
             Assert.Equal(new BigInteger(483), result);
         }
 
@@ -52,7 +52,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeNegativeIntString()
         {
             IntType intType = new IntType("int");
-            var result = intType.DecodeString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed2979");
+            var result = intType.Decode<BigInteger>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed2979");
             Assert.Equal(new BigInteger(-1234567), result);
         }
 
@@ -61,7 +61,7 @@ namespace Ethereum.ABI.Tests.DNX
         {
             IntType intType = new IntType("int");
             var bytes = intType.Encode(100000569);
-            var result = intType.Decode(bytes);
+            var result = intType.Decode<BigInteger>(bytes);
             Assert.Equal(new BigInteger(100000569), result);
         }
 
@@ -70,7 +70,7 @@ namespace Ethereum.ABI.Tests.DNX
         {
             IntType intType = new IntType("int");
             var bytes = intType.Encode(-100000569);
-            var result = intType.Decode(bytes);
+            var result = intType.Decode<BigInteger>(bytes);
             Assert.Equal(new BigInteger(-100000569), result);
         }
 
@@ -78,7 +78,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeStringLength()
         {
             IntType intType = new IntType("int");
-            var result = intType.DecodeString("0x0000000000000000000000000000000000000000000000000000000000000020");
+            var result = intType.Decode<BigInteger>("0x0000000000000000000000000000000000000000000000000000000000000020");
             Assert.Equal(new BigInteger(32), result);
         }
 

@@ -26,7 +26,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeFalse()
         {
             var boolType = new BoolType();
-            var result = boolType.DecodeString("0000000000000000000000000000000000000000000000000000000000000000");
+            var result = boolType.Decode<bool>("0000000000000000000000000000000000000000000000000000000000000000");
             Assert.Equal(false, result);
         }
 
@@ -34,7 +34,7 @@ namespace Ethereum.ABI.Tests.DNX
         public virtual void ShouldDecodeTrue()
         {
             var boolType = new BoolType();
-            var result = boolType.DecodeString("0000000000000000000000000000000000000000000000000000000000000001");
+            var result = boolType.Decode<bool>("0000000000000000000000000000000000000000000000000000000000000001");
             Assert.Equal(true, result);
         }
     }

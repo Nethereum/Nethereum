@@ -45,11 +45,10 @@ namespace Ethereum.ABI.Tests.DNX
             var arrayType = ArrayType.CreateABIType("uint[]");
 
             //when
-            var result = arrayType.DecodeString(given);
+            var list = arrayType.Decode<List<BigInteger>>(given);
 
             //then
-            var list = result as IList;
-
+         
 
             if (list != null)
             {
@@ -57,7 +56,7 @@ namespace Ethereum.ABI.Tests.DNX
 
                 for (int i = 0; i < list.Count; i++)
                 {
-                    Assert.Equal(new BigInteger(i + 234567), (BigInteger)list[i]);
+                    Assert.Equal(new BigInteger(i + 234567), list[i]);
                 }
             }
             else

@@ -3,14 +3,13 @@ using System.Numerics;
 
 namespace Ethereum.RPC.ABI
 {
-    public class EncoderDecoderHelpes
+    public class EncoderDecoderHelpers
     {
         public static int GetNumberOfBytes(byte[] encoded)
         {
+            var intDecoder = new IntTypeDecoder();
             var numberOfBytesEncoded = encoded.Take(32);
-            var numberOfBytes = new IntType("int").Decode(numberOfBytesEncoded.ToArray());
-            var unboxed = (BigInteger)numberOfBytes;
-            return (int)unboxed;
+            return intDecoder.DecodeInt(numberOfBytesEncoded.ToArray());  
         }
     }
-}
+}  

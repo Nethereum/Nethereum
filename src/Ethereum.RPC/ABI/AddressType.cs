@@ -1,32 +1,12 @@
-using System;
-using Ethereum.RPC.Util;
-
 namespace Ethereum.RPC.ABI
 {
-    public class AddressType : IntType
+    public class AddressType : ABIType
     {
         public AddressType() : base("address")
         {
-        }
-
-        public override byte[] Encode(object value)
-        {
-            var strValue = value as string;
-            if (strValue != null
-                && !strValue.StartsWith("0x", StringComparison.Ordinal))
-            {
-                // address is supposed to be always in hex
-                value = "0x" + value;
-            }
-            byte[] addr = base.Encode(value);
-            for (int i = 0; i < 12; i++)
-            {
-                if (addr[i] != 0)
-                {
-                    throw new Exception("Invalid address (should be 20 bytes length): " + addr.ToHex());
-                }
-            }
-            return addr;
+            //this will need to be only a string type one, converting to hex
+            Decoder = new IntTypeDecoder();
+            Encoder = new AddressTypeEncoder();
         }
     }
 }
