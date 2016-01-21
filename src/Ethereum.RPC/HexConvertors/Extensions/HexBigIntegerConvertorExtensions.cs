@@ -9,6 +9,8 @@ namespace Ethereum.RPC
     {
         public static string ToHex(this BigInteger value, bool littleEndian)
         {
+            if (value == 0) return "0x0";
+
             byte[] bytes;
 
             if (BitConverter.IsLittleEndian != littleEndian)
@@ -20,7 +22,7 @@ namespace Ethereum.RPC
                 bytes = value.ToByteArray().ToArray();
             }
 
-            return bytes.ToHex();
+            return "0x" + bytes.ToHexCompact();
         }
 
 

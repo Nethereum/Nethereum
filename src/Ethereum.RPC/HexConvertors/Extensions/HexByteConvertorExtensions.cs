@@ -10,6 +10,10 @@ namespace Ethereum.RPC.Util
             return string.Concat(value.Select(b => b.ToString("x2")));
         }
 
+        public static string ToHexCompact(this byte[] value)
+        {
+            return ToHex(value).TrimStart('0');
+        }
         //From article http://blogs.msdn.com/b/heikkiri/archive/2012/07/17/hex-string-to-corresponding-byte-array.aspx
 
         private static readonly byte[] Empty = new byte[0];

@@ -7,15 +7,15 @@ namespace Ethereum.RPC
 {
     public enum ApiMethods
     {
-        net_listening,
-        eth_protocolVersion,
-        eth_syncing,
-        eth_coinbase,
-        eth_mining,
-        eth_hashrate,
-        eth_gasPrice,
-        eth_accounts,
-        eth_blockNumber,
+        net_listening, //done
+        eth_protocolVersion, //done
+        eth_syncing, //done
+        eth_coinbase, //done
+        eth_mining, //done
+        eth_hashrate, //done
+        eth_gasPrice, //done
+        eth_accounts, //done
+        eth_blockNumber, //done
         eth_getBalance,
         eth_getStorageAt,
         eth_getTransactionCount,
@@ -34,18 +34,18 @@ namespace Ethereum.RPC
         eth_getTransactionByHash,
         eth_getTransactionByBlockHashAndIndex,
         eth_getTransactionByBlockNumberAndIndex,
-        eth_getTransactionReceipt,
+        eth_getTransactionReceipt, //done
         eth_getUncleByBlockHashAndIndex,
         eth_getUncleByBlockNumberAndIndex,
-        eth_getCompilers,
+        eth_getCompilers, //done
         eth_compileLLL,
         eth_compileSolidity, //done
         eth_compileSerpent,
-        eth_newFilter,
+        eth_newFilter, //done
         eth_newBlockFilter,
         eth_newPendingTransactionFilter,
         eth_uninstallFilter,
-        eth_getFilterChanges,
+        eth_getFilterChanges, //done
         eth_getFilterLogs,
         eth_getLogs,
         eth_getWork,
@@ -56,8 +56,8 @@ namespace Ethereum.RPC
         db_putHex,
         db_getHex,
         shh_post,
-        shh_version,
-        shh_newIdentity,
+        shh_version, //done
+        shh_newIdentity, //done
         shh_hasIdentity,
         shh_newGroup,
         shh_addToGroup,
@@ -67,7 +67,7 @@ namespace Ethereum.RPC
         shh_getMessages,
         web3_clientVersion, //done
         web3_sha3, //done
-        net_version,
-        net_peerCount
+        net_version, //done
+        net_peerCount //done
     }
 }

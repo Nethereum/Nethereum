@@ -8,7 +8,7 @@ namespace Ethereum.RPC
     {
         public static string ToHexUTF8(this string value)
         {
-            return Encoding.UTF8.GetBytes(value).ToHex();
+            return "0x" + Encoding.UTF8.GetBytes(value).ToHex();
         }
 
 
