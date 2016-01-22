@@ -16,18 +16,18 @@ namespace Ethereum.RPC
         eth_gasPrice, //done
         eth_accounts, //done
         eth_blockNumber, //done
-        eth_getBalance,
-        eth_getStorageAt,
-        eth_getTransactionCount,
-        eth_getBlockTransactionCountByHash,
-        eth_getBlockTransactionCountByNumber,
-        eth_getUncleCountByBlockHash,
-        eth_getUncleCountByBlockNumber,
-        eth_getCode,
-        eth_sign,
+        eth_getBalance, //done
+        eth_getStorageAt, //done
+        eth_getTransactionCount, //done
+        eth_getBlockTransactionCountByHash, //done
+        eth_getBlockTransactionCountByNumber, //done
+        eth_getUncleCountByBlockHash, //done
+        eth_getUncleCountByBlockNumber, //done
+        eth_getCode, //done
+        eth_sign, //done
         eth_sendTransaction, //done
-        eth_sendRawTransaction,
-        eth_call,
+        eth_sendRawTransaction, //done
+        eth_call, //done
         eth_estimateGas,
         eth_getBlockByHash,
         eth_getBlockByNumber,
@@ -51,10 +51,6 @@ namespace Ethereum.RPC
         eth_getWork,
         eth_submitWork,
         eth_submitHashrate,
-        db_putString,
-        db_getString,
-        db_putHex,
-        db_getHex,
         shh_post,
         shh_version, //done
         shh_newIdentity, //done

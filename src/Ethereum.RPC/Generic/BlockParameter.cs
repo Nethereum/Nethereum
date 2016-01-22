@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Numerics;
+using Ethereum.RPC;
+using Ethereum.RPC.Generic;
 using Ethereum.RPC.Util;
 using Newtonsoft.Json;
 
