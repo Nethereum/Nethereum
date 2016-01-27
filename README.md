@@ -187,12 +187,14 @@ This is the current TODO list in order of priority
 * ~~BigIntegers everywhere as opposed to long / int64~~
 * ~~Hex Types (BigInteger, String) to simplify Rpc encoding~~
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
-* Events decoding as per Functions.
 * Complete other RPC methods.
+* Extract projects for RPC / ABI / Web3
+* Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)
 * Documentation
-* Introduction of different services for Account, Blockchain, Contract creation, Transaction / Call submission (ie Transfer, Contract call)
-* Nuget
+* Nuget (beta)
 * Code generate Contract / Function to simplify usage 
+* Events decoding as per Functions.
+* Example of windows universal app using a contract (Windows, Mobile, RPI2)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
-* Example of windows universal app using a contract (Windows, Mobile, RPI2)
+
