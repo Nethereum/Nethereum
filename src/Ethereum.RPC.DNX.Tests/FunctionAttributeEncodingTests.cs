@@ -82,7 +82,7 @@ namespace Ethereum.ABI.Tests.DNX
 
             Assert.Equal("hello", result.A);
             Assert.Equal("world", result.C);
-
+            Assert.Equal(array[6], result.B[6]);
         }
 
     }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
 using Ethereum.RPC.Eth;
+using Ethereum.RPC.Generic;
 using RPCRequestResponseHandlers;
 
 namespace Ethereum.RPC
