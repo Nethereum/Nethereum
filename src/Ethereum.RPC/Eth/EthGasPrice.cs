@@ -2,8 +2,8 @@
 namespace Ethereum.RPC.Eth
 {
 
-    ///<Summary>
-    /// eth_gasPrice
+///<Summary>
+/// eth_gasPrice
 /// 
 /// Returns the current price per gas in wei.
 /// 

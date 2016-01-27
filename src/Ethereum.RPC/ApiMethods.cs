@@ -28,12 +28,12 @@ namespace Ethereum.RPC
         eth_sendTransaction, //done
         eth_sendRawTransaction, //done
         eth_call, //done
-        eth_estimateGas,
-        eth_getBlockByHash,
+        eth_estimateGas, //done
+        eth_getBlockByHash, //done
         eth_getBlockByNumber,
-        eth_getTransactionByHash,
-        eth_getTransactionByBlockHashAndIndex,
-        eth_getTransactionByBlockNumberAndIndex,
+        eth_getTransactionByHash, //done
+        eth_getTransactionByBlockHashAndIndex, //done
+        eth_getTransactionByBlockNumberAndIndex, //done
         eth_getTransactionReceipt, //done
         eth_getUncleByBlockHashAndIndex,
         eth_getUncleByBlockNumberAndIndex,

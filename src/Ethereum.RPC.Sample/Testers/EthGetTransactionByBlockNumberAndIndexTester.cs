@@ -10,7 +10,7 @@ namespace Ethereum.RPC.Sample.Testers
         public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGetTransactionByBlockNumberAndIndex = new EthGetTransactionByBlockNumberAndIndex();
-            return await ethGetTransactionByBlockNumberAndIndex.SendRequestAsync(client);
+            return (object)await ethGetTransactionByBlockNumberAndIndex.SendRequestAsync(client, new HexBigInteger(20), new HexBigInteger(0));
         }
 
         public Type GetRequestType()
