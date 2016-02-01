@@ -13,16 +13,19 @@ namespace RPCRequestResponseHandlers
     public class RpcRequestResponseHandler<TResponse>
     {
         public string MethodName { get; }
-        public RpcRequestResponseHandler(string methodName)
+
+        public RpcClient Client { get; }
+        public RpcRequestResponseHandler(RpcClient client, string methodName)
         {
             this.MethodName = methodName;
+            this.Client = client;
         }
 
-        public async Task<TResponse> SendRequestAsync(RpcClient client, string id, params object[] paramList)
+        public async Task<TResponse> SendRequestAsync(string id, params object[] paramList)
         {
             var request = BuildRequest(id, paramList);
            // string rpcRequestJson = JsonConvert.SerializeObject(request);
-            var response = await client.SendRequestAsync(request);
+            var response = await Client.SendRequestAsync(request);
             if (response.HasError) throw new RPCResponseException(response);
             return response.GetResult<TResponse>();
         }

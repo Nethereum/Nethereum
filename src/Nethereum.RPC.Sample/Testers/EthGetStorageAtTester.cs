@@ -1,0 +1,23 @@
+using System;
+using System.Threading.Tasks;
+using edjCase.JsonRpc.Client;
+using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth;
+
+namespace Nethereum.RPC.Sample.Testers
+{
+    public class EthGetStorageAtTester : IRPCRequestTester
+    {
+        public async Task<dynamic> ExecuteTestAsync(RpcClient client)
+        {
+            var ethGetStorageAt = new EthGetStorageAt(client);
+            return await ethGetStorageAt.SendRequestAsync( "0x407d73d8a49eeb85d32cf465507dd71d507100c1", new HexBigInteger(2));
+        }
+
+        public Type GetRequestType()
+        {
+            return typeof(EthGetStorageAt);
+        }
+    }
+}
+        

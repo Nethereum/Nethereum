@@ -12,14 +12,16 @@ namespace RPCRequestResponseHandlers
     public class RpcRequestResponseHandlerNoParam<TResponse>
     {
         public string MethodName { get; }
-        public RpcRequestResponseHandlerNoParam(string methodName)
+        public RpcClient Client { get; }
+        public RpcRequestResponseHandlerNoParam(RpcClient client, string methodName)
         {
             this.MethodName = methodName;
+            this.Client = client;
         }
 
-        public virtual async Task<TResponse> SendRequestAsync(RpcClient client, string id)
+        public virtual async Task<TResponse> SendRequestAsync(string id)
         {
-            var response = await client.SendRequestAsync(BuildRequest(id));
+            var response = await Client.SendRequestAsync(BuildRequest(id));
             if (response.HasError) throw new RPCResponseException(response);
             return response.GetResult<TResponse>();
         }
