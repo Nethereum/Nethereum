@@ -9,10 +9,11 @@ namespace RPCRequestResponseHandlers
 {
  
 
-    public class RpcRequestResponseHandlerNoParam<TResponse>
+    public class RpcRequestResponseHandlerNoParam<TResponse>: IRpcRequestHandler
     {
         public string MethodName { get; }
         public RpcClient Client { get; }
+
         public RpcRequestResponseHandlerNoParam(RpcClient client, string methodName)
         {
             this.MethodName = methodName;

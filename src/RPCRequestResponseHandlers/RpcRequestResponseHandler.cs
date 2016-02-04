@@ -9,8 +9,13 @@ using System.Threading.Tasks;
 namespace RPCRequestResponseHandlers
 {
     
+    public interface IRpcRequestHandler
+    {
+        string MethodName { get; }
+        RpcClient Client { get; }
+    }
 
-    public class RpcRequestResponseHandler<TResponse>
+    public class RpcRequestResponseHandler<TResponse>: IRpcRequestHandler
     {
         public string MethodName { get; }
 

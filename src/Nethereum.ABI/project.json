@@ -30,6 +30,7 @@
     }
   },
   "dependencies": {
-    "Nethereum.Hex": "1.0.0-*"
+    "Nethereum.Hex": "1.0.0-*",
+    "Portable.BouncyCastle": "1.8.1"
   }
 }

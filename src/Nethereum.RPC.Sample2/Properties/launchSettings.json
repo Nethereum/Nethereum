@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Ethereum.RPC.Sample": {
-      "commandName": "Ethereum.RPC.Sample",
-      "sdkVersion": "dnx-coreclr-win-x86.1.0.0-rc1-final"
-    }
-  }
-}

@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Infrastructure
 
         }
 
-        public override Task<TResponse> SendRequestAsync(string id = Constants.DEFAULT_REQUEST_ID)
+        public new Task<TResponse> SendRequestAsync(string id = Constants.DEFAULT_REQUEST_ID)
         {
             return base.SendRequestAsync(id);
         }

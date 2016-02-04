@@ -1,0 +1,24 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "Nethereum.RPC.ClassesExtractor Console Application",
+  "authors": [ "JuanFran" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+
+  "dependencies": {
+    "Nethereum.RPC": "1.0.0-*"
+  },
+
+  "commands": {
+    "Nethereum.RPC.ClassesExtractor": "Nethereum.RPC.ClassesExtractor"
+  },
+
+  "frameworks": {
+    "dnx451": { }
+  }
+}

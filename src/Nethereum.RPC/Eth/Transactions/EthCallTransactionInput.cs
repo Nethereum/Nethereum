@@ -9,6 +9,35 @@ namespace Nethereum.RPC.Eth.Transactions
     [JsonObject(MemberSerialization.OptIn)]
     public class EthCallTransactionInput
     {
+        public EthCallTransactionInput()
+        {
+        }
+
+        public EthCallTransactionInput(string data, string addressTo)
+        {
+            this.Data = data;
+            this.To = addressTo;
+        }
+
+        public EthCallTransactionInput(string data, string addressTo, HexBigInteger value):this(data, addressTo)
+        {
+            this.Value = value;
+        }
+
+        public EthCallTransactionInput(string data, string addressTo, string adddressFrom, HexBigInteger value) : this(data, addressTo, value)
+        {
+            this.From = adddressFrom;
+        }
+
+        public EthCallTransactionInput(string data, HexBigInteger gas, string addressFrom)
+        {
+            this.Data = data;
+            this.Gas = gas;
+            this.From = addressFrom;
+        }
+
+
+    
         /// <summary>
         ///  DATA, 20 Bytes - The address the transaction is send from.
         /// </summary>

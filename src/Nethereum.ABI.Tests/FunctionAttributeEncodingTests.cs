@@ -7,6 +7,26 @@ using Xunit;
 
 namespace Nethereum.ABI.Tests
 {
+
+    public class ContractDeserialiaserTests
+    {
+        [Fact]
+        public virtual void ShouldDeserializeContract()
+        {
+            string abi = @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""to"",""type"":""address""}],""name"":""other"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]" ;
+
+            var des = new ABIDeserialiser();
+            var contract = des.DeserialiseContract(abi);
+            var function = contract.Functions.FirstOrDefault(x => x.Name == "multiply");
+            Assert.NotNull(function);
+            Assert.False(function.Constant);
+            var param = function.InputParameters.FirstOrDefault(x => x.Name == "a");
+            Assert.NotNull(param);
+            Assert.Equal(param.Type, "uint256");
+            Assert.Equal("c6888fa1", function.Sha3Signature);
+            Assert.Equal("ea6ace3d", contract.Functions[1].Sha3Signature);
+        }
+    }
     public class FunctionAttributeEncodingTests
     {
         [Function(Name ="test", Sha3Signature = "c6888fa1")]
