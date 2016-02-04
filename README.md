@@ -1,10 +1,12 @@
-# Ethereum.RPC
+# Nethereum
 
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Ethereum RPC Client Library in .Net C#, Web3.js in .net.
+Ethereum is the Web3 RPC Client Library in .Net.
 
-**Work in progress**, consider this as a working spike for different rpc commands, including calling contracts. Have a look at the different test projects for usage. 
+**Work in progress**, consider this as a working pre-alpha version.
+
+
 
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
 
@@ -12,7 +14,49 @@ Sugestions, ideas, please raise an issue. Want to collaborate, create a pull req
 
 ##Example of deploying a contract and calling a function
 
-This is an example of all the stages required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
+This is the Web3 example of how to deploy a contract and call a function.
+
+```csharp
+
+public async Task<string> Test()
+        {
+            //The compiled solidity contract to be deployed
+            //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
+            var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
+            var abi =
+                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
+
+            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var web3 = new Web3();
+
+            //deploy the contract, no need to use the abi as we don't have a constructor
+            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(contractByteCode, addressFrom);
+           
+            //the contract should be mining now
+
+            //get the contract address 
+            EthTransactionReceipt receipt = null;
+            //wait for the contract to be mined to the address
+            while (receipt == null)
+            {
+                receipt = await web3.Eth.GetTransactionReceipt.SendRequestAsync(transactionHash);
+            }
+
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+            
+            //get the function by name
+            var multiplyFunction = contract.GetFunction("multiply");
+
+            //do a function call (not transaction) and get the result
+            var result = await multiplyFunction.CallAsync<int>(69);
+            //visual test 
+            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + result + " and should be 483";
+        }
+
+
+```
+
+This is an example of all the stages (internal if you want) required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
 
 Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
 
@@ -77,7 +121,8 @@ ABI encoding and decoding has been tested on windows/linux for different endiann
 
 ### Events, logs and filters
 
-This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs.
+This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs. (This is not implemented yet on the Web3 component)
+
 On the example you can see how a contract is deployed, then using the contract address we subscribe to all the events raised by the contract using filters. Transactions are submitted and the logs are retrived by polling using the filter. From the logs we can retrive the event encoded signature and event data (indexed in the logs and in the data).
 
 ```csharp
@@ -253,12 +298,13 @@ This is the current TODO list in order of priority
 * ~~Hex Types (BigInteger, String) to simplify Rpc encoding~~
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
 * Complete other RPC methods.
-* Extract projects for RPC / ABI / Web3
-* Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)
+* ~~Extract projects for RPC / ABI / Web3
+* ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)
+* Complete Web 3 methods (Shh, Join Eth rpc commands as in web3, web3 util wei conversion etc)
 * Documentation
 * Nuget (beta)
-* Code generate Contract / Function to simplify usage 
-* Events decoding as per Functions.
+* Code generate Typed DTO Functions to simplify usage 
+* Filtering / Events as in Web3
 * Example of windows universal app using a contract (Windows, Mobile, RPI2)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
