@@ -298,8 +298,8 @@ This is the current TODO list in order of priority
 * ~~Hex Types (BigInteger, String) to simplify Rpc encoding~~
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
 * Complete other RPC methods.
-* ~~Extract projects for RPC / ABI / Web3
-* ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)
+* ~~Extract projects for RPC / ABI / Web3~~
+* ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
 * Complete Web 3 methods (Shh, Join Eth rpc commands as in web3, web3 util wei conversion etc)
 * Documentation
 * Nuget (beta)
