@@ -1,7 +1,10 @@
 ﻿
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using edjCase.JsonRpc.Client;
+    using Nethereum.ABI;
+    using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Web3
 {
@@ -22,5 +25,8 @@ namespace Nethereum.Web3
             this.Client = new RpcClient(new Uri(url));
         }
     }
+
+
+    
 }
 

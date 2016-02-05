@@ -25,10 +25,11 @@ namespace Nethereum.Web3
 
         private EthCall ethCall;
         private EthSendTransaction ethSendTransaction;
+        protected FunctionABI FunctionABI { get; set; }
 
-
-        protected FunctionBase(RpcClient rpcClient, Contract contract)
+        protected FunctionBase(RpcClient rpcClient, Contract contract, FunctionABI functionABI )
         {
+            FunctionABI = functionABI;
             this.rpcClient = rpcClient;
             this.contract = contract;
             this.ethCall = new EthCall(rpcClient);
@@ -42,27 +43,27 @@ namespace Nethereum.Web3
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall) where TReturn: new()
         {
             var result =  await ethCall.SendRequestAsync(new EthCallTransactionInput(encodedFunctionCall, ContractAddress), DefaultBlock);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result);
+            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger value) where TReturn : new()
         {
             var result = await ethCall.SendRequestAsync(new EthCallTransactionInput(encodedFunctionCall, ContractAddress, from, value), DefaultBlock);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result);
+            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, EthCallTransactionInput callInput) where TReturn : new()
         {
             callInput.Data = encodedFunctionCall; 
             var result = await ethCall.SendRequestAsync(callInput, DefaultBlock);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result);
+            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, EthCallTransactionInput callInput, BlockParameter block) where TReturn : new()
         {
             callInput.Data = encodedFunctionCall;
             var result = await ethCall.SendRequestAsync(callInput, block);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result);
+            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
         protected async Task<string> SendTransactionAsync(string encodedFunctionCall)

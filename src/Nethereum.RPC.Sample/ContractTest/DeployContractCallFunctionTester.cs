@@ -60,9 +60,10 @@ namespace Nethereum.RPC.Sample.ContractTest
             var resultFunction = await ethCall.SendRequestAsync( transactionInput);
             // decode the output
             var functionDecoder = new FunctionCallDecoder();
-            var output =  (BigInteger)functionDecoder.DecodeOutput(resultFunction, new Parameter("uint"))[0].Result;
+
+            var output = functionDecoder.DecodeOutput<int>(resultFunction, new Parameter("uint", "d"));
             //visual test 
-            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + (int)output  + " and should be 483";
+            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + output  + " and should be 483";
 
            
 

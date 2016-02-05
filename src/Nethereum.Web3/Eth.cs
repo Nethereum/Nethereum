@@ -110,13 +110,5 @@ namespace Nethereum.Web3
             contract.DefaultAccount = DefaultAccount;
             return contract;
         }
-
-        public Contract GetContract(string contractAddress)
-        {
-            var contract = new Contract(client, contractAddress);
-            contract.DefaultBlock = DefaultBlock;
-            contract.DefaultAccount = DefaultAccount;
-            return contract;
-        }
     }
 }

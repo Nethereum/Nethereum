@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
@@ -10,11 +11,52 @@ namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionCallDecoder
     {
+        ///<summary>
+        /// Decodes the output of a function using either a FunctionOutputAttribute  (T)
+        ///  or the parameter casted to the type T, only one outputParameter should be used in this scenario.
+        /// </summary>
+        ///  
+        public T DecodeOutput<T>(string output, params Parameter[] outputParameter) where T : new()
+        {
+            var function = FunctionOutputAttribute.GetAttribute<T>();
+
+            if (function == null)
+            {
+                if (outputParameter != null)
+                {
+                    if (outputParameter.Length > 1)
+                        throw new Exception(
+                            "Only one output parameter supported to be decoded this way, use a FunctionOutputAttribute or define each outputparameter");
+
+                    var parmeterOutput = new ParameterOutput()
+                    {
+                        DecodedType = typeof (T),
+                        Parameter = outputParameter[0]
+                    };
+
+                    var results = DecodeOutput(output, parmeterOutput);
+
+                    if (results.Any())
+                    {
+                        return (T) results[0].Result;
+                    }
+                }
+
+                return default(T);
+
+            }
+            else
+            {
+                return DecodeOutput<T>(output);
+            }
+        }
+
         public T DecodeOutput<T>(string output) where T : new()
         {
+            
             var type = typeof(T);
 
-            var function = type.GetTypeInfo().GetCustomAttribute<FunctionOutputAttribute>();
+             var function = FunctionOutputAttribute.GetAttribute<T>();
             if (function == null)
                 throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
 
@@ -45,13 +87,6 @@ namespace Nethereum.ABI.FunctionEncoding
 
             return result;
             
-        }
-
-
-        public List<ParameterOutput> DecodeOutput(string output, params Parameter[] outputParameters)
-        {
-            var results = outputParameters.Select(param => new ParameterOutput() {Parameter = param}).ToArray();
-            return DecodeOutput(output, results);
         }
 
 

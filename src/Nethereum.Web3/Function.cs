@@ -11,11 +11,11 @@ namespace Nethereum.Web3
 
     public class Function : FunctionBase
     {
-        private readonly FunctionABI function;
+       
 
-        public Function(RpcClient rpcClient, Contract contract, FunctionABI function) : base(rpcClient, contract)
+        public Function(RpcClient rpcClient, Contract contract, FunctionABI function) : base(rpcClient, contract, function)
         {
-            this.function = function;
+           
         }
 
         public async Task<TReturn> CallAsync<TReturn>(params object[] functionInput) where TReturn : new()
@@ -67,14 +67,14 @@ namespace Nethereum.Web3
 
         public string GetData(params object[] functionInput)
         {
-            return FunctionCallEncoder.EncodeRequest(function.Sha3Signature, function.InputParameters, functionInput);
+            return FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature, FunctionABI.InputParameters, functionInput);
         }
     }
-
+    
     public class Function<TFunctionInput> : FunctionBase
     {
 
-        public Function(RpcClient rpcClient, Contract contract) : base(rpcClient, contract)
+        public Function(RpcClient rpcClient, Contract contract, FunctionABI functionABI) : base(rpcClient, contract, functionABI)
         {
         }
 
