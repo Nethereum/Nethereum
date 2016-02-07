@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Generic;
+using Nethereum.RPC.Eth.DTOs;
 using RPCRequestResponseHandlers;
 
 namespace Nethereum.RPC.Eth
@@ -39,18 +39,23 @@ namespace Nethereum.RPC.Eth
 ///   "result": "0x03"
 /// }    
     ///</Summary>
-    public class EthGetStorageAt : RpcRequestResponseHandler<string>
+    public class EthGetStorageAt : RpcRequestResponseHandler<string>, IDefaultBlock
         {
-            public EthGetStorageAt(RpcClient client) : base(client, ApiMethods.eth_getStorageAt.ToString()) { }
+            public EthGetStorageAt(RpcClient client) : base(client, ApiMethods.eth_getStorageAt.ToString())
+        {
+            DefaultBlock = BlockParameter.CreateLatest();
+        }
 
-            public async Task<string> SendRequestAsync( string address, HexBigInteger position, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public BlockParameter DefaultBlock { get; set; }
+
+        public async Task<string> SendRequestAsync( string address, HexBigInteger position, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return await base.SendRequestAsync( id, address, position, block);
             }
 
             public async Task<string> SendRequestAsync( string address, HexBigInteger position, string id = Constants.DEFAULT_REQUEST_ID)
             {
-                return await SendRequestAsync( address, position, BlockParameter.CreateLatest(), id);
+                return await SendRequestAsync( address, position, DefaultBlock, id);
             }
 
             public RpcRequest BuildRequest(string address, HexBigInteger position, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)

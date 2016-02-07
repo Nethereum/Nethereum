@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Generic;
 using Nethereum.RPC.Sample.Testers;
 
 namespace Nethereum.RPC.Sample.ContractTest
@@ -38,7 +38,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             //Create the transaction input for the new contract
 
             //On transaction input the compiled contract is the Data, together with our sender address 
-            var transactionInput = new EthSendTransactionInput();
+            var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the transaction hash, as we need to get a transaction receipt with the contract address
@@ -48,7 +48,7 @@ namespace Nethereum.RPC.Sample.ContractTest
 
             //Get the transaction receipt using the transactionHash
             var ethGetTransactionReceipt = new EthGetTransactionReceipt(client);
-            EthTransactionReceipt receipt = null;
+            TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
@@ -106,7 +106,7 @@ namespace Nethereum.RPC.Sample.ContractTest
         private static async Task SendTransaction(RpcClient client, string addressFrom,
             string contractAddress)
         {
-            var transactionInput = new EthSendTransactionInput();
+            var transactionInput = new TransactionInput();
             var ethSendTransaction = new EthSendTransaction(client);
             var function = new FunctionCallEncoder();
             //Input the function method Sha3Encoded (4 bytes) 

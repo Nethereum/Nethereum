@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Sample.Testers;
 
@@ -21,7 +22,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             //Create a new Eth Send Transanction RPC Handler
             var ethSendTransation = new EthSendTransaction(client);
             //As the input the compiled contract is the Data, together with our address
-            var transactionInput = new EthSendTransactionInput();
+            var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the hash
@@ -31,7 +32,7 @@ namespace Nethereum.RPC.Sample.ContractTest
 
             //get contract address 
             var ethGetTransactionReceipt = new EthGetTransactionReceipt(client);
-            EthTransactionReceipt receipt = null;
+            TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {

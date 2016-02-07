@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
-using Nethereum.RPC.Generic;
+using Nethereum.RPC.Eth.DTOs;
 using RPCRequestResponseHandlers;
 
 namespace Nethereum.RPC.Eth.Transactions
@@ -38,23 +38,28 @@ namespace Nethereum.RPC.Eth.Transactions
     ///   "result": "0x0"
     /// }    
     ///</Summary>
-    public class EthCall : RpcRequestResponseHandler<string>
+    public class EthCall : RpcRequestResponseHandler<string>, IDefaultBlock
     {
-        public EthCall(RpcClient client) : base(client, ApiMethods.eth_call.ToString()) { }
-
-        public async Task<string> SendRequestAsync( EthCallTransactionInput ethCallInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public EthCall(RpcClient client) : base(client, ApiMethods.eth_call.ToString())
         {
-            return await base.SendRequestAsync( id, ethCallInput, block);
+            DefaultBlock = BlockParameter.CreateLatest();
         }
 
-        public async Task<string> SendRequestAsync( EthCallTransactionInput ethCallInput, string id = Constants.DEFAULT_REQUEST_ID)
+        public BlockParameter DefaultBlock { get; set; }
+
+        public async Task<string> SendRequestAsync( CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
         {
-            return await base.SendRequestAsync( id, ethCallInput, BlockParameter.CreateLatest());
+            return await base.SendRequestAsync( id, callInput, block);
         }
 
-        public RpcRequest BuildRequest(EthCallTransactionInput ethCallInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<string> SendRequestAsync( CallInput callInput, string id = Constants.DEFAULT_REQUEST_ID)
         {
-            return base.BuildRequest(id, ethCallInput, block);
+            return await base.SendRequestAsync( id, callInput, DefaultBlock);
+        }
+
+        public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        {
+            return base.BuildRequest(id, callInput, block);
         }
     }
 

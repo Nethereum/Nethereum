@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
+using Nethereum.RPC.Eth.DTOs;
 using RPCRequestResponseHandlers;
 
 namespace Nethereum.RPC.Eth.Transactions
@@ -52,11 +53,11 @@ namespace Nethereum.RPC.Eth.Transactions
 ///   }
 /// }    
     ///</Summary>
-    public class EthGetTransactionReceipt : RpcRequestResponseHandler<EthTransactionReceipt>
+    public class EthGetTransactionReceipt : RpcRequestResponseHandler<TransactionReceipt>
     {
             public EthGetTransactionReceipt(RpcClient client) : base(client, ApiMethods.eth_getTransactionReceipt.ToString()) { }
 
-        public async Task<EthTransactionReceipt> SendRequestAsync( string transactionHash, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<TransactionReceipt> SendRequestAsync( string transactionHash, string id = Constants.DEFAULT_REQUEST_ID)
         {
             return await base.SendRequestAsync( id, transactionHash);
         }

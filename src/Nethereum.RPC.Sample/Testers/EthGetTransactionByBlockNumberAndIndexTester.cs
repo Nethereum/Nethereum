@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Sample.Testers
 {

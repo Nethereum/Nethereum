@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Infrastructure;
 
 namespace Nethereum.RPC.Eth
@@ -50,13 +51,13 @@ namespace Nethereum.RPC.Eth
 
         }
 
-        public new async Task<EthSyncingOutput> SendRequestAsync( string id = Constants.DEFAULT_REQUEST_ID)
+        public new async Task<SyncingOutput> SendRequestAsync( string id = Constants.DEFAULT_REQUEST_ID)
         {
             var response = await base.SendRequestAsync( id);
 
-            if (response is bool && response == false) return new EthSyncingOutput { Synching = response };
+            if (response is bool && response == false) return new SyncingOutput { Synching = response };
 
-            return new EthSyncingOutput {
+            return new SyncingOutput {
                                          Synching = true,
                                          CurrentBlock = new HexBigInteger(response.currentBlock),
                                          HighestBlock = new HexBigInteger(response.highestBlock),

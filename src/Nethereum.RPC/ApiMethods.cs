@@ -25,7 +25,7 @@
         eth_call, //done
         eth_estimateGas, //done
         eth_getBlockByHash, //done
-        eth_getBlockByNumber,
+        eth_getBlockByNumber, //done
         eth_getTransactionByHash, //done
         eth_getTransactionByBlockHashAndIndex, //done
         eth_getTransactionByBlockNumberAndIndex, //done
@@ -33,20 +33,20 @@
         eth_getUncleByBlockHashAndIndex,
         eth_getUncleByBlockNumberAndIndex,
         eth_getCompilers, //done
-        eth_compileLLL,
+        eth_compileLLL, //done
         eth_compileSolidity, //done
-        eth_compileSerpent,
+        eth_compileSerpent, //done
         eth_newFilter, //done
-        eth_newBlockFilter,
-        eth_newPendingTransactionFilter,
-        eth_uninstallFilter,
+        eth_newBlockFilter, //done
+        eth_newPendingTransactionFilter, //done
+        eth_uninstallFilter, //done
         eth_getFilterChanges, //done
-        eth_getFilterLogs,
-        eth_getLogs,
-        eth_getWork,
-        eth_submitWork,
-        eth_submitHashrate,
-        shh_post,
+        eth_getFilterLogs, //done
+        eth_getLogs, //done
+        eth_getWork, //done
+        eth_submitWork, //done
+        eth_submitHashrate, //done
+        shh_post, 
         shh_version, //done
         shh_newIdentity, //done
         shh_hasIdentity,

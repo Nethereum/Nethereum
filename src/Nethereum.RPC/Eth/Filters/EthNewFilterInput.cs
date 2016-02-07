@@ -1,4 +1,4 @@
-using Nethereum.RPC.Generic;
+using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.Filters

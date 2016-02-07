@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Web3.Sample
@@ -25,12 +26,12 @@ namespace Nethereum.Web3.Sample
             //the contract should be mining now
 
             //get the contract address 
-            EthTransactionReceipt receipt = null;
+            TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
                 await Task.Delay(500);
-                receipt = await web3.Eth.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);

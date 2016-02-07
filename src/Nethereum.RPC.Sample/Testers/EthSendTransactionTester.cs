@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -16,7 +17,7 @@ namespace Nethereum.RPC.Sample.Testers
         {
             var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
             var ethSendTransation = new EthSendTransaction(client);
-            var transactionInput = new EthSendTransactionInput();
+            var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             return await ethSendTransation.SendRequestAsync( transactionInput);

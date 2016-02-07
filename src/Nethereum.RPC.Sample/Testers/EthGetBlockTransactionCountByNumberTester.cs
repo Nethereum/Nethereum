@@ -2,7 +2,8 @@ using System;
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.RPC.Eth;
-using Nethereum.RPC.Generic;
+using Nethereum.RPC.Eth.Blocks;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.RPC.Sample.Testers
 {
