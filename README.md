@@ -4,117 +4,133 @@
 
 Ethereum is the Web3 RPC Client Library in .Net.
 
-**Work in progress**, consider this as a working pre-alpha version.
-
-
+**Work in progress**, consider this as an alpha version.
 
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
 
 Sugestions, ideas, please raise an issue. Want to collaborate, create a pull request.
 
+Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
+
+ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
+
 ##Example of deploying a contract and calling a function
+####Web 3 (Simple)
 
 This is the Web3 example of how to deploy a contract and call a function.
 
 ```csharp
 
-public async Task<string> Test()
+ public async Task<string> Test()
         {
             //The compiled solidity contract to be deployed
-            //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
-            var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
+            /*
+               contract test { 
+               uint _multiplier;
+               function test(uint multiplier){
+                   _multiplier = multiplier;
+               }
+               function multiply(uint a) returns(uint d) { return a * _multiplier; }
+           }
+           */
+
+            var contractByteCode =
+                "0x606060405260405160208060ae833981016040528080519060200190919050505b806000600050819055505b5060768060386000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600060005054820290506071565b91905056";
+
             var abi =
-                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
+                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+
             var web3 = new Web3();
 
-            //deploy the contract, no need to use the abi as we don't have a constructor
-            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(contractByteCode, addressFrom);
-           
+            //deploy the contract, including abi and a paramter of 7. 
+            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
+
             //the contract should be mining now
 
             //get the contract address 
-            EthTransactionReceipt receipt = null;
+            TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                receipt = await web3.Eth.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                await Task.Delay(500);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
-            
+
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
 
             //do a function call (not transaction) and get the result
             var result = await multiplyFunction.CallAsync<int>(69);
             //visual test 
-            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + result + " and should be 483";
+            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + result +
+                   " and should be 483";
         }
 
 
 ```
+####Rpc example
 
 This is an example of all the stages (internal if you want) required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
-
-Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
-
-ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
-
 
 
 ```csharp
  public Task<dynamic> ExecuteTest(RpcClient client)
-        {
-           //The compiled solidity contract to be deployed
+          //The compiled solidity contract to be deployed
             //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
             var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
 
             //Create a new Eth Send Transanction RPC Handler
-            var ethSendTransation = new EthSendTransaction();
+            var ethSendTransation = new EthSendTransaction(client);
             //As the input the compiled contract is the Data, together with our address
-            var transactionInput = new EthSendTransactionInput();
+            var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the hash
-            var transactionHash =  await ethSendTransation.SendRequestAsync(client, transactionInput);
+            var transactionHash =  await ethSendTransation.SendRequestAsync( transactionInput);
             
             //the contract should be mining now
 
             //get contract address 
-            var ethGetTransactionReceipt = new EthGetTransactionReceipt();
-            EthTransactionReceipt receipt = null;
+            var ethGetTransactionReceipt = new EthGetTransactionReceipt(client);
+            TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                receipt = await ethGetTransactionReceipt.SendRequestAsync(client, transactionHash);
+                receipt = await ethGetTransactionReceipt.SendRequestAsync( transactionHash);
             }
 
             //Encode and build function parameters 
-            var function = new ABI.FunctionCallEncoder();
-            
+            var function = new FunctionCallEncoder();
+
             //Input the function method Sha3Encoded (4 bytes) 
-            function.FunctionSha3Encoded = "c6888fa1";
-            //Define input and output parameters
-            function.InputsParameters = new []{new Parameter() {Name = "a", Type = ABIType.CreateABIType("uint")}};
-            function.OutputParameters = new []{new Parameter() {Type = ABIType.CreateABIType("uint")}};
+            var sha3Signature = "c6888fa1";
+            //Define input parameters
+            var inputParameters = new[] { new Parameter("uint", "a") };
             //encode the function call (function + parameter input)
+           
             //using 69 as the input
-            var functionCall = function.EncodeRequest(69);
+            var functionCall = function.EncodeRequest(sha3Signature, inputParameters, 69);
             //reuse the transaction input, (just the address) 
             //the destination address is the contract address
             transactionInput.To = receipt.ContractAddress;
             //use as data the function call
             transactionInput.Data = functionCall;
             // rpc method to do the call
-            var ethCall = new EthCall();
+            var ethCall = new EthCall(client);
             // call and get the result
-            var resultFunction = await ethCall.SendRequestAsync(client, transactionInput);
+            var resultFunction = await ethCall.SendRequestAsync( transactionInput);
             // decode the output
-            var output =  (BigInteger)function.DecodeOutput(resultFunction)[0].Result;
+            var functionDecoder = new FunctionCallDecoder();
+
+            var output = functionDecoder.DecodeOutput<int>(resultFunction, new Parameter("uint", "d"));
             //visual test 
-            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + (int)output  + " and should be 483";
+            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + output  + " and should be 483";
+
+           
 
         }
 ```
@@ -297,14 +313,15 @@ This is the current TODO list in order of priority
 * ~~BigIntegers everywhere as opposed to long / int64~~
 * ~~Hex Types (BigInteger, String) to simplify Rpc encoding~~
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
-* Complete other RPC methods.
 * ~~Extract projects for RPC / ABI / Web3~~
 * ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
-* Complete Web 3 methods (Shh, Join Eth rpc commands as in web3, web3 util wei conversion etc)
-* Documentation
+* ~~Complete Eth, Net partial Shh~~
+* Add wei conversion support
+* Simplify Filtering / Events encoding/decoding on Web3
+* Examples / Documentation
 * Nuget (beta)
+* Other shh methods
 * Code generate Typed DTO Functions to simplify usage 
-* Filtering / Events as in Web3
 * Example of windows universal app using a contract (Windows, Mobile, RPI2)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
