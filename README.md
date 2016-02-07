@@ -299,12 +299,12 @@ This is the current TODO list in order of priority
 * ~~ABI Encoding decoding simplification using DTO pattern and attributes for encoding / decoding values~~
 * ~~Extract projects for RPC / ABI / Web3~~
 * ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
-* ~~ Complete Eth, Net partial Shh ~~
+* ~~Complete Eth, Net partial Shh~~
 * Add wei conversion support
-* Documentation
-* Nuget (beta)
 * Filtering / Events as in Web3
-* Complete shh
+* Examples / Documentation
+* Nuget (beta)
+* Other shh methods
 * Code generate Typed DTO Functions to simplify usage 
 * Example of windows universal app using a contract (Windows, Mobile, RPI2)
 * Example of unit testing contracts (.net driven)
