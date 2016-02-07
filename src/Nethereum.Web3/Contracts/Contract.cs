@@ -37,12 +37,25 @@ namespace Nethereum.Web3
             return new Function(Client, this, GetFunctionAbi(name));
         }
 
+        public Event GetEvent(string name)
+        {
+            return new Event(Client, this, GetEventAbi(name));
+        }
+
         private FunctionABI GetFunctionAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
             if (functionAbi == null) throw new Exception("Function not found");
             return functionAbi;
+        }
+
+        private EventABI GetEventAbi(string name)
+        {
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Name == name);
+            if (eventAbi == null) throw new Exception("Event not found");
+            return eventAbi;
         }
 
     }

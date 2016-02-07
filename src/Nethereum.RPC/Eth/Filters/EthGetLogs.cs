@@ -27,15 +27,15 @@ namespace Nethereum.RPC.Eth.Filters
 /// curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getLogs","params":[{"topics":["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"]}],"id":74}'
 /// Result see eth_getFilterChanges    
     ///</Summary>
-    public class EthGetLogs : RpcRequestResponseHandler<EthNewFilterLog[]>
+    public class EthGetLogs : RpcRequestResponseHandler<NewFilterLog[]>
         {
             public EthGetLogs(RpcClient client) : base(client,ApiMethods.eth_getLogs.ToString()) { }
 
-            public async Task<EthNewFilterLog[]> SendRequestAsync(EthNewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<NewFilterLog[]> SendRequestAsync(NewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return await base.SendRequestAsync(id, newFilter);
             }
-            public RpcRequest BuildRequest(EthNewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(NewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
             {
                 return base.BuildRequest(id, newFilter);
             }

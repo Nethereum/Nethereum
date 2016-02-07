@@ -69,10 +69,10 @@ namespace Nethereum.ABI.FunctionEncoding
             return parameters.ToArray();
         }
 
-        public EventABI BuildEvent(dynamic eventj)
+        public EventABI BuildEvent(dynamic eventobject)
         {
-            var eventABI = new EventABI(eventj.name);
-            eventABI.InputParameters = BuildFunctionParameters(eventj.inputs);
+            var eventABI = new EventABI(eventobject.name);
+            eventABI.InputParameters = BuildEventParameters(eventobject.inputs);
        
             return eventABI;
         }

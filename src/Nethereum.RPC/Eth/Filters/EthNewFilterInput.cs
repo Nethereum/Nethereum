@@ -7,10 +7,10 @@ namespace Nethereum.RPC.Eth.Filters
     /// Object - The transaction object
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public class EthNewFilterInput
+    public class NewFilterInput
     {
 
-        public EthNewFilterInput()
+        public NewFilterInput()
         {
             FromBlock = new BlockParameter();
             ToBlock = new BlockParameter();

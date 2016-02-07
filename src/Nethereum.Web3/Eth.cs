@@ -35,7 +35,7 @@ namespace Nethereum.Web3
         {
             this.Client = client;
            
-            this.DefaultBlock = BlockParameter.CreateLatest();
+           
 
             DeployContract = new DeployContract(client);
 
@@ -55,7 +55,9 @@ namespace Nethereum.Web3
             Uncles = new EthUncleService(client);
             Mining = new EthMiningService(client);
             Compile = new EthCompilerService(client);
-            
+
+            this.DefaultBlock = BlockParameter.CreateLatest();
+
         }
 
         public EthAccounts Accounts { get; private set; }

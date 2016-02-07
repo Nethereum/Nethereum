@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.Filters
 {
-    public class EthNewFilterLog
+    public class NewFilterLog
     {
 
         /// <summary>

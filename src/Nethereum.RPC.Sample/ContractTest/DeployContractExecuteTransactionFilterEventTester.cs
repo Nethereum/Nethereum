@@ -60,7 +60,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             var eventCallSh3 = await new Web3.Web3Sha3(client).SendRequestAsync( new HexString("Multiplied(uint256,address)"));
             //create a filter 
             //just listen to anything no more filter topics (ie int indexed number)
-            var ethFilterInput = new EthNewFilterInput();
+            var ethFilterInput = new NewFilterInput();
             ethFilterInput.FromBlock.SetValue(receipt.BlockNumber);
             ethFilterInput.ToBlock = BlockParameter.CreateLatest();
             ethFilterInput.Address = new [] { receipt.ContractAddress};
@@ -76,7 +76,7 @@ namespace Nethereum.RPC.Sample.ContractTest
 
             //get filter changes
             var ethGetFilterChangesForEthNewFilter = new EthGetFilterChangesForEthNewFilter(client);
-            EthNewFilterLog[] logs = null;
+            NewFilterLog[] logs = null;
 
             while (logs == null || logs.Length < 1)
             {

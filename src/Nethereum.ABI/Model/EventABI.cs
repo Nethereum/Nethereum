@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class EventABI
@@ -21,7 +24,7 @@ namespace Nethereum.ABI.FunctionEncoding
             get
             {
                 if (sha3Signature != null) return sha3Signature;
-                sha3Signature = signatureEncoder.GenerateSha3Signature(Name, InputParameters);
+                sha3Signature = signatureEncoder.GenerateSha3Signature(Name, InputParameters.Cast<Parameter>().ToArray());
                 return sha3Signature;
             }
 
