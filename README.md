@@ -6,13 +6,16 @@ Ethereum is the Web3 RPC Client Library in .Net.
 
 **Work in progress**, consider this as an alpha version.
 
-
-
 To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
 
 Sugestions, ideas, please raise an issue. Want to collaborate, create a pull request.
 
+Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
+
+ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
+
 ##Example of deploying a contract and calling a function
+####Web 3 (Simple)
 
 This is the Web3 example of how to deploy a contract and call a function.
 
@@ -55,13 +58,9 @@ public async Task<string> Test()
 
 
 ```
+####Rpc example
 
 This is an example of all the stages (internal if you want) required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
-
-Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
-
-ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
-
 
 
 ```csharp
