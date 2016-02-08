@@ -1,5 +1,10 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Web3.Sample
 {
@@ -68,7 +73,7 @@ namespace Nethereum.Web3.Sample
 
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
-            // var callresult = await multiplyFunction.CallAsync<int>(69);
+          
             var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 69);
             var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 18);
             var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 7);
@@ -83,13 +88,36 @@ namespace Nethereum.Web3.Sample
             }
 
             var logsAll = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAll);
+            var logsAllDecoded = DecodeAllEvents<EventMultiplied>(logsAll);
             var logs69 = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filter69);
+            var logs69Decoded = DecodeAllEvents<EventMultiplied>(logs69);
             var logs49result = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filter49);
+            var logs49Decoded = DecodeAllEvents<EventMultiplied>(logs49result);
             var logs69And18 = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filter69And18);
-
+            var logs69And18Decoded = DecodeAllEvents<EventMultiplied>(logs69And18);
 
             return "All logs :" + logsAll.Length + " Logs for 69 " + logs69.Length;
 
+        }
+
+        public List<T> DecodeAllEvents<T>(NewFilterLog[] logs) where T : new()
+        {
+            var result = new List<T>();
+            var eventDecoder = new EventTopicDecoder();
+            foreach (var log in logs)
+            {
+                result.Add(eventDecoder.DecodeTopics<T>(log.Topics, log.Data));   
+            }
+            return result;
+        }
+
+        public class EventMultiplied
+        {
+            [Parameter("uint", "a", 1, true)]
+            public int A { get; set; }
+
+            [Parameter("uint", "result", 2, true)]
+            public int Result { get; set; }
         }
     }
 }

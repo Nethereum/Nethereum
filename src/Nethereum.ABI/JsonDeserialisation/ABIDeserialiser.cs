@@ -77,14 +77,14 @@ namespace Nethereum.ABI.FunctionEncoding
             return eventABI;
         }
 
-        public EventParameter[] BuildEventParameters(dynamic inputs)
+        public Parameter[] BuildEventParameters(dynamic inputs)
         {
-            var parameters = new List<EventParameter>();
+            var parameters = new List<Parameter>();
             var parameterOrder = 0;
             foreach (dynamic input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new EventParameter(input.type, input.indexed, input.name, parameterOrder);
+                var parameter = new Parameter(input.type, input.name, parameterOrder) {Indexed = input.indexed};
                 parameters.Add(parameter);
             }
 

@@ -22,5 +22,7 @@ namespace Nethereum.ABI.FunctionEncoding
         public string Type { get; private set; }
         public ABIType ABIType { get; private set; }
         public int Order { get; private set; }
+
+        public bool Indexed { get; set; }
     }
 }

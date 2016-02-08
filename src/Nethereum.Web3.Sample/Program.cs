@@ -17,7 +17,7 @@ namespace Nethereum.Web3.Sample
             //var eventFilterTopic = new EventFilterTopic();
             //Console.WriteLine(eventFilterTopic.Test().Result);
 
-            var eventFilterTopic2 = new EventFilterTopic2();
+            var eventFilterTopic2 = new EventFilterWith2Topics();
             Console.WriteLine(eventFilterTopic2.Test().Result);
 
             Console.ReadLine();
