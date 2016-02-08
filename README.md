@@ -137,7 +137,7 @@ This is an example of all the stages (internal if you want) required to deploy a
 
 ### Events, logs and filters
 
-This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs. (This is not implemented yet on the Web3 component)
+This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs. (This is not fully implemented yet on the Web3 component, but you can check this sample https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.Web3.Sample/EventFilterWith2Topics.cs)
 
 On the example you can see how a contract is deployed, then using the contract address we subscribe to all the events raised by the contract using filters. Transactions are submitted and the logs are retrived by polling using the filter. From the logs we can retrive the event encoded signature and event data (indexed in the logs and in the data).
 
