@@ -63,222 +63,87 @@ There are varoious RPC Data transfer objects for Block, Transaction, FilterInput
 The BlockParameter can be either for the latest, earliest, pending or for a given blocknumber, this is defaulted to latest on the requests that uses it. If using Web3, changing the Default Block Parameter, will cascade to all the commands.
 
 ##Working with Smart Contracts
-###Deployment / Initialising
+###Deployment
 
-This is the Web3 example of how to deploy a contract and call a function.
+Given an example of a simple "multiply" smart contract, which takes as a constructor the intial value to be multiplied, and a function "multiply" with a parameter with the value to be multiplied.
+
+```javascript
+    contract test { 
+               
+        uint _multiplier;
+               
+        function test(uint multiplier){
+                   
+             _multiplier = multiplier;
+        }
+               
+        function multiply(uint a) returns(uint d) { 
+                    return a * _multiplier; 
+        }
+    }
+```
+
+To deploy the contract first we will declare the compiled contract and abi interface (the interface is like the wsdl of a web service). You can use the [Online Solidity Compiler](https://chriseth.github.io/browser-solidity/).
 
 ```csharp
-
- public async Task<string> Test()
-        {
-            //The compiled solidity contract to be deployed
-            /*
-               contract test { 
-               uint _multiplier;
-               function test(uint multiplier){
-                   _multiplier = multiplier;
-               }
-               function multiply(uint a) returns(uint d) { return a * _multiplier; }
-           }
-           */
-
-            var contractByteCode =
+    var contractByteCode =
                 "0x606060405260405160208060ae833981016040528080519060200190919050505b806000600050819055505b5060768060386000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600060005054820290506071565b91905056";
 
-            var abi =
+    var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
-
-            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
-
-            var web3 = new Web3();
-
-            //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
-
-            //the contract should be mining now
-
-            //get the contract address 
-            TransactionReceipt receipt = null;
-            //wait for the contract to be mined to the address
-            while (receipt == null)
-            {
-                await Task.Delay(500);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-            }
-
-            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
-
-            //get the function by name
-            var multiplyFunction = contract.GetFunction("multiply");
-
-            //do a function call (not transaction) and get the result
-            var result = await multiplyFunction.CallAsync<int>(69);
-            //visual test 
-            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + result +
-                   " and should be 483";
-        }
-
-
 ```
-####Rpc example
 
-This is an example of all the stages (internal if you want) required to deploy and call a contract using the JSON RPC API, it is aimed to also give an understanding of how Ethereum works. Function calls using eth_call will not be mined, and won't use any gas. To mine a "function call" you will need to use a transaction, calling a transaction won't return any values.
-
+Now using Web3 and our address we can deploy the contract as follows:
 
 ```csharp
- public Task<dynamic> ExecuteTest(RpcClient client)
-          //The compiled solidity contract to be deployed
-            //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
-            var contractByteCode = "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
-
-            //Create a new Eth Send Transanction RPC Handler
-            var ethSendTransation = new EthSendTransaction(client);
-            //As the input the compiled contract is the Data, together with our address
-            var transactionInput = new TransactionInput();
-            transactionInput.Data = contractByteCode;
-            transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
-            // retrieve the hash
-            var transactionHash =  await ethSendTransation.SendRequestAsync( transactionInput);
-            
-            //the contract should be mining now
-
-            //get contract address 
-            var ethGetTransactionReceipt = new EthGetTransactionReceipt(client);
-            TransactionReceipt receipt = null;
-            //wait for the contract to be mined to the address
-            while (receipt == null)
-            {
-                receipt = await ethGetTransactionReceipt.SendRequestAsync( transactionHash);
-            }
-
-            //Encode and build function parameters 
-            var function = new FunctionCallEncoder();
-
-            //Input the function method Sha3Encoded (4 bytes) 
-            var sha3Signature = "c6888fa1";
-            //Define input parameters
-            var inputParameters = new[] { new Parameter("uint", "a") };
-            //encode the function call (function + parameter input)
-           
-            //using 69 as the input
-            var functionCall = function.EncodeRequest(sha3Signature, inputParameters, 69);
-            //reuse the transaction input, (just the address) 
-            //the destination address is the contract address
-            transactionInput.To = receipt.ContractAddress;
-            //use as data the function call
-            transactionInput.Data = functionCall;
-            // rpc method to do the call
-            var ethCall = new EthCall(client);
-            // call and get the result
-            var resultFunction = await ethCall.SendRequestAsync( transactionInput);
-            // decode the output
-            var functionDecoder = new FunctionCallDecoder();
-
-            var output = functionDecoder.DecodeOutput<int>(resultFunction, new Parameter("uint", "d"));
-            //visual test 
-            return "The result of deploying a contract and calling a function to multiply 7 by 69 is: " + output  + " and should be 483";
-
-           
-
-        }
+    var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+    var web3 = new Web3();
+    var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
 ```
+In this scenario we are passing a constructor parameter 7, which will be the multiplier of our contract. 
 
-### Events, logs and filters
+Note: Because this is a simple contract we have not passed any gas, as the default will be enough. If you were going to deploy a more complex contract ensure that enough gas is used, as the transaction might be succesful but not code will be deployed.
 
-This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs. (This is not fully implemented yet on the Web3 component, but you can check this sample https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.Web3.Sample/EventFilterWith2Topics.cs)
-
-On the example you can see how a contract is deployed, then using the contract address we subscribe to all the events raised by the contract using filters. Transactions are submitted and the logs are retrived by polling using the filter. From the logs we can retrive the event encoded signature and event data (indexed in the logs and in the data).
+After deploying the contract we will need to wait for the transaction to be mined to get the contract address. The contract address can be found on the transaction receipt. 
 
 ```csharp
-    /* This is the example contract containing an event raised every time we call multiply
-            contract test { 
-    
-                event Multiplied(uint indexed a, address sender);
-    
-                function multiply(uint a) returns(uint d) 
-                { 
-                    Multiplied(a, msg.sender);
-                    return a * 7; 
-                    
-                } 
-    
-            }*/
-
-            //The contract byte code already compiled
-            var contractByteCode = "606060405260c08060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000817f10f82b5dc139f3677a16d7bfb70c65252e78143313768d2c52e07db775e1c7ab33604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a260078202905060bb565b91905056";
-            
-            //Create a new Eth Send Transanction RPC Handler
-            var ethSendTransation = new EthSendTransaction();
-
-            //Create the transaction input for the new contract
-
-            //On transaction input the compiled contract is the Data, together with our sender address 
-            var transactionInput = new EthSendTransactionInput();
-            transactionInput.Data = contractByteCode;
-            transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
-            // retrieve the transaction hash, as we need to get a transaction receipt with the contract address
-            var transactionHash = await ethSendTransation.SendRequestAsync(client, transactionInput);
-
-            //the contract should be mining now
-
-            //Get the transaction receipt using the transactionHash
-            var ethGetTransactionReceipt = new EthGetTransactionReceipt();
-            EthTransactionReceipt receipt = null;
-            //wait for the contract to be mined to the address
-            while (receipt == null)
-            {
-                receipt = await ethGetTransactionReceipt.SendRequestAsync(client, transactionHash);
-            }
-
-            //sha3 the event call, we can use this to validate our topics 
-            var eventCall = Encoding.ASCII.GetBytes("Multiplied(uint256,address)").ToHexString();
-            var eventCallSh3 = await new Web3.Web3Sha3().SendRequestAsync(client, eventCall);
-            //create a filter 
-            //just listen to anything no more filter topics (ie int indexed number)
-            var ethFilterInput = new EthNewFilterInput();
-            ethFilterInput.FromBlockParameter.SetValue(receipt.BlockNumberHex);
-            ethFilterInput.ToBlockParameter.SetValue(BlockParameter.BlockParameterType.latest);
-            ethFilterInput.Address = new [] { receipt.ContractAddress};
-           //no topics
-            //ethFilterInput.Topics = new object[]{};
-
-            var newEthFilter = new EthNewFilter();
-            var filterId = await newEthFilter.SendRequestAsync(client, ethFilterInput);
-
-           
-            //create a transaction which will raise the event
-            await SendTransaction(client, transactionInput.From, receipt.ContractAddress);
-
-            //get filter changes
-            var ethGetFilterChangesForEthNewFilter = new EthGetFilterChangesForEthNewFilter();
-            EthNewFilterLog[] logs = null;
-
-            while (logs == null || logs.Length < 1)
-            {
-                //Get the filter changes logs
-                logs = await ethGetFilterChangesForEthNewFilter.SendRequestAsync(client, filterId);
-
-                if (logs.Length > 0)
-                {
-                    var sb = new StringBuilder();
-                    sb.AppendLine("Topic 0: " + logs[0].Topics[0] + " should be the same as the SH3 encoded event signature " + eventCallSh3);
-                    sb.AppendLine("Topic 1: " + logs[0].Topics[1] + " should be 69 hex  0x45, padded");
-                    sb.AppendLine("Data " + logs[0].Data + " should be the same as the address padded 32 bytes " + transactionInput.From);
-               
-                    return sb.ToString();
-                }
-                else
-                {
-                    //create another transaction which will raise the event
-                    await SendTransaction(client, transactionInput.From, receipt.ContractAddress);
-                }
-
-            }
+   TransactionReceipt receipt = null;
+   while (receipt == null)
+   {
+        await Task.Delay(500);
+        receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+    }
 ```
 
-### Encoding / Decoding Function parameters and outputs using DTO
+Using the address we can create a Contract object which we can interact
+```csharp
+  var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+  
+```
+###Existing contract
 
-DTOs are supported for the encoding and decoding of the input and output of smart contract functions.
+To  interact with an existing contract we just need the ABI and the Contract address, it is mainly the last step of deploying a contract.
+
+```csharp
+  var abi =
+                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
+  var contractAddress = "0x12890d2cce102216644c59dae5baed386868686c";
+  var contract = web3.Eth.GetContract(abi, contractAddress);
+```
+
+###Calling a Function
+
+A function call allows you to execute some contract code without creating a transaction, for example in the multiplication we can execute just the code. Because we are not creating a transaction, in normal occasions no gas will be used.  
+
+Using the contract created on the last step, we can get the function "multiply" by using its name. This is the same name as defined in the contract or ABI interface.
+
+```csharp
+    var multiplyFunction = contract.GetFunction("multiply");
+    var result = await multiplyFunction.CallAsync<int>(69);
+```
+On the call we have identified the return type we want, in this scenario we have specified a type of int. Type conversions are supported for simple types and when returning multiple output parameters a DTO object will be necesary to be created.
+
+##DTOs
 
 ``` csharp
    [Function(Name = "test", Sha3Signature = "c6888fa1")]
@@ -342,6 +207,12 @@ DTOs are supported for the encoding and decoding of the input and output of smar
         }
 ```
 
+### Events, logs and filters
+
+This is a demonstration how you can raise events from your solidity contract and filter and capture them from the logs. (This is not fully implemented yet on the Web3 component, but you can check this sample https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.Web3.Sample/EventFilterWith2Topics.cs)
+
+
+
 
 ### Running on Linux
 * Install DNX following the [asp.net guide](http://docs.asp.net/en/latest/getting-started/installing-on-linux.html). (Use coreclr)
@@ -365,7 +236,7 @@ This is the current TODO list in order of priority
 * ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
 * ~~Complete Eth, Net partial Shh~~
 * Add wei conversion support
-* Simplify Filtering / Events encoding/decoding on Web3
+* ~~Simplify Filtering / Events encoding/decoding on Web3~~
 * Examples / Documentation
 * Nuget (beta)
 * Other shh methods
