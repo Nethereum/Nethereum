@@ -12,7 +12,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
             
         }
 
-        public ParameterAttribute(string type, string name = null, int order = 1, bool indexed = false):this(type, name, order)
+        public ParameterAttribute(string type, string name, int order, bool indexed = false):this(type, name, order)
         {
             Parameter.Indexed = indexed;
 

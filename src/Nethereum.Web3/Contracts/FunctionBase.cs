@@ -45,9 +45,9 @@ namespace Nethereum.Web3
             return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger value) where TReturn : new()
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value ) where TReturn : new()
         {
-            var result = await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, from, value), DefaultBlock);
+            var result = await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, from, gas, value), DefaultBlock);
             return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 
@@ -71,9 +71,9 @@ namespace Nethereum.Web3
               
         }
 
-        protected async Task<string> SendTransactionAsync(string encodedFunctionCall, string from, HexBigInteger value) 
+        protected async Task<string> SendTransactionAsync(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value) 
         {
-            return await ethSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress, from, value));
+            return await ethSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, value));
             
         }
 

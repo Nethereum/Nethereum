@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Eth.DTOs {
             
         }
         
-        public TransactionInput(string data, string addressTo, string adddressFrom, HexBigInteger value) : base(data, addressTo, adddressFrom, value)
+        public TransactionInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger value) : base(data, addressTo, adddressFrom, gas, value)
         {
            
         }

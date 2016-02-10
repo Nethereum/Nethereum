@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
@@ -58,9 +60,8 @@ namespace Nethereum.Web3.Sample
             var eth = web3.Eth;
             var transactions = eth.Transactions;
 
-            //TODO set gas
             //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
+            var transactionHash = await eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
 
             //the contract should be mining now
 
@@ -73,8 +74,14 @@ namespace Nethereum.Web3.Sample
                 receipt = await transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
-            //TODO validate gas usage and getcode 
+            var code = await web3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress);
 
+            if (String.IsNullOrEmpty(code))
+            {
+                throw new Exception("Code was not deployed correctly, verify bytecode or enough gas was uto deploy the contract");
+            }
+       
+   
             var contract = eth.GetContract(abi, receipt.ContractAddress);
 
             var multipliedEvent = contract.GetEvent("Multiplied");
@@ -94,7 +101,7 @@ namespace Nethereum.Web3.Sample
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
            
-            //TODO set gas
+            
             var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, 69);
             var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, 18);
             var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, 7);
@@ -116,10 +123,10 @@ namespace Nethereum.Web3.Sample
             var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
             var eventLogsFor69and18 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69And18);
 
-            var multipliedLogEvents = await multipliedEventLog.GetFilterChanges<EventMultipliedLog>(filterAllLog);
-            
-            return "All logs :" + eventLogsAll.Count + " Logs for 69 " + eventLogs69.Count;
+            var multipliedLogEvents = await multipliedEventLog.GetFilterChanges<EventMultipliedSenderLog>(filterAllLog);
 
+            return "All logs :" + eventLogsAll.Count + " Multiplied by 69 result: " +
+                   eventLogs69.First().Event.Result + " Address is " + multipliedLogEvents.First().Event.Sender;
         } 
 
         public class EventMultiplied
@@ -129,12 +136,9 @@ namespace Nethereum.Web3.Sample
 
             [Parameter("uint", "result", 2, true)]
             public int Result { get; set; }
-
-            
-
         }
 
-        public class EventMultipliedLog
+        public class EventMultipliedSenderLog
         {
             [Parameter("uint", "a", 1, true)]
             public int A { get; set; }

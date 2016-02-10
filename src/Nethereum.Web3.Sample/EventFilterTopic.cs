@@ -1,4 +1,6 @@
+using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Web3.Sample
@@ -44,6 +46,9 @@ namespace Nethereum.Web3.Sample
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
+
+            
+
 
             //the contract should be mining now
 

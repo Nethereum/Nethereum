@@ -44,8 +44,6 @@ namespace Nethereum.Web3
 
         public async Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas)
         {
-
-
             return await ethSendTransaction.SendRequestAsync(new TransactionInput(contractByteCode, gas, from));
         }
 

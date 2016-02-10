@@ -24,11 +24,11 @@ namespace Nethereum.Web3
             return await base.CallAsync<TReturn>(encodedInput);
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(string from,
-            HexBigInteger value, params object[] functionInput) where TReturn : new()
+        public async Task<TReturn> CallAsync<TReturn>(string from, HexBigInteger gas,
+            HexBigInteger value,  params object[] functionInput) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
-            return await base.CallAsync<TReturn>(encodedInput, from, value);
+            return await base.CallAsync<TReturn>(encodedInput, from, gas, value);
         }
 
         public async Task<TReturn> CallAsync<TReturn>(
@@ -48,14 +48,14 @@ namespace Nethereum.Web3
         public async Task<string> SendTransactionAsync(string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return await base.SendTransactionAsync(encodedInput, from, null);
+            return await base.SendTransactionAsync(encodedInput, from, null, null);
         }
 
-        public async Task<string> SendTransactionAsync(string from,
+        public async Task<string> SendTransactionAsync(string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return await base.SendTransactionAsync(encodedInput, from, value);
+            return await base.SendTransactionAsync(encodedInput, from, gas, value);
         }
 
         public async Task<string> SendTransactionAsync(
@@ -84,11 +84,11 @@ namespace Nethereum.Web3
             return await base.CallAsync<TReturn>(encodedInput);
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from,
+        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value) where TReturn : new()
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
-            return await base.CallAsync<TReturn>(encodedInput, from, value);
+            return await base.CallAsync<TReturn>(encodedInput, from, gas, value);
         }
 
         public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
@@ -112,11 +112,11 @@ namespace Nethereum.Web3
             return await base.SendTransactionAsync(encodedInput);
         }
 
-        public async Task<string> SendTransactionAsync(TFunctionInput functionInput, string from,
+        public async Task<string> SendTransactionAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value) 
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
-            return await base.SendTransactionAsync(encodedInput, from, value);
+            return await base.SendTransactionAsync(encodedInput, from, gas, value);
         }
 
         public async Task<string> SendTransactionAsync(TFunctionInput functionInput,

@@ -54,7 +54,7 @@ namespace Nethereum.RPC.Eth.Transactions
         public async Task<HexBigInteger> SendRequestAsync( string address,
             string id = Constants.DEFAULT_REQUEST_ID)
         {
-            return await SendRequestAsync( address, DefaultBlock, id);
+            return await base.SendRequestAsync(id, address, DefaultBlock);
         }
 
         public RpcRequest BuildRequest(string address, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
