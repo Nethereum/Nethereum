@@ -2,20 +2,68 @@
 
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Ethereum is the Web3 RPC Client Library in .Net.
+Nethereum is a similar implementation of the Javascript Etherum Web3 RPC Client Library in .Net.
 
-**Work in progress**, consider this as an alpha version.
+It supports most of the JSON RPC methods, together with a simplified usage of Smart contracts including the deployment, function transactions and log event filtering.
 
-To startup a development chain you can use https://github.com/juanfranblanco/Ethereum.TestNet.Genesis. Note that some of the command line tests uses the account in this chain.
+##Getting Started
 
-Sugestions, ideas, please raise an issue. Want to collaborate, create a pull request.
+If you need to start a development chain you can use [this Ethereum test genesis](https://github.com/juanfranblanco/Ethereum.TestNet.Genesis). Other useful resources are [the online solidity compiler](https://chriseth.github.io/browser-solidity/), editor with syntax higlighting [Visual Studio Code Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity) and of course [Mix](https://github.com/ethereum/mix/releases)
 
-Note: Using solc to compile contracts is currently a hit and miss in Windows, the simplest way to compile and develop at the moment is to [use the online solidity compiler](https://chriseth.github.io/browser-solidity/). If you like Visual Studio Code you can try this [languange add on for Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity). Are you consuming an external contract and want the function encoded and / or events, try this [Ethereum Sha3 ABI](http://juan.blanco.ws/SHA3/)
+###Web 3
+Create an instance of Web3, this is the wrapper to interact with an Ethereum client like Geth. The parameterless constructor uses the defaults address "http://localhost:8545/", or you can supply your own.
 
-ABI encoding and decoding has been tested on windows/linux for different endiannes. For more info on ABI encoding check the [Ethereum Wiki](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) 
+```csharp
+    var web3 = new Web3();
+```
 
-##Example of deploying a contract and calling a function
-####Web 3 (Simple)
+From Web3 you can access Eth, Net, Shh RPC methods, and from Eth categorised by functionality Transactions, Filters, Mining, Compilers, etc.  
+
+```csharp
+    web3.Eth.Transactions.GetTransactionReceipt;
+    web3.Eth.Transactions.Call;
+    web3.Eth.Transactions.EstimateGas;
+    web3.Eth.Transactions.GetTransactionByBlockHashAndIndex;
+    web3.Net.PeerCount;
+    web3.Eth.GetBalance;
+    web3.Eth.Mining.IsMining;
+    web3.Eth.Accounts;
+```
+
+Each object is an RPC command which can be executed Async as:
+
+```csharp
+    await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+```
+###RPC
+
+The communication uses the JSON RPC interface, the full documentation can be found [in the Ethereum wiki](https://github.com/ethereum/wiki/wiki/JSON-RPC)
+
+###RPC Data Types
+
+The simplest datatypes to communicate with Ethereum are Numeric and Data.
+
+Numeric: A HexBigInteger data type has been created to allow the simple conversion of the input and output of numbers from the RPC.
+This types also handles the conversion to and from Big Endian, together with specific usages for Eth "0x0"
+
+```csharp
+    var number = new HexBigInteger(21000);
+    var anotherNumber = new HexBigInteger("0x5208");
+    var hex = number.HexValue; //0x5208
+    BigInteger val = anotherNumber; //2100
+```
+
+Data: The transaction, blocks, uncles, addresses hashes are treated as strings to simplify usage.
+
+Hex strings: Similar to HexBigInteger some strings need to be encoded and decoded Hex. HexString has been created to handle the conversion using UTF8 encoding, from and to Hex.
+
+####DTOs
+There are varoious RPC Data transfer objects for Block, Transaction, FilterInput, and BlockParameter, to name a few.
+
+The BlockParameter can be either for the latest, earliest, pending or for a given blocknumber, this is defaulted to latest on the requests that uses it. If using Web3, changing the Default Block Parameter, will cascade to all the commands.
+
+##Working with Smart Contracts
+###Deployment / Initialising
 
 This is the Web3 example of how to deploy a contract and call a function.
 
