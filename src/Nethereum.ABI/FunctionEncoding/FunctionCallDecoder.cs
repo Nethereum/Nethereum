@@ -26,6 +26,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties) where T : new()
         {
+            if (output == "0x") return result;
             var parameterObjects = new List<ParameterOutputProperty>();
 
             foreach (var property in properties)
@@ -111,6 +112,7 @@ namespace Nethereum.ABI.FunctionEncoding
         ///  
         public T DecodeOutput<T>(string output, params Parameter[] outputParameter) where T : new()
         {
+            if (output == "0x") return default(T);
             var function = FunctionOutputAttribute.GetAttribute<T>();
 
             if (function == null)
@@ -147,7 +149,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public T DecodeOutput<T>(string output) where T : new()
         {
-
+            if (output == "0x") return default(T);
             var type = typeof (T);
 
             var function = FunctionOutputAttribute.GetAttribute<T>();

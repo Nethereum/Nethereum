@@ -3,8 +3,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.Filters
 {
-    public class NewFilterLog
-    {
+    public class FilterLog   {
 
         /// <summary>
         /// TAG - pending when the log is pending. mined if log is already mined..

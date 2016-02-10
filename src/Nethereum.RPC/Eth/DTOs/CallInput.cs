@@ -17,6 +17,7 @@ namespace Nethereum.RPC.Eth.DTOs
         {
             this.Data = data;
             this.To = addressTo;
+            this.Gas = new HexBigInteger(900000);
         }
 
         public CallInput(string data, string addressTo, HexBigInteger value):this(data, addressTo)
@@ -31,8 +32,9 @@ namespace Nethereum.RPC.Eth.DTOs
 
         public CallInput(string data, HexBigInteger gas, string addressFrom)
         {
+            this.Gas = new HexBigInteger(900000);
             this.Data = data;
-            this.Gas = gas;
+            //this.Gas = gas;
             this.From = addressFrom;
         }
 

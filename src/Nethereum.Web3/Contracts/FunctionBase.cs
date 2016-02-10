@@ -41,6 +41,7 @@ namespace Nethereum.Web3
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall) where TReturn: new()
         {
             var result =  await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), DefaultBlock);
+            
             return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
         }
 

@@ -76,7 +76,7 @@ namespace Nethereum.RPC.Sample.ContractTest
 
             //get filter changes
             var ethGetFilterChangesForEthNewFilter = new EthGetFilterChangesForEthNewFilter(client);
-            NewFilterLog[] logs = null;
+            FilterLog[] logs = null;
 
             while (logs == null || logs.Length < 1)
             {

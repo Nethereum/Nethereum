@@ -45,10 +45,10 @@ namespace Nethereum.Web3
             return await base.CallAsync<TReturn>(encodedInput, callInput, blockParameter);
         }
 
-        public async Task<string> SendTransactionAsync(params object[] functionInput)
+        public async Task<string> SendTransactionAsync(string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return await base.SendTransactionAsync(encodedInput);
+            return await base.SendTransactionAsync(encodedInput, from, null);
         }
 
         public async Task<string> SendTransactionAsync(string from,

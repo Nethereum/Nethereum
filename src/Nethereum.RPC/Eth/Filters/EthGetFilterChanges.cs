@@ -56,14 +56,14 @@ namespace Nethereum.RPC.Eth.Filters
     ///     }]
     /// }    
     ///</Summary>
-    public class EthGetFilterChangesForEthNewFilter : RpcRequestResponseHandler<NewFilterLog[]>
+    public class EthGetFilterChangesForEthNewFilter : RpcRequestResponseHandler<FilterLog[]>
     {
         public EthGetFilterChangesForEthNewFilter(RpcClient client)
             : base(client, ApiMethods.eth_getFilterChanges.ToString())
         {
         }
 
-        public async Task<NewFilterLog[]> SendRequestAsync(HexBigInteger filterId,
+        public async Task<FilterLog[]> SendRequestAsync(HexBigInteger filterId,
             string id = Constants.DEFAULT_REQUEST_ID)
         {
             return await base.SendRequestAsync(id, filterId);

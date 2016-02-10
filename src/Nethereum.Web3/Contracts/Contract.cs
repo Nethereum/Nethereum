@@ -1,9 +1,12 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Web3
 {
@@ -14,8 +17,10 @@ namespace Nethereum.Web3
             this.ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
             this.Client = client;
             this.Address = contractAddress;
+            ethNewFilter = new EthNewFilter(client);
         }
 
+        private EthNewFilter ethNewFilter;
 
         public RpcClient Client { get; private set; }
 
@@ -56,6 +61,19 @@ namespace Nethereum.Web3
             var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Name == name);
             if (eventAbi == null) throw new Exception("Event not found");
             return eventAbi;
+        }
+
+        public NewFilterInput GetDefaultFilterInput()
+        {
+            var ethFilterInput = new NewFilterInput();
+            ethFilterInput.Address = new[] { this.Address };
+            return ethFilterInput;
+        }
+
+        public Task<HexBigInteger> CreateFilterAsync()
+        {
+            var ethFilterInput = this.GetDefaultFilterInput();
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
     }
