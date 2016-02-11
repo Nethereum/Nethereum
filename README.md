@@ -2,9 +2,9 @@
 
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Nethereum is a similar implementation of the Javascript Etherum Web3 RPC Client Library in .Net.
+Nethereum is a .Net Client for Ethereum, it allows you to interact with Ethereum in similar way as the Javascript Etherum Web3 RPC Client Library.
 
-It supports most of the JSON RPC methods, together with a simplified usage of Smart contracts including the deployment, function transactions and log event filtering.
+Currently supports most of the JSON RPC methods, together with a simplified usage of Smart contracts. These includese the  deployment of contrancts, function calling and transactions together with log event filtering and decoding of topics.
 
 ##Getting Started
 
