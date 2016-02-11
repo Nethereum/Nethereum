@@ -143,10 +143,18 @@ Using the contract created on the last step, we can get the function "multiply" 
 ```
 On the call we have identified the return type we want, in this scenario we have specified a type of int. Type conversions are supported for simple types and when returning multiple output parameters a DTO object will be necesary to be created.
 
-##DTOs
+Here is the complete example for [Contract Creation and Call](https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.Web3.Sample/ContractConstructorDeploymentAndCall.cs)
 
-``` csharp
-   [Function(Name = "test", Sha3Signature = "c6888fa1")]
+##DTOs
+DTOS allow for encoding and decoding of function calls /transactions using objects. This is specially helpful when decoding the output of multiple paramameters.
+
+To create a DTO a class will need to have Fuction attribute with its name and sha3Signature (the need of the signature will be removed shortly). The output class will need FunctionOutput instead.
+
+Each property will need to define a Parameter attribute with its name, type and order.
+
+In this example this class is a an input and output class
+```csharp
+        [Function(Name = "test", Sha3Signature = "c6888fa1")]
         [FunctionOutput]
         public class FunctionMultipleInputOutput
         {
@@ -159,53 +167,17 @@ On the call we have identified the return type we want, in this scenario we have
             [Parameter("string", 3)]
             public string C { get; set; }
         }
-
-        [Fact]
-        public virtual void ShouldEncodeMultipleTypesIncludingDynamicStringAndIntArray()
-        {
-            var paramsEncoded =
-                "00000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000003944700000000000000000000000000000000000000000000000000000000000394480000000000000000000000000000000000000000000000000000000000039449000000000000000000000000000000000000000000000000000000000003944a000000000000000000000000000000000000000000000000000000000003944b000000000000000000000000000000000000000000000000000000000003944c000000000000000000000000000000000000000000000000000000000003944d000000000000000000000000000000000000000000000000000000000003944e000000000000000000000000000000000000000000000000000000000003944f0000000000000000000000000000000000000000000000000000000000039450000000000000000000000000000000000000000000000000000000000003945100000000000000000000000000000000000000000000000000000000000394520000000000000000000000000000000000000000000000000000000000039453000000000000000000000000000000000000000000000000000000000003945400000000000000000000000000000000000000000000000000000000000394550000000000000000000000000000000000000000000000000000000000039456000000000000000000000000000000000000000000000000000000000003945700000000000000000000000000000000000000000000000000000000000394580000000000000000000000000000000000000000000000000000000000039459000000000000000000000000000000000000000000000000000000000003945a0000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
-
-            var function = new FunctionMultipleInputOutput();
-            function.A = "hello";
-            function.C = "world";
-
-            var array = new BigInteger[20];
-            for (uint i = 0; i < 20; i++)
-            {
-                array[i] = i + 234567;
-            }
-
-            function.B = array.ToList();
-
-            var result = new FunctionCallEncoder().EncodeRequest(function);
-
-            Assert.Equal("0x" + "c6888fa1" + paramsEncoded, result);
-        }
-
-
-
-        [Fact]
-        public virtual void ShouldDecodeMultipleTypesIncludingDynamicStringAndIntArray()
-        {
-
-            var functionCallDecoder = new FunctionCallDecoder();
-
-            var array = new uint[20];
-            for (uint i = 0; i < 20; i++)
-            {
-                array[i] = i + 234567;
-            }
-
-            var result = functionCallDecoder.
-                DecodeOutput<FunctionMultipleInputOutput>("0x" + "00000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000003944700000000000000000000000000000000000000000000000000000000000394480000000000000000000000000000000000000000000000000000000000039449000000000000000000000000000000000000000000000000000000000003944a000000000000000000000000000000000000000000000000000000000003944b000000000000000000000000000000000000000000000000000000000003944c000000000000000000000000000000000000000000000000000000000003944d000000000000000000000000000000000000000000000000000000000003944e000000000000000000000000000000000000000000000000000000000003944f0000000000000000000000000000000000000000000000000000000000039450000000000000000000000000000000000000000000000000000000000003945100000000000000000000000000000000000000000000000000000000000394520000000000000000000000000000000000000000000000000000000000039453000000000000000000000000000000000000000000000000000000000003945400000000000000000000000000000000000000000000000000000000000394550000000000000000000000000000000000000000000000000000000000039456000000000000000000000000000000000000000000000000000000000003945700000000000000000000000000000000000000000000000000000000000394580000000000000000000000000000000000000000000000000000000000039459000000000000000000000000000000000000000000000000000000000003945a0000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000"
-                );
-
-            Assert.Equal("hello", result.A);
-            Assert.Equal("world", result.C);
-            Assert.Equal(array[6], result.B[6]);
-        }
 ```
+This can be be called as follows:
+```csharp
+       var function = contract.GetFunction<FunctionMultipleInputOutput>();
+       var functionInput = new FunctionMultipleInputOutput();
+       var resultOutput = await function.CallAsync<FunctionMultipleInputOutput>(functionInput);
+       var cValue = resultOutput.C;
+```
+Because we are encoding and decoding the paramaeters using the same class, it is used to get the function and also as a decoding output of the call.
+
+For more information on the encoding / decoding [check the unit tests](https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.ABI.Tests/FunctionAttributeEncodingTests.cs);
 
 ### Events, logs and filters
 
@@ -355,8 +327,6 @@ This is a demonstration how you can raise events from your solidity contract and
 ```
 
 
-
-
 ### Running on Linux
 * Install DNX following the [asp.net guide](http://docs.asp.net/en/latest/getting-started/installing-on-linux.html). (Use coreclr)
 * Run dnu restore at the solution level, to restore all packages and dependencies.
@@ -378,13 +348,16 @@ This is the current TODO list in order of priority
 * ~~Extract projects for RPC / ABI / Web3~~
 * ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
 * ~~Complete Eth, Net partial Shh~~
-* Add wei conversion support
 * ~~Simplify Filtering / Events encoding/decoding on Web3~~
-* Examples / Documentation
+* Examples / Documentation (This readme file, missing breakdown of how fiters / event work)
+* Add wei conversion support
 * Nuget (beta)
 * Other shh methods
+* Admin methods
+* Real example
 * Code generate Typed DTO Functions to simplify usage 
 * Example of windows universal app using a contract (Windows, Mobile, RPI2)
+* IPC (Server, Client, refactor out RPC Client, introduce factories)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
 
