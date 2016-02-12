@@ -361,3 +361,5 @@ This is the current TODO list in order of priority
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
 
+
+Logo by created by Cass (https://github.com/cassiopaia)
