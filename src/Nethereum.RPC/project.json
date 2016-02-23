@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "Nethereum.Hex": "1.0.0-*",
-    "Newtonsoft.Json": "8.0.1-beta3",
     "RPCRequestResponseHandlers": "1.0.0-*"
+
   }
 }

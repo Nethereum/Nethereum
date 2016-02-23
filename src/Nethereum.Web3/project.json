@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0-*",
-  "description": "Nethereum.Web3 Class Library",
-  "authors": [ "JuanFran" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "version": "1.0.0-alpha",
+  "description": "Nethereum.Web3 Ethereum Web3 Class Library",
+  "authors": [ "Juan Blanco" ],
+  "tags": [ "Netherum, Ethereum, Blockchain, Crypto2.0" ],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/nuget_icon.png",
   "frameworks": {
     "dnx451": { },
     "dnxcore50": {

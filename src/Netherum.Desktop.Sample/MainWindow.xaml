@@ -1,0 +1,17 @@
+﻿<Window x:Class="Netherum.Desktop.Sample.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Netherum.Desktop.Sample"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Button Width="200" Height="50" x:Name="btnGetAccoutns" Content="Get Accounts"  Click="BtnGetAccoutns_OnClick"></Button>
+        <TextBox Grid.Column="1" Width="200" Height="50" x:Name="txtAccounts"></TextBox> 
+    </Grid>
+</Window>

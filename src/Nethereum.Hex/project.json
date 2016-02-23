@@ -32,7 +32,7 @@
   },
   "dependencies": {
     
-    "Newtonsoft.Json": "8.0.1-beta3"
+    "Newtonsoft.Json": "8.0.1"
     
   }
 }
