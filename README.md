@@ -349,9 +349,10 @@ This is the current TODO list in order of priority
 * ~~Create Web3 similar wrapper (wont be the same for contracts / functions) to simplify usage (ie Web3.Eth.Get..)~~
 * ~~Complete Eth, Net partial Shh~~
 * ~~Simplify Filtering / Events encoding/decoding on Web3~~
-* Examples / Documentation (This readme file, missing breakdown of how fiters / event work)
-* Add wei conversion support
+* ~~Examples / Documentation (This readme)~~ 
+* ~~Add wei conversion support~~
 * Nuget (beta)
+* Documentation: Breakdown explanation of the Event filtering example
 * Other shh methods
 * Admin methods
 * Real example
