@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0-*",
-  "description": "Nethereum.RPC Class Library",
+  "version": "1.0.0-alpha",
+  "description": "Nethereum.RPC Ethereum Core RPC Class Library to interact via RCP with an Ethereum client, for example geth.",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "Ethereum, Nethereum, RPC" ],
-  "projectUrl": "http://nethereum.com",
-  "licenseUrl": "",
+  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0"],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   "frameworks": {
     "dnx451": {
       "frameworkAssemblies": {

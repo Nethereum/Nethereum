@@ -1,10 +1,11 @@
 ﻿{
-  "version": "1.0.0-*",
-  "description": "Nethereum.RPC.ClassesExtractor Console Application",
-  "authors": [ "JuanFran" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "version": "1.0.0-alpha",
+  "description": "Nethereum.ClassesExtractor RPC classes extractor",
+  "authors": [ "Juan Blanco" ],
+  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
 
   "compilationOptions": {
     "emitEntryPoint": true

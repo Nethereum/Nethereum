@@ -37,32 +37,67 @@ namespace Nethereum.Web3
             this.FunctionCallEncoder = new FunctionCallEncoder();
 
         }
-            
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall) where TReturn: new()
+
+        private Parameter GetFirstParameterOrNull(Parameter[] parameters)
+        {
+            if (parameters == null) return null;
+            if (parameters.Length == 0) return null;
+            return parameters[0];
+        }
+         
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall)
         {
             var result =  await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), DefaultBlock);
             
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
+            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value ) where TReturn : new()
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value ) 
         {
             var result = await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, from, gas, value), DefaultBlock);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
+            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput) where TReturn : new()
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput)
         {
             callInput.Data = encodedFunctionCall; 
             var result = await ethCall.SendRequestAsync(callInput, DefaultBlock);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
+            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput, BlockParameter block) where TReturn : new()
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput, BlockParameter block) 
         {
             callInput.Data = encodedFunctionCall;
             var result = await ethCall.SendRequestAsync(callInput, block);
-            return FunctionCallDecoder.DecodeOutput<TReturn>(result, FunctionABI.OutputParameters);
+            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
+        }
+
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall)
+        {
+            var result = await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), DefaultBlock);
+
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
+        }
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value)
+        {
+            var result = await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, from, gas, value), DefaultBlock);
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
+        }
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall, CallInput callInput)
+        {
+            callInput.Data = encodedFunctionCall;
+            var result = await ethCall.SendRequestAsync(callInput, DefaultBlock);
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
+        }
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall, CallInput callInput, BlockParameter block)
+        {
+            callInput.Data = encodedFunctionCall;
+            var result = await ethCall.SendRequestAsync(callInput, block);
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
         }
 
         protected async Task<string> SendTransactionAsync(string encodedFunctionCall)

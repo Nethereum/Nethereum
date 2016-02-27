@@ -1,10 +1,11 @@
 ﻿{
-  "version": "1.0.0-*",
-  "description": "Nethereum.Hex Class Library",
-  "authors": [ "JuanFran" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "version": "1.0.0-alpha",
+  "description": "HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum",
+  "authors": [ "Juan Blanco" ],
+  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
 
   "frameworks": {
     "dnx451": {
@@ -31,9 +32,9 @@
     }
   },
   "dependencies": {
-    
+
     "Newtonsoft.Json": "8.0.1"
-    
+
   }
 }
 

@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0-*",
-  "description": "RPCRequestResponseHandlers Class Library",
+  "version": "1.0.0-alpha",
+  "description": "Generic Rpc Request Responses Handlers to use with JsonRpc.Client",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "tags": [ "Json", "RPC" ],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   "frameworks": {
     "dnx451": { },
     "dnxcore50": {

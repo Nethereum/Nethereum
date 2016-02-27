@@ -29,7 +29,6 @@ namespace RPCRequestResponseHandlers
         public async Task<TResponse> SendRequestAsync(string id, params object[] paramList)
         {
             var request = BuildRequest(id, paramList);
-           // string rpcRequestJson = JsonConvert.SerializeObject(request);
             var response = await Client.SendRequestAsync(request);
             if (response.HasError) throw new RPCResponseException(response);
             return response.GetResult<TResponse>();

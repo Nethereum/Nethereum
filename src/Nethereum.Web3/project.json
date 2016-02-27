@@ -1,11 +1,11 @@
 {
   "version": "1.0.0-alpha",
-  "description": "Nethereum.Web3 Ethereum Web3 Class Library",
+  "description": "Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters ",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "Netherum, Ethereum, Blockchain, Crypto2.0" ],
+  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
   "projectUrl": "http://www.nethereum.com",
   "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
-  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/nuget_icon.png",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   "frameworks": {
     "dnx451": { },
     "dnxcore50": {

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 namespace RPCRequestResponseHandlers
 {
  
-
     public class RpcRequestResponseHandlerNoParam<TResponse>: IRpcRequestHandler
     {
         public string MethodName { get; }
