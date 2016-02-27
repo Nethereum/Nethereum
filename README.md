@@ -356,16 +356,18 @@ This is the current TODO list in order of priority
 * ~~Simplify Filtering / Events encoding/decoding on Web3~~
 * ~~Examples / Documentation (This readme)~~ 
 * ~~Add wei conversion support~~
-* Nuget (beta)
-* Documentation: Breakdown explanation of the Event filtering example
+* ~~Nuget (alpha)~~
+* Real example
+* Further Documentation: Breakdown explanation of the Event filtering example
+* Netstandard, Net CLI
+* UWP contract example (Windows, Mobile, RPI2)
 * Other shh methods
 * Admin methods
-* Real example
+* Nuget (beta)
 * Code generate Typed DTO Functions to simplify usage 
-* Example of windows universal app using a contract (Windows, Mobile, RPI2)
 * IPC (Server, Client, refactor out RPC Client, introduce factories)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
 
 
-Logo by created by Cass (https://github.com/cassiopaia)
+Logo created by Cass (https://github.com/cassiopaia)
