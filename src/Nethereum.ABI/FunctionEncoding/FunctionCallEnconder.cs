@@ -24,6 +24,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public string EncodeRequest(string sha3Signature, Parameter[] parameters, params object[] values)
         {
+            
             var parametersEncoded = EncodeParameters(parameters, values).ToHex();
 
             return EncodeRequest(sha3Signature, parametersEncoded);
