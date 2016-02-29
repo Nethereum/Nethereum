@@ -79,11 +79,11 @@ namespace Nethereum.RPC.Eth.Blocks
         {
             public EthGetBlockWithTransactionsByHash(RpcClient client) : base(client, ApiMethods.eth_getBlockByHash.ToString()) { }
 
-            public async Task<BlockWithTransactions> SendRequestAsync( string blockHash, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<BlockWithTransactions> SendRequestAsync( string blockHash, object id = null)
             {
                 return await base.SendRequestAsync( id, blockHash, true);
             }
-            public RpcRequest BuildRequest(string blockHash, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string blockHash, object id = null)
             {
                 return base.BuildRequest(id, blockHash, true);
             }
@@ -166,11 +166,11 @@ public class EthGetBlockWithTransactionsHashesByHash : RpcRequestResponseHandler
 {
     public EthGetBlockWithTransactionsHashesByHash(RpcClient client) : base(client, ApiMethods.eth_getBlockByHash.ToString()) { }
 
-    public async Task<BlockWithTransactionHashes> SendRequestAsync( string blockHash, string id = Constants.DEFAULT_REQUEST_ID)
+    public async Task<BlockWithTransactionHashes> SendRequestAsync( string blockHash, object id = null)
     {
         return await base.SendRequestAsync( id, blockHash, false);
     }
-    public RpcRequest BuildRequest(string blockHash, string id = Constants.DEFAULT_REQUEST_ID)
+    public RpcRequest BuildRequest(string blockHash, object id = null)
     {
         return base.BuildRequest(id, blockHash, false);
     }

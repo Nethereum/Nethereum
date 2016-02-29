@@ -87,11 +87,11 @@ namespace Nethereum.RPC.Eth.Blocks
     {
         public EthGetBlockWithTransactionsHashesByNumber(RpcClient client) : base(client, ApiMethods.eth_getBlockByNumber.ToString()) { }
 
-        public async Task<BlockWithTransactionHashes> SendRequestAsync(HexBigInteger number, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<BlockWithTransactionHashes> SendRequestAsync(HexBigInteger number, object id = null)
         {
             return await base.SendRequestAsync(id, number, false);
         }
-        public RpcRequest BuildRequest(HexBigInteger number, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
             return base.BuildRequest(id, number);
         }

@@ -38,12 +38,12 @@ namespace Nethereum.RPC.Web3
 
         }
 
-        public async Task<String> SendRequestAsync( HexString valueToConvertHex, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<String> SendRequestAsync( HexString valueToConvertHex, object id = null)
         {
             return await base.SendRequestAsync( id, valueToConvertHex);
         }
 
-        public RpcRequest BuildRequest(HexString valueToConvert, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(HexString valueToConvert, object id = null)
         {
             return base.BuildRequest(id, valueToConvert);
         }

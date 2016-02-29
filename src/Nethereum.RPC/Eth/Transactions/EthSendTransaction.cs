@@ -15,11 +15,11 @@ namespace Nethereum.RPC.Eth.Transactions
 
         }
 
-        public async Task<String> SendRequestAsync( TransactionInput input, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<String> SendRequestAsync( TransactionInput input, object id = null)
         {
             return await base.SendRequestAsync( id, input);
         }
-        public RpcRequest BuildRequest(TransactionInput input, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(TransactionInput input, object id = null)
         {
             return base.BuildRequest(id, input);
         }

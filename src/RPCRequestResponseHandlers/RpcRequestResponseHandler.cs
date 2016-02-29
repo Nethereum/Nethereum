@@ -8,13 +8,6 @@ using System.Threading.Tasks;
 
 namespace RPCRequestResponseHandlers
 {
-    
-    public interface IRpcRequestHandler
-    {
-        string MethodName { get; }
-        RpcClient Client { get; }
-    }
-
     public class RpcRequestResponseHandler<TResponse>: IRpcRequestHandler
     {
         public string MethodName { get; }
@@ -26,7 +19,7 @@ namespace RPCRequestResponseHandlers
             this.Client = client;
         }
 
-        public async Task<TResponse> SendRequestAsync(string id, params object[] paramList)
+        public async Task<TResponse> SendRequestAsync(object id, params object[] paramList)
         {
             var request = BuildRequest(id, paramList);
             var response = await Client.SendRequestAsync(request);
@@ -34,9 +27,11 @@ namespace RPCRequestResponseHandlers
             return response.GetResult<TResponse>();
         }
 
-        public RpcRequest BuildRequest(string id,  params object[] paramList)
+        public RpcRequest BuildRequest(object id,  params object[] paramList)
         {
-            return new RpcRequest(id, MethodName, paramList);
+            if (id == null) id = Configuration.DefaultRequestId;
+            id = id?.ToString();
+            return new RpcRequest((string)id, MethodName, paramList);
         }
     }
 }

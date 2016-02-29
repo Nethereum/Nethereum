@@ -37,11 +37,11 @@ namespace Nethereum.RPC.Eth
         {
             public EthSign(RpcClient client) : base(client, ApiMethods.eth_sign.ToString()) { }
 
-            public async Task<string> SendRequestAsync( string address, string data, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<string> SendRequestAsync( string address, string data, object id = null)
             {
                 return await base.SendRequestAsync( id, address, data);
             }
-            public RpcRequest BuildRequest(string address, string data, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string address, string data, object id = null)
             {
                 return base.BuildRequest(id, address, data);
             }

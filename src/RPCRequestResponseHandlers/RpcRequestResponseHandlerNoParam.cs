@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RPCRequestResponseHandlers
 {
- 
     public class RpcRequestResponseHandlerNoParam<TResponse>: IRpcRequestHandler
     {
         public string MethodName { get; }
@@ -19,15 +18,18 @@ namespace RPCRequestResponseHandlers
             this.Client = client;
         }
 
-        public virtual async Task<TResponse> SendRequestAsync(string id)
+        public virtual async Task<TResponse> SendRequestAsync(object id)
         {
             var response = await Client.SendRequestAsync(BuildRequest(id));
             if (response.HasError) throw new RPCResponseException(response);
             return response.GetResult<TResponse>();
         }
-        public RpcRequest BuildRequest(string id)
+        public RpcRequest BuildRequest(object id)
         {
-            return new RpcRequest(id, MethodName, (object)null);
+            if (id == null) id = Configuration.DefaultRequestId;
+            id = id?.ToString();
+
+            return new RpcRequest((string)id  , MethodName, (object)null);
         }
     }
 

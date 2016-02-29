@@ -38,11 +38,11 @@ namespace Nethereum.RPC.Eth.Uncles
         {
             public EthGetUncleCountByBlockHash(RpcClient client) : base(client, ApiMethods.eth_getUncleCountByBlockHash.ToString()) { }
 
-            public async Task<HexBigInteger> SendRequestAsync( string hash, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync( string hash, object id = null)
             {
                 return await base.SendRequestAsync( id, hash);
             }
-            public RpcRequest BuildRequest(string hash, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string hash, object id = null)
             {
                 return base.BuildRequest(id, hash);
             }

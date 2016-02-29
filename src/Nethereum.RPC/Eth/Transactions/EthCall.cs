@@ -47,17 +47,17 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public BlockParameter DefaultBlock { get; set; }
 
-        public async Task<string> SendRequestAsync( CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<string> SendRequestAsync( CallInput callInput, BlockParameter block, object id = null)
         {
             return await base.SendRequestAsync( id, callInput, block);
         }
 
-        public async Task<string> SendRequestAsync( CallInput callInput, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<string> SendRequestAsync( CallInput callInput, object id = null)
         {
             return await base.SendRequestAsync( id, callInput, DefaultBlock);
         }
 
-        public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, object id = null)
         {
             return base.BuildRequest(id, callInput, block);
         }

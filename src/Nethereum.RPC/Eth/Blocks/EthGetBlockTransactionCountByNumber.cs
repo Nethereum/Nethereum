@@ -39,17 +39,17 @@ namespace Nethereum.RPC.Eth.Blocks
         {
             public EthGetBlockTransactionCountByNumber(RpcClient client) : base(client, ApiMethods.eth_getBlockTransactionCountByNumber.ToString()) { }
 
-            public async Task<HexBigInteger> SendRequestAsync( BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync( BlockParameter block, object id = null)
             {
                 return await base.SendRequestAsync( id, block);
             }
 
-            public async Task<HexBigInteger> SendRequestAsync( string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync( object id = null)
             {
                 return await SendRequestAsync( BlockParameter.CreateLatest(), id);
             }
 
-        public RpcRequest BuildRequest(BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(BlockParameter block, object id = null)
             {
                 return base.BuildRequest(id, block);
             }

@@ -61,11 +61,11 @@ namespace Nethereum.RPC.Eth.Transactions
         {
             public EthGetTransactionByHash(RpcClient client) : base(client, ApiMethods.eth_getTransactionByHash.ToString()) { }
 
-            public async Task<Transaction> SendRequestAsync( string hashTransaction, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<Transaction> SendRequestAsync( string hashTransaction, object id = null)
             {
                 return await base.SendRequestAsync( id, hashTransaction);
             }
-            public RpcRequest BuildRequest(string hashTransaction, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string hashTransaction, object id = null)
             {
                 return base.BuildRequest(id, hashTransaction);
             }

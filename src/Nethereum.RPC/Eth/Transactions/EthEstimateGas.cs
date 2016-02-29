@@ -37,17 +37,17 @@ namespace Nethereum.RPC.Eth.Transactions
         {
             public EthEstimateGas(RpcClient client) : base(client, ApiMethods.eth_estimateGas.ToString()) { }
 
-            public async Task<HexBigInteger> SendRequestAsync( CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync( CallInput callInput, BlockParameter block, object id = null)
             {
                 return await base.SendRequestAsync(id, callInput, block);
             }
 
-        public async Task<HexBigInteger> SendRequestAsync(CallInput callInput, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<HexBigInteger> SendRequestAsync(CallInput callInput, object id = null)
         {
             return await SendRequestAsync(callInput, BlockParameter.CreateLatest(), id);
         }
 
-        public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, object id = null)
             {
                 return base.BuildRequest(id, callInput, block);
             }

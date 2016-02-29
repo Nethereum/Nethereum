@@ -35,11 +35,11 @@ namespace Nethereum.RPC.Eth.Transactions
         {
             public EthGetTransactionByBlockHashAndIndex(RpcClient client) : base(client, ApiMethods.eth_getTransactionByBlockHashAndIndex.ToString()) { }
 
-            public async Task<Transaction> SendRequestAsync( string blockHash, HexBigInteger transactionIndex, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<Transaction> SendRequestAsync( string blockHash, HexBigInteger transactionIndex, object id = null)
             {
                 return await base.SendRequestAsync( id, blockHash, transactionIndex);
             }
-            public RpcRequest BuildRequest(string blockHash, HexBigInteger transactionIndex, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string blockHash, HexBigInteger transactionIndex, object id = null)
             {
                 return base.BuildRequest(id, blockHash, transactionIndex);
             }

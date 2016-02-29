@@ -39,11 +39,11 @@ namespace Nethereum.RPC.Eth.Mining
         {
             public EthSubmitHashrate(RpcClient client) : base(client,ApiMethods.eth_submitHashrate.ToString()) { }
 
-            public async Task<bool> SendRequestAsync(string[] hashRateAndId, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<bool> SendRequestAsync(string[] hashRateAndId, object id = null)
             {
                 return await base.SendRequestAsync(id, hashRateAndId);
             }
-            public RpcRequest BuildRequest(string[] hashRateAndId, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string[] hashRateAndId, object id = null)
             {
                 return base.BuildRequest(id, hashRateAndId);
             }

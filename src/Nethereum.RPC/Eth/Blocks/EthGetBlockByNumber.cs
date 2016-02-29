@@ -88,11 +88,11 @@ namespace Nethereum.RPC.Eth.Blocks
     {
         public EthGetBlockWithTransactionsByNumber(RpcClient client) : base(client, ApiMethods.eth_getBlockByNumber.ToString()) { }
 
-        public async Task<BlockWithTransactions> SendRequestAsync(HexBigInteger number, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<BlockWithTransactions> SendRequestAsync(HexBigInteger number, object id = null)
         {
             return await base.SendRequestAsync(id, number, true);
         }
-        public RpcRequest BuildRequest(HexBigInteger number, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
             return base.BuildRequest(id, number);
         }

@@ -37,11 +37,11 @@ namespace Nethereum.RPC.Eth.Compilation
         {
             public EthCompileSerpent(RpcClient client) : base(client,ApiMethods.eth_compileSerpent.ToString()) { }
 
-            public async Task<string> SendRequestAsync(string serpentCode, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<string> SendRequestAsync(string serpentCode, object id = null)
             {
                 return await base.SendRequestAsync(id, serpentCode);
             }
-            public RpcRequest BuildRequest(string serpentCode, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string serpentCode, object id = null)
             {
                 return base.BuildRequest(id, serpentCode);
             }

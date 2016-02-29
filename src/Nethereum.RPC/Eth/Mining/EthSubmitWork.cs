@@ -41,11 +41,11 @@ namespace Nethereum.RPC.Eth.Mining
         {
             public EthSubmitWork(RpcClient client) : base(client,ApiMethods.eth_submitWork.ToString()) { }
 
-            public async Task<bool> SendRequestAsync(string[] work, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<bool> SendRequestAsync(string[] work, object id = null)
             {
                 return await base.SendRequestAsync(id, work);
             }
-            public RpcRequest BuildRequest(string[] work, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string[] work, object id = null)
             {
                 return base.BuildRequest(id, work);
             }

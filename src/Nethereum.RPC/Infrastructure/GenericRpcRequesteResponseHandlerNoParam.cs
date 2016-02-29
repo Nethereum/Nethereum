@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Infrastructure
 
         }
 
-        public new Task<TResponse> SendRequestAsync(string id = Constants.DEFAULT_REQUEST_ID)
+        public new Task<TResponse> SendRequestAsync(object id = null)
         {
             return base.SendRequestAsync(id);
         }

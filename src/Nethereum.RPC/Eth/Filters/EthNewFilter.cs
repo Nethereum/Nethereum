@@ -52,11 +52,11 @@ namespace Nethereum.RPC.Eth.Filters
         {
             public EthNewFilter(RpcClient client) : base(client, ApiMethods.eth_newFilter.ToString()) { }
 
-            public async Task<HexBigInteger> SendRequestAsync( NewFilterInput newFilterInput, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<HexBigInteger> SendRequestAsync( NewFilterInput newFilterInput, object id = null)
             {
                 return await base.SendRequestAsync( id, newFilterInput);
             }
-            public RpcRequest BuildRequest(NewFilterInput newFilterInput, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(NewFilterInput newFilterInput, object id = null)
             {
                 return base.BuildRequest(id, newFilterInput);
             }

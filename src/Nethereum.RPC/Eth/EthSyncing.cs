@@ -51,7 +51,7 @@ namespace Nethereum.RPC.Eth
 
         }
 
-        public new async Task<SyncingOutput> SendRequestAsync( string id = Constants.DEFAULT_REQUEST_ID)
+        public new async Task<SyncingOutput> SendRequestAsync( object id = null)
         {
             var response = await base.SendRequestAsync( id);
 

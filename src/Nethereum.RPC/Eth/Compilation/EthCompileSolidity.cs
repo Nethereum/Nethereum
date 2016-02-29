@@ -71,11 +71,11 @@ namespace Nethereum.RPC.Eth.Compilation
 
         }
 
-        public async Task<String> SendRequestAsync( string contractCode, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<String> SendRequestAsync( string contractCode, object id = null)
         {
             return await base.SendRequestAsync( id, contractCode);
         }
-        public RpcRequest BuildRequest(string contractCode, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(string contractCode, object id = null)
         {
             return base.BuildRequest(id, contractCode);
         }

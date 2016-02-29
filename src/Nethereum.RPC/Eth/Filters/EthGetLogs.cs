@@ -31,11 +31,11 @@ namespace Nethereum.RPC.Eth.Filters
         {
             public EthGetLogs(RpcClient client) : base(client,ApiMethods.eth_getLogs.ToString()) { }
 
-            public async Task<FilterLog[]> SendRequestAsync(NewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<FilterLog[]> SendRequestAsync(NewFilterInput newFilter, object id = null)
             {
                 return await base.SendRequestAsync(id, newFilter);
             }
-            public RpcRequest BuildRequest(NewFilterInput newFilter, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(NewFilterInput newFilter, object id = null)
             {
                 return base.BuildRequest(id, newFilter);
             }

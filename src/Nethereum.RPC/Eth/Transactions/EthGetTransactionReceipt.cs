@@ -57,11 +57,11 @@ namespace Nethereum.RPC.Eth.Transactions
     {
             public EthGetTransactionReceipt(RpcClient client) : base(client, ApiMethods.eth_getTransactionReceipt.ToString()) { }
 
-        public async Task<TransactionReceipt> SendRequestAsync( string transactionHash, string id = Constants.DEFAULT_REQUEST_ID)
+        public async Task<TransactionReceipt> SendRequestAsync( string transactionHash, object id = null)
         {
             return await base.SendRequestAsync( id, transactionHash);
         }
-        public RpcRequest BuildRequest(string  transactionHash, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(string  transactionHash, object id = null)
         {
             return base.BuildRequest(id, transactionHash);
         }

@@ -64,12 +64,12 @@ namespace Nethereum.RPC.Eth.Filters
         }
 
         public async Task<FilterLog[]> SendRequestAsync(HexBigInteger filterId,
-            string id = Constants.DEFAULT_REQUEST_ID)
+            object id = null)
         {
             return await base.SendRequestAsync(id, filterId);
         }
 
-        public RpcRequest BuildRequest(HexBigInteger filterId, string id = Constants.DEFAULT_REQUEST_ID)
+        public RpcRequest BuildRequest(HexBigInteger filterId, object id = null)
         {
             return base.BuildRequest(id, filterId);
         }

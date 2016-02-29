@@ -38,11 +38,11 @@ namespace Nethereum.RPC.Eth.Transactions
         {
             public EthSendRawTransaction(RpcClient client) : base(client, ApiMethods.eth_sendRawTransaction.ToString()) { }
 
-            public async Task<string> SendRequestAsync( string signedTransactionData, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<string> SendRequestAsync( string signedTransactionData, object id = null)
             {
                 return await base.SendRequestAsync( id, signedTransactionData);
             }
-            public RpcRequest BuildRequest(string signedTransactionData, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string signedTransactionData, object id = null)
             {
                 return base.BuildRequest(id, signedTransactionData);
             }

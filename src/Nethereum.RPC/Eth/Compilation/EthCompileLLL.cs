@@ -38,11 +38,11 @@ namespace Nethereum.RPC.Eth.Compilation
         {
             public EthCompileLLL(RpcClient client) : base(client, ApiMethods.eth_compileLLL.ToString()) { }
 
-            public async Task<string> SendRequestAsync(string lllcode, string id = Constants.DEFAULT_REQUEST_ID)
+            public async Task<string> SendRequestAsync(string lllcode, object id = null)
             {
                 return await base.SendRequestAsync(id, lllcode);
             }
-            public RpcRequest BuildRequest(string lllcode, string id = Constants.DEFAULT_REQUEST_ID)
+            public RpcRequest BuildRequest(string lllcode, object id = null)
             {
                 return base.BuildRequest(id, lllcode);
             }
