@@ -36,11 +36,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="JsonRpc.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\JsonRpc.Client.1.0.0-rc1-3\lib\net45\JsonRpc.Client.dll</HintPath>
+      <HintPath>..\..\packages\JsonRpc.Client.1.0.0-rc1-6\lib\net451\JsonRpc.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="JsonRpc.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\JsonRpc.Core.1.0.0-rc1-3\lib\net45\JsonRpc.Core.dll</HintPath>
+      <HintPath>..\..\packages\JsonRpc.Core.1.0.0-rc1-6\lib\net451\JsonRpc.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nethereum.ABI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">

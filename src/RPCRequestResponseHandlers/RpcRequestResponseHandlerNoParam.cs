@@ -28,7 +28,7 @@ namespace RPCRequestResponseHandlers
         {
             if (id == null) id = Configuration.DefaultRequestId;
         
-            return new RpcRequest((string)id  , MethodName, (object)null);
+            return new RpcRequest(id  , MethodName, (object)null);
         }
     }
 
