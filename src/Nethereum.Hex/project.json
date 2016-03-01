@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha-2",
   "description": "HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
@@ -8,24 +8,22 @@
   "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
 
   "frameworks": {
-    "dnx451": {
+    "net451": {
       "frameworkAssemblies": {
         "System.Numerics": "4.0.0.0"
       }
     },
-    "dnxcore50": {
+    "dotnet52": {
       "dependencies": {
-        "Microsoft.CSharp": "4.0.1-beta-23409",
-        "System.Collections": "4.0.11-beta-23409",
-        "System.Linq": "4.0.1-beta-23409",
-        "System.Runtime": "4.0.21-beta-23409",
-        "System.Threading": "4.0.11-beta-23409",
-        "System.Runtime.Numerics": "4.0.1-beta-23516"
-      }
-    },
-    "net45": {
-      "frameworkAssemblies": {
-        "System.Numerics": "4.0.0.0"
+        "System.Collections": "4.0.11-beta-23516",
+        "System.Runtime": "4.0.21-beta-23516",
+        "System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+        "System.Threading": "4.0.11-beta-23516",
+        "System.Runtime.Numerics": "4.0.1-beta-23516",
+        "System.Linq": "4.0.1-beta-23516",
+        "System.Runtime.Extensions": "4.0.0-beta-23109",
+        "System.Text.Encoding": "4.0.11-beta-23409",
+        "System.Runtime.InteropServices": "4.0.0-beta-23019"
       }
     }
   },

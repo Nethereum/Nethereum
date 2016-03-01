@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha-2",
   "description": "Encoding and decoding of ABI Types, functions, events of Ethereum contracts",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
@@ -23,7 +23,7 @@
         "System.Runtime.Numerics": "4.0.1-beta-23516"
       }
     },
-    "net45": {
+    "net451": {
       "frameworkAssemblies": {
         "System.Runtime": "4.0.0.0",
         "System.Numerics": "4.0.0.0"

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha-2",
   "description": "Nethereum.RPC Ethereum Core RPC Class Library to interact via RCP with an Ethereum client, for example geth.",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0"],
@@ -23,7 +23,7 @@
         "System.Runtime.Numerics": "4.0.1-beta-23516"
       }
     },
-    "net45": {
+    "net451": {
       "frameworkAssemblies": {
         "System.Numerics": "4.0.0.0"
       }

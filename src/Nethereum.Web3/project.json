@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha-2",
   "description": "Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters ",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
@@ -17,7 +17,7 @@
         "System.Threading": "4.0.11-beta-23409"
       }
     },
-    "net45": { }
+    "net451": { }
   },
   "dependencies": {
     "Nethereum.ABI": "1.0.0-*",

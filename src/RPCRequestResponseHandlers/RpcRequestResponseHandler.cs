@@ -30,8 +30,8 @@ namespace RPCRequestResponseHandlers
         public RpcRequest BuildRequest(object id,  params object[] paramList)
         {
             if (id == null) id = Configuration.DefaultRequestId;
-            id = id?.ToString();
-            return new RpcRequest((string)id, MethodName, paramList);
+         
+            return new RpcRequest(id, MethodName, paramList);
         }
     }
 }

@@ -9,10 +9,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Netherum.Desktop.Sample</RootNamespace>
     <AssemblyName>Netherum.Desktop.Sample</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -42,24 +43,29 @@
       <HintPath>..\..\packages\JsonRpc.Core.1.0.0-rc1-3\lib\net45\JsonRpc.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.ABI">
-      <HintPath>..\..\artifacts\bin\Nethereum.ABI\Debug\net45\Nethereum.ABI.dll</HintPath>
+    <Reference Include="Nethereum.ABI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\artifacts\bin\Nethereum.ABI\Debug\net451\Nethereum.ABI.dll</HintPath>
     </Reference>
-    <Reference Include="Nethereum.Hex">
-      <HintPath>..\..\artifacts\bin\Nethereum.Hex\Debug\net45\Nethereum.Hex.dll</HintPath>
+    <Reference Include="Nethereum.Hex, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\artifacts\bin\Nethereum.Hex\Debug\dotnet5.2\Nethereum.Hex.dll</HintPath>
     </Reference>
-    <Reference Include="Nethereum.RPC">
-      <HintPath>..\..\artifacts\bin\Nethereum.RPC\Debug\net45\Nethereum.RPC.dll</HintPath>
+    <Reference Include="Nethereum.RPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\artifacts\bin\Nethereum.RPC\Debug\net451\Nethereum.RPC.dll</HintPath>
     </Reference>
-    <Reference Include="Nethereum.Web3">
-      <HintPath>..\..\artifacts\bin\Nethereum.Web3\Debug\net45\Nethereum.Web3.dll</HintPath>
+    <Reference Include="Nethereum.Web3, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\artifacts\bin\Nethereum.Web3\Debug\net451\Nethereum.Web3.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="RPCRequestResponseHandlers">
-      <HintPath>..\..\artifacts\bin\RPCRequestResponseHandlers\Debug\net45\RPCRequestResponseHandlers.dll</HintPath>
+    <Reference Include="RPCRequestResponseHandlers, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\artifacts\bin\RPCRequestResponseHandlers\Debug\dnxcore50\RPCRequestResponseHandlers.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

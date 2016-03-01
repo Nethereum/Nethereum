@@ -1,26 +1,25 @@
 {
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha-2",
   "description": "Generic Rpc Request Responses Handlers to use with JsonRpc.Client",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Json", "RPC" ],
   "projectUrl": "http://www.nethereum.com",
   "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
   "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
-  "frameworks": {
-    "dnx451": { },
-    "dnxcore50": {
-      "dependencies": {
-        "Microsoft.CSharp": "4.0.1-beta-23409",
-        "System.Collections": "4.0.11-beta-23409",
-        "System.Linq": "4.0.1-beta-23409",
-        "System.Runtime": "4.0.21-beta-23409",
-        "System.Threading": "4.0.11-beta-23409"
-      }
-    },
-    "net45": { }
-  },
   "dependencies": {
-    "JsonRpc.Client": "1.0.0-rc1-3",
-    "Newtonsoft.Json": "8.0.1"
+    "JsonRpc.Client": "1.0.0-rc1-6",
+    "Newtonsoft.Json": "8.0.2"
+  },
+  "frameworks": {
+    "net451": { },
+    "dotnet52": {
+      "dependencies": {
+        "System.Collections": "4.0.11-beta-23516",
+        "System.Runtime": "4.0.21-beta-23516",
+        "System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+        "System.Threading": "4.0.11-beta-23516",
+        "System.IO.Compression": "4.1.0-beta-23516"
+      }
+    }
   }
 }
