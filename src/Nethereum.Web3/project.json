@@ -7,21 +7,21 @@
   "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
   "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   "frameworks": {
-
-    "dotnet52": {
-      "dependencies": {
-        "Microsoft.CSharp": "4.0.1-beta-23409",
-        "System.Collections": "4.0.11-beta-23409",
-        "System.Console": "4.0.0-beta-23409",
-        "System.Linq": "4.0.1-beta-23409",
-        "System.Threading": "4.0.11-beta-23409"
-      }
+    "dnx451": { },
+      "dnxcore50": {
+        "dependencies": {
+          "Microsoft.CSharp": "4.0.1-beta-23409",
+          "System.Collections": "4.0.11-beta-23409",
+          "System.Console": "4.0.0-beta-23409",
+          "System.Linq": "4.0.1-beta-23409",
+          "System.Threading": "4.0.11-beta-23409"
+        }
+      },
+      "net451": { }
     },
-    "net451": { }
-  },
-  "dependencies": {
-    "Nethereum.ABI": "1.0.0-*",
-    "Nethereum.Hex": "1.0.0-*",
-    "Nethereum.RPC": "1.0.0-*"
+    "dependencies": {
+      "Nethereum.ABI": "1.0.0-*",
+      "Nethereum.Hex": "1.0.0-*",
+      "Nethereum.RPC": "1.0.0-*"
+    }
   }
-}

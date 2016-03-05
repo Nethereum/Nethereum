@@ -123,6 +123,7 @@ namespace Nethereum.Web3.Sample
             var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
             var eventLogsFor69and18 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69And18);
 
+            
             var multipliedLogEvents = await multipliedEventLog.GetFilterChanges<EventMultipliedSenderLog>(filterAllLog);
 
             return "All logs :" + eventLogsAll.Count + " Multiplied by 69 result: " +

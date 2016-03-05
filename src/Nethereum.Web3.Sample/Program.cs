@@ -10,9 +10,12 @@ namespace Nethereum.Web3.Sample
         {
             //var contractDeploymentAndCallTest = new ContractDeploymentAndCall();
             //Console.WriteLine(contractDeploymentAndCallTest.Test().Result);
+            
+            var personalTest = new PersonalTest();
+            Console.WriteLine(personalTest.Test().Result);
 
-            var contractConstructorDeploymentAndCall = new ContractConstructorDeploymentAndCall();
-            Console.WriteLine(contractConstructorDeploymentAndCall.Test().Result);
+            //var contractConstructorDeploymentAndCall = new ContractConstructorDeploymentAndCall();
+            //Console.WriteLine(contractConstructorDeploymentAndCall.Test().Result);
 
             //var eventFilterTopic = new EventFilterTopic();
             //Console.WriteLine(eventFilterTopic.Test().Result);

@@ -60,5 +60,9 @@
         web3_sha3, //done
         net_version, //done
         net_peerCount //done
+        ,
+        personal_listAccounts,
+        personal_newAccount,
+        personal_unlockAccount
     }
 }

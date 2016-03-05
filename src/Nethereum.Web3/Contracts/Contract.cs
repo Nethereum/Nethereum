@@ -51,7 +51,7 @@ namespace Nethereum.Web3
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
-            if (functionAbi == null) throw new Exception("Function not found");
+            if (functionAbi == null) throw new Exception("Function not found:" + name);
             return functionAbi;
         }
 
@@ -63,9 +63,11 @@ namespace Nethereum.Web3
             return eventAbi;
         }
 
-        public NewFilterInput GetDefaultFilterInput()
+        public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null)
         {
             var ethFilterInput = new NewFilterInput();
+            ethFilterInput.FromBlock = fromBlock;
+            ethFilterInput.ToBlock = BlockParameter.CreateLatest();
             ethFilterInput.Address = new[] { this.Address };
             return ethFilterInput;
         }

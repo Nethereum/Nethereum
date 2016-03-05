@@ -32,6 +32,19 @@ namespace Nethereum.RPC.Eth.DTOs
         {
             this.ParameterType = BlockParameterType.latest;
         }
+
+        public BlockParameter(HexBigInteger blockNumber)
+        {
+            this.SetValue(blockNumber);
+        }
+
+        public BlockParameter(ulong blockNumber):this(new HexBigInteger(blockNumber))
+        {
+            
+        }
+
+
+
         public enum BlockParameterType
         {
             latest,

@@ -15,6 +15,7 @@ namespace Nethereum.Web3
             Eth = new Eth(Client);
             Shh = new Shh(Client);
             Net = new Net(Client);
+            Personal = new Personal(Client);
             Convert = new UnitConversion();
             sha3Keccack = new Sha3Keccack();
         }
@@ -25,6 +26,8 @@ namespace Nethereum.Web3
         public Shh Shh { get; private set; }
 
         public Net Net { get; private set; }
+
+        public Personal Personal { get; private set; }
 
         private void IntialiseRpcClient(string url)
         {
