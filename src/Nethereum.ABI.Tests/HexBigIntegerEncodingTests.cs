@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Xunit;
@@ -46,6 +48,46 @@ namespace Nethereum.ABI.Tests
         {
             var x = new HexBigInteger("0x0");
             Assert.Equal(0, x.Value);
+        }
+
+        [Fact]
+        public virtual void ShouldDecode10000000000000000000()
+        {
+            var encode = new HexBigInteger(BigInteger.Parse("10000000000000000000"));
+            var x = new HexBigInteger("0x008ac7230489e80000");
+            Assert.Equal(encode.Value.ToString(), x.Value.ToString());
+        }
+
+        [Fact]
+        public virtual void SuperTest()
+        {
+            var random = new Random();
+            
+            for (int i = 0; i < 10000; i++)
+            {
+                var number = random.Next(0, 100000);
+                var encode = new HexBigInteger(BigInteger.Parse(i * number  + "000000000000"));
+                Debug.WriteLine(encode.HexValue);
+                Assert.Equal(encode.Value.ToString(), new HexBigInteger(encode.HexValue).Value.ToString());
+            }   
+        }
+
+        [Fact]
+        public virtual void ShouldDecode08ac7230489e80000()
+        {
+            var encode = new HexBigInteger(BigInteger.Parse("10000000000000000000"));
+            var x = new HexBigInteger("0x8ac7230489e80000");
+            Assert.Equal(encode.Value.ToString(), x.Value.ToString());
+
+
+        }
+
+        [Fact]
+        public virtual void ShouldDecode1000000000000000000()
+        {
+            var encode = new HexBigInteger(BigInteger.Parse("1000000000000000000"));
+            var x = new HexBigInteger("0xde0b6b3a7640000");
+            Assert.Equal(encode.Value.ToString(), x.Value.ToString());
         }
     }
 }

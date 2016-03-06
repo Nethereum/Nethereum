@@ -31,7 +31,10 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
             if ((BitConverter.IsLittleEndian != isHexLittleEndian))
             {
-                encoded = encoded.ToArray().Reverse().ToArray();
+                var listEncoded = encoded.ToList();
+                listEncoded.Insert(0, 0x00);
+                encoded = listEncoded.ToArray().Reverse().ToArray();
+
             }
             return new BigInteger(encoded);
         }
