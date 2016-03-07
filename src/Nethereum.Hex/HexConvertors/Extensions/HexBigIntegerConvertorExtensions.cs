@@ -8,20 +8,22 @@ namespace Nethereum.Hex.HexConvertors.Extensions
     {
         public static string ToHex(this BigInteger value, bool littleEndian)
         {
+            if(value.Sign < 0) throw new Exception("Hex Encoding of Negative BigInteger value is not supported");
             if (value == 0) return "0x0";
 
             byte[] bytes;
 
             if (BitConverter.IsLittleEndian != littleEndian)
             {
-                bytes = value.ToByteArray().Reverse().ToArray();
+                bytes = value.ToByteArray().Reverse().ToArray();                
             }
             else
             {
                 bytes = value.ToByteArray().ToArray();
             }
+            var hex = bytes.ToHexCompact();
 
-            return "0x" + bytes.ToHexCompact();
+            return "0x" + hex;
         }
 
 

@@ -59,16 +59,16 @@ namespace Nethereum.ABI.Tests
         }
 
         [Fact]
-        public virtual void SuperTest()
+        public virtual void EncodingDecodingRandom10000Test()
         {
             var random = new Random();
             
             for (int i = 0; i < 10000; i++)
             {
                 var number = random.Next(0, 100000);
-                var encode = new HexBigInteger(BigInteger.Parse(i * number  + "000000000000"));
-                Debug.WriteLine(encode.HexValue);
-                Assert.Equal(encode.Value.ToString(), new HexBigInteger(encode.HexValue).Value.ToString());
+                var value = i* number + "000000000000";
+                var encode = new HexBigInteger(BigInteger.Parse(value)); 
+               Assert.Equal(encode.Value.ToString(), new HexBigInteger(encode.HexValue).Value.ToString());
             }   
         }
 
