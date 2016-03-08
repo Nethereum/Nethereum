@@ -358,14 +358,15 @@ This is the current TODO list in order of priority
 * ~~Examples / Documentation (This readme)~~ 
 * ~~Add wei conversion support~~
 * ~~Nuget (alpha)~~
+* ~~Personal RPC~~
 * Real example [Maker](https://github.com/Nethereum/Netherum.Maker)
 * Further Documentation: Breakdown explanation of the Event filtering example
 * Netstandard, Net CLI
 * UWP contract example (Windows, Mobile, RPI2)
-* Other shh methods
-* Admin methods
+* Complete shh methods
+* Admin RPC methods
 * Nuget (beta)
-* Code generate Typed DTO Functions to simplify usage 
+* Code generate Contracts and Typed DTO Functions / Events to simplify usage 
 * IPC (Server, Client, refactor out RPC Client, introduce factories)
 * Example of unit testing contracts (.net driven)
 * Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
