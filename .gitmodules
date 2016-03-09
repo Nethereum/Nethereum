@@ -1,0 +1,4 @@
+[submodule "Nethereum-XS/JsonRpc.Router"]
+	path = Nethereum-XS/JsonRpc.Router
+	url = git://github.com/Nethereum/JsonRpc.Router.git
+	branch = DevQA
