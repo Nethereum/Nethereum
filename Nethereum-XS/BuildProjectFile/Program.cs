@@ -105,6 +105,7 @@ static string fileTemplate1 =
     <Reference Include=""System.Net.Http"" />
     <Reference Include=""System.Numerics"" />
     <Reference Include=""Microsoft.CSharp"" />
+    <Reference Include=""System.Runtime"" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include=""Properties\AssemblyInfo.cs"" />";
