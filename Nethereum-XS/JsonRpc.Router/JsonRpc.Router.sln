@@ -1,0 +1,70 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EB6CC2D7-ED2C-447F-A85B-5E204FD69352}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{41AD7143-8434-4ABE-92B7-70F448CFE634}"
+	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
+		Nuget.config = Nuget.config
+	EndProjectSection
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Router", "src\JsonRpc.Router\JsonRpc.Router.xproj", "{F89E9E51-0D7A-4A82-A899-14C886C4F384}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Router.Sample", "src\JsonRpc.Router.Sample\JsonRpc.Router.Sample.xproj", "{DC822B36-8944-48E5-AFC3-B6F859F49E02}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Router.Tests", "test\JsonRpc.Router.Tests\JsonRpc.Router.Tests.xproj", "{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{B5DD29D3-4FCA-4CFB-A562-A7985BB1C269}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Client", "src\JsonRpc.Client\JsonRpc.Client.xproj", "{87ED8B44-B59A-440C-A377-565EFFB2691A}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Core", "src\JsonRpc.Core\JsonRpc.Core.xproj", "{9F2CEC93-9FEC-4949-8797-D08BF776BFBF}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "JsonRpc.Client.Sample", "src\JsonRpc.Client.Sample\JsonRpc.Client.Sample.xproj", "{84727B1C-6DED-4460-903B-27B19F1326AC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F89E9E51-0D7A-4A82-A899-14C886C4F384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F89E9E51-0D7A-4A82-A899-14C886C4F384}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F89E9E51-0D7A-4A82-A899-14C886C4F384}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F89E9E51-0D7A-4A82-A899-14C886C4F384}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC822B36-8944-48E5-AFC3-B6F859F49E02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC822B36-8944-48E5-AFC3-B6F859F49E02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC822B36-8944-48E5-AFC3-B6F859F49E02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC822B36-8944-48E5-AFC3-B6F859F49E02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87ED8B44-B59A-440C-A377-565EFFB2691A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87ED8B44-B59A-440C-A377-565EFFB2691A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87ED8B44-B59A-440C-A377-565EFFB2691A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87ED8B44-B59A-440C-A377-565EFFB2691A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F2CEC93-9FEC-4949-8797-D08BF776BFBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F2CEC93-9FEC-4949-8797-D08BF776BFBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F2CEC93-9FEC-4949-8797-D08BF776BFBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F2CEC93-9FEC-4949-8797-D08BF776BFBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84727B1C-6DED-4460-903B-27B19F1326AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84727B1C-6DED-4460-903B-27B19F1326AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84727B1C-6DED-4460-903B-27B19F1326AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84727B1C-6DED-4460-903B-27B19F1326AC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F89E9E51-0D7A-4A82-A899-14C886C4F384} = {EB6CC2D7-ED2C-447F-A85B-5E204FD69352}
+		{DC822B36-8944-48E5-AFC3-B6F859F49E02} = {EB6CC2D7-ED2C-447F-A85B-5E204FD69352}
+		{EB3C5DC1-9E22-4C56-8E1F-0D93917E75E5} = {B5DD29D3-4FCA-4CFB-A562-A7985BB1C269}
+		{87ED8B44-B59A-440C-A377-565EFFB2691A} = {EB6CC2D7-ED2C-447F-A85B-5E204FD69352}
+		{9F2CEC93-9FEC-4949-8797-D08BF776BFBF} = {EB6CC2D7-ED2C-447F-A85B-5E204FD69352}
+		{84727B1C-6DED-4460-903B-27B19F1326AC} = {EB6CC2D7-ED2C-447F-A85B-5E204FD69352}
+	EndGlobalSection
+EndGlobal

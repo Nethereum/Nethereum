@@ -1,0 +1,36 @@
+﻿{
+	"title": "JsonRpc DNX Client Sample",
+	"version": "1.0.0-rc1-1",
+	"description": "A DNX Client sample for Json Rpc v2 requests.",
+	"summary": "A DNX Json RPC v2 client sample",
+	"authors": [ "Gekctek" ],
+	"tags": [ "JsonRpc Rpc AspNet Json-Rpc DNX" ],
+	"projectUrl": "https://github.com/Gekctek/JsonRpc.Router",
+	"repository": {"type": "git"},
+	"licenseUrl": "https://raw.githubusercontent.com/Gekctek/JsonRpc.Router/master/LICENSE",
+	"releaseNotes": "Initial",
+
+	"dependencies": {
+		"JsonRpc.Client": {
+			"target": "project",
+			"version": "1.0.0-*"
+		}
+	},
+	"commands": {
+		"run": "JsonRpc.Client.Sample"
+	},
+
+	"frameworks": {
+		"dnx451": { },
+		"dnxcore50": {
+			"dependencies": {
+				"System.Collections": "4.0.11-beta-23516",
+				"System.Runtime": "4.0.21-beta-23516",
+				"System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+				"System.Threading": "4.0.11-beta-23516",
+				"System.IO.Compression": "4.1.0-beta-23516",
+				"System.Console": "4.0.0-beta-23516"
+			}
+		}
+	}
+}

@@ -1,0 +1,32 @@
+{
+	"title": "JsonRpc DNX Client",
+	"version": "1.0.0-rc1-6",
+	"description": "A DNX Client implementation for Json Rpc v2 requests.",
+	"summary": "A DNX Json RPC v2 client",
+	"authors": [ "Gekctek" ],
+	"tags": [ "JsonRpc Rpc Json-Rpc DNX" ],
+	"projectUrl": "https://github.com/Gekctek/JsonRpc.Router",
+	"repository": { "type": "git" },
+	"licenseUrl": "https://raw.githubusercontent.com/Gekctek/JsonRpc.Router/master/LICENSE",
+	"releaseNotes": "Changing dotnet framework version to 52.",
+
+	"dependencies": {
+		"Newtonsoft.Json": "7.0.1",
+		"JsonRpc.Core": "1.0.0-rc1-*",
+		"System.Net.Http": "4.0.1-beta-23516",
+		"System.Runtime.InteropServices": "4.0.21-beta-23516"
+	},
+
+	"frameworks": {
+		"net451": { },
+		"dotnet52": {
+			"dependencies": {
+				"System.Collections": "4.0.11-beta-23516",
+				"System.Runtime": "4.0.21-beta-23516",
+				"System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+				"System.Threading": "4.0.11-beta-23516",
+				"System.IO.Compression": "4.1.0-beta-23516"
+			}
+		}
+	}
+}
