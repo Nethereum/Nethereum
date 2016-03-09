@@ -32,8 +32,9 @@ namespace Nethereum.ABI.Decoders
     {
         public override bool IsSupportedType(Type type)
         {
+			
             return type == typeof (int) || type == typeof (ulong) || type == typeof (long) || type == typeof (uint) ||
-                   type == typeof (BigInteger);
+				type == typeof (BigInteger) || type == typeof (Nethereum.Hex.HexTypes.HexBigInteger);
         }
 
 
@@ -63,6 +64,10 @@ namespace Nethereum.ABI.Decoders
             {
                 return DecodeBigInteger(encoded);
             }
+
+			if (type == typeof(Nethereum.Hex.HexTypes.HexBigInteger)) {
+				return new Nethereum.Hex.HexTypes.HexBigInteger(encoded.ToHex());
+			}
 
             throw new NotSupportedException(type.ToString() + " is not a supported decoding type for IntType");
         }
