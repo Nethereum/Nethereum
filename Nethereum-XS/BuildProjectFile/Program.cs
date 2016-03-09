@@ -64,16 +64,16 @@ namespace BuildProjectFile
 		}
 
 
-static string fileTemplate1 =@"
-<?xml version=""1.0"" encoding=""utf-8""?>
+static string fileTemplate1 =
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <Project DefaultTargets=""Build"" ToolsVersion=""4.0"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
   <PropertyGroup>
     <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>
     <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>
     <ProjectGuid>{590E4431-4EA0-42A3-87FF-4F748C9FD514}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>NetherumXS</RootNamespace>
-    <AssemblyName>Netherum-XS</AssemblyName>
+    <RootNamespace>Nethereum</RootNamespace>
+    <AssemblyName>Nethereum</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">
