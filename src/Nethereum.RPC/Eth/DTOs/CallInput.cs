@@ -44,36 +44,36 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///  DATA, 20 Bytes - The address the transaction is send from.
         /// </summary>
-        [JsonProperty(PropertyName = "from")]
+		[JsonProperty(PropertyName = "from", NullValueHandling = NullValueHandling.Ignore)]
         public string From { get; set; }
 
         /// <summary>
         /// DATA, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
         /// </summary>
-        [JsonProperty(PropertyName = "to")]
+		[JsonProperty(PropertyName = "to", NullValueHandling = NullValueHandling.Ignore)]
         public string To { get; set; }
 
         /// <summary>
         /// QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return unused gas.
         /// </summary>
-        [JsonProperty(PropertyName = "gas")]
+		[JsonProperty(PropertyName = "gas", NullValueHandling = NullValueHandling.Ignore)]
         public HexBigInteger Gas { get; set; }
 
         /// <summary>
         /// gasPrice: QUANTITY - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
         /// </summary>
-        [JsonProperty(PropertyName = "gasPrice")]
+		[JsonProperty(PropertyName = "gasPrice", NullValueHandling = NullValueHandling.Ignore)]
         public HexBigInteger GasPrice { get; set; }
 
         /// <summary>
         /// value: QUANTITY - (optional) Integer of the value send with this transaction
         /// </summary>
-        [JsonProperty(PropertyName = "value")]
+		[JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
         public HexBigInteger Value { get; set; }
         /// <summary>
         /// data: DATA - (optional) The compiled code of a contract
         /// </summary>
-        [JsonProperty(PropertyName = "data")]
+		[JsonProperty(PropertyName = "data", NullValueHandling = NullValueHandling.Ignore)]
         public string Data { get; set; }
 
     }
