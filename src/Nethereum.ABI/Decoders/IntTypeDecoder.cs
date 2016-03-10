@@ -101,38 +101,50 @@ namespace Nethereum.ABI.Decoders
         {
             bool paddedPrefix = true;
             var unpaddedBytes = new List<byte>();
-            bool negative = false;
-            foreach (byte item in encoded)
-            {
-                if ((item == 0 || item == 0xFF) && paddedPrefix)
-                {
-                    if (item == 0xFF)
-                    {
-                        negative = true;
-                    }
-                }
 
-                if (!(item == 0 || item == 0xFF) && paddedPrefix)
-                {
-                    paddedPrefix = false;
-                }
-
-                if (!paddedPrefix)
-                {
-                    unpaddedBytes.Add(item);
-                }
-            }
-
-            if (!unpaddedBytes.Any()) unpaddedBytes.Add(encoded.Last());
+            bool negative = encoded.First() == 0xFF;
 
             if (BitConverter.IsLittleEndian)
             {
-                if (!negative)
-                {
-                    unpaddedBytes.Insert(0, 0x00);
-                }
-                encoded = unpaddedBytes.ToArray().Reverse().ToArray();
+                encoded = encoded.Reverse().ToArray();
             }
+
+            if (negative)
+            {
+                return new BigInteger(encoded) - new BigInteger("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".HexToByteArray()) - 1;
+            }
+
+            //foreach (byte item in encoded)
+            //{
+            //    if ((item == 0 || item == 0xFF) && paddedPrefix)
+            //    {
+            //        if (item == 0xFF)
+            //        {
+            //            negative = true;
+            //        }
+            //    }
+
+            //    if (!(item == 0 || item == 0xFF) && paddedPrefix)
+            //    {
+            //        paddedPrefix = false;
+            //    }
+
+            //    if (!paddedPrefix)
+            //    {
+            //        unpaddedBytes.Add(item);
+            //    }
+            //}
+
+            //if (!unpaddedBytes.Any()) unpaddedBytes.Add(encoded.Last());
+
+            //if (BitConverter.IsLittleEndian)
+            //{
+            //    if (!negative)
+            //    {
+            //        unpaddedBytes.Insert(0, 0x00);
+            //    }
+            //    encoded = unpaddedBytes.ToArray().Reverse().ToArray();
+            //}
 
             return new BigInteger(encoded);
         }

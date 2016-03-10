@@ -7,7 +7,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
     {
         public static string ToHex(this byte[] value)
         {
-            return string.Concat(value.Select(b => b.ToString("x2")));
+            return string.Concat(value.Select(b =>  b.ToString("x2")));
         }
 
         public static string ToHexCompact(this byte[] value)
