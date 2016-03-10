@@ -18,7 +18,11 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public string EncodeRequest(string contractByteCode, Parameter[] parameters, params object[] values)
         {
-            var parametersEncoded = EncodeParameters(parameters, values).ToHex();
+            var parametersEncoded = "";
+            if (values != null)
+            {
+                parametersEncoded = EncodeParameters(parameters, values).ToHex();
+            }
 
             return EncodeRequest(contractByteCode, parametersEncoded);
         }

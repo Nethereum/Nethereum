@@ -11,6 +11,9 @@ namespace Nethereum.Web3.Sample
             //var contractDeploymentAndCallTest = new ContractDeploymentAndCall();
             //Console.WriteLine(contractDeploymentAndCallTest.Test().Result);
             
+            var intTests = new IntTypeIntegrationTests();
+            Console.WriteLine(intTests.Test().Result);
+
             var personalTest = new PersonalTest();
             Console.WriteLine(personalTest.Test().Result);
 

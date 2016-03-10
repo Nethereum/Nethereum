@@ -95,8 +95,6 @@ namespace Nethereum.ABI.Tests
             Assert.Equal(expected, result.ToString());
         }
 
-
-
         [Theory]
         [InlineData("-1000000000", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffc4653600")]
         [InlineData("-124346577657532", "0xffffffffffffffffffffffffffffffffffffffffffffffffffff8ee84e68e144")]
@@ -145,8 +143,5 @@ namespace Nethereum.ABI.Tests
             var result = intType.Decode<BigInteger>("0x0000000000000000000000000000000000000000000000000000000000000020");
             Assert.Equal(new BigInteger(32), result);
         }
-
-       
-
     }
 }
