@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Client;
@@ -71,7 +73,7 @@ namespace Nethereum.Web3
         {
             var ethFilterInput = contract.GetDefaultFilterInput(fromBlock);
             ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
-            return await ethNewFilter.SendRequestAsync(ethFilterInput);
+             return await ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
         public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3, BlockParameter fromBlock = null)

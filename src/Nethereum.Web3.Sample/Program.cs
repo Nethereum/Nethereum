@@ -8,14 +8,16 @@ namespace Nethereum.Web3.Sample
     {
         public static void Main(string[] args)
         {
+            var tokenTest = new RegisteredTokenTest();
+            Console.WriteLine(tokenTest.Test().Result);
             //var contractDeploymentAndCallTest = new ContractDeploymentAndCall();
             //Console.WriteLine(contractDeploymentAndCallTest.Test().Result);
-            
-            var intTests = new IntTypeIntegrationTests();
-            Console.WriteLine(intTests.Test().Result);
 
-            var personalTest = new PersonalTest();
-            Console.WriteLine(personalTest.Test().Result);
+            //var intTests = new IntTypeIntegrationTests();
+            //Console.WriteLine(intTests.Test().Result);
+
+            //var personalTest = new PersonalTest();
+            //Console.WriteLine(personalTest.Test().Result);
 
             //var contractConstructorDeploymentAndCall = new ContractConstructorDeploymentAndCall();
             //Console.WriteLine(contractConstructorDeploymentAndCall.Test().Result);

@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0-*",
+  "description": "Nethereum.Gen Console Application",
+  "authors": [ "JuanFran" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+
+  "dependencies": {
+    "Nethereum.ABI": "1.0.0-alpha-2",
+    "Nethereum.Hex": "1.0.0-alpha-2",
+    "Nethereum.Web3": "1.0.0-alpha-2"
+  },
+
+  "commands": {
+    "Nethereum.Gen": "Nethereum.Gen"
+  },
+
+  "frameworks": {
+    "dnx451": { },
+    "dnxcore50": {
+      "dependencies": {
+        "Microsoft.CSharp": "4.0.1-beta-23516",
+        "System.Collections": "4.0.11-beta-23516",
+        "System.Console": "4.0.0-beta-23516",
+        "System.Linq": "4.0.1-beta-23516",
+        "System.Threading": "4.0.11-beta-23516"
+      }
+    }
+  }
+}

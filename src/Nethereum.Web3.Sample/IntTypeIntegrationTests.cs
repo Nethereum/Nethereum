@@ -6,6 +6,8 @@ using Xunit;
 
 namespace Nethereum.Web3.Sample
 {
+
+
     public class IntTypeIntegrationTests
     {
         public async Task<string> Test()
@@ -15,40 +17,40 @@ namespace Nethereum.Web3.Sample
               contract test { 
     
     
-    function test1() returns(int) { 
-       int d = 3457987492347979798742;
-       return d;
-    }
+                function test1() returns(int) { 
+                   int d = 3457987492347979798742;
+                   return d;
+                }
     
-      function test2(int d) returns(int) { 
-       return d;
-    }
+                  function test2(int d) returns(int) { 
+                   return d;
+                }
     
-    function test3(int d)returns(int){
-        int x = d + 1 -1;
-        return x;
-    }
+                function test3(int d)returns(int){
+                    int x = d + 1 -1;
+                    return x;
+                }
     
-    function test4(int d)returns(bool){
-        return d == 3457987492347979798742;
-    }
+                function test4(int d)returns(bool){
+                    return d == 3457987492347979798742;
+                }
     
-    function test5(int d)returns(bool){
-        return d == -3457987492347979798742;
-    }
+                function test5(int d)returns(bool){
+                    return d == -3457987492347979798742;
+                }
     
-    function test6(int d)returns(bool){
-        return d == 500;
-    }
+                function test6(int d)returns(bool){
+                    return d == 500;
+                }
     
-    function test7(int256 d)returns(bool){
-        return d == 74923479797565;
-    }
+                function test7(int256 d)returns(bool){
+                    return d == 74923479797565;
+                }
     
-    function test8(int256 d)returns(bool){
-        return d == 9223372036854775808;
-    }
-}
+                function test8(int256 d)returns(bool){
+                    return d == 9223372036854775808;
+                }
+            }
            }
            */
 

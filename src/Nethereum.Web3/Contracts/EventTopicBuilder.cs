@@ -16,6 +16,7 @@ namespace Nethereum.Web3
 
         public object GetSignaguteTopic()
         {
+            
             return new[] {eventABI.Sha33Signature};
         }
 
@@ -26,6 +27,7 @@ namespace Nethereum.Web3
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic)
         {
+
             return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1) , GetValueTopic(secondTopic, 2) };
         }
 
@@ -49,6 +51,7 @@ namespace Nethereum.Web3
                 if (values[i] != null)
                 {
                     encoded[i] = "0x" + parameter.ABIType.Encode(values[i]).ToHex();
+                    
                 }
                
             }

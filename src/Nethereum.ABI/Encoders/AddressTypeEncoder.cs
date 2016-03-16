@@ -31,6 +31,9 @@ namespace Nethereum.ABI.Encoders
                 {
                     throw new Exception("Invalid address (should be 20 bytes length): " + addr.ToHex());
                 }
+
+                if (addr[i] == 0xFF) addr[i] = 0;
+
             }
             return addr;
         }
