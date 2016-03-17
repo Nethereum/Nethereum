@@ -2,3 +2,6 @@
 	path = Nethereum-XS/JsonRpc.Router
 	url = git://github.com/Nethereum/JsonRpc.Router.git
 	branch = DevQA
+[submodule "Nethereum-XS/Netherum.Maker"]
+	path = Nethereum-XS/Netherum.Maker
+	url = https://github.com/Nethereum/Netherum.Maker.git

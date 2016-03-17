@@ -1,7 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum-XS", "Nethereum-XS.csproj", "{590E4431-4EA0-42A3-86FF-4F748C9FD514}"
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum-XS", "Nethereum-XS.csproj", "{590E4431-4EA0-42A3-87FF-4F748C9FD514}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildProjectFile", "BuildProjectFile\BuildProjectFile.csproj", "{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}"
 EndProject
@@ -11,13 +13,16 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{590E4431-4EA0-42A3-86FF-4F748C9FD514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{590E4431-4EA0-42A3-86FF-4F748C9FD514}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{590E4431-4EA0-42A3-86FF-4F748C9FD514}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{590E4431-4EA0-42A3-86FF-4F748C9FD514}.Release|Any CPU.Build.0 = Release|Any CPU
+		{590E4431-4EA0-42A3-87FF-4F748C9FD514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{590E4431-4EA0-42A3-87FF-4F748C9FD514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{590E4431-4EA0-42A3-87FF-4F748C9FD514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{590E4431-4EA0-42A3-87FF-4F748C9FD514}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

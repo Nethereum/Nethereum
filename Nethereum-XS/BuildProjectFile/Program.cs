@@ -17,8 +17,9 @@ namespace BuildProjectFile
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\RPCRequestResponseHandlers", "RPCRequestResponseHandlers"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
+            stringBuilder.Append(CreateOutputFolder("Netherum.Maker\\Nethereum.Maker", "Maker"));
 
-			var fileOutputPath = buildPath + "Nethereum-XS.csproj";
+            var fileOutputPath = buildPath + "Nethereum-XS.csproj";
 			if (File.Exists (fileOutputPath))
 				File.Delete (fileOutputPath);
 			
