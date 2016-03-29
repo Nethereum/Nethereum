@@ -49,7 +49,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public FunctionABI BuildFunction(dynamic function)
         {
-            var functionABI = new FunctionABI(function.name, function.constant);
+            var functionABI = new FunctionABI(function.name, function.constant, TryGetSerpentValue(function));
             functionABI.InputParameters = BuildFunctionParameters(function.inputs);
             functionABI.OutputParameters = BuildFunctionParameters(function.outputs);
             return functionABI;
@@ -62,13 +62,38 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (dynamic input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter(input.type, input.name, parameterOrder);
+                var parameter = new Parameter(input.type, input.name, parameterOrder, TryGetSignatureValue(input));
                 parameters.Add(parameter);
             }
 
             return parameters.ToArray();
         }
 
+        public bool TryGetSerpentValue(dynamic function)
+        {
+            try
+            {
+                return function.serpent;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public string TryGetSignatureValue(dynamic parameter)
+        {
+            try
+            {
+                return parameter.signature;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        
         public EventABI BuildEvent(dynamic eventobject)
         {
             var eventABI = new EventABI(eventobject.name);

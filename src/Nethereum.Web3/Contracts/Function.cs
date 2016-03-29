@@ -45,6 +45,33 @@ namespace Nethereum.Web3
             return await base.CallAsync<TReturn>(encodedInput, callInput, blockParameter);
         }
 
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(params object[] functionInput) where TReturn: new()
+        {
+            var encodedInput = GetData(functionInput);
+            return await base.CallAsync<TReturn>(new TReturn(), encodedInput);
+        }
+
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(string from, HexBigInteger gas,
+            HexBigInteger value, TReturn functionOutput, params object[] functionInput) where TReturn : new()
+        {
+            var encodedInput = GetData(functionInput);
+            return await base.CallAsync<TReturn>(new TReturn(), encodedInput, from, gas, value);
+        }
+
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(
+            CallInput callInput, params object[] functionInput) where TReturn : new()
+        {
+            var encodedInput = GetData(functionInput);
+            return await base.CallAsync<TReturn>(new TReturn(), encodedInput, callInput);
+        }
+
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(
+            CallInput callInput, BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
+        {
+            var encodedInput = GetData(functionInput);
+            return await base.CallAsync<TReturn>(new TReturn(), encodedInput, callInput, blockParameter);
+        }
+
         public async Task<string> SendTransactionAsync(string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -78,28 +105,55 @@ namespace Nethereum.Web3
         {
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput) where TReturn : new()
+        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput)
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
+            return await base.CallAsync<TReturn>(encodedInput);
+        }
+
+        public async Task<TReturn> CalltAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
+            return await base.CallAsync<TReturn>(encodedInput, from, gas, value);
+        }
+
+        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
+            CallInput callInput, TReturn functionOutput) 
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
+            return await base.CallAsync<TReturn>(encodedInput, callInput);
+        }
+
+        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
+            CallInput callInput, BlockParameter blockParameter, TReturn functionOutput)         {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
+            return await base.CallAsync<TReturn>( encodedInput, callInput, blockParameter);
+        }
+
+
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(TFunctionInput functionInput) where TReturn : new()
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
             return await base.CallAsync<TReturn>(new TReturn(), encodedInput);
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value) where TReturn : new()
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
             return await base.CallAsync<TReturn>(new TReturn(), encodedInput, from, gas, value);
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput) where TReturn : new()
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(TFunctionInput functionInput,
+            CallInput callInput, TReturn functionOutput) where TReturn : new()
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
             return await base.CallAsync<TReturn>(new TReturn(), encodedInput, callInput);
         }
 
-        public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput, BlockParameter blockParameter) where TReturn : new()
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>(TFunctionInput functionInput,
+            CallInput callInput, BlockParameter blockParameter, TReturn functionOutput) where TReturn : new()
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
             return await base.CallAsync<TReturn>(new TReturn(), encodedInput, callInput, blockParameter);

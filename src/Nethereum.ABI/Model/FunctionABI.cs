@@ -2,15 +2,17 @@ namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionABI
     {
-
         private SignatureEncoder signatureEncoder;
 
-        public FunctionABI(string name, bool constant)
+        public FunctionABI(string name, bool constant, bool serpent = false)
         {
             Name = name;
+            Serpent = serpent;
             Constant = constant;
-            signatureEncoder = new SignatureEncoder();   
+            signatureEncoder = serpent ? new SerpentSignatureEncoder() : new SignatureEncoder();   
         }
+
+        public bool Serpent { get; private set; }
 
         public bool Constant { get; private set; }
 

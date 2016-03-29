@@ -5,11 +5,12 @@ namespace Nethereum.ABI.FunctionEncoding
     public class Parameter
     {
 
-        public Parameter(string type, string name = null, int order = 1)
+        public Parameter(string type, string name = null, int order = 1, string serpentSignature = null)
         {
             this.Name = name;
             this.Type = type;
             this.Order = order;
+            this.SerpentSignature = serpentSignature;
             this.ABIType = ABIType.CreateABIType(type);
         }
 
@@ -24,5 +25,6 @@ namespace Nethereum.ABI.FunctionEncoding
         public int Order { get; private set; }
 
         public bool Indexed { get; set; }
+        public string SerpentSignature { get; private set; }
     }
 }

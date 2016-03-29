@@ -36,7 +36,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{CDD3B024
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A36B1E91-CE03-43D6-AA50-9C893AD33B75}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Gen", "Nethereum.Gen\Nethereum.Gen.xproj", "{57229BA6-2EB6-43EB-A3E4-1CC489D23766}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Gen", "src\Nethereum.Gen\Nethereum.Gen.xproj", "{57229BA6-2EB6-43EB-A3E4-1CC489D23766}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

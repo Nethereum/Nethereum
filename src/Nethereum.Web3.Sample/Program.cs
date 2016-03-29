@@ -8,8 +8,7 @@ namespace Nethereum.Web3.Sample
     {
         public static void Main(string[] args)
         {
-            var tokenTest = new RegisteredTokenTest();
-            Console.WriteLine(tokenTest.Test().Result);
+            
             //var contractDeploymentAndCallTest = new ContractDeploymentAndCall();
             //Console.WriteLine(contractDeploymentAndCallTest.Test().Result);
 
