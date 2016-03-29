@@ -10,6 +10,7 @@ namespace Nethereum.ABI.FunctionEncoding
         
         public string EncodeRequest<T>(T functionInput)
         {
+           
             var type = typeof(T);
 
             var function = type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>();
