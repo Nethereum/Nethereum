@@ -5,6 +5,6 @@ namespace RPCRequestResponseHandlers
     public interface IRpcRequestHandler
     {
         string MethodName { get; }
-        RpcClient Client { get; }
+        IClient Client { get; }
     }
 }

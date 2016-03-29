@@ -1,0 +1,26 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "Nethereum.Web3.Ipc.Sample Console Application",
+  "authors": [ "JuanFran" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+
+  "dependencies": {
+    "Nethereum.JsonRpc.IpcClient": "1.0.0-*",
+    "Nethereum.Web3": "1.0.0-alpha-2"
+  },
+
+  "commands": {
+    "Nethereum.Web3.Ipc.Sample": "Nethereum.Web3.Ipc.Sample"
+  },
+
+  "frameworks": {
+    "dnx451": { }
+    }
+  }
+

@@ -12,8 +12,8 @@ namespace RPCRequestResponseHandlers
     {
         public string MethodName { get; }
 
-        public RpcClient Client { get; }
-        public RpcRequestResponseHandler(RpcClient client, string methodName)
+        public IClient Client { get; }
+        public RpcRequestResponseHandler(IClient client, string methodName)
         {
             this.MethodName = methodName;
             this.Client = client;

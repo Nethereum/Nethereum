@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -13,7 +13,7 @@ namespace Nethereum.Web3
     {
        
 
-        public Function(RpcClient rpcClient, Contract contract, FunctionABI function) : base(rpcClient, contract, function)
+        public Function(IClient rpcClient, Contract contract, FunctionABI function) : base(rpcClient, contract, function)
         {
            
         }
@@ -101,7 +101,7 @@ namespace Nethereum.Web3
     public class Function<TFunctionInput> : FunctionBase
     {
 
-        public Function(RpcClient rpcClient, Contract contract, FunctionABI functionABI) : base(rpcClient, contract, functionABI)
+        public Function(IClient rpcClient, Contract contract, FunctionABI functionABI) : base(rpcClient, contract, functionABI)
         {
         }
 

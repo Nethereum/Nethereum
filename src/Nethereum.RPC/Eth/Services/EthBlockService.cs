@@ -1,20 +1,11 @@
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.Web3
 {
     public class EthBlockService : RpcClientWrapper
     {
-        public EthBlockNumber GetBlockNumber { get; private set; }
-        public EthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; private set; }
-        public EthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; private set; }
-        public EthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; private set; }
-        public EthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; private set; }
-        public EthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; private set; }
-        public EthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; private set; }
-
-        public EthBlockService(RpcClient client) : base(client)
+        public EthBlockService(IClient client) : base(client)
         {
             GetBlockNumber = new EthBlockNumber(client);
             GetBlockTransactionCountByHash = new EthGetBlockTransactionCountByHash(client);
@@ -25,5 +16,12 @@ namespace Nethereum.Web3
             GetBlockWithTransactionsHashesByNumber = new EthGetBlockWithTransactionsHashesByNumber(client);
         }
 
+        public EthBlockNumber GetBlockNumber { get; private set; }
+        public EthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; private set; }
+        public EthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; private set; }
+        public EthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; private set; }
+        public EthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; private set; }
+        public EthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; private set; }
+        public EthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; private set; }
     }
 }

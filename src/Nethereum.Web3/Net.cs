@@ -1,4 +1,5 @@
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Net;
 
 namespace Nethereum.Web3
@@ -9,7 +10,7 @@ namespace Nethereum.Web3
         public NetPeerCount PeerCount { get; private set; }
         public NetVersion Version { get; private set; }
 
-        public Net(RpcClient client) : base(client)
+        public Net(IClient client) : base(client)
         {
             Listening = new NetListening(client);
             PeerCount = new NetPeerCount(client);

@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0-alpha-2",
+  "description": "JsonRpc.Client additions to provide a generic inteface, request and response handlers",
+  "authors": [ "Juan Blanco" ],
+  "tags": [ "Json", "RPC" ],
+  "projectUrl": "http://www.nethereum.com",
+  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
+  "dependencies": {
+    "JsonRpc.Client": "1.0.0-rc1-6",
+    "Newtonsoft.Json": "8.0.2"
+  },
+  "frameworks": {
+    "net451": { },
+    "dnx451": { },
+      "dnxcore50": {
+        "dependencies": {
+          "System.Collections": "4.0.11-beta-23516",
+          "System.Runtime": "4.0.21-beta-23516",
+          "System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+          "System.Threading": "4.0.11-beta-23516",
+          "System.IO.Compression": "4.1.0-beta-23516"
+        }
+      },
+      "dotnet52": {
+        "dependencies": {
+          "System.Collections": "4.0.11-beta-23516",
+          "System.Runtime": "4.0.21-beta-23516",
+          "System.Runtime.Serialization.Primitives": "4.1.0-beta-23516",
+          "System.Threading": "4.0.11-beta-23516",
+          "System.IO.Compression": "4.1.0-beta-23516"
+        }
+      }
+    }
+  }

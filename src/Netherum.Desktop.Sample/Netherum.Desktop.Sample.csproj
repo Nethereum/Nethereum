@@ -53,6 +53,9 @@
       <HintPath>..\..\artifacts\bin\Nethereum.Hex\Debug\dotnet5.2\Nethereum.Hex.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Nethereum.JsonRpc.Client">
+      <HintPath>..\..\artifacts\bin\Nethereum.JsonRpc.Client\Debug\net451\Nethereum.JsonRpc.Client.dll</HintPath>
+    </Reference>
     <Reference Include="Nethereum.RPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\artifacts\bin\Nethereum.RPC\Debug\net451\Nethereum.RPC.dll</HintPath>
@@ -66,10 +69,6 @@
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="RPCRequestResponseHandlers, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\artifacts\bin\RPCRequestResponseHandlers\Debug\dotnet5.2\RPCRequestResponseHandlers.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

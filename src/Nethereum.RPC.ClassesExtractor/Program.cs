@@ -5,7 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth;
 using System.Reflection;
-using RPCRequestResponseHandlers;
+using Nethereum.JsonRpc.Client;
+
 
 namespace Nethereum.RPC.ClassesExtractor
 {

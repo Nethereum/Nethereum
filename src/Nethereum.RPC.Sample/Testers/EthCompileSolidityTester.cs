@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Compilation;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -11,12 +11,12 @@ namespace Nethereum.RPC.Sample.Testers
         {
             var ethCompileSolidty = new EthCompileSolidity(client);
             var contractCode = "contract test { function multiply(uint a) returns(uint d) { return a * 7; } }";
-            return await ethCompileSolidty.SendRequestAsync( contractCode);
+            return await ethCompileSolidty.SendRequestAsync(contractCode);
         }
 
         public Type GetRequestType()
         {
-            return typeof(EthCompileSolidity);
+            return typeof (EthCompileSolidity);
         }
     }
 }

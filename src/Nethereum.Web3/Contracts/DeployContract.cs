@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -9,12 +9,12 @@ namespace Nethereum.Web3
 {
     public class DeployContract
     {
-        private readonly RpcClient client;
+        private readonly IClient client;
         private EthSendTransaction ethSendTransaction;
         private ConstructorCallEncoder constructorCallEncoder;
         private ABIDeserialiser abiDeserialiser;
 
-        public DeployContract(RpcClient client)
+        public DeployContract(IClient client)
         {
             this.client = client;
             this.ethSendTransaction = new EthSendTransaction(client);

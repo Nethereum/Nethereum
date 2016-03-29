@@ -1,8 +1,7 @@
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
 using edjCase.JsonRpc.Core;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using RPCRequestResponseHandlers;
 
 namespace Nethereum.RPC.Eth
 {
@@ -32,7 +31,7 @@ namespace Nethereum.RPC.Eth
     /// </Summary>
     public class EthGetCode : RpcRequestResponseHandler<string>, IDefaultBlock
     {
-        public EthGetCode(RpcClient client) : base(client, ApiMethods.eth_getCode.ToString())
+        public EthGetCode(IClient client) : base(client, ApiMethods.eth_getCode.ToString())
         {
             DefaultBlock = BlockParameter.CreateLatest();
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
@@ -31,7 +32,7 @@ namespace Nethereum.Web3
 
         }
 
-        public Eth(RpcClient client):base(client)
+        public Eth(IClient client):base(client)
         {
             this.Client = client;
            

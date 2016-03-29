@@ -3,20 +3,18 @@ using System.Collections;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Sample.Testers;
 
 namespace Nethereum.RPC.Sample
 {
     public class Program
     {
-
         public static void Main(string[] args)
         {
+            var client = new RpcClient(new Uri("http://localhost:8545/"));
 
-            RpcClient client = new RpcClient(new Uri("http://localhost:8545/"));
-
-            Type testerType = typeof (IRPCRequestTester);
+            var testerType = typeof (IRPCRequestTester);
             var assembly = testerType.GetTypeInfo().Assembly;
             var types = assembly.GetTypes();
 
@@ -28,7 +26,7 @@ namespace Nethereum.RPC.Sample
                     try
                     {
                         var testerResult = tester.ExecuteTestAsync(client).Result;
-                        
+
                         ConsoleOutputResult(testerResult, tester.GetRequestType());
                     }
                     catch (Exception ex)
@@ -39,7 +37,6 @@ namespace Nethereum.RPC.Sample
             }
 
             Console.ReadLine();
-
         }
 
         public static void ConsoleOutputResult(object result, Type methodType)
@@ -51,8 +48,8 @@ namespace Nethereum.RPC.Sample
             Console.WriteLine();
             if (result != null)
             {
-                IEnumerable array = result as IEnumerable;
-                if (array != null && !(result is String))
+                var array = result as IEnumerable;
+                if (array != null && !(result is string))
                 {
                     foreach (var item in array)
                     {
@@ -81,18 +78,13 @@ namespace Nethereum.RPC.Sample
                 }
                 return sb.ToString();
             }
-            else
-            {
-                return input.ToString();
-            }
-
+            return input.ToString();
         }
 
         public static bool IsSimpleType(Type type)
         {
             return type.GetTypeInfo().IsPrimitive || type.GetTypeInfo().IsEnum || type == typeof (string) ||
-                   type == typeof (decimal) || type == typeof(BigInteger);
+                   type == typeof (decimal) || type == typeof (BigInteger);
         }
-
     }
 }

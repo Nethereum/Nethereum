@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Mining;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -16,8 +15,7 @@ namespace Nethereum.RPC.Sample.Testers
 
         public Type GetRequestType()
         {
-            return typeof(EthHashrate);
+            return typeof (EthHashrate);
         }
     }
 }
-        

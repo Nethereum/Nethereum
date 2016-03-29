@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
 
 namespace Nethereum.Web3
@@ -13,7 +13,7 @@ namespace Nethereum.Web3
         public PersonalNewAccount NewAccount { get; private set; }
         public PersonalUnlockAccount UnlockAccount { get; private set; }
 
-        public Personal(RpcClient client) : base(client)
+        public Personal(IClient client) : base(client)
         {
             ListAccounts = new PersonalListAccounts(client);
             NewAccount = new PersonalNewAccount(client);

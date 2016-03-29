@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
 using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -12,13 +11,16 @@ namespace Nethereum.RPC.Sample.Testers
         public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGetTransactionByBlockNumberAndIndex = new EthGetTransactionByBlockNumberAndIndex(client);
-            return (object)await ethGetTransactionByBlockNumberAndIndex.SendRequestAsync( new HexBigInteger(20), new HexBigInteger(0));
+            return
+                (object)
+                    await
+                        ethGetTransactionByBlockNumberAndIndex.SendRequestAsync(new HexBigInteger(20),
+                            new HexBigInteger(0));
         }
 
         public Type GetRequestType()
         {
-            return typeof(EthGetTransactionByBlockNumberAndIndex);
+            return typeof (EthGetTransactionByBlockNumberAndIndex);
         }
     }
 }
-        

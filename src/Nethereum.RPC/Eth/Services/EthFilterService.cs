@@ -1,24 +1,11 @@
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Web3
 {
     public class EthFilterService : RpcClientWrapper
     {
-        public EthGetFilterChangesForBlockOrTransaction GetFilterChangesForBlockOrTransaction { get; private set; }
-        public EthGetFilterChangesForEthNewFilter GetFilterChangesForEthNewFilter { get; private set; }
-        public EthGetFilterLogsForBlockOrTransaction GetFilterLogsForBlockOrTransaction { get; private set; }
-        public EthGetFilterLogsForEthNewFilter GetFilterLogsForEthNewFilter { get; private set; }
-
-        public EthNewBlockFilter NewBlockFilter { get; private set; }
-        public EthNewFilter NewFilter { get; private set; }
-        public EthNewPendingTransactionFilter NewPendingTransactionFilter { get; private set; }
-
-        public EthUninstallFilter UninstallFilter { get; private set; }
-        public EthGetLogs GetLogs { get; private set; }
-
-        public EthFilterService(RpcClient client) : base(client)
+        public EthFilterService(IClient client) : base(client)
         {
             GetFilterChangesForBlockOrTransaction = new EthGetFilterChangesForBlockOrTransaction(client);
             GetFilterChangesForEthNewFilter = new EthGetFilterChangesForEthNewFilter(client);
@@ -30,5 +17,17 @@ namespace Nethereum.Web3
             NewPendingTransactionFilter = new EthNewPendingTransactionFilter(client);
             UninstallFilter = new EthUninstallFilter(client);
         }
+
+        public EthGetFilterChangesForBlockOrTransaction GetFilterChangesForBlockOrTransaction { get; private set; }
+        public EthGetFilterChangesForEthNewFilter GetFilterChangesForEthNewFilter { get; private set; }
+        public EthGetFilterLogsForBlockOrTransaction GetFilterLogsForBlockOrTransaction { get; private set; }
+        public EthGetFilterLogsForEthNewFilter GetFilterLogsForEthNewFilter { get; private set; }
+
+        public EthNewBlockFilter NewBlockFilter { get; private set; }
+        public EthNewFilter NewFilter { get; private set; }
+        public EthNewPendingTransactionFilter NewPendingTransactionFilter { get; private set; }
+
+        public EthUninstallFilter UninstallFilter { get; private set; }
+        public EthGetLogs GetLogs { get; private set; }
     }
 }

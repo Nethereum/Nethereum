@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -12,13 +11,12 @@ namespace Nethereum.RPC.Sample.Testers
         public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGetBlockTransactionCountByNumber = new EthGetBlockTransactionCountByNumber(client);
-            return await ethGetBlockTransactionCountByNumber.SendRequestAsync( BlockParameter.CreateLatest());
+            return await ethGetBlockTransactionCountByNumber.SendRequestAsync(BlockParameter.CreateLatest());
         }
 
         public Type GetRequestType()
         {
-            return typeof(EthGetBlockTransactionCountByNumber);
+            return typeof (EthGetBlockTransactionCountByNumber);
         }
     }
 }
-        

@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
-    /// Object - The transaction call object
+    ///     Object - The transaction call object
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     public class CallInput
@@ -15,66 +15,65 @@ namespace Nethereum.RPC.Eth.DTOs
 
         public CallInput(string data, string addressTo)
         {
-            this.Data = data;
-            this.To = addressTo;
-            
+            Data = data;
+            To = addressTo;
         }
 
-        public CallInput(string data, string addressTo, HexBigInteger value):this(data, addressTo)
+        public CallInput(string data, string addressTo, HexBigInteger value) : this(data, addressTo)
         {
-            this.Value = value;
+            Value = value;
         }
 
-        public CallInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger value) : this(data, addressTo, value)
+        public CallInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger value)
+            : this(data, addressTo, value)
         {
-            this.From = adddressFrom;
-            this.Gas = gas;
+            From = adddressFrom;
+            Gas = gas;
         }
 
         public CallInput(string data, HexBigInteger gas, string addressFrom)
         {
-           
-            this.Data = data;
-            this.Gas = gas;
-            this.From = addressFrom;
+            Data = data;
+            Gas = gas;
+            From = addressFrom;
         }
 
 
-    
         /// <summary>
-        ///  DATA, 20 Bytes - The address the transaction is send from.
+        ///     DATA, 20 Bytes - The address the transaction is send from.
         /// </summary>
         [JsonProperty(PropertyName = "from")]
         public string From { get; set; }
 
         /// <summary>
-        /// DATA, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
+        ///     DATA, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
         /// </summary>
         [JsonProperty(PropertyName = "to")]
         public string To { get; set; }
 
         /// <summary>
-        /// QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return unused gas.
+        ///     QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return
+        ///     unused gas.
         /// </summary>
         [JsonProperty(PropertyName = "gas")]
         public HexBigInteger Gas { get; set; }
 
         /// <summary>
-        /// gasPrice: QUANTITY - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
+        ///     gasPrice: QUANTITY - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
         /// </summary>
         [JsonProperty(PropertyName = "gasPrice")]
         public HexBigInteger GasPrice { get; set; }
 
         /// <summary>
-        /// value: QUANTITY - (optional) Integer of the value send with this transaction
+        ///     value: QUANTITY - (optional) Integer of the value send with this transaction
         /// </summary>
         [JsonProperty(PropertyName = "value")]
         public HexBigInteger Value { get; set; }
+
         /// <summary>
-        /// data: DATA - (optional) The compiled code of a contract
+        ///     data: DATA - (optional) The compiled code of a contract
         /// </summary>
         [JsonProperty(PropertyName = "data")]
         public string Data { get; set; }
-
     }
 }

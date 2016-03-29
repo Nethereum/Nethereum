@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -10,13 +10,12 @@ namespace Nethereum.RPC.Sample.Testers
         public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGetBalance = new EthGetBalance(client);
-            return await ethGetBalance.SendRequestAsync( "0x12890d2cce102216644c59dae5baed380d84830c");
+            return await ethGetBalance.SendRequestAsync("0x12890d2cce102216644c59dae5baed380d84830c");
         }
 
         public Type GetRequestType()
         {
-            return typeof(EthGetBalance);
+            return typeof (EthGetBalance);
         }
     }
 }
-        

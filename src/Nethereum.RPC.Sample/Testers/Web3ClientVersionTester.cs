@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Web3;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -15,7 +15,7 @@ namespace Nethereum.RPC.Sample.Testers
 
         public Type GetRequestType()
         {
-            return typeof(Web3ClientVersion);
+            return typeof (Web3ClientVersion);
         }
     }
 }

@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "Nethereum.Hex": "1.0.0-*",
-    "RPCRequestResponseHandlers": "1.0.0-*"
+    "Nethereum.JsonRpc.Client": "1.0.0-*"
 
   }
 }

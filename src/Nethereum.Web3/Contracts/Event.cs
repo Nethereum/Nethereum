@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -13,7 +13,7 @@ namespace Nethereum.Web3
 {
     public class Event
     {
-        private RpcClient client;
+        private IClient client;
         private EventABI eventABI;
 
         private Contract contract;
@@ -143,7 +143,7 @@ namespace Nethereum.Web3
 
     
 
-        public Event(RpcClient client, Contract contract, EventABI eventABI)
+        public Event(IClient client, Contract contract, EventABI eventABI)
         {
             this.client = client;
             this.contract = contract;

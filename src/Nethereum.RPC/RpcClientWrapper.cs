@@ -1,14 +1,14 @@
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Web3
 {
     public class RpcClientWrapper
     {
-        protected RpcClient Client { get; set; }
-
-        public RpcClientWrapper(RpcClient client)
+        public RpcClientWrapper(IClient client)
         {
             Client = client;
         }
+
+        protected IClient Client { get; set; }
     }
 }

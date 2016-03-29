@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -9,7 +9,7 @@ namespace Nethereum.Web3
 {
     public abstract class FunctionBase
     {
-        private RpcClient rpcClient;
+        private IClient rpcClient;
 
         private readonly Contract contract;
 
@@ -25,7 +25,7 @@ namespace Nethereum.Web3
         private EthSendTransaction ethSendTransaction;
         protected FunctionABI FunctionABI { get; set; }
 
-        protected FunctionBase(RpcClient rpcClient, Contract contract, FunctionABI functionABI )
+        protected FunctionBase(IClient rpcClient, Contract contract, FunctionABI functionABI )
         {
             FunctionABI = functionABI;
             this.rpcClient = rpcClient;

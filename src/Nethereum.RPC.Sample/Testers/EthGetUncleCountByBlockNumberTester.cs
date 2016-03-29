@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
 using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Uncles;
 
 namespace Nethereum.RPC.Sample.Testers
@@ -12,13 +11,12 @@ namespace Nethereum.RPC.Sample.Testers
         public async Task<dynamic> ExecuteTestAsync(RpcClient client)
         {
             var ethGetUncleCountByBlockNumber = new EthGetUncleCountByBlockNumber(client);
-            return await ethGetUncleCountByBlockNumber.SendRequestAsync( new HexBigInteger(2));
+            return await ethGetUncleCountByBlockNumber.SendRequestAsync(new HexBigInteger(2));
         }
 
         public Type GetRequestType()
         {
-            return typeof(EthGetUncleCountByBlockNumber);
+            return typeof (EthGetUncleCountByBlockNumber);
         }
     }
 }
-        

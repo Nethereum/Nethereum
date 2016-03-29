@@ -1,5 +1,5 @@
 ﻿using System;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.Util;
 
 namespace Nethereum.Web3
@@ -7,11 +7,22 @@ namespace Nethereum.Web3
     public class Web3
     {
         public UnitConversion Convert { get; private set; }
-        private readonly Sha3Keccack sha3Keccack;
+        private Sha3Keccack sha3Keccack;
+
+        public Web3(IClient client)
+        {
+            this.Client = client;
+            InitialiseInnerServices();
+        }
 
         public Web3(string url = @"http://localhost:8545/")
         {
             IntialiseRpcClient(url);
+            InitialiseInnerServices();
+        }
+
+        private void InitialiseInnerServices()
+        {
             Eth = new Eth(Client);
             Shh = new Shh(Client);
             Net = new Net(Client);
@@ -20,7 +31,7 @@ namespace Nethereum.Web3
             sha3Keccack = new Sha3Keccack();
         }
 
-        public RpcClient Client { get; private set; }
+        public IClient Client { get; private set; }
 
         public Eth Eth { get; private set; }
         public Shh Shh { get; private set; }

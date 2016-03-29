@@ -14,7 +14,7 @@ namespace BuildProjectFile
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.ABI", "ABI"));
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.RPC", "RPC"));
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.Web3", "Web3"));
-			stringBuilder.Append(CreateOutputFolder ("..\\src\\RPCRequestResponseHandlers", "RPCRequestResponseHandlers"));
+			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.JsonRpc.Client", "NethereumJsonRpc"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
             stringBuilder.Append(CreateOutputFolder("Netherum.Maker\\Nethereum.Maker", "Maker"));

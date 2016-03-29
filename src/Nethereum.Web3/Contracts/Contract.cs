@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
@@ -12,7 +12,7 @@ namespace Nethereum.Web3
 {
     public class Contract
     {
-        public Contract(RpcClient client, string abi, string contractAddress) 
+        public Contract(IClient client, string abi, string contractAddress) 
         {
             this.ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
             this.Client = client;
@@ -22,7 +22,7 @@ namespace Nethereum.Web3
 
         private EthNewFilter ethNewFilter;
 
-        public RpcClient Client { get; private set; }
+        public IClient Client { get; private set; }
 
         public ContractABI ContractABI { get; set; }
 

@@ -1,4 +1,4 @@
-using edjCase.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Shh;
 
 namespace Nethereum.Web3
@@ -8,7 +8,7 @@ namespace Nethereum.Web3
         public ShhNewIdentity NewIdentity { get; private set; }
         public ShhVersion Version { get; private set; }
 
-        public Shh(RpcClient client) : base(client)
+        public Shh(IClient client) : base(client)
         {
             NewIdentity = new ShhNewIdentity(client);
             Version = new ShhVersion(client);

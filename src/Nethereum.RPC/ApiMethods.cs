@@ -46,7 +46,7 @@
         eth_getWork, //done
         eth_submitWork, //done
         eth_submitHashrate, //done
-        shh_post, 
+        shh_post,
         shh_version, //done
         shh_newIdentity, //done
         shh_hasIdentity,

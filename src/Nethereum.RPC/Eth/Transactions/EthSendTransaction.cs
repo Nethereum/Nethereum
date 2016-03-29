@@ -1,29 +1,24 @@
-﻿using System;
-using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
+﻿using System.Threading.Tasks;
 using edjCase.JsonRpc.Core;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using RPCRequestResponseHandlers;
 
 namespace Nethereum.RPC.Eth.Transactions
 {
-
-    public class EthSendTransaction : RpcRequestResponseHandler<String>
+    public class EthSendTransaction : RpcRequestResponseHandler<string>
     {
-        public EthSendTransaction(RpcClient client) : base(client, ApiMethods.eth_sendTransaction.ToString())
+        public EthSendTransaction(IClient client) : base(client, ApiMethods.eth_sendTransaction.ToString())
         {
-
         }
 
-        public async Task<String> SendRequestAsync( TransactionInput input, object id = null)
+        public async Task<string> SendRequestAsync(TransactionInput input, object id = null)
         {
-            return await base.SendRequestAsync( id, input);
+            return await base.SendRequestAsync(id, input);
         }
+
         public RpcRequest BuildRequest(TransactionInput input, object id = null)
         {
             return base.BuildRequest(id, input);
         }
-
-
     }
 }

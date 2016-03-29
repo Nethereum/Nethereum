@@ -1,12 +1,11 @@
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Compilation;
 
 namespace Nethereum.Web3
 {
-    public class EthCompilerService:RpcClientWrapper
+    public class EthCompilerService : RpcClientWrapper
     {
-        public EthCompilerService(RpcClient client) : base(client)
+        public EthCompilerService(IClient client) : base(client)
         {
             CompileLLL = new EthCompileLLL(client);
             CompileSerpent = new EthCompileSerpent(client);

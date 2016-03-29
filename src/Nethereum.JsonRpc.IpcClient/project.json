@@ -1,0 +1,14 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "Nethereum.JsonRpc.IpcClient Class Library",
+  "authors": [ "JuanFran" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+  "frameworks": {
+    "net451": { }
+  },
+  "dependencies": {
+    "Nethereum.JsonRpc.Client": "1.0.0-alpha-2"
+  }
+  }

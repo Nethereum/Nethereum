@@ -1,5 +1,4 @@
-using edjCase.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
@@ -7,23 +6,7 @@ namespace Nethereum.Web3
 {
     public class EthTransactionsService : RpcClientWrapper
     {
-        public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; private set; }
-        public EthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; private set; }
-        public EthGetTransactionByHash GetTransactionByHash { get; private set; }
-        public EthGetTransactionCount GetTransactionCount { get; private set; }
-        public EthGetTransactionReceipt GetTransactionReceipt { get; private set; }
-        public EthSendRawTransaction SendRawTransaction { get; private set; }
-        public EthSendTransaction SendTransaction { get; private set; }
-        public EthCall Call { get; private set; }
-        public EthEstimateGas EstimateGas { get; private set; }
-
-        public void SetDefaultBlock(BlockParameter blockParameter)
-        {
-            this.Call.DefaultBlock = blockParameter;
-            this.GetTransactionCount.DefaultBlock = blockParameter;
-        }
-
-        public EthTransactionsService(RpcClient client) : base(client)
+        public EthTransactionsService(IClient client) : base(client)
         {
             Call = new EthCall(client);
             EstimateGas = new EthEstimateGas(client);
@@ -34,6 +17,22 @@ namespace Nethereum.Web3
             GetTransactionReceipt = new EthGetTransactionReceipt(client);
             SendRawTransaction = new EthSendRawTransaction(client);
             SendTransaction = new EthSendTransaction(client);
+        }
+
+        public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; private set; }
+        public EthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; private set; }
+        public EthGetTransactionByHash GetTransactionByHash { get; private set; }
+        public EthGetTransactionCount GetTransactionCount { get; }
+        public EthGetTransactionReceipt GetTransactionReceipt { get; private set; }
+        public EthSendRawTransaction SendRawTransaction { get; private set; }
+        public EthSendTransaction SendTransaction { get; private set; }
+        public EthCall Call { get; }
+        public EthEstimateGas EstimateGas { get; private set; }
+
+        public void SetDefaultBlock(BlockParameter blockParameter)
+        {
+            Call.DefaultBlock = blockParameter;
+            GetTransactionCount.DefaultBlock = blockParameter;
         }
     }
 }

@@ -5,9 +5,40 @@ using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
-    [JsonConverter(typeof(BlockParameterJsonConverter))]
+    [JsonConverter(typeof (BlockParameterJsonConverter))]
     public class BlockParameter
     {
+        public enum BlockParameterType
+        {
+            latest,
+            earliest,
+            pending,
+            blockNumber
+        }
+
+        private BlockParameter(BlockParameterType type)
+        {
+            ParameterType = type;
+        }
+
+        public BlockParameter()
+        {
+            ParameterType = BlockParameterType.latest;
+        }
+
+        public BlockParameter(HexBigInteger blockNumber)
+        {
+            SetValue(blockNumber);
+        }
+
+        public BlockParameter(ulong blockNumber) : this(new HexBigInteger(blockNumber))
+        {
+        }
+
+        public HexBigInteger BlockNumber { get; private set; }
+
+        public BlockParameterType ParameterType { get; private set; }
+
         public static BlockParameter CreateLatest()
         {
             return new BlockParameter(BlockParameterType.latest);
@@ -23,65 +54,32 @@ namespace Nethereum.RPC.Eth.DTOs
             return new BlockParameter(BlockParameterType.pending);
         }
 
-        private BlockParameter(BlockParameterType type)
-        {
-            this.ParameterType = type;
-        }
-
-        public BlockParameter()
-        {
-            this.ParameterType = BlockParameterType.latest;
-        }
-
-        public BlockParameter(HexBigInteger blockNumber)
-        {
-            this.SetValue(blockNumber);
-        }
-
-        public BlockParameter(ulong blockNumber):this(new HexBigInteger(blockNumber))
-        {
-            
-        }
-
-
-
-        public enum BlockParameterType
-        {
-            latest,
-            earliest,
-            pending,
-            blockNumber
-        }
-
-        public HexBigInteger BlockNumber { get; private set; }
-
-        public BlockParameterType ParameterType { get; private set; }
-
-       
 
         public void SetValue(BlockParameterType parameterType)
         {
-            if (parameterType == BlockParameterType.blockNumber) throw new ArgumentException("Please provide the blockNumber when setting the type as blockNumber", "parameterType");
-            this.ParameterType = parameterType;
+            if (parameterType == BlockParameterType.blockNumber)
+                throw new ArgumentException("Please provide the blockNumber when setting the type as blockNumber",
+                    "parameterType");
+            ParameterType = parameterType;
             BlockNumber = null;
         }
 
-        public void SetValue(string blockNumberHex) 
+        public void SetValue(string blockNumberHex)
         {
-            this.ParameterType = BlockParameterType.blockNumber;
-            this.BlockNumber = new HexBigInteger(blockNumberHex);
+            ParameterType = BlockParameterType.blockNumber;
+            BlockNumber = new HexBigInteger(blockNumberHex);
         }
 
         public void SetValue(HexBigInteger blockNumber)
         {
-            this.ParameterType = BlockParameterType.blockNumber;
-            this.BlockNumber = blockNumber;
+            ParameterType = BlockParameterType.blockNumber;
+            BlockNumber = blockNumber;
         }
 
         public void SetValue(BigInteger blockNumber)
         {
-            this.ParameterType = BlockParameterType.blockNumber;
-            this.BlockNumber = new HexBigInteger(blockNumber);
+            ParameterType = BlockParameterType.blockNumber;
+            BlockNumber = new HexBigInteger(blockNumber);
         }
 
         public string GetRPCParam()
@@ -92,7 +90,5 @@ namespace Nethereum.RPC.Eth.DTOs
             }
             return ParameterType.ToString();
         }
-
-
     }
 }
