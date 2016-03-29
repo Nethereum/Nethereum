@@ -105,8 +105,15 @@ namespace Nethereum.Web3
         {
         }
 
+        public async Task<TReturn> CallAsync<TReturn>()
+        {
+            var encodedInput = FunctionABI.Sha3Signature;
+            return await base.CallAsync<TReturn>(encodedInput);
+        }
+
         public async Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput)
         {
+            
             var encodedInput = FunctionCallEncoder.EncodeRequest(functionInput);
             return await base.CallAsync<TReturn>(encodedInput);
         }
@@ -131,6 +138,11 @@ namespace Nethereum.Web3
             return await base.CallAsync<TReturn>( encodedInput, callInput, blockParameter);
         }
 
+        public async Task<TReturn> CallMultipleOutputAsync<TReturn>() where TReturn : new()
+        {
+            var encodedInput = FunctionABI.Sha3Signature;
+            return await base.CallAsync<TReturn>(new TReturn(), encodedInput);
+        }
 
         public async Task<TReturn> CallMultipleOutputAsync<TReturn>(TFunctionInput functionInput) where TReturn : new()
         {
