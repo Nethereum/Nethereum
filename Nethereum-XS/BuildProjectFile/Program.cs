@@ -97,11 +97,11 @@ static string fileTemplate1 =
   </PropertyGroup>
   <ItemGroup>
     <Reference Include=""System"" />
-    <Reference Include=""crypto"">
-      <HintPath>packages\Portable.BouncyCastle.1.8.1\lib\net45\crypto.dll</HintPath>
-    </Reference>
     <Reference Include=""Newtonsoft.Json"">
-      <HintPath>packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include=""BouncyCastle.Crypto"">
+      <HintPath>packages\BouncyCastle.Crypto.dll.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
     <Reference Include=""System.Net.Http"" />
     <Reference Include=""System.Numerics"" />
