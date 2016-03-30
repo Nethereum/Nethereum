@@ -364,12 +364,14 @@ This is the current TODO list in order of priority
 * ~~IPC (Client, refactor out RPC Client, introduce generic interfaces) [Windows Ipc Client](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.JsonRpc.IpcClient)~~
 * ~~Initial Code generation Contracts and Augur generation example [Code generator](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Gen), [Nethereum.Augur](https://github.com/Nethereum/Nethereum.Augur)~~
 * ~~Initial serpent support~~
-* Nuget (rc1)
+* ~~Nuget (rc1)~~
 
 Release 1.0
 * Migration Netstandard, Net CLI
 * Complete Rpc Methods: ssh, miner, admin
 * ABI support for Real as per Web3
+* General bugs and fixes.
+* Nuget (rc2)
 * Platform testing on Linux, Windows, UWP, OSX (Xamarin), Android (Xamarin)
 * Serpent support example (Augur) (not complete api)
 * General bugs and fixes.
