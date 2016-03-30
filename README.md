@@ -360,9 +360,9 @@ This is the current TODO list in order of priority
 * ~~Nuget (alpha)~~
 * ~~Personal RPC~~
 * ~~Real example [Nethereum.Maker](https://github.com/Nethereum/Netherum.Maker)~~
-* ~~Project generation to support older versions of Visual Studio and / or Xamarin~~
-* ~~IPC (Server, Client, refactor out RPC Client, introduce factories)~~
-* ~~Initial Code generation Contracts and Augur generation example~~
+* ~~Project generation to support older versions of Visual Studio and / or Xamarin [Nethereum.XS and Project Generation](https://github.com/Nethereum/Nethereum/tree/master/Nethereum-XS)~~
+* ~~IPC (Client, refactor out RPC Client, introduce generic interfaces) [Windows Ipc Client](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.JsonRpc.IpcClient)~~
+* ~~Initial Code generation Contracts and Augur generation example [Code generator](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Gen), [Nethereum.Augur](https://github.com/Nethereum/Nethereum.Augur)~~
 * ~~Initial serpent support~~
 * Nuget (rc1)
 
