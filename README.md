@@ -359,17 +359,29 @@ This is the current TODO list in order of priority
 * ~~Add wei conversion support~~
 * ~~Nuget (alpha)~~
 * ~~Personal RPC~~
-* Real example [Maker](https://github.com/Nethereum/Netherum.Maker)
-* Further Documentation: Breakdown explanation of the Event filtering example
-* Netstandard, Net CLI
+* ~~Real example [Nethereum.Maker](https://github.com/Nethereum/Netherum.Maker)~~
+* ~~Project generation to support older versions of Visual Studio and / or Xamarin~~
+* ~~IPC (Server, Client, refactor out RPC Client, introduce factories)~~
+* ~~Initial Code generation Contracts and Augur generation example~~
+* ~~Initial serpent support~~
+* Nuget (rc1)
+
+Release 1.0
+* Migration Netstandard, Net CLI
+* Complete Rpc Methods: ssh, miner, admin
+* ABI support for Real as per Web3
+* Platform testing on Linux, Windows, UWP, OSX (Xamarin), Android (Xamarin)
+* Serpent support example (Augur) (not complete api)
+* General bugs and fixes.
+* Nuget (1.0)
+
+Development and tools
 * UWP contract example (Windows, Mobile, RPI2)
-* Complete shh methods
-* Admin RPC methods
-* Nuget (beta)
-* Code generate Contracts and Typed DTO Functions / Events to simplify usage 
-* IPC (Server, Client, refactor out RPC Client, introduce factories)
+* Azure example
+* Finalisation of Contracts code generation, typed DTO Functions / Events to simplify usage 
 * Example of unit testing contracts (.net driven)
-* Example of using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
+* Example end to end using [dapple / dappsys](https://github.com/NexusDevelopment/dapple) unit testing (solidity driven).
+* Documentation and examples
 
 
 Logo created by Cass (https://github.com/cassiopaia)
