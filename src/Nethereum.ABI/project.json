@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha-2",
+  "version": "1.0.0-rc1",
   "description": "Encoding and decoding of ABI Types, functions, events of Ethereum contracts",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],

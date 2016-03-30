@@ -11,9 +11,9 @@
   },
 
   "dependencies": {
-    "Nethereum.ABI": "1.0.0-alpha-2",
-    "Nethereum.Hex": "1.0.0-alpha-2",
-    "Nethereum.Web3": "1.0.0-alpha-2"
+    "Nethereum.ABI": "1.0.0-*",
+    "Nethereum.Hex": "1.0.0-*",
+    "Nethereum.Web3": "1.0.0-*"
   },
 
   "commands": {

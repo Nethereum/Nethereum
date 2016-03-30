@@ -9,8 +9,7 @@
   "dependencies": {
     "Nethereum.ABI": "1.0.0-*",
     "Nethereum.Hex": "1.0.0-*",
-    "Nethereum.RPC": "1.0.0-*",
-    "RPCRequestResponseHandlers": "1.0.0-*"
+    "Nethereum.RPC": "1.0.0-*"
   },
 
   "commands": {

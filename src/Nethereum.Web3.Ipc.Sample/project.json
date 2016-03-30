@@ -12,7 +12,7 @@
 
   "dependencies": {
     "Nethereum.JsonRpc.IpcClient": "1.0.0-*",
-    "Nethereum.Web3": "1.0.0-alpha-2"
+    "Nethereum.Web3": "1.0.0-*"
   },
 
   "commands": {

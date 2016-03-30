@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha-2",
+  "version": "1.0.0-rc1",
   "description": "JsonRpc.Client additions to provide a generic inteface, request and response handlers",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Json", "RPC" ],
