@@ -51,6 +51,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Issues\Issue24.cs" />
+    <Compile Include="Issues\IssueRaymens.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
