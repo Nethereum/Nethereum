@@ -1,5 +1,10 @@
 # Nethereum
 
+Nethereum is a .Net Client for Ethereum, it allows you to interact with Ethereum in similar way as the Javascript Etherum Web3 RPC Client Library.
+
+Currently supports most of the JSON RPC methods, together with a simplified usage of Smart contracts. These includese the  deployment of contrancts, function calling and transactions together with log event filtering and decoding of topics.
+
+Join the chat here for any queries: 
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ###Nugets
@@ -13,12 +18,12 @@ Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as 
 | Nethereum.ABI    | [![NuGet version](https://badge.fury.io/nu/nethereum.abi.svg)](https://badge.fury.io/nu/nethereum.abi)| 
 | Nethereum.RPC    | [![NuGet version](https://badge.fury.io/nu/nethereum.rpc.svg)](https://badge.fury.io/nu/nethereum.rpc)| 
 | Nethereum.Hex    | [![NuGet version](https://badge.fury.io/nu/nethereum.hex.svg)](https://badge.fury.io/nu/nethereum.hex)| 
+| Nethereum.JsonRpc.IpcClient| [![NuGet version](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient.svg)](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient)| 
 
-[![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
 
-Nethereum is a .Net Client for Ethereum, it allows you to interact with Ethereum in similar way as the Javascript Etherum Web3 RPC Client Library.
 
-Currently supports most of the JSON RPC methods, together with a simplified usage of Smart contracts. These includese the  deployment of contrancts, function calling and transactions together with log event filtering and decoding of topics.
+
+
 
 ##Getting Started
 
