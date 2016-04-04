@@ -4,8 +4,8 @@ Nethereum is a .Net Client for Ethereum, it allows you to interact with Ethereum
 
 Currently supports most of the JSON RPC methods, together with a simplified usage of Smart contracts. These includese the  deployment of contrancts, function calling and transactions together with log event filtering and decoding of topics.
 
-Join the chat here for any queries: 
-[![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Join the chat at [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+for any queries, general comments, or just a chat.
 
 ###Nugets
 
