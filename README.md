@@ -7,7 +7,8 @@ Currently supports most of the JSON RPC methods, together with a simplified usag
 Join the chat at [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 for any queries, general comments, or just a chat.
 
-###Nugets
+###Nuget RC1
+
 
 Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages.
 
@@ -21,15 +22,11 @@ Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as 
 | Nethereum.JsonRpc.IpcClient| [![NuGet version](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient.svg)](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient)| 
 
 
-
-
-
-
 ##Getting Started
 
 If you need to start a development chain you can use [this Ethereum test genesis](https://github.com/juanfranblanco/Ethereum.TestNet.Genesis). Other useful resources are [the online solidity compiler](https://chriseth.github.io/browser-solidity/), editor with syntax higlighting [Visual Studio Code Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity) and of course [Mix](https://github.com/ethereum/mix/releases)
 
-##Nuget Alpha
+
 An alpha package has been released, the Web3 is the top level package that includes all the dependencies. If you have issues intalling the packages make sure you have a reference to System.Runtime.
 
 PM > Install-Package Nethereum.Web3 -Pre
