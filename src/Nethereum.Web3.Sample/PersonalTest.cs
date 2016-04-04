@@ -8,7 +8,7 @@ namespace Nethereum.Web3.Sample
         public async Task<string> Test()
         {
 
-            var web3 = new Web3();
+            var web3 = new Web3("http://192.168.2.211:8545");
             var address = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
             var result = await web3.Personal.UnlockAccount.SendRequestAsync(address, pass, new HexBigInteger(600));

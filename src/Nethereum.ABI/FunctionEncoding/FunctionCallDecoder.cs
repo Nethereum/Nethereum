@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -45,13 +47,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var orderedParameters = parameterObjects.OrderBy(x => x.Parameter.Order).ToArray();
             var parameterResults = DecodeOutput(output, orderedParameters);
 
-
-            parameterResults.ForEach(x =>
+            foreach (var parameterResult in parameterResults)
             {
-                var parameter = (ParameterOutputProperty)x;
+                var parameter = (ParameterOutputProperty)parameterResult;
                 var propertyInfo = parameter.PropertyInfo;
                 propertyInfo.SetValue(result, parameter.Result);
-            });
+            }
 
             return result;
         }
@@ -183,9 +184,9 @@ namespace Nethereum.ABI.FunctionEncoding
             if (function == null)
                 throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
 
-            var properties = type.GetProperties();
+            var properties = type.GetTypeInfo().DeclaredProperties;
 
-            DecodeAttributes(output, functionOutputResult, properties);
+            DecodeAttributes(output, functionOutputResult, properties.ToArray());
 
             return functionOutputResult;
 

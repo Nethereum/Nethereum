@@ -12,7 +12,7 @@ namespace Nethereum.ABI.FunctionEncoding
             var type = typeof(T);
             var result = new T();
 
-            var properties = GetPropertiesWithParameterAttributes(type.GetProperties());
+            var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties.ToArray());
             var topicNumber = 0;
             foreach (var topic in topics)
             {

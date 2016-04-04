@@ -58,8 +58,7 @@ namespace Nethereum.ABI.Decoders
 
         protected static Type GetIListElementType(Type listType)
         {
-            var enumType = listType
-                .GetInterfaces()
+            var enumType = listType.GetTypeInfo().ImplementedInterfaces
                 .Where(i => i.GetTypeInfo().IsGenericType && i.GenericTypeArguments.Length == 1)
                 .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 

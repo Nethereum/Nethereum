@@ -17,23 +17,28 @@ namespace BuildProjectFile
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.JsonRpc.Client", "NethereumJsonRpc"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
 			stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
-            stringBuilder.Append(CreateOutputFolder("Netherum.Maker\\Nethereum.Maker", "Maker"));
+            stringBuilder.Append(CreateOutputFolder("\\Netherum.Maker\\Nethereum.Maker", "Maker"));
+            GenerateFile("Nethereum-XS\\Nethereum - XS.csproj", fileTemplate1, fileTemplate2, stringBuilder.ToString());
+            GenerateFile("Nethereum.Portable\\Nethereum.Portable.csproj", fileTemplatePortable1, fileTemplatePortable2, stringBuilder.ToString());
+        }
 
-            var fileOutputPath = buildPath + "Nethereum-XS.csproj";
-			if (File.Exists (fileOutputPath))
-				File.Delete (fileOutputPath);
-			
-			var outputFile = File.CreateText(fileOutputPath);
-			outputFile.Write (fileTemplate1 + stringBuilder.ToString () + fileTemplate2);
-			outputFile.Flush ();
-			outputFile.Close ();
+        public static void GenerateFile(string path, string template1, string template2, string content)
+        {
+            var fileOutputPath = buildPath + path;
+            if (File.Exists(fileOutputPath))
+                File.Delete(fileOutputPath);
 
-		}
-
+            var outputFile = File.CreateText(fileOutputPath);
+            outputFile.Write(template1 + content + template2);
+            outputFile.Flush();
+            outputFile.Close();
+        }
+        
 		static string[] excludeFiles  = new []{"*AssemblyInfo.cs"};
 
 		//hack to match our path.. make it empty and you are at the root of the solution.
 		static string buildPath = "..\\..\\..\\";
+        static string relativePathProject = "..\\"; //our projects are in a subdirectory
 
 		static string itemTemplate = @"
         <Compile Include=""{0}"">
@@ -55,7 +60,8 @@ namespace BuildProjectFile
 
 			foreach (var file in files) {
 
-				    var filePathProject = file.Substring (buildPath.Length);
+                    //Build project files execution is at bin, we get a root of solution and navigate a relativePath down to subfolder.
+				    var filePathProject = relativePathProject + file.Substring (buildPath.Length);
 					var linkPathProject = prefix + file.Substring (buildPath.Length + folderPath.Length);
 					stringBuilder.AppendFormat (itemTemplate, filePathProject, linkPathProject);
 
@@ -63,6 +69,60 @@ namespace BuildProjectFile
 
 			return stringBuilder.ToString ();
 		}
+
+        static string fileTemplatePortable1 =
+        @"<?xml version=""1.0"" encoding=""utf-8""?>
+<Project ToolsVersion=""14.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
+  <Import Project=""$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"" Condition=""Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>
+    <Platform Condition="" '$(Platform)' == '' "">AnyCPU</Platform>
+    <ProjectGuid>{0F8DA38C-5C65-4545-BFF0-C40EC0CE40B4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Nethereum.Portable</RootNamespace>
+    <AssemblyName>Nethereum.Portable</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworkProfile>Profile111</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include=""project.json"" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include=""Properties\AssemblyInfo.cs"" />";
+        static string fileTemplatePortable2 = @"
+        </ItemGroup>
+  <Import Project=""$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets"" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name=""BeforeBuild"">
+  </Target>
+  <Target Name=""AfterBuild"">
+  </Target>
+  -->
+</Project>";
 
 
 static string fileTemplate1 =

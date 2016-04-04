@@ -20,7 +20,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
-            var properties = type.GetProperties();
+            var properties = type.GetTypeInfo().DeclaredProperties;
 
             var parameterObjects = new List<ParameterAttributeValue>();
 
