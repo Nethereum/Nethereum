@@ -10,7 +10,7 @@ for any queries, general comments, or just a chat.
 ###Nuget RC1
 
 
-Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages.
+Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages apart from IPC which is windows specific.
 
 | Package       | Nuget         | 
 | ------------- |:-------------:|
