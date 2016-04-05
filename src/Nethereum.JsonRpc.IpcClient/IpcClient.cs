@@ -14,12 +14,39 @@ using Newtonsoft.Json;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
-    public class IpcClient : IClient
+    public class IpcClient : IClient, IDisposable
     {
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
         private string ipcPath;
-   
+
+        private object lockingObject = new object();
+
+        private NamedPipeClientStream pipeClient;
+        private NamedPipeClientStream GetPipeClient()
+        {
+            lock (lockingObject)
+            {
+                try
+                {
+                    if (pipeClient == null || !pipeClient.IsConnected)
+                    {
+                        pipeClient = new NamedPipeClientStream(ipcPath);
+                        pipeClient.Connect();
+                    }
+                }
+                catch
+                {
+                    //Connection error we want to allow to retry.
+                    pipeClient = null;
+                    throw;
+                }
+            }
+
+            return pipeClient;
+        }
+
+
         public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null)
         {
             this.ipcPath = ipcPath;
@@ -64,46 +91,65 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
         {
-            using (var pipeClient = new NamedPipeClientStream(ipcPath))
+            try
             {
+
+                var pipeClient = GetPipeClient();
+
+                string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
+                byte[] requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+                await pipeClient.WriteAsync(requestBytes, 0, requestBytes.Length);
+
+                var responseBytes = await ReadResponseStream(pipeClient);
+
+                string responseJson = Encoding.UTF8.GetString(responseBytes);
+
                 try
                 {
-                    
-                    pipeClient.Connect();
-
-                    string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
-                    byte[] requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-                    await pipeClient.WriteAsync(requestBytes, 0, requestBytes.Length);
-
-                    var responseBytes = await ReadResponseStream(pipeClient);
-
-                    pipeClient.Close();
-
-                    string responseJson = Encoding.UTF8.GetString(responseBytes);
-
-                    try
+                    return JsonConvert.DeserializeObject<TResponse>(responseJson, this.JsonSerializerSettings);
+                }
+                catch (JsonSerializationException)
+                {
+                    RpcResponse rpcResponse = JsonConvert.DeserializeObject<RpcResponse>(responseJson, this.JsonSerializerSettings);
+                    if (rpcResponse == null)
                     {
-                        return JsonConvert.DeserializeObject<TResponse>(responseJson, this.JsonSerializerSettings);
+                        throw new RpcClientUnknownException(
+                            $"Unable to parse response from the ipc server. Response Json: {responseJson}");
                     }
-                    catch (JsonSerializationException)
-                    {
-                        RpcResponse rpcResponse = JsonConvert.DeserializeObject<RpcResponse>(responseJson, this.JsonSerializerSettings);
-                        if (rpcResponse == null)
-                        {
-                            throw new RpcClientUnknownException(
-                                $"Unable to parse response from the ipc server. Response Json: {responseJson}");
-                        }
-                        throw rpcResponse.Error.CreateException();
-                    }
+                    throw rpcResponse.Error.CreateException();
+                }
             }
             catch (Exception ex) when (!(ex is RpcClientException) && !(ex is RpcException))
             {
-                throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
+
+        }
+
+        #region IDisposable Support
+        private bool disposedValue = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (pipeClient != null) pipeClient.Dispose();
+                }
+
+                disposedValue = true;
             }
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
+
     }
+
 }
 
 
