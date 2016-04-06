@@ -135,7 +135,11 @@ namespace Nethereum.JsonRpc.IpcClient
             {
                 if (disposing)
                 {
-                    if (pipeClient != null) pipeClient.Dispose();
+                    if (pipeClient != null)
+                    {    
+                        pipeClient.Close();
+                        pipeClient.Dispose();
+                    }
                 }
 
                 disposedValue = true;
