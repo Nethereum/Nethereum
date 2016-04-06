@@ -5,6 +5,16 @@ namespace Nethereum.Web3
 {
     public class UnitConversion
     {
+        private static UnitConversion convert;
+        public static UnitConversion Convert
+        {
+            get
+            {
+                if (convert == null) convert = new UnitConversion();
+                return convert;
+            }
+        }
+
         public enum EthUnit
         {
             Wei,
