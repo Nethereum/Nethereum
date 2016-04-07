@@ -2,15 +2,25 @@
 
 Nethereum is a .Net Client for Ethereum, it allows you to interact with Ethereum in similar way as the Javascript Etherum Web3 RPC Client Library.
 
-Currently supports most of the JSON RPC methods, together with a simplified usage of Smart contracts. These includese the  deployment of contrancts, function calling and transactions together with log event filtering and decoding of topics.
+Currently supports most of the JSON RPC / IPC methods, together with a simplified usage of Smart contracts. These includes the  deployment of contracts, function calling, and transaction encoding and decoding. It also includes a simplified log event filtering and decoding of topics.
 
 Join the chat at [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-for any queries, general comments, or just a chat.
+for simple queries or general comments.  I recommend the usage of http://ethereum.stackexchange.com/ with the tag Nethereum for general queries, as it might help anybody else in the future. Issues, bugs, feature requests etc raise an issue in github.
 
 ###Nuget RC1
 
 
 Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages apart from IPC which is windows specific.
+
+```
+PM > Install-Package Nethereum.Portable -Pre
+```
+
+Another quick start option if targetting dnx41, core50 or net451 is use the Web3 package, which the top level package that includes all the dependencies. If you have issues intalling the packages make sure you have a reference to System.Runtime specific to your environment.
+
+```
+PM > Install-Package Nethereum.Web3 -Pre
+```
 
 | Package       | Nuget         | 
 | ------------- |:-------------:|
@@ -26,10 +36,6 @@ Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as 
 
 If you need to start a development chain you can use [this Ethereum test genesis](https://github.com/juanfranblanco/Ethereum.TestNet.Genesis). Other useful resources are [the online solidity compiler](https://chriseth.github.io/browser-solidity/), editor with syntax higlighting [Visual Studio Code Solidity](https://marketplace.visualstudio.com/items/JuanBlanco.solidity) and of course [Mix](https://github.com/ethereum/mix/releases)
 
-
-An alpha package has been released, the Web3 is the top level package that includes all the dependencies. If you have issues intalling the packages make sure you have a reference to System.Runtime.
-
-PM > Install-Package Nethereum.Web3 -Pre
 
 ###Web 3
 Create an instance of Web3, this is the wrapper to interact with an Ethereum client like Geth. The parameterless constructor uses the defaults address "http://localhost:8545/", or you can supply your own.
