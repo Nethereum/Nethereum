@@ -23,6 +23,7 @@ namespace Nethereum.Web3.Ipc.Sample
             var address = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
             var result = await web3.Personal.UnlockAccount.SendRequestAsync(address, pass, new HexBigInteger(600));
+            var resultCoinBase = await web3.Personal.UnlockAccount.SendRequestAsync(web3.Eth.CoinBase, pass, new HexBigInteger(600));
             var newAccount = await web3.Personal.NewAccount.SendRequestAsync("password");
             var accounts = await web3.Personal.ListAccounts.SendRequestAsync();
             return "New account : " + newAccount + " all accounts: " + string.Join(",", accounts);
