@@ -12,6 +12,11 @@ namespace Nethereum.JsonRpc.Client
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null, JsonSerializerSettings jsonSerializerSettings = null)
         {
+            if (jsonSerializerSettings == null)
+            {
+                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            }
+
             this.innerRpcClient = new edjCase.JsonRpc.Client.RpcClient(baseUrl, authHeaderValue, jsonSerializerSettings);
         }
 

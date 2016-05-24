@@ -49,6 +49,10 @@ namespace Nethereum.JsonRpc.IpcClient
 
         public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null)
         {
+            if (jsonSerializerSettings == null)
+            {
+                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            }
             this.ipcPath = ipcPath;
             this.JsonSerializerSettings = jsonSerializerSettings;
         }
@@ -74,14 +78,14 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private async Task<byte[]> ReadResponseStream(NamedPipeClientStream pipeClientStream)
         {
-            var buffer = new byte[pipeClientStream.InBufferSize];
+            var buffer = new byte[512];
             using (var ms = new MemoryStream())
             {
                 while (true)
                 {
                     var read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length);
                     ms.Write(buffer, 0, read);
-                    if (read < pipeClientStream.InBufferSize)
+                    if (read < 512)
                     {
                         return ms.ToArray();
                     }

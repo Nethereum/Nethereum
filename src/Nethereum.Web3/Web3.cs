@@ -1,6 +1,7 @@
 ﻿using System;
 using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.Util;
+using Newtonsoft.Json;
 
 namespace Nethereum.Web3
 {
@@ -42,7 +43,7 @@ namespace Nethereum.Web3
 
         private void IntialiseRpcClient(string url)
         {
-            Client = new RpcClient(new Uri(url));
+            Client = new RpcClient(new Uri(url), null, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
         }
 
         public string Sha3(string value)

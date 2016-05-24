@@ -651,6 +651,10 @@
 				<Link>NethereumJsonRpc\Constants.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\DefaultJsonSerializerSettingsFactory.cs">
+				<Link>NethereumJsonRpc\DefaultJsonSerializerSettingsFactory.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\IClient.cs">
 				<Link>NethereumJsonRpc\IClient.cs</Link>
 		</Compile>

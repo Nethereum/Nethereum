@@ -12,13 +12,15 @@ namespace Nethereum.Web3.Ipc.Sample
         public static void Main(string[] args)
         {
             Console.WriteLine(Test().Result);
+            Console.WriteLine(new EventFilterWith2Topics().Test().Result);
+
             Console.ReadLine();
 
         }
 
         public static async Task<string> Test()
         {
-            var client = new IpcClient("geth.ipc");
+            var client = new IpcClient("./geth.ipc");
             var web3 = new Web3(client);
             var address = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";

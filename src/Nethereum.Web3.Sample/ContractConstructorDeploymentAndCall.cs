@@ -38,7 +38,7 @@ namespace Nethereum.Web3.Sample
 
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
 
-            var web3 = new Web3();
+            var web3 = new Web3("http://192.168.2.211:8545");
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);

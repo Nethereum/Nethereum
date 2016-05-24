@@ -6,10 +6,11 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.IpcClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Ipc.Sample
 {
     public class EventFilterWith2Topics
     {
@@ -54,9 +55,11 @@ namespace Nethereum.Web3.Sample
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply1"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""b"",""type"":""uint256""}],""name"":""multiply2"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""}],""name"":""Multiplied"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""},{""indexed"":false,""name"":""sender"",""type"":""address""},{""indexed"":false,""name"":""hello"",""type"":""string""}],""name"":""MultipliedLog"",""type"":""event""}]";
 
+            var client = new IpcClient("./geth.ipc");
+            var web3 = new Web3(client);
+
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
 
-            var web3 = new Web3("http://localhost:8545");
             var eth = web3.Eth;
             var transactions = eth.Transactions;
 
