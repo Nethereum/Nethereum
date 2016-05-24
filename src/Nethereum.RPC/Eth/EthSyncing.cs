@@ -52,9 +52,9 @@ namespace Nethereum.RPC.Eth
             return new SyncingOutput
             {
                 Synching = true,
-                CurrentBlock = new HexBigInteger(response.currentBlock),
-                HighestBlock = new HexBigInteger(response.highestBlock),
-                StartingBlock = new HexBigInteger(response.startingBlock)
+                CurrentBlock = new HexBigInteger(response.currentBlock.ToString()),
+                HighestBlock = new HexBigInteger(response.highestBlock.ToString()),
+                StartingBlock = new HexBigInteger(response.startingBlock.ToString())
             };
         }
     }
