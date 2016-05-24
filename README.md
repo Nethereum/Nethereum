@@ -41,7 +41,7 @@ If you need to start a development chain you can use [this Ethereum test genesis
 Create an instance of Web3, this is the wrapper to interact with an Ethereum client like Geth. The parameterless constructor uses the defaults address "http://localhost:8545/", or you can supply your own.
 
 ```csharp
-    var web3 = new Web3();
+    var web3 = new Nethereum.Web3.Web3();
 ```
 
 From Web3 you can access Eth, Net, Shh RPC methods, and from Eth categorised by functionality Transactions, Filters, Mining, Compilers, etc.  
