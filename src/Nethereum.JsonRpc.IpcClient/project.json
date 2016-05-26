@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "description": "Nethereum.JsonRpc.IpcClient Class Library",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Json", "RPC" ],
@@ -10,6 +10,6 @@
     "net451": { }
   },
   "dependencies": {
-    "Nethereum.JsonRpc.Client": "1.0.0-rc1"
+    "Nethereum.JsonRpc.Client": "1.0.0-rc2"
   }
 }

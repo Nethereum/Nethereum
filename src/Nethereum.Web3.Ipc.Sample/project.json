@@ -6,12 +6,12 @@
   "projectUrl": "",
   "licenseUrl": "",
 
-  "compilationOptions": {
+  "buildOptions": {
     "emitEntryPoint": true
   },
 
   "dependencies": {
-    "Nethereum.JsonRpc.IpcClient": "1.0.0-*",
+    "Nethereum.JsonRpc.IpcClient": "1.0.0-rc2",
     "Nethereum.Web3": "1.0.0-*"
   },
 
@@ -20,7 +20,11 @@
   },
 
   "frameworks": {
-    "dnx451": { }
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Numerics": "4.0.0.0"
+      }
     }
   }
+}
 

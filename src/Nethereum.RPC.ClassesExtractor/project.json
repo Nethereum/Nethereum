@@ -7,12 +7,16 @@
   "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
   "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
 
-  "compilationOptions": {
+  "buildOptions": {
     "emitEntryPoint": true
   },
 
   "dependencies": {
-    "Nethereum.RPC": "1.0.0-*"
+    "Nethereum.RPC": "1.0.0-*",
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0-rc2-3002702"
+    }
   },
 
   "commands": {
@@ -20,6 +24,8 @@
   },
 
   "frameworks": {
-    "dnx451": { }
+    "netcoreapp1.0": {
+      "imports": "net451"
+    }
   }
 }

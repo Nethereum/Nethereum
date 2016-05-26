@@ -1,19 +1,23 @@
 {
   "version": "1.0.0-*",
   "description": "Nethereum.Gen Console Application",
-  "authors": [ "JuanFran" ],
+  "authors": [ "Juan Blanco" ],
   "tags": [ "" ],
   "projectUrl": "",
   "licenseUrl": "",
 
-  "compilationOptions": {
+  "buildOptions": {
     "emitEntryPoint": true
   },
 
   "dependencies": {
     "Nethereum.ABI": "1.0.0-*",
     "Nethereum.Hex": "1.0.0-*",
-    "Nethereum.Web3": "1.0.0-*"
+    "Nethereum.Web3": "1.0.0-*",
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0-rc2-3002702"
+    }
   },
 
   "commands": {
@@ -21,6 +25,8 @@
   },
 
   "frameworks": {
-    "dnx451": { }
+    "netcoreapp1.0": {
+      "imports":  "net451"
+    }
   }
 }
