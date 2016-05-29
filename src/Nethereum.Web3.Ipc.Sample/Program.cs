@@ -12,7 +12,7 @@ namespace Nethereum.Web3.Ipc.Sample
         public static void Main(string[] args)
         {
             Console.WriteLine(Test().Result);
-            Console.WriteLine(new EventFilterWith2Topics().Test().Result);
+            //Console.WriteLine(new EventFilterWith2Topics().Test().Result);
 
             Console.ReadLine();
 
