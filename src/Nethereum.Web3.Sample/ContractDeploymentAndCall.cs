@@ -4,6 +4,7 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Web3.Sample
 {
+
     public class ContractDeploymentAndCall
     {
         public async Task<string> Test()
