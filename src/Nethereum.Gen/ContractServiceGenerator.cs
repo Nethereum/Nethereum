@@ -126,7 +126,7 @@ namespace Nethereum.{0}
             var parameters = GetFunctionParameters(function.InputParameters);
             var callParameters = GetFunctionCallParameters(function.InputParameters);
             var returnType = "";
-            if (function.OutputParameters != null && function.OutputParameters.Length > 0)
+            if (function.OutputParameters != null && function.OutputParameters.Length == 1)
             {
                 returnType = GetTypeMap(function.OutputParameters.FirstOrDefault().ABIType.Name);
             }

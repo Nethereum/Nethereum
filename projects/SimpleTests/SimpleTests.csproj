@@ -40,6 +40,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Nethereum.Portable, Version=1.0.5993.32557, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Nethereum.Portable.1.0.0-rc2\lib\portable45-net45+win8+wpa81\Nethereum.Portable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -72,12 +76,6 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Nethereum.Portable\Nethereum.Portable.csproj">
-      <Project>{0f8da38c-5c65-4545-bff0-c40ec0ce40b4}</Project>
-      <Name>Nethereum.Portable</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="DaoTest\" />

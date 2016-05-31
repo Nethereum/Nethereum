@@ -1,0 +1,63 @@
+﻿@model IEnumerable<Nethereum.Web.Sample.ViewModels.ProposalViewModel>
+
+@{
+    ViewBag.Title = "Proposals";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Proposals</h2>
+
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Index)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Description)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Open)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ProposalPassed)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Yea)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Nay)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Creator)
+        </th>
+        <th></th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.ActionLink(item.Index.ToString(), "DaoProposalDetail", new { index = item.Index })
+           
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Description)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Open)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.ProposalPassed)
+        </td>
+        <td>
+            @item.Yea
+        </td>
+        <td>
+            @item.Nay
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Creator)
+        </td>
+    </tr>
+}
+
+</table>
