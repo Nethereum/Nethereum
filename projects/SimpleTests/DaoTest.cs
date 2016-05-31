@@ -2,6 +2,7 @@ using System.Numerics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Web3;
 
 namespace SimpleTests
@@ -9,7 +10,8 @@ namespace SimpleTests
     [TestClass]
     public class DaoTest
     {
-        
+     
+        //Note: These tests are pointing to live.   
 
         [TestMethod]
         public void CheckTotalSupply()
@@ -32,9 +34,8 @@ namespace SimpleTests
             var contractAddress = "0xbb9bc244d798123fde783fcc1c72d3bb8c189413";
             var web3 = new Web3();
             var contract = web3.Eth.GetContract(abi, contractAddress);
-            var totalSupplyFunction = contract.GetFunction("proposals");
-            var proposal = new Proposal();
-            var result = totalSupplyFunction.CallDeserializingToObjectAsync<Proposal>(5).Result;
+            var proposalsFunction = contract.GetFunction("proposals");
+            var result = proposalsFunction.CallDeserializingToObjectAsync<Proposal>(5).Result;
             Assert.IsTrue(result.Creator == "0xd68ba7734753e2ee54103116323aba2d94c78dc5");
         }
 
@@ -113,7 +114,12 @@ namespace SimpleTests
             public bool ProposalPassed { get; set; }
 
             [Parameter("bytes32", 7)]
-            public string ProposalHash { get; set; }
+            public byte[] ProposalHash { get; set; }
+
+            public string GetProposalHashToHex()
+            {
+                return ProposalHash.ToHex();
+            }
 
             [Parameter("uint256", 8)]
             public BigInteger ProposalDeposit { get; set; }
