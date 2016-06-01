@@ -29,7 +29,7 @@ namespace Nethereum.Web.Sample.Controllers
         {
             var service = GetDaoService();          
             var proposals = await service.GetAllProposals();
-            var proposalsViewModel = AutoMapper.Mapper.Map<List<ProposalViewModel>>(proposals);
+            var proposalsViewModel = new ProposalViewModelMapper().MapFromModel(proposals);
             return View(proposalsViewModel);
         }
 
@@ -37,7 +37,7 @@ namespace Nethereum.Web.Sample.Controllers
         {
             var service = GetDaoService();
             var proposal = await service.GetProposal(index);
-            var proposalViewModel = AutoMapper.Mapper.Map<ProposalViewModel>(proposal);
+            var proposalViewModel = new ProposalViewModelMapper().MapFromModel(proposal);
             return View(proposalViewModel);
         }
 
