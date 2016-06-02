@@ -388,18 +388,18 @@ This is the current TODO list in order of priority
 * ~~Nuget (rc1)~~
 
 Release 1.0
-* Migration Netstandard, Net CLI
+* ~~Migration Netstandard, Net CLI~~
 * Complete Rpc Methods: ssh, miner, admin
 * ABI support for Real as per Web3
 * General bugs and fixes.
 * Nuget (rc2)
-* Platform testing on Linux, Windows, UWP, OSX (Xamarin), Android (Xamarin)
-* Serpent support example (Augur) (not complete api)
+* ~~Platform testing on Linux, Windows, UWP, OSX (Xamarin), Android (Xamarin)~~
+* ~~Serpent support example (Augur) (not complete api)~~
 * General bugs and fixes.
 * Nuget (1.0)
 
 Development and tools
-* UWP contract example (Windows, Mobile, RPI2)
+* ~~UWP contract example (Windows, Mobile, RPI2)~~
 * Azure example
 * Finalisation of Contracts code generation, typed DTO Functions / Events to simplify usage 
 * Example of unit testing contracts (.net driven)
