@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using Newtonsoft.Json;
@@ -17,17 +18,17 @@ namespace Nethereum.ABI.FunctionEncoding
             var events = new List<EventABI>();
             ConstructorABI constructor = null;
 
-            foreach (dynamic element in contract)
+            foreach (IDictionary<string, object> element in contract)
             {
-                if (element.type == "function")
+                if ((string)element["type"] == "function")
                 {
                     functions.Add(BuildFunction(element));
                 }
-                if (element.type == "event")
+                if ((string)element["type"] == "event")
                 {
                     events.Add(BuildEvent(element));
                 }
-                if (element.type == "constructor")
+                if ((string)element["type"] == "constructor")
                 {
                     constructor = BuildConstructor(element);
                 }
@@ -42,40 +43,41 @@ namespace Nethereum.ABI.FunctionEncoding
 
         }
 
-        public ConstructorABI BuildConstructor(dynamic constructor)
+        public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
         {
             var constructorABI = new ConstructorABI();
-            constructorABI.InputParameters = BuildFunctionParameters(constructor.inputs);
+            constructorABI.InputParameters = BuildFunctionParameters((List<object>)constructor["inputs"]);
             return constructorABI;
         }
 
-        public FunctionABI BuildFunction(dynamic function)
+        public FunctionABI BuildFunction(IDictionary<string, object> function)
         {
-            var functionABI = new FunctionABI(function.name, function.constant, TryGetSerpentValue(function));
-            functionABI.InputParameters = BuildFunctionParameters(function.inputs);
-            functionABI.OutputParameters = BuildFunctionParameters(function.outputs);
+            var functionABI = new FunctionABI((string)function["name"], (bool)function["constant"], TryGetSerpentValue(function));
+            functionABI.InputParameters = BuildFunctionParameters((List<object>) function["inputs"]);
+            functionABI.OutputParameters = BuildFunctionParameters((List<object>)function["outputs"]);
             return functionABI;
         }
 
-        public Parameter[] BuildFunctionParameters(dynamic inputs)
+        public Parameter[] BuildFunctionParameters(List<object> inputs)
         {
             var parameters = new List<Parameter>();
             var parameterOrder = 0;
-            foreach (dynamic input in inputs)
+            foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter(input.type, input.name, parameterOrder, TryGetSignatureValue(input));
+                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder, TryGetSignatureValue(input));
                 parameters.Add(parameter);
             }
 
             return parameters.ToArray();
         }
 
-        public bool TryGetSerpentValue(dynamic function)
+        public bool TryGetSerpentValue(IDictionary<string, object> function)
         {
             try
             {
-                return function.serpent;
+                if (function.ContainsKey("serpent")) return (bool) function["serpent"];
+                return false;
             }
             catch
             {
@@ -83,11 +85,12 @@ namespace Nethereum.ABI.FunctionEncoding
             }
         }
 
-        public string TryGetSignatureValue(dynamic parameter)
+        public string TryGetSignatureValue(IDictionary<string, object> parameter)
         {
             try
             {
-                return parameter.signature;
+                if (parameter.ContainsKey("signature")) return (string) parameter["signature"];
+                return null;
             }
             catch
             {
@@ -96,22 +99,22 @@ namespace Nethereum.ABI.FunctionEncoding
         }
 
         
-        public EventABI BuildEvent(dynamic eventobject)
+        public EventABI BuildEvent(IDictionary<string, object> eventobject)
         {
-            var eventABI = new EventABI(eventobject.name);
-            eventABI.InputParameters = BuildEventParameters(eventobject.inputs);
+            var eventABI = new EventABI((string)eventobject["name"]);
+            eventABI.InputParameters = BuildEventParameters((List<object>)eventobject["inputs"]);
        
             return eventABI;
         }
 
-        public Parameter[] BuildEventParameters(dynamic inputs)
+        public Parameter[] BuildEventParameters(List<object> inputs)
         {
             var parameters = new List<Parameter>();
             var parameterOrder = 0;
-            foreach (dynamic input in inputs)
+            foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter(input.type, input.name, parameterOrder) {Indexed = input.indexed};
+                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder) {Indexed = (bool)input["indexed"]};
                 parameters.Add(parameter);
             }
 
