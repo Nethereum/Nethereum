@@ -51,6 +51,6 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     logs: Array - Array of log objects, which this transaction generated.
         /// </summary>
         [JsonProperty(PropertyName = "logs")]
-        public dynamic[] Logs { get; set; }
+        public object[] Logs { get; set; }
     }
 }

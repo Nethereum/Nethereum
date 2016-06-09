@@ -8,9 +8,9 @@ namespace Nethereum.RPC.Eth.DTOs
     public class SyncingOutput
     {
         /// <summary>
-        ///     Is it synching?
+        ///     Is it syncing?
         /// </summary>
-        public bool Synching { get; set; }
+        public bool IsSyncing { get; set; }
 
         /// <summary>
         ///     StartingBlock: QUANTITY - The block at which the import started (will only be reset, after the sync reached his

@@ -60,6 +60,6 @@ namespace Nethereum.RPC.Eth.Filters
         ///     except you declared the event with the anonymous specifier.)
         /// </summary>
         [JsonProperty(PropertyName = "topics")]
-        public dynamic[] Topics { get; set; }
+        public object[] Topics { get; set; }
     }
 }

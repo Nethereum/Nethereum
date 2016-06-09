@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Infrastructure;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.Eth
 {
@@ -37,7 +39,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": false
     ///     }
     /// </Summary>
-    public class EthSyncing : GenericRpcRequestResponseHandlerNoParam<dynamic>
+    public class EthSyncing : GenericRpcRequestResponseHandlerNoParam<object>
     {
         public EthSyncing(IClient client) : base(client, ApiMethods.eth_syncing.ToString())
         {
@@ -47,14 +49,16 @@ namespace Nethereum.RPC.Eth
         {
             var response = await base.SendRequestAsync(id);
 
-            if (response is bool && response == false) return new SyncingOutput {Synching = response};
+            if (response is bool && (bool)response == false) return new SyncingOutput {IsSyncing = (bool)response};
+
+            var syncingResponse = (JObject) response;
 
             return new SyncingOutput
             {
-                Synching = true,
-                CurrentBlock = new HexBigInteger(response.currentBlock.ToString()),
-                HighestBlock = new HexBigInteger(response.highestBlock.ToString()),
-                StartingBlock = new HexBigInteger(response.startingBlock.ToString())
+                IsSyncing = true,
+                CurrentBlock = new HexBigInteger(syncingResponse["currentBlock"].ToString()),
+                HighestBlock = new HexBigInteger(syncingResponse["highestBlock"].ToString()),
+                StartingBlock = new HexBigInteger(syncingResponse["startingBlock"].ToString())
             };
         }
     }
