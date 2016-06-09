@@ -5,15 +5,15 @@
   "tags": [ "" ],
   "projectUrl": "",
   "licenseUrl": "",
-
+  "testRunner": "xunit",
   "dependencies": {
     "Nethereum.ABI": "1.0.0-*",
     "Nethereum.Hex": "1.0.0-*",
     "Nethereum.RPC": "1.0.0-*",
-    "Microsoft.NETCore.App": {
-      "type": "platform",
-      "version": "1.0.0-rc2-3002702"
-    }
+    "xunit": "2.1.0",
+    "dotnet-test-xunit": "1.0.0-rc2-build10025",
+    "Nethereum.RPC.Tests": "1.0.0-*",
+    "Nethereum.JsonRpc.Client": "1.0.0-rc2"
   },
 
   "commands": {
@@ -21,8 +21,10 @@
   },
 
   "frameworks": {
-    "netcoreapp1.0": {
-      "imports": "net451"
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Numerics": "4.0.0.0"
+      }
     }
   }
 }
