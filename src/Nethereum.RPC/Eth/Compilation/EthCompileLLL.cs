@@ -33,9 +33,9 @@ namespace Nethereum.RPC.Eth.Compilation
         {
         }
 
-        public async Task<string> SendRequestAsync(string lllcode, object id = null)
+        public Task<string> SendRequestAsync(string lllcode, object id = null)
         {
-            return await base.SendRequestAsync(id, lllcode);
+            return base.SendRequestAsync(id, lllcode);
         }
 
         public RpcRequest BuildRequest(string lllcode, object id = null)

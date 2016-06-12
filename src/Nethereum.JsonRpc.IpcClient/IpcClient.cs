@@ -63,7 +63,7 @@ namespace Nethereum.JsonRpc.IpcClient
             {
                 throw new ArgumentNullException(nameof(request));
             }
-            return await this.SendAsync<RpcRequest, RpcResponse>(request);
+            return await this.SendAsync<RpcRequest, RpcResponse>(request).ConfigureAwait(false);
         }
 
         public Task<RpcResponse> SendRequestAsync(string method, string route = null, params object[] paramList)
@@ -83,7 +83,7 @@ namespace Nethereum.JsonRpc.IpcClient
             {
                 while (true)
                 {
-                    var read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length);
+                    var read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     ms.Write(buffer, 0, read);
                     if (read < 512)
                     {
@@ -98,13 +98,13 @@ namespace Nethereum.JsonRpc.IpcClient
             try
             {
 
-                var pipeClient = GetPipeClient();
+                var pipeClientStream = GetPipeClient();
 
                 string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
                 byte[] requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-                await pipeClient.WriteAsync(requestBytes, 0, requestBytes.Length);
+                await pipeClientStream.WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
 
-                var responseBytes = await ReadResponseStream(pipeClient);
+                var responseBytes = await ReadResponseStream(pipeClientStream).ConfigureAwait(false);
 
                 string responseJson = Encoding.UTF8.GetString(responseBytes);
 

@@ -26,13 +26,13 @@ namespace Nethereum.RPC.Personal
         public async Task<bool> SendRequestAsync(string address, string passPhrase, HexBigInteger durationInSeconds,
             object id = null)
         {
-            return await base.SendRequestAsync(id, address, passPhrase, durationInSeconds);
+            return await base.SendRequestAsync(id, address, passPhrase, durationInSeconds).ConfigureAwait(false);
         }
 
         public async Task<bool> SendRequestAsync(Eth.EthCoinBase coinbaseRequest, string passPhrase, HexBigInteger durationInSeconds,
             object id = null)
         {
-            return await base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase, durationInSeconds);
+            return await base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase, durationInSeconds).ConfigureAwait(false);
         }
 
         public RpcRequest BuildRequest(string address, string passPhrase, HexBigInteger durationInSeconds,

@@ -33,9 +33,9 @@ namespace Nethereum.RPC.Eth.Uncles
         {
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(string hash, object id = null)
+        public Task<HexBigInteger> SendRequestAsync(string hash, object id = null)
         {
-            return await base.SendRequestAsync(id, hash);
+            return base.SendRequestAsync(id, hash);
         }
 
         public RpcRequest BuildRequest(string hash, object id = null)

@@ -8,7 +8,7 @@ namespace Nethereum.JsonRpc.Client
 {
     public class RpcClient : IClient
     {
-        private edjCase.JsonRpc.Client.RpcClient innerRpcClient;
+        private readonly edjCase.JsonRpc.Client.RpcClient innerRpcClient;
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null, JsonSerializerSettings jsonSerializerSettings = null)
         {

@@ -31,9 +31,9 @@ namespace Nethereum.RPC.Eth
         {
         }
 
-        public async Task<string> SendRequestAsync(string address, string data, object id = null)
+        public Task<string> SendRequestAsync(string address, string data, object id = null)
         {
-            return await base.SendRequestAsync(id, address, data);
+            return base.SendRequestAsync(id, address, data);
         }
 
         public RpcRequest BuildRequest(string address, string data, object id = null)

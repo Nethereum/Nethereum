@@ -20,20 +20,46 @@ namespace Nethereum.Web.Sample.Services
             this.contract = web3.Eth.GetContract(abi, address);
         }
 
-        public async Task<long> GetNumberOfProposals()
+        public Task<long> GetNumberOfProposals()
         {
-            return await contract.GetFunction("numberOfProposals").CallAsync<long>();
+            return contract.GetFunction("numberOfProposals").CallAsync<long>();
         }
 
         public async Task<List<Proposal>> GetAllProposals()
         {
          
-            var numberOfProposals = await GetNumberOfProposals();
+            var numberOfProposals = await GetNumberOfProposals().ConfigureAwait(false);
             var proposals = new List<Proposal>();
 
-            for (int i = 0; i < numberOfProposals; i++)
+            for (var i = 0; i < numberOfProposals; i++)
             {
-                proposals.Add(await GetProposal(i));
+                proposals.Add(await GetProposal(i).ConfigureAwait(false));
+            }
+            return proposals;
+        }
+
+        public async Task<List<Proposal>> GetLatestProposals(long total)
+        {
+            var numberOfProposals = await GetNumberOfProposals().ConfigureAwait(false);
+            if (total >= numberOfProposals) total = numberOfProposals - 1;
+            var proposals = new List<Proposal>();
+
+            for (var i = numberOfProposals - 1; i >= (numberOfProposals - total); i--)
+            {
+                proposals.Add(await GetProposal(i).ConfigureAwait(false));
+            }
+            return proposals;
+        }
+
+        public async Task<List<Proposal>> GetAllProposals(long startProposal, long lastProposal)
+        {
+            var numberOfProposals = await GetNumberOfProposals().ConfigureAwait(false);
+            if (lastProposal >= numberOfProposals) lastProposal = numberOfProposals - 1;
+            var proposals = new List<Proposal>();
+
+            for (var i = startProposal; i <= lastProposal; i++)
+            {
+                proposals.Add(await GetProposal(i).ConfigureAwait(false));
             }
             return proposals;
         }
@@ -41,7 +67,7 @@ namespace Nethereum.Web.Sample.Services
         public async Task<Proposal> GetProposal(long index)
         {
             var proposalsFunction = contract.GetFunction("proposals");
-            var proposal = await proposalsFunction.CallDeserializingToObjectAsync<Proposal>(index);
+            var proposal = await proposalsFunction.CallDeserializingToObjectAsync<Proposal>(index).ConfigureAwait(false);
             proposal.Index = index;
             return proposal;
         }

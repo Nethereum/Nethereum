@@ -47,7 +47,7 @@ namespace Nethereum.RPC.Eth
 
         public new async Task<SyncingOutput> SendRequestAsync(object id = null)
         {
-            var response = await base.SendRequestAsync(id);
+            var response = await base.SendRequestAsync(id).ConfigureAwait(false);
 
             if (response is bool && (bool)response == false) return new SyncingOutput {IsSyncing = (bool)response};
 

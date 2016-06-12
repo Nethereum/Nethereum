@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.JsonRpc.Client
 {
-    public class DefaultJsonSerializerSettingsFactory
+    public static class DefaultJsonSerializerSettingsFactory
     {
         public static JsonSerializerSettings BuildDefaultJsonSerializerSettings()
         {

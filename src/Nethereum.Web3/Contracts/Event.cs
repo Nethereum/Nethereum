@@ -30,58 +30,59 @@ namespace Nethereum.Web3
             return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
-        public async Task<HexBigInteger> CreateFilterAsync<T>(T firstIndexedParameterValue, BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync<T>(T firstIndexedParameterValue, BlockParameter fromBlock = null)
         {
-            return await CreateFilterAsync( new object[] { firstIndexedParameterValue }, fromBlock);
+            return CreateFilterAsync(new object[] {firstIndexedParameterValue}, fromBlock);
         }
 
-        public async Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue, BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue, BlockParameter fromBlock = null)
         {
-            return await CreateFilterAsync(new object[] { firstIndexedParameterValue }, new object[] { secondIndexedParameterValue }, fromBlock);
+            return CreateFilterAsync(new object[] { firstIndexedParameterValue }, new object[] { secondIndexedParameterValue }, fromBlock);
         }
 
-        public async Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue, T3 thirdIndexedParameterValue,  BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue, T3 thirdIndexedParameterValue,  BlockParameter fromBlock = null)
         {
-            return await CreateFilterAsync(new object[] { firstIndexedParameterValue }, new object[] { secondIndexedParameterValue }, new object[] { thirdIndexedParameterValue }, fromBlock);
-        }
-
-
-        public async Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues, BlockParameter fromBlock = null)
-        {
-            return await CreateFilterAsync( firstIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
-        }
-
-        public async Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues, BlockParameter fromBlock = null)
-        {
-            return await CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
-        }
-
-        public async Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues, T3[] thirdIndexedParameterValues, BlockParameter fromBlock = null)
-        {
-            return await CreateFilterAsync( firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray(), thirdIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
+            return CreateFilterAsync(new object[] {firstIndexedParameterValue},
+                new object[] {secondIndexedParameterValue}, new object[] {thirdIndexedParameterValue}, fromBlock);
         }
 
 
-        public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues, BlockParameter fromBlock = null)
+        {
+            return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
+        }
+
+        public Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues, BlockParameter fromBlock = null)
+        {
+            return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
+        }
+
+        public Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues, T3[] thirdIndexedParameterValues, BlockParameter fromBlock = null)
+        {
+            return  CreateFilterAsync( firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray(), thirdIndexedParameterValues.Cast<object>().ToArray(), fromBlock);
+        }
+
+
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, BlockParameter fromBlock = null)
         {
             var ethFilterInput = contract.GetDefaultFilterInput(fromBlock);
             ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1);
-            return await ethNewFilter.SendRequestAsync(ethFilterInput);
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
-        public async Task<HexBigInteger> CreateFilterAsync( object[] filterTopic1, object[] filterTopic2, BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync( object[] filterTopic1, object[] filterTopic2, BlockParameter fromBlock = null)
         {
             var ethFilterInput = contract.GetDefaultFilterInput(fromBlock);
             ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
-             return await ethNewFilter.SendRequestAsync(ethFilterInput);
+             return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
-        public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3, BlockParameter fromBlock = null)
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3, BlockParameter fromBlock = null)
         {
             var ethFilterInput = contract.GetDefaultFilterInput(fromBlock);
 
             ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
-            return await ethNewFilter.SendRequestAsync(ethFilterInput);
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
 
 
@@ -157,13 +158,13 @@ namespace Nethereum.Web3
 
         public async Task<List<EventLog<T>>> GetAllChanges<T>(HexBigInteger filterId) where T : new()
         {
-            var logs = await ethFilterLogs.SendRequestAsync(filterId);
+            var logs = await ethFilterLogs.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
 
         public async Task<List<EventLog<T>>> GetFilterChanges<T>(HexBigInteger filterId) where T : new()
         {
-            var logs = await ethGetFilterChanges.SendRequestAsync(filterId);
+            var logs = await ethGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
 

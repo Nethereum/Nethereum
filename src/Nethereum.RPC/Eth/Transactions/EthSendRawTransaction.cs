@@ -30,9 +30,9 @@ namespace Nethereum.RPC.Eth.Transactions
         {
         }
 
-        public async Task<string> SendRequestAsync(string signedTransactionData, object id = null)
+        public Task<string> SendRequestAsync(string signedTransactionData, object id = null)
         {
-            return await base.SendRequestAsync(id, signedTransactionData);
+            return base.SendRequestAsync(id, signedTransactionData);
         }
 
         public RpcRequest BuildRequest(string signedTransactionData, object id = null)

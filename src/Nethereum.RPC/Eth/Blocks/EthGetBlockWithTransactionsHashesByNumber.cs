@@ -83,9 +83,9 @@ namespace Nethereum.RPC.Eth.Blocks
         {
         }
 
-        public async Task<BlockWithTransactionHashes> SendRequestAsync(HexBigInteger number, object id = null)
+        public Task<BlockWithTransactionHashes> SendRequestAsync(HexBigInteger number, object id = null)
         {
-            return await base.SendRequestAsync(id, number, false);
+            return base.SendRequestAsync(id, number, false);
         }
 
         public RpcRequest BuildRequest(HexBigInteger number, object id = null)

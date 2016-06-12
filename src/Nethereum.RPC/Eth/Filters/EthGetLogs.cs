@@ -26,9 +26,9 @@ namespace Nethereum.RPC.Eth.Filters
         {
         }
 
-        public async Task<FilterLog[]> SendRequestAsync(NewFilterInput newFilter, object id = null)
+        public Task<FilterLog[]> SendRequestAsync(NewFilterInput newFilter, object id = null)
         {
-            return await base.SendRequestAsync(id, newFilter);
+            return base.SendRequestAsync(id, newFilter);
         }
 
         public RpcRequest BuildRequest(NewFilterInput newFilter, object id = null)

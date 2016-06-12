@@ -17,7 +17,7 @@ namespace Nethereum.JsonRpc.Client
 
         public virtual async Task<TResponse> SendRequestAsync(object id)
         {
-            var response = await Client.SendRequestAsync(BuildRequest(id));
+            var response = await Client.SendRequestAsync(BuildRequest(id)).ConfigureAwait(false);
             if (response.HasError) throw new RpcResponseException(response);
             return response.GetResult<TResponse>();
         }

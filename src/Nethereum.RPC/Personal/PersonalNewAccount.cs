@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Personal
 
         public async Task<string> SendRequestAsync(string passPhrase, object id = null)
         {
-            return await base.SendRequestAsync(id, passPhrase);
+            return await base.SendRequestAsync(id, passPhrase).ConfigureAwait(false);
         }
 
         public RpcRequest BuildRequest(string passPhrase, object id = null)

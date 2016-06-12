@@ -32,9 +32,9 @@ namespace Nethereum.RPC.Eth.Compilation
         {
         }
 
-        public async Task<string> SendRequestAsync(string serpentCode, object id = null)
+        public Task<string> SendRequestAsync(string serpentCode, object id = null)
         {
-            return await base.SendRequestAsync(id, serpentCode);
+            return base.SendRequestAsync(id, serpentCode);
         }
 
         public RpcRequest BuildRequest(string serpentCode, object id = null)

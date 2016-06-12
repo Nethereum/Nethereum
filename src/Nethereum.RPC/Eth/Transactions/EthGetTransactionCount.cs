@@ -39,16 +39,16 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public BlockParameter DefaultBlock { get; set; }
 
-        public async Task<HexBigInteger> SendRequestAsync(string address, BlockParameter block,
+        public Task<HexBigInteger> SendRequestAsync(string address, BlockParameter block,
             object id = null)
         {
-            return await base.SendRequestAsync(id, address, block);
+            return base.SendRequestAsync(id, address, block);
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(string address,
+        public Task<HexBigInteger> SendRequestAsync(string address,
             object id = null)
         {
-            return await base.SendRequestAsync(id, address, DefaultBlock);
+            return base.SendRequestAsync(id, address, DefaultBlock);
         }
 
         public RpcRequest BuildRequest(string address, BlockParameter block, object id = null)

@@ -32,10 +32,10 @@ namespace Nethereum.RPC.Eth.Transactions
         {
         }
 
-        public async Task<Transaction> SendRequestAsync(string blockHash, HexBigInteger transactionIndex,
+        public Task<Transaction> SendRequestAsync(string blockHash, HexBigInteger transactionIndex,
             object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash, transactionIndex);
+            return base.SendRequestAsync(id, blockHash, transactionIndex);
         }
 
         public RpcRequest BuildRequest(string blockHash, HexBigInteger transactionIndex, object id = null)

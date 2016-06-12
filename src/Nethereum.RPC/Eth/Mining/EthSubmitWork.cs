@@ -36,9 +36,9 @@ namespace Nethereum.RPC.Eth.Mining
         {
         }
 
-        public async Task<bool> SendRequestAsync(string[] work, object id = null)
+        public Task<bool> SendRequestAsync(string[] work, object id = null)
         {
-            return await base.SendRequestAsync(id, work);
+            return base.SendRequestAsync(id, work);
         }
 
         public RpcRequest BuildRequest(string[] work, object id = null)

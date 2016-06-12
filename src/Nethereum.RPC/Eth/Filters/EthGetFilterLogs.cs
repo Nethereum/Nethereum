@@ -26,9 +26,9 @@ namespace Nethereum.RPC.Eth.Filters
         {
         }
 
-        public async Task<string[]> SendRequestAsync(HexBigInteger filterId, object id = null)
+        public Task<string[]> SendRequestAsync(HexBigInteger filterId, object id = null)
         {
-            return await base.SendRequestAsync(id, filterId);
+            return base.SendRequestAsync(id, filterId);
         }
 
         public RpcRequest BuildRequest(HexBigInteger filterId, object id = null)

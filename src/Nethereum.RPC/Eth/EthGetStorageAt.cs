@@ -42,15 +42,15 @@ namespace Nethereum.RPC.Eth
 
         public BlockParameter DefaultBlock { get; set; }
 
-        public async Task<string> SendRequestAsync(string address, HexBigInteger position, BlockParameter block,
+        public Task<string> SendRequestAsync(string address, HexBigInteger position, BlockParameter block,
             object id = null)
         {
-            return await base.SendRequestAsync(id, address, position, block);
+            return base.SendRequestAsync(id, address, position, block);
         }
 
-        public async Task<string> SendRequestAsync(string address, HexBigInteger position, object id = null)
+        public Task<string> SendRequestAsync(string address, HexBigInteger position, object id = null)
         {
-            return await base.SendRequestAsync(id, address, position, DefaultBlock);
+            return base.SendRequestAsync(id, address, position, DefaultBlock);
         }
 
         public RpcRequest BuildRequest(string address, HexBigInteger position, BlockParameter block, object id = null)

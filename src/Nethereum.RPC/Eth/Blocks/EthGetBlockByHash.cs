@@ -78,7 +78,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public async Task<BlockWithTransactions> SendRequestAsync(string blockHash, object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash, true);
+            return await base.SendRequestAsync(id, blockHash, true).ConfigureAwait(false);
         }
 
         public RpcRequest BuildRequest(string blockHash, object id = null)
@@ -159,9 +159,9 @@ namespace Nethereum.RPC.Eth.Blocks
         {
         }
 
-        public async Task<BlockWithTransactionHashes> SendRequestAsync(string blockHash, object id = null)
+        public Task<BlockWithTransactionHashes> SendRequestAsync(string blockHash, object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash, false);
+            return base.SendRequestAsync(id, blockHash, false);
         }
 
         public RpcRequest BuildRequest(string blockHash, object id = null)

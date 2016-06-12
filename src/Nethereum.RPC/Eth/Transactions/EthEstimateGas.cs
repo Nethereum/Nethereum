@@ -30,14 +30,14 @@ namespace Nethereum.RPC.Eth.Transactions
         {
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(CallInput callInput, BlockParameter block, object id = null)
+        public Task<HexBigInteger> SendRequestAsync(CallInput callInput, BlockParameter block, object id = null)
         {
-            return await base.SendRequestAsync(id, callInput, block);
+            return base.SendRequestAsync(id, callInput, block);
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(CallInput callInput, object id = null)
+        public Task<HexBigInteger> SendRequestAsync(CallInput callInput, object id = null)
         {
-            return await SendRequestAsync(callInput, BlockParameter.CreateLatest(), id);
+            return SendRequestAsync(callInput, BlockParameter.CreateLatest(), id);
         }
 
         public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, object id = null)

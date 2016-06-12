@@ -33,7 +33,7 @@ namespace Nethereum.RPC.Web3
 
         public async Task<string> SendRequestAsync(HexString valueToConvertHex, object id = null)
         {
-            return await base.SendRequestAsync(id, valueToConvertHex);
+            return await base.SendRequestAsync(id, valueToConvertHex).ConfigureAwait(false);
         }
 
         public RpcRequest BuildRequest(HexString valueToConvert, object id = null)

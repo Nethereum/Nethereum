@@ -34,14 +34,14 @@ namespace Nethereum.RPC.Eth.Blocks
         {
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(BlockParameter block, object id = null)
+        public Task<HexBigInteger> SendRequestAsync(BlockParameter block, object id = null)
         {
-            return await base.SendRequestAsync(id, block);
+            return base.SendRequestAsync(id, block);
         }
 
-        public async Task<HexBigInteger> SendRequestAsync(object id = null)
+        public Task<HexBigInteger> SendRequestAsync(object id = null)
         {
-            return await SendRequestAsync(BlockParameter.CreateLatest(), id);
+            return SendRequestAsync(BlockParameter.CreateLatest(), id);
         }
 
         public RpcRequest BuildRequest(BlockParameter block, object id = null)
