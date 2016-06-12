@@ -8,7 +8,7 @@ namespace Nethereum.ABI.FunctionEncoding
     public class FunctionCallEncoder: ParametersEncoder
     {
         
-        public string EncodeRequest<T>(T functionInput)
+        public string EncodeRequest<T>(T functionInput, string sha3Signature)
         {
            
             var type = typeof(T);
@@ -19,7 +19,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
             var encodedParameters = EncodeParametersFromTypeAttributes(type, functionInput);
         
-            return EncodeRequest(function.Sha3Signature, encodedParameters.ToHex());
+            return EncodeRequest(sha3Signature, encodedParameters.ToHex());
         }
 
 

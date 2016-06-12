@@ -194,7 +194,7 @@ namespace Nethereum.Web3
 
         public string GetData(TFunctionInput functionInput)
         {
-            return FunctionCallEncoder.EncodeRequest(functionInput);
+            return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
         }
 
     }

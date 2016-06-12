@@ -6,11 +6,8 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
     [AttributeUsage(AttributeTargets.Class)]
     public class FunctionAttribute: Attribute
     {
-        
         public string Name { get; set; }
-        public string Sha3Signature { get; set; }
-
-
+        
         public static bool IsFunctionType<T>()
         {
             return GetAttribute<T>() != null;

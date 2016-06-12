@@ -29,7 +29,7 @@ namespace Nethereum.ABI.Tests
     }
     public class FunctionAttributeEncodingTests
     {
-        [Function(Name ="test", Sha3Signature = "c6888fa1")]
+        [Function(Name ="test")]
         public class FunctionIntInput
         {
             [Parameter("int")]
@@ -41,11 +41,11 @@ namespace Nethereum.ABI.Tests
         public virtual void ShouldEncodeInt()
         {
             var input = new FunctionIntInput {A = 69};
-            var result = new FunctionCallEncoder().EncodeRequest(input);
+            var result = new FunctionCallEncoder().EncodeRequest(input, "c6888fa1");
             Assert.Equal("0xc6888fa10000000000000000000000000000000000000000000000000000000000000045", result);
         }
 
-        [Function(Name = "test", Sha3Signature = "c6888fa1")]
+        [Function(Name = "test")]
         [FunctionOutput]
         public class FunctionMultipleInputOutput
         {
@@ -77,7 +77,7 @@ namespace Nethereum.ABI.Tests
 
             function.B = array.ToList();
 
-            var result = new FunctionCallEncoder().EncodeRequest(function);
+            var result = new FunctionCallEncoder().EncodeRequest(function, "c6888fa1");
 
             Assert.Equal("0x" + "c6888fa1" + paramsEncoded, result);
         }
