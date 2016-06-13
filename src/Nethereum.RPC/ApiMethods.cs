@@ -63,6 +63,11 @@
         ,
         personal_listAccounts,
         personal_newAccount,
-        personal_unlockAccount
+        personal_unlockAccount,
+        admin_addPeer,
+        admin_nodeInfo,
+        admin_datadir,
+        admin_startRPC,
+        admin_setSolc
     }
 }
