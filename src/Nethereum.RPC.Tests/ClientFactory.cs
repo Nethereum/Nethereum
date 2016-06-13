@@ -11,9 +11,9 @@ namespace Nethereum.RPC.Tests
     {
         public static IClient GetClient()
         {
-            var client = new IpcClient("./geth.ipc");
-            return new RpcClient(new Uri("https://eth2.augur.net")); 
-            //return new RpcClient(new Uri("http://localhost:8545/"));
+            //var client = new IpcClient("./geth.ipc");
+            //return new RpcClient(new Uri("https://eth2.augur.net")); 
+            return new RpcClient(new Uri("http://localhost:8545/"));
             
         }
     }

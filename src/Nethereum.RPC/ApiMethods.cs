@@ -68,6 +68,15 @@
         admin_nodeInfo,
         admin_datadir,
         admin_startRPC,
-        admin_setSolc
+        admin_setSolc,
+        admin_startWS,
+        admin_stopRPC,
+        admin_stopWS,
+        debug_blockProfile,
+        debug_backtraceAt,
+        debug_dumpBlock,
+        debug_cpuProfile,
+        debug_gcStats,
+        debug_getBlockRlp
     }
 }
