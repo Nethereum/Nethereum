@@ -77,6 +77,12 @@
         debug_dumpBlock,
         debug_cpuProfile,
         debug_gcStats,
-        debug_getBlockRlp
+        debug_getBlockRlp,
+        debug_goTrace,
+        debug_memStats,
+        debug_seedHash,
+        debug_setBlockProfileRate,
+        debug_stacks,
+        debug_startCPUProfile
     }
 }

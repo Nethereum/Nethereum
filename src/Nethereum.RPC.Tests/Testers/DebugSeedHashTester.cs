@@ -5,15 +5,14 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
-using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.Sample.Testers
 {
-    public class DebugGetBlockRlpTester : RPCRequestTester<string>, IRPCRequestTester
+    public class DebugSeedHashTester : RPCRequestTester<string>, IRPCRequestTester
     {
-
+        
         [Fact]
-        public async void ShouldReturnTheBlockRplAsAString()
+        public async void ShouldReturnTheHash()
         {
             var result = await ExecuteAsync(ClientFactory.GetClient());
             Assert.NotNull(result);
@@ -21,13 +20,13 @@ namespace Nethereum.RPC.Sample.Testers
 
         public override async Task<string> ExecuteAsync(IClient client)
         {
-            var debugGetBlockRlp = new DebugGetBlockRlp(client);
-            return await debugGetBlockRlp.SendRequestAsync(10);
+            var debugSeedHash = new DebugSeedHash(client);
+            return await debugSeedHash.SendRequestAsync(10);
         }
 
         public override Type GetRequestType()
         {
-            return typeof(DebugGetBlockRlp);
+            return typeof(DebugSeedHash);
         }
     }
 }
