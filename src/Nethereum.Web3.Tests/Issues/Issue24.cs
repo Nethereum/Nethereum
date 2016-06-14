@@ -7,7 +7,6 @@ using Xunit;
 
 namespace SimpleTests
 {
-   ]
     public class Issue24
     {
         //This was a problem on event type declaration, see the Mordern test
