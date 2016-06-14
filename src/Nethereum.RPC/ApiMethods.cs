@@ -83,6 +83,14 @@
         debug_seedHash,
         debug_setBlockProfileRate,
         debug_stacks,
-        debug_startCPUProfile
+        debug_startCPUProfile,
+        debug_startGoTrace,
+        debug_stopCPUProfile,
+        debug_stopGoTrace,
+        debug_traceBlock,
+        debug_traceBlockByNumber,
+        debug_traceBlockByHash,
+        debug_traceBlockFromFile,
+        debug_traceTransaction
     }
 }

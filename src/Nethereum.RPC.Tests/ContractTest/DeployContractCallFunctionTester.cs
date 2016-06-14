@@ -6,12 +6,21 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Sample.Testers;
 using Xunit;
+using Nethereum.RPC.Tests;
 
 namespace Nethereum.RPC.Sample.ContractTest
 {
-    public class DeployContractCallFunctionTester : IRPCRequestTester
+    public class DeployContractCallFunctionTester : RPCRequestTester<string>, IRPCRequestTester
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+
+        [Fact]
+        public async void ShouldDeployContractAndPerformCall()
+        {
+            var result = await ExecuteAsync(ClientFactory.GetClient());
+            Assert.Equal("The result of deploying a contract and calling a function to multiply 7 by 69 is: 483 and should be 483", result);
+        }
+
+        public override async Task<string> ExecuteAsync(IClient client)
         {
             //The compiled solidity contract to be deployed
             //contract test { function multiply(uint a) returns(uint d) { return a * 7; } }
@@ -44,7 +53,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             //Input the function method Sha3Encoded (4 bytes) 
             var sha3Signature = "c6888fa1";
             //Define input parameters
-            var inputParameters = new[] {new Parameter("uint", "a")};
+            var inputParameters = new[] { new Parameter("uint", "a") };
             //encode the function call (function + parameter input)
 
             //using 69 as the input
@@ -70,7 +79,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             return message;
         }
 
-        public Type GetRequestType()
+        public override Type GetRequestType()
         {
             return typeof (DeployContractCallFunctionTester);
         }
