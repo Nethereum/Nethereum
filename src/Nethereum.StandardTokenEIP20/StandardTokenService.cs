@@ -1,11 +1,10 @@
-﻿using System.Numerics;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 
-namespace Nethereum.Maker.ERC20Token
+namespace Nethereum.StandardTokenEIP20
 {
-    public class EthTokenService
+    public class StandardTokenService
     {
         private readonly Web3.Web3 web3;
 
@@ -14,7 +13,7 @@ namespace Nethereum.Maker.ERC20Token
 
         private Contract contract;
 
-        public EthTokenService(Web3.Web3 web3, string address)
+        public StandardTokenService(Web3.Web3 web3, string address)
         {
             this.web3 = web3;
             this.contract = web3.Eth.GetContract(abi, address);

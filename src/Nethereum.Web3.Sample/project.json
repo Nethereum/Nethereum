@@ -1,31 +1,28 @@
 {
   "version": "1.0.0-*",
-  "description": "Nethereum.Web3.Sample Console Application",
+  "description": "Nethereum.Web3.Tests ",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
-
+  "testRunner": "xunit",
   "buildOptions": {
     "emitEntryPoint": true
   },
 
   "dependencies": {
-    "Nethereum.Web3": "1.0.0-*",
     "xunit": "2.1.0",
-    "Microsoft.NETCore.App": {
-      "type": "platform",
-      "version": "1.0.0-rc2-3002702"
-    }
+    "Nethereum.StandardTokenEIP20": "1.0.0-*",
+    "Nethereum.Web3": "1.0.0-*",
+    "dotnet-test-xunit": "1.0.0-*",
+    "Nethereum.JsonRpc.IpcClient": "1.0.0-*"
   },
 
   "commands": {
     "Nethereum.Web3.Sample": "Nethereum.Web3.Sample"
   },
   "frameworks": {
-    "netcoreapp1.0": {
-      "imports": "net451"
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Numerics": "4.0.0.0"
+      }
     }
   }
 }
-

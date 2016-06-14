@@ -6,6 +6,7 @@ using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Personal;
 
 namespace Nethereum.RPC.Sample.Testers
 {

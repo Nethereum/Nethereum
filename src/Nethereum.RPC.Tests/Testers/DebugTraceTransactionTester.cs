@@ -7,6 +7,7 @@ using Nethereum.RPC.Tests;
 using Xunit;
 using Newtonsoft.Json.Linq;
 using Nethereum.RPC.DebugGeth.DTOs;
+using Nethereum.RPC.DebugGeth;
 
 namespace Nethereum.RPC.Sample.Testers
 {

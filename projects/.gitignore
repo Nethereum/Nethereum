@@ -2,6 +2,7 @@
 *.db
 *.opendb
 ABI/
+EIP20/
 Hex/
 Maker/
 JsonRpc.Client/

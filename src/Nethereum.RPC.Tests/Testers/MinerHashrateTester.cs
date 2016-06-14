@@ -6,6 +6,7 @@ using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Miner;
 
 namespace Nethereum.RPC.Sample.Testers
 {

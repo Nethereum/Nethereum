@@ -3,12 +3,16 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Tests;
+using Xunit;
+using System.Threading;
 
 namespace Nethereum.Web3.Sample
 {
     public class ContractConstructorDeploymentAndCall
     {
-        public async Task<string> Test()
+        [Fact]
+        public async void ShouldDeployAContractWithConstructor()
         {
             //The compiled solidity contract to be deployed
             /*
@@ -37,12 +41,23 @@ namespace Nethereum.Web3.Sample
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var pass = "password";
 
-            var web3 = new Web3("http://192.168.2.211:8545");
+            var web3 = new Web3(ClientFactory.GetClient());
+
+            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            Assert.True(result, "Account should be unlocked");
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
 
+            Assert.NotNull(transactionHash);
+
+            result = await web3.Personal.LockAccount.SendRequestAsync(addressFrom);
+            Assert.True(result, "Account should be locked");
+
+            result = await web3.Miner.Start.SendRequestAsync();
+            Assert.True(result, "Mining should have started");
             //the contract should be mining now
 
             //get the contract address 
@@ -50,28 +65,36 @@ namespace Nethereum.Web3.Sample
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(500);
+                Thread.Sleep(1000);
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
-            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+            Assert.NotNull(receipt.ContractAddress);
 
+            result = await web3.Miner.Stop.SendRequestAsync();
+            Assert.True(result, "Mining should have stopped");
+
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+            
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
 
             //do a function call (not transaction) and get the result
-            var result = await multiplyFunction.CallAsync<int>(69);
+            var callResult = await multiplyFunction.CallAsync<int>(69);
+            Assert.Equal(483, callResult);
 
             var multiplierFunction = contract.GetFunction("getMultiplier");
 
             var multiplier = await multiplierFunction.CallAsync<int>();
 
+            Assert.Equal(7, multiplier);
+
             var contractNameFunction = contract.GetFunction("contractName");
+
             var name = await contractNameFunction.CallAsync<string>();
 
-            //visual test 
-            return "The result of deploying a contract and calling a function to multiply " + multiplier + " by 69 is: " + result +
-                   " and should be 483";
+            Assert.Equal("Multiplier", name);
+            
         }
     }
 }

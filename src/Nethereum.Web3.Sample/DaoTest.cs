@@ -1,19 +1,18 @@
 using System.Numerics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Web3;
+using Xunit;
 
 namespace SimpleTests
 {
-    [TestClass]
+  
     public class DaoTest
     {
      
         //Note: These tests are pointing to live.   
 
-        [TestMethod]
+        [Fact]
         public void CheckTotalSupply()
         {
             var abi =
@@ -23,10 +22,10 @@ namespace SimpleTests
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var totalSupplyFunction = contract.GetFunction("totalSupply");
             var result = totalSupplyFunction.CallAsync<BigInteger>().Result;
-            Assert.IsTrue(result > 0);
+            Assert.True(result > 0);
         }
 
-        [TestMethod]
+        [Fact]
         public void CheckProposal()
         {
             var abi =
@@ -36,7 +35,7 @@ namespace SimpleTests
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var proposalsFunction = contract.GetFunction("proposals");
             var result = proposalsFunction.CallDeserializingToObjectAsync<Proposal>(5).Result;
-            Assert.IsTrue(result.Creator == "0xd68ba7734753e2ee54103116323aba2d94c78dc5");
+            Assert.True(result.Creator == "0xd68ba7734753e2ee54103116323aba2d94c78dc5");
         }
 
         /*

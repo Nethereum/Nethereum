@@ -9,6 +9,7 @@ using Xunit;
 using Nethereum.RPC.Tests;
 using Nethereum.RPC.Personal;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Miner;
 
 namespace Nethereum.RPC.Sample.ContractTest
 {

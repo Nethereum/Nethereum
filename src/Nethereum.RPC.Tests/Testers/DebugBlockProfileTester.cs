@@ -5,6 +5,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
+using Nethereum.RPC.DebugGeth;
 
 namespace Nethereum.RPC.Sample.Testers
 {
