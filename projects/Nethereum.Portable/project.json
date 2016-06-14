@@ -1,7 +1,7 @@
 ﻿{
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc3",
   
-  "description": "Nethereum.Portable Nethereum portable classs library including Web3 to interact via RCP with an Ethereum client, for example geth. ABI, RPC and contract encoding and decoding ",
+  "description": "Nethereum.Portable Nethereum portable classs library including Web3 to interact via RCP with an Ethereum client, for example geth. Includes other libraries like ABI, RPC, contract encoding and decoding, StardardToken, Maker ",
   "authors": [ "Juan Blanco" ],
   "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
   "projectUrl": "http://www.nethereum.com",
