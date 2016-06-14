@@ -43,10 +43,60 @@ namespace Nethereum.Web3
             Tether
         }
 
-        
-        public BigInteger FromWei(BigInteger value, EthUnit fromUnit = EthUnit.Ether)
+
+        private int CalculateNumberOfDecimalPlaces(double value, int currentNumberOfDecimals = 0)
         {
-            return value/GetEthUnitValue(fromUnit);
+            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), currentNumberOfDecimals);
+        }
+
+        private int CalculateNumberOfDecimalPlaces(float value, int currentNumberOfDecimals = 0)
+        {
+            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), currentNumberOfDecimals);
+        }
+
+        private int CalculateNumberOfDecimalPlaces(decimal value, int currentNumberOfDecimals = 0)
+        {
+            var multiplied = value * System.Convert.ToInt64(Math.Pow(10, currentNumberOfDecimals));
+            if (Math.Round(multiplied) == multiplied)
+                return currentNumberOfDecimals;
+            return CalculateNumberOfDecimalPlaces(value, currentNumberOfDecimals + 1);
+        }
+
+        public BigInteger ToWei(decimal amount, BigInteger fromUnit)
+        {
+            var decimalPlaces = CalculateNumberOfDecimalPlaces(amount);
+            if (decimalPlaces == 0) return BigInteger.Multiply(new BigInteger(amount), fromUnit);
+
+            var decimalConversionUnit = System.Convert.ToInt64(Math.Pow(10, decimalPlaces));
+
+            var amountFromDec = new BigInteger(amount * decimalConversionUnit);
+            var unitFromDec = BigInteger.Divide(fromUnit, decimalConversionUnit);
+            return amountFromDec * unitFromDec;
+        }
+
+        public BigInteger ToWei(decimal amount, EthUnit fromUnit = EthUnit.Ether)
+        {
+            return ToWei(amount, GetEthUnitValue(fromUnit));
+        }
+
+        public BigInteger ToWei(decimal amount, int decimalPlacesFromUnit)
+        {
+            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
+        }
+
+        public decimal FromWei(BigInteger value, BigInteger toUnit)
+        {
+            return (decimal)value / (decimal)toUnit;
+        }
+
+        public decimal FromWei(BigInteger value, EthUnit toUnit = EthUnit.Ether)
+        {
+            return FromWei(value,GetEthUnitValue(toUnit));
+        }
+
+        public decimal FromWei(BigInteger value, int decimalPlacesToUnit)
+        {
+            return FromWei(value, BigInteger.Pow(10, decimalPlacesToUnit));
         }
 
         public BigInteger ToWei(BigInteger value, EthUnit fromUnit = EthUnit.Ether)
@@ -61,12 +111,12 @@ namespace Nethereum.Web3
 
         public BigInteger ToWei(double value, EthUnit fromUnit = EthUnit.Ether)
         {
-            return ToWei(new BigInteger(value), fromUnit);
+            return ToWei(System.Convert.ToDecimal(value), fromUnit);
         }
 
         public BigInteger ToWei(float value, EthUnit fromUnit = EthUnit.Ether)
         {
-            return ToWei(new BigInteger(value), fromUnit);
+            return ToWei(System.Convert.ToDecimal(value), fromUnit);
         }
 
         public BigInteger ToWei(long value, EthUnit fromUnit = EthUnit.Ether)
@@ -74,14 +124,9 @@ namespace Nethereum.Web3
             return ToWei(new BigInteger(value), fromUnit);
         }
 
-        public BigInteger ToWei(decimal value, EthUnit fromUnit = EthUnit.Ether)
-        {
-            return ToWei(new BigInteger(value), fromUnit);
-        }
-
         public BigInteger ToWei(string value, EthUnit fromUnit = EthUnit.Ether)
         {
-            return ToWei(BigInteger.Parse(value), fromUnit);
+            return ToWei(Decimal.Parse(value), fromUnit);
         }
 
         public BigInteger GetEthUnitValue(EthUnit ethUnit)
@@ -139,5 +184,6 @@ namespace Nethereum.Web3
             }
             throw new NotImplementedException();
         }
-    }
+        }
+
 }

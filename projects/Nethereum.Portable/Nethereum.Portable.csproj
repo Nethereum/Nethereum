@@ -303,6 +303,130 @@
 				<Link>RPC\RpcClientWrapper.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminAddPeer.cs">
+				<Link>RPC\Admin\AdminAddPeer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminDatadir.cs">
+				<Link>RPC\Admin\AdminDatadir.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminNodeInfo.cs">
+				<Link>RPC\Admin\AdminNodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminSetSolc.cs">
+				<Link>RPC\Admin\AdminSetSolc.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminStartRPC.cs">
+				<Link>RPC\Admin\AdminStartRPC.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminStartWS.cs">
+				<Link>RPC\Admin\AdminStartWS.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminStopRPC.cs">
+				<Link>RPC\Admin\AdminStopRPC.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Admin\AdminStopWS.cs">
+				<Link>RPC\Admin\AdminStopWS.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugBacktraceAt.cs">
+				<Link>RPC\DebugGeth\DebugBacktraceAt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugBlockProfile.cs">
+				<Link>RPC\DebugGeth\DebugBlockProfile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugCpuProfile.cs">
+				<Link>RPC\DebugGeth\DebugCpuProfile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugDumpBlock.cs">
+				<Link>RPC\DebugGeth\DebugDumpBlock.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugGcStats.cs">
+				<Link>RPC\DebugGeth\DebugGcStats.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugGetBlockRlp.cs">
+				<Link>RPC\DebugGeth\DebugGetBlockRlp.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugGoTrace.cs">
+				<Link>RPC\DebugGeth\DebugGoTrace.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugMemStats.cs">
+				<Link>RPC\DebugGeth\DebugMemStats.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugSeedHash.cs">
+				<Link>RPC\DebugGeth\DebugSeedHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugSetBlockProfileRate.cs">
+				<Link>RPC\DebugGeth\DebugSetBlockProfileRate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugStacks.cs">
+				<Link>RPC\DebugGeth\DebugStacks.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugStartCPUProfile.cs">
+				<Link>RPC\DebugGeth\DebugStartCPUProfile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugStartGoTrace.cs">
+				<Link>RPC\DebugGeth\DebugStartGoTrace.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugStopCPUProfile.cs">
+				<Link>RPC\DebugGeth\DebugStopCPUProfile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugStopGoTrace.cs">
+				<Link>RPC\DebugGeth\DebugStopGoTrace.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugTraceBlock.cs">
+				<Link>RPC\DebugGeth\DebugTraceBlock.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugTraceBlockByHash.cs">
+				<Link>RPC\DebugGeth\DebugTraceBlockByHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugTraceBlockByNumber.cs">
+				<Link>RPC\DebugGeth\DebugTraceBlockByNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugTraceBlockFromFile.cs">
+				<Link>RPC\DebugGeth\DebugTraceBlockFromFile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugTraceTransaction.cs">
+				<Link>RPC\DebugGeth\DebugTraceTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugVerbosity.cs">
+				<Link>RPC\DebugGeth\DebugVerbosity.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DebugVmodule.cs">
+				<Link>RPC\DebugGeth\DebugVmodule.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\DebugGeth\DTOs\TraceTransactionOptions.cs">
+				<Link>RPC\DebugGeth\DTOs\TraceTransactionOptions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\EthAccounts.cs">
 				<Link>RPC\Eth\EthAccounts.cs</Link>
 		</Compile>
@@ -559,6 +683,22 @@
 				<Link>RPC\Infrastructure\GenericRpcRequesteResponseHandlerNoParam.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Miner\MinerHashrate.cs">
+				<Link>RPC\Miner\MinerHashrate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Miner\MinerSetGasPrice.cs">
+				<Link>RPC\Miner\MinerSetGasPrice.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Miner\MinerStart.cs">
+				<Link>RPC\Miner\MinerStart.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Miner\MinerStop.cs">
+				<Link>RPC\Miner\MinerStop.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Net\NetListening.cs">
 				<Link>RPC\Net\NetListening.cs</Link>
 		</Compile>
@@ -575,8 +715,16 @@
 				<Link>RPC\Personal\PersonalListAccounts.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalLockAccount.cs">
+				<Link>RPC\Personal\PersonalLockAccount.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalNewAccount.cs">
 				<Link>RPC\Personal\PersonalNewAccount.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalSignAndSendTransaction.cs">
+				<Link>RPC\Personal\PersonalSignAndSendTransaction.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalUnlockAccount.cs">
@@ -599,8 +747,20 @@
 				<Link>RPC\Web3\Web3Sha3.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\Admin.cs">
+				<Link>Web3\Admin.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\DebugGeth.cs">
+				<Link>Web3\DebugGeth.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\Eth.cs">
 				<Link>Web3\Eth.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Miner.cs">
+				<Link>Web3\Miner.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Web3\Net.cs">
