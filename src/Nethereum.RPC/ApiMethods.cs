@@ -91,6 +91,11 @@
         debug_traceBlockByNumber,
         debug_traceBlockByHash,
         debug_traceBlockFromFile,
-        debug_traceTransaction
+        debug_traceTransaction,
+        debug_verbosity,
+        debug_vmodule,
+        miner_hashrate,
+        miner_start,
+        miner_stop
     }
 }

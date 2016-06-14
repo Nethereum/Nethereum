@@ -7,6 +7,8 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Sample.Testers;
 using Xunit;
 using Nethereum.RPC.Tests;
+using Nethereum.RPC.Personal;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.Sample.ContractTest
 {
@@ -34,6 +36,13 @@ namespace Nethereum.RPC.Sample.ContractTest
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the hash
+
+            var personalUnlock = new PersonalUnlockAccount(client);
+            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, "password", new HexBigInteger(90));
+
+            var minerStart = new MinerStart(client);
+            var minerStartResult = await minerStart.SendRequestAsync();
+
             var transactionHash = await ethSendTransation.SendRequestAsync(transactionInput);
 
             //the contract should be mining now
@@ -46,6 +55,11 @@ namespace Nethereum.RPC.Sample.ContractTest
             {
                 receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash);
             }
+
+
+
+            var minerStop = new MinerStop(client);
+            var minerStopResult = await minerStop.SendRequestAsync();
 
             //Encode and build function parameters 
             var function = new FunctionCallEncoder();
