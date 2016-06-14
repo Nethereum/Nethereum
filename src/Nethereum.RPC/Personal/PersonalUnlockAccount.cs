@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using edjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth;
 
 namespace Nethereum.RPC.Personal
 {
@@ -29,10 +30,14 @@ namespace Nethereum.RPC.Personal
             return await base.SendRequestAsync(id, address, passPhrase, durationInSeconds).ConfigureAwait(false);
         }
 
-        public async Task<bool> SendRequestAsync(Eth.EthCoinBase coinbaseRequest, string passPhrase, HexBigInteger durationInSeconds,
+        public async Task<bool> SendRequestAsync(EthCoinBase coinbaseRequest, string passPhrase,
+            HexBigInteger durationInSeconds,
             object id = null)
         {
-            return await base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase, durationInSeconds).ConfigureAwait(false);
+            return
+                await
+                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase, durationInSeconds)
+                        .ConfigureAwait(false);
         }
 
         public RpcRequest BuildRequest(string address, string passPhrase, HexBigInteger durationInSeconds,

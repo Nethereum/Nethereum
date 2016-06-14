@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -49,7 +48,7 @@ namespace Nethereum.RPC.Eth
         {
             var response = await base.SendRequestAsync(id).ConfigureAwait(false);
 
-            if (response is bool && (bool)response == false) return new SyncingOutput {IsSyncing = (bool)response};
+            if (response is bool && (bool) response == false) return new SyncingOutput {IsSyncing = (bool) response};
 
             var syncingResponse = (JObject) response;
 

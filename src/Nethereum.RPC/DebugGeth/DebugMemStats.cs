@@ -2,7 +2,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.RPC
+namespace Nethereum.RPC.DebugGeth
 {
     /// <Summary>
     ///     Returns detailed runtime memory statistics.

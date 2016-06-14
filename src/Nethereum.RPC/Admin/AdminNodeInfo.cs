@@ -1,4 +1,4 @@
-using Nethereum.JsonRpc.Client;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 using Newtonsoft.Json.Linq;
 

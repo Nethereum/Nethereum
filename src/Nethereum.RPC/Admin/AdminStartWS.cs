@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using edjCase.JsonRpc.Core;
-using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Admin

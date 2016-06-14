@@ -1,18 +1,15 @@
-
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC
+namespace Nethereum.RPC.DebugGeth
 {
-
-    ///<Summary>
-    /// Stops an ongoing CPU profile.    
-    ///</Summary>
+    /// <Summary>
+    ///     Stops an ongoing CPU profile.
+    /// </Summary>
     public class DebugStopCPUProfile : GenericRpcRequestResponseHandlerNoParam<object>
     {
-            public DebugStopCPUProfile(IClient client) : base(client, ApiMethods.debug_stopCPUProfile.ToString()) { }
+        public DebugStopCPUProfile(IClient client) : base(client, ApiMethods.debug_stopCPUProfile.ToString())
+        {
+        }
     }
-
 }
-            
-        

@@ -2,53 +2,53 @@
 {
     public enum ApiMethods
     {
-        net_listening, //done
-        eth_protocolVersion, //done
-        eth_syncing, //done
-        eth_coinbase, //done
-        eth_mining, //done
-        eth_hashrate, //done
-        eth_gasPrice, //done
-        eth_accounts, //done
-        eth_blockNumber, //done
-        eth_getBalance, //done
-        eth_getStorageAt, //done
-        eth_getTransactionCount, //done
-        eth_getBlockTransactionCountByHash, //done
-        eth_getBlockTransactionCountByNumber, //done
-        eth_getUncleCountByBlockHash, //done
-        eth_getUncleCountByBlockNumber, //done
-        eth_getCode, //done
-        eth_sign, //done
-        eth_sendTransaction, //done
-        eth_sendRawTransaction, //done
-        eth_call, //done
-        eth_estimateGas, //done
-        eth_getBlockByHash, //done
-        eth_getBlockByNumber, //done
-        eth_getTransactionByHash, //done
-        eth_getTransactionByBlockHashAndIndex, //done
-        eth_getTransactionByBlockNumberAndIndex, //done
-        eth_getTransactionReceipt, //done
+        net_listening,
+        eth_protocolVersion,
+        eth_syncing,
+        eth_coinbase,
+        eth_mining,
+        eth_hashrate,
+        eth_gasPrice,
+        eth_accounts,
+        eth_blockNumber,
+        eth_getBalance,
+        eth_getStorageAt,
+        eth_getTransactionCount,
+        eth_getBlockTransactionCountByHash,
+        eth_getBlockTransactionCountByNumber,
+        eth_getUncleCountByBlockHash,
+        eth_getUncleCountByBlockNumber,
+        eth_getCode,
+        eth_sign,
+        eth_sendTransaction,
+        eth_sendRawTransaction,
+        eth_call,
+        eth_estimateGas,
+        eth_getBlockByHash,
+        eth_getBlockByNumber,
+        eth_getTransactionByHash,
+        eth_getTransactionByBlockHashAndIndex,
+        eth_getTransactionByBlockNumberAndIndex,
+        eth_getTransactionReceipt,
         eth_getUncleByBlockHashAndIndex,
         eth_getUncleByBlockNumberAndIndex,
-        eth_getCompilers, //done
-        eth_compileLLL, //done
-        eth_compileSolidity, //done
-        eth_compileSerpent, //done
-        eth_newFilter, //done
-        eth_newBlockFilter, //done
-        eth_newPendingTransactionFilter, //done
-        eth_uninstallFilter, //done
-        eth_getFilterChanges, //done
-        eth_getFilterLogs, //done
-        eth_getLogs, //done
-        eth_getWork, //done
-        eth_submitWork, //done
-        eth_submitHashrate, //done
+        eth_getCompilers,
+        eth_compileLLL,
+        eth_compileSolidity,
+        eth_compileSerpent,
+        eth_newFilter,
+        eth_newBlockFilter,
+        eth_newPendingTransactionFilter,
+        eth_uninstallFilter,
+        eth_getFilterChanges,
+        eth_getFilterLogs,
+        eth_getLogs,
+        eth_getWork,
+        eth_submitWork,
+        eth_submitHashrate,
         shh_post,
-        shh_version, //done
-        shh_newIdentity, //done
+        shh_version,
+        shh_newIdentity,
         shh_hasIdentity,
         shh_newGroup,
         shh_addToGroup,
@@ -56,10 +56,10 @@
         shh_uninstallFilter,
         shh_getFilterChanges,
         shh_getMessages,
-        web3_clientVersion, //done
-        web3_sha3, //done
-        net_version, //done
-        net_peerCount //done
+        web3_clientVersion,
+        web3_sha3,
+        net_version,
+        net_peerCount
         ,
         personal_listAccounts,
         personal_newAccount,
@@ -96,6 +96,9 @@
         debug_vmodule,
         miner_hashrate,
         miner_start,
-        miner_stop
+        miner_stop,
+        miner_setGasPrice,
+        personal_lockAccount,
+        personal_signAndSendTransaction
     }
 }

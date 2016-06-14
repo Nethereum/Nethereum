@@ -37,14 +37,16 @@ namespace Nethereum.RPC.Sample.ContractTest
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
             // retrieve the hash
 
-            var personalUnlock = new PersonalUnlockAccount(client);
-            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, "password", new HexBigInteger(90));
-
             var minerStart = new MinerStart(client);
             var minerStartResult = await minerStart.SendRequestAsync();
 
+            var personalUnlock = new PersonalUnlockAccount(client);
+            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, "password", new HexBigInteger(90));
+
             var transactionHash = await ethSendTransation.SendRequestAsync(transactionInput);
 
+            var personalock = new PersonalLockAccount(client);
+            var lockResult = await personalock.SendRequestAsync(transactionInput.From);
             //the contract should be mining now
 
             //get contract address 
@@ -53,6 +55,7 @@ namespace Nethereum.RPC.Sample.ContractTest
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
+                await Task.Delay(1000);
                 receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 

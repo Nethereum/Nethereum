@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using edjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 

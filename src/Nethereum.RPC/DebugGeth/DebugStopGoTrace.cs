@@ -1,18 +1,15 @@
-
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC
+namespace Nethereum.RPC.DebugGeth
 {
-
-    ///<Summary>
-    /// Stops writing the Go runtime trace.    
-    ///</Summary>
+    /// <Summary>
+    ///     Stops writing the Go runtime trace.
+    /// </Summary>
     public class DebugStopGoTrace : GenericRpcRequestResponseHandlerNoParam<object>
     {
-            public DebugStopGoTrace(IClient client) : base(client, ApiMethods.debug_stopGoTrace.ToString()) { }
+        public DebugStopGoTrace(IClient client) : base(client, ApiMethods.debug_stopGoTrace.ToString())
+        {
+        }
     }
-
 }
-            
-        

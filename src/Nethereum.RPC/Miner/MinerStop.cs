@@ -1,18 +1,15 @@
-
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC
+namespace Nethereum.RPC.Miner
 {
-
-    ///<Summary>
-    /// Stop the CPU mining operation.    
-    ///</Summary>
+    /// <Summary>
+    ///     Stop the CPU mining operation.
+    /// </Summary>
     public class MinerStop : GenericRpcRequestResponseHandlerNoParam<bool>
     {
-            public MinerStop(IClient client) : base(client, ApiMethods.miner_stop.ToString()) { }
+        public MinerStop(IClient client) : base(client, ApiMethods.miner_stop.ToString())
+        {
+        }
     }
-
 }
-            
-        

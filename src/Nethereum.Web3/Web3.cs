@@ -28,6 +28,9 @@ namespace Nethereum.Web3
             Shh = new Shh(Client);
             Net = new Net(Client);
             Personal = new Personal(Client);
+            Miner = new Miner(Client);
+            DebugGeth = new DebugGeth(Client);
+            Admin = new Admin(Client);
             Convert = new UnitConversion();
             sha3Keccack = new Sha3Keccack();
         }
@@ -40,6 +43,12 @@ namespace Nethereum.Web3
         public Net Net { get; private set; }
 
         public Personal Personal { get; private set; }
+
+        public Admin Admin { get; private set; }
+
+        public DebugGeth DebugGeth { get; private set; }
+
+        public Miner Miner { get; private set; }
 
         private void IntialiseRpcClient(string url)
         {
