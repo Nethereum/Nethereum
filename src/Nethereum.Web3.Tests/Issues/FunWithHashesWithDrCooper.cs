@@ -16,7 +16,7 @@ namespace Nethereum.Web3.Sample.Issues
             /* 
              contract Hashes{
                 
-                function sha3Test(bytes32 _myvalue) returns (bytes32 val){
+                function sha3Test(string _myvalue) returns (bytes32 val){
                     return sha3(_myvalue);
                 }
     
