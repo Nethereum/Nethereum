@@ -11,6 +11,7 @@ namespace Nethereum.ABI.Encoders
         public Bytes32TypeEncoder()
         {
             this.intTypeEncoder = new IntTypeEncoder();
+           
         }
 
         public byte[] Encode(object value)
@@ -29,6 +30,13 @@ namespace Nethereum.ABI.Encoders
                 var bytes = System.Text.Encoding.UTF8.GetBytes(stringValue);
                 Array.Copy(bytes, 0, returnBytes, 0, bytes.Length);
                 return returnBytes;
+            }
+
+            var bytesValue = value as byte[];
+            if (bytesValue != null)
+            {
+                if (bytesValue.Length > 32) throw new ArgumentException("Expected byte array no bigger than 32 bytes");
+                return bytesValue;
             }
 
             throw new ArgumentException("Expected Numeric Type or String to be Encoded as Bytes32");
