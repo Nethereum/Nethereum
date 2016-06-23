@@ -3,3 +3,7 @@ pages:
 - Home: 'docs/index.md'
 - Introduction:
     - 'Getting started' : 'docs/introduction/getting-started.md'
+    - 'Web3' : 'docs/introduction/web3.md'
+    - 'RPC' : 'docs/introduction/rpc.md'
+- Contracts:
+    - 'Writing contracts' : 'docs/contracts/writing.md'
