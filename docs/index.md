@@ -2,7 +2,7 @@
 
 Nethereum is a .Net RPC / IPC Client library for Ethereum, it allows you to interact with Ethereum clients like geth using .Net. The library has very similar functionality as the Javascript Etherum Web3 RPC Client Library.
 
-All the JSON RPC/IPC methods are implemented as they appear in new versions of the clients, closely supported the geth client inclusding its extensions for admin, personal, debugging.
+All the JSON RPC/IPC methods are implemented as they appear in new versions of the clients. The geth client is the one that is closely supported and tested, including its management extensions for admin, personal, debugging, miner.
 
 Interaction with contracts has been simplified for deployment, function calling, transaction and event filtering and decoding of topics.
 
