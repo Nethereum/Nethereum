@@ -1,15 +1,33 @@
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.RPC.Tests;
 using Nethereum.Web3;
 using Xunit;
+using Nethereum.Hex.HexTypes;
 
 namespace SimpleTests
 {
   
     public class DaoTest
     {
-     
+
+        [Fact]
+        public async void GetBlock()
+        {
+            var web3 = new Web3(ClientFactory.GetClient());
+            var block = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(new HexBigInteger(1139657));
+            var transaction =
+                await
+                    web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(
+                        "0x9122a4bba873e30c9c6e71481bd60ef61f559f60e26e50a38272f3324b7befca");
+
+            var receipt = await
+                web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(
+                    "0x9122a4bba873e30c9c6e71481bd60ef61f559f60e26e50a38272f3324b7befca");
+           
+        }
+        //0x2e3b02a91f1115812b518c35149bbb54b788ea1c25c45abb7d477556ef20ac96
         //Note: These tests are pointing to live.   
 
         [Fact]
