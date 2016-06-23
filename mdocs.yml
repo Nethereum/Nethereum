@@ -1,0 +1,5 @@
+site_name: Nethereum
+pages: 
+- Home: 'docs/index.md'
+- Introduction:
+    - 'Getting started' : 'docs/introduction/getting-started.md'
