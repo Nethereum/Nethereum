@@ -10,7 +10,7 @@ pages:
 - Contracts:
     - 'Writing contracts' : 'contracts/writing.md'
     - 'Deploying' : 'contracts/deploying.md'
-    - 'DTO' : 'contract/dto.md'
+    - 'DTO' : 'contracts/dto.md'
     - 'Calling' : 'contracts/calling.md'
     - 'Transactions' : 'contracts/transactions.md'
     - 'Events' : 'contracts/events.md'
