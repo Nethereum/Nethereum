@@ -6,8 +6,9 @@ All the JSON RPC/IPC methods are implemented as they appear in new versions of t
 
 Interaction with contracts has been simplified for deployment, function calling, transaction and event filtering and decoding of topics.
 
+The library has been tested in all the platforms .Net Core, Mono, Linux, iOS, Android, Raspberry PI, Xbox and of course Windows.
 
-# Quick installation
+## Quick installation
 
 Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages apart from IPC which is windows specific.
 
@@ -15,7 +16,8 @@ Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as 
 PM > Install-Package Nethereum.Portable -Pre
 ```
 
-Another quick start option if targetting netstardad 1.2 is use the Web3 package, which the top level package that includes all the dependencies. 
+Another option (if targetting netstardad 1.2) is to use the Nethereum.Web3 package. This top level package include all the dependencies for RPC, ABI and Hex. 
+
 If you have issues intalling the packages make sure you have a reference to System.Runtime specific to your environment.
 
 ```
@@ -30,3 +32,6 @@ PM > Install-Package Nethereum.Web3 -Pre
 | Nethereum.RPC    | [![NuGet version](https://badge.fury.io/nu/nethereum.rpc.svg)](https://badge.fury.io/nu/nethereum.rpc)| 
 | Nethereum.Hex    | [![NuGet version](https://badge.fury.io/nu/nethereum.hex.svg)](https://badge.fury.io/nu/nethereum.hex)| 
 | Nethereum.JsonRpc.IpcClient| [![NuGet version](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient.svg)](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient)| 
+
+
+Finally if you want to use IPC you will need the specific IPC Client library for Windows. Note: Currently only Windows is supported.
