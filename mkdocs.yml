@@ -1,9 +1,9 @@
 site_name: Nethereum
 pages: 
-- Home: 'docs/index.md'
+- Home: 'index.md'
 - Introduction:
-    - 'Getting started' : 'docs/introduction/getting-started.md'
-    - 'Web3' : 'docs/introduction/web3.md'
-    - 'RPC' : 'docs/introduction/rpc.md'
+    - 'Getting started' : 'introduction/getting-started.md'
+    - 'Web3' : 'introduction/web3.md'
+    - 'RPC' : 'introduction/rpc.md'
 - Contracts:
-    - 'Writing contracts' : 'docs/contracts/writing.md'
+    - 'Writing contracts' : 'contracts/writing.md'
