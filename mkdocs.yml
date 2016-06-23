@@ -5,5 +5,13 @@ pages:
     - 'Getting started' : 'introduction/getting-started.md'
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
+    - 'IPC' : 'introduction/ipc.md'
+    - 'Hex Types' : 'introduction/hex-types.md'
 - Contracts:
     - 'Writing contracts' : 'contracts/writing.md'
+    - 'Deploying' : 'contracts/deploying.md'
+    - 'DTO' : 'contract/dto.md'
+    - 'Calling' : 'contracts/calling.md'
+    - 'Transactions' : 'contracts/transactions.md'
+    - 'Events' : 'contracts/events.md'
+    - 'Failing transactions' : 'contracts/failing-transactions.md'
