@@ -19,14 +19,26 @@ namespace Nethereum.RPC.Sample.Testers
         {
             var result = await ExecuteAsync(ClientFactory.GetClient());
             Assert.NotNull(result);
+            var error = GetError(result);
         }
 
+        public string GetError(JObject result)
+        {
+            
+            var structsLogs = (JArray) result["structLogs"];
+            var lastCall = structsLogs[structsLogs.Count - 1];
+            return lastCall["error"].Value<string>();
 
+        }
+
+        //Live error ""0x022f440fa96eb469363804d7b6c52321d4f409fa76578cdbdc5f04ff494b1321" one call
+        //Live error "0x2bf8b77737953752535380c87a443de4974899f97a84fddf04a7764330f9964c"
+        //Live normal = "0x58c8e6eaab928b2ce991d4b949027d168d010ed9ac6b79d65bfb1c7495a89b7a"
 
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var debugTraceTransaction = new DebugTraceTransaction(client);
-            return await debugTraceTransaction.SendRequestAsync("0x31227fe8fdadbeb9e08626cfc2b869c2977fe8ab33ded0dc277d12ebce27c793", new TraceTransactionOptions());
+            return await debugTraceTransaction.SendRequestAsync("0x58c8e6eaab928b2ce991d4b949027d168d010ed9ac6b79d65bfb1c7495a89b7a", new TraceTransactionOptions());
         }
 
         public override Type GetRequestType()
