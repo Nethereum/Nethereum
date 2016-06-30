@@ -8,22 +8,25 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
+using Nethereum.RPC.Tests;
+using Xunit;
 
 namespace Nethereum.Web3.Sample
 {
     public class EventFilterWith2Topics
     {
-        public async Task<string> Test()
+        [Fact]
+        public async void Test()
         {
             //The compiled solidity contract to be deployed
             /*
-           contract test { 
+          contract test { 
     
                 uint _multiplier;
     
                 event Multiplied(uint indexed a, uint indexed result);
     
-                event MultipliedLog(uint indexed a, uint indexed result, address sender, string hello );
+                event MultipliedLog(uint indexed a, uint indexed result, string indexed hello, address sender );
     
                 function test(uint multiplier){
                     _multiplier = multiplier;
@@ -32,7 +35,7 @@ namespace Nethereum.Web3.Sample
                 function multiply(uint a) returns(uint d) {
                     d = a * _multiplier;
                     Multiplied(a, d);
-                    MultipliedLog(a, d, msg.sender, "Hello world");
+                    MultipliedLog(a, d, "Hello world", msg.sender);
                     return d;
                 }
     
@@ -49,19 +52,31 @@ namespace Nethereum.Web3.Sample
            */
 
             var contractByteCode =
-                "0x6060604052604051602080610216833981016040528080519060200190919050505b806000600050819055505b506101db8061003b6000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806361325dbc1461004f578063c23f4e3e1461007b578063c6888fa1146100b05761004d565b005b61006560048080359060200190919050506101b3565b6040518082815260200191505060405180910390f35b61009a60048080359060200190919080359060200190919050506101c9565b6040518082815260200191505060405180910390f35b6100c660048080359060200190919050506100dc565b6040518082815260200191505060405180910390f35b600060006000505482029050805080827f51ae5c4fa89d1aa731ff280d425357e6e5c838c6fc8ed6ca0139ea31716bbd5760405180905060405180910390a380827fffc23845ca34f573c322267502cda1440fac565d162e9c3a5b2a9caca600d91d33604051808273ffffffffffffffffffffffffffffffffffffffff168152602001806020018281038252600b8152602001807f48656c6c6f20776f726c640000000000000000000000000000000000000000008152602001506020019250505060405180910390a38090506101ae565b919050565b6000600060005054820290506101c4565b919050565b600081830290506101d5565b9291505056";
+                "0x6060604052604051602080610213833981016040528080519060200190919050505b806000600050819055505b506101d88061003b6000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806361325dbc1461004f578063c23f4e3e1461007b578063c6888fa1146100b05761004d565b005b61006560048080359060200190919050506100dc565b6040518082815260200191505060405180910390f35b61009a60048080359060200190919080359060200190919050506100f2565b6040518082815260200191505060405180910390f35b6100c66004808035906020019091905050610104565b6040518082815260200191505060405180910390f35b6000600060005054820290506100ed565b919050565b600081830290506100fe565b92915050565b600060006000505482029050805080827f51ae5c4fa89d1aa731ff280d425357e6e5c838c6fc8ed6ca0139ea31716bbd5760405180905060405180910390a360405180807f48656c6c6f20776f726c64000000000000000000000000000000000000000000815260200150600b019050604051809103902081837f74053123e4f45ba0f8cbf86301034a4ab00cdc75cd155a0df7c5d815bd97dcb533604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a48090506101d3565b91905056";
 
             var abi =
-                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply1"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""b"",""type"":""uint256""}],""name"":""multiply2"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""}],""name"":""Multiplied"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""},{""indexed"":false,""name"":""sender"",""type"":""address""},{""indexed"":false,""name"":""hello"",""type"":""string""}],""name"":""MultipliedLog"",""type"":""event""}]";
+                @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply1"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""b"",""type"":""uint256""}],""name"":""multiply2"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""}],""name"":""Multiplied"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""a"",""type"":""uint256""},{""indexed"":true,""name"":""result"",""type"":""uint256""},{""indexed"":true,""name"":""sender"",""type"":""string""},{""indexed"":false,""name"":""hello"",""type"":""address""}],""name"":""MultipliedLog"",""type"":""event""}]";
 
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var pass = "password";
 
-            var web3 = new Web3("http://localhost:8545");
+            var web3 = new Web3(ClientFactory.GetClient());
+
+            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            Assert.True(result, "Account should be unlocked");
+
+           
+
             var eth = web3.Eth;
             var transactions = eth.Transactions;
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
+
+            Assert.NotNull(transactionHash);
+
+            result = await web3.Miner.Start.SendRequestAsync(4);
+            Assert.True(result, "Mining should have started");
 
             //the contract should be mining now
 
@@ -117,6 +132,9 @@ namespace Nethereum.Web3.Sample
                 receiptTransaction = await transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
             }
 
+            result = await web3.Miner.Stop.SendRequestAsync();
+            Assert.True(result, "Mining should have stopped");
+
             var logs = await eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract);    
             var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);
             var eventLogs69 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69);
@@ -126,8 +144,11 @@ namespace Nethereum.Web3.Sample
             
             var multipliedLogEvents = await multipliedEventLog.GetFilterChanges<EventMultipliedSenderLog>(filterAllLog);
 
-            return "All logs :" + eventLogsAll.Count + " Multiplied by 69 result: " +
-                   eventLogs69.First().Event.Result + " Address is " + multipliedLogEvents.First().Event.Sender;
+            Assert.Equal(eventLogs69.First().Event.Result, 483);
+            Assert.Equal(multipliedLogEvents.First().Event.Hello, "0xed6c11b0b5b808960df26f5bfc471d04c1995b0ffd2055925ad1be28d6baadfd"); //The sha3 keccak of "Hello world" as it is an indexed string
+            Assert.Equal(multipliedLogEvents.First().Event.Sender, addressFrom);
+
+       
         } 
 
         public class EventMultiplied
@@ -147,11 +168,11 @@ namespace Nethereum.Web3.Sample
             [Parameter("uint", "result", 2, true)]
             public int Result { get; set; }
 
-            [Parameter("address", "sender", 3, false)]
+            [Parameter("address", "sender", 4, false)]
             public string Sender { get; set; }
 
             
-            [Parameter("string", "hello", 4, false)]
+            [Parameter("string", "hello", 3, true)]
             public string Hello { get; set; }
 
         }

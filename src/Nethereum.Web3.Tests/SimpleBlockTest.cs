@@ -1,4 +1,6 @@
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Tests;
+using Nethereum.Web3;
 using Xunit;
 
 namespace SimpleTests
