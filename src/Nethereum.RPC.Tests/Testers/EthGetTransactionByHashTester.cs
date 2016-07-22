@@ -2,6 +2,9 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Tests;
+using Xunit;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.RPC.Sample.Testers
 {
@@ -19,6 +22,30 @@ namespace Nethereum.RPC.Sample.Testers
         public Type GetRequestType()
         {
             return typeof (EthGetTransactionByHash);
+        }
+    }
+
+    public class EthGetTransactionReceiptTester : RPCRequestTester<TransactionReceipt>, IRPCRequestTester
+    {
+        [Fact]
+        public async void ShouldRetrieveAccounts()
+        {
+            var receipt = await ExecuteAsync(ClientFactory.GetClient());
+            Assert.NotNull(receipt);
+        }
+
+        public override async Task<TransactionReceipt> ExecuteAsync(IClient client)
+        {
+            var ethGetTransactionByHash = new EthGetTransactionReceipt(client);
+            return
+                await
+                    ethGetTransactionByHash.SendRequestAsync(
+                        "0x040554dc82f845d6c44e1d7f3b2109f6ae13a8a3d235529e790829f93d69eb0e");
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthGetTransactionReceipt);
         }
     }
 }
