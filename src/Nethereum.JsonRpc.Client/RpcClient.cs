@@ -85,7 +85,7 @@ namespace Nethereum.JsonRpc.Client
             {
                 throw new ArgumentNullException(nameof(request));
             }
-            return await this.SendAsync<RpcRequest, RpcResponse>(request, route);
+            return await this.SendAsync<RpcRequest, RpcResponse>(request, route).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace Nethereum.JsonRpc.Client
                 throw new ArgumentNullException(nameof(requests));
             }
             List<RpcRequest> requestList = requests.ToList();
-            return await this.SendAsync<List<RpcRequest>, List<RpcResponse>>(requestList, route);
+            return await this.SendAsync<List<RpcRequest>, List<RpcResponse>>(requestList, route).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace Nethereum.JsonRpc.Client
                     HttpContent httpContent = new StringContent(rpcRequestJson, Encoding.UTF8,
                                     "application/json");
                    
-                    HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(route, httpContent);
+                    HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(route, httpContent).ConfigureAwait(false);
                     httpResponseMessage.EnsureSuccessStatusCode();
 
                     string responseJson = await httpResponseMessage.Content.ReadAsStringAsync();
