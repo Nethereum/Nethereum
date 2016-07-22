@@ -11,11 +11,12 @@ namespace Nethereum.JsonRpc.Client
     {
         public static JsonSerializerSettings BuildDefaultJsonSerializerSettings()
         {
-            return new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new NullToEmptyStringResolver()};
+            return new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new NullParamsFirstElementResolver()};
         }
     }
 
-    public class NullToEmptyStringResolver : Newtonsoft.Json.Serialization.DefaultContractResolver
+    //Passing a null value as the first parameter in the rpc (as no value) causes issues on client as it is not being ignored deserialising, as it is treated as the first element of the array.
+    public class NullParamsFirstElementResolver : Newtonsoft.Json.Serialization.DefaultContractResolver
     {
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
