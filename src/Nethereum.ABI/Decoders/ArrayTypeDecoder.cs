@@ -20,6 +20,11 @@ namespace Nethereum.ABI.Decoders
             return GetIListElementType(type) != null;
         }
 
+        public override Type GetDefaultDecodingType()
+        {
+            return typeof(List<object>);
+        }
+
         public override object Decode(byte[] encoded, Type type)
         {
 

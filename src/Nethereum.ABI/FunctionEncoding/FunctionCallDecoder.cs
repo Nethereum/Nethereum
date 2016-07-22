@@ -53,11 +53,26 @@ namespace Nethereum.ABI.FunctionEncoding
                 var propertyInfo = parameter.PropertyInfo;
                 propertyInfo.SetValue(result, parameter.Result);
             }
-
+            
             return result;
         }
 
+        public List<ParameterOutput> DecodeDefaultData(string data, params Parameter[] inputParameters)
+        {
+            var parameterOutputs = new List<ParameterOutput>();
 
+            foreach (var inputParameter in inputParameters)
+            {
+                parameterOutputs.Add(new ParameterOutput()
+                {
+                    Parameter = inputParameter,
+                    DecodedType = inputParameter.ABIType.GetDefaultDecodingType()
+                });
+            }
+
+            return DecodeOutput(data, parameterOutputs.ToArray());
+        }
+     
         public List<ParameterOutput> DecodeOutput(string output, params ParameterOutput[] outputParameters)
         {
 
@@ -128,6 +143,20 @@ namespace Nethereum.ABI.FunctionEncoding
 
             return default(T);
         }
+
+        public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data, params Parameter[] parameters)
+        {
+            if (!sha3Signature.StartsWith("0x")) sha3Signature = "0x" + sha3Signature;
+            if (!data.StartsWith("0x")) data = "0x" + data;
+
+            if (data == "0x" || data == sha3Signature) return null;
+            if (data.StartsWith(sha3Signature))
+            {
+                data = data.Substring(sha3Signature.Length); //4 bytes?
+            }
+            return DecodeDefaultData(data, parameters);
+        }
+             
 
         ///<summary>
         /// Decodes the output of a function using either a FunctionOutputAttribute  (T)

@@ -7,8 +7,6 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Web3
 {
-   
-
     public class Function : FunctionBase
     {
        

@@ -36,9 +36,6 @@ namespace Nethereum.Web3
             return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2), GetValueTopic(thirdTopic, 3) };
         }
 
-       
-
-
         public object[] GetValueTopic(object[] values, int paramNumber)
         {
             if (values == null) return null;
@@ -57,6 +54,5 @@ namespace Nethereum.Web3
             }
             return encoded;
         }
-
     }
 }

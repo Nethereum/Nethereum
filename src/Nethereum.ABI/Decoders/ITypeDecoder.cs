@@ -12,5 +12,6 @@ namespace Nethereum.ABI.Decoders
         object Decode(string hexString, Type type);
 
         T Decode<T>(string hexString);
+        Type GetDefaultDecodingType();
     }
 }

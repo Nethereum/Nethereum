@@ -27,5 +27,7 @@ namespace Nethereum.ABI.Decoders
         {
             return (T)Decode(encoded, typeof(T));
         }
+
+        public abstract Type GetDefaultDecodingType();
     }
 }

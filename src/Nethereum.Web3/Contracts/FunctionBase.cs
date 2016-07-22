@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
@@ -37,6 +38,11 @@ namespace Nethereum.Web3
             this.FunctionCallEncoder = new FunctionCallEncoder();
 
         }
+
+        public List<ParameterOutput> DecodeInput(string data)
+        {
+            return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data, FunctionABI.InputParameters);
+        } 
 
         private Parameter GetFirstParameterOrNull(Parameter[] parameters)
         {
@@ -109,7 +115,6 @@ namespace Nethereum.Web3
         protected Task<string> SendTransactionAsync(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value) 
         {
             return ethSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, value));
-            
         }
 
         protected Task<string> SendTransactionAsync(string encodedFunctionCall,

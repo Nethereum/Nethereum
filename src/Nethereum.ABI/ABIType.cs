@@ -88,6 +88,11 @@ namespace Nethereum.ABI
             return Name;
         }
 
+        public Type GetDefaultDecodingType()
+        {
+            return Decoder.GetDefaultDecodingType();
+        }
+
         public object Decode(byte[] encoded, Type type)
         {
            return Decoder.Decode(encoded, type);

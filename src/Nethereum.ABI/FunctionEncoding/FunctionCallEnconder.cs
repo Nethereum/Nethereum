@@ -6,11 +6,9 @@ using Nethereum.Hex.HexConvertors.Extensions;
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionCallEncoder: ParametersEncoder
-    {
-        
+    {   
         public string EncodeRequest<T>(T functionInput, string sha3Signature)
         {
-           
             var type = typeof(T);
 
             var function = type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>();

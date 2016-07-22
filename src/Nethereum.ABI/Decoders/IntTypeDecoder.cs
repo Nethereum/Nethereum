@@ -11,7 +11,7 @@ namespace Nethereum.ABI.Decoders
         public override bool IsSupportedType(Type type)
         {
             return type == typeof (int) || type == typeof (ulong) || type == typeof (long) || type == typeof (uint) ||
-                   type == typeof (BigInteger);
+                   type == typeof (BigInteger) && type == typeof (object);
         }
 
 
@@ -37,12 +37,17 @@ namespace Nethereum.ABI.Decoders
                 return DecodeUInt(encoded);
             }
 
-            if (type == typeof(BigInteger))
+            if (type == typeof(BigInteger) || type == typeof(object))
             {
                 return DecodeBigInteger(encoded);
             }
 
             throw new NotSupportedException(type.ToString() + " is not a supported decoding type for IntType");
+        }
+
+        public override Type GetDefaultDecodingType()
+        {
+            return typeof (BigInteger);
         }
 
         public int DecodeInt(byte[] encoded)

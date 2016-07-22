@@ -11,6 +11,7 @@ using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Web3
 {
+
     public class Event
     {
         private IClient client;
@@ -83,66 +84,7 @@ namespace Nethereum.Web3
 
             ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
             return ethNewFilter.SendRequestAsync(ethFilterInput);
-        }
-
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T>(T firstIndexedParameterValue)
-        //{
-        //    return await CreateFilterAsync<T>(null, firstIndexedParameterValue);
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue)
-        //{
-        //    return await CreateFilterAsync(new object[] { firstIndexedParameterValue }, new object[] { secondIndexedParameterValue });
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1 firstIndexedParameterValue, T2 secondIndexedParameterValue, T3 thirdIndexedParameterValue)
-        //{
-        //    return await CreateFilterAsync(new object[] { firstIndexedParameterValue }, new object[] { secondIndexedParameterValue }, new object[] { thirdIndexedParameterValue });
-        //}
-
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues)
-        //{
-        //    return await CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray());
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues)
-        //{
-        //    return await CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray());
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1[] firstIndexedParameterValues, T2[] secondIndexedParameterValues, T3[] thirdIndexedParameterValues)
-        //{
-        //    return await CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), secondIndexedParameterValues.Cast<object>().ToArray(), thirdIndexedParameterValues.Cast<object>().ToArray());
-        //}
-
-
-        //public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1)
-        //{
-        //    var ethFilterInput = contract.GetDefaultFilterInput();
-        //    ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1);
-        //    return await ethNewFilter.SendRequestAsync(ethFilterInput);
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2)
-        //{
-        //    var ethFilterInput = contract.GetDefaultFilterInput();
-        //    ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
-        //    return await ethNewFilter.SendRequestAsync(ethFilterInput);
-        //}
-
-        //public async Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3)
-        //{
-        //    var ethFilterInput = contract.GetDefaultFilterInput();
-            
-        //    ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
-        //    return await ethNewFilter.SendRequestAsync(ethFilterInput);
-        //}
-
-       
-
-    
+        }    
 
         public Event(IClient client, Contract contract, EventABI eventABI)
         {

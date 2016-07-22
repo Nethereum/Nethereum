@@ -14,7 +14,7 @@ namespace Nethereum.ABI.Decoders
         }
         public override bool IsSupportedType(Type type)
         {
-            return type == typeof(string);
+            return type == typeof (string) || type == typeof (object);
         }
 
         public override object Decode(byte[] encoded, Type type)
@@ -23,5 +23,9 @@ namespace Nethereum.ABI.Decoders
             return intTypeDecoder.DecodeBigInteger(encoded).ToHex(false);
         }
 
+        public override Type GetDefaultDecodingType()
+        {
+            return typeof(string);
+        }
     }
 }
