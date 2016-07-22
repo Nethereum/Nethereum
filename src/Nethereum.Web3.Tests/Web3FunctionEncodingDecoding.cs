@@ -10,8 +10,7 @@ namespace Nethereum.Web3.Sample
       
         [Fact]
         public void ShouldDecodeInt()
-        {
-          
+        { 
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
