@@ -11,7 +11,7 @@
     "xunit": "2.1.0",
     "dotnet-test-xunit": "1.0.0-rc2-build10025"
   },
-   "frameworks": {
+  "frameworks": {
     "netcoreapp1.0": {
       "dependencies": {
         "Microsoft.NETCore.App": {
@@ -21,8 +21,9 @@
       },
       "imports": [
         "dnxcore50",
-        "portable-net45+win8"
+        "portable-net45+win8",
+        "netstandard1.2"
       ]
     }
-    }
+  }
 }

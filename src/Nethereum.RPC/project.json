@@ -16,7 +16,8 @@
   "dependencies": {
     "NETStandard.Library": "1.6.0",
     "Nethereum.Hex": "1.0.0-rc2",
-    "Nethereum.JsonRpc.Client": "1.0.0-rc2"
+    "Nethereum.JsonRpc.Client": "1.0.0-rc2",
+    "Portable.BouncyCastle": "1.8.1"
 
   }
 }

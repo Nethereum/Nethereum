@@ -1,13 +1,17 @@
-using Nethereum.Hex.HexTypes;
+using System.Net.Configuration;
+using System.Security.Principal;
 using Nethereum.RPC.Tests;
 using Nethereum.Web3;
 using Xunit;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex;
+using Nethereum.Hex.HexTypes;
 
 namespace SimpleTests
 {
     public class SimpleBlockTest
     {
-
+        
         [Fact]
         public async void GetBlock()
         {

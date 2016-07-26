@@ -1,3 +1,5 @@
+using System.Text;
+using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
@@ -13,4 +15,6 @@ namespace Nethereum.ABI.Tests
             Assert.Equal("0000000000000000000000001234567890abcdef1234567890abcdef12345678", result2);
         }
     }
+
+   
 }

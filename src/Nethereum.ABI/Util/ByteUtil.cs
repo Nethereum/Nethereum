@@ -5,8 +5,8 @@ namespace Nethereum.ABI.Util
     public class ByteUtil
     {
 
-        public static readonly sbyte[] EMPTY_BYTE_ARRAY = new sbyte[0];
-        public static readonly sbyte[] ZERO_BYTE_ARRAY = new sbyte[] { 0 };
+        public static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
+        public static readonly byte[] ZERO_BYTE_ARRAY = new byte[] { 0 };
 
         /// <summary>
         /// Creates a copy of bytes and appends b to the end of it
