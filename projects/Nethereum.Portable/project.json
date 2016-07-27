@@ -1,21 +1,29 @@
 ﻿{
-  "version": "1.0.0-rc3",
-  
-  "description": "Nethereum.Portable Nethereum portable classs library including Web3 to interact via RCP with an Ethereum client, for example geth. Includes other libraries like ABI, RPC, contract encoding and decoding, StardardToken, Maker ",
-  "authors": [ "Juan Blanco" ],
-  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
-  "projectUrl": "http://www.nethereum.com",
-  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
-  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
-  "supports": { },
+  "version": "1.0.0-rc4",
+  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken, Maker",
+  "authors": [
+    "Juan Blanco"
+  ],
+  "packOptions": {
+    "tags": [
+      "Netherum",
+      "Ethereum",
+      "Blockchain",
+      "Crypto 2.0"
+    ],
+    "projectUrl": "http://www.nethereum.com",
+    "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+    "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
+  },
+  "supports": {},
   "dependencies": {
-    "Newtonsoft.Json": "8.0.3",
-    "Portable.BouncyCastle": "1.8.1"
+    "EdjCase.JsonRpc.Client": "1.0.4",
+    "Newtonsoft.Json": "9.0.1",
+    "Portable.BouncyCastle": "1.8.1.1"
   },
   "frameworks": {
-    ".NETPortable,Version=v4.5,Profile=Profile111": {
-
-      "dependencies": { }
-    }
+    
+    ".NETPortable,Version=v4.5,Profile=Profile111": {}
+    
   }
 }

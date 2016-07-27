@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
-using edjCase.JsonRpc.Core;
+using EdjCase.JsonRpc.Client;
+using EdjCase.JsonRpc.Core;
 
 namespace Nethereum.JsonRpc.Client
 {

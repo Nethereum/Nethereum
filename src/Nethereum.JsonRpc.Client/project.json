@@ -1,23 +1,25 @@
 {
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc4",
   "authors": [ "Juan Blanco" ],
   "packOptions": {
-    "summary": "JsonRpc.Client additions to provide a generic inteface, request and response handlers",
+    "summary": "JsonRpc.Client wrapper of Edjcase.JsonRpc.Client specific to Nethereum and additions to provide a generic inteface which can be switched with IPC, request and response handlers",
     "tags": [ "Json", "RPC" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
   "dependencies": {
-    "JsonRpc.Client": "1.0.0-rc1-6",
-    "Newtonsoft.Json": "8.0.4-beta1",
-    "NETStandard.Library": "1.6.0"
+    "Newtonsoft.Json": "9.0.1",
+    "NETStandard.Library": "1.6.0",
+    "EdjCase.JsonRpc.Client": "1.0.5"
   },
   "frameworks": {
-    "netstandard1.2": {
+    "netstandard1.1": {
       "imports": [
         "dotnet5.2"
       ]
-    }
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile111": {},
+    "net451": {}
   }
 }

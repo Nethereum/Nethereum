@@ -7,8 +7,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
-using edjCase.JsonRpc.Core;
+using EdjCase.JsonRpc.Client;
+using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using edjCase.JsonRpc.Core;
+using EdjCase.JsonRpc.Core;
 
 namespace Nethereum.JsonRpc.Client
 {

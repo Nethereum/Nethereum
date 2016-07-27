@@ -29,9 +29,6 @@ namespace Nethereum.RPC.Core
          * to the miner for each unit of gas */
         private byte[] gasPrice;
 
-        /* SHA3 hash of the RLP encoded transaction */
-        private byte[] hash;
-
         /* a counter used to make sure each transaction can only be processed once */
         private byte[] nonce;
         /* Indicates if this transaction has been parsed
@@ -107,7 +104,6 @@ namespace Nethereum.RPC.Core
                 signature = ECDSASignature.FromComponents(r.ToBigIntegerFromRLPDecoded().ToByteArray(), s.ToBigIntegerFromRLPDecoded().ToByteArray(), v);
             }
             parsed = true;
-            hash = GetHash();
         }
 
         public bool IsParsed()
@@ -264,7 +260,6 @@ namespace Nethereum.RPC.Core
 
             if (signature != null)
             {
-                //TODO: V ? R and S bytes? what about encoding / decoding and endianism 
                 v = RLP.EncodeByte(signature.V);
                 r = RLP.EncodeElement(new BigInteger(signature.R.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
                 s = RLP.EncodeElement(new BigInteger(signature.S.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
@@ -277,8 +272,6 @@ namespace Nethereum.RPC.Core
             }
 
             rlpEncoded = RLP.EncodeList(nonce, gasPrice, gasLimit, receiveAddress, value, data, v, r, s);
-
-            hash = GetHash();
 
             return rlpEncoded;
         }

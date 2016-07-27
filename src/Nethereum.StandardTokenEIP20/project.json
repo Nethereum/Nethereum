@@ -1,22 +1,25 @@
 ﻿{
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc4",
   "description": "Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
-  "projectUrl": "http://www.nethereum.com",
-  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
-  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
-
-  "dependencies": {
-    "NETStandard.Library": "1.5.0-rc2-24027",
-    "Nethereum.Web3": "1.0.0-*"
+  "packOptions": {
+    "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+    "projectUrl": "http://www.nethereum.com",
+    "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+    "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   },
+    "dependencies": {
+      "NETStandard.Library": "1.5.0-rc2-24027",
+      "Nethereum.Web3": "1.0.0-rc4"
+    },
 
-  "frameworks": {
-    "netstandard1.2": {
-      "imports": [
-        "dotnet5.2"
-      ]
+    "frameworks": {
+      "netstandard1.1": {
+        "imports": [
+          "dotnet5.2"
+        ]
+      },
+      ".NETPortable,Version=v4.5,Profile=Profile111": {},
+      "net451": {}
     }
   }
-}

@@ -1,23 +1,27 @@
 {
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc4",
   "description": "Nethereum.RPC Ethereum Core RPC Class Library to interact via RCP with an Ethereum client, for example geth.",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
-  "projectUrl": "http://www.nethereum.com",
-  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
-  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
-  "frameworks": {
-    "netstandard1.2": {
-      "imports": [
-        "dotnet5.2"
-      ]
-    }
+  "packOptions": {
+    "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+    "projectUrl": "http://www.nethereum.com",
+    "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+    "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
-  "dependencies": {
-    "NETStandard.Library": "1.6.0",
-    "Nethereum.Hex": "1.0.0-rc2",
-    "Nethereum.JsonRpc.Client": "1.0.0-rc2",
-    "Portable.BouncyCastle": "1.8.1"
+    "frameworks": {
+      "netstandard1.1": {
+        "imports": [
+          "dotnet5.2"
+        ]
+      },
+      ".NETPortable,Version=v4.5,Profile=Profile111": {},
+      "net451": {}
+    },
+    "dependencies": {
+      "NETStandard.Library": "1.6.0",
+      "Nethereum.Hex": "1.0.0-rc4",
+      "Nethereum.JsonRpc.Client": "1.0.0-rc4",
+      "Portable.BouncyCastle": "1.8.1"
 
+    }
   }
-}

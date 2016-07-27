@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using edjCase.JsonRpc.Client;
-using edjCase.JsonRpc.Core;
+using EdjCase.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Text;
+using EdjCase.JsonRpc.Core;
 
 namespace Nethereum.JsonRpc.Client
 {
     public class RpcClient : IClient
     {
-        private readonly CustomRpcClient innerRpcClient;
-        //private readonly edjCase.JsonRpc.Client.RpcClient innerRpcClient;
+        //private readonly CustomRpcClient innerRpcClient;
+        private readonly EdjCase.JsonRpc.Client.RpcClient innerRpcClient;
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
             JsonSerializerSettings jsonSerializerSettings = null)
@@ -24,7 +24,7 @@ namespace Nethereum.JsonRpc.Client
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
             }
 
-            this.innerRpcClient = new CustomRpcClient(baseUrl, authHeaderValue, jsonSerializerSettings);
+            this.innerRpcClient = new EdjCase.JsonRpc.Client.RpcClient(baseUrl, authHeaderValue, jsonSerializerSettings);
         }
 
         public Task<RpcResponse> SendRequestAsync(RpcRequest request, string route = null)
@@ -40,7 +40,7 @@ namespace Nethereum.JsonRpc.Client
 
 
     /// <summary>
-    /// NOTE: This is a private implementation of the https://github.com/edjCase/JsonRpc/blob/master/src/EdjCase.JsonRpc.Client/RpcClient.cs to promptly solve issues.
+    /// NOTE: This is a private implementation (Read copy for emergencies and testing) of the https://github.com/edjCase/JsonRpc/blob/master/src/EdjCase.JsonRpc.Client/RpcClient.cs to promptly solve issues.
     /// DO NOT USE IF THEY BOTH MATCH.
     /// </summary>
     internal class CustomRpcClient

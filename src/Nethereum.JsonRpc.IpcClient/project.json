@@ -1,15 +1,17 @@
 ﻿{
-  "version": "1.0.0-rc2",
-  "description": "Nethereum.JsonRpc.IpcClient Class Library",
+  "version": "1.0.0-rc4",
+  "description": "Nethereum.JsonRpc IpcClient for Windows Class Library",
   "authors": [ "Juan Blanco" ],
-  "tags": [ "Json", "RPC" ],
-  "projectUrl": "http://www.nethereum.com",
-  "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
-  "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
-  "frameworks": {
-    "net451": { }
-  },
-  "dependencies": {
-    "Nethereum.JsonRpc.Client": "1.0.0-rc2"
+  "packOptions": {
+    "tags": [ "Json", "RPC" ],
+    "projectUrl": "http://www.nethereum.com",
+    "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+    "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
+   },
+    "frameworks": {
+      "net451": {}
+    },
+    "dependencies": {
+      "Nethereum.JsonRpc.Client": "1.0.0-rc4"
+    }
   }
-}
