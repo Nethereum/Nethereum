@@ -44,7 +44,6 @@ namespace NBitcoin.Crypto
 		}
 
 
-
 		public static X9ECParameters Secp256k1
 		{
 			get

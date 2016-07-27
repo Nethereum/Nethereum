@@ -268,6 +268,21 @@ namespace Nethereum.ABI.Util.RLP
             }
         }
 
+        public static byte[] EncodeByte(byte singleByte)
+        {
+            if ((singleByte) == 0)
+            {
+                return new byte[] { (byte)OFFSET_SHORT_ITEM };
+            }
+            else if ((singleByte) <= 0x7F)
+            {
+                return new byte[] { singleByte };
+            }
+            else
+            {
+                return new byte[] { (byte)(OFFSET_SHORT_ITEM + 1), singleByte };
+            }
+        }
 
         public static int ByteArrayToInt(byte[] bytes)
         {

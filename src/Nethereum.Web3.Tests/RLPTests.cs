@@ -5,10 +5,11 @@ using Org.BouncyCastle.Crypto.Paddings;
 using Xunit;
 using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
-
+using Nethereum.RPC.Core;
 
 namespace SimpleTests
 {
+ 
     public class RLPTests
     {
         [Fact]

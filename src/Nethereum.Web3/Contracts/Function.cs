@@ -105,7 +105,7 @@ namespace Nethereum.Web3
 
         public Task<TReturn> CallAsync<TReturn>()
         {
-            var encodedInput = FunctionABI.Sha3Signature;
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
             return base.CallAsync<TReturn>(encodedInput);
         }
 

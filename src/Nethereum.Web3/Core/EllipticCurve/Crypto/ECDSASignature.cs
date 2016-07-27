@@ -36,10 +36,11 @@ namespace NBitcoin.Crypto
         public static ECDSASignature FromComponents(byte[] r, byte[] s, byte v)
         {
             ECDSASignature signature = FromComponents(r, s);
-            //signature.v = v;
+            signature.V = v;
             return signature;
         }
 
+        public byte V { get; set; }
 
         public ECDSASignature(BigInteger r, BigInteger s)
 		{
