@@ -41,6 +41,17 @@ namespace Nethereum.ABI.FunctionEncoding
             return prefix + sha3Signature + encodedParameters;
         }
 
-        
+        public string EncodeRequest(string sha3Signature)
+        {
+            var prefix = "0x";
+
+            if (sha3Signature.StartsWith(prefix))
+            {
+                prefix = "";
+            }
+
+            return EncodeRequest	(prefix + sha3Signature + encodedParameters);
+        }
+
     }
 }
