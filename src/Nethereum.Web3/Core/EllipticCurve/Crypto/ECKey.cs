@@ -70,9 +70,8 @@ namespace NBitcoin.Crypto
 			AssertPrivateKey();
 			var signer = new DeterministicECDSA();
 			signer.setPrivateKey(PrivateKey);
-			var sig = ECDSASignature.FromDER(signer.signHash(hash));
-                
-   			sig.MakeCanonical();
+			var sig = ECDSASignature.FromDER(signer.signHash(hash));  
+   			sig = sig.MakeCanonical();
 
             int recId = -1;
             byte[] thisKey = this.GetPubKey(false); // compressed
@@ -99,11 +98,20 @@ namespace NBitcoin.Crypto
 				throw new InvalidOperationException("This key should be a private key for such operation");
 		}
 
+	    private static BigInteger N_DIV_2 =
+	        new BigInteger("7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0", 16);
 
+	    private bool homestead = true;
 
-		public bool Verify(byte[] hash, ECDSASignature sig)
+        public bool Verify(byte[] hash, ECDSASignature sig)
 		{
-			var signer = new ECDsaSigner();
+
+            if (this.homestead && sig.S.CompareTo(N_DIV_2) == 1)
+            {
+                return false;
+            }
+
+            var signer = new ECDsaSigner();
 			signer.Init(false, GetPublicKeyParameters());
 			return signer.VerifySignature(hash, sig.R, sig.S);
 		}
@@ -122,7 +130,7 @@ namespace NBitcoin.Crypto
 	    {
 	        var pubKey = this.GetPubKey(false);
 	        var arr = new byte[pubKey.Length - 1];
-            //remove the uncompressed prefix
+            //remove the prefix
 	        Array.Copy(pubKey, 1, arr, 0, arr.Length);
 	        return arr;
   

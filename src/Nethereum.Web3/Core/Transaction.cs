@@ -101,9 +101,26 @@ namespace Nethereum.RPC.Core
                 var v = transaction[6].RLPData[0];
                 var r = transaction[7].RLPData;
                 var s = transaction[8].RLPData;
-                signature = ECDSASignature.FromComponents(r.ToBigIntegerFromRLPDecoded().ToByteArray(), s.ToBigIntegerFromRLPDecoded().ToByteArray(), v);
+                //check
+                signature = ECDSASignature.FromComponents(r, s, v);
             }
             parsed = true;
+        }
+
+        public string ToJsonHex()
+        {
+            var s = "['{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}']";
+            return String.Format(s,nonce.ToHex(),
+                gasPrice.ToHex(), gasLimit.ToHex(), receiveAddress.ToHex(), value.ToHex(), ToHex(data),
+                signature.V.ToString("X"),
+                signature.R.ToByteArrayUnsigned().ToHex(), 
+                signature.S.ToByteArrayUnsigned().ToHex());
+        }
+
+        private string ToHex(byte[] x)
+        {
+            if (x == null) return "0x";
+            return x.ToHex();
         }
 
         public bool IsParsed()
@@ -269,13 +286,15 @@ namespace Nethereum.RPC.Core
             var value = RLP.EncodeElement(this.value);
             var data = RLP.EncodeElement(this.data);
 
-            byte[] v, r, s;
+            byte[] v, r, s;     
 
             if (signature != null)
             {
                 v = RLP.EncodeByte(signature.V);
-                r = RLP.EncodeElement(new BigInteger(signature.R.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
-                s = RLP.EncodeElement(new BigInteger(signature.S.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
+               // r = RLP.EncodeElement(new BigInteger(signature.R.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
+                r = RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
+                //s = RLP.EncodeElement(new BigInteger(signature.S.ToByteArrayUnsigned()).ToBytesForRLPEncoding());
+                s = RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
             }
             else
             {
@@ -298,7 +317,7 @@ namespace Nethereum.RPC.Core
             BigInteger gasLimit)
         {
             return new Transaction(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
-                gasLimit.ToBytesForRLPEncoding(), to.ToBytesForRLPEncoding(), amount.ToBytesForRLPEncoding(), null);
+                gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), null);
         }
     }
 }

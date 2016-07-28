@@ -48,8 +48,6 @@ namespace Nethereum.Web3.Sample
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
 
             
-
-
             //the contract should be mining now
 
             //get the contract address 
