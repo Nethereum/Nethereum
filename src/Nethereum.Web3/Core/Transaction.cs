@@ -184,17 +184,30 @@ namespace Nethereum.RPC.Core
 
         public ECKey GetKey()
         {
-            throw new NotImplementedException();
             var hash = GetRawHash();
-            //TODO:
-            //return ECKey.RecoverFromSignature(signature.v, signature, hash);
-            return null;
+            return ECKey.RecoverFromSignature(GetRecIdFromV(signature),signature, hash, false);   
+        }
+
+        public static int GetRecIdFromV(ECDSASignature sig)
+        {
+            int header = sig.V;
+            // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
+            //                  0x1D = second key with even y, 0x1E = second key with odd y
+            if (header < 27 || header > 34)
+            {
+                throw new Exception("Header byte out of range: " + header);
+            }
+            if (header >= 31)
+            {
+                header -= 4;
+            }
+            return header - 27;
         }
 
 
         public void Sign(ECKey key)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
             signature = key.Sign(GetRawHash());
             rlpEncoded = null;
         }

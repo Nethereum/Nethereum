@@ -5,6 +5,7 @@ using NBitcoin.BouncyCastle.Math;
 using NBitcoin.BouncyCastle.Math.EC;
 using System;
 using NBitcoin.BouncyCastle.Math.EC.Custom.Sec;
+using System.Linq;
 
 namespace NBitcoin.Crypto
 {
@@ -70,7 +71,26 @@ namespace NBitcoin.Crypto
 			var signer = new DeterministicECDSA();
 			signer.setPrivateKey(PrivateKey);
 			var sig = ECDSASignature.FromDER(signer.signHash(hash));
-			return sig.MakeCanonical();
+                
+   			sig.MakeCanonical();
+
+            int recId = -1;
+            byte[] thisKey = this.GetPubKey(false); // compressed
+            for (int i = 0; i < 4; i++)
+            {
+                byte[] k = ECKey.RecoverFromSignature(i, sig, hash, false).GetPubKey(false);
+                if (k != null && Enumerable.SequenceEqual(k, thisKey))
+                {
+                    recId = i;
+                    break;
+                }
+            }
+            if (recId == -1)
+            {
+                throw new Exception("Could not construct a recoverable key. This should never happen.");
+            }
+            sig.V = (byte)(recId + 27);
+		    return sig;
 		}
 
 		private void AssertPrivateKey()
@@ -97,6 +117,16 @@ namespace NBitcoin.Crypto
 			var result = Secp256k1.Curve.CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger()).GetEncoded(isCompressed);
 			return result;
 		}
+
+	    public byte[] GetEthereumPubKeyForAddress()
+	    {
+	        var pubKey = this.GetPubKey(false);
+	        var arr = new byte[pubKey.Length - 1];
+            //remove the uncompressed prefix
+	        Array.Copy(pubKey, 1, arr, 0, arr.Length);
+	        return arr;
+  
+	    }
 
 
 

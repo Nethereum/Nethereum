@@ -1,8 +1,12 @@
+using System;
 using System.Numerics;
+using NBitcoin.Crypto;
 using Xunit;
 using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Core;
+using System.Diagnostics;
+using System.Linq;
 
 namespace SimpleTests
 {
@@ -44,6 +48,12 @@ namespace SimpleTests
             Assert.Equal(testValue.ToBigIntegerFromRLPDecoded(), tx.GetValue().ToBigIntegerFromRLPDecoded());
          
             Assert.Equal(HASH_TX, tx.GetRawHash().ToHex());
+            
+            tx.Sign(new ECKey(KEY.HexToByteArray(), true));
+            var address = GetPublicEthereumAddress(tx.GetKey());
+            Assert.Same(GetPublicEtherumAddress(KEY), address);
+            Debug.WriteLine(address);
+            // Assert.Equal(RLP_ENCODED_UNSIGNED_TX, tx.GetEncoded().ToHex());
 
         }
 
@@ -67,6 +77,51 @@ namespace SimpleTests
             Assert.Equal("eab47c1a49bf2fe5d40e01d313900e19ca485867d462fe06e139e3a536c6d4f4", new BigInteger(tx.GetSignature().R.ToByteArrayUnsigned()).ToBytesForRLPEncoding().ToHex());
             
             Assert.Equal("14a569d327dcda4b29f74f93c0e9729d2f49ad726e703f9cd90dbb0fbf6649f1", new BigInteger(tx.GetSignature().S.ToByteArrayUnsigned()).ToBytesForRLPEncoding().ToHex());
+
+
+            Assert.Equal(GetPublicEtherumAddress(KEY), GetPublicEthereumAddress(tx.GetKey()));
+        }
+
+        [Fact]
+        public void ShouldSignEncodeTransactionAndRecoverPublicAddress()
+        {
+            string privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+            string sendersAddress = "12890D2cce102216644c59daE5baed380d84830c";
+            string publicKey = "87977ddf1e8e4c3f0a4619601fc08ac5c1dcf78ee64e826a63818394754cef52457a10a599cb88afb7c5a6473b7534b8b150d38d48a11c9b515dd01434cceb08";
+            //string  = "e0a462586887362a18a318b128dbc1e3a0cae6d4b0739f5d0419ec25114bc722";
+            //string sendersAddress = "d13d825eb15c87b247c4c26331d66f225a5f632e";
+            var key = new ECKey(privateKey.HexToByteArray(), true);
+            var pubKeyGen = key.GetPubKey(false);
+            Debug.WriteLine(pubKeyGen.ToHex());
+            var pubKey = key.GetPublicKeyParameters();
+            var hash = "test".ToHexUTF8().HexToByteArray();
+            var signature = key.Sign(hash);
+            Assert.True(key.Verify(hash, signature));
+
+
+            var initaddr = new Nethereum.ABI.Util.Sha3Keccack().CalculateHash(key.GetEthereumPubKeyForAddress());
+            var addr = new byte[initaddr.Length - 12];
+            Array.Copy(initaddr, 12, addr, 0, initaddr.Length - 12);
+            var addrHex = addr.ToHex();
+            Assert.Equal(sendersAddress, addrHex);
+
+            //msghash = b.sha256('the quick brown fox jumps over the lazy dog')
+            //V, R, S = b.ecdsa_raw_sign(msghash, priv)
+            //assert b.ecdsa_raw_verify(msghash, (V, R, S), pub)
+        }
+
+        public string GetPublicEtherumAddress(string privateKey)
+        {
+            var key = new ECKey(privateKey.HexToByteArray(), true);
+            return GetPublicEthereumAddress(key);
+        }
+
+        public string GetPublicEthereumAddress(ECKey key)
+        {
+            var initaddr = new Nethereum.ABI.Util.Sha3Keccack().CalculateHash(key.GetEthereumPubKeyForAddress());
+            var addr = new byte[initaddr.Length - 12];
+            Array.Copy(initaddr, 12, addr, 0, initaddr.Length - 12);
+            return addr.ToHex();
         }
     }
 }
