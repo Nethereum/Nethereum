@@ -17,7 +17,7 @@ namespace Nethereum.Web3
         public object GetSignaguteTopic()
         {
             
-            return new[] {eventABI.Sha33Signature};
+            return new[] {Ensure0XPrefix(eventABI.Sha33Signature)};
         }
 
         public object[] GetTopics(object[] firstTopic)
@@ -36,6 +36,11 @@ namespace Nethereum.Web3
             return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2), GetValueTopic(thirdTopic, 3) };
         }
 
+        private string Ensure0XPrefix(string input)
+        {
+            return !input.StartsWith("0x") ? "0x" + input : input;
+        }
+
         public object[] GetValueTopic(object[] values, int paramNumber)
         {
             if (values == null) return null;
@@ -47,7 +52,7 @@ namespace Nethereum.Web3
             {
                 if (values[i] != null)
                 {
-                    encoded[i] = "0x" + parameter.ABIType.Encode(values[i]).ToHex();
+                    encoded[i] = Ensure0XPrefix(parameter.ABIType.Encode(values[i]).ToHex());
                     
                 }
                

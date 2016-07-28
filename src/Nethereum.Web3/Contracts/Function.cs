@@ -138,7 +138,7 @@ namespace Nethereum.Web3
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>() where TReturn : new()
         {
-            var encodedInput = FunctionABI.Sha3Signature;
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
             return base.CallAsync<TReturn>(new TReturn(), encodedInput);
         }
 
