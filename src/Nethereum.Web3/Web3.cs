@@ -8,6 +8,7 @@ namespace Nethereum.Web3
     public class Web3
     {
         public UnitConversion Convert { get; private set; }
+        public TransactionSigning OfflineTransactionSigning { get; private set; }
         private Sha3Keccack sha3Keccack;
 
         public Web3(IClient client)
@@ -33,6 +34,8 @@ namespace Nethereum.Web3
             Admin = new Admin(Client);
             Convert = new UnitConversion();
             sha3Keccack = new Sha3Keccack();
+            OfflineTransactionSigning = new TransactionSigning();
+
         }
 
         public IClient Client { get; private set; }

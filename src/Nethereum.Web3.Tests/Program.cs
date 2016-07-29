@@ -27,8 +27,8 @@ namespace Nethereum.Web3.Sample
 
             //var eventFilterTopic2 = new EventFilterWith2Topics();
             //Console.WriteLine(eventFilterTopic2.Test().Result);
-
-            new TransactionTests().ShouldCreateASignedTransaction();
+  
+            var passed = new TransactionSigningTests().ShouldSignAndSendRawTransaction().Result;
             new TransactionTests().TestTransactionFromSignedRLP();
             new TransactionTests().ShouldEncodeATransactionUsingKeccak256();
             new TransactionTests().ShouldResolveAddress();

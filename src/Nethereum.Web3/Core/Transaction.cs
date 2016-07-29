@@ -270,16 +270,24 @@ namespace Nethereum.Core
             return rlpEncoded;
         }
 
-        public static Transaction Create(string to, BigInteger amount, BigInteger nonce)
-        {
-            return Create(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_BALANCE_GAS);
+        public Transaction (string to, BigInteger amount, BigInteger nonce):this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_BALANCE_GAS) { 
         }
 
-        public static Transaction Create(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit)
+        public Transaction(string to, BigInteger amount, BigInteger nonce, string data) : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_BALANCE_GAS, data)
         {
-            return new Transaction(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
-                gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), null);
         }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,BigInteger gasLimit) : this(to, amount, nonce, gasPrice, gasLimit, "")
+        {
+
+        }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
+                gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray())
+        {
+
+        }
+
     }
 }

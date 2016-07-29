@@ -72,7 +72,7 @@ namespace SimpleTests
             Debug.WriteLine(new HexBigInteger(21000).HexValue);
 
             //Create a transaction from scratch
-            var tx = Transaction.Create("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 10000, 324, 10000000000000, 21000);
+            var tx = new Transaction("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 10000, 324, 10000000000000, 21000);
             tx.Sign(new ECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
