@@ -29,11 +29,11 @@ namespace Nethereum.Web3.Sample
             //Console.WriteLine(eventFilterTopic2.Test().Result);
 
             new TransactionTests().ShouldCreateASignedTransaction();
-            //new TransactionTests().TestTransactionFromSignedRLP();
-            //new TransactionTests().ShouldEncodeATransactionUsingKeccak256();
-            //new TransactionTests().ShouldResolveAddress();
-            //new TransactionTests().ShouldSignEncodeTransactionAndRecoverPublicAddress();
-            //new TransactionTests().TestTransactionFromUnSignedRLP();
+            new TransactionTests().TestTransactionFromSignedRLP();
+            new TransactionTests().ShouldEncodeATransactionUsingKeccak256();
+            new TransactionTests().ShouldResolveAddress();
+            new TransactionTests().ShouldSignEncodeTransactionAndRecoverPublicAddress();
+            new TransactionTests().TestTransactionFromUnSignedRLP();
 
             Console.ReadLine();
         }

@@ -11,7 +11,8 @@ namespace NBitcoin.Crypto
 {
 	public class ECDSASignature
 	{
-		private readonly BigInteger _R;
+
+        private readonly BigInteger _R;
 		public BigInteger R
 		{
 			get
@@ -28,18 +29,7 @@ namespace NBitcoin.Crypto
 			}
 		}
 
-        public static ECDSASignature FromComponents(byte[] r, byte[] s)
-        {
-            return new ECDSASignature(new BigInteger(1, r), new BigInteger(1, s));
-        }
-
-        public static ECDSASignature FromComponents(byte[] r, byte[] s, byte v)
-        {
-            ECDSASignature signature = FromComponents(r, s);
-            signature.V = v;
-            return signature;
-        }
-
+        
         public byte V { get; set; }
 
         public ECDSASignature(BigInteger r, BigInteger s)
