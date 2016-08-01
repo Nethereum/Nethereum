@@ -1,16 +1,6 @@
-# Nethereum
-
-Nethereum is a .Net RPC / IPC Client library for Ethereum, it allows you to interact with Ethereum clients like geth using .Net. The library has very similar functionality as the Javascript Etherum Web3 RPC Client Library.
-
-All the JSON RPC/IPC methods are implemented as they appear in new versions of the clients. The geth client is the one that is closely supported and tested, including its management extensions for admin, personal, debugging, miner.
-
-Interaction with contracts has been simplified for deployment, function calling, transaction and event filtering and decoding of topics.
-
-The library has been tested in all the platforms .Net Core, Mono, Linux, iOS, Android, Raspberry PI, Xbox and of course Windows.
-
 ## Quick installation
 
-Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages embeded in one. (Apart from IPC which is windows specific).
+The simplest way to install Nethereum is to use Nuget, here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages embeded in one. (Apart from IPC which is windows specific).
 
 ```
 PM > Install-Package Nethereum.Portable -Pre

@@ -803,6 +803,10 @@
 				<Link>Web3\Shh.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\TransactionSigning.cs">
+				<Link>Web3\TransactionSigning.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\UnitConversion.cs">
 				<Link>Web3\UnitConversion.cs</Link>
 		</Compile>
@@ -1377,6 +1381,10 @@
 		
         <Compile Include="..\..\src\Nethereum.Web3\Core\EllipticCurve\Crypto\ECKey.cs">
 				<Link>Web3\Core\EllipticCurve\Crypto\ECKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Core\EllipticCurve\Crypto\EthereumECKey.cs">
+				<Link>Web3\Core\EllipticCurve\Crypto\EthereumECKey.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">
