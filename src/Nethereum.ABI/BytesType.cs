@@ -8,7 +8,7 @@ namespace Nethereum.ABI
         public BytesType() : base("bytes")
         {
             this.Decoder = new BytesTypeDecoder();
-            this.Encoder = new BoolTypeEncoder();
+            this.Encoder = new BytesTypeEncoder();
         }
 
         public override int FixedSize => -1;
