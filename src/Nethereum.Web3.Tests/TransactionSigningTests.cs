@@ -21,8 +21,9 @@ namespace SimpleTests
                 txCount.Value);
 
             Assert.True(web3.OfflineTransactionSigning.VerifyTransaction(encoded));
+
             Debug.WriteLine(web3.OfflineTransactionSigning.GetSenderAddress(encoded));
-            Assert.Same(senderAddress.ToLower(), "0x" + web3.OfflineTransactionSigning.GetSenderAddress(encoded));
+            Assert.Equal(senderAddress.ToLower(), "0x" + web3.OfflineTransactionSigning.GetSenderAddress(encoded));
 
             var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded);
             await web3.Miner.Start.SendRequestAsync(4);

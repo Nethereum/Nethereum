@@ -24,6 +24,8 @@ namespace Nethereum.Web3
 
         private EthCall ethCall;
         private EthSendTransaction ethSendTransaction;
+        private EthEstimateGas ethEstimateGas;
+
         protected FunctionABI FunctionABI { get; set; }
 
         protected FunctionBase(IClient rpcClient, Contract contract, FunctionABI functionABI )
@@ -33,7 +35,9 @@ namespace Nethereum.Web3
             this.contract = contract;
             this.ethCall = new EthCall(rpcClient);
             this.ethSendTransaction = new EthSendTransaction(rpcClient);
-               
+            this.ethEstimateGas = new EthEstimateGas(rpcClient);
+
+
             this.FunctionCallDecoder = new FunctionCallDecoder();
             this.FunctionCallEncoder = new FunctionCallEncoder();
 
@@ -50,7 +54,24 @@ namespace Nethereum.Web3
             if (parameters.Length == 0) return null;
             return parameters[0];
         }
-         
+
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall)
+        {
+            return await ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress)).ConfigureAwait(false);
+        }
+
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value)
+        {
+            return await ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas, value)).ConfigureAwait(false);
+        }
+
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, CallInput callInput
+            )
+        {
+            callInput.Data = encodedFunctionCall;
+            return await ethEstimateGas.SendRequestAsync(callInput).ConfigureAwait(false);
+        }
+
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall)
         {
             var result =  await ethCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), DefaultBlock).ConfigureAwait(false);

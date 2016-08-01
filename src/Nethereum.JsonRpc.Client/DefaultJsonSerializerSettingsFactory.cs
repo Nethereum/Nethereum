@@ -11,7 +11,8 @@ namespace Nethereum.JsonRpc.Client
     {
         public static JsonSerializerSettings BuildDefaultJsonSerializerSettings()
         {
-            return new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new NullParamsFirstElementResolver()};
+            return new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore};
+                //ContractResolver = new NullParamsFirstElementResolver()};
         }
     }
 

@@ -16,7 +16,7 @@ namespace Nethereum.Web3.Sample
     public class EventFilterWith2Topics
     {
         [Fact]
-        public async void Test()
+        public async Task Test()
         {
             //The compiled solidity contract to be deployed
             /*
@@ -62,7 +62,7 @@ namespace Nethereum.Web3.Sample
 
             var web3 = new Web3(ClientFactory.GetClient());
 
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600000));
             Assert.True(result, "Account should be unlocked");
 
            
@@ -116,7 +116,7 @@ namespace Nethereum.Web3.Sample
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
            
-            
+            var gas = await multiplyFunction.EstimateGasAsync(69);
             var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, 69);
             var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, 18);
             var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, 7);

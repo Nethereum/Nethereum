@@ -80,25 +80,25 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private async Task<byte[]> ReadResponseStream(NamedPipeClientStream pipeClientStream)
         {
-            var buffer = new byte[512];
+            var buffer = new byte[1024];
 
             using (var ms = new MemoryStream())
             {
                 while (true)
                 {
-                    //if the total number of bytes matches 512 for the last Read, it will wait for the next read forever as we don't have a flag for completeness
-                    //a wait is in place for this with a 1 second (maybe too long..)
+                    //if the total number of bytes matches 1024 for the last Read, it will wait for the next read forever as we don't have a flag for completeness
+                    //a wait is in place for this with a 10 second (maybe too long..)
                     //if timesout (false returned) we have to close the pipestream and return the memory stream
                     var read = 0;
                     if (Task.Run(
                             async () =>
                             {
                                 read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                                ms.Write(buffer, 0, read);
                             }
-                            ).Wait(1000))
+                            ).Wait(10000))
                     {
-                        if (read < 512)
+                        ms.Write(buffer, 0, read);
+                        if (read < 1024)
                         {
                             return ms.ToArray();
                         }
@@ -120,10 +120,10 @@ namespace Nethereum.JsonRpc.IpcClient
 
                 string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
                 byte[] requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-                await pipeClientStream.WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
+                await GetPipeClient().WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
 
-                var responseBytes = await ReadResponseStream(pipeClientStream).ConfigureAwait(false);
-
+                var responseBytes = await ReadResponseStream(GetPipeClient()).ConfigureAwait(false);
+                if(responseBytes == null) throw  new RpcClientUnknownException("Invalid response / null");
                 var totalMegs = (responseBytes.Length / 1024f) / 1024f;
                 if (totalMegs > 10) throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
                 string responseJson = Encoding.UTF8.GetString(responseBytes);

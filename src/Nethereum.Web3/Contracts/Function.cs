@@ -16,6 +16,26 @@ namespace Nethereum.Web3
            
         }
 
+        public Task<HexBigInteger> EstimateGasAsync(params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(string from, HexBigInteger gas,
+            HexBigInteger value, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput, from, gas, value);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(
+            CallInput callInput, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput, callInput);
+        }
+
         public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -101,6 +121,33 @@ namespace Nethereum.Web3
 
         public Function(IClient rpcClient, Contract contract, FunctionABI functionABI) : base(rpcClient, contract, functionABI)
         {
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync()
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return base.EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput)
+        {
+
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput, from, gas, value);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput,
+            CallInput callInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.EstimateGasFromEncAsync(encodedInput, callInput);
         }
 
         public Task<TReturn> CallAsync<TReturn>()
