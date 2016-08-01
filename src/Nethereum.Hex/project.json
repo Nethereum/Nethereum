@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-rc4",
+  "version": "1.0.0-rc5",
   "description": "HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum",
   "authors": [ "Juan Blanco" ],
   "packOptions": {
@@ -8,15 +8,14 @@
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
-    "dependencies": {
-      "Newtonsoft.Json": "8.0.4-beta1",
-      "NETStandard.Library": "1.6.0"
-    },
+  "dependencies": {
+    "Newtonsoft.Json": "9.0.1",
+    "NETStandard.Library": "1.6.0"
+  },
     "frameworks": {
       "netstandard1.1": {
-        "imports": [
-          "dotnet5.2"
-        ]
+        "imports": ["dotnet52"]
+          
       },
       ".NETPortable,Version=v4.5,Profile=Profile111": {},
       "net451": {

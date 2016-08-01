@@ -811,6 +811,10 @@
 				<Link>Web3\UnitConversion.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\VmStackErrorChecker.cs">
+				<Link>Web3\VmStackErrorChecker.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\Web3.cs">
 				<Link>Web3\Web3.cs</Link>
 		</Compile>

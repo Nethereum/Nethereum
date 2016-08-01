@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-rc4",
+  "version": "1.0.0-rc5",
   "description": "Nethereum.JsonRpc IpcClient for Windows Class Library",
   "authors": [ "Juan Blanco" ],
   "packOptions": {
@@ -12,6 +12,6 @@
       "net451": {}
     },
     "dependencies": {
-      "Nethereum.JsonRpc.Client": "1.0.0-rc4"
+      "Nethereum.JsonRpc.Client": "1.0.0-rc5"
     }
   }

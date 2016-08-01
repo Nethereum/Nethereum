@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-rc4",
+  "version": "1.0.0-rc5",
   "description": "Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters ",
   "authors": [ "Juan Blanco" ],
   "packOptions": {
@@ -8,20 +8,18 @@
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
   },
-    "frameworks": {
-      "netstandard1.1": {
-        "imports": [
-          "dotnet5.2"
-        ]
-      },
-      ".NETPortable,Version=v4.5,Profile=Profile111": {},
-      "net451": {}
+  "frameworks": {
+    "netstandard1.1": {
+      "imports": [ "dotnet52" ]
     },
+    ".NETPortable,Version=v4.5,Profile=Profile111": {},
+    "net451": {}
+  },
   "dependencies": {
     "NETStandard.Library": "1.6.0",
-    "Nethereum.ABI": "1.0.0-rc4",
-    "Nethereum.Hex": "1.0.0-rc4",
-    "Nethereum.RPC": "1.0.0-rc4"
+    "Nethereum.ABI": "1.0.0-rc5",
+    "Nethereum.Hex": "1.0.0-rc5",
+    "Nethereum.RPC": "1.0.0-rc5"
 
   }
   }
