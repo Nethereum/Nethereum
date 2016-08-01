@@ -10,7 +10,6 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Core.Signing.Crypto
 {
-
     public class EthECDSASignatureFactory
     {
         public static ECDSASignature FromComponents(byte[] r, byte[] s)
@@ -28,7 +27,6 @@ namespace Nethereum.Core.Signing.Crypto
 
     public static class EthECKey
     { 
-
         public static ECDSASignature SignAndCalculateV(this ECKey key, byte[] hash)
         {
             var signature = key.Sign(hash);
@@ -41,6 +39,7 @@ namespace Nethereum.Core.Signing.Crypto
         {
             return ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature, hash, false);
         }
+
 
         public static int GetRecIdFromV(byte v)
         {
@@ -66,6 +65,12 @@ namespace Nethereum.Core.Signing.Crypto
             Array.Copy(pubKey, 1, arr, 0, arr.Length);
             return arr;
 
+        }
+
+        public static bool VerifyAllowingOnlyLowS(this ECKey key, byte[] hash, ECDSASignature sig)
+        {
+            if (!sig.IsLowS) return false;
+            return key.Verify(hash, sig);
         }
 
         public static string GetPublicAddress(this ECKey key)

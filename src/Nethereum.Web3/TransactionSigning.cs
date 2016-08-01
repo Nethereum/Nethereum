@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using NBitcoin.Crypto;
 using Nethereum.Core;
+using Nethereum.Core.Signing.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Web3
@@ -38,6 +39,24 @@ namespace Nethereum.Web3
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
             transaction.Sign(new ECKey(key.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
+        }
+
+        public bool VerifyTransaction(string rlp)
+        {
+            var transaction = new Transaction(rlp.HexToByteArray());
+            return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
+        }
+
+        public byte[] GetPublicKey(string rlp)
+        {
+            var transaction = new Transaction(rlp.HexToByteArray());
+            return transaction.Key.GetPubKey(false);
+        }
+
+        public string GetSenderAddress(string rlp)
+        {
+            var transaction = new Transaction(rlp.HexToByteArray());
+            return transaction.Key.GetPublicAddress();
         }
     }
 }
