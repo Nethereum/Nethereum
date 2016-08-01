@@ -32,7 +32,9 @@ namespace Nethereum.JsonRpc.IpcClient
                     if (pipeClient == null || !pipeClient.IsConnected)
                     {
                         pipeClient = new NamedPipeClientStream(ipcPath);
+
                         pipeClient.Connect();
+
                     }
                 }
                 catch
@@ -79,14 +81,31 @@ namespace Nethereum.JsonRpc.IpcClient
         private async Task<byte[]> ReadResponseStream(NamedPipeClientStream pipeClientStream)
         {
             var buffer = new byte[512];
+
             using (var ms = new MemoryStream())
             {
                 while (true)
                 {
-                    var read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    ms.Write(buffer, 0, read);
-                    if (read < 512)
+                    //if the total number of bytes matches 512 for the last Read, it will wait for the next read forever as we don't have a flag for completeness
+                    //a wait is in place for this with a 1 second (maybe too long..)
+                    //if timesout (false returned) we have to close the pipestream and return the memory stream
+                    var read = 0;
+                    if (Task.Run(
+                            async () =>
+                            {
+                                read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                                ms.Write(buffer, 0, read);
+                            }
+                            ).Wait(1000))
                     {
+                        if (read < 512)
+                        {
+                            return ms.ToArray();
+                        }
+                    }
+                    else
+                    {
+                        pipeClientStream.Close();
                         return ms.ToArray();
                     }
                 }
@@ -97,7 +116,6 @@ namespace Nethereum.JsonRpc.IpcClient
         {
             try
             {
-
                 var pipeClientStream = GetPipeClient();
 
                 string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
@@ -106,6 +124,8 @@ namespace Nethereum.JsonRpc.IpcClient
 
                 var responseBytes = await ReadResponseStream(pipeClientStream).ConfigureAwait(false);
 
+                var totalMegs = (responseBytes.Length / 1024f) / 1024f;
+                if (totalMegs > 10) throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
                 string responseJson = Encoding.UTF8.GetString(responseBytes);
 
                 try
@@ -118,7 +138,7 @@ namespace Nethereum.JsonRpc.IpcClient
                     if (rpcResponse == null)
                     {
                         throw new RpcClientUnknownException(
-                            $"Unable to parse response from the ipc server. Response Json: {responseJson}");
+                        $"Unable to parse response from the ipc server. Response Json: {responseJson}");
                     }
                     throw rpcResponse.Error.CreateException();
                 }
@@ -140,7 +160,7 @@ namespace Nethereum.JsonRpc.IpcClient
                 if (disposing)
                 {
                     if (pipeClient != null)
-                    {    
+                    {
                         pipeClient.Close();
                         pipeClient.Dispose();
                     }
