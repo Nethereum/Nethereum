@@ -28,6 +28,8 @@ namespace Nethereum.Web3
         public DebugVerbosity Verbosity { get; private set; }
         public DebugVmodule Vmodule { get; private set; }
 
+        public VmStackErrorChecker StackErrorChecker { get; private set; }
+
         public DebugGeth(IClient client) : base(client)
         {
             BacktraceAt = new DebugBacktraceAt(client);
@@ -52,7 +54,10 @@ namespace Nethereum.Web3
             TraceTransaction = new DebugTraceTransaction(client);
             Verbosity = new DebugVerbosity(client);
             Vmodule = new DebugVmodule(client);
+            StackErrorChecker = new VmStackErrorChecker();
 
         }
+
+
     }
 }
