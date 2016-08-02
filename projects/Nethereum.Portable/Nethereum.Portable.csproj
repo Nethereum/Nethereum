@@ -1435,14 +1435,6 @@
 				<Link>NethereumJsonRpc\RPCResponseException.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\\Nethereum.Maker\Nethereum.Maker\MakerTokenConvertor.cs">
-				<Link>Maker\MakerTokenConvertor.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\\Nethereum.Maker\Nethereum.Maker\MakerTokenRegistryService.cs">
-				<Link>Maker\MakerTokenRegistryService.cs</Link>
-		</Compile>
-		
         </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
