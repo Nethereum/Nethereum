@@ -45,29 +45,29 @@
     </Reference>
     <Reference Include="Nethereum.ABI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\artifacts\bin\Nethereum.ABI\Debug\net451\Nethereum.ABI.dll</HintPath>
+      <HintPath>..\Nethereum.ABI\bin\Debug\net451\Nethereum.ABI.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nethereum.Hex, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\artifacts\bin\Nethereum.Hex\Debug\dotnet5.2\Nethereum.Hex.dll</HintPath>
+      <HintPath>..\Nethereum.Hex\bin\Debug\net451\Nethereum.Hex.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nethereum.JsonRpc.Client">
-      <HintPath>..\..\artifacts\bin\Nethereum.JsonRpc.Client\Debug\net451\Nethereum.JsonRpc.Client.dll</HintPath>
+      <HintPath>..\Nethereum.JsonRpc.Client\bin\Debug\net451\Nethereum.JsonRpc.Client.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.RPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\artifacts\bin\Nethereum.RPC\Debug\net451\Nethereum.RPC.dll</HintPath>
+      <HintPath>..\Nethereum.RPC\bin\Debug\net451\Nethereum.RPC.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Nethereum.Web3, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\artifacts\bin\Nethereum.Web3\Debug\net451\Nethereum.Web3.dll</HintPath>
+      <HintPath>..\Nethereum.Web3\bin\Debug\net451\Nethereum.Web3.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
