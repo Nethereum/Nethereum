@@ -14,7 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Nethereum.Web3;
 
-namespace Netherum.Desktop.Sample
+namespace Nethereum.Desktop.Sample
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -28,7 +28,7 @@ namespace Netherum.Desktop.Sample
 
         private async void BtnGetAccoutns_OnClick(object sender, RoutedEventArgs e)
         {
-            var web3 = new Web3();
+            var web3 = new Web3.Web3();
             var accounts = await web3.Eth.Accounts.SendRequestAsync();
             this.Dispatcher.Invoke(() => {
                                              txtAccounts.Text = string.Join(",", accounts);
