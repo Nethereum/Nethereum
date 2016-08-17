@@ -9,6 +9,8 @@ namespace Nethereum.Web3
     {
         public UnitConversion Convert { get; private set; }
         public TransactionSigning OfflineTransactionSigning { get; private set; }
+        private AddressUtil addressUtil;
+
         private Sha3Keccack sha3Keccack;
 
         public Web3(IClient client)
@@ -35,6 +37,7 @@ namespace Nethereum.Web3
             Convert = new UnitConversion();
             sha3Keccack = new Sha3Keccack();
             OfflineTransactionSigning = new TransactionSigning();
+            addressUtil = new AddressUtil();
 
         }
 
@@ -61,6 +64,21 @@ namespace Nethereum.Web3
         public string Sha3(string value)
         {
             return sha3Keccack.CalculateHash(value);
+        }
+
+        public string ToChecksumAddress(string address)
+        {
+            return this.addressUtil.ConvertToChecksumAddress(address);
+        }
+
+        public bool IsChecksumAddress(string address)
+        {
+            return this.addressUtil.IsChecksumAddress(address);
+        }
+
+        public string ToValid20ByteAddress(string address)
+        {
+            return this.addressUtil.ConvertToValid20ByteAddress(address);
         }
     }
 }
