@@ -5,9 +5,29 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 {
     public static class HexByteConvertorExtensions
     {
-        public static string ToHex(this byte[] value)
+        public static string ToHex(this byte[] value, bool prefix = false)
         {
-            return string.Concat(value.Select(b =>  b.ToString("x2")));
+            var strPrex = prefix ? "0x" : "";
+            return strPrex  + string.Concat(value.Select(b =>  b.ToString("x2")));
+        }
+
+        public static bool HasHexPrefix(this string value)
+        {
+            return value.StartsWith("0x");
+        }
+
+        public static string RemoveHexPrefix(this string value)
+        {
+            return value.Replace("0x", "");
+        }
+
+        public static string EnsureHexPrefix(this string value)
+        {
+            if (!value.HasHexPrefix())
+            {
+                return "0x" + value;
+            }
+            return value;
         }
 
         public static string ToHexCompact(this byte[] value)

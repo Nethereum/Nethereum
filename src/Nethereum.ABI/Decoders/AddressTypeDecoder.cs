@@ -20,7 +20,9 @@ namespace Nethereum.ABI.Decoders
         public override object Decode(byte[] encoded, Type type)
         {
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
-            return intTypeDecoder.DecodeBigInteger(encoded).ToHex(false);
+            byte[] output = new byte[20];
+            Array.Copy(encoded,12,output,0,20);
+            return output.ToHex(true);
         }
 
         public override Type GetDefaultDecodingType()

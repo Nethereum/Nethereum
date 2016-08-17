@@ -122,7 +122,7 @@ namespace Nethereum.Web3
         }
     }
 
-    public class EventLog<T>
+    public class EventLog<T>:IEventLog
     {
         public EventLog(T eventObject, FilterLog log)
         {
@@ -132,5 +132,10 @@ namespace Nethereum.Web3
 
         public T Event { get; private set; }
         public FilterLog Log { get; private set; }
+    }
+
+    public interface IEventLog
+    {
+        FilterLog Log { get; }
     }
 }
