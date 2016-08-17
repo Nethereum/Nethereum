@@ -32,29 +32,22 @@ namespace Nethereum.ABI.Util.RLP
         {
             var output = new List<byte[]>();
             foreach (var str in strings)
-            {
                 output.Add(str.ToBytesForRLPEncoding());
-            }
             return output.ToArray();
         }
 
         private static byte[] ToBytesFromNumber(byte[] bytes)
         {
-
             if (BitConverter.IsLittleEndian)
-            {
                 bytes = bytes.Reverse().ToArray();
-            }
 
             var trimmed = new List<byte>();
-            bool previousByteWasZero = true;
+            var previousByteWasZero = true;
 
-            for (int i = 0; i < bytes.Length; i++)
+            for (var i = 0; i < bytes.Length; i++)
             {
-                if (previousByteWasZero && bytes[i] == 0)
-                {
+                if (previousByteWasZero && (bytes[i] == 0))
                     continue;
-                }
 
                 previousByteWasZero = false;
                 trimmed.Add(bytes[i]);
@@ -65,12 +58,12 @@ namespace Nethereum.ABI.Util.RLP
 
         public static int ToIntFromRLPDecoded(this byte[] bytes)
         {
-            return (int)ToBigIntegerFromRLPDecoded(bytes);
+            return (int) ToBigIntegerFromRLPDecoded(bytes);
         }
 
         public static long ToLongFromRLPDecoded(this byte[] bytes)
         {
-            return (long)ToBigIntegerFromRLPDecoded(bytes);
+            return (long) ToBigIntegerFromRLPDecoded(bytes);
         }
 
         public static string ToStringFromRLPDecoded(this byte[] bytes)
@@ -83,11 +76,8 @@ namespace Nethereum.ABI.Util.RLP
         {
             if (bytes == null) return 0;
             if (BitConverter.IsLittleEndian)
-            {
                 return new BigInteger(bytes.Reverse().ToArray());
-            }
             return new BigInteger(bytes);
         }
-
     }
 }

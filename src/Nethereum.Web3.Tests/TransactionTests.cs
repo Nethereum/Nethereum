@@ -9,7 +9,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests
 {
     public class TransactionTests
     {

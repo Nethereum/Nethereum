@@ -8,21 +8,23 @@
   },
 
   "dependencies": {
-    "xunit": "2.1.0",
     "Nethereum.StandardTokenEIP20": "1.0.0-*",
     "Nethereum.Web3": "1.0.0-*",
-    "dotnet-test-xunit": "1.0.0-*",
-    "Nethereum.JsonRpc.IpcClient": "1.0.0-*"
+    "xunit": "2.2.0-beta2-build3300",
+    "dotnet-test-xunit": "2.2.0-preview2-build1029"
   },
 
-  "commands": {
-    "Nethereum.Web3.Sample": "Nethereum.Web3.Sample"
-  },
   "frameworks": {
     "net451": {
+      "dependencies": {
+        "Nethereum.JsonRpc.IpcClient": "1.0.0-rc6"
+      },
       "frameworkAssemblies": {
         "System.Numerics": "4.0.0.0"
-      }
+       
+      } 
+      
     }
-  }
+    
+    }
 }

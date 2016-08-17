@@ -4,7 +4,7 @@ using Nethereum.ABI.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
-    public class SerpentSignatureEncoder:SignatureEncoder
+    public class SerpentSignatureEncoder : SignatureEncoder
     {
         public override string GenerateSignature(string name, Parameter[] parameters)
         {
@@ -14,18 +14,17 @@ namespace Nethereum.ABI.FunctionEncoding
             signature.Append(string.Join("", parameters.OrderBy(x => x.Order).Select(x => x.SerpentSignature)));
             return signature.ToString();
         }
-
     }
 
     public class SignatureEncoder
     {
-        private Sha3Keccack sha3Keccack;
+        private readonly Sha3Keccack sha3Keccack;
 
         public SignatureEncoder()
         {
             sha3Keccack = new Sha3Keccack();
-
         }
+
         public virtual string GenerateSignature(string name, Parameter[] parameters)
         {
             var signature = new StringBuilder();
@@ -38,18 +37,15 @@ namespace Nethereum.ABI.FunctionEncoding
         }
 
 
-        
-
         public string GenerateSha3Signature(string name, Parameter[] parameters)
         {
             var signature = GenerateSignature(name, parameters);
             return sha3Keccack.CalculateHash(signature);
-        
         }
 
         public string GenerateSha3Signature(string name, Parameter[] parameters, int numberOfFirstBytes)
         {
-            return GenerateSha3Signature(name,parameters).Substring(0, numberOfFirstBytes*2); 
+            return GenerateSha3Signature(name, parameters).Substring(0, numberOfFirstBytes*2);
         }
     }
 }

@@ -8,11 +8,11 @@ namespace Nethereum.ABI.Encoders
 {
     public class IntTypeEncoder : ITypeEncoder
     {
-        private IntTypeDecoder intTypeDecoder;
+        private readonly IntTypeDecoder intTypeDecoder;
 
         public IntTypeEncoder()
         {
-            this.intTypeDecoder = new IntTypeDecoder();
+            intTypeDecoder = new IntTypeDecoder();
         }
 
         public byte[] Encode(object value)
@@ -22,21 +22,13 @@ namespace Nethereum.ABI.Encoders
             var stringValue = value as string;
 
             if (stringValue != null)
-            {
                 bigInt = intTypeDecoder.Decode<BigInteger>(stringValue);
-            }
             else if (value is BigInteger)
-            {
-                bigInt = (BigInteger)value;
-            }
+                bigInt = (BigInteger) value;
             else if (value.IsNumber())
-            {
                 bigInt = BigInteger.Parse(value.ToString());
-            }
             else
-            {
                 throw new Exception("Invalid value for type '" + this + "': " + value + " (" + value.GetType() + ")");
-            }
             return EncodeInt(bigInt);
         }
 
@@ -47,31 +39,21 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] EncodeInt(BigInteger bigInt)
         {
-            byte[] ret = new byte[32];
+            var ret = new byte[32];
 
-            for (int i = 0; i < ret.Length; i++)
-            {
+            for (var i = 0; i < ret.Length; i++)
                 if (bigInt.Sign < 0)
-                {
                     ret[i] = 0xFF;
-                }
                 else
-                {
                     ret[i] = 0;
-                }
-            }
 
             byte[] bytes;
 
             //It should always be Big Endian.
             if (BitConverter.IsLittleEndian)
-            {
                 bytes = bigInt.ToByteArray().Reverse().ToArray();
-            }
             else
-            {
                 bytes = bigInt.ToByteArray().ToArray();
-            }
 
             Array.Copy(bytes, 0, ret, 32 - bytes.Length, bytes.Length);
 

@@ -1,9 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -17,12 +14,8 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var result = new List<PropertyInfo>();
             foreach (var property in properties)
-            {
                 if (property.IsDefined(typeof(ParameterAttribute), false))
-                {
-                   result.Add(property);
-                }
-            }
+                    result.Add(property);
             return result.ToArray();
         }
 
@@ -32,28 +25,26 @@ namespace Nethereum.ABI.FunctionEncoding
             var parameterObjects = new List<ParameterOutputProperty>();
 
             foreach (var property in properties)
-            {
                 if (property.IsDefined(typeof(ParameterAttribute), false))
                 {
                     var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-                    parameterObjects.Add(new ParameterOutputProperty()
+                    parameterObjects.Add(new ParameterOutputProperty
                     {
                         Parameter = parameterAttribute.Parameter,
                         PropertyInfo = property,
                         DecodedType = property.PropertyType
                     });
                 }
-            }
             var orderedParameters = parameterObjects.OrderBy(x => x.Parameter.Order).ToArray();
             var parameterResults = DecodeOutput(output, orderedParameters);
 
             foreach (var parameterResult in parameterResults)
             {
-                var parameter = (ParameterOutputProperty)parameterResult;
+                var parameter = (ParameterOutputProperty) parameterResult;
                 var propertyInfo = parameter.PropertyInfo;
                 propertyInfo.SetValue(result, parameter.Result);
             }
-            
+
             return result;
         }
 
@@ -62,21 +53,18 @@ namespace Nethereum.ABI.FunctionEncoding
             var parameterOutputs = new List<ParameterOutput>();
 
             foreach (var inputParameter in inputParameters)
-            {
-                parameterOutputs.Add(new ParameterOutput()
+                parameterOutputs.Add(new ParameterOutput
                 {
                     Parameter = inputParameter,
                     DecodedType = inputParameter.ABIType.GetDefaultDecodingType()
                 });
-            }
 
             return DecodeOutput(data, parameterOutputs.ToArray());
         }
-     
+
         public List<ParameterOutput> DecodeOutput(string output, params ParameterOutput[] outputParameters)
         {
-
-            byte[] outputBytes = output.HexToByteArray();
+            var outputBytes = output.HexToByteArray();
 
             var currentIndex = 0;
 
@@ -85,7 +73,8 @@ namespace Nethereum.ABI.FunctionEncoding
                 var param = outputParam.Parameter;
                 if (param.ABIType.IsDynamic())
                 {
-                    outputParam.DataIndexStart = EncoderDecoderHelpers.GetNumberOfBytes(outputBytes.Skip(currentIndex).ToArray());
+                    outputParam.DataIndexStart =
+                        EncoderDecoderHelpers.GetNumberOfBytes(outputBytes.Skip(currentIndex).ToArray());
                     currentIndex = currentIndex + 32;
                 }
                 else
@@ -98,7 +87,8 @@ namespace Nethereum.ABI.FunctionEncoding
             }
 
             ParameterOutput currentDataItem = null;
-            foreach (var nextDataItem in outputParameters.Where(outputParam => outputParam.Parameter.ABIType.IsDynamic()))
+            foreach (
+                var nextDataItem in outputParameters.Where(outputParam => outputParam.Parameter.ABIType.IsDynamic()))
             {
                 if (currentDataItem != null)
                 {
@@ -127,42 +117,38 @@ namespace Nethereum.ABI.FunctionEncoding
 
             if (outputParameter != null)
             {
-                var parmeterOutput = new ParameterOutput()
+                var parmeterOutput = new ParameterOutput
                 {
-                    DecodedType = typeof (T),
+                    DecodedType = typeof(T),
                     Parameter = outputParameter
                 };
 
                 var results = DecodeOutput(output, parmeterOutput);
 
                 if (results.Any())
-                {
                     return (T) results[0].Result;
-                }
             }
 
             return default(T);
         }
 
-        public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data, params Parameter[] parameters)
+        public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
+            params Parameter[] parameters)
         {
             if (!sha3Signature.StartsWith("0x")) sha3Signature = "0x" + sha3Signature;
             if (!data.StartsWith("0x")) data = "0x" + data;
 
-            if (data == "0x" || data == sha3Signature) return null;
+            if ((data == "0x") || (data == sha3Signature)) return null;
             if (data.StartsWith(sha3Signature))
-            {
                 data = data.Substring(sha3Signature.Length); //4 bytes?
-            }
             return DecodeDefaultData(data, parameters);
         }
-             
 
-        ///<summary>
-        /// Decodes the output of a function using either a FunctionOutputAttribute  (T)
-        ///  or the parameter casted to the type T, only one outputParameter should be used in this scenario.
+
+        /// <summary>
+        ///     Decodes the output of a function using either a FunctionOutputAttribute  (T)
+        ///     or the parameter casted to the type T, only one outputParameter should be used in this scenario.
         /// </summary>
-        ///  
         public T DecodeOutput<T>(string output, params Parameter[] outputParameter) where T : new()
         {
             if (output == "0x") return default(T);
@@ -180,12 +166,8 @@ namespace Nethereum.ABI.FunctionEncoding
                 }
 
                 return default(T);
-
             }
-            else
-            {
-                return DecodeFunctionOutput<T>(output);
-            }
+            return DecodeFunctionOutput<T>(output);
         }
 
 
@@ -193,19 +175,15 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             if (output == "0x") return default(T);
             var result = new T();
-            DecodeFunctionOutput<T>(result, output);
+            DecodeFunctionOutput(result, output);
             return result;
-
         }
 
 
         public T DecodeFunctionOutput<T>(T functionOutputResult, string output)
         {
-           
             if (output == "0x")
-            {
-               return functionOutputResult;
-            }
+                return functionOutputResult;
 
             var type = typeof(T);
 
@@ -218,7 +196,6 @@ namespace Nethereum.ABI.FunctionEncoding
             DecodeAttributes(output, functionOutputResult, properties.ToArray());
 
             return functionOutputResult;
-
         }
     }
 }

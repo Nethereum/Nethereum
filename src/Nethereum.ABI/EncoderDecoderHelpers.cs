@@ -9,7 +9,7 @@ namespace Nethereum.ABI
         {
             var intDecoder = new IntTypeDecoder();
             var numberOfBytesEncoded = encoded.Take(32);
-            return intDecoder.DecodeInt(numberOfBytesEncoded.ToArray());  
+            return intDecoder.DecodeInt(numberOfBytesEncoded.ToArray());
         }
     }
-}  
+}

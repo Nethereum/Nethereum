@@ -1,7 +1,6 @@
-using Nethereum.RPC.Tests;
 using Xunit;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
 
     public class ContractDeploymentAndCall

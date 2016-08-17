@@ -4,7 +4,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
 
 

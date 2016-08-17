@@ -9,19 +9,19 @@ namespace Nethereum.ABI.Decoders
 
         public AddressTypeDecoder()
         {
-            this.intTypeDecoder = new IntTypeDecoder();
-
+            intTypeDecoder = new IntTypeDecoder();
         }
+
         public override bool IsSupportedType(Type type)
         {
-            return type == typeof (string) || type == typeof (object);
+            return (type == typeof(string)) || (type == typeof(object));
         }
 
         public override object Decode(byte[] encoded, Type type)
         {
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
-            byte[] output = new byte[20];
-            Array.Copy(encoded,12,output,0,20);
+            var output = new byte[20];
+            Array.Copy(encoded, 12, output, 0, 20);
             return output.ToHex(true);
         }
 

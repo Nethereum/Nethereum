@@ -1,10 +1,10 @@
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.DTOs;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Xunit;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class GethTester
     {

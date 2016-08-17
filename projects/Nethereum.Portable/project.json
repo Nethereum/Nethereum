@@ -1,6 +1,6 @@
 ﻿{
-  "version": "1.0.0-rc5",
-  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken, Maker",
+  "version": "1.0.0-rc6",
+  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken",
   "authors": [
     "Juan Blanco"
   ],

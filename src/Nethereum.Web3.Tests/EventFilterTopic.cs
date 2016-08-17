@@ -1,9 +1,7 @@
-using System.Numerics;
 using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class EventFilterTopic
     {

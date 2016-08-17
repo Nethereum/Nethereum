@@ -1,12 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Tests;
-using Xunit;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
+using Xunit;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetTransactionByHashTester : IRPCRequestTester
     {

@@ -4,7 +4,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class EthCallTester : IRPCRequestTester
     {

@@ -1,17 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.ABI.FunctionEncoding;
-using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Filters;
-using Nethereum.RPC.Tests;
 using Xunit;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class EventFilterWith2Topics
     {

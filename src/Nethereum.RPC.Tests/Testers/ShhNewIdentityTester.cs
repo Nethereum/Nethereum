@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Shh;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class ShhNewIdentityTester : IRPCRequestTester
     {

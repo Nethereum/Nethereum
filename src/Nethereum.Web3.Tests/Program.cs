@@ -1,9 +1,6 @@
-﻿using SimpleTests;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class Program
     {

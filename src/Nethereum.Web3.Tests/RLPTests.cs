@@ -1,12 +1,11 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-using Org.BouncyCastle.Crypto.Paddings;
-using Xunit;
 using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests
 {
  
     public class RLPTests

@@ -1,14 +1,11 @@
-
 using System;
 using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
-using Nethereum.RPC.Tests;
-using Xunit;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Miner;
+using Xunit;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class MinerSetGasPriceTester : RPCRequestTester<bool>, IRPCRequestTester
     {

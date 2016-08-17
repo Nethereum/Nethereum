@@ -1,6 +1,5 @@
 namespace Nethereum.ABI.Util
 {
-
     public static class NumberExtensions
     {
         public static bool IsNumber(this object value)

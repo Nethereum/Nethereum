@@ -20,9 +20,7 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var parametersEncoded = "";
             if (values != null)
-            {
                 parametersEncoded = EncodeParameters(parameters, values).ToHex();
-            }
 
             return EncodeRequest(contractByteCode, parametersEncoded);
         }
@@ -32,9 +30,7 @@ namespace Nethereum.ABI.FunctionEncoding
             var prefix = "0x";
 
             if (contractByteCode.StartsWith(prefix))
-            {
                 prefix = "";
-            }
 
             return prefix + contractByteCode + encodedParameters;
         }

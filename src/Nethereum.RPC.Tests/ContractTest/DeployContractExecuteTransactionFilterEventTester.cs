@@ -7,11 +7,11 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Sample.Testers;
+using Nethereum.RPC.Tests.Testers;
 using Nethereum.RPC.Web3;
 using Xunit;
 
-namespace Nethereum.RPC.Sample.ContractTest
+namespace Nethereum.RPC.Tests.ContractTest
 {
     public class DeployContractExecuteTransactionFilterEventTester : IRPCRequestTester
     {

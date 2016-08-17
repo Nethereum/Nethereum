@@ -1,4 +1,4 @@
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public static class GethTesterFactory
     {

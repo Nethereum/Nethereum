@@ -1,13 +1,9 @@
-using System;
-using System.Threading.Tasks;
+using System.Threading;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Tests;
 using Xunit;
-using System.Threading;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class ContractConstructorDeploymentAndCall
     {

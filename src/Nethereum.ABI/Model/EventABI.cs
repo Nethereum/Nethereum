@@ -1,12 +1,10 @@
-using System;
-using System.Linq;
-
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class EventABI
     {
+        private string sha3Signature;
 
-        private SignatureEncoder signatureEncoder;
+        private readonly SignatureEncoder signatureEncoder;
 
         public EventABI(string name)
         {
@@ -14,11 +12,10 @@ namespace Nethereum.ABI.FunctionEncoding
             signatureEncoder = new SignatureEncoder();
         }
 
-        public string Name { get; private set; }
+        public string Name { get; }
 
         public Parameter[] InputParameters { get; set; }
-        
-        private string sha3Signature;
+
         public string Sha33Signature
         {
             get
@@ -27,7 +24,6 @@ namespace Nethereum.ABI.FunctionEncoding
                 sha3Signature = signatureEncoder.GenerateSha3Signature(Name, InputParameters);
                 return sha3Signature;
             }
-
         }
     }
 }

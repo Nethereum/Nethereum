@@ -9,14 +9,9 @@ namespace Nethereum.ABI.Encoders
         public byte[] Encode(object value)
         {
             var array = value as IEnumerable;
-            if (array != null && !(value is string))
-            {
+            if ((array != null) && !(value is string))
                 return EncodeList(array.Cast<object>().ToList());
-            }
-            else
-            {
-                throw new Exception("Array value expected for type");
-            }
+            throw new Exception("Array value expected for type");
         }
 
 

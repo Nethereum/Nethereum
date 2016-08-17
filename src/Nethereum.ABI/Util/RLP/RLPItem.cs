@@ -3,12 +3,13 @@ namespace Nethereum.ABI.Util.RLP
     public class RLPItem : IRLPElement
     {
         private readonly byte[] rlpData;
-        public byte[] RLPData => GetRLPData();
 
         public RLPItem(byte[] rlpData)
         {
             this.rlpData = rlpData;
         }
+
+        public byte[] RLPData => GetRLPData();
 
         private byte[] GetRLPData()
         {

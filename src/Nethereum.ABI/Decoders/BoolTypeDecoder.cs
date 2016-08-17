@@ -2,14 +2,15 @@ using System;
 
 namespace Nethereum.ABI.Decoders
 {
-    public class BoolTypeDecoder:TypeDecoder
+    public class BoolTypeDecoder : TypeDecoder
     {
-        private IntTypeDecoder intTypeDecoder;
+        private readonly IntTypeDecoder intTypeDecoder;
 
         public BoolTypeDecoder()
         {
-            intTypeDecoder = new IntTypeDecoder();    
+            intTypeDecoder = new IntTypeDecoder();
         }
+
         public bool Decode(byte[] encoded)
         {
             return Decode<bool>(encoded);
@@ -17,7 +18,7 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return type == typeof (bool) || type == typeof(object);
+            return (type == typeof(bool)) || (type == typeof(object));
         }
 
         public override object Decode(byte[] encoded, Type type)
@@ -29,7 +30,7 @@ namespace Nethereum.ABI.Decoders
 
         public override Type GetDefaultDecodingType()
         {
-            return typeof (bool);
+            return typeof(bool);
         }
     }
 }

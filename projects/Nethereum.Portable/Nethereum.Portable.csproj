@@ -283,6 +283,10 @@
 				<Link>ABI\Model\Parameter.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\Util\AddressUtil.cs">
+				<Link>ABI\Util\AddressUtil.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\Util\ByteUtil.cs">
 				<Link>ABI\Util\ByteUtil.cs</Link>
 		</Compile>
@@ -831,6 +835,10 @@
 				<Link>Web3\Contracts\Event.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\Contracts\EventLog.cs">
+				<Link>Web3\Contracts\EventLog.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\Contracts\EventTopicBuilder.cs">
 				<Link>Web3\Contracts\EventTopicBuilder.cs</Link>
 		</Compile>
@@ -841,6 +849,18 @@
 		
         <Compile Include="..\..\src\Nethereum.Web3\Contracts\FunctionBase.cs">
 				<Link>Web3\Contracts\FunctionBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Contracts\IEventLog.cs">
+				<Link>Web3\Contracts\IEventLog.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs">
+				<Link>Web3\Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Contracts\Comparers\FilterLogBlockNumberTransactionIndexComparer.cs">
+				<Link>Web3\Contracts\Comparers\FilterLogBlockNumberTransactionIndexComparer.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Web3\Core\Transaction.cs">

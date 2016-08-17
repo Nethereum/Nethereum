@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using System.Numerics;
-using Nethereum.RPC.Tests;
 using Xunit;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class Web3FunctionEncodingDecoding
     {

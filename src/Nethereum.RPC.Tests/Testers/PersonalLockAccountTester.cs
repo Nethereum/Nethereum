@@ -1,13 +1,10 @@
-
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
-using Nethereum.RPC.Tests;
-using Xunit;
 using Nethereum.RPC.Personal;
+using Xunit;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class PersonalLockAccountTester : RPCRequestTester<bool>, IRPCRequestTester
     {

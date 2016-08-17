@@ -1,10 +1,9 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.Web3;
 using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests
 {
     public class TransactionSigningTests
     {

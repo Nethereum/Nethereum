@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 
-namespace Nethereum.Web3.Sample
+namespace Nethereum.Web3.Tests
 {
     public class PersonalTest
     {

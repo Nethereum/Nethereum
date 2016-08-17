@@ -21,6 +21,12 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return value.Replace("0x", "");
         }
 
+        public static bool IsTheSameHex(this string first, string second)
+        {
+            return String.Equals(EnsureHexPrefix(first).ToLower(), EnsureHexPrefix(second).ToLower(),
+                StringComparison.Ordinal);
+        }
+
         public static string EnsureHexPrefix(this string value)
         {
             if (!value.HasHexPrefix())

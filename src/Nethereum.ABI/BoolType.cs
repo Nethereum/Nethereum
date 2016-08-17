@@ -10,6 +10,5 @@ namespace Nethereum.ABI
             Decoder = new BoolTypeDecoder();
             Encoder = new BoolTypeEncoder();
         }
-   
     }
 }

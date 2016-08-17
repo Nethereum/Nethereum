@@ -1,9 +1,8 @@
-﻿using Nethereum.JsonRpc.Client;
-using System;
-using System.Runtime.Remoting.Channels;
+﻿using System;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public interface IRPCRequestTester
     {

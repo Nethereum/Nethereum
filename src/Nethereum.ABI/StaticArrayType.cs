@@ -15,16 +15,16 @@ namespace Nethereum.ABI
             Encoder = new StaticArrayTypeEncoder(ElementType, Size);
         }
 
+        public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";
+
+        public override int FixedSize => ElementType.FixedSize*Size;
+
         private void IntialiseSize(string name)
         {
-            int indexFirstBracket = name.IndexOf("[", StringComparison.Ordinal);
-            int indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);
-            string dim = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
+            var indexFirstBracket = name.IndexOf("[", StringComparison.Ordinal);
+            var indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);
+            var dim = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
             Size = int.Parse(dim);
         }
-
-        public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";       
-
-        public override int FixedSize => ElementType.FixedSize * Size;
     }
 }

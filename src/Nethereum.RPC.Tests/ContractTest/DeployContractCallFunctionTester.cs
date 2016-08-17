@@ -1,17 +1,16 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Sample.Testers;
-using Xunit;
-using Nethereum.RPC.Tests;
-using Nethereum.RPC.Personal;
-using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Miner;
+using Nethereum.RPC.Personal;
+using Nethereum.RPC.Tests.Testers;
+using Xunit;
 
-namespace Nethereum.RPC.Sample.ContractTest
+namespace Nethereum.RPC.Tests.ContractTest
 {
     public class DeployContractCallFunctionTester : RPCRequestTester<string>, IRPCRequestTester
     {

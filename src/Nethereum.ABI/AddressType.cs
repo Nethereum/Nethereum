@@ -1,4 +1,3 @@
-using System;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
 
@@ -12,7 +11,5 @@ namespace Nethereum.ABI
             Decoder = new AddressTypeDecoder();
             Encoder = new AddressTypeEncoder();
         }
-
-       
     }
 }

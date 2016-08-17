@@ -1,12 +1,10 @@
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.RPC.Tests;
-using Nethereum.Web3;
-using Xunit;
 using Nethereum.Hex.HexTypes;
+using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests
 {
   
     public class DaoTest

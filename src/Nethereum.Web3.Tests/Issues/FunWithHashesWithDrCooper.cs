@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.RPC.Tests;
 
-namespace Nethereum.Web3.Sample.Issues
+namespace Nethereum.Web3.Tests.Issues
 {
     public class FunWithHashesWithDrCooper
     {

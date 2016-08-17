@@ -1,11 +1,8 @@
-﻿using System;
-using Nethereum.ABI;
+﻿using Nethereum.ABI;
 using Nethereum.Hex.HexConvertors.Extensions;
-using System.Diagnostics;
-using Nethereum.Web3;
 using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests.Issues
 {
     public class Issue24
     {

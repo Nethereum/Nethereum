@@ -1,22 +1,18 @@
-using System;
-
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class Parameter
     {
-
         public Parameter(string type, string name = null, int order = 1, string serpentSignature = null)
         {
-            this.Name = name;
-            this.Type = type;
-            this.Order = order;
-            this.SerpentSignature = serpentSignature;
-            this.ABIType = ABIType.CreateABIType(type);
+            Name = name;
+            Type = type;
+            Order = order;
+            SerpentSignature = serpentSignature;
+            ABIType = ABIType.CreateABIType(type);
         }
 
-        public Parameter(string type, int order):this(type, null, order)
+        public Parameter(string type, int order) : this(type, null, order)
         {
-
         }
 
         public string Name { get; private set; }

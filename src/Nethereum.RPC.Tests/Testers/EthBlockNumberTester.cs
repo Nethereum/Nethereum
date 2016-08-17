@@ -1,12 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
 using Xunit;
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Tests;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class EthBlockNumberTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {

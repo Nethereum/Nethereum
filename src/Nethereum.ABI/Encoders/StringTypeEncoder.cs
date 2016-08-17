@@ -1,10 +1,11 @@
 using System;
+using System.Text;
 
 namespace Nethereum.ABI.Encoders
 {
     public class StringTypeEncoder : ITypeEncoder
     {
-        private BytesTypeEncoder byteTypeEncoder;
+        private readonly BytesTypeEncoder byteTypeEncoder;
 
         public StringTypeEncoder()
         {
@@ -14,11 +15,9 @@ namespace Nethereum.ABI.Encoders
         public byte[] Encode(object value)
         {
             if (!(value is string))
-            {
                 throw new Exception("String value expected for type 'string'");
-            }
 
-            var bytes = System.Text.Encoding.UTF8.GetBytes((string)value);
+            var bytes = Encoding.UTF8.GetBytes((string) value);
 
             return byteTypeEncoder.Encode(bytes, false);
         }

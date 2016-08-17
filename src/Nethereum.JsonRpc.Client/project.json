@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-rc5",
+  "version": "1.0.0-rc6",
   "authors": [ "Juan Blanco" ],
   "packOptions": {
     "summary": "JsonRpc.Client wrapper of Edjcase.JsonRpc.Client specific to Nethereum and additions to provide a generic inteface which can be switched with IPC, request and response handlers",

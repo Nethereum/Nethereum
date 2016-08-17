@@ -1,22 +1,21 @@
 using System;
 using System.Numerics;
+using System.Text;
 using Nethereum.ABI.Util;
 
 namespace Nethereum.ABI.Encoders
 {
     public class Bytes32TypeEncoder : ITypeEncoder
     {
-        private IntTypeEncoder intTypeEncoder;
+        private readonly IntTypeEncoder intTypeEncoder;
 
         public Bytes32TypeEncoder()
         {
-            this.intTypeEncoder = new IntTypeEncoder();
-           
+            intTypeEncoder = new IntTypeEncoder();
         }
 
         public byte[] Encode(object value)
         {
-
             if (value.IsNumber())
             {
                 var bigInt = BigInteger.Parse(value.ToString());
@@ -27,7 +26,7 @@ namespace Nethereum.ABI.Encoders
             if (stringValue != null)
             {
                 var returnBytes = new byte[32];
-                var bytes = System.Text.Encoding.UTF8.GetBytes(stringValue);
+                var bytes = Encoding.UTF8.GetBytes(stringValue);
                 Array.Copy(bytes, 0, returnBytes, 0, bytes.Length);
                 return returnBytes;
             }
@@ -41,6 +40,5 @@ namespace Nethereum.ABI.Encoders
 
             throw new ArgumentException("Expected Numeric Type or String to be Encoded as Bytes32");
         }
-
     }
 }

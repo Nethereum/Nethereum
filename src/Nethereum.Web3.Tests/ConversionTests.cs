@@ -1,8 +1,7 @@
 using System.Numerics;
-using Nethereum.Web3;
 using Xunit;
 
-namespace SimpleTests
+namespace Nethereum.Web3.Tests
 {
    
     public class ConversionTests

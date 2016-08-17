@@ -1,15 +1,12 @@
-
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
-using Nethereum.RPC.Tests;
-using Xunit;
-using Newtonsoft.Json.Linq;
-using Nethereum.RPC.DebugGeth.DTOs;
 using Nethereum.RPC.DebugGeth;
+using Nethereum.RPC.DebugGeth.DTOs;
+using Newtonsoft.Json.Linq;
+using Xunit;
 
-namespace Nethereum.RPC.Sample.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class DebugTraceTransactionTester : RPCRequestTester<JObject>, IRPCRequestTester
     {

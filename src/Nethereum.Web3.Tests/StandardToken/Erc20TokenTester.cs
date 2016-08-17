@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Tests;
-using Nethereum.Web3;
-using Xunit;
-using Nethereum.StandardTokenEIP20.Events.DTO;
 using Nethereum.StandardTokenEIP20;
+using Nethereum.StandardTokenEIP20.Events.DTO;
+using Xunit;
 
-namespace Nethereum.ERC20.Sample
+namespace Nethereum.Web3.Tests.StandardToken
 {
     public class Erc20TokenTester
     {

@@ -13,7 +13,6 @@ namespace Nethereum.ABI.Decoders
         {
             //Skip the length of the array, just pass the array values
             return base.Decode(encoded.Skip(32).ToArray(), type);
-
         }
     }
 }

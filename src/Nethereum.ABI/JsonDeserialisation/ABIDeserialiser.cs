@@ -1,13 +1,10 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using Newtonsoft.Json;
 using Nethereum.ABI.JsonDeserialisation;
-
+using Newtonsoft.Json;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
-
     public class ABIDeserialiser
     {
         public ContractABI DeserialiseContract(string abi)
@@ -20,18 +17,12 @@ namespace Nethereum.ABI.FunctionEncoding
 
             foreach (IDictionary<string, object> element in contract)
             {
-                if ((string)element["type"] == "function")
-                {
+                if ((string) element["type"] == "function")
                     functions.Add(BuildFunction(element));
-                }
-                if ((string)element["type"] == "event")
-                {
+                if ((string) element["type"] == "event")
                     events.Add(BuildEvent(element));
-                }
-                if ((string)element["type"] == "constructor")
-                {
+                if ((string) element["type"] == "constructor")
                     constructor = BuildConstructor(element);
-                }
             }
 
             var contractABI = new ContractABI();
@@ -40,21 +31,21 @@ namespace Nethereum.ABI.FunctionEncoding
             contractABI.Events = events.ToArray();
 
             return contractABI;
-
         }
 
         public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
         {
             var constructorABI = new ConstructorABI();
-            constructorABI.InputParameters = BuildFunctionParameters((List<object>)constructor["inputs"]);
+            constructorABI.InputParameters = BuildFunctionParameters((List<object>) constructor["inputs"]);
             return constructorABI;
         }
 
         public FunctionABI BuildFunction(IDictionary<string, object> function)
         {
-            var functionABI = new FunctionABI((string)function["name"], (bool)function["constant"], TryGetSerpentValue(function));
+            var functionABI = new FunctionABI((string) function["name"], (bool) function["constant"],
+                TryGetSerpentValue(function));
             functionABI.InputParameters = BuildFunctionParameters((List<object>) function["inputs"]);
-            functionABI.OutputParameters = BuildFunctionParameters((List<object>)function["outputs"]);
+            functionABI.OutputParameters = BuildFunctionParameters((List<object>) function["outputs"]);
             return functionABI;
         }
 
@@ -65,7 +56,8 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder, TryGetSignatureValue(input));
+                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder,
+                    TryGetSignatureValue(input));
                 parameters.Add(parameter);
             }
 
@@ -98,12 +90,12 @@ namespace Nethereum.ABI.FunctionEncoding
             }
         }
 
-        
+
         public EventABI BuildEvent(IDictionary<string, object> eventobject)
         {
-            var eventABI = new EventABI((string)eventobject["name"]);
-            eventABI.InputParameters = BuildEventParameters((List<object>)eventobject["inputs"]);
-       
+            var eventABI = new EventABI((string) eventobject["name"]);
+            eventABI.InputParameters = BuildEventParameters((List<object>) eventobject["inputs"]);
+
             return eventABI;
         }
 
@@ -114,7 +106,10 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder) {Indexed = (bool)input["indexed"]};
+                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder)
+                {
+                    Indexed = (bool) input["indexed"]
+                };
                 parameters.Add(parameter);
             }
 

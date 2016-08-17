@@ -79,7 +79,7 @@ namespace Nethereum.Core
 
         /// <summary>
         ///     The counter used to make sure each transaction can only be processed once, you may need to regenerate the
-        ///     transaction if is too low or too high
+        ///     transaction if is too low or too high, simples way is to get the number of transacations
         /// </summary>
         public byte[] Nonce
         {
@@ -206,9 +206,6 @@ namespace Nethereum.Core
             rlpEncoded = null;
         }
 
-        /// <summary>
-        ///     The raw encoded is used to create the signature, it does not include the V,R,S
-        /// </summary>
         public byte[] GetRLPEncodedRaw()
         {
             EnsuredRPLDecoded();
