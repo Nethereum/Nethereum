@@ -7,7 +7,7 @@ namespace Nethereum.Web3
 {
     public class EventTopicBuilder
     {
-        private EventABI eventABI;
+        private readonly EventABI eventABI;
 
         public EventTopicBuilder(EventABI eventABI)
         {
@@ -16,24 +16,26 @@ namespace Nethereum.Web3
 
         public object GetSignaguteTopic()
         {
-            
             return new[] {Ensure0XPrefix(eventABI.Sha33Signature)};
         }
 
         public object[] GetTopics(object[] firstTopic)
         {
-            return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1) };
+            return new[] {GetSignaguteTopic(), GetValueTopic(firstTopic, 1)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic)
         {
-
-            return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1) , GetValueTopic(secondTopic, 2) };
+            return new[] {GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic, object[] thirdTopic)
         {
-            return new[] { GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2), GetValueTopic(thirdTopic, 3) };
+            return new[]
+            {
+                GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2),
+                GetValueTopic(thirdTopic, 3)
+            };
         }
 
         private string Ensure0XPrefix(string input)
@@ -48,15 +50,9 @@ namespace Nethereum.Web3
             var parameter = eventABI.InputParameters.FirstOrDefault(x => x.Order == paramNumber);
             if (parameter == null) throw new Exception("Event parameter not found at " + paramNumber);
 
-            for (int i = 0; i < values.Length; i++)
-            {
+            for (var i = 0; i < values.Length; i++)
                 if (values[i] != null)
-                {
                     encoded[i] = Ensure0XPrefix(parameter.ABIType.Encode(values[i]).ToHex());
-                    
-                }
-               
-            }
             return encoded;
         }
     }

@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 
@@ -12,17 +12,17 @@ namespace Nethereum.Web3
 {
     public class Contract
     {
-        public Contract(IClient client, string abi, string contractAddress) 
+        private readonly EthNewFilter ethNewFilter;
+
+        public Contract(IClient client, string abi, string contractAddress)
         {
-            this.ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
-            this.Client = client;
-            this.Address = contractAddress;
+            ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
+            Client = client;
+            Address = contractAddress;
             ethNewFilter = new EthNewFilter(client);
         }
 
-        private EthNewFilter ethNewFilter;
-
-        public IClient Client { get; private set; }
+        public IClient Client { get; }
 
         public ContractABI ContractABI { get; set; }
 
@@ -33,12 +33,12 @@ namespace Nethereum.Web3
         public Function<TFunction> GetFunction<TFunction>()
         {
             var function = FunctionAttribute.GetAttribute<TFunction>();
-            if(function == null) throw new Exception("Invalid TFunction required a Function Attribute");
+            if (function == null) throw new Exception("Invalid TFunction required a Function Attribute");
             return new Function<TFunction>(Client, this, GetFunctionAbi(function.Name));
         }
 
         public Function GetFunction(string name)
-        {  
+        {
             return new Function(Client, this, GetFunctionAbi(name));
         }
 
@@ -63,20 +63,19 @@ namespace Nethereum.Web3
             return eventAbi;
         }
 
-        public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null)
+        public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = new NewFilterInput();
             ethFilterInput.FromBlock = fromBlock;
-            ethFilterInput.ToBlock = BlockParameter.CreateLatest();
-            ethFilterInput.Address = new[] { this.Address };
+            ethFilterInput.ToBlock = toBlock ?? BlockParameter.CreateLatest();
+            ethFilterInput.Address = new[] {Address};
             return ethFilterInput;
         }
 
         public Task<HexBigInteger> CreateFilterAsync()
         {
-            var ethFilterInput = this.GetDefaultFilterInput();
+            var ethFilterInput = GetDefaultFilterInput();
             return ethNewFilter.SendRequestAsync(ethFilterInput);
         }
-
     }
 }

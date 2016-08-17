@@ -9,9 +9,7 @@ namespace Nethereum.Web3.Contracts.Comparers
         public int Compare(FilterLog x, FilterLog y)
         {
             if (x.BlockNumber.Value == y.BlockNumber.Value)
-            {
                 return x.TransactionIndex.Value.CompareTo(y.TransactionIndex.Value);
-            }
             return x.BlockNumber.Value.CompareTo(y.BlockNumber.Value);
         }
     }
