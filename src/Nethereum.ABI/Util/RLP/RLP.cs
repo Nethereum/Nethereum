@@ -59,7 +59,7 @@ namespace Nethereum.ABI.Util.RLP
         ///     byte with value 0x80 plus the length of the string followed by the
         ///     string. The range of the first byte is thus [0x80, 0xb7].
         /// </summary>
-        private const int OFFSET_SHORT_ITEM = 0x80;
+        private const byte OFFSET_SHORT_ITEM = 0x80;
 
         /// <summary>
         ///     [0xb7]
@@ -70,7 +70,7 @@ namespace Nethereum.ABI.Util.RLP
         ///     \xb9\x04\x00 followed by the string. The range of the first byte is thus
         ///     [0xb8, 0xbf].
         /// </summary>
-        private const int OFFSET_LONG_ITEM = 0xb7;
+        private const byte OFFSET_LONG_ITEM = 0xb7;
 
         /// <summary>
         ///     [0xc0]
@@ -80,7 +80,7 @@ namespace Nethereum.ABI.Util.RLP
         ///     of the RLP encodings of the items. The range of the first byte is thus
         ///     [0xc0, 0xf7].
         /// </summary>
-        private const int OFFSET_SHORT_LIST = 0xc0;
+        private const byte OFFSET_SHORT_LIST = 0xc0;
 
         /// <summary>
         ///     [0xf7]
@@ -90,7 +90,7 @@ namespace Nethereum.ABI.Util.RLP
         ///     followed by the concatenation of the RLP encodings of the items. The
         ///     range of the first byte is thus [0xf8, 0xff].
         /// </summary>
-        private const int OFFSET_LONG_LIST = 0xf7;
+        private const byte OFFSET_LONG_LIST = 0xf7;
 
         /// <summary>
         ///     Allow for content up to size of 2^64 bytes *
