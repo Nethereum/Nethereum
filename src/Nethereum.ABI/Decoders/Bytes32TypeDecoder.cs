@@ -48,7 +48,7 @@ namespace Nethereum.ABI.Decoders
 
         private string DecodeString(byte[] encoded)
         {
-            return Encoding.UTF8.GetString(encoded, 0, encoded.Length);
+            return Encoding.UTF8.GetString(encoded, 0, encoded.Length).TrimEnd('\0');
         }
     }
 }
