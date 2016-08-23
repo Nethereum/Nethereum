@@ -1,7 +1,9 @@
 
 # Deployment of Contracts to Ethereum
 
-The first step to be able to interact with any contract is to deploy it to the Ethereum chain. 
+The first step to be able to interact with any contract is to deploy it to the Ethereum chain.  
+
+[![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
 
 ## The test contract
 This is a very simple example of a solidity contract:
@@ -51,49 +53,49 @@ Before a contract can be deployed it needs to be compiled. Let's quickly see how
 
 ### Verifying it has been deployed
 
-### The whole contract
+### The final code
 
 ```csharp
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var password = "password";
-            var abi = @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
-            var byteCode =
-                "0x60606040526040516020806052833950608060405251600081905550602b8060276000396000f3606060405260e060020a60003504631df4f1448114601a575b005b600054600435026060908152602090f3";
+    var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+    var password = "password";
+    var abi = @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
+    var byteCode =
+        "0x60606040526040516020806052833950608060405251600081905550602b8060276000396000f3606060405260e060020a60003504631df4f1448114601a575b005b600054600435026060908152602090f3";
 
-            var multiplier = 7;
+    var multiplier = 7;
 
-            var web3 = new Web3.Web3();
-            var unlockAccountResult =
-                await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
-            Assert.True(unlockAccountResult);
+    var web3 = new Web3.Web3();
+    var unlockAccountResult =
+        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
+    Assert.True(unlockAccountResult);
 
-            var transactionHash =
-                await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
+    var transactionHash =
+        await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
 
-            var mineResult = await web3.Miner.Start.SendRequestAsync(6);
+    var mineResult = await web3.Miner.Start.SendRequestAsync(6);
 
-            Assert.True(mineResult);
+    Assert.True(mineResult);
 
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+    var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 
-            while (receipt == null)
-            {
-                Thread.Sleep(5000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-            }
-            
-            mineResult = await web3.Miner.Stop.SendRequestAsync();
-            Assert.True(mineResult);
+    while (receipt == null)
+    {
+        Thread.Sleep(5000);
+        receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+    }
+    
+    mineResult = await web3.Miner.Stop.SendRequestAsync();
+    Assert.True(mineResult);
 
-            var contractAddress = receipt.ContractAddress;
+    var contractAddress = receipt.ContractAddress;
 
-            var contract = web3.Eth.GetContract(abi, contractAddress);
+    var contract = web3.Eth.GetContract(abi, contractAddress);
 
-            var multiplyFunction = contract.GetFunction("multiply");
+    var multiplyFunction = contract.GetFunction("multiply");
 
-            var result = await multiplyFunction.CallAsync<int>(7);
+    var result = await multiplyFunction.CallAsync<int>(7);
 
-            Assert.Equal(49, result);
+    Assert.Equal(49, result);
 
 ```
 
