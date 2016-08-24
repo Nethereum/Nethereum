@@ -102,13 +102,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
     <Compile Include="Deployment\Deployment.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="contracts\bin\test.abi" />
-    <None Include="contracts\bin\test.bin" />
     <None Include="Deployment\contracts\bin\test.abi" />
     <None Include="Deployment\contracts\bin\test.bin" />
     <None Include="packages.config">
@@ -116,7 +113,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="contracts\test.sol" />
     <Content Include="Deployment\contracts\test.sol" />
   </ItemGroup>
   <ItemGroup>

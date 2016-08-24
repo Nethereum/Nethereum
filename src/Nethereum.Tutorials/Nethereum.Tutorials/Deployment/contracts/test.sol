@@ -2,10 +2,10 @@ contract test {
     int _multiplier;
 
     function test(int multiplier){
-        _multiplier = multiplier
+        _multiplier = multiplier;
     }
 
     function multiply(int val) returns (int d) {
-        return val * multiplier;    
+        return val * _multiplier;    
     }
 }
