@@ -11,7 +11,7 @@ namespace Nethereum.Tutorials
 {
     public class Deployment
     {
-        [Fact]
+		[Fact(Skip="Unskip it if want to demo")]
         public async Task ShouldBeAbleToDeployAContract()
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";

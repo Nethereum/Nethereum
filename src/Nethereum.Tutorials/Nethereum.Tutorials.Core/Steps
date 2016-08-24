@@ -1,0 +1,19 @@
+1. Have a quick overview on how to install the new .net core
+2. How to install vscode
+
+3. Create a simple smart contract (multiplication contract)
+4. Compile
+5. Bytecode and abi
+
+6. Start our small private chain using geth
+
+7. Small overview of our .net application / unit test
+
+8. Unlock an account
+
+9. deploy the Bytecode
+
+10. Mine it
+11. receipt of the transaction to get the contract address
+12. Final call to the contract and verify its functionality
+

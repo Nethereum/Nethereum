@@ -1,1 +1,3 @@
 eth.accounts
+miner.stop
+miner.stop()
