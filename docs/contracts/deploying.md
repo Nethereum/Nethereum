@@ -7,12 +7,12 @@ The first step to be able to interact with any contract is to deploy it to the E
 
 These are two videos that can take you through all the steps, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code.
 
-## Windows, Visual Studio, .Net 451 Video
+### Windows, Visual Studio, .Net 451 Video
 This video takes you through the steps of creating the a smart contract, compilet it, start a private chain and deploy it using Nethereum.
 
 [![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
 
-## Cross platform, Visual Studio Code, .Net core Video
+### Cross platform, Visual Studio Code, .Net core Video
 
 If you want to develop in a cross platform environment this video takes you through same steps but in a Mac using Visual Studio Code and .Net Core.
 
