@@ -3,10 +3,19 @@
 
 The first step to be able to interact with any contract is to deploy it to the Ethereum chain.  
 
-This is a hands on video tutorial that describes all the steps for this guide in windows using Visual Studio
+## Videos
+
+These are two videos that can take you through all the steps, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code.
+
+## Windows, Visual Studio, .Net 451 Video
+This video takes you through the steps of creating the a smart contract, compilet it, start a private chain and deploy it using Nethereum.
+
 [![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
 
-If you want to develop in a cross platform environment you there is another video with the same steps but in a Mac using Visual Studio Code and .Net Core
+## Cross platform, Visual Studio Code, .Net core Video
+
+If you want to develop in a cross platform environment this video takes you through same steps but in a Mac using Visual Studio Code and .Net Core.
+
 [![Cross platform development in Ethereum using .Net Core and VsCode and Nethereum](http://img.youtube.com/vi/M1qKcJyQcMY/0.jpg)](http://www.youtube.com/watch?v=M1qKcJyQcMY "Cross platform development in Ethereum using .Net Core and VsCode and Nethereum")
 
 
@@ -31,10 +40,10 @@ This is a very simple example of a solidity contract:
 The contract named "test" has a  constructor named after the contract (class) and a function multiply.
 The function multiply returns the result of the multiplication of a parameter "a" by the value of the "multiplier" provider at time of deployment to the constructor.
 
-### Contract compilation, the Bytecode and the ABI
+## Contract compilation, the Bytecode and the ABI
 Before a contract can be deployed it needs to be compiled. Let's quickly see how to do this with Solidity Online or Visual Studio Code
 
-#### Visual Studio Code 
+### Visual Studio Code 
 
 1. Open Visual Studio Code
 2. Copy the contract test into a new file and save it as "test.sol", you will need to have opened a folder as your workspace.
