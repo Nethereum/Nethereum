@@ -1,9 +1,14 @@
 
-# Deployment of Contracts to Ethereum
+# Step by Step guide to create and deploy a contract to Ethereum
 
 The first step to be able to interact with any contract is to deploy it to the Ethereum chain.  
 
+This is a hands on video tutorial that describes all the steps for this guide in windows using Visual Studio
 [![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
+
+If you want to develop in a cross platform environment you there is another video with the same steps but in a Mac using Visual Studio Code and .Net Core
+[![Cross platform development in Ethereum using .Net Core and VsCode and Nethereum](http://img.youtube.com/vi/M1qKcJyQcMY/0.jpg)](http://www.youtube.com/watch?v=M1qKcJyQcMY "Cross platform development in Ethereum using .Net Core and VsCode and Nethereum")
+
 
 ## The test contract
 This is a very simple example of a solidity contract:
@@ -32,8 +37,8 @@ Before a contract can be deployed it needs to be compiled. Let's quickly see how
 #### Visual Studio Code 
 
 1. Open Visual Studio Code
-2. Copy the contract test into a new file and save it as "test.sol"
-3. If you don't have the Solidity extension press F1 and type "ext", then search for "solidity" and install it.
+2. Copy the contract test into a new file and save it as "test.sol", you will need to have opened a folder as your workspace.
+3. If you don't have the Solidity extension press F1 or Shift+Command+P on a mac and type "ext", then search for "solidity" and install it.
 4. Now that is installed you can press F1 again type "compile" and select the option to "Compile current contract" 
 5. Your abi and bytecode files can be found now in your bin folder.
 
@@ -42,8 +47,26 @@ Before a contract can be deployed it needs to be compiled. Let's quickly see how
 ## Deployment
 
 ### Unlocking the account
+First of all you will need to unlock your account to do so you can use Web3.Personal.UnlockAccount.
+
+To unlock an account you will need to pass the address, password and the duration in seconds that you want to unlock your account.
+
+```csharp
+ var unlockAccountResult =
+        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
+```
 
 ### The deployment transaction
+After unlocking your account you are ready to create the transaction to deploy it.
+
+To create a deployment transaction you will use web3.Eth.DeployContract, using the abi (as we are having a constructor), the byte code, and any parameters to the constructor
+
+```csharp
+   var transactionHash =
+        await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
+```
+
+Deploying a transaction will return 
 
 ### Mining it
 
