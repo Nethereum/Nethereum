@@ -1,19 +1,14 @@
-1. Have a quick overview on how to install the new .net core
-2. How to install vscode
+Calls
+Call functions and return a value, but there are not mined or verified by the consensus
 
-3. Create a simple smart contract (multiplication contract)
-4. Compile
-5. Bytecode and abi
+Transactions
+Verified by the consensus, it will use some gas, it won't return any value.
 
-6. Start our small private chain using geth
+Events
+Put information on the log, you can retrieve information of the log using the client.
 
-7. Small overview of our .net application / unit test
+Filters
+The event data from a block to the latest block
 
-8. Unlock an account
-
-9. deploy the Bytecode
-
-10. Mine it
-11. receipt of the transaction to get the contract address
-12. Final call to the contract and verify its functionality
-
+Topics
+Are the indexed values that can filter futher the log
