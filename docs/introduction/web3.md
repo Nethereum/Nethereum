@@ -1,3 +1,4 @@
+#Web3
 
 Web3 provides a simple interaction wrapper to access the RPC methods provided by the client categorised in a similar way, 
 also a simpler way to interact with contracts providing a simple way to interact with the different ways to encode and decode the input / output of contracts.
