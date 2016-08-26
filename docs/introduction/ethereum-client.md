@@ -1,4 +1,4 @@
-#Getting started with Geth
+#Getting started with the Ethereum Client
 
 Nethereum requires an Ethereum client like Geth, eth (c++), parity, etc with RPC / IPC enabled to interact with the network.
 

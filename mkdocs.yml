@@ -2,14 +2,13 @@ site_name: Nethereum
 pages: 
 - Home: 'index.md'
 - Introduction:
-    - 'Getting started' : 'introduction/getting-started.md'
+    - 'Introduction' : 'introduction.md'
+    - 'Getting started with the Ethereum Client' : 'introduction/ethereum-client.md'
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
     - 'IPC' : 'introduction/ipc.md'
-    - 'Hex Types' : 'introduction/hex-types.md'
 - Contracts:
-    - 'Writing contracts' : 'contracts/writing.md'
-    - 'Deploying' : 'contracts/deploying.md'
+    - 'Step by step writing contracts and deployment' : 'contracts/deploying.md'
     - 'DTO' : 'contracts/dto.md'
     - 'Calling' : 'contracts/calling.md'
     - 'Transactions' : 'contracts/transactions.md'
