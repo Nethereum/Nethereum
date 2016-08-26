@@ -1,13 +1,15 @@
 #Web3
 
-Web3 provides a simple interaction wrapper to access the RPC methods provided by the client categorised in a similar way, 
-also a simpler way to interact with contracts providing a simple way to interact with the different ways to encode and decode the input / output of contracts.
+Web3 provides a simple interaction wrapper to access the RPC methods provided by the client categorised by their similar functionality, 
+also provides a simplified way to interact with contracts by combining the ABI encoding /decoding of the input / output of the contracts together with the Eth RPC requests.
+
+There are two types of RPC calls the Standard Ethereum JSON RPC
 
 * Eth
 * Net
 * Shh
 
-There are also Geth specific ones as provided though their management RPC api.
+And the management RPC.
 
 * Admin
 * Personal
