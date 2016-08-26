@@ -2,7 +2,7 @@ site_name: Nethereum
 pages: 
 - Home: 'index.md'
 - Introduction:
-    - 'Introduction' : 'introduction.md'
+    - 'Introduction' : 'introduction/introduction.md'
     - 'Getting started with the Ethereum Client' : 'introduction/ethereum-client.md'
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
