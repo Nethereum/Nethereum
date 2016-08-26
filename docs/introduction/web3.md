@@ -8,13 +8,12 @@ also a simpler way to interact with contracts providing a simple way to interact
 * Shh
 
 There are also Geth specific ones as provided though their management RPC api.
-These are:
 
 * Admin
 * Personal
 * Debug
 
-The best way to learn about the different RPC methods provided is to  use as a reference [the official Ethereum RPC API documentation](https://github.com/ethereum/wiki/wiki/JSON-RPC) or the [the official management api for geth](https://github.com/ethereum/go-ethereum/wiki/Management-APIs)
+The best way to learn about the different RPC methods provided is to use as a reference [the official Ethereum RPC API documentation](https://github.com/ethereum/wiki/wiki/JSON-RPC) or the [the official management api for geth](https://github.com/ethereum/go-ethereum/wiki/Management-APIs)
 
 ## Web3 constructor
 
@@ -40,13 +39,14 @@ The parameterless constructor uses the defaults address "http://localhost:8545/"
     var web3 = new Nethereum.Web3.Web3(ipcClient);
 ```
 ## Properties / methods overview
-Web3 acting as the main interaction point offerst 2 types of properties, RPCClientWrappers and access to core utility services.
+Web3 acting as the main interaction point offers 2 types of properties, RPCClientWrappers and access to core utility services.
 
 ### RPCClientWrappers
 The RPC Client wrappers are just generic wrappers of specific functionality of the Ethereum client.
+
 We currently have:
 
-Eth, Net, Miner, Admin, Personal and DebugGeth. Eth, Net are as decribed before generic to the standard Eth and Miner, Admin, Personal and DebugGeth belong to the management RPC.
+Eth, Net, Miner, Admin, Personal and DebugGeth. Eth, Net are as described before generic to the standard Eth and Miner, Admin, Personal and DebugGeth belong to the management RPC.
 
 Eth it is subdivided in further wrappers to enable a simpler way to organise the different RPC calls.
 
@@ -82,7 +82,8 @@ Further example can be found on the [conversion unit tests](https://github.com/N
 
 #### Offline transaction signing
 
-Offline transaction signing can be accesed through OfflineTransactionSigning where you can Sign, get the sender address or verify transactions without interacting directly with the client
+"OfflineTransactionSigning" enables the signing of transactions, get the sender address or verify already signed transactions without interacting directly with the client.
+This is very convenient as light clients may not be able to store the whole chain, but would prefer to use their privates keys to sign transactions and broadcast the signed raw transaction to the network.
 
 ```csharp
 web3.OfflineTransactionSigning.SignTransaction
