@@ -1,7 +1,8 @@
 #Web3
 
-Web3 provides a simple interaction wrapper to access the RPC methods provided by the client categorised by their similar functionality, 
-also provides a simplified way to interact with contracts by combining the ABI encoding /decoding of the input / output of the contracts together with the Eth RPC requests.
+Web3 provides a simple interaction wrapper to access the RPC methods provided by the Ethereum client categorised by their similar functionality.
+
+It also provides a simplified way to interact with contracts by combining the ABI encoding / decoding of the input / output of the contracts together with the Eth RPC requests.
 
 There are two types of RPC calls the Standard Ethereum JSON RPC
 
@@ -16,6 +17,7 @@ And the management RPC.
 * Debug
 
 The best way to learn about the different RPC methods provided is to use as a reference [the official Ethereum RPC API documentation](https://github.com/ethereum/wiki/wiki/JSON-RPC) or the [the official management api for geth](https://github.com/ethereum/go-ethereum/wiki/Management-APIs)
+So we won't go into major detail here.
 
 ## Web3 constructor
 
@@ -41,7 +43,8 @@ The parameterless constructor uses the defaults address "http://localhost:8545/"
     var web3 = new Nethereum.Web3.Web3(ipcClient);
 ```
 ## Properties / methods overview
-Web3 acting as the main interaction point offers 2 types of properties, RPCClientWrappers and access to core utility services.
+
+Web3 acting as the main interaction point offers 2 types of properties / methods RPCClientWrappers and access to core utility services.
 
 ### RPCClientWrappers
 The RPC Client wrappers are just generic wrappers of specific functionality of the Ethereum client.

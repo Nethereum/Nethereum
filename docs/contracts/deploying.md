@@ -56,7 +56,7 @@ Before a contract can be deployed it needs to be compiled. Let's quickly see how
 ## Deployment
 
 ### Unlocking the account
-First of all you will need to unlock your account to do so you can use Web3.Personal.UnlockAccount.
+First of all you will need to unlock your account to do so you can use web3.Personal.UnlockAccount.
 
 To unlock an account you will need to pass the address, password and the duration in seconds that you want to unlock your account.
 
@@ -75,15 +75,57 @@ To create a deployment transaction you will use web3.Eth.DeployContract, using t
         await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
 ```
 
-Deploying a transaction will return 
+Deploying a transaction will return a transactionHash which will be using later on to retrieve the transaction receipt. 
 
 ### Mining it
 
+The transaction that has deployed the contract needs to be verified by the network, if we are running a private chain with a single node we will need to mine the transaction.
+
+```csharp
+ var mineResult = await web3.Miner.Start.SendRequestAsync(6);
+```
+
 ### The transaction receipt
+Once we have started mining (or we know that are miners in the network) we can can attempt to retrieve the transaction receipt, we will need this as it contains our contract address.
+
+The transaction might have not be mined yet, so when attempting to get the receipt it might return a null value, in this scenario we will continue trying until we get a not null result.
+
+```csharp
+   var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+
+    while (receipt == null)
+    {
+        Thread.Sleep(5000);
+        receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+    }
+```
 
 ### Stop mining it
 
-### Verifying it has been deployed
+```csharp
+    var mineResult = await web3.Miner.Start.SendRequestAsync(6);
+```
+
+### Calling the contract function and return a value
+Once we have the receipt, we can retrieve the contract address of our newly deployed contract. Using the contract address and the abi we can create an instance of the Contract object.
+
+Using the contract we can get a Function object using the name of function.
+
+Now with the function we will be able to do a Call to our multiply function by passing a parameter to do the multiplication. 
+
+Note: Calls are not the same as transactions so are not submitted to the network for consensus. Calls are a simple way to retrieve data or do an operation from a contract as our multiplication.
+
+```csharp
+    var contractAddress = receipt.ContractAddress;
+
+    var contract = web3.Eth.GetContract(abi, contractAddress);
+
+    var multiplyFunction = contract.GetFunction("multiply");
+
+    var result = await multiplyFunction.CallAsync<int>(7);
+
+    Assert.Equal(49, result);
+```
 
 ### The final code
 

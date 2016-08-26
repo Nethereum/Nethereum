@@ -1,8 +1,8 @@
-###RPC
+#RPC
 
 The communication uses the JSON RPC interface, the full documentation can be found [in the Ethereum wiki](https://github.com/ethereum/wiki/wiki/JSON-RPC)
 
-###RPC Data Types
+##RPC Data Types
 
 The simplest datatypes to communicate with Ethereum are Numeric and Data.
 
@@ -20,11 +20,10 @@ Data: The transaction, blocks, uncles, addresses hashes are treated as strings t
 
 Hex strings: Similar to HexBigInteger some strings need to be encoded and decoded Hex. HexString has been created to handle the conversion using UTF8 encoding, from and to Hex.
 
-####DTOs
+##DTOs
 
-There are varoious RPC Data transfer objects for Block, Transaction, FilterInput, and BlockParameter, to name a few.
+There are various RPC Data transfer objects for Block, Transaction, FilterInput, and BlockParameter, to name a few.
 
-The BlockParameter can be either for the latest, earliest, pending or for a given blocknumber, this is defaulted to latest on the requests that uses it. 
+The BlockParameter can be either for the latest, earliest, pending or for a given block number, this is defaulted to latest on all the requests that uses it. 
 
-If using Web3, changing the Default Block Parameter, will cascade to all the commands.
-
+Note: If using Web3, changing the Default Block Parameter, will cascade to all the commands.
