@@ -103,7 +103,7 @@ The transaction might have not be mined yet, so when attempting to get the recei
 ### Stop mining it
 
 ```csharp
-    var mineResult = await web3.Miner.Start.SendRequestAsync(6);
+    var mineResult = await web3.Miner.Stop.SendRequestAsync();
 ```
 
 ### Calling the contract function and return a value
