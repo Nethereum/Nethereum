@@ -26,7 +26,7 @@ Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as 
 PM > Install-Package Nethereum.Portable -Pre
 ```
 
-Another option (if targeting netstardad 1.1) is to use the Nethereum.Web3 package. This top level package include all the dependencies for RPC, ABI and Hex. 
+Another option (if targeting netstandard 1.1) is to use the Nethereum.Web3 package. This top level package include all the dependencies for RPC, ABI and Hex. 
 
 If you have issues installing the packages make sure you have a reference to System.Runtime specific to your environment.
 
@@ -59,13 +59,13 @@ There a few video guides, which might be helpful you to get started.
 These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code.
 
 ##### Windows, Visual Studio, .Net 451 Video
-This video takes you through the steps of creating the a smart contract, compilet it, start a private chain and deploy it using Nethereum.
+This video takes you through the steps of creating the a smart contract, compile it, start a private chain and deploy it using Nethereum.
 
 [![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
 
 ##### Cross platform, Visual Studio Code, .Net core Video
 
-If you want to develop in a cross platform environment this video takes you through same steps but in a Mac using Visual Studio Code and .Net Core.
+If you want to develop in a cross platform environment this video takes you through same steps as the Windows .Net 451 step by step guide but this time in a Mac using Visual Studio Code and .Net Core.
 
 [![Cross platform development in Ethereum using .Net Core and VsCode and Nethereum](http://img.youtube.com/vi/M1qKcJyQcMY/0.jpg)](http://www.youtube.com/watch?v=M1qKcJyQcMY "Cross platform development in Ethereum using .Net Core and VsCode and Nethereum")
 
@@ -73,7 +73,7 @@ If you want to develop in a cross platform environment this video takes you thro
 ## Thanks and Credits
 
 * Many thanks to Cass for the fantastic logo (https://github.com/cassiopaia)
-* Many thanks to everyone who has submitted a request for bugs, extra featurs or help either here in github, gitter or other channels, you are continusly shaping this project. 
-  A big shout out specially to @slothbag, @matt.tan, @knocte, @TrekDev, @raymens, @rickzanux, @naddison36, @bobsummerwill, @brendan87, @dylanmckendry
+* Many thanks to everyone who has submitted a request for bugs, extra features or help either here in github, gitter or other channels, you are continuously shaping this project. 
+  A big shout out specially to @slothbag, @matt.tan, @knocte, @TrekDev, @raymens, @rickzanux, @naddison36, @bobsummerwill, @brendan87, @dylanmckendry every little helps.
 * Of course everyone at Ujo, Consensys and Ethereum
-* Huge thanks to Ethan Celleti from edjCase for his great support on his JsonRpc library and NBitcoin for his implementaion of the Elliptic Curve implementation in .Net
+* Huge thanks to Ethan Celleti from edjCase for his great support on his JsonRpc library and NBitcoin for his implementation of the Elliptic Curve in .Net
