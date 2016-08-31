@@ -41,7 +41,7 @@ The contract named "test" has a  constructor named after the contract (class) an
 The function multiply returns the result of the multiplication of a parameter "a" by the value of the "multiplier" provider at time of deployment to the constructor.
 
 ## Contract compilation, the Bytecode and the ABI
-Before a contract can be deployed it needs to be compiled. Let's quickly see how to do this with Solidity Online or Visual Studio Code
+Before a contract can be deployed it needs to be compiled. Let's quickly see how to do this with Visual Studio Code
 
 ### Visual Studio Code 
 
@@ -51,7 +51,7 @@ Before a contract can be deployed it needs to be compiled. Let's quickly see how
 4. Now that is installed you can press F1 again type "compile" and select the option to "Compile current contract" 
 5. Your abi and bytecode files can be found now in your bin folder.
 
-//screenshot
+![VsCode solidity compilation](https://raw.githubusercontent.com/Nethereum/Nethereum/master/docs/screenshots/vscode.png)
 
 ## Deployment
 
@@ -128,6 +128,8 @@ Note: Calls are not the same as transactions so are not submitted to the network
 ```
 
 ### The final code
+
+All the source code can be found under deployment in the [Tutorials solution](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Tutorials)
 
 ```csharp
     var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";

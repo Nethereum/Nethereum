@@ -52,7 +52,7 @@ Note: Named Pipe Windows is the only IPC supported and can only be used in combi
 The documentation and guides are now in [Read the docs](https://nethereum.readthedocs.io/en/latest/), and work in progress. 
 
 ### Video guides
-There a few video guides, which might be helpful you to get started.
+There a few video guides, which might be helpful to get started.
 
 The code for these tutorials can be found [here](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Tutorials)
 
