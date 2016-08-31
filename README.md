@@ -54,6 +54,8 @@ The documentation and guides are now in [Read the docs](https://nethereum.readth
 ### Video guides
 There a few video guides, which might be helpful you to get started.
 
+The code for these tutorials can be found [here](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Tutorials)
+
 #### Introductions
 
 These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code.
@@ -82,6 +84,19 @@ This video provides an introduction on how to store and retrieve data from struc
 
 [![Mappings, Structs, Arrays and complex Functions Output (DTOs)](http://img.youtube.com/vi/o8UC96K0rg8/0.jpg)](https://www.youtube.com/watch?v=o8UC96K0rg8 "Mappings, Structs, Arrays and complex Functions Output (DTOs)")
 
+## Sample Projects
+
+### Nethereum Wallet
+
+This is a cross platform wallet example using Nethereum, Xamarin.Forms and MvvmCross, targeting all main mobile platforms Android, iOS, Windows, Desktop (Windows 10 uwp), IoT with the Raspberry PI and Xbox.
+
+[Source Code](https://github.com/Nethereum/Nethereum.UI.Wallet.Sample)
+
+### Nethereum Web 
+
+This example demonstrates using Nethereum on a web project
+
+[Source Code](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Web.Sample)
 
 ## Thanks and Credits
 
