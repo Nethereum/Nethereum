@@ -70,6 +70,19 @@ If you want to develop in a cross platform environment this video takes you thro
 [![Cross platform development in Ethereum using .Net Core and VsCode and Nethereum](http://img.youtube.com/vi/M1qKcJyQcMY/0.jpg)](http://www.youtube.com/watch?v=M1qKcJyQcMY "Cross platform development in Ethereum using .Net Core and VsCode and Nethereum")
 
 
+#### Introduction to Calls, Transactions, Events, Filters and Topics
+
+This hands on demo provides an introduction to calls, transactions, events filters and topics
+
+[![Introduction to Calls, Transactions, Events, Filters and Topics](http://img.youtube.com/vi/Yir_nu5mmw8/0.jpg)](https://www.youtube.com/watch?v=Yir_nu5mmw8 "Introduction to Calls, Transactions, Events, Filters and Topics")
+ 
+#### Mappings, Structs, Arrays and complex Functions Output (DTOs) 
+
+This video provides an introduction on how to store and retrieve data from structs, mappings and arrays decoding multiple output parameters to Data Transfer Objects
+
+[![Mappings, Structs, Arrays and complex Functions Output (DTOs)](http://img.youtube.com/vi/o8UC96K0rg8/0.jpg)](https://www.youtube.com/watch?v=o8UC96K0rg8 "Mappings, Structs, Arrays and complex Functions Output (DTOs)")
+
+
 ## Thanks and Credits
 
 * Many thanks to Cass for the fantastic logo (https://github.com/cassiopaia)
