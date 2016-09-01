@@ -38,14 +38,20 @@ But most important you need have enabled RPC or IPC.
 
 You can start the HTTP JSON-RPC with the --rpc flag
 
-```geth --rpc
+```
+geth --rpc
+```
 
 change the default port (8545) and listing address (localhost) with:
 
-```geth --rpc --rpcaddr <ip> --rpcport <portnumber>
+```
+geth --rpc --rpcaddr <ip> --rpcport <portnumber>
+```
 If accessing the RPC from a browser, CORS will need to be enabled with the appropriate domain set. Otherwise, JavaScript calls are limit by the same-origin policy and requests will fail:
 
-```geth --rpc --rpccorsdomain "http://localhost:3000"
+```
+geth --rpc --rpccorsdomain "http://localhost:3000"
+```
 The JSON RPC can also be started from the geth console using the admin.startRPC(addr, port) command.
 
 ### Setting up your own testnet
