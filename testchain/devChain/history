@@ -1,3 +1,9 @@
 eth.accounts
 miner.stop
 miner.stop()
+debug
+debug.traceTransaction("0xf3362bc764f59c81741cc17ec79af6117f2bf54fff030238f9a41d6ad36af179")
+debug.traceTransaction("0xbf0d2cdf6696535e34039ccc4a96a3b570e1dd5445145a463e1e65e796907e33")
+debug.traceTransaction("0x3bf58560864f4068baae1ef371c6630f581a5bf59ff7c94bb5f861389e56af51")
+debug.traceTransaction("0x395b59ba2f65911d8887cc80185f19b8879a9911c70473e5c28e2baa83c9f1d7")
+debug.traceTransaction("0xcc14309dac68bf2192502ac1eb018a6c8bfbdc8555bd74b4b65053b7dfe5a058")

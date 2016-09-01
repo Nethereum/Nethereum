@@ -9,8 +9,6 @@ pages:
     - 'IPC' : 'introduction/ipc.md'
 - Contracts:
     - 'Step by step writing contracts and deployment' : 'contracts/deploying.md'
-    - 'DTO' : 'contracts/dto.md'
-    - 'Calling' : 'contracts/calling.md'
-    - 'Transactions' : 'contracts/transactions.md'
-    - 'Events' : 'contracts/events.md'
-    - 'Failing transactions' : 'contracts/failing-transactions.md'
+    - 'Step by step transactions, events, filters and topics' : 'contracts/calling-transactions-events.md'
+- 'Sample Projects' : 'demos/sample-projects.md'
+   

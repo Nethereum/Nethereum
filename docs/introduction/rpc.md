@@ -26,4 +26,16 @@ There are various RPC Data transfer objects for Block, Transaction, FilterInput,
 
 The BlockParameter can be either for the latest, earliest, pending or for a given block number, this is defaulted to latest on all the requests that uses it. 
 
-Note: If using Web3, changing the Default Block Parameter, will cascade to all the commands.
+Note: If using Web3, changing the Default Block Parameter, will cascade to all the Eth transaction commands, GetCode, GetStorageAt, GetBalance
+
+```csharp
+var ethGetBlockTransactionCountByNumber = new EthGetBlockTransactionCountByNumber(client);
+return await ethGetBlockTransactionCountByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+```
+
+or if using Web3
+
+```csharp
+var web3 = new Web3();
+web3.Eth.Blocks.GetBlockTransactionCountByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+```
