@@ -8,7 +8,8 @@ pages:
     - 'RPC' : 'introduction/rpc.md'
     - 'IPC' : 'introduction/ipc.md'
 - Contracts:
-    - 'Step by step writing contracts and deployment' : 'contracts/deploying.md'
-    - 'Step by step transactions, events, filters and topics' : 'contracts/calling-transactions-events.md'
+    - 'Create and deploy contracts' : 'contracts/deploying.md'
+    - 'Calls, transactions, events, filters and topics' : 'contracts/calling-transactions-events.md'
+    - 'Multiple output parameters and function DTOs' : 'contracts/functiondtos.md'
 - 'Sample Projects' : 'demos/sample-projects.md'
    

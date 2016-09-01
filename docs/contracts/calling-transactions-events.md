@@ -1,4 +1,4 @@
-# Step by Step guide to call, transactions, events, filters and topics
+# Calls, transactions, events, filters and topics
 
 The previous guide covered how to deploy and call a contract, this guide will delve a bit deeper into calling contracts, transactions, events and topics.
 
