@@ -76,13 +76,13 @@ When retrieving the data each parameter will be decoded based on the type define
 Given that we have submitted a transaction to store using the key "key1", the document name "hello" with the description as "solidity is great".
 
 ```csharp
-  await storeFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null, "key1", "hello", "solidity is great");
- ```         
+    await storeFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null, "key1", "hello", "solidity is great");
+```         
 
 Once the transaction is mined we can do a Call to retrieve the document, this time as we are using a Function DTO we are Deserialising / Decoding to an object, so the function to use is CallDeserializingToObjectAsync.
 
 ```csharp
-  await documentsFunction.CallDeserializingToObjectAsync<Document>("key1", 1);
+    await documentsFunction.CallDeserializingToObjectAsync<Document>("key1", 1);
 ```
 
 ### The final code
