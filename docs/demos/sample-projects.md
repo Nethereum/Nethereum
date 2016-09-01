@@ -6,6 +6,8 @@ This is a cross platform wallet example using Nethereum, Xamarin.Forms and MvvmC
 
 [Source Code](https://github.com/Nethereum/Nethereum.UI.Wallet.Sample)
 
+[![Nethereum Xbox and UWP](http://img.youtube.com/vi/WuRFmlcWFaA/0.jpg)](http://www.youtube.com/watch?v=WuRFmlcWFaA "Nethereum Xbox and UWP")
+
 ### Nethereum Web 
 
 This example demonstrates using Nethereum on a web project and how you can interact with the DAO.
