@@ -1,5 +1,5 @@
 
-# Step by Step guide to create and deploy a contract to Ethereum
+# Create and deploy a smart contract to Ethereum
 
 The first step to be able to interact with any contract is to deploy it to the Ethereum chain.  
 
@@ -77,7 +77,7 @@ To create a deployment transaction you will use web3.Eth.DeployContract, using t
 
 Deploying a transaction will return a transactionHash which will be using later on to retrieve the transaction receipt. 
 
-### Mining it
+### Start mining
 
 The transaction that has deployed the contract needs to be verified by the network, if we are running a private chain with a single node we will need to mine the transaction.
 
@@ -100,7 +100,7 @@ The transaction might have not be mined yet, so when attempting to get the recei
     }
 ```
 
-### Stop mining it
+### Stop mining
 
 ```csharp
     var mineResult = await web3.Miner.Stop.SendRequestAsync();
@@ -174,4 +174,3 @@ All the source code can be found under deployment in the [Tutorials solution](ht
     Assert.Equal(49, result);
 
 ```
-
