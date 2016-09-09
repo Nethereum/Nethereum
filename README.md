@@ -99,6 +99,14 @@ This example demonstrates using Nethereum on a web project
 
 [Source Code](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Web.Sample)
 
+### Nethereum Game
+
+This sample game demonstrates how to integrate Nethereum with the UrhoSharp SamplyGame (game sample) to create a cross-platform game that interacts with Ethereum.
+
+A simple smart contract deployed to Ethereum allows you to tracks the users high scores and the top scores. The sample uses private keys to sign "offline" transactions and use a public node for all the communication, this way avoids the local installation of an ethereum client.
+
+[Source Code](https://github.com/Nethereum/Nethereum.Game.Sample)
+
 ## Thanks and Credits
 
 * Many thanks to Cass for the fantastic logo (https://github.com/cassiopaia)
