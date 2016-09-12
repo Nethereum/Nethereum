@@ -183,6 +183,7 @@ namespace Nethereum.Web3
         public static List<EventLog<T>> DecodeAllEvents<T>(FilterLog[] logs) where T : new()
         {
             var result = new List<EventLog<T>>();
+            if (logs == null) return result;
             var eventDecoder = new EventTopicDecoder();
             foreach (var log in logs)
             {

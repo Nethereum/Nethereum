@@ -14,10 +14,10 @@ cd ..
 cd Nethereum.Web3
 dotnet pack
 cd ..
-cd Nethereum.StandardToken
+cd Nethereum.StandardToken*
 dotnet pack
 cd ..
-cd Nethereum.JsonRpc.IpcClient
+cd Nethereum.JsonRpc.IpcClient*
 dotnet pack
 cd ..
 setlocal
