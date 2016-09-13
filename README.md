@@ -118,6 +118,20 @@ This video gives you a quick introduction on the sample:
 
 [![Cross platform game development with Ethereum using UrhoSharp and .Net](http://img.youtube.com/vi/WtpmCmP11Iw/0.jpg)](https://www.youtube.com/watch?v=WtpmCmP11Iw "Cross platform game development with Ethereum using UrhoSharp and .Net")
 
+### Nethereum Hololens
+Very simple sample to demonstrate integration with Unity3d, UWP and Hololens.
+
+Unity3d does not support (yet) the latest version of .net for scripting, but this is not an issue with UWP.
+
+This project demonstrates how to enable this by using the [Origami sample](https://developer.microsoft.com/en-us/windows/holographic/holograms_101e) from the 101e on Holograms by Microsoft,
+and adding an script in which we will get the latest blockNumber.
+
+##Video sample
+This video provides a quick overview of the structure, #pragmas and dlls necessary on the plugins folder.
+[![Hololens, Unity3d and Nethereum](http://img.youtube.com/vi/2MXAWHTRw7E/0.jpg)](https://www.youtube.com/watch?v=2MXAWHTRw7E "Hololens, Unity3d and Nethereum")
+
+
+
 ## Thanks and Credits
 
 * Many thanks to Cass for the fantastic logo (https://github.com/cassiopaia)
