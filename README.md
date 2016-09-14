@@ -138,4 +138,4 @@ This video provides a quick overview of the structure, #pragmas and dlls necessa
 * Many thanks to everyone who has submitted a request for extra features, help or bugs either here in github, gitter or other channels, you are continuously shaping this project. 
   A big shout out specially to @slothbag, @matt.tan, @knocte, @TrekDev, @raymens, @rickzanux, @naddison36, @bobsummerwill, @brendan87, @dylanmckendry.
 * Of course everyone at Ujo, Consensys and Ethereum
-* Huge thanks to Ethan Celleti from edjCase for his great support on his JsonRpc library and NBitcoin for his implementation of the Elliptic Curve in .Net
+* Huge thanks to Ethan Celleti from edjCase for his great support on his JsonRpc library, NBitcoin for his implementation of the Elliptic Curve in .Net and last but not least EthereumJ, EthereumJS (and all subprojects), Web3js for inspiration and code porting in some areas.
