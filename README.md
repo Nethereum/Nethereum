@@ -127,7 +127,7 @@ This project demonstrates how to enable this by using the [Origami sample](https
 and adding an script in which we will get the latest blockNumber.
 
 ####Video sample
-This video provides a quick overview of the structure, #pragmas and dlls necessary on the plugins folder.
+This video provides a quick overview of the structure, preprocessor directives and dlls necessary on the plugins folder to get this working.
 [![Hololens, Unity3d and Nethereum](http://img.youtube.com/vi/2MXAWHTRw7E/0.jpg)](https://www.youtube.com/watch?v=2MXAWHTRw7E "Hololens, Unity3d and Nethereum")
 
 
