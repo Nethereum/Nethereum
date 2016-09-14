@@ -1,10 +1,14 @@
 ﻿{
-  "version": "1.0.0-rc6",
+  "version": "1.0.0",
   "description": "Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
   "title": "Nethereum.StandardTokenEIP20",
   "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Nethereum/Nethereum"
+    },
     "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
@@ -12,7 +16,7 @@
     "summary": "Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts"
   },
   "dependencies": {
-    "Nethereum.Web3": "1.0.0-rc6",
+    "Nethereum.Web3": "1.0.0",
     "NETStandard.Library": "1.6.0"
   },
 

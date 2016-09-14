@@ -1,4 +1,5 @@
 rem packing web3 and dependencies
+del /S *.*.nupkg
 cd Nethereum.Hex
 dotnet pack
 cd ..

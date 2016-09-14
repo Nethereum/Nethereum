@@ -1,8 +1,15 @@
 ﻿{
-  "version": "1.0.0-rc6",
+  "version": "1.0.0",
   "description": "HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum",
   "authors": [ "Juan Blanco" ],
+  "copyright": "Juan Blanco",
+  "title": "Nethereum.Hex",
   "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Nethereum/Nethereum"
+    },
+    "summary": "HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum",
     "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
@@ -12,15 +19,15 @@
     "Newtonsoft.Json": "9.0.1",
     "NETStandard.Library": "1.6.0"
   },
-    "frameworks": {
-      "netstandard1.1": {
-        "imports": ["dotnet52"]
-          
-      },
-      ".NETPortable,Version=v4.5,Profile=Profile111": {},
-      "net451": {
-        "frameworkAssemblies": {"System.Numerics": ""}
-      }
+  "frameworks": {
+    "netstandard1.1": {
+      "imports": [ "dotnet52" ]
+
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile111": {},
+    "net451": {
+      "frameworkAssemblies": { "System.Numerics": "" }
     }
   }
+}
 

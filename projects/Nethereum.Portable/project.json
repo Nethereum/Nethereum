@@ -1,9 +1,11 @@
 ﻿{
-  "version": "1.0.0-rc6",
+  "version": "1.0.0",
   "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken",
   "authors": [
     "Juan Blanco"
   ],
+  "copyright": "Juan Blanco",
+  "title": "Nethereum.Portable",
   "packOptions": {
     "tags": [
       "Netherum",
@@ -11,6 +13,11 @@
       "Blockchain",
       "Crypto 2.0"
     ],
+    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Nethereum/Nethereum"
+    },
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
@@ -22,8 +29,8 @@
     "Portable.BouncyCastle": "1.8.1.1"
   },
   "frameworks": {
-    
+
     ".NETPortable,Version=v4.5,Profile=Profile111": {}
-    
+
   }
 }
