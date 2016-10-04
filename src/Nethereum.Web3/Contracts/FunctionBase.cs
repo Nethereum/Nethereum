@@ -5,6 +5,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Personal;
 
 namespace Nethereum.Web3
 {
@@ -15,6 +16,7 @@ namespace Nethereum.Web3
         private readonly EthCall ethCall;
         private readonly EthEstimateGas ethEstimateGas;
         private readonly EthSendTransaction ethSendTransaction;
+        private readonly PersonalSignAndSendTransaction personalSignAndSendTransaction;
         private IClient rpcClient;
 
         protected FunctionBase(IClient rpcClient, Contract contract, FunctionABI functionABI)
@@ -174,6 +176,26 @@ namespace Nethereum.Web3
         {
             input.Data = encodedFunctionCall;
             return ethSendTransaction.SendRequestAsync(input);
+        }
+
+        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall)
+        {
+            return personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress), password);
+        }
+
+        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall, string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            return
+                personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress, from, gas,
+                    value), password);
+        }
+
+        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall,
+            TransactionInput input)
+        {
+            input.Data = encodedFunctionCall;
+            return personalSignAndSendTransaction.SendRequestAsync(input, password);
         }
     }
 }
