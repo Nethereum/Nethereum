@@ -6,51 +6,69 @@ using System.Threading.Tasks;
 namespace Nethereum.EVM
 {
 
-    //TODO: EVM Schedule
-    /*
-     struct EVMSchedule
-{
-	EVMSchedule(): tierStepGas(std::array<unsigned, 8>{{0, 2, 3, 5, 8, 10, 20, 0}}) {}
-	EVMSchedule(bool _efcd, bool _hdc, unsigned const& _txCreateGas): exceptionalFailedCodeDeposit(_efcd), haveDelegateCall(_hdc), tierStepGas(std::array<unsigned, 8>{{0, 2, 3, 5, 8, 10, 20, 0}}), txCreateGas(_txCreateGas) {}
-	bool exceptionalFailedCodeDeposit = true;
-	bool haveDelegateCall = true;
-	unsigned stackLimit = 1024;
-	std::array<unsigned, 8> tierStepGas;
-	unsigned expGas = 10;
-	unsigned expByteGas = 10;
-	unsigned sha3Gas = 30;
-	unsigned sha3WordGas = 6;
-	unsigned sloadGas = 50;
-	unsigned sstoreSetGas = 20000;
-	unsigned sstoreResetGas = 5000;
-	unsigned sstoreRefundGas = 15000;
-	unsigned jumpdestGas = 1;
-	unsigned logGas = 375;
-	unsigned logDataGas = 8;
-	unsigned logTopicGas = 375;
-	unsigned createGas = 32000;
-	unsigned callGas = 40;
-	unsigned callStipend = 2300;
-	unsigned callValueTransferGas = 9000;
-	unsigned callNewAccountGas = 25000;
-	unsigned suicideRefundGas = 24000;
-	unsigned memoryGas = 3;
-	unsigned quadCoeffDiv = 512;
-	unsigned createDataGas = 200;
-	unsigned txGas = 21000;
-	unsigned txCreateGas = 53000;
-	unsigned txDataZeroGas = 4;
-	unsigned txDataNonZeroGas = 68;
-	unsigned copyGas = 3;
-};
+    public class GasCost
+    {
 
-static const EVMSchedule DefaultSchedule = EVMSchedule();
-static const EVMSchedule FrontierSchedule = EVMSchedule(false, false, 21000);
-static const EVMSchedule HomesteadSchedule = EVMSchedule(true, true, 53000);
+        /* backwards compatibility, remove eventually */
+        public const int STEP = 1;
+        public const int SSTORE = 300;
+        /* backwards compatibility, remove eventually */
 
-} */
+        public const int ZEROSTEP = 0;
+        public const int QUICKSTEP = 2;
+        public const int FASTESTSTEP = 3;
+        public const int FASTSTEP = 5;
+        public const int MIDSTEP = 8;
+        public const int SLOWSTEP = 10;
+        public const int EXTSTEP = 20;
 
-    public class InstructionCollection
+        public const int GENESISGASLIMIT = 1000000;
+        public const int MINGASLIMIT = 125000;
+
+        public const int BALANCE = 20;
+        public const int SHA3 = 30;
+        public const int SHA3_WORD = 6;
+        public const int SLOAD = 50;
+        public const int STOP = 0;
+        public const int SUICIDE = 0;
+        public const int CLEAR_SSTORE = 5000;
+        public const int SET_SSTORE = 20000;
+        public const int RESET_SSTORE = 5000;
+        public const int REFUND_SSTORE = 15000;
+        public const int CREATE = 32000;
+
+        public const int JUMPDEST = 1;
+        public const int CREATE_DATA_BYTE = 5;
+        public const int CALL = 40;
+        public const int STIPEND_CALL = 2300;
+        public const int VT_CALL = 9000; //value transfer call
+        public const int NEW_ACCT_CALL = 25000; //new account call
+        public const int MEMORY = 3;
+        public const int SUICIDE_REFUND = 24000;
+        public const int QUAD_COEFF_DIV = 512;
+        public const int CREATE_DATA = 200;
+        public const int TX_NO_ZERO_DATA = 68;
+        public const int TX_ZERO_DATA = 4;
+        public const int TRANSACTION = 21000;
+        public const int TRANSACTION_CREATE_CONTRACT = 53000;
+        public const int LOG_GAS = 375;
+        public const int LOG_DATA_GAS = 8;
+        public const int LOG_TOPIC_GAS = 375;
+        public const int COPY_GAS = 3;
+        public const int EXP_GAS = 10;
+        public const int EXP_BYTE_GAS = 10;
+        public const int IDENTITY = 15;
+        public const int IDENTITY_WORD = 3;
+        public const int RIPEMD160 = 600;
+        public const int RIPEMD160_WORD = 120;
+        public const int SHA256 = 60;
+        public const int SHA256_WORD = 12;
+        public const int EC_RECOVER = 3000;
+    }
+
+
+
+public class InstructionCollection
     {
 
      public static Dictionary<Instruction, InstructionInfo> Instructions = new Dictionary<Instruction, InstructionInfo>()
