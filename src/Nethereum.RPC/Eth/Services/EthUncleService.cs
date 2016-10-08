@@ -9,9 +9,13 @@ namespace Nethereum.Web3
         {
             GetUncleCountByBlockHash = new EthGetUncleCountByBlockHash(client);
             GetUncleCountByBlockNumber = new EthGetUncleCountByBlockNumber(client);
+            GetUncleByBlockHashAndIndex = new EthGetUncleByBlockHashAndIndex(client);
+            GetUncleByBlockNumberAndIndex = new EthGetUncleByBlockNumberAndIndex(client);
         }
 
         public EthGetUncleCountByBlockHash GetUncleCountByBlockHash { get; private set; }
         public EthGetUncleCountByBlockNumber GetUncleCountByBlockNumber { get; private set; }
+        public EthGetUncleByBlockHashAndIndex GetUncleByBlockHashAndIndex { get; private set; }
+        public EthGetUncleByBlockNumberAndIndex GetUncleByBlockNumberAndIndex { get; private set; }
     }
 }
