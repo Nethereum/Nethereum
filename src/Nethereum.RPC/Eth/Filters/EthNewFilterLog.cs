@@ -6,6 +6,11 @@ namespace Nethereum.RPC.Eth.Filters
     public class FilterLog
     {
         /// <summary>
+        /// true when the log was removed, due to a chain reorganization. false if its a valid log.
+        /// </summary>
+        [JsonProperty(PropertyName = "removed")]
+        public bool Removed { get; set; }
+        /// <summary>
         ///     TAG - pending when the log is pending. mined if log is already mined..
         /// </summary>
         [JsonProperty(PropertyName = "type")]
