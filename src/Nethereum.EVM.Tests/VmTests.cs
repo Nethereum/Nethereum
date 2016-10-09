@@ -448,6 +448,61 @@ namespace Nethereum.EVM.Tests
             AssertSteps("6301020304610F0011", "00", 3);
         }
 
-       
+        [Fact]
+        public void ShouldCheck_SGT_1()
+        { // SGT OP
+            AssertSteps("6001600213", "01", 3);
+
+        }
+
+        [Fact]
+        public virtual void ShouldCheck_SGT_2()
+        { // SGT OP
+            AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "13", "00", 3); // -170 -    30
+            
+        }
+
+        [Fact]
+        public virtual void ShouldCheck_SGT_3()
+        { // SGT OP
+            AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "13", "01", 3); // // -169 -  -170
+        }
+
+        [Fact]
+        public  void TestLT_1()
+        { // LT OP
+            AssertSteps("6001600210", "00", 3);
+        }
+
+        [Fact]
+        public void TestLT_2()
+        { // LT OP
+            AssertSteps("6001610F0010", "00", 3);
+        }
+
+        [Fact]
+        public  void TestLT_3()
+        { // LT OP
+            AssertSteps("6301020304610F0010", "01", 3);
+        }
+
+        [Fact]
+        public void TestSLT_1()
+        { // SLT OP
+            AssertSteps("6001600212", "00", 3);
+        }
+
+        [Fact]
+        public void TestSLT_2()
+        { // SLT OP
+            AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "12", "01", 3); // -170 -    30
+        }
+
+        [Fact]
+        public void TestSLT_3()
+        { // SLT OP
+            AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "12", "00", 3); // // -169 -  -170
+        }
+
     }
 }

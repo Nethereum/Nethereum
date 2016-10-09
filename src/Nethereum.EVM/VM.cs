@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Numerics;
+using System.Collections;
+using System.Linq;
 
 namespace Nethereum.EVM
 {
@@ -38,21 +40,59 @@ namespace Nethereum.EVM
                 case Instruction.SIGNEXTEND:
                     break;
                 case Instruction.LT:
+                    var ltBytes1 = program.StackPop();
+                    var ltBytes2 = program.StackPop();
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ltBytes1 = ltBytes1.Reverse().ToArray();
+                        ltBytes2 = ltBytes2.Reverse().ToArray();
+                    }
+                    program.StackPush(new[] { new BigInteger(ltBytes1) < new BigInteger(ltBytes2) ? (byte)1 : (byte)0 });
+                    program.Step();
                     break;
                 case Instruction.GT:
                     var gtBytes1 = program.StackPop();
                     var gtBytes2 = program.StackPop();
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        gtBytes1 = gtBytes1.Reverse().ToArray();
+                        gtBytes2 = gtBytes2.Reverse().ToArray();
+                    }
                     program.StackPush(new[] { new BigInteger(gtBytes1) > new BigInteger(gtBytes2) ? (byte)1 : (byte)0 });
                     program.Step();
                     break;
                 case Instruction.SLT:
+                    var sltBytes1 = program.StackPop();
+                    var sltBytes2 = program.StackPop();
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        sltBytes1 = sltBytes1.Reverse().ToArray();
+                        sltBytes2 = sltBytes2.Reverse().ToArray();
+                    }
+                    program.StackPush(new[] { new BigInteger(sltBytes1) < new BigInteger(sltBytes2) ? (byte)1 : (byte)0 });
+                    program.Step();
                     break;
                 case Instruction.SGT:
+                    var sgtBytes1 = program.StackPop();
+                    var sgtBytes2 = program.StackPop();
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        sgtBytes1 = sgtBytes1.Reverse().ToArray();
+                        sgtBytes2 = sgtBytes2.Reverse().ToArray();
+                    }
+                    program.StackPush(new[] { new BigInteger(sgtBytes1) > new BigInteger(sgtBytes2) ? (byte)1 : (byte)0 });
+
+                    program.Step();
                     break;
                 case Instruction.EQ:
                     var eqBytes1 = program.StackPop();
                     var eqBytes2 = program.StackPop();
                     //check endianism
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        eqBytes1 = eqBytes1.Reverse().ToArray();
+                        eqBytes2 = eqBytes2.Reverse().ToArray();
+                    }
                     program.StackPush(new[] { new BigInteger(eqBytes1) == new BigInteger(eqBytes2) ? (byte)1: (byte)0});
                     program.Step();
 
