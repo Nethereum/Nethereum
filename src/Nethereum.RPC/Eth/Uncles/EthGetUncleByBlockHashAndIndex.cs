@@ -34,14 +34,14 @@ namespace Nethereum.RPC.Eth.Uncles
         {
         }
 
-        public Task<BlockWithTransactionHashes> SendRequestAsync(string BlockHash, HexBigInteger UncleIndex, object id = null)
+        public Task<BlockWithTransactionHashes> SendRequestAsync(string blockHash, HexBigInteger uncleIndex, object id = null)
         {
-            return base.SendRequestAsync(id, BlockHash, UncleIndex);
+            return base.SendRequestAsync(id, blockHash, uncleIndex);
         }
 
-        public RpcRequest BuildRequest(string BlockHash, HexBigInteger UncleIndex, object id = null)
+        public RpcRequest BuildRequest(string blockHash, HexBigInteger uncleIndex, object id = null)
         {
-            return base.BuildRequest(id, BlockHash, UncleIndex);
+            return base.BuildRequest(id, blockHash, uncleIndex);
         }
     }
 }
