@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Eth.Uncles;
 
 namespace Nethereum.RPC.Tests.Testers

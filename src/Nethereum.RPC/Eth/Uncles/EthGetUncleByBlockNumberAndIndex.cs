@@ -7,25 +7,25 @@ using Nethereum.RPC.Eth.DTOs;
 namespace Nethereum.RPC.Eth.Uncles
 {
     /// <Summary>
-    ///     eth_getUncleCountByBlockHash
-    ///     Returns the number of uncles in a block from a block matching the given block hash.
+    ///     eth_getUncleByBlockNumberAndIndex
+    ///     Returns information about a uncle of a block by number and uncle index position.
     ///     Parameters
-    ///     DATA, 32 Bytes - hash of a block
-    ///     params: [
-    ///     '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
-    ///     ]
+    ///     QUANTITY|TAG - a block number, or the string "earliest", "latest" or "pending", as in the default block parameter.
+    ///     QUANTITY - the uncle's index position.
     ///     Returns
     ///     QUANTITY - integer of the number of uncles in this block.
     ///     Example
+    ///     params: [
+    ///     '0x29c', // 668
+    ///     '0x0' // 0
+    ///     ]
+    ///     Returns
+    ///     See eth_getBlockByHash
+    ///     Note: An uncle doesn't contain individual transactions.
+    ///     Example
     ///     Request
-    ///     curl -X POST --data
-    ///     '{"jsonrpc":"2.0","method":"eth_getUncleCountByBlockHash","params":["0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238"],"id"Block:1}'
-    ///     Result
-    ///     {
-    ///     "id":1,
-    ///     "jsonrpc": "2.0",
-    ///     "result": "0x1" // 1
-    ///     }
+    ///     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getUncleByBlockNumberAndIndex","params":["0x29c",
+    ///     "0x0"],"id":1}'
     /// </Summary>
     public class EthGetUncleByBlockNumberAndIndex : RpcRequestResponseHandler<BlockWithTransactionHashes>
     {
@@ -34,14 +34,14 @@ namespace Nethereum.RPC.Eth.Uncles
         {
         }
 
-        public Task<BlockWithTransactionHashes> SendRequestAsync(HexBigInteger blockNumber, HexBigInteger uncleIndex, object id = null)
+        public Task<BlockWithTransactionHashes> SendRequestAsync(BlockParameter blockParameter, HexBigInteger uncleIndex, object id = null)
         {
-            return base.SendRequestAsync(id, blockNumber, uncleIndex);
+            return base.SendRequestAsync(id, blockParameter, uncleIndex);
         }
 
-        public RpcRequest BuildRequest(HexBigInteger blockNumber, HexBigInteger uncleIndex, object id = null)
+        public RpcRequest BuildRequest(BlockParameter blockParameter, HexBigInteger uncleIndex, object id = null)
         {
-            return base.BuildRequest(id, blockNumber, uncleIndex);
+            return base.BuildRequest(id, blockParameter, uncleIndex);
         }
     }
 }
