@@ -15,6 +15,8 @@ namespace Nethereum.JsonRpc.Client
     {
         //private readonly CustomRpcClient innerRpcClient;
         private readonly EdjCase.JsonRpc.Client.RpcClient innerRpcClient;
+        public RequestInterceptor OverridingRequestInterceptor { get; set; }
+        
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
             JsonSerializerSettings jsonSerializerSettings = null)
@@ -29,11 +31,19 @@ namespace Nethereum.JsonRpc.Client
 
         public Task<RpcResponse> SendRequestAsync(RpcRequest request, string route = null)
         {
+            if (OverridingRequestInterceptor != null)
+            {
+                return OverridingRequestInterceptor.InterceptSendRequestAsync(innerRpcClient.SendRequestAsync, request, route);
+            }
             return innerRpcClient.SendRequestAsync(request, route);
         }
 
         public Task<RpcResponse> SendRequestAsync(string method, string route = null, params object[] paramList)
         {
+            if (OverridingRequestInterceptor != null)
+            {
+                return OverridingRequestInterceptor.InterceptSendRequestAsync(innerRpcClient.SendRequestAsync, method, route, paramList);
+            }
             return innerRpcClient.SendRequestAsync(method, route, paramList);
         }
     }

@@ -22,6 +22,8 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private object lockingObject = new object();
 
+        public RequestInterceptor OverridingRequestInterceptor { get; set; }
+
         private NamedPipeClientStream pipeClient;
         private NamedPipeClientStream GetPipeClient()
         {
@@ -61,6 +63,15 @@ namespace Nethereum.JsonRpc.IpcClient
 
         public async Task<RpcResponse> SendRequestAsync(RpcRequest request, string route = null)
         {
+            if (OverridingRequestInterceptor != null)
+            {
+                return await OverridingRequestInterceptor.InterceptSendRequestAsync(InnerSendRequestAsync, request, route).ConfigureAwait(false);
+            }
+            return await InnerSendRequestAsync(request);
+        }
+
+        private async Task<RpcResponse> InnerSendRequestAsync(RpcRequest request, string route = null)
+        {
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
@@ -69,6 +80,15 @@ namespace Nethereum.JsonRpc.IpcClient
         }
 
         public Task<RpcResponse> SendRequestAsync(string method, string route = null, params object[] paramList)
+        {
+            if (OverridingRequestInterceptor != null)
+            {
+                return OverridingRequestInterceptor.InterceptSendRequestAsync(InnerSendRequestAsync, method, route, paramList);
+            }
+            return InnerSendRequestAsync(method, route, paramList);
+        }
+
+        private Task<RpcResponse> InnerSendRequestAsync(string method, string route = null, params object[] paramList)
         {
             if (string.IsNullOrWhiteSpace(method))
             {
