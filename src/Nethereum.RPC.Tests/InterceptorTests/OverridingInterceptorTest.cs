@@ -15,6 +15,7 @@ namespace Nethereum.RPC.Tests.InterceptorTests
     {
         public override async Task<RpcResponse> InterceptSendRequestAsync(Func<RpcRequest, string, Task<RpcResponse>> interceptedSendRequestAsync, RpcRequest request, string route = null)
         {
+          
             if (request.Method == "eth_accounts")
             {
                 return BuildResponse(new string[] { "hello", "hello2"}, route);
