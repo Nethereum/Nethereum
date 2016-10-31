@@ -147,3 +147,24 @@ There are also utilities to both validate and format addresses
 
 An example of the expectations on the [encoding and decoding can be found on the address unit tests](https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.ABI.Tests/AddressEncodingTests.cs)
 
+
+### Transaction Request To Offline Signed Transaction Interceptor
+
+The web3 transaction request to an offline signed transaction interceptor, provides a mechanism to intercept all transactions and automatically offline sign them and send a raw transaction with a preconfigured private key.
+
+```csharp
+  var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+  var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+
+  var web3 = new Web3();
+  var transactionInterceptor = new TransactionRequestToOfflineSignedTransactionInterceptor(senderAddress, privateKey, web3);
+  web3.Client.OverridingRequestInterceptor = transactionInterceptor;
+```
+
+The interceptor requires the private key, the corresponding address and an instance of web3. Once the web3 rpc client is configured all the requests will be be same.
+
+```csharp
+    var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
+```
+
+

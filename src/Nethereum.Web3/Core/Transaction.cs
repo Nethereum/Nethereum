@@ -9,8 +9,8 @@ namespace Nethereum.Core
 {
     public class Transaction
     {
-        private static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("10000000000000");
-        private static readonly BigInteger DEFAULT_BALANCE_GAS = BigInteger.Parse("21000");
+        public static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("10000000000000");
+        public static readonly BigInteger DEFFAULT_GAS_LIMIT = BigInteger.Parse("21000");
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
@@ -267,10 +267,10 @@ namespace Nethereum.Core
             return rlpEncoded;
         }
 
-        public Transaction (string to, BigInteger amount, BigInteger nonce):this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_BALANCE_GAS) { 
+        public Transaction (string to, BigInteger amount, BigInteger nonce):this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT) { 
         }
 
-        public Transaction(string to, BigInteger amount, BigInteger nonce, string data) : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_BALANCE_GAS, data)
+        public Transaction(string to, BigInteger amount, BigInteger nonce, string data) : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT, data)
         {
         }
 

@@ -1,3 +1,4 @@
+using Nethereum.Hex.HexTypes;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;

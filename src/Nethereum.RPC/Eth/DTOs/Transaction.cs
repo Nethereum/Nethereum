@@ -42,13 +42,13 @@ namespace Nethereum.RPC.Eth.DTOs
         public string To { get; set; }
 
         /// <summary>
-        ///     QUANTITY - gas provided by the sender.
+        ///   QUANTITY - gas provided by the sender.
         /// </summary>
         [JsonProperty(PropertyName = "gas")]
         public HexBigInteger Gas { get; set; }
 
         /// <summary>
-        ///     QUANTITY - gas price provided by the sender in Wei.
+        ///   QUANTITY - gas price provided by the sender in Wei.
         /// </summary>
         [JsonProperty(PropertyName = "gasPrice")]
         public HexBigInteger GasPrice { get; set; }

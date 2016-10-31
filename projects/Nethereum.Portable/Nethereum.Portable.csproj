@@ -703,6 +703,14 @@
 				<Link>RPC\Eth\Transactions\EthSendTransaction.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\EthGetUncleByBlockHashAndIndex.cs">
+				<Link>RPC\Eth\Uncles\EthGetUncleByBlockHashAndIndex.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\EthGetUncleByBlockNumberAndIndex.cs">
+				<Link>RPC\Eth\Uncles\EthGetUncleByBlockNumberAndIndex.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\EthGetUncleCountByBlockHash.cs">
 				<Link>RPC\Eth\Uncles\EthGetUncleCountByBlockHash.cs</Link>
 		</Compile>
@@ -1411,6 +1419,10 @@
 				<Link>Web3\Core\EllipticCurve\Crypto\EthereumECKey.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\Interceptors\TransactionSigningInterceptor.cs">
+				<Link>Web3\Interceptors\TransactionSigningInterceptor.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">
 				<Link>EIP20\StandardTokenService.cs</Link>
 		</Compile>
@@ -1439,6 +1451,10 @@
 				<Link>NethereumJsonRpc\IRpcRequestHandler.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RequestInterceptor.cs">
+				<Link>NethereumJsonRpc\RequestInterceptor.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClient.cs">
 				<Link>NethereumJsonRpc\RpcClient.cs</Link>
 		</Compile>
@@ -1453,6 +1469,10 @@
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RPCResponseException.cs">
 				<Link>NethereumJsonRpc\RPCResponseException.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Uport\Class1.cs">
+				<Link>Uport\Class1.cs</Link>
 		</Compile>
 		
         </ItemGroup>
