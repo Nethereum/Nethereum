@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Sample.Testers;
+using Nethereum.RPC.Tests.Testers;
 
 namespace Nethereum.RPC.Sample
 {
