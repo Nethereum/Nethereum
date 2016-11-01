@@ -65,9 +65,24 @@ namespace Nethereum.EVM
 
         public void StackPush(byte[] stackWord)
         {
-            //VerifyStackOverflow(0, 1); //Sanity Check
+            ThrowWhenPushStackOverflows(); 
             Stack.Push(stackWord);
         }
+
+        private void ThrowWhenPushStackOverflows()
+        {
+            VerifyStackOverflow(0,1);
+        }
+
+        public void VerifyStackOverflow(int args, int returns)
+        {
+            if (Stack.Count - args + returns > MAX_STACKSIZE)
+            {
+                throw new Exception("Stack overflow, maximum size is " + MAX_STACKSIZE);
+            }
+        }
+
+        public const int MAX_STACKSIZE = 1024;
 
         public byte[] StackPop()
         {

@@ -5,9 +5,47 @@ using System.Linq;
 
 namespace Nethereum.EVM
 {
+
+ //   public class Memory
+ //   {
+ //       /// Retrieve current size of the memory
+ //       public int Size()
+ //       {
+            
+ //       }
+
+ //       /// Resize (shrink or expand) the memory to specified size (fills 0)
+ //       public void Resize(int size)
+ //       {
+            
+ //       }
+
+ //       /// Resize the memory only if its smaller
+ //       public void Expand(int newSize)
+ //       {
+ //       }
+
+ //       /// Write single byte to memory
+ //       public void WriteByte(int offset, int value)
+ //       {
+ //       }
+
+ ////       /// Write a word to memory. Does not resize memory!
+ ////       fn write(&mut self, offset: U256, value: U256);
+ ////       /// Read a word from memory
+ ////       fn read(&self, offset: U256) -> U256;
+	/////// Write slice of bytes to memory. Does not resize memory!
+	////fn write_slice(&mut self, offset: U256, &[u8]);
+ ////       /// Retrieve part of the memory between offset and offset + size
+ ////       fn read_slice(&self, offset: U256, size: U256) -> &[u8];
+	/////// Retrieve writeable part of memory
+	////fn writeable_slice(&mut self, offset: U256, size: U256) -> &mut[u8];
+	////fn dump(&self);
+ //   }
+
     public class VM
     {
-        //TODO: Endianism checks can be done on pop and push
+        //TODO: Endianism checks can be done on pop and push // or not
 
         public void Step(Program program)
         {
@@ -119,7 +157,7 @@ namespace Nethereum.EVM
 
                     var orBytes1 = program.StackPop();
                     var orBytes2 = program.StackPop();
-
+                    //check endianism
                     var orB1 = new BigInteger(orBytes1);
                     orB1 = orB1 | new BigInteger(orBytes2);
 
@@ -129,7 +167,7 @@ namespace Nethereum.EVM
                 case Instruction.XOR:
                     var xorBytes1 = program.StackPop();
                     var xorBytes2 = program.StackPop();
-
+                    //check endianism
                     var xorB1 = new BigInteger(xorBytes1);
                     xorB1 = xorB1 ^ new BigInteger(xorBytes2);
 
@@ -137,6 +175,10 @@ namespace Nethereum.EVM
                     program.Step();
                     break;
                 case Instruction.NOT:
+                    var notBytes1 = program.StackPop();
+                    //check endianism
+                    var notB1 = new BigInteger(notBytes1);
+                    program.StackPush((~notB1).ToByteArray());
                     break;
                 case Instruction.BYTE:
                     var byteBytes1 = program.StackPop();
@@ -191,6 +233,8 @@ namespace Nethereum.EVM
                 case Instruction.GASLIMIT:
                     break;
                 case Instruction.POP:
+                    program.StackPop();
+                    program.Step();
                     break;
                 case Instruction.MLOAD:
                     break;

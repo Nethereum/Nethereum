@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexTypes;
 using Xunit;
 
 namespace Nethereum.EVM.Tests
@@ -502,6 +503,32 @@ namespace Nethereum.EVM.Tests
         public void TestSLT_3()
         { // SLT OP
             AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "12", "00", 3); // // -169 -  -170
+        }
+
+        [Fact]
+        public void Should_NOT_1()
+        { // NOT OP
+            AssertSteps("600119", "FE", 2);
+        }
+
+        [Fact]
+        public void Should_NOT_2()
+        {
+            // NOT OP
+            AssertSteps("61A00319", "5FFC", 2);
+        }
+
+        [Fact]
+        public void TestPOP_1()
+        { // POP OP
+            AssertSteps("61000060016200000250", "01", 4);
+          
+        }
+
+        [Fact]
+        public void TestPOP_2()
+        { // POP OP
+            AssertSteps("6100006001620000025050", "0000", 5);
         }
 
     }
