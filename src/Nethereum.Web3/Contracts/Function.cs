@@ -108,24 +108,24 @@ namespace Nethereum.Web3
             return base.SendTransactionAsync(encodedInput, input);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password, string from, params object[] functionInput)
+        public Task<string> SignAndSendTransactionAsync(string password, string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput, from, null, null);
+            return base.SignAndSendTransactionAsync(password, encodedInput, from, null, null);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password, string from, HexBigInteger gas,
+        public Task<string> SignAndSendTransactionAsync(string password, string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput, from, gas, value);
+            return base.SignAndSendTransactionAsync(password, encodedInput, from, gas, value);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password,
+        public Task<string> SignAndSendTransactionAsync(string password,
             TransactionInput input, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput, input);
+            return base.SignAndSendTransactionAsync(password, encodedInput, input);
         }
 
 
@@ -257,24 +257,24 @@ namespace Nethereum.Web3
             return base.SendTransactionAsync(encodedInput, input);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password, TFunctionInput functionInput)
+        public Task<string> SignAndSendTransactionAsync(string password, TFunctionInput functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput);
+            return base.SignAndSendTransactionAsync(password, encodedInput);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password, TFunctionInput functionInput, string from, HexBigInteger gas,
+        public Task<string> SignAndSendTransactionAsync(string password, TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput, from, gas, value);
+            return base.SignAndSendTransactionAsync(password, encodedInput, from, gas, value);
         }
 
-        public Task<string> SingAndSendTransactionAsync(string password, TFunctionInput functionInput,
+        public Task<string> SignAndSendTransactionAsync(string password, TFunctionInput functionInput,
             TransactionInput input)
         {
             var encodedInput = GetData(functionInput);
-            return base.SingAndSendTransactionAsync(password, encodedInput, input);
+            return base.SignAndSendTransactionAsync(password, encodedInput, input);
         }
 
         public string GetData(TFunctionInput functionInput)

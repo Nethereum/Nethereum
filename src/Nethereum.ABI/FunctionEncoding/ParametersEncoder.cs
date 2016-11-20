@@ -46,6 +46,11 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
         {
+            if(values == null && parameters.Length > 0)
+                throw new ArgumentNullException(nameof(values), "No values specified for encoding");
+
+            if (values == null) return new byte[] {};
+
             if (values.Length > parameters.Length)
                 throw new Exception("Too many arguments: " + values.Length + " > " + parameters.Length);
 

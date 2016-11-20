@@ -178,12 +178,12 @@ namespace Nethereum.Web3
             return ethSendTransaction.SendRequestAsync(input);
         }
 
-        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall)
+        protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall)
         {
             return personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress), password);
         }
 
-        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall, string from, HexBigInteger gas,
+        protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall, string from, HexBigInteger gas,
             HexBigInteger value)
         {
             return
@@ -191,7 +191,16 @@ namespace Nethereum.Web3
                     value), password);
         }
 
-        protected Task<string> SingAndSendTransactionAsync(string password, string encodedFunctionCall,
+        protected Task<string> SignAndSendTransactionAsync(string password, string from, HexBigInteger gas,
+           HexBigInteger value)
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return
+                personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedInput, ContractAddress, from, gas,
+                    value), password);
+        }
+
+        protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall,
             TransactionInput input)
         {
             input.Data = encodedFunctionCall;
