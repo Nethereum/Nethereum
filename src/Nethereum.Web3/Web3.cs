@@ -1,4 +1,5 @@
 ﻿using System;
+using NBitcoin.BouncyCastle.Crypto;
 using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.Util;
 using Newtonsoft.Json;
@@ -79,6 +80,9 @@ namespace Nethereum.Web3
         public string ToValid20ByteAddress(string address)
         {
             return this.addressUtil.ConvertToValid20ByteAddress(address);
+        }
+
+        {
         }
     }
 }
