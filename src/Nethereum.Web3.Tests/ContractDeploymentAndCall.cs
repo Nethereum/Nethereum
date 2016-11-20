@@ -154,7 +154,7 @@ contract Purchase {
 }*/
 
         [Fact]
-        public async void ShouldDeployAContractWithValue()
+        public async void ShouldDeployAContractWithValueAndSendAValueUsingSingAndSend()
         {
             var contractByteCode =
                 "0x6060604052600180546c0100000000000000000000000033810204600160a060020a03199091161790556002340460008190556002023414603e576002565b6103258061004c6000396000f3606060405236156100615760e060020a600035046308551a53811461006657806335a063b41461007d5780633fa4f245146100a05780637150d8ae146100ae57806373fac6f0146100c5578063c19d93fb146100e8578063d696069714610101575b610002565b346100025761011f600154600160a060020a031681565b346100025761013b60015433600160a060020a0390811691161461014f57610002565b346100025761013d60005481565b346100025761011f600254600160a060020a031681565b346100025761013b60025433600160a060020a039081169116146101e457610002565b346100025761013d60025460ff60a060020a9091041681565b61013b60025460009060ff60a060020a90910416156102a457610002565b60408051600160a060020a039092168252519081900360200190f35b005b60408051918252519081900360200190f35b60025460009060a060020a900460ff161561016957610002565b6040517f80b62b7017bb13cf105e22749ee2a06a417ffba8c7f57b665057e0f3c2e925d990600090a16040516002805460a160020a60a060020a60ff0219909116179055600154600160a060020a0390811691309091163180156108fc02916000818181858888f1935050505015156101e157610002565b50565b60025460019060a060020a900460ff1681146101ff57610002565b6040517f64ea507aa320f07ae13c28b5e9bf6b4833ab544315f5f2aa67308e21c252d47d90600090a16040516002805460a060020a60ff02191660a160020a179081905560008054600160a060020a03909216926108fc8315029291818181858888f19350505050158061029a5750600154604051600160a060020a039182169130163180156108fc02916000818181858888f19350505050155b156101e157610002565b6000546002023414806102b657610002565b6040517f764326667cab2f2f13cad5f7b7665c704653bd1acc250dcb7b422bce726896b490600090a150506002805460a060020a73ffffffffffffffffffffffffffffffffffffffff199091166c01000000000000000000000000338102041760a060020a60ff02191617905556";
@@ -191,6 +191,54 @@ contract Purchase {
             await web3.Miner.Start.SendRequestAsync(6);
             receipt = await gethTester.GetTransactionReceipt(tx);
             await web3.Miner.Stop.SendRequestAsync();
+
+            var stateFunction = contract.GetFunction("state");
+            callResult = await stateFunction.CallAsync<int>();
+            Assert.Equal(1, callResult);
+
+        }
+
+
+        [Fact]
+        public async void ShouldDeployAContractWithValueAndSendAValue()
+        {
+            var contractByteCode =
+                "0x6060604052600180546c0100000000000000000000000033810204600160a060020a03199091161790556002340460008190556002023414603e576002565b6103258061004c6000396000f3606060405236156100615760e060020a600035046308551a53811461006657806335a063b41461007d5780633fa4f245146100a05780637150d8ae146100ae57806373fac6f0146100c5578063c19d93fb146100e8578063d696069714610101575b610002565b346100025761011f600154600160a060020a031681565b346100025761013b60015433600160a060020a0390811691161461014f57610002565b346100025761013d60005481565b346100025761011f600254600160a060020a031681565b346100025761013b60025433600160a060020a039081169116146101e457610002565b346100025761013d60025460ff60a060020a9091041681565b61013b60025460009060ff60a060020a90910416156102a457610002565b60408051600160a060020a039092168252519081900360200190f35b005b60408051918252519081900360200190f35b60025460009060a060020a900460ff161561016957610002565b6040517f80b62b7017bb13cf105e22749ee2a06a417ffba8c7f57b665057e0f3c2e925d990600090a16040516002805460a160020a60a060020a60ff0219909116179055600154600160a060020a0390811691309091163180156108fc02916000818181858888f1935050505015156101e157610002565b50565b60025460019060a060020a900460ff1681146101ff57610002565b6040517f64ea507aa320f07ae13c28b5e9bf6b4833ab544315f5f2aa67308e21c252d47d90600090a16040516002805460a060020a60ff02191660a160020a179081905560008054600160a060020a03909216926108fc8315029291818181858888f19350505050158061029a5750600154604051600160a060020a039182169130163180156108fc02916000818181858888f19350505050155b156101e157610002565b6000546002023414806102b657610002565b6040517f764326667cab2f2f13cad5f7b7665c704653bd1acc250dcb7b422bce726896b490600090a150506002805460a060020a73ffffffffffffffffffffffffffffffffffffffff199091166c01000000000000000000000000338102041760a060020a60ff02191617905556";
+
+            var abi =
+                "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
+
+            var web3 = new Web3(ClientFactory.GetClient());
+
+            var gethTester = GethTesterFactory.GetLocal(web3);
+
+            await gethTester.StartMining();
+            await gethTester.UnlockAccount();
+            
+            var transaction =
+                await
+                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
+                        gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
+
+            var receipt = await gethTester.GetTransactionReceipt(transaction);
+
+            await gethTester.StopMining();
+
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+
+            //get the function by name
+            var valueFuntion = contract.GetFunction("value");
+
+            //do a function call (not transaction) and get the result
+            var callResult = await valueFuntion.CallAsync<int>();
+            Assert.Equal(5000, callResult);
+
+            var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
+            var tx = await confirmPurchaseFunction.SendTransactionAsync(gethTester.Account,
+                new HexBigInteger(900000), new HexBigInteger(10000));
+            await gethTester.StartMining();
+            receipt = await gethTester.GetTransactionReceipt(tx);
+            await gethTester.StopMining();
 
             var stateFunction = contract.GetFunction("state");
             callResult = await stateFunction.CallAsync<int>();

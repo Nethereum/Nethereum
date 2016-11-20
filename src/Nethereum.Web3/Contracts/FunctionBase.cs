@@ -191,6 +191,13 @@ namespace Nethereum.Web3
                     value), password);
         }
 
+        public Task<string> SendTransactionAsync(string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return SendTransactionAsync(encodedInput, from, gas, value);
+        }
+
         public Task<string> SignAndSendTransactionAsync(string password, HexBigInteger gas, HexBigInteger value, string from
           )
         {
