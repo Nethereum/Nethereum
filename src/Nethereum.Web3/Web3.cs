@@ -82,7 +82,9 @@ namespace Nethereum.Web3
             return this.addressUtil.ConvertToValid20ByteAddress(address);
         }
 
+        public string GetAddressFromPrivateKey(string privateKey)
         {
+            return Core.Signing.Crypto.EthECKey.GetPublicAddress(privateKey);
         }
     }
 }
