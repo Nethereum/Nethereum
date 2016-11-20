@@ -184,6 +184,18 @@ contract Purchase {
             //do a function call (not transaction) and get the result
             var callResult = await valueFuntion.CallAsync<int>();
             Assert.Equal(5000, callResult);
+
+            var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
+            var tx = await confirmPurchaseFunction.SignAndSendTransactionAsync(gethTester.Password,
+                new HexBigInteger(900000), new HexBigInteger(10000), gethTester.Account);
+            await web3.Miner.Start.SendRequestAsync(6);
+            receipt = await gethTester.GetTransactionReceipt(tx);
+            await web3.Miner.Stop.SendRequestAsync();
+
+            var stateFunction = contract.GetFunction("state");
+            callResult = await stateFunction.CallAsync<int>();
+            Assert.Equal(1, callResult);
+
         }
 
     }

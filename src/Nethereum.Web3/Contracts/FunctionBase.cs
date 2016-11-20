@@ -27,7 +27,7 @@ namespace Nethereum.Web3
             ethCall = new EthCall(rpcClient);
             ethSendTransaction = new EthSendTransaction(rpcClient);
             ethEstimateGas = new EthEstimateGas(rpcClient);
-
+            personalSignAndSendTransaction = new PersonalSignAndSendTransaction(rpcClient);
             FunctionCallDecoder = new FunctionCallDecoder();
             FunctionCallEncoder = new FunctionCallEncoder();
         }
@@ -191,8 +191,8 @@ namespace Nethereum.Web3
                     value), password);
         }
 
-        protected Task<string> SignAndSendTransactionAsync(string password, string from, HexBigInteger gas,
-           HexBigInteger value)
+        public Task<string> SignAndSendTransactionAsync(string password, HexBigInteger gas, HexBigInteger value, string from
+          )
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
             return
