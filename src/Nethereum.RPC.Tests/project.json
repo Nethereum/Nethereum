@@ -1,15 +1,17 @@
 ﻿{
-  "version": "1.0.1-*",
+  "version": "1.0.2-*",
   "testRunner": "xunit",
 
   "dependencies": {
-    "NETStandard.Library": "1.5.0-rc2-24027",
-    "Nethereum.ABI": "1.0.0-rc2",
-    "Nethereum.Hex": "1.0.0-rc2",
-    "Nethereum.RPC": "1.0.0-rc2",
-    "Nethereum.JsonRpc.IpcClient": "1.0.0-*",
+    "NETStandard.Library": "1.6.0",
     "xunit": "2.2.0-beta2-build3300",
-    "dotnet-test-xunit": "2.2.0-preview2-build1029"
+    "dotnet-test-xunit": "2.2.0-preview2-build1029",
+    "Nethereum.ABI": "1.0.2",
+    "Nethereum.Web3": "1.0.2",
+    "Nethereum.RPC": "1.0.2",
+    "Nethereum.JsonRpc.Client": "1.0.2",
+    "Nethereum.JsonRpc.IpcClient": "1.0.2",
+    "Nethereum.Hex": "1.0.2"
   },
 
   "frameworks": {

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Encoding and decoding of ABI Types, functions, events of Ethereum contracts",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -16,7 +16,7 @@
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
   "dependencies": {
-    "Nethereum.Hex": "1.0.1",
+    "Nethereum.Hex": "1.0.2",
     "Portable.BouncyCastle": "1.8.1",
     "NETStandard.Library": "1.6.0"
   },

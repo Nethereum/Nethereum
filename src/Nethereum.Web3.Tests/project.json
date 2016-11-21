@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1-*",
+  "version": "1.0.2-*",
   "description": "Nethereum.Web3.Tests ",
   "authors": [ "Juan Blanco" ],
   "testRunner": "xunit",
@@ -8,8 +8,8 @@
   },
 
   "dependencies": {
-    "Nethereum.StandardTokenEIP20": "1.0.1-*",
-    "Nethereum.Web3": "1.0.1-*",
+    "Nethereum.StandardTokenEIP20": "1.0.2-*",
+    "Nethereum.Web3": "1.0.2-*",
     "xunit": "2.2.0-beta2-build3300",
     "dotnet-test-xunit": "2.2.0-preview2-build1029"
   },
@@ -17,7 +17,7 @@
   "frameworks": {
     "net451": {
       "dependencies": {
-        "Nethereum.JsonRpc.IpcClient": "1.0.1"
+        "Nethereum.JsonRpc.IpcClient": "1.0.2"
       },
       "frameworkAssemblies": {
         "System.Numerics": "4.0.0.0"
