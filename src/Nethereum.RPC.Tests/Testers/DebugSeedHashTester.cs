@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheHash()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var debugSeedHash = new DebugSeedHash(client);
-            return await debugSeedHash.SendRequestAsync(10);
+            return await debugSeedHash.SendRequestAsync(Settings.GetBlockNumber());
         }
 
         public override Type GetRequestType()

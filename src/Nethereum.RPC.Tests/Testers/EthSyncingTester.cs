@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void HighestBlockShouldBeBiggerThan0WhenSyncing()
         {
-            var syncResult = await ExecuteAsync(ClientFactory.GetClient());
+            var syncResult = await ExecuteAsync();
             if (syncResult.IsSyncing)
             {
                 Assert.True(syncResult.HighestBlock.Value > 0);

@@ -143,8 +143,6 @@ namespace Nethereum.Web3.Tests
             AssertStringCollection(test, expected);
         }
 
-
-
         private static void AssertStringCollection(string[] test, string expected)
         {
             byte[] encoderesult = RLP.EncodeList(EncodeElementsBytes(test.ToBytesForRLPEncoding()));

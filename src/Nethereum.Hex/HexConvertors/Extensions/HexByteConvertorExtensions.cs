@@ -29,11 +29,24 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static string EnsureHexPrefix(this string value)
         {
+            if (value == null) return null;
             if (!value.HasHexPrefix())
             {
                 return "0x" + value;
             }
             return value;
+        }
+
+        public static string[] EnsureHexPrefix(this string[] values)
+        {
+            if (values != null)
+            {
+                foreach (var value in values)
+                {
+                    value.EnsureHexPrefix();
+                }
+            }
+            return values;
         }
 
         public static string ToHexCompact(this byte[] value)

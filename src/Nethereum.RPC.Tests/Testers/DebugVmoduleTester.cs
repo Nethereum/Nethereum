@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldSetTheVerbosityAndReturnNull()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.Null(result);
         }
 

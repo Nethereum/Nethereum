@@ -9,18 +9,17 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class DebugDumpBlockTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        
         [Fact]
         public async void ShouldReturnAJObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var debugDumpBlock = new DebugDumpBlock(client);
-            return await debugDumpBlock.SendRequestAsync(10);
+            return await debugDumpBlock.SendRequestAsync(Settings.GetBlockNumber());
         }
 
         public override Type GetRequestType()

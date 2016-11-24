@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Personal
@@ -15,12 +17,14 @@ namespace Nethereum.RPC.Personal
 
         public Task<bool> SendRequestAsync(string account, object id = null)
         {
-            return base.SendRequestAsync(id, account);
+            if (account == null) throw new ArgumentNullException(nameof(account));
+            return base.SendRequestAsync(id, account.EnsureHexPrefix());
         }
 
         public RpcRequest BuildRequest(string account, object id = null)
         {
-            return base.BuildRequest(id, account);
+            if (account == null) throw new ArgumentNullException(nameof(account));
+            return base.BuildRequest(id, account.EnsureHexPrefix());
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
@@ -19,11 +20,13 @@ namespace Nethereum.RPC.Admin
 
         public Task<bool> SendRequestAsync(string enodeUrl, object id = null)
         {
+            if (enodeUrl == null) throw new ArgumentNullException(nameof(enodeUrl));
             return base.SendRequestAsync(id, enodeUrl);
         }
 
         public RpcRequest BuildRequest(string enodeUrl, object id = null)
         {
+            if (enodeUrl == null) throw new ArgumentNullException(nameof(enodeUrl));
             return base.BuildRequest(id, enodeUrl);
         }
     }

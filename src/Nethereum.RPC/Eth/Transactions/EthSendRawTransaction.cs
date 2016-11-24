@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Eth.Transactions
@@ -32,12 +34,14 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public Task<string> SendRequestAsync(string signedTransactionData, object id = null)
         {
-            return base.SendRequestAsync(id, signedTransactionData);
+            if (signedTransactionData == null) throw new ArgumentNullException(nameof(signedTransactionData));
+            return base.SendRequestAsync(id, signedTransactionData.EnsureHexPrefix());
         }
 
         public RpcRequest BuildRequest(string signedTransactionData, object id = null)
         {
-            return base.BuildRequest(id, signedTransactionData);
+            if (signedTransactionData == null) throw new ArgumentNullException(nameof(signedTransactionData));
+            return base.BuildRequest(id, signedTransactionData.EnsureHexPrefix());
         }
     }
 }

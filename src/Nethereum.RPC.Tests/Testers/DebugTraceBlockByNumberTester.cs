@@ -14,14 +14,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var debugTraceBlockByNumber = new DebugTraceBlockByNumber(client);
-            return await debugTraceBlockByNumber.SendRequestAsync(10000);
+            return await debugTraceBlockByNumber.SendRequestAsync(Settings.GetBlockNumber());
         }
 
         public override Type GetRequestType()

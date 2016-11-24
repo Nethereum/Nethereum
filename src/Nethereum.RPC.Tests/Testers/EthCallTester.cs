@@ -6,6 +6,9 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    /// <summary>
+    /// use web3 tests for calls and transactions tests
+    /// </summary>
     public class EthCallTester : IRPCRequestTester
     {
         /*

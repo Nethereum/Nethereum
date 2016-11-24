@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldLockAccountAndReturnTrue()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.True(result);
         }
 
         public override async Task<bool> ExecuteAsync(IClient client)
         {
             var personalLockAccount = new PersonalLockAccount(client);
-            return await personalLockAccount.SendRequestAsync("0x12890d2cce102216644c59dae5baed380d84830c");
+            return await personalLockAccount.SendRequestAsync(Settings.GetDefaultAccount());
         }
 
         public override Type GetRequestType()

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
@@ -63,11 +64,13 @@ namespace Nethereum.RPC.Eth.Filters
         public Task<FilterLog[]> SendRequestAsync(HexBigInteger filterId,
             object id = null)
         {
+            if (filterId == null) throw new ArgumentNullException(nameof(filterId));
             return base.SendRequestAsync(id, filterId);
         }
 
         public RpcRequest BuildRequest(HexBigInteger filterId, object id = null)
         {
+            if (filterId == null) throw new ArgumentNullException(nameof(filterId));
             return base.BuildRequest(id, filterId);
         }
     }

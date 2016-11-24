@@ -1,14 +1,23 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthEstimateGasTester : IRPCRequestTester
+    public class EthEstimateGasTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldEstimateGas()
+        {
+            var result = await ExecuteAsync();
+            Assert.True(result.Value > 0);
+        }
+
+        public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethEstimateGas = new EthEstimateGas(client);
             var contractByteCode = "0xc6888fa10000000000000000000000000000000000000000000000000000000000000045";
@@ -17,12 +26,12 @@ namespace Nethereum.RPC.Tests.Testers
             var transactionInput = new CallInput();
             transactionInput.Data = contractByteCode;
             transactionInput.To = to;
-            transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
+            transactionInput.From = Settings.GetDefaultAccount();
 
             return await ethEstimateGas.SendRequestAsync(transactionInput);
         }
 
-        public Type GetRequestType()
+        public override Type GetRequestType()
         {
             return typeof (EthEstimateGas);
         }

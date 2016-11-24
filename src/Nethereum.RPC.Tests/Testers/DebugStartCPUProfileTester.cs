@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldStartCPUProfileAndAlwaysReturnNull()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.Null(result);
         }
 
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugCpuProfile = new DebugStartCPUProfile(client);
-            return await debugCpuProfile.SendRequestAsync(@"C:\ProgramData\chocolatey\lib\geth-stable\tools\log.txt");
+            return await debugCpuProfile.SendRequestAsync(Settings.GetDefaultLogLocation());
         }
 
        

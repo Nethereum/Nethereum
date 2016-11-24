@@ -15,12 +15,12 @@ namespace Nethereum.RPC.DebugGeth
         {
         }
 
-        public Task<JObject> SendRequestAsync(long blockNumber, object id = null)
+        public Task<JObject> SendRequestAsync(ulong blockNumber, object id = null)
         {
             return base.SendRequestAsync(id, blockNumber);
         }
 
-        public RpcRequest BuildRequest(long blockNumber, object id = null)
+        public RpcRequest BuildRequest(ulong blockNumber, object id = null)
         {
             return base.BuildRequest(id, blockNumber);
         }

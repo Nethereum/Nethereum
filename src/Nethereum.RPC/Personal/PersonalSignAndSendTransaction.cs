@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Personal
     public class PersonalSignAndSendTransaction : RpcRequestResponseHandler<string>
     {
         public PersonalSignAndSendTransaction(IClient client)
-            : base(client, ApiMethods.personal_signAndSendTransaction.ToString())
+            : base(client, ApiMethods.personal_sendTransaction.ToString())
         {
         }
 

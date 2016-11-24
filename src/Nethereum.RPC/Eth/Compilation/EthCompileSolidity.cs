@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RPC.Eth.Compilation
 {
@@ -59,19 +61,21 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     }
     ///     }
     /// </summary>
-    public class EthCompileSolidity : RpcRequestResponseHandler<JObject>
+    public class EthCompileSolidity : RpcRequestResponseHandler<JToken>
     {
         public EthCompileSolidity(IClient client) : base(client, ApiMethods.eth_compileSolidity.ToString())
         {
         }
 
-        public Task<JObject> SendRequestAsync(string contractCode, object id = null)
+        public Task<JToken> SendRequestAsync(string contractCode, object id = null)
         {
+            if (contractCode == null) throw new ArgumentNullException(nameof(contractCode));
             return base.SendRequestAsync(id, contractCode);
         }
 
         public RpcRequest BuildRequest(string contractCode, object id = null)
         {
+            if (contractCode == null) throw new ArgumentNullException(nameof(contractCode));
             return base.BuildRequest(id, contractCode);
         }
     }

@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -42,17 +44,22 @@ namespace Nethereum.RPC.Eth
 
         public Task<HexBigInteger> SendRequestAsync(string address, BlockParameter block, object id = null)
         {
-            return base.SendRequestAsync(id, address, block);
+            if (address == null) throw new ArgumentNullException(nameof(address));
+            if (block == null) throw new ArgumentNullException(nameof(block));
+            return base.SendRequestAsync(id, address.EnsureHexPrefix(), block);
         }
 
         public Task<HexBigInteger> SendRequestAsync(string address, object id = null)
         {
-            return base.SendRequestAsync(id, address, DefaultBlock);
+            if (address == null) throw new ArgumentNullException(nameof(address));
+            return base.SendRequestAsync(id, address.EnsureHexPrefix(), DefaultBlock);
         }
 
         public RpcRequest BuildRequest(string address, BlockParameter block, object id = null)
         {
-            return base.BuildRequest(id, address, block);
+            if (address == null) throw new ArgumentNullException(nameof(address));
+            if (block == null) throw new ArgumentNullException(nameof(block));
+            return base.BuildRequest(id, address.EnsureHexPrefix(), block);
         }
     }
 }

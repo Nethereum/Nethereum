@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldAlwaysReturnNull()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.Null(result);
         }
 
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugStartGoTrace = new DebugStartGoTrace(client);
-            return await debugStartGoTrace.SendRequestAsync(@"C:\ProgramData\chocolatey\lib\geth-stable\tools\log.txt", 30);
+            return await debugStartGoTrace.SendRequestAsync(Settings.GetDefaultLogLocation(), 30);
         }
 
         public override Type GetRequestType()

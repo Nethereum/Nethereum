@@ -8,18 +8,17 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class DebugBlockProfileTester : RPCRequestTester<object>, IRPCRequestTester
     {
-        
         [Fact]
         public async void ShouldAlwaysReturnNull()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.Null(result);
         }
 
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugBlockProfile = new DebugBlockProfile(client);
-            return await debugBlockProfile.SendRequestAsync(@"C:\ProgramData\chocolatey\lib\geth-stable\tools\log.txt", 30);
+            return await debugBlockProfile.SendRequestAsync(Settings.GetDefaultLogLocation(), 30);
         }
 
         public override Type GetRequestType()

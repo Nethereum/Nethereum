@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var debugTraceBlock = new DebugTraceBlock(client);
             var debugGetBlockRlp = new DebugGetBlockRlp(client);
-            var rlp = await debugGetBlockRlp.SendRequestAsync(10);
+            var rlp = await debugGetBlockRlp.SendRequestAsync(Settings.GetBlockNumber());
             return await debugTraceBlock.SendRequestAsync("0x" + rlp);
         }
 

@@ -1,6 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.Eth.Compilation
 {
@@ -27,19 +30,21 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     // the compiled source code
     ///     }
     /// </Summary>
-    public class EthCompileLLL : RpcRequestResponseHandler<string>
+    public class EthCompileLLL : RpcRequestResponseHandler<JObject>
     {
         public EthCompileLLL(IClient client) : base(client, ApiMethods.eth_compileLLL.ToString())
         {
         }
 
-        public Task<string> SendRequestAsync(string lllcode, object id = null)
+        public Task<JObject> SendRequestAsync(string lllcode, object id = null)
         {
+            if (lllcode == null) throw new ArgumentNullException(nameof(lllcode));
             return base.SendRequestAsync(id, lllcode);
         }
 
         public RpcRequest BuildRequest(string lllcode, object id = null)
         {
+            if (lllcode == null) throw new ArgumentNullException(nameof(lllcode));
             return base.BuildRequest(id, lllcode);
         }
     }

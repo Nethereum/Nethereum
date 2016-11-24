@@ -1,6 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.Eth.Compilation
 {
@@ -26,19 +29,21 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     // the compiled source code
     ///     }
     /// </Summary>
-    public class EthCompileSerpent : RpcRequestResponseHandler<string>
+    public class EthCompileSerpent : RpcRequestResponseHandler<JObject>
     {
         public EthCompileSerpent(IClient client) : base(client, ApiMethods.eth_compileSerpent.ToString())
         {
         }
 
-        public Task<string> SendRequestAsync(string serpentCode, object id = null)
+        public Task<JObject> SendRequestAsync(string serpentCode, object id = null)
         {
+            if (serpentCode == null) throw new ArgumentNullException(nameof(serpentCode));
             return base.SendRequestAsync(id, serpentCode);
         }
 
         public RpcRequest BuildRequest(string serpentCode, object id = null)
         {
+            if (serpentCode == null) throw new ArgumentNullException(nameof(serpentCode));
             return base.BuildRequest(id, serpentCode);
         }
     }

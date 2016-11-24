@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
@@ -32,11 +33,13 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public Task<HexBigInteger> SendRequestAsync(CallInput callInput, object id = null)
         {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
             return SendRequestAsync(id, callInput);
         }
 
         public RpcRequest BuildRequest(CallInput callInput, object id = null)
         {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
             return base.BuildRequest(id, callInput);
         }
     }

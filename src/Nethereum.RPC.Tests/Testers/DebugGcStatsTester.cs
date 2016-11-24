@@ -9,11 +9,10 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class DebugGcStatsTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        
         [Fact]
         public async void ShouldReturnTheGcStatsAsJObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 

@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -54,12 +56,14 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public Task<TransactionReceipt> SendRequestAsync(string transactionHash, object id = null)
         {
-            return base.SendRequestAsync(id, transactionHash);
+            if (transactionHash == null) throw new ArgumentNullException(nameof(transactionHash));
+            return base.SendRequestAsync(id, transactionHash.EnsureHexPrefix());
         }
 
         public RpcRequest BuildRequest(string transactionHash, object id = null)
         {
-            return base.BuildRequest(id, transactionHash);
+            if (transactionHash == null) throw new ArgumentNullException(nameof(transactionHash));
+            return base.BuildRequest(id, transactionHash.EnsureHexPrefix());
         }
     }
 }

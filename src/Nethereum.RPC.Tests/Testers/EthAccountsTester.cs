@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveAccounts()
         {
-            var accounts = await ExecuteAsync(ClientFactory.GetClient());
+            var accounts = await ExecuteAsync();
             Assert.True(accounts.Length > 0);
         }
 

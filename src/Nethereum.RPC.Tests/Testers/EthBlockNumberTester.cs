@@ -10,10 +10,10 @@ namespace Nethereum.RPC.Tests.Testers
     public class EthBlockNumberTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
         [Fact]
-        public async void ShouldRetrieveBlockNumberBiggerThanZero()
+        public async void ShouldRetrieveBlockNumberEqualOrBiggerThanZero()
         {
-            var blockNumber = await ExecuteAsync(ClientFactory.GetClient());
-            Assert.True(blockNumber.Value > 0);
+            var blockNumber = await ExecuteAsync();
+            Assert.True(blockNumber.Value >= 0);
         }
 
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)

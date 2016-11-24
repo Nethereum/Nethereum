@@ -31,12 +31,12 @@ namespace Nethereum.RPC.Web3
         {
         }
 
-        public async Task<string> SendRequestAsync(HexString valueToConvertHex, object id = null)
+        public async Task<string> SendRequestAsync(HexUTF8String valueToConvertHexUtf8, object id = null)
         {
-            return await base.SendRequestAsync(id, valueToConvertHex).ConfigureAwait(false);
+            return await base.SendRequestAsync(id, valueToConvertHexUtf8).ConfigureAwait(false);
         }
 
-        public RpcRequest BuildRequest(HexString valueToConvert, object id = null)
+        public RpcRequest BuildRequest(HexUTF8String valueToConvert, object id = null)
         {
             return base.BuildRequest(id, valueToConvert);
         }

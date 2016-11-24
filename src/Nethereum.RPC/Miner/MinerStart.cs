@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
@@ -15,6 +16,7 @@ namespace Nethereum.RPC.Miner
 
         public Task<bool> SendRequestAsync(int number, object id = null)
         {
+            if (number <= 0) throw new ArgumentOutOfRangeException(nameof(number));
             return base.SendRequestAsync(id, number);
         }
 
@@ -25,6 +27,7 @@ namespace Nethereum.RPC.Miner
 
         public RpcRequest BuildRequest(int number, object id = null)
         {
+            if (number <= 0) throw new ArgumentOutOfRangeException(nameof(number));
             return base.BuildRequest(id, number);
         }
     }

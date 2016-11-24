@@ -1,4 +1,5 @@
 ﻿using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -67,7 +68,7 @@ namespace Nethereum.Web3.Interceptors
 
             var signedTransaction = signer.SignTransaction(privateKey, transaction.To, value.Value, nonce, gasPrice.Value, gasLimit.Value, transaction.Data);
 
-            var txnHash = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(signedTransaction).ConfigureAwait(false);
+            var txnHash = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
             return BuildResponse(txnHash, route);
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
@@ -17,11 +18,13 @@ namespace Nethereum.RPC.Miner
 
         public Task<bool> SendRequestAsync(HexBigInteger price, object id = null)
         {
+            if (price == null) throw new ArgumentNullException(nameof(price));
             return base.SendRequestAsync(id, price);
         }
 
         public RpcRequest BuildRequest(HexBigInteger price, object id = null)
         {
+            if (price == null) throw new ArgumentNullException(nameof(price));
             return base.BuildRequest(id, price);
         }
     }

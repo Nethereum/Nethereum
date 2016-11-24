@@ -44,7 +44,7 @@ namespace Nethereum.RPC.Tests.ContractTest
             var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
             transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
-            // retrieve the transaction hash, as we need to get a transaction receipt with the contract address
+            // retrieve the transaction hash, as we need to get a transaction sreceipt with the contract address
             var transactionHash = await ethSendTransation.SendRequestAsync(transactionInput);
 
             //the contract should be mining now
@@ -60,7 +60,7 @@ namespace Nethereum.RPC.Tests.ContractTest
 
             //sha3 the event call, we can use this to validate our topics 
 
-            var eventCallSh3 = await new Web3Sha3(client).SendRequestAsync(new HexString("Multiplied(uint256,address)"));
+            var eventCallSh3 = await new Web3Sha3(client).SendRequestAsync(new HexUTF8String("Multiplied(uint256,address)"));
             //create a filter 
             //just listen to anything no more filter topics (ie int indexed number)
             var ethFilterInput = new NewFilterInput();

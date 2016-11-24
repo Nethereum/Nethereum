@@ -1,3 +1,4 @@
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
 
@@ -9,6 +10,10 @@ namespace Nethereum.RPC.Eth.DTOs
     [JsonObject(MemberSerialization.OptIn)]
     public class CallInput
     {
+        private string _from;
+        private string _to;
+        private string _data;
+
         public CallInput()
         {
         }
@@ -50,13 +55,21 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     DATA, 20 Bytes - The address the transaction is send from.
         /// </summary>
         [JsonProperty(PropertyName = "from")]
-        public string From { get; set; }
+        public string From
+        {
+            get { return _from.EnsureHexPrefix(); }
+            set { _from = value; }
+        }
 
         /// <summary>
         ///     DATA, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
         /// </summary>
         [JsonProperty(PropertyName = "to")]
-        public string To { get; set; }
+        public string To
+        {
+            get { return _to.EnsureHexPrefix(); }
+            set { _to = value; }
+        }
 
         /// <summary>
         ///     QUANTITY - (optional, default: 90000) Integer of the gas provided for the transaction execution.It will return
@@ -81,6 +94,10 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     data: DATA - (optional) The compiled code of a contract
         /// </summary>
         [JsonProperty(PropertyName = "data")]
-        public string Data { get; set; }
+        public string Data
+        {
+            get { return _data.EnsureHexPrefix(); }
+            set { _data = value; }
+        }
     }
 }

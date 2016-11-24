@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
@@ -36,11 +37,15 @@ namespace Nethereum.RPC.Eth.Uncles
 
         public Task<BlockWithTransactionHashes> SendRequestAsync(BlockParameter blockParameter, HexBigInteger uncleIndex, object id = null)
         {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            if (uncleIndex == null) throw new ArgumentNullException(nameof(uncleIndex));
             return base.SendRequestAsync(id, blockParameter, uncleIndex);
         }
 
         public RpcRequest BuildRequest(BlockParameter blockParameter, HexBigInteger uncleIndex, object id = null)
         {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            if (uncleIndex == null) throw new ArgumentNullException(nameof(uncleIndex));
             return base.BuildRequest(id, blockParameter, uncleIndex);
         }
     }

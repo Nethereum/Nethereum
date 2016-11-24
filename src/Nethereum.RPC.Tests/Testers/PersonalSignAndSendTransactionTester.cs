@@ -9,11 +9,10 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class PersonalSignAndSendTransactionTester : RPCRequestTester<string>, IRPCRequestTester
     {
-        
         [Fact]
         public async void ShouldSignAndSendTransaction()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
@@ -27,9 +26,9 @@ namespace Nethereum.RPC.Tests.Testers
             //As the input the compiled contract is the Data, together with our address
             var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
-            transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
+            transactionInput.From = Settings.GetDefaultAccount();
 
-            return await personalSignAndSendTransaction.SendRequestAsync(transactionInput, "password");
+            return await personalSignAndSendTransaction.SendRequestAsync(transactionInput, Settings.GetDefaultAccountPassword());
         }
 
         public override Type GetRequestType()

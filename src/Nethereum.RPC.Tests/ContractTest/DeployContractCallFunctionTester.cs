@@ -18,7 +18,7 @@ namespace Nethereum.RPC.Tests.ContractTest
         [Fact]
         public async void ShouldDeployContractAndPerformCall()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.Equal("The result of deploying a contract and calling a function to multiply 7 by 69 is: 483 and should be 483", result);
         }
 
@@ -34,14 +34,14 @@ namespace Nethereum.RPC.Tests.ContractTest
             //As the input the compiled contract is the Data, together with our address
             var transactionInput = new TransactionInput();
             transactionInput.Data = contractByteCode;
-            transactionInput.From = "0x12890d2cce102216644c59dae5baed380d84830c";
+            transactionInput.From = Settings.GetDefaultAccount();
             // retrieve the hash
 
             var minerStart = new MinerStart(client);
             var minerStartResult = await minerStart.SendRequestAsync();
 
             var personalUnlock = new PersonalUnlockAccount(client);
-            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, "password", new HexBigInteger(90));
+            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, Settings.GetDefaultAccountPassword(), new HexBigInteger(90));
 
             var transactionHash = await ethSendTransation.SendRequestAsync(transactionInput);
 

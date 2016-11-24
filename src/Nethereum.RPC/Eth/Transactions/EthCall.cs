@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
@@ -42,16 +43,21 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public Task<string> SendRequestAsync(CallInput callInput, BlockParameter block, object id = null)
         {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
+            if (block == null) throw new ArgumentNullException(nameof(block));
             return base.SendRequestAsync(id, callInput, block);
         }
 
         public Task<string> SendRequestAsync(CallInput callInput, object id = null)
         {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
             return base.SendRequestAsync(id, callInput, DefaultBlock);
         }
 
         public RpcRequest BuildRequest(CallInput callInput, BlockParameter block, object id = null)
         {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
+            if (block == null) throw new ArgumentNullException(nameof(block));
             return base.BuildRequest(id, callInput, block);
         }
     }

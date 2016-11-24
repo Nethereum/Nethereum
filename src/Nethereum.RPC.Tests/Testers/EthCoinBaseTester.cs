@@ -2,20 +2,31 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Compilation;
+using Newtonsoft.Json.Linq;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthCoinBaseTester : IRPCRequestTester
+  
+    public class EthCoinBaseTester : RPCRequestTester<string>, IRPCRequestTester
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldReturnCoinBaseAccount()
+        {
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+        }
+
+        public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethCoinBase = new EthCoinBase(client);
             return await ethCoinBase.SendRequestAsync();
         }
 
-        public Type GetRequestType()
+        public override Type GetRequestType()
         {
-            return typeof (EthCoinBase);
+            return typeof(EthCoinBase);
         }
     }
 }

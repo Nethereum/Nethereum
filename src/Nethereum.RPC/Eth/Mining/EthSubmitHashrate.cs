@@ -1,6 +1,8 @@
+using System;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RPC.Eth.Mining
 {
@@ -34,14 +36,21 @@ namespace Nethereum.RPC.Eth.Mining
         {
         }
 
-        public Task<bool> SendRequestAsync(string[] hashRateAndId, object id = null)
+        public Task<bool> SendRequestAsync(string hashRate, string clientId, object id = null)
         {
-            return base.SendRequestAsync(id, hashRateAndId);
+            if (hashRate == null) throw new ArgumentNullException(nameof(hashRate));
+            if (clientId == null) throw new ArgumentNullException(nameof(clientId));
+
+            return base.SendRequestAsync(id, hashRate.EnsureHexPrefix(), clientId.EnsureHexPrefix());
         }
 
-        public RpcRequest BuildRequest(string[] hashRateAndId, object id = null)
+        public RpcRequest BuildRequest(string hashRate, string clientId, object id = null)
         {
-            return base.BuildRequest(id, hashRateAndId);
+            if (hashRate == null) throw new ArgumentNullException(nameof(hashRate));
+            if (clientId == null) throw new ArgumentNullException(nameof(clientId));
+
+            return base.BuildRequest(id, hashRate.EnsureHexPrefix(), clientId.EnsureHexPrefix());
+            
         }
     }
 }

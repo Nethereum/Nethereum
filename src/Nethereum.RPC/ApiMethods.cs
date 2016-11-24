@@ -99,6 +99,6 @@
         miner_stop,
         miner_setGasPrice,
         personal_lockAccount,
-        personal_signAndSendTransaction
+        personal_sendTransaction
     }
 }

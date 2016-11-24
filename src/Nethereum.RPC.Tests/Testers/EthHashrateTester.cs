@@ -1,21 +1,32 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Mining;
+using Nethereum.RPC.Miner;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthHashrateTester : IRPCRequestTester
+    public class EthHashrateTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldReturnHashRate()
         {
-            var ethHashrate = new EthHashrate(client);
-            return await ethHashrate.SendRequestAsync();
+            var result = await ExecuteAsync();
+            //We should not be mining so hash rate is 0
+            Assert.Equal(result.HexValue, "0x0");
         }
 
-        public Type GetRequestType()
+        public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
-            return typeof (EthHashrate);
+            var minerHashrate = new EthHashrate(client);
+            return await minerHashrate.SendRequestAsync();
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthHashrate);
         }
     }
 }

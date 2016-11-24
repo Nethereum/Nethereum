@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var debugTraceBlockByHash = new DebugTraceBlockByHash(client);
             //live block number 1700742
-            return await debugTraceBlockByHash.SendRequestAsync("0x2ece67890207544f423c6dfc4dcd75874dfae58f618de4095d9932b0b8b60d7d");
+            return await debugTraceBlockByHash.SendRequestAsync(Settings.GetBlockHash());
         }
 
         public override Type GetRequestType()

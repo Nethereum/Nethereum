@@ -29,7 +29,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveAccounts()
         {
-            var receipt = await ExecuteAsync(ClientFactory.GetClient());
+            var receipt = await ExecuteAsync();
             Assert.NotNull(receipt);
         }
 

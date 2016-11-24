@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheBlockRplAsAString()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
             Assert.NotNull(result);
         }
 
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var debugGetBlockRlp = new DebugGetBlockRlp(client);
-            return await debugGetBlockRlp.SendRequestAsync(10);
+            return await debugGetBlockRlp.SendRequestAsync(Settings.GetBlockNumber());
         }
 
         public override Type GetRequestType()

@@ -14,7 +14,7 @@ namespace Nethereum.Hex.HexTypes
 
             if (typeof(String) == typeof(T))
             {
-                return HexString.CreateFromHex(hex);
+                return HexUTF8String.CreateFromHex(hex);
             }
             throw new NotImplementedException();
         }

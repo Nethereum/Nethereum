@@ -10,7 +10,6 @@ namespace Nethereum.Hex.HexTypes
         protected HexRPCType(IHexConvertor<T> convertor)
         {
             this.convertor = convertor;
-            
         }
 
         public HexRPCType(IHexConvertor<T> convertor, string hexValue)
@@ -35,7 +34,7 @@ namespace Nethereum.Hex.HexTypes
         protected void InitialiseFromHex(string newHexValue)
         {
             value = ConvertFromHex(newHexValue);
-            hexValue = newHexValue;
+            hexValue = newHexValue.EnsureHexPrefix();
         }
 
         protected T value;
@@ -48,7 +47,7 @@ namespace Nethereum.Hex.HexTypes
 
         protected void InitialiseFromValue(T newValue)
         {
-            hexValue = ConvertToHex(newValue);
+            hexValue = ConvertToHex(newValue).EnsureHexPrefix();
             value = newValue;
         }
 
@@ -76,7 +75,5 @@ namespace Nethereum.Hex.HexTypes
         {
             return hexRpcType.Value;
         }
-
-
     }
 }

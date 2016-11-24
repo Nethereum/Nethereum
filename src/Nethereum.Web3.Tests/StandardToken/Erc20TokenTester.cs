@@ -77,7 +77,7 @@ namespace Nethereum.Web3.Tests.StandardToken
                 var newAddressBalance = await tokenService.GetBalanceOfAsync<ulong>(newAddress);
                 Assert.Equal((ulong) 1000, newAddressBalance);
 
-                var allTransfersFilter = await transfersEvent.CreateFilterAsync(new BlockParameter(3000));
+                var allTransfersFilter = await transfersEvent.CreateFilterAsync(new BlockParameter(transferReceipt.BlockNumber));
                 var eventLogsAll = await transfersEvent.GetAllChanges<Transfer>(allTransfersFilter);
                 Assert.Equal(1, eventLogsAll.Count);
                 var transferLog = eventLogsAll.First();
@@ -103,7 +103,7 @@ namespace Nethereum.Web3.Tests.StandardToken
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(5000);
+                await Task.Delay(1000);
                 receipt = await transactionService.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
             return receipt;

@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShoulRetrieveUncleWithTransactionHashes()
         {
-            var uncle = await ExecuteAsync(ClientFactory.GetClient());
+            var uncle = await ExecuteAsync();
             Assert.NotNull(uncle);
         }
 

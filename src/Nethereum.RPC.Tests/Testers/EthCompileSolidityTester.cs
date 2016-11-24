@@ -7,17 +7,18 @@ using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthCompileSolidityTester : RPCRequestTester<JObject>, IRPCRequestTester
+    public class EthCompileSolidityTester : RPCRequestTester<JToken>, IRPCRequestTester
     {
         [Fact]
         public async void ShouldReturnJTokenObject()
         {
-            var result = await ExecuteAsync(ClientFactory.GetClient());
+            var result = await ExecuteAsync();
+            //parity returns the bytecode, geth retuns the whole json
             Assert.NotNull(result);
         }
 
 
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override async Task<JToken> ExecuteAsync(IClient client)
         {
             var ethCompileSolidty = new EthCompileSolidity(client);
             var contractCode = "contract Test {}";
