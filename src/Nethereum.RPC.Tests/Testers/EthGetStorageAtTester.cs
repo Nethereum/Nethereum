@@ -3,22 +3,33 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetStorageAtTester : IRPCRequestTester
+
+
+    public class EthGetStorageAtTester : RPCRequestTester<string>
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldRetunStorage()
         {
-            var ethGetStorageAt = new EthGetStorageAt(client);
-            return
-                await
-                    ethGetStorageAt.SendRequestAsync("0x407d73d8a49eeb85d32cf465507dd71d507100c1", new HexBigInteger(2));
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            //cannot verify it will be the same content but the lenght yes
+            Assert.True(result.Length == "0x4d756c7469706c69657200000000000000000000000000000000000000000014".Length);
+
         }
 
-        public Type GetRequestType()
+        public override async Task<string> ExecuteAsync(IClient client)
         {
-            return typeof (EthGetStorageAt);
+            var ethGetStorageAt = new EthGetStorageAt(client);
+            return await ethGetStorageAt.SendRequestAsync(Settings.GetContractAddress(), new HexBigInteger(1));
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthGetStorageAt);
         }
     }
 }

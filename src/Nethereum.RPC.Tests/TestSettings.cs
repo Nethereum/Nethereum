@@ -31,19 +31,35 @@ namespace Nethereum.RPC.Tests.Testers
             return GetAppSettingsValue("transactionHash");
         }
 
+        public string GetLiveRpcUrl()
+        {
+            return GetLiveSettingsValue("rpcUrl");
+        }
+
         public ulong GetBlockNumber()
         {
-            return Convert.ToUInt64(GetAppSettingsValue("blocknumber"));
+            return Convert.ToUInt64(GetAppSettingsValue("blockNumber"));
         }
 
         private string GetAppSettingsValue(string key)
         {
-            var configuration = Configuration.GetSection("testSettings");
+            var settingsKey = "testSettings";
+            return GetSectionSettingsValue(key, settingsKey);
+        }
+
+        private string GetLiveSettingsValue(string key)
+        {
+            return GetSectionSettingsValue(key, "liveSettings");
+        }
+
+        private string GetSectionSettingsValue(string key, string sectionSettingsKey)
+        {
+            var configuration = Configuration.GetSection(sectionSettingsKey);
             var children = configuration.GetChildren();
             var setting = children.FirstOrDefault(x => x.Key == key);
             if (setting != null)
                 return setting.Value;
-            throw  new Exception("Setting: " + key + " Not found");
+            throw new Exception("Setting: " + key + " Not found");
         }
 
         public string GetRPCUrl()
@@ -54,6 +70,11 @@ namespace Nethereum.RPC.Tests.Testers
         public string GetDefaultAccountPassword()
         {
             return GetAppSettingsValue("defaultAccountPassword");
+        }
+
+        public string GetContractAddress()
+        {
+            return GetAppSettingsValue("contractAddress");
         }
 
         public string GetDefaultLogLocation()

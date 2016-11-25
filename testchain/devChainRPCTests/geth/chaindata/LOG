@@ -78,3 +78,36 @@
 19:25:17.078268 version@stat F·[3] S·15KiB[15KiB] Sc·[0.75]
 19:25:17.088272 db@janitor F·5 G·0
 19:25:17.088272 db@open done T·51.0088ms
+=============== Nov 25, 2016 (GMT) ===============
+09:53:36.015190 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:53:36.037193 version@stat F·[3] S·15KiB[15KiB] Sc·[0.75]
+09:53:36.037193 db@open opening
+09:53:36.037193 journal@recovery F·1
+09:53:36.038692 journal@recovery recovering @17
+09:53:36.095210 memdb@flush created L0@19 N·3 S·405B "Blo..ion,v215":"eth..Y\x8dk,v216"
+09:53:36.098200 version@stat F·[4] S·15KiB[15KiB] Sc·[1.00]
+09:53:36.106703 db@janitor F·6 G·0
+09:53:36.106703 db@open done T·69.5092ms
+09:53:36.110702 table@compaction L0·4 -> L1·0 S·15KiB Q·218
+09:53:36.118713 db@close closing
+09:53:36.161209 table@build created L1@22 N·127 S·13KiB " w\xf9..\x15\xda\xed,v173":"\xf95a..˥\xb3,v84"
+09:53:36.161209 table@build exiting
+09:53:36.161709 table@build revert @22
+09:53:36.163211 db@close done T·44.4988ms
+=============== Nov 25, 2016 (GMT) ===============
+09:53:36.178211 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:53:36.178711 version@stat F·[4] S·15KiB[15KiB] Sc·[1.00]
+09:53:36.179213 db@open opening
+09:53:36.179213 journal@recovery F·1
+09:53:36.199214 journal@recovery recovering @20
+09:53:36.220217 version@stat F·[4] S·15KiB[15KiB] Sc·[1.00]
+09:53:36.228717 db@janitor F·6 G·0
+09:53:36.228717 db@open done T·49.5044ms
+09:53:36.228717 table@compaction L0·4 -> L1·0 S·15KiB Q·218
+09:53:36.276726 table@build created L1@24 N·127 S·13KiB " w\xf9..\x15\xda\xed,v173":"\xf95a..˥\xb3,v84"
+09:53:36.276726 version@stat F·[0 1] S·13KiB[0B 13KiB] Sc·[0.00 0.00]
+09:53:36.330244 table@compaction committed F-3 S-2KiB Ke·0 D·87 T·101.5266ms
+09:53:36.331232 table@remove removed @19
+09:53:36.331731 table@remove removed @14
+09:53:36.332231 table@remove removed @9
+09:53:36.332231 table@remove removed @4

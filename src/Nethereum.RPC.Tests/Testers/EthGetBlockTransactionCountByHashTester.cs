@@ -1,22 +1,34 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
+using Nethereum.RPC.Eth.DTOs;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetBlockTransactionCountByHashTester : IRPCRequestTester
+
+    public class EthGetBlockTransactionCountByHashTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldReturnTransactionCount()
+        {
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            //we have configured one transaction at least for this block
+            Assert.True(result.Value > 0);
+        }
+
+        public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethGetBlockTransactionCountByHash = new EthGetBlockTransactionCountByHash(client);
             return
                 await
-                    ethGetBlockTransactionCountByHash.SendRequestAsync(
-                        "0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238");
+                    ethGetBlockTransactionCountByHash.SendRequestAsync(Settings.GetBlockHash());
         }
 
-        public Type GetRequestType()
+        public override Type GetRequestType()
         {
             return typeof (EthGetBlockTransactionCountByHash);
         }

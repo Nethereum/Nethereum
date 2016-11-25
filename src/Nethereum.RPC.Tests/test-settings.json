@@ -1,4 +1,7 @@
 ﻿{
+  "liveSettings": {
+    "rpcUrl": "https://mainnet.infura.io"
+  }, 
   "testSettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
@@ -7,14 +10,14 @@
     "blockhash": "0x0b7f7e2151328f33dbb14a8285331a6fd0b1081d1f5edea1937b7bee4dce7c5b",
     "blockNumber": "1",
     "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
-    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4"
+    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4",
   },
   "parityRopstenSettings": {
     "defaultAccount": "0xe84a30306b0BEEfD34a13A8d20d333078Ba7792e",
     "defaultAccountPassword": "password",
     "rpcUrl": "http://localhost:8545/",
     "blockhash": "0xe2d80e5134ae5ed9b900af89d275e32645f038e48b9d30411a25354901e6a3d0",
-    "blocknumber": "34153"
+    "blockNumber": "34153"
   }
 
 }

@@ -7,44 +7,26 @@ using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetTransactionByHashTester : IRPCRequestTester
-    {
-        public async Task<object> ExecuteTestAsync(IClient client)
-        {
-            var ethGetTransactionByHash = new EthGetTransactionByHash(client);
-            return
-                await
-                    ethGetTransactionByHash.SendRequestAsync(
-                        "0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238");
-        }
-
-        public Type GetRequestType()
-        {
-            return typeof (EthGetTransactionByHash);
-        }
-    }
-
-    public class EthGetTransactionReceiptTester : RPCRequestTester<TransactionReceipt>, IRPCRequestTester
+    public class EthGetTransactionByHashTester : RPCRequestTester<Transaction>
     {
         [Fact]
-        public async void ShouldRetrieveAccounts()
+        public async void ShouldReturnTheTransaction()
         {
-            var receipt = await ExecuteAsync();
-            Assert.NotNull(receipt);
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            Assert.Equal(Settings.GetTransactionHash(), result.TransactionHash);
+
         }
 
-        public override async Task<TransactionReceipt> ExecuteAsync(IClient client)
+        public override async Task<Transaction> ExecuteAsync(IClient client)
         {
-            var ethGetTransactionByHash = new EthGetTransactionReceipt(client);
-            return
-                await
-                    ethGetTransactionByHash.SendRequestAsync(
-                        "0x040554dc82f845d6c44e1d7f3b2109f6ae13a8a3d235529e790829f93d69eb0e");
+            var ethGetTransactionByHash = new EthGetTransactionByHash(client);
+            return await ethGetTransactionByHash.SendRequestAsync(Settings.GetTransactionHash());
         }
 
         public override Type GetRequestType()
         {
-            return typeof(EthGetTransactionReceipt);
+            return typeof(EthGetTransactionByHash);
         }
     }
 }

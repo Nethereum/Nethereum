@@ -2,20 +2,32 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetCodeTester : IRPCRequestTester
+
+    public class EthGetCodeTester : RPCRequestTester<string>
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void Should()
         {
-            var ethGetCode = new EthGetCode(client);
-            return await ethGetCode.SendRequestAsync("0x12890d2cce102216644c59dae5baed380d84830c");
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            //we want some code
+            Assert.True(result.Length > "0x".Length);
+
         }
 
-        public Type GetRequestType()
+        public override async Task<string> ExecuteAsync(IClient client)
         {
-            return typeof (EthGetCode);
+            var ethGetCode = new EthGetCode(client);
+            return await ethGetCode.SendRequestAsync(Settings.GetContractAddress());
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthGetCode);
         }
     }
 }

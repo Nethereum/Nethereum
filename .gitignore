@@ -22,6 +22,8 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
+devChainRPCTests/
+
 
 # Visual Studio 2015 cache/options directory
 .vs/

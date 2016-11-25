@@ -1,21 +1,31 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Transactions;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetTransactionCountTester : IRPCRequestTester
+    public class EthGetTransactionCountTester : RPCRequestTester<HexBigInteger>
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldReturnTheTransactionCountOfTheAccount()
         {
-            var ethGetTransactionCount = new EthGetTransactionCount(client);
-            return await ethGetTransactionCount.SendRequestAsync("0x12890d2cce102216644c59dae5baed380d84830c");
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            Assert.True(result.Value > 0);
         }
 
-        public Type GetRequestType()
+        public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
-            return typeof (EthGetTransactionCount);
+            var ethGetTransactionCount = new EthGetTransactionCount(client);
+            return await ethGetTransactionCount.SendRequestAsync(Settings.GetDefaultAccount());
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthGetTransactionCount);
         }
     }
 }

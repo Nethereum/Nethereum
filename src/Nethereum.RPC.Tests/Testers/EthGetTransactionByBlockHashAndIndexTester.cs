@@ -1,25 +1,33 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthGetTransactionByBlockHashAndIndexTester : IRPCRequestTester
+    public class EthGetTransactionByBlockHashAndIndexTester : RPCRequestTester<Transaction>
     {
-        public async Task<object> ExecuteTestAsync(IClient client)
+        [Fact]
+        public async void ShouldReturnTheTransaction()
         {
-            var ethGetTransactionByBlockHashAndIndex = new EthGetTransactionByBlockHashAndIndex(client);
-            return
-                (object)
-                    await
-                        ethGetTransactionByBlockHashAndIndex.SendRequestAsync(
-                            "0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331", 0);
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+            Assert.Equal(Settings.GetTransactionHash(), result.TransactionHash);
+
         }
 
-        public Type GetRequestType()
+        public override async Task<Transaction> ExecuteAsync(IClient client)
         {
-            return typeof (EthGetTransactionByBlockHashAndIndex);
+            var ethGetTransactionByBlockHashAndIndex = new EthGetTransactionByBlockHashAndIndex(client);
+            return await ethGetTransactionByBlockHashAndIndex.SendRequestAsync(Settings.GetBlockHash(), new HexBigInteger(0));
+        }
+
+        public override Type GetRequestType()
+        {
+            return typeof(EthGetTransactionByBlockHashAndIndex);
         }
     }
 }
