@@ -45,7 +45,6 @@ namespace Nethereum.KeyStore
 
         public override string GetKdfType()
         {
-            
             return KdfType;
         }
     }

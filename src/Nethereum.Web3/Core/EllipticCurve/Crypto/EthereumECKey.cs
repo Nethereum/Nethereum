@@ -95,7 +95,6 @@ namespace Nethereum.Core.Signing.Crypto
         {
             //mixing bouncy implementation
             var gen = new ECKeyPairGenerator();
-            
             var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
             gen.Init(keyGenParam);
             var keyPair =  gen.GenerateKeyPair();

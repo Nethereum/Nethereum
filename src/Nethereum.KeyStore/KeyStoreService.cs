@@ -25,17 +25,22 @@ namespace Nethereum.KeyStore
 
         public string GetAddressFromKeyStore(string json)
         {
+            if (json == null) throw new ArgumentNullException(nameof(json));
             var keyStoreDocument = JObject.Parse(json);
             return keyStoreDocument["address"].Value<string>();
         }
 
         public string GenerateUTCFileName(string address)
         {
+            if (address == null) throw new ArgumentNullException(nameof(address));
             return "UTC--" + DateTime.UtcNow.ToString("O").Replace(":", "-") + "--" + address.Replace("0x", "");
         }
 
         public byte[] DecryptKeyStoreFromJson(string password, string json)
         {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (json == null) throw new ArgumentNullException(nameof(json));
+
             var type = _keyStoreKdfChecker.GetKeyStoreKdfType(json);
             if (type == KeyStoreKdfChecker.KdfType.pbkdf2)
             {
@@ -52,6 +57,9 @@ namespace Nethereum.KeyStore
 
         public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] key, string address)
         {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (address == null) throw new ArgumentNullException(nameof(address));
+
             return _keyStoreScryptService.EncryptAndGenerateKeyStoreAsJson(password, key, address);
         }
     }

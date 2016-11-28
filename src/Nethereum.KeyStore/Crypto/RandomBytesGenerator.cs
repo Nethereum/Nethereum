@@ -11,12 +11,7 @@ namespace Nethereum.KeyStore.Crypto
         {
             return GenerateRandomBytes(16);
         }
-
-        public byte[] GeneratRandomPrivateKey()
-        {
-            return GenerateRandomBytes(32);
-        }
-
+      
         public byte[] GenerateRandomSalt()
         {
             return GenerateRandomBytes(32);

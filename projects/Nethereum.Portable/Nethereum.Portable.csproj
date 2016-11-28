@@ -1471,6 +1471,70 @@
 				<Link>NethereumJsonRpc\RPCResponseException.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.KeyStore\IKeyStoreService.cs">
+				<Link>KeyStore\IKeyStoreService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\InvalidKdfException.cs">
+				<Link>KeyStore\InvalidKdfException.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\KeyStoreKdfChecker.cs">
+				<Link>KeyStore\KeyStoreKdfChecker.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\KeyStorePbkdf2Service.cs">
+				<Link>KeyStore\KeyStorePbkdf2Service.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\KeyStoreScryptService.cs">
+				<Link>KeyStore\KeyStoreScryptService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\KeyStoreService.cs">
+				<Link>KeyStore\KeyStoreService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\KeyStoreServiceBase.cs">
+				<Link>KeyStore\KeyStoreServiceBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Crypto\IRandomBytesGenerator.cs">
+				<Link>KeyStore\Crypto\IRandomBytesGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Crypto\KeyStoreCrypto.cs">
+				<Link>KeyStore\Crypto\KeyStoreCrypto.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Crypto\RandomBytesGenerator.cs">
+				<Link>KeyStore\Crypto\RandomBytesGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\CipherParams.cs">
+				<Link>KeyStore\Model\CipherParams.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\CryptoInfo.cs">
+				<Link>KeyStore\Model\CryptoInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\KdfParams.cs">
+				<Link>KeyStore\Model\KdfParams.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\KeyStore.cs">
+				<Link>KeyStore\Model\KeyStore.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\Pbkdf2Params.cs">
+				<Link>KeyStore\Model\Pbkdf2Params.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Model\ScryptParams.cs">
+				<Link>KeyStore\Model\ScryptParams.cs</Link>
+		</Compile>
+		
         </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
