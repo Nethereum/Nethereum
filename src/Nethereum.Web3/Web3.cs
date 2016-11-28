@@ -1,22 +1,20 @@
 ﻿using System;
-using NBitcoin.BouncyCastle.Crypto;
-using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.Util;
+using Nethereum.Core.Signing.Crypto;
+using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 
 namespace Nethereum.Web3
 {
     public class Web3
     {
-        public UnitConversion Convert { get; private set; }
-        public TransactionSigning OfflineTransactionSigning { get; private set; }
         private AddressUtil addressUtil;
 
         private Sha3Keccack sha3Keccack;
 
         public Web3(IClient client)
         {
-            this.Client = client;
+            Client = client;
             InitialiseInnerServices();
         }
 
@@ -26,21 +24,8 @@ namespace Nethereum.Web3
             InitialiseInnerServices();
         }
 
-        private void InitialiseInnerServices()
-        {
-            Eth = new Eth(Client);
-            Shh = new Shh(Client);
-            Net = new Net(Client);
-            Personal = new Personal(Client);
-            Miner = new Miner(Client);
-            DebugGeth = new DebugGeth(Client);
-            Admin = new Admin(Client);
-            Convert = new UnitConversion();
-            sha3Keccack = new Sha3Keccack();
-            OfflineTransactionSigning = new TransactionSigning();
-            addressUtil = new AddressUtil();
-
-        }
+        public UnitConversion Convert { get; private set; }
+        public TransactionSigning OfflineTransactionSigning { get; private set; }
 
         public IClient Client { get; private set; }
 
@@ -57,9 +42,14 @@ namespace Nethereum.Web3
 
         public Miner Miner { get; private set; }
 
-        private void IntialiseRpcClient(string url)
+        public string GetAddressFromPrivateKey(string privateKey)
         {
-            Client = new RpcClient(new Uri(url), null, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            return EthECKey.GetPublicAddress(privateKey);
+        }
+
+        public bool IsChecksumAddress(string address)
+        {
+            return addressUtil.IsChecksumAddress(address);
         }
 
         public string Sha3(string value)
@@ -69,22 +59,33 @@ namespace Nethereum.Web3
 
         public string ToChecksumAddress(string address)
         {
-            return this.addressUtil.ConvertToChecksumAddress(address);
-        }
-
-        public bool IsChecksumAddress(string address)
-        {
-            return this.addressUtil.IsChecksumAddress(address);
+            return addressUtil.ConvertToChecksumAddress(address);
         }
 
         public string ToValid20ByteAddress(string address)
         {
-            return this.addressUtil.ConvertToValid20ByteAddress(address);
+            return addressUtil.ConvertToValid20ByteAddress(address);
         }
 
-        public string GetAddressFromPrivateKey(string privateKey)
+        private void InitialiseInnerServices()
         {
-            return Core.Signing.Crypto.EthECKey.GetPublicAddress(privateKey);
+            Eth = new Eth(Client);
+            Shh = new Shh(Client);
+            Net = new Net(Client);
+            Personal = new Personal(Client);
+            Miner = new Miner(Client);
+            DebugGeth = new DebugGeth(Client);
+            Admin = new Admin(Client);
+            Convert = new UnitConversion();
+            sha3Keccack = new Sha3Keccack();
+            OfflineTransactionSigning = new TransactionSigning();
+            addressUtil = new AddressUtil();
+        }
+
+        private void IntialiseRpcClient(string url)
+        {
+            Client = new RpcClient(new Uri(url), null,
+                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore});
         }
     }
 }

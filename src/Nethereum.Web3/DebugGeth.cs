@@ -5,31 +5,6 @@ namespace Nethereum.Web3
 {
     public class DebugGeth : RpcClientWrapper
     {
-        public DebugBacktraceAt BacktraceAt { get; private set; }
-        public DebugBlockProfile BlockProfile { get; private set; }
-        public DebugCpuProfile CpuProfile { get; private set; }
-        public DebugDumpBlock DumpBlock { get; private set; }
-        public DebugGcStats GcStats { get; private set; }
-        public DebugGetBlockRlp GetBlockRlp { get; private set; }
-        public DebugGoTrace GoTrace { get; private set; }
-        public DebugMemStats MemStats { get; private set; }
-        public DebugSeedHash SeedHash { get; private set; }
-        public DebugSetBlockProfileRate SetBlockProfileRate { get; private set; }
-        public DebugStacks Stacks { get; private set; }
-        public DebugStartCPUProfile StartCPUProfile { get; private set; }
-        public DebugStartGoTrace StartGoTrace { get; private set; }
-        public DebugStopCPUProfile StopCPUProfile { get; private set; }
-        public DebugStopGoTrace StopGoTrace { get; private set; }
-        public DebugTraceBlock TraceBlock { get; private set; }
-        public DebugTraceBlockByHash TraceBlockByHash { get; private set; }
-        public DebugTraceBlockByNumber TraceBlockByNumber { get; private set; }
-        public DebugTraceBlockFromFile TraceBlockFromFile { get; private set; }
-        public DebugTraceTransaction TraceTransaction { get; private set; }
-        public DebugVerbosity Verbosity { get; private set; }
-        public DebugVmodule Vmodule { get; private set; }
-
-        public VmStackErrorChecker StackErrorChecker { get; private set; }
-
         public DebugGeth(IClient client) : base(client)
         {
             BacktraceAt = new DebugBacktraceAt(client);
@@ -55,9 +30,31 @@ namespace Nethereum.Web3
             Verbosity = new DebugVerbosity(client);
             Vmodule = new DebugVmodule(client);
             StackErrorChecker = new VmStackErrorChecker();
-
         }
 
+        public DebugBacktraceAt BacktraceAt { get; private set; }
+        public DebugBlockProfile BlockProfile { get; private set; }
+        public DebugCpuProfile CpuProfile { get; private set; }
+        public DebugDumpBlock DumpBlock { get; private set; }
+        public DebugGcStats GcStats { get; private set; }
+        public DebugGetBlockRlp GetBlockRlp { get; private set; }
+        public DebugGoTrace GoTrace { get; private set; }
+        public DebugMemStats MemStats { get; private set; }
+        public DebugSeedHash SeedHash { get; private set; }
+        public DebugSetBlockProfileRate SetBlockProfileRate { get; private set; }
+        public DebugStacks Stacks { get; private set; }
+        public DebugStartCPUProfile StartCPUProfile { get; private set; }
+        public DebugStartGoTrace StartGoTrace { get; private set; }
+        public DebugStopCPUProfile StopCPUProfile { get; private set; }
+        public DebugStopGoTrace StopGoTrace { get; private set; }
+        public DebugTraceBlock TraceBlock { get; private set; }
+        public DebugTraceBlockByHash TraceBlockByHash { get; private set; }
+        public DebugTraceBlockByNumber TraceBlockByNumber { get; private set; }
+        public DebugTraceBlockFromFile TraceBlockFromFile { get; private set; }
+        public DebugTraceTransaction TraceTransaction { get; private set; }
+        public DebugVerbosity Verbosity { get; private set; }
+        public DebugVmodule Vmodule { get; private set; }
 
+        public VmStackErrorChecker StackErrorChecker { get; private set; }
     }
 }

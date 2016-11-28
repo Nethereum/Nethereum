@@ -30,6 +30,26 @@ namespace Nethereum.Web3
 
         public string Address { get; set; }
 
+        public Task<HexBigInteger> CreateFilterAsync()
+        {
+            var ethFilterInput = GetDefaultFilterInput();
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
+        }
+
+        public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = new NewFilterInput();
+            ethFilterInput.FromBlock = fromBlock;
+            ethFilterInput.ToBlock = toBlock ?? BlockParameter.CreateLatest();
+            ethFilterInput.Address = new[] {Address};
+            return ethFilterInput;
+        }
+
+        public Event GetEvent(string name)
+        {
+            return new Event(Client, this, GetEventAbi(name));
+        }
+
         public Function<TFunction> GetFunction<TFunction>()
         {
             var function = FunctionAttribute.GetAttribute<TFunction>();
@@ -42,19 +62,6 @@ namespace Nethereum.Web3
             return new Function(Client, this, GetFunctionAbi(name));
         }
 
-        public Event GetEvent(string name)
-        {
-            return new Event(Client, this, GetEventAbi(name));
-        }
-
-        private FunctionABI GetFunctionAbi(string name)
-        {
-            if (ContractABI == null) throw new Exception("Contract abi not initialised");
-            var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
-            if (functionAbi == null) throw new Exception("Function not found:" + name);
-            return functionAbi;
-        }
-
         private EventABI GetEventAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
@@ -63,19 +70,12 @@ namespace Nethereum.Web3
             return eventAbi;
         }
 
-        public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        private FunctionABI GetFunctionAbi(string name)
         {
-            var ethFilterInput = new NewFilterInput();
-            ethFilterInput.FromBlock = fromBlock;
-            ethFilterInput.ToBlock = toBlock ?? BlockParameter.CreateLatest();
-            ethFilterInput.Address = new[] {Address};
-            return ethFilterInput;
-        }
-
-        public Task<HexBigInteger> CreateFilterAsync()
-        {
-            var ethFilterInput = GetDefaultFilterInput();
-            return ethNewFilter.SendRequestAsync(ethFilterInput);
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
+            if (functionAbi == null) throw new Exception("Function not found:" + name);
+            return functionAbi;
         }
     }
 }

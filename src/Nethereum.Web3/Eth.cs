@@ -1,42 +1,17 @@
-using System;
-using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Web3
 {
-    public class Eth:RpcClientWrapper
+    public class Eth : RpcClientWrapper
     {
-       
         private BlockParameter defaultBlock;
 
-        public BlockParameter DefaultBlock
+        public Eth(IClient client) : base(client)
         {
-            get { return defaultBlock; }
-            set
-            {
-                defaultBlock = value;
-                SetDefaultBlock();
-            }
-        }
+            Client = client;
 
-        private void SetDefaultBlock()
-        {
-            this.GetBalance.DefaultBlock = DefaultBlock;
-            this.GetCode.DefaultBlock = DefaultBlock;
-            this.GetStorageAt.DefaultBlock = DefaultBlock;
-            this.Transactions.SetDefaultBlock(defaultBlock);
-
-        }
-
-        public Eth(IClient client):base(client)
-        {
-            this.Client = client;
-           
-           
 
             DeployContract = new DeployContract(client);
 
@@ -45,7 +20,7 @@ namespace Nethereum.Web3
             GasPrice = new EthGasPrice(client);
             GetBalance = new EthGetBalance(client);
             GetCode = new EthGetCode(client);
-            GetStorageAt = new EthGetStorageAt(client);       
+            GetStorageAt = new EthGetStorageAt(client);
             ProtocolVersion = new EthProtocolVersion(client);
             Sign = new EthSign(client);
             Syncing = new EthSyncing(client);
@@ -57,27 +32,36 @@ namespace Nethereum.Web3
             Mining = new EthMiningService(client);
             Compile = new EthCompilerService(client);
 
-            this.DefaultBlock = BlockParameter.CreateLatest();
+            DefaultBlock = BlockParameter.CreateLatest();
+        }
 
+        public BlockParameter DefaultBlock
+        {
+            get { return defaultBlock; }
+            set
+            {
+                defaultBlock = value;
+                SetDefaultBlock();
+            }
         }
 
         public EthAccounts Accounts { get; private set; }
-        
+
         public EthCoinBase CoinBase { get; private set; }
 
         public EthGasPrice GasPrice { get; private set; }
-        public EthGetBalance GetBalance { get; private set; }
-        
-        public EthGetCode GetCode { get; private set; }
-        
-        public EthGetStorageAt GetStorageAt { get; private set; }
-       
+        public EthGetBalance GetBalance { get; }
+
+        public EthGetCode GetCode { get; }
+
+        public EthGetStorageAt GetStorageAt { get; }
+
         public EthProtocolVersion ProtocolVersion { get; private set; }
-         public EthSign Sign { get; private set; }
-    
+        public EthSign Sign { get; private set; }
+
         public EthSyncing Syncing { get; private set; }
-        
-        public EthTransactionsService Transactions { get; private set; }
+
+        public EthTransactionsService Transactions { get; }
 
         public EthUncleService Uncles { get; private set; }
         public EthMiningService Mining { get; private set; }
@@ -95,6 +79,14 @@ namespace Nethereum.Web3
             var contract = new Contract(Client, abi, contractAddress);
             contract.DefaultBlock = DefaultBlock;
             return contract;
+        }
+
+        private void SetDefaultBlock()
+        {
+            GetBalance.DefaultBlock = DefaultBlock;
+            GetCode.DefaultBlock = DefaultBlock;
+            GetStorageAt.DefaultBlock = DefaultBlock;
+            Transactions.SetDefaultBlock(defaultBlock);
         }
     }
 }

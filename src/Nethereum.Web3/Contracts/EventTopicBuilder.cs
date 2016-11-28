@@ -38,11 +38,6 @@ namespace Nethereum.Web3
             };
         }
 
-        private string EnsureHexPrefix(string input)
-        {
-            return input.EnsureHexPrefix();
-        }
-
         public object[] GetValueTopic(object[] values, int paramNumber)
         {
             if (values == null) return null;
@@ -54,6 +49,11 @@ namespace Nethereum.Web3
                 if (values[i] != null)
                     encoded[i] = EnsureHexPrefix(parameter.ABIType.Encode(values[i]).ToHex());
             return encoded;
+        }
+
+        private string EnsureHexPrefix(string input)
+        {
+            return input.EnsureHexPrefix();
         }
     }
 }

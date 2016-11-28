@@ -47,35 +47,22 @@ namespace Nethereum.Web3
             return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data, FunctionABI.InputParameters);
         }
 
-        private Parameter GetFirstParameterOrNull(Parameter[] parameters)
+        public Task<string> SendTransactionAsync(string from, HexBigInteger gas,
+            HexBigInteger value)
         {
-            if (parameters == null) return null;
-            if (parameters.Length == 0) return null;
-            return parameters[0];
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return SendTransactionAsync(encodedInput, from, gas, value);
         }
 
-        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall)
-        {
-            return
-                await
-                    ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress))
-                        .ConfigureAwait(false);
-        }
-
-        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, string from,
-            HexBigInteger gas, HexBigInteger value)
-        {
-            return
-                await
-                    ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas,
-                        value)).ConfigureAwait(false);
-        }
-
-        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, CallInput callInput
+        public Task<string> SignAndSendTransactionAsync(string password, HexBigInteger gas, HexBigInteger value,
+            string from
         )
         {
-            callInput.Data = encodedFunctionCall;
-            return await ethEstimateGas.SendRequestAsync(callInput).ConfigureAwait(false);
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return
+                personalSignAndSendTransaction.SendRequestAsync(
+                    new TransactionInput(encodedInput, ContractAddress, from, gas,
+                        value), password);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall)
@@ -158,6 +145,30 @@ namespace Nethereum.Web3
             return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
         }
 
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall)
+        {
+            return
+                await
+                    ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress))
+                        .ConfigureAwait(false);
+        }
+
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, string from,
+            HexBigInteger gas, HexBigInteger value)
+        {
+            return
+                await
+                    ethEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas,
+                        value)).ConfigureAwait(false);
+        }
+
+        protected async Task<HexBigInteger> EstimateGasFromEncAsync(string encodedFunctionCall, CallInput callInput
+        )
+        {
+            callInput.Data = encodedFunctionCall;
+            return await ethEstimateGas.SendRequestAsync(callInput).ConfigureAwait(false);
+        }
+
         protected Task<string> SendTransactionAsync(string encodedFunctionCall)
         {
             return ethSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress));
@@ -180,31 +191,19 @@ namespace Nethereum.Web3
 
         protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall)
         {
-            return personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress), password);
+            return
+                personalSignAndSendTransaction.SendRequestAsync(
+                    new TransactionInput(encodedFunctionCall, ContractAddress), password);
         }
 
-        protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall, string from, HexBigInteger gas,
+        protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall, string from,
+            HexBigInteger gas,
             HexBigInteger value)
         {
             return
-                personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedFunctionCall, ContractAddress, from, gas,
-                    value), password);
-        }
-
-        public Task<string> SendTransactionAsync(string from, HexBigInteger gas,
-            HexBigInteger value)
-        {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return SendTransactionAsync(encodedInput, from, gas, value);
-        }
-
-        public Task<string> SignAndSendTransactionAsync(string password, HexBigInteger gas, HexBigInteger value, string from
-          )
-        {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return
-                personalSignAndSendTransaction.SendRequestAsync(new TransactionInput(encodedInput, ContractAddress, from, gas,
-                    value), password);
+                personalSignAndSendTransaction.SendRequestAsync(
+                    new TransactionInput(encodedFunctionCall, ContractAddress, from, gas,
+                        value), password);
         }
 
         protected Task<string> SignAndSendTransactionAsync(string password, string encodedFunctionCall,
@@ -212,6 +211,13 @@ namespace Nethereum.Web3
         {
             input.Data = encodedFunctionCall;
             return personalSignAndSendTransaction.SendRequestAsync(input, password);
+        }
+
+        private Parameter GetFirstParameterOrNull(Parameter[] parameters)
+        {
+            if (parameters == null) return null;
+            if (parameters.Length == 0) return null;
+            return parameters[0];
         }
     }
 }

@@ -14,14 +14,13 @@ namespace Nethereum.Web3
 {
     public class Event
     {
-        private IClient client;
-
         private readonly Contract contract;
         private readonly EthGetFilterLogsForEthNewFilter ethFilterLogs;
         private readonly EthGetFilterChangesForEthNewFilter ethGetFilterChanges;
         private readonly EthGetLogs ethGetLogs;
         private readonly EthNewFilter ethNewFilter;
         private readonly EventTopicBuilder eventTopicBuilder;
+        private IClient client;
 
         public Event(IClient client, Contract contract, EventABI eventABI)
         {
@@ -37,22 +36,9 @@ namespace Nethereum.Web3
 
         public EventABI EventABI { get; }
 
-        public NewFilterInput CreateFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var ethFilterInput = contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = new[] {eventTopicBuilder.GetSignaguteTopic()};
-            return ethFilterInput;
-        }
-
         public Task<HexBigInteger> CreateFilterAsync(BlockParameter fromBlock = null)
         {
             var newFilterInput = CreateFilterInput(fromBlock);
-            return ethNewFilter.SendRequestAsync(newFilterInput);
-        }
-
-        public Task<HexBigInteger> CreateFilterBlockRangeAsync(BlockParameter fromBlock, BlockParameter toBlock)
-        {
-            var newFilterInput = CreateFilterInput(fromBlock, toBlock);
             return ethNewFilter.SendRequestAsync(newFilterInput);
         }
 
@@ -101,6 +87,40 @@ namespace Nethereum.Web3
                 thirdIndexedParameterValues.Cast<object>().ToArray(), fromBlock, toBlock);
         }
 
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, BlockParameter fromBlock = null,
+            BlockParameter toBlock = null)
+        {
+            var ethFilterInput = CreateFilterInput(filterTopic1, fromBlock, toBlock);
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
+        }
+
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, fromBlock, toBlock);
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
+        }
+
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, filterTopic3, fromBlock, toBlock);
+            return ethNewFilter.SendRequestAsync(ethFilterInput);
+        }
+
+        public Task<HexBigInteger> CreateFilterBlockRangeAsync(BlockParameter fromBlock, BlockParameter toBlock)
+        {
+            var newFilterInput = CreateFilterInput(fromBlock, toBlock);
+            return ethNewFilter.SendRequestAsync(newFilterInput);
+        }
+
+        public NewFilterInput CreateFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = contract.GetDefaultFilterInput(fromBlock, toBlock);
+            ethFilterInput.Topics = new[] {eventTopicBuilder.GetSignaguteTopic()};
+            return ethFilterInput;
+        }
+
         public NewFilterInput CreateFilterInput(object[] filterTopic1, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
@@ -125,25 +145,17 @@ namespace Nethereum.Web3
             return ethFilterInput;
         }
 
-        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, BlockParameter fromBlock = null,
-            BlockParameter toBlock = null)
+        public static List<EventLog<T>> DecodeAllEvents<T>(FilterLog[] logs) where T : new()
         {
-            var ethFilterInput = CreateFilterInput(filterTopic1, fromBlock, toBlock);
-            return ethNewFilter.SendRequestAsync(ethFilterInput);
-        }
-
-        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, fromBlock, toBlock);
-            return ethNewFilter.SendRequestAsync(ethFilterInput);
-        }
-
-        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, filterTopic3, fromBlock, toBlock);
-            return ethNewFilter.SendRequestAsync(ethFilterInput);
+            var result = new List<EventLog<T>>();
+            if (logs == null) return result;
+            var eventDecoder = new EventTopicDecoder();
+            foreach (var log in logs)
+            {
+                var eventObject = eventDecoder.DecodeTopics<T>(log.Topics, log.Data);
+                result.Add(new EventLog<T>(eventObject, log));
+            }
+            return result;
         }
 
         public async Task<List<EventLog<T>>> GetAllChanges<T>(NewFilterInput filterInput) where T : new()
@@ -178,19 +190,6 @@ namespace Nethereum.Web3
                     return true;
             }
             return false;
-        }
-
-        public static List<EventLog<T>> DecodeAllEvents<T>(FilterLog[] logs) where T : new()
-        {
-            var result = new List<EventLog<T>>();
-            if (logs == null) return result;
-            var eventDecoder = new EventTopicDecoder();
-            foreach (var log in logs)
-            {
-                var eventObject = eventDecoder.DecodeTopics<T>(log.Topics, log.Data);
-                result.Add(new EventLog<T>(eventObject, log));
-            }
-            return result;
         }
     }
 }

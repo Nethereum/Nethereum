@@ -2,8 +2,8 @@
 using NBitcoin.Crypto;
 using Nethereum.ABI.Util;
 using Nethereum.ABI.Util.RLP;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Core.Signing.Crypto;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Core
 {
@@ -44,9 +44,7 @@ namespace Nethereum.Core
             this.data = data;
 
             if (receiveAddress == null)
-            {
                 this.receiveAddress = EMPTY_BYTE_ARRAY;
-            }
 
             decoded = true;
         }
@@ -55,6 +53,28 @@ namespace Nethereum.Core
             byte[] data, byte[] r, byte[] s, byte v) : this(nonce, gasPrice, gasLimit, receiveAddress, value, data)
         {
             signature = EthECDSASignatureFactory.FromComponents(r, s, v);
+        }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce)
+            : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT)
+        {
+        }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce, string data)
+            : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT, data)
+        {
+        }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice, BigInteger gasLimit)
+            : this(to, amount, nonce, gasPrice, gasLimit, "")
+        {
+        }
+
+        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
+            gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray()
+        )
+        {
         }
 
         public byte[] Hash
@@ -146,11 +166,59 @@ namespace Nethereum.Core
 
         public ECKey Key
         {
-            get
+            get { return EthECKey.RecoverFromSignature(Signature, RawHash); }
+        }
+
+        public byte[] BuildRLPEncoded(bool raw)
+        {
+            byte[] nonce = null;
+            if ((this.nonce == null) || ((this.nonce.Length == 1) && (this.nonce[0] == 0)))
+                nonce = RLP.EncodeElement(null);
+            else
+                nonce = RLP.EncodeElement(this.nonce);
+            var gasPrice = RLP.EncodeElement(this.gasPrice);
+            var gasLimit = RLP.EncodeElement(this.gasLimit);
+            var receiveAddress = RLP.EncodeElement(this.receiveAddress);
+            var value = RLP.EncodeElement(this.value);
+            var data = RLP.EncodeElement(this.data);
+
+            if (raw)
+                return RLP.EncodeList(nonce, gasPrice, gasLimit, receiveAddress, value, data);
+            byte[] v, r, s;
+
+            if (signature != null)
             {
-                return EthECKey.RecoverFromSignature(Signature, RawHash);
-            }   
-        } 
+                v = RLP.EncodeByte(signature.V);
+                r = RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
+                s = RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
+            }
+            else
+            {
+                v = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                r = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                s = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+            }
+
+            return RLP.EncodeList(nonce, gasPrice, gasLimit, receiveAddress, value, data, v, r, s);
+        }
+
+        public byte[] GetRLPEncoded()
+        {
+            if (rlpEncoded != null)
+                return rlpEncoded;
+            rlpEncoded = BuildRLPEncoded(false);
+            return rlpEncoded;
+        }
+
+        public byte[] GetRLPEncodedRaw()
+        {
+            EnsuredRPLDecoded();
+
+            if (rlpRaw != null)
+                return rlpRaw;
+            rlpRaw = BuildRLPEncoded(true);
+            return rlpRaw;
+        }
 
 
         public virtual void RlpDecode()
@@ -176,6 +244,12 @@ namespace Nethereum.Core
             decoded = true;
         }
 
+        public void Sign(ECKey key)
+        {
+            signature = key.SignAndCalculateV(RawHash);
+            rlpEncoded = null;
+        }
+
         public string ToJsonHex()
         {
             var s = "['{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}']";
@@ -186,105 +260,16 @@ namespace Nethereum.Core
                 signature.S.ToByteArrayUnsigned().ToHex());
         }
 
+        private void EnsuredRPLDecoded()
+        {
+            if (!decoded)
+                RlpDecode();
+        }
+
         private string ToHex(byte[] x)
         {
             if (x == null) return "0x";
             return x.ToHex();
         }
-
-        private void EnsuredRPLDecoded()
-        {
-            if (!decoded)
-            {
-                RlpDecode();
-            }
-        }
-
-        public void Sign(ECKey key)
-        {
-            signature = key.SignAndCalculateV(RawHash);
-            rlpEncoded = null;
-        }
-
-        public byte[] GetRLPEncodedRaw()
-        {
-            EnsuredRPLDecoded();
-
-            if (rlpRaw != null)
-            {
-                return rlpRaw;
-            }
-            rlpRaw = BuildRLPEncoded(true);
-            return rlpRaw;
-        }
-
-        public byte[] BuildRLPEncoded(bool raw)
-        {
-            byte[] nonce = null;
-            if (this.nonce == null || this.nonce.Length == 1 && this.nonce[0] == 0)
-            {
-                nonce = RLP.EncodeElement(null);
-            }
-            else
-            {
-                nonce = RLP.EncodeElement(this.nonce);
-            }
-            var gasPrice = RLP.EncodeElement(this.gasPrice);
-            var gasLimit = RLP.EncodeElement(this.gasLimit);
-            var receiveAddress = RLP.EncodeElement(this.receiveAddress);
-            var value = RLP.EncodeElement(this.value);
-            var data = RLP.EncodeElement(this.data);
-
-            if (raw)
-            {
-                return RLP.EncodeList(nonce, gasPrice, gasLimit, receiveAddress, value, data);
-            }
-            byte[] v, r, s;
-
-            if (signature != null)
-            {
-                v = RLP.EncodeByte(signature.V);
-                r = RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
-                s = RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
-            }
-            else
-            {
-                v = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                r = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                s = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-            }
-
-            return RLP.EncodeList(nonce, gasPrice, gasLimit, receiveAddress, value, data, v, r, s);
-        }
-
-        public byte[] GetRLPEncoded()
-        {
-            if (rlpEncoded != null)
-            {
-                return rlpEncoded;
-            }
-            rlpEncoded = BuildRLPEncoded(false);
-            return rlpEncoded;
-        }
-
-        public Transaction (string to, BigInteger amount, BigInteger nonce):this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT) { 
-        }
-
-        public Transaction(string to, BigInteger amount, BigInteger nonce, string data) : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFFAULT_GAS_LIMIT, data)
-        {
-        }
-
-        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,BigInteger gasLimit) : this(to, amount, nonce, gasPrice, gasLimit, "")
-        {
-
-        }
-
-        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
-                gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray())
-        {
-
-        }
-
     }
 }

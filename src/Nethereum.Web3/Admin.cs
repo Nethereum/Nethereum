@@ -5,15 +5,6 @@ namespace Nethereum.Web3
 {
     public class Admin : RpcClientWrapper
     {
-        public AdminAddPeer AddPeer { get; private set; }
-        public AdminDatadir Datadir { get; private set; }
-        public AdminNodeInfo NodeInfo { get; private set; }
-        public AdminSetSolc SetSolc { get; private set; }
-        public AdminStartRPC StartRPC { get; private set; }
-        public AdminStartWS StartWS { get; private set; }
-        public AdminStopRPC StopRPC { get; private set; }
-        public AdminStopWS StopWS { get; private set; }
-
         public Admin(IClient client) : base(client)
         {
             AddPeer = new AdminAddPeer(client);
@@ -24,8 +15,15 @@ namespace Nethereum.Web3
             StartWS = new AdminStartWS(client);
             StopRPC = new AdminStopRPC(client);
             StopWS = new AdminStopWS(client);
-
         }
 
+        public AdminAddPeer AddPeer { get; private set; }
+        public AdminDatadir Datadir { get; private set; }
+        public AdminNodeInfo NodeInfo { get; private set; }
+        public AdminSetSolc SetSolc { get; private set; }
+        public AdminStartRPC StartRPC { get; private set; }
+        public AdminStartWS StartWS { get; private set; }
+        public AdminStopRPC StopRPC { get; private set; }
+        public AdminStopWS StopWS { get; private set; }
     }
 }

@@ -13,26 +13,6 @@ namespace Nethereum.Web3
         {
         }
 
-        public Task<HexBigInteger> EstimateGasAsync(params object[] functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(string from, HexBigInteger gas,
-            HexBigInteger value, params object[] functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(
-            CallInput callInput, params object[] functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, callInput);
-        }
-
         public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -88,6 +68,33 @@ namespace Nethereum.Web3
             return base.CallAsync(new TReturn(), encodedInput, callInput, blockParameter);
         }
 
+        public Task<HexBigInteger> EstimateGasAsync(params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(string from, HexBigInteger gas,
+            HexBigInteger value, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(
+            CallInput callInput, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput, callInput);
+        }
+
+
+        public string GetData(params object[] functionInput)
+        {
+            return FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature, FunctionABI.InputParameters,
+                functionInput);
+        }
+
         public Task<string> SendTransactionAsync(string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -127,13 +134,6 @@ namespace Nethereum.Web3
             var encodedInput = GetData(functionInput);
             return base.SignAndSendTransactionAsync(password, encodedInput, input);
         }
-
-
-        public string GetData(params object[] functionInput)
-        {
-            return FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature, FunctionABI.InputParameters,
-                functionInput);
-        }
     }
 
     public class Function<TFunctionInput> : FunctionBase
@@ -141,32 +141,6 @@ namespace Nethereum.Web3
         public Function(IClient rpcClient, Contract contract, FunctionABI functionABI)
             : base(rpcClient, contract, functionABI)
         {
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync()
-        {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return EstimateGasFromEncAsync(encodedInput);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
-            HexBigInteger value)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput,
-            CallInput callInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, callInput);
         }
 
         public Task<TReturn> CallAsync<TReturn>()
@@ -236,6 +210,37 @@ namespace Nethereum.Web3
             return base.CallAsync(new TReturn(), encodedInput, callInput, blockParameter);
         }
 
+        public Task<HexBigInteger> EstimateGasAsync()
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput,
+            CallInput callInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return EstimateGasFromEncAsync(encodedInput, callInput);
+        }
+
+        public string GetData(TFunctionInput functionInput)
+        {
+            return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
+        }
+
 
         public Task<string> SendTransactionAsync(TFunctionInput functionInput)
         {
@@ -263,7 +268,8 @@ namespace Nethereum.Web3
             return base.SignAndSendTransactionAsync(password, encodedInput);
         }
 
-        public Task<string> SignAndSendTransactionAsync(string password, TFunctionInput functionInput, string from, HexBigInteger gas,
+        public Task<string> SignAndSendTransactionAsync(string password, TFunctionInput functionInput, string from,
+            HexBigInteger gas,
             HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
@@ -275,11 +281,6 @@ namespace Nethereum.Web3
         {
             var encodedInput = GetData(functionInput);
             return base.SignAndSendTransactionAsync(password, encodedInput, input);
-        }
-
-        public string GetData(TFunctionInput functionInput)
-        {
-            return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
         }
     }
 }
