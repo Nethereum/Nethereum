@@ -48,7 +48,7 @@ namespace Nethereum.KeyStore.Console.Sample
             System.Console.ReadLine();
 
 
-            //We can use EthECKey to generate a new one, this is uses SecureRandom
+            //We can use EthECKey to generate a new ECKey pair, this is uses SecureRandom
             var ecKey = EthECKey.GenerateKey();
             var privateKey = ecKey.GetPrivateKeyAsBytes();
             var genAddress = ecKey.GetPublicAddress();
@@ -61,8 +61,8 @@ namespace Nethereum.KeyStore.Console.Sample
             var pbkdf2Service = new KeyStorePbkdf2Service();
             var pkbdf2Result = pbkdf2Service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
 
-            //Both services can be configured with a new IRandomBytesGenerator for the IV or Salt
-            //and when encrypting we can pass custom KdfParameters
+            //Both services can be configured with a new IRandomBytesGenerator for the IV and Salt
+            //also when encrypting we can pass custom KdfParameters
         }
     }
 }
