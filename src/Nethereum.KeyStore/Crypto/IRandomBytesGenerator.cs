@@ -4,6 +4,5 @@
     {
         byte[] GenerateRandomInitialisationVector();
         byte[] GenerateRandomSalt();
-        byte[] GeneratRandomPrivateKey();
     }
 }
