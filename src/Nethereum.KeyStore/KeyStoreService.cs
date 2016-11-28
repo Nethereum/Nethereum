@@ -29,6 +29,11 @@ namespace Nethereum.KeyStore
             return keyStoreDocument["address"].Value<string>();
         }
 
+        public string GenerateUTCFileName(string address)
+        {
+            return "UTC--" + DateTime.UtcNow.ToString("O").Replace(":", "-") + "--" + address.Replace("0x", "");
+        }
+
         public byte[] DecryptKeyStoreFromJson(string password, string json)
         {
             var type = _keyStoreKdfChecker.GetKeyStoreKdfType(json);

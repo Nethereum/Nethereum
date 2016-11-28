@@ -111,3 +111,26 @@
 09:53:36.331731 table@remove removed @14
 09:53:36.332231 table@remove removed @9
 09:53:36.332231 table@remove removed @4
+=============== Nov 28, 2016 (GMT) ===============
+11:49:18.567870 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:49:18.583872 version@stat F·[0 1] S·13KiB[0B 13KiB] Sc·[0.00 0.00]
+11:49:18.583872 db@open opening
+11:49:18.584388 journal@recovery F·1
+11:49:18.592374 journal@recovery recovering @22
+11:49:18.653381 memdb@flush created L0@25 N·3 S·405B "Blo..ion,v219":"eth..Y\x8dk,v220"
+11:49:18.657882 version@stat F·[1 1] S·13KiB[405B 13KiB] Sc·[0.25 0.00]
+11:49:18.672388 db@janitor F·4 G·0
+11:49:18.672883 db@open done T·89.0112ms
+11:49:18.676883 db@close closing
+11:49:18.681885 db@close done T·4.5014ms
+=============== Nov 28, 2016 (GMT) ===============
+11:49:18.697387 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:49:18.697886 version@stat F·[1 1] S·13KiB[405B 13KiB] Sc·[0.25 0.00]
+11:49:18.697886 db@open opening
+11:49:18.697886 journal@recovery F·1
+11:49:18.718890 journal@recovery recovering @26
+11:49:18.741892 version@stat F·[1 1] S·13KiB[405B 13KiB] Sc·[0.25 0.00]
+11:49:18.749894 db@janitor F·4 G·0
+11:49:18.749894 db@open done T·52.0079ms
+11:51:24.503064 db@close closing
+11:51:24.514064 db@close done T·11.0001ms

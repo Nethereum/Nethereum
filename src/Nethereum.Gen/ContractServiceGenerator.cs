@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Gen
 {
+
+    [Obsolete("This has been replaced for the code generation extension in visual studio code")]
     public class ContractServiceGenerator
     {
         public string NameSpaceTemplate =
