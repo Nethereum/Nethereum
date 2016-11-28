@@ -29,7 +29,7 @@ namespace Nethereum.KeyStore
             return keyStoreDocument["address"].Value<string>();
         }
 
-        public byte[] DecryptKeyStore(string password, string json)
+        public byte[] DecryptKeyStoreFromJson(string password, string json)
         {
             var type = _keyStoreKdfChecker.GetKeyStoreKdfType(json);
             if (type == KeyStoreKdfChecker.KdfType.pbkdf2)
@@ -45,7 +45,7 @@ namespace Nethereum.KeyStore
             throw new Exception("Invalid kdf type");
         }
 
-        public string EncryptAndGenerateDefaultKeyStore(string password, byte[] key, string address)
+        public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] key, string address)
         {
             return _keyStoreScryptService.EncryptAndGenerateKeyStoreAsJson(password, key, address);
         }
