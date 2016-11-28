@@ -16,6 +16,6 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             var bytes = hex.HexToByteArray();
             return System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
         }
-   
+
     }
 }

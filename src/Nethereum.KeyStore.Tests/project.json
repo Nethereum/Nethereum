@@ -1,0 +1,26 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "Nethereum.KeyStore.Tests ",
+  "authors": [ "Juan Blanco" ],
+  "testRunner": "xunit",
+  
+  "dependencies": {
+    "Nethereum.KeyStore": "1.0.0-*",
+    "Nethereum.Hex": "1.0.2",
+    "xunit": "2.2.0-beta2-build3300",
+    "dotnet-test-xunit": "2.2.0-preview2-build1029"
+  },
+
+  "frameworks": {
+    "net451": {
+      "dependencies": {
+       
+      },
+      "frameworkAssemblies": {
+        "System.Numerics": "4.0.0.0"
+
+      }
+
+    }
+  }
+}
