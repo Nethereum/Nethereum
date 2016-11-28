@@ -21,6 +21,9 @@ cd ..
 cd Nethereum.JsonRpc.IpcClient*
 dotnet pack
 cd ..
+cd Nethereum.KeyStore*
+dotnet pack
+cd ..
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
