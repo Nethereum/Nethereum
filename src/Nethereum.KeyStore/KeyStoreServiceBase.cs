@@ -22,17 +22,29 @@ namespace Nethereum.KeyStore
             KeyStoreCrypto = keyStoreCrypto;
         }
 
+
+        protected KeyStoreServiceBase(IRandomBytesGenerator randomBytesGenerator)
+        {
+            RandomBytesGenerator = randomBytesGenerator;
+            KeyStoreCrypto = new KeyStoreCrypto();
+        }
+
         public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address) 
+        {
+            var kdfParams = GetDefaultParams();
+            return EncryptAndGenerateKeyStore(password, privateKey, address, kdfParams);
+        }
+
+        public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address, T kdfParams)
         {
             if (password == null) throw new ArgumentNullException(nameof(password));
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             if (address == null) throw new ArgumentNullException(nameof(address));
+            if (kdfParams == null) throw new ArgumentNullException(nameof(kdfParams));
 
-            if(privateKey.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
+            if (privateKey.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
 
             var salt = RandomBytesGenerator.GenerateRandomSalt();
-         
-            var kdfParams = GetDefaultParams();
 
             var derivedKey = GenerateDerivedKey(KeyStoreCrypto.GetPasswordAsBytes(password), salt, kdfParams);
 
@@ -55,12 +67,17 @@ namespace Nethereum.KeyStore
             };
 
             return keyStore;
-
         }
 
         public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss)
         {
             var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss);
+            return JsonConvert.SerializeObject(keyStore);
+        }
+
+        public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss, T kdfParams)
+        {
+            var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss, kdfParams);
             return JsonConvert.SerializeObject(keyStore);
         }
 

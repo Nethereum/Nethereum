@@ -9,7 +9,8 @@
       "type": "platform",
       "version": "1.0.1"
     },
-    "Nethereum.KeyStore": "1.0.0"
+    "Nethereum.KeyStore": "1.0.0",
+    "Nethereum.Web3": "1.0.3"
   },
 
   "frameworks": {

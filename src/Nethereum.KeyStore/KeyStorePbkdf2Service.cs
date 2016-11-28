@@ -12,8 +12,14 @@ namespace Nethereum.KeyStore
         public KeyStorePbkdf2Service()
         {
         }
+
         public KeyStorePbkdf2Service(IRandomBytesGenerator randomBytesGenerator, KeyStoreCrypto keyStoreCrypto) : base(randomBytesGenerator, keyStoreCrypto)
         {
+        }
+
+        public KeyStorePbkdf2Service(IRandomBytesGenerator randomBytesGenerator) : base(randomBytesGenerator)
+        {
+
         }
 
         protected override byte[] GenerateDerivedKey(byte[] pasword, byte[] salt, Pbkdf2Params kdfParams)
