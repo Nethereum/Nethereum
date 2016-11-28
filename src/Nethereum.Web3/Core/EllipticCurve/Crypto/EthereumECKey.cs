@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Linq;
 using NBitcoin.BouncyCastle.Math;
+
 using NBitcoin.Crypto;
 using Nethereum.ABI.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 
 namespace Nethereum.Core.Signing.Crypto
 {
@@ -24,6 +29,8 @@ namespace Nethereum.Core.Signing.Crypto
 
     public static class EthECKey
     {
+        private static readonly SecureRandom SecureRandom = new SecureRandom();
+
         public static int CalculateRecId(this ECKey key, ECDSASignature signature, byte[] hash)
         {
             var recId = -1;
@@ -82,6 +89,23 @@ namespace Nethereum.Core.Signing.Crypto
         public static ECKey RecoverFromSignature(ECDSASignature signature, byte[] hash)
         {
             return ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature, hash, false);
+        }
+
+        public static ECKey GenerateKey()
+        {
+            //mixing bouncy implementation
+            var gen = new ECKeyPairGenerator();
+            
+            var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
+            gen.Init(keyGenParam);
+            var keyPair =  gen.GenerateKeyPair();
+            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArray();
+            return new ECKey(privateBytes, true);
+        }
+
+        public static byte[] GetPrivateKeyAsBytes(this ECKey key)
+        {
+            return key.PrivateKey.D.ToByteArray();
         }
 
         public static ECDSASignature SignAndCalculateV(this ECKey key, byte[] hash)

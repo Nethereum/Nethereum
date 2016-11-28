@@ -1,4 +1,5 @@
-﻿using Org.BouncyCastle.Security;
+﻿using Org.BouncyCastle.Crypto.Prng;
+using Org.BouncyCastle.Security;
 
 namespace Nethereum.KeyStore.Crypto
 {

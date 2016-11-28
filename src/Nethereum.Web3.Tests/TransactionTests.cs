@@ -161,5 +161,15 @@ namespace Nethereum.Web3.Tests
             Assert.Equal(key.GetPubKeyNoPrefix().ToHex(), publicKey);
             Assert.Equal(sendersAddress.ToLower(), key.GetPublicAddress());
         }
+
+        [Fact]
+        public void ShouldGenerateECKey()
+        {
+            var ecKey = EthECKey.GenerateKey();
+            var key = ecKey.GetPrivateKeyAsBytes();
+            var regeneratedKey = new ECKey(key, true);
+            Assert.Equal(key.ToHex(), regeneratedKey.GetPrivateKeyAsBytes().ToHex());
+            Assert.Equal(ecKey.GetPublicAddress(), regeneratedKey.GetPublicAddress());
+        }
     }
 }
