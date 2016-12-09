@@ -16,8 +16,10 @@ namespace Nethereum.KeyStore.Console.Sample
             //Reading an existing file
             var address = "12890d2cce102216644c59dae5baed380d84830c";
             var password = "password";
+            //UTC--2016-11-23T09-58-36Z--ca2137bc-e2a1-5c40-d60d-ab8cf5fb302c
 
-            var file = File.OpenText("UTC--2015-11-25T05-05-03.116905600Z--12890d2cce102216644c59dae5baed380d84830c");
+            var file = File.OpenText("UTC--2016-11-23T09-58-36Z--ca2137bc-e2a1-5c40-d60d-ab8cf5fb302c");
+           // var file = File.OpenText("UTC--2015-11-25T05-05-03.116905600Z--12890d2cce102216644c59dae5baed380d84830c");
             var json = file.ReadToEnd();
             
             //using the simple key store service
@@ -48,7 +50,7 @@ namespace Nethereum.KeyStore.Console.Sample
             System.Console.ReadLine();
 
 
-            //We can use EthECKey to generate a new ECKey pair, this is uses SecureRandom
+            //We can use EthECKey to generate a new ECKey pair, this is using SecureRandom
             var ecKey = EthECKey.GenerateKey();
             var privateKey = ecKey.GetPrivateKeyAsBytes();
             var genAddress = ecKey.GetPublicAddress();
@@ -61,7 +63,7 @@ namespace Nethereum.KeyStore.Console.Sample
             var pbkdf2Service = new KeyStorePbkdf2Service();
             var pkbdf2Result = pbkdf2Service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
 
-            //Both services can be configured with a new IRandomBytesGenerator for the IV and Salt
+            //Both services can be configured with a new IRandomBytesGenerator for the IV and Salt, currently uses SecureRandom for both.
             //also when encrypting we can pass custom KdfParameters
         }
     }

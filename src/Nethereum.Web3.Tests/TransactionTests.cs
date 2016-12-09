@@ -86,7 +86,7 @@ namespace Nethereum.Web3.Tests
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx.Key.GetPublicAddress());
 
             var tx3 = new Transaction(rlp.HexToByteArray());
-            Assert.Equal(tx.Data, tx3.Data);
+            Assert.Equal(tx.Data, tx3.Data ?? new byte[] { });
 
             Debug.WriteLine(tx.ToJsonHex());
 
@@ -161,6 +161,7 @@ namespace Nethereum.Web3.Tests
             Assert.Equal(key.GetPubKeyNoPrefix().ToHex(), publicKey);
             Assert.Equal(sendersAddress.ToLower(), key.GetPublicAddress());
         }
+
 
         [Fact]
         public void ShouldGenerateECKey()

@@ -29,7 +29,7 @@ namespace Nethereum.KeyStore
 
         protected override Pbkdf2Params GetDefaultParams()
         {
-            return new Pbkdf2Params() { Dklen = 32, Count = 65536, Prf = "hmac-sha256" };
+            return new Pbkdf2Params() { Dklen = 32, Count = 262145, Prf = "hmac-sha256" };
         }
 
         public override byte[] DecryptKeyStore(string password, KeyStore<Pbkdf2Params> keyStore)
