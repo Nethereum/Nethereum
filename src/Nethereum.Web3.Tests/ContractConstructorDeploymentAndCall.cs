@@ -36,12 +36,12 @@ namespace Nethereum.Web3.Tests
             var abi =
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
-            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var addressFrom = "0x398e41717cfe68eeef4938677676a63667f35c4e";
             var pass = "password";
 
             var web3 = new Web3(ClientFactory.GetClient());
-
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            var result = true;
+            result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
             Assert.True(result, "Account should be unlocked");
 
             //deploy the contract, including abi and a paramter of 7. 
@@ -49,12 +49,12 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(transactionHash);
 
-            result = await web3.Personal.LockAccount.SendRequestAsync(addressFrom);
+           // result = await web3.Personal.LockAccount.SendRequestAsync(addressFrom);
             Assert.True(result, "Account should be locked");
 
             result = await web3.Miner.Start.SendRequestAsync();
             Assert.True(result, "Mining should have started");
-            //the contract should be mining now
+            ////the contract should be mining now
 
             //get the contract address 
             TransactionReceipt receipt = null;
