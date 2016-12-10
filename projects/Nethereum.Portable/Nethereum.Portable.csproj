@@ -871,6 +871,10 @@
 				<Link>Web3\Contracts\Comparers\FilterLogBlockNumberTransactionIndexComparer.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\Core\SimpleRLPSigner.cs">
+				<Link>Web3\Core\SimpleRLPSigner.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\Core\Transaction.cs">
 				<Link>Web3\Core\Transaction.cs</Link>
 		</Compile>

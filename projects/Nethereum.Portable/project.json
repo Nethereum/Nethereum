@@ -1,6 +1,6 @@
 ﻿{
-  "version": "1.0.3",
-  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken",
+  "version": "1.0.4",
+  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, KeyStore, StardardToken",
   "authors": [
     "Juan Blanco"
   ],
@@ -13,7 +13,7 @@
       "Blockchain",
       "Crypto 2.0"
     ],
-    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, StardardToken",
+    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, KeyStore, StardardToken",
     "repository": {
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
