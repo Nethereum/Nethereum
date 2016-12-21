@@ -1,0 +1,12 @@
+miner.start()
+eth.blockNumber
+eth.mining
+eth
+eth.blockNubmer
+miner.stop()
+miner.start()
+eth
+miner.stop()
+miner.start()
+miner.stop()
+miner.start()
