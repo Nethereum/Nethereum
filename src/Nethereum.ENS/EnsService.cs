@@ -7,7 +7,7 @@ using Nethereum.Web3;
 
 namespace Nethereum.ENS
 {
-   public class EnsService
+   public partial class EnsService
    {
         private readonly Web3.Web3 web3;
 

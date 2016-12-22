@@ -7,7 +7,7 @@ using Nethereum.Web3;
 
 namespace Nethereum.ENS
 {
-   public class PublicResolverService
+   public partial class PublicResolverService
    {
         private readonly Web3.Web3 web3;
 
@@ -46,7 +46,6 @@ namespace Nethereum.ENS
         public Function GetFunctionSetAddr() {
             return contract.GetFunction("setAddr");
         }
-
 
         public Task<bool> SupportsInterfaceAsyncCall(byte[] interfaceID) {
             var function = GetFunctionSupportsInterface();

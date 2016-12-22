@@ -18,11 +18,17 @@ namespace Nethereum.ENS
                 var labels = name.Split('.');
                 for (var i = labels.Length - 1; i >= 0; i--)
                 {
-                    var byteInput = (node + kecckak.CalculateHash(labels[i])).HexToByteArray();
+                    var byteInput = (node + GetEnsLabelHash(labels[i])).HexToByteArray();
                     node = kecckak.CalculateHash(byteInput).ToHex();
                 }
             }
             return node.EnsureHexPrefix();
+        }
+
+        public string GetEnsLabelHash(string label)
+        {
+            var kecckak = new Sha3Keccack();
+            return kecckak.CalculateHash(label);
         }
     }
 }
