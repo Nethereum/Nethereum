@@ -4,6 +4,7 @@ using NBitcoin.Crypto;
 using Nethereum.ABI.Util;
 using Nethereum.ABI.Util.RLP;
 using Nethereum.Core.Signing.Crypto;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Nethereum.Core
 {

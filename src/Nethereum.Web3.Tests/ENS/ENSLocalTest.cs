@@ -58,10 +58,10 @@ namespace Nethereum.Web3.Tests
 
             //Now the owner of Eth is the FIFS
             var ownerOfEth = await ensService.OwnerAsyncCall(ethNode.HexToByteArray());
-
+            Assert.Equal(fifsAddress, ownerOfEth);
             /**** setup done **/
 
-            //registration a myname
+            //registration of "myname"
             
             //create a service for the registrar
             var fifsService = new FIFSRegistrarService(web3, fifsAddress);
