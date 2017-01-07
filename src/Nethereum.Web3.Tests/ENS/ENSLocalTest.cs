@@ -11,8 +11,8 @@ namespace Nethereum.Web3.Tests
         public async void ShouldCreateEnsRegistarResolverAndRegiterandResolveANewAddress()
         {
             // Our account
-            var addressFrom = "0x35986492f332f6e8b072c339eaae7dc360b73858";
-            // var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            //var addressFrom = "0x35986492f332f6e8b072c339eaae7dc360b73858";
+             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
 
             //The address we want to resolve when using "test.eth"
             var addressToResolve = "0x12890d2cce102216644c59dae5baed380d84830c";
@@ -24,8 +24,8 @@ namespace Nethereum.Web3.Tests
             var txService = new TransactionService(web3);
 
             //uncomment to use geth instead of test-rpc
-            //var pass = "password";
-            //await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(6000));
+            var pass = "password";
+            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(6000));
 
             //deploy ENS contract
             var ensAddress = await txService.DeployContractAndGetAddressAsync(() => EnsService.DeployContractAsync(web3, addressFrom, defaultGas));

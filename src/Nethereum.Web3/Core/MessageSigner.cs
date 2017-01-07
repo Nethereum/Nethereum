@@ -7,7 +7,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Core
 {
-    public class SimpleSigner
+    public class MessageSigner
     {
         public string HashAndSign(string plainMessage, string privateKey)
         {

@@ -13,90 +13,8 @@ using Xunit;
 
 namespace Nethereum.Web3.Tests
 {
-    public class GetSignerTests
-    {
-        [Fact]
-        public void ShouldRecover()
-        {
-            var signature = "0x0976a177078198a261faf206287b8bb93ebb233347ab09a57c8691733f5772f67f398084b30fc6379ffee2cc72d510fd0f8a7ac2ee0162b95dc5d61146b40ffa1c";
-            var text = "test";
-            var hasher = new Sha3Keccack();
-            var hash = hasher.CalculateHash(text);
-            var signer = new GethSigner();
-            var account = signer.EcRecover(hash.HexToByteArray(), signature);
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-
-            signature = signer.Sign(hash.HexToByteArray(),
-               "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
-
-            account = signer.EcRecover(hash.HexToByteArray(), signature);
-
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-        }
-
-        [Fact]
-        public void ShouldRecoverUsingShortcutHashes()
-        {
-            var signature = "0x0976a177078198a261faf206287b8bb93ebb233347ab09a57c8691733f5772f67f398084b30fc6379ffee2cc72d510fd0f8a7ac2ee0162b95dc5d61146b40ffa1c";
-            var text = "test";
-            var signer = new GethSigner();
-            var account = signer.HashAndEcRecover(text, signature);
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-
-            signature = signer.HashAndSign(text,
-               "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
-
-            account = signer.HashAndEcRecover(text, signature);
-
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-        }
-    }
-
-    public class SimpleSignerTests
-    {
-        [Fact]
-        public void ShouldRecoverSimple()
-        {
-            var signer = new SimpleSigner();
-            var account = signer.EcRecover("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".HexToByteArray(), "0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e996cdc8cae7690408b4e800f60ddac49d2ad34180e68f1da0aaf001");
-            Assert.Equal("0x8a3106a3e50576d4b6794a0e74d3bb5f8c9acaab", account.EnsureHexPrefix());
-        }
-
-        [Fact]
-        public void ShouldRecoverGethPrefix()
-        {
-            //signed message using geth 1.5^
-            var signature = "0x0976a177078198a261faf206287b8bb93ebb233347ab09a57c8691733f5772f67f398084b30fc6379ffee2cc72d510fd0f8a7ac2ee0162b95dc5d61146b40ffa1c";
-            var text = "test";
-            var hasher = new Sha3Keccack();
-            var hash = hasher.CalculateHash(text);
-            var byteList = new List<byte>();
-
-            var bytePrefix = "0x19".HexToByteArray();
-            var textBytePrefix = Encoding.UTF8.GetBytes("Ethereum Signed Message:\n" + hash.HexToByteArray().Length);
-            var bytesMessage = hash.HexToByteArray();
-
-            byteList.AddRange(bytePrefix);
-            byteList.AddRange(textBytePrefix);
-            byteList.AddRange(bytesMessage);
-            var hashPrefix2 = hasher.CalculateHash(byteList.ToArray()).ToHex();
-
-            var signer = new SimpleSigner();
-           
-            var account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
-
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-
-            signature =  signer.Sign(hashPrefix2.HexToByteArray(),
-                "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
-
-            account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
-
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
-        }
-    }
-
-    public class SimpleRLPSignerTests
+   
+    public class RLPSignerTests
     {
         private const int NumberOfElementsInTrasaction = 6;
 
@@ -107,11 +25,11 @@ namespace Nethereum.Web3.Tests
             var rlp =
                 "0xf87c80018261a894095e7baea6a6c7c4c2dfeb977efac326af552d870a9d00000000000000000000000000010000000000000000000000000000001ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
 
-            var tx = new SimpleRLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
+            var tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
             Assert.Equal("67719a47cf3e3fe77b89c994d85395ad0f899d86", tx.Key.GetPublicAddress());
             rlp =
                 "0xf85f800182520894095e7baea6a6c7c4c2dfeb977efac326af552d870a801ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
-            tx = new SimpleRLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
+            tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
             Assert.Equal("963f4a0d8a11b758de8d5b99ab4ac898d6438ea6", tx.Key.GetPublicAddress());
         }
 
@@ -141,7 +59,7 @@ namespace Nethereum.Web3.Tests
 
 
             //Create a transaction from scratch
-            var tx = new SimpleRLPSigner(new byte[][] {nonce, gasPrice, gasLimit, to, amount, data});
+            var tx = new RLPSigner(new byte[][] {nonce, gasPrice, gasLimit, to, amount, data});
             tx.Sign(new ECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
@@ -154,7 +72,7 @@ namespace Nethereum.Web3.Tests
 
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx.Key.GetPublicAddress());
 
-            var tx3 = new SimpleRLPSigner(rlp.HexToByteArray(), 6);
+            var tx3 = new RLPSigner(rlp.HexToByteArray(), 6);
             Assert.Equal(tx.Data[5], tx3.Data[5] ?? new byte[] {});
 
 
@@ -181,11 +99,11 @@ namespace Nethereum.Web3.Tests
         {
             var account = "12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var signedValue = new SimpleRLPSigner(new byte[][] { "hello".ToBytesForRLPEncoding() });
+            var signedValue = new RLPSigner(new byte[][] { "hello".ToBytesForRLPEncoding() });
             signedValue.Sign(new ECKey(privateKey.HexToByteArray(), true));
             var encoded = signedValue.GetRLPEncoded();
             var hexEncoded = encoded.ToHex();
-            var signedRecovery = new SimpleRLPSigner(encoded, 1);
+            var signedRecovery = new RLPSigner(encoded, 1);
             var value = signedRecovery.Data[0].ToStringFromRLPDecoded();
             Assert.Equal("hello", value);
             var addressSender = signedRecovery.Key.GetPublicAddress();

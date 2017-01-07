@@ -14,11 +14,11 @@ namespace Nethereum.Core
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private static readonly byte[] ZERO_BYTE_ARRAY = { 0 };
 
-        private SimpleRLPSigner simpleRlpSigner;
+        private RLPSigner simpleRlpSigner;
 
         public Transaction(byte[] rawData)
         {
-            simpleRlpSigner = new SimpleRLPSigner(rawData, 6);
+            simpleRlpSigner = new RLPSigner(rawData, 6);
 
         }
 
@@ -34,14 +34,14 @@ namespace Nethereum.Core
         public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data)
         {
-            simpleRlpSigner = new SimpleRLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
+            simpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
 
         }
 
         public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] r, byte[] s, byte v)
         {
-            simpleRlpSigner = new SimpleRLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data), r, s, v);
+            simpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data), r, s, v);
         }
 
         public Transaction(string to, BigInteger amount, BigInteger nonce)

@@ -8,7 +8,7 @@ using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Nethereum.Core
 {
-    public class SimpleRLPSigner
+    public class RLPSigner
     {
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private byte[][] data;
@@ -19,21 +19,21 @@ namespace Nethereum.Core
         private bool decoded;
         private int numberOfElements;
 
-        public SimpleRLPSigner(byte[] rawData, int numberOfElements)
+        public RLPSigner(byte[] rawData, int numberOfElements)
         {
             rlpEncoded = rawData;
             decoded = false;
             this.numberOfElements = numberOfElements;
         }
 
-        public SimpleRLPSigner(byte[][] data)
+        public RLPSigner(byte[][] data)
         {
             this.numberOfElements = data.Length;
             this.data = data;
             decoded = true;
         }
 
-        public SimpleRLPSigner(byte[][] data, byte[] r, byte[] s, byte v)
+        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v)
         {
             this.numberOfElements = data.Length;
             this.data = data;

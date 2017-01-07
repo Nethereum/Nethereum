@@ -5,9 +5,8 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Core
 {
-    public class GethSigner:SimpleSigner
+    public class EthereumMessageSigner:MessageSigner
     {
-   
         public override string HashAndSign(byte[] plainMessage, ECKey key)
         {
             return base.Sign(HashAndHashPrefixedMessage(plainMessage), key);
