@@ -36,7 +36,7 @@ namespace Nethereum.Web3.Tests
             var abi =
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
-            var addressFrom = "0x398e41717cfe68eeef4938677676a63667f35c4e";
+            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
             var web3 = new Web3(ClientFactory.GetClient());

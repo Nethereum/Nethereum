@@ -21,7 +21,7 @@ namespace Nethereum.Web3.Tests.Issues
 
             var w3 = new Web3();
 
-           // var accUnlocked = await w3.Personal.UnlockAccount.SendRequestAsync(account, pass, new HexBigInteger(1000));
+            //var accUnlocked = await w3.Personal.UnlockAccount.SendRequestAsync(account, pass, new HexBigInteger(1000));
             //issue ran out of gas (putting 900 * 1000 instead of 200 * 1000 fixes this)
             
             var contractHash = await w3.Eth.DeployContract.SignAndSendRequestAsync(pass, abi, byteCode, account, new HexBigInteger(900 * 1000), "My product");

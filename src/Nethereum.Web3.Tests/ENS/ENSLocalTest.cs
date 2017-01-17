@@ -1,3 +1,4 @@
+using System.Linq;
 using Nethereum.ENS;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -10,23 +11,21 @@ namespace Nethereum.Web3.Tests
         [Fact]
         public async void ShouldCreateEnsRegistarResolverAndRegiterandResolveANewAddress()
         {
-            // Our account
-            //var addressFrom = "0x35986492f332f6e8b072c339eaae7dc360b73858";
-             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
-
             //The address we want to resolve when using "test.eth"
             var addressToResolve = "0x12890d2cce102216644c59dae5baed380d84830c";
-
            
             var defaultGas = new HexBigInteger(900000);
 
             var web3 = new Web3(ClientFactory.GetClient());
             var txService = new TransactionService(web3);
 
+            // var addressFrom = (await web3.Eth.Accounts.SendRequestAsync()).First();
             //uncomment to use geth instead of test-rpc
+            // Our account
+            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
-            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(6000));
-
+            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(60000));
+            await web3.Miner.Start.SendRequestAsync();
             //deploy ENS contract
             var ensAddress = await txService.DeployContractAndGetAddressAsync(() => EnsService.DeployContractAsync(web3, addressFrom, defaultGas));
             
@@ -91,6 +90,8 @@ namespace Nethereum.Web3.Tests
             //and get the address from the resolver
             var theAddress = await resolverService.AddrAsyncCall(fullNameNode.HexToByteArray());
             Assert.Equal(addressToResolve, theAddress);
+
+            await web3.Miner.Stop.SendRequestAsync();
 
         }
     }

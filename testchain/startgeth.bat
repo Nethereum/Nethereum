@@ -4,4 +4,4 @@ RD /S /Q %~dp0\devChain\geth\nodes
 del %~dp0\devchain\geth\nodekey
 
 geth  --datadir=devChain init genesis_dev.json
-geth  --rpc --networkid=39318 --cache=2048 --maxpeers=0 --datadir=devChain  --rpccorsdomain "*" --rpcapi "eth,web3,personal,net,miner,admin,debug" --ipcapi "eth,web3,personal,net,miner,admin" --verbosity 3 console  
+geth  --rpc --networkid=39318 --cache=2048 --maxpeers=0 --datadir=devChain  --rpccorsdomain "*" --rpcapi "eth,web3,personal,net,miner,admin,debug" --ipcapi "eth,web3,personal,net,miner,admin" --verbosity 0 console  

@@ -7,10 +7,11 @@ using Xunit;
 namespace Nethereum.Web3.Tests
 {
   
+    //Note: Dao tests are not valid after the fork
     public class DaoTest
     {
 
-        [Fact]
+        //[Fact]
         public async void GetBlock()
         {
             var web3 = new Web3(ClientFactory.GetClient());
@@ -28,7 +29,7 @@ namespace Nethereum.Web3.Tests
         //0x2e3b02a91f1115812b518c35149bbb54b788ea1c25c45abb7d477556ef20ac96
         //Note: These tests are pointing to live.   
 
-        [Fact]
+        //[Fact]
         public void CheckTotalSupply()
         {
             var abi =
@@ -41,7 +42,7 @@ namespace Nethereum.Web3.Tests
             Assert.True(result > 0);
         }
 
-        [Fact]
+        //[Fact]
         public void CheckProposal()
         {
             var abi =
