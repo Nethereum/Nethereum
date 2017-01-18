@@ -9,5 +9,13 @@ namespace Nethereum.Quorum.Tests
         {
             
         }
+
+        //Canonical
+        //IsBlockMaker
+        //IsVoter
+        //MakeBlock
+        //PauseBlockMaker
+        //ResumeBlockMaker
+        //Vote
     }
 }

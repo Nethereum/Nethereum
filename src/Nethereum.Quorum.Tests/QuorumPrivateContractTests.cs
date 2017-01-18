@@ -12,7 +12,7 @@ namespace Nethereum.Quorum.Tests
         [Fact]
         public async void ShouldBeAbleToConnectTo7NodesPrivate()
         {
-            var ipAddress = "http://192.168.2.200";
+            var ipAddress = DefaultSettings.QuorumIPAddress;
             var node1Port = "22000";
             var node2Port = "22001";
             var node7Port = "22006";
@@ -68,7 +68,5 @@ namespace Nethereum.Quorum.Tests
             var functionGet = contract.GetFunction("get");
             return await functionGet.CallAsync<int>();
         }
-
-        
     }
 }
