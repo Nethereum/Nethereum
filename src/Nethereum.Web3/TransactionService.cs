@@ -2,8 +2,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3.Contracts;
 
-namespace Nethereum.Web3.Tests
+namespace Nethereum.Web3
 {
     public class TransactionService
     {
@@ -23,7 +24,8 @@ namespace Nethereum.Web3.Tests
             var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
             while (receipt == null)
             {
-                Thread.Sleep(_retryMiliseconds);
+                
+                await Task.Delay(_retryMiliseconds);
                 tokenSource?.Token.ThrowIfCancellationRequested();
                 receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
             }

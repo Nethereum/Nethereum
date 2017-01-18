@@ -1,0 +1,33 @@
+﻿{
+  "version": "0.0.1",
+  "description": "Nethereum.Quorum.RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
+  "authors": [ "Juan Blanco" ],
+  "copyright": "Juan Blanco",
+  "title": "Nethereum.RPC.Quorum",
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Nethereum/Nethereum"
+    },
+    "summary": "Nethereum.Quorum.RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
+    "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+    "projectUrl": "http://www.nethereum.com",
+    "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
+    "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
+  },
+  "frameworks": {
+    "netstandard1.1": {
+      "dependencies": {
+        "NETStandard.Library": "1.6.0"
+      },
+      "imports": [ "dotnet52" ]
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile111": {},
+    "net451": {}
+  },
+  "dependencies": {
+    "Nethereum.RPC": "1.0.4",
+    "Nethereum.Web3": "1.0.4"
+  }
+}
+
