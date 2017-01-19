@@ -3,17 +3,10 @@ using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    public class PrivateTransactionInput: TransactionInput
+    public class PrivateTransactionInput : TransactionInput
     {
-        [JsonProperty(PropertyName = "privateFrom")]
-        public string PrivateFrom { get; set; }
-
-        [JsonProperty(PropertyName = "privateFor")]
-        public string[] PrivateFor { get; set; }
-
         public PrivateTransactionInput()
         {
-            
         }
 
         public PrivateTransactionInput(TransactionInput transaction, string[] privateFor, string privateFrom)
@@ -28,5 +21,11 @@ namespace Nethereum.Quorum.RPC.DTOs
             Data = transaction.Data;
             Value = transaction.Value;
         }
+
+        [JsonProperty(PropertyName = "privateFrom")]
+        public string PrivateFrom { get; set; }
+
+        [JsonProperty(PropertyName = "privateFor")]
+        public string[] PrivateFor { get; set; }
     }
 }

@@ -67,7 +67,7 @@ namespace Nethereum.Web3
             return addressUtil.ConvertToValid20ByteAddress(address);
         }
 
-        private void InitialiseInnerServices()
+        protected virtual void InitialiseInnerServices()
         {
             Eth = new Eth(Client);
             Shh = new Shh(Client);

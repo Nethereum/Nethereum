@@ -32,7 +32,7 @@ namespace Nethereum.Quorum.Tests
 
             //set the private for
             var privateFor = new List<string>(new[] { "ROAZBWtSacxXQrOe3FGAqJDyJjFePR5ce4TSIzmJ0Bc=" });
-            web3Node1.SetPrivateRequestsParamaters(privateFor);
+            web3Node1.SetPrivateRequestParameters(privateFor);
             //send transaction
             var txnHash = await transactionService.SendRequestAsync(() => functionSet.SendTransactionAsync(account, 4));
 

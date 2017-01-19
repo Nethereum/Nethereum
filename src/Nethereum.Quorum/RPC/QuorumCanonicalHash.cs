@@ -12,15 +12,13 @@ namespace Nethereum.Quorum.RPC
         {
         }
 
-        public Task<string> SendRequestAsync(HexBigInteger blockNumber, object id = null)
+        public Task<string> SendRequestAsync(long blockNumber, object id = null)
         {
-            if (blockNumber == null) throw new ArgumentNullException(nameof(blockNumber));
             return base.SendRequestAsync(id, blockNumber);
         }
 
-        public RpcRequest BuildRequest(HexBigInteger blockNumber, object id = null)
+        public RpcRequest BuildRequest(long blockNumber, object id = null)
         {
-            if (blockNumber == null) throw new ArgumentNullException(nameof(blockNumber));
             return base.BuildRequest(id, blockNumber);
         }
     }

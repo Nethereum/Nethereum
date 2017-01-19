@@ -18,7 +18,8 @@ namespace Nethereum.Quorum.RPC.Services
             MakeBlock = new QuorumMakeBlock(client);
             PauseBlockMaker = new QuorumPauseBlockMaker(client);
             ResumeBlockMaker = new QuorumResumeBlockMaker(client);
-            Vote = new QuorumVote(client);   
+            Vote = new QuorumVote(client);  
+            NodeInfo = new QuorumNodeInfo(client);
         }
 
         public QuorumCanonicalHash CanonicalHash { get; private set; }
@@ -28,5 +29,6 @@ namespace Nethereum.Quorum.RPC.Services
         public QuorumPauseBlockMaker PauseBlockMaker { get; private set; }
         public QuorumResumeBlockMaker ResumeBlockMaker { get; private set; }
         public QuorumVote Vote { get; private set; }
+        public QuorumNodeInfo NodeInfo { get; private set; }
 }
 }

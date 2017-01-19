@@ -84,6 +84,12 @@ namespace Nethereum.RPC.Eth.Blocks
         {
         }
 
+        public Task<BlockWithTransactions> SendRequestAsync(BlockParameter blockParameter, object id = null)
+        {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            return base.SendRequestAsync(id, blockParameter, true);
+        }
+
         public Task<BlockWithTransactions> SendRequestAsync(HexBigInteger number, object id = null)
         {
             if (number == null) throw new ArgumentNullException(nameof(number));
