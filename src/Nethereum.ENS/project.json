@@ -16,7 +16,7 @@
     "summary": "Nethereum.ENS Ethereum Name service library"
   },
   "dependencies": {
-    "Nethereum.Web3": "1.0.4",
+    "Nethereum.Web3": "1.0.5",
     "NETStandard.Library": "1.6.0"
   },
 

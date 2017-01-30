@@ -815,6 +815,10 @@
 				<Link>Web3\Shh.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\TransactionService.cs">
+				<Link>Web3\TransactionService.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\TransactionSigning.cs">
 				<Link>Web3\TransactionSigning.cs</Link>
 		</Compile>
@@ -833,6 +837,10 @@
 		
         <Compile Include="..\..\src\Nethereum.Web3\Contracts\Contract.cs">
 				<Link>Web3\Contracts\Contract.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Contracts\ContractDeploymentException.cs">
+				<Link>Web3\Contracts\ContractDeploymentException.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Web3\Contracts\DeployContract.cs">
@@ -871,8 +879,16 @@
 				<Link>Web3\Contracts\Comparers\FilterLogBlockNumberTransactionIndexComparer.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Core\SimpleRLPSigner.cs">
-				<Link>Web3\Core\SimpleRLPSigner.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Web3\Core\EthereumMessageSigner.cs">
+				<Link>Web3\Core\EthereumMessageSigner.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Core\MessageSigner.cs">
+				<Link>Web3\Core\MessageSigner.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Core\RLPSigner.cs">
+				<Link>Web3\Core\RLPSigner.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Web3\Core\Transaction.cs">
@@ -1537,6 +1553,90 @@
 		
         <Compile Include="..\..\src\Nethereum.KeyStore\Model\ScryptParams.cs">
 				<Link>KeyStore\Model\ScryptParams.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\Web3Quorum.cs">
+				<Link>Quorum\Web3Quorum.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\ApiMethods.cs">
+				<Link>Quorum\RPC\ApiMethods.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumCanonicalHash.cs">
+				<Link>Quorum\RPC\QuorumCanonicalHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumIsBlockMaker.cs">
+				<Link>Quorum\RPC\QuorumIsBlockMaker.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumIsVoter.cs">
+				<Link>Quorum\RPC\QuorumIsVoter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumMakeBlock.cs">
+				<Link>Quorum\RPC\QuorumMakeBlock.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumNodeInfo.cs">
+				<Link>Quorum\RPC\QuorumNodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumPauseBlockMaker.cs">
+				<Link>Quorum\RPC\QuorumPauseBlockMaker.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumResumeBlockMaker.cs">
+				<Link>Quorum\RPC\QuorumResumeBlockMaker.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumVote.cs">
+				<Link>Quorum\RPC\QuorumVote.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\BlockMakeStratregy.cs">
+				<Link>Quorum\RPC\DTOs\BlockMakeStratregy.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\NodeInfo.cs">
+				<Link>Quorum\RPC\DTOs\NodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\PrivateTransactionInput.cs">
+				<Link>Quorum\RPC\DTOs\PrivateTransactionInput.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\Interceptors\PrivateForInterceptor.cs">
+				<Link>Quorum\RPC\Interceptors\PrivateForInterceptor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\Services\QuorumChainService.cs">
+				<Link>Quorum\RPC\Services\QuorumChainService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\DeedService.cs">
+				<Link>ENS\DeedService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\EnsService.cs">
+				<Link>ENS\EnsService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\EnsUtil.cs">
+				<Link>ENS\EnsUtil.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\FIFSRegistrar.cs">
+				<Link>ENS\FIFSRegistrar.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\PublicResolver.cs">
+				<Link>ENS\PublicResolver.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ENS\RegistrarService.cs">
+				<Link>ENS\RegistrarService.cs</Link>
 		</Compile>
 		
         </ItemGroup>

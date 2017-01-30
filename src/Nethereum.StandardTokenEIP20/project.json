@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -16,7 +16,7 @@
     "summary": "Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts"
   },
   "dependencies": {
-    "Nethereum.Web3": "1.0.4",
+    "Nethereum.Web3": "1.0.5",
     "NETStandard.Library": "1.6.0"
   },
 

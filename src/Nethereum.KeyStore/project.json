@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Keystore generation, encryption and decryption for Ethereum key files using the Web3 Secret Storage definition, https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -16,7 +16,7 @@
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
   "dependencies": {
-    "Nethereum.Hex": "1.0.4",
+    "Nethereum.Hex": "1.0.5",
     "Portable.BouncyCastle": "1.8.1",
     "NETStandard.Library": "1.6.0"
   },

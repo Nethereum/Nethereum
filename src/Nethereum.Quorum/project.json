@@ -26,8 +26,8 @@
     "net451": {}
   },
   "dependencies": {
-    "Nethereum.RPC": "1.0.4",
-    "Nethereum.Web3": "1.0.4"
+    "Nethereum.RPC": "1.0.5",
+    "Nethereum.Web3": "1.0.5"
   }
 }
 
