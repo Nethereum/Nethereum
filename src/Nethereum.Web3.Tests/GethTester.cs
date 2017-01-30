@@ -21,7 +21,7 @@ namespace Nethereum.Web3.Tests
 
         public async Task<bool> UnlockAccount()
         {
-            return await Web3.Personal.UnlockAccount.SendRequestAsync(Account, Password, new HexBigInteger(600));
+            return await Web3.Personal.UnlockAccount.SendRequestAsync(Account, Password, 600);
         }
 
         public async Task<bool> StartMining()

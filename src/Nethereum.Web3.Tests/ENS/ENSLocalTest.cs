@@ -24,7 +24,7 @@ namespace Nethereum.Web3.Tests
             // Our account
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
-            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(60000));
+            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 60000);
             await web3.Miner.Start.SendRequestAsync();
             //deploy ENS contract
             var ensAddress = await txService.DeployContractAndGetAddressAsync(() => EnsService.DeployContractAsync(web3, addressFrom, defaultGas));

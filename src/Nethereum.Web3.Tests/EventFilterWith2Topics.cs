@@ -57,7 +57,7 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3(ClientFactory.GetClient());
 
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600000));
+            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600000);
             Assert.True(result, "Account should be unlocked");
 
            

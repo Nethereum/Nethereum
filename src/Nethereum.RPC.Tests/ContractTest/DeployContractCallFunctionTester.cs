@@ -41,7 +41,7 @@ namespace Nethereum.RPC.Tests.ContractTest
             var minerStartResult = await minerStart.SendRequestAsync();
 
             var personalUnlock = new PersonalUnlockAccount(client);
-            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, Settings.GetDefaultAccountPassword(), new HexBigInteger(90));
+            var unlockResult = await personalUnlock.SendRequestAsync(transactionInput.From, Settings.GetDefaultAccountPassword(), 90);
 
             var transactionHash = await ethSendTransation.SendRequestAsync(transactionInput);
 

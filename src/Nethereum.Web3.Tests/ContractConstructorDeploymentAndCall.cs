@@ -41,7 +41,7 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3(ClientFactory.GetClient());
             var result = true;
-            result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600);
             Assert.True(result, "Account should be unlocked");
 
             //deploy the contract, including abi and a paramter of 7. 

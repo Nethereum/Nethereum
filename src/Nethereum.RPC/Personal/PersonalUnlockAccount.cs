@@ -26,28 +26,43 @@ namespace Nethereum.RPC.Personal
         {
         }
 
-        public async Task<bool> SendRequestAsync(string address, string passPhrase, HexBigInteger durationInSeconds,
+        /// <summary>
+        /// This is compatible with newer versions of Geth
+        /// </summary>
+        public async Task<bool> SendRequestAsync(string address, string passPhrase, int? durationInSeconds,
             object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
-            if (durationInSeconds == null) throw new ArgumentNullException(nameof(durationInSeconds));
+
+            
+            return await base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// This is compatible with older versions of Geth and Parity
+        /// </summary>
+        public async Task<bool> SendRequestAsync(string address, string passPhrase, HexBigInteger durationInSeconds,
+           object id = null)
+        {
+            if (address == null) throw new ArgumentNullException(nameof(address));
+            if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
+
             return await base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds).ConfigureAwait(false);
         }
 
         public async Task<bool> SendRequestAsync(EthCoinBase coinbaseRequest, string passPhrase,
-            HexBigInteger durationInSeconds,
             object id = null)
         {
             if (coinbaseRequest == null) throw new ArgumentNullException(nameof(coinbaseRequest));
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
             return
                 await
-                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase, durationInSeconds)
+                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase)
                         .ConfigureAwait(false);
         }
 
-        public RpcRequest BuildRequest(string address, string passPhrase, HexBigInteger durationInSeconds,
+        public RpcRequest BuildRequest(string address, string passPhrase, int? durationInSeconds,
             object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));

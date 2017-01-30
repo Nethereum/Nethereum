@@ -14,6 +14,16 @@ namespace Nethereum.RPC.Tests.Testers
             Configuration = builder.Build();
         }
 
+        public static string ParitySettings = "parityRopstenSettings";
+        public static string GethSettings = "testSettings";
+
+        public string CurrentSettings = TestSettings.GethSettings;
+
+        public bool IsParity()
+        {
+            return CurrentSettings == ParitySettings;
+        }
+
         public IConfigurationRoot Configuration { get; set; }
 
         public string GetDefaultAccount()
@@ -43,8 +53,7 @@ namespace Nethereum.RPC.Tests.Testers
 
         private string GetAppSettingsValue(string key)
         {
-            var settingsKey = "testSettings";
-            return GetSectionSettingsValue(key, settingsKey);
+            return GetSectionSettingsValue(key, CurrentSettings);
         }
 
         private string GetLiveSettingsValue(string key)

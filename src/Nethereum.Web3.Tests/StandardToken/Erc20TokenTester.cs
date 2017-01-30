@@ -30,7 +30,7 @@ namespace Nethereum.Web3.Tests.StandardToken
 
                 var pass = "password";
                 var result =
-                    await web3.Personal.UnlockAccount.SendRequestAsync(addressOwner, pass, new HexBigInteger(600));
+                    await web3.Personal.UnlockAccount.SendRequestAsync(addressOwner, pass, 600);
                 Assert.True(result, "Account should be unlocked");
                 var newAddress = await web3.Personal.NewAccount.SendRequestAsync(pass);
 

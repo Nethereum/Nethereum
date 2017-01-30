@@ -1,4 +1,5 @@
 using System;
+using System.Net.Configuration;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
