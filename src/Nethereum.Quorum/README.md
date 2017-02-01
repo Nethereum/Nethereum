@@ -12,7 +12,7 @@ We should be able to answer there any simple queries, general comments or reques
 
 ## Quick installation
 
-Here is a list of all the nuget packages. Nethereum.Portable combines all the Nethereum packages and Nethereum.Quorum is the single Quorum adapter.
+Here is a list of all the nuget packages. Nethereum.Portable combines all the Nethereum packages including Quorum and Nethereum.Quorum is the single Quorum library.
 
 | Package       | Nuget         | 
 | ------------- |:-------------:|
@@ -44,7 +44,7 @@ For a full example of usage using the [7nodes sample of Quorum](https://github.c
 
 ### Quorum RPC 
 
-Specific Quorum RPC methods can be accessed using web3.Quorum to retrieve the CanonicalHash, BlockMaker, Voter, MakeBlock.. 
+The Quorum RPC methods can be accessed using web3.Quorum to retrieve the CanonicalHash, BlockMaker, Voter, MakeBlock.. 
 Here are some examples from the Unit tests using the [7nodes sample of Quorum](https://github.com/jpmorganchase/quorum-examples/tree/master/examples/7nodes)
 
 ```csharp
