@@ -35,7 +35,7 @@ If you have issues installing the packages make sure you have a reference to Sys
 PM > Install-Package Nethereum.Web3 -Pre
 ```
 
-| Package       | Nuget         _|Project Source |  Description
+|       | Nuget_Package |Project Source |  Description
 | ------------- |--------------------------|-----------|----------|
 | Nethereum.Portable    | [![NuGet version](https://badge.fury.io/nu/nethereum.portable.svg)](https://badge.fury.io/nu/nethereum.portable)| N/A| Portable class library combining all the different libraries in one package |
 | Nethereum.Web3    | [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)| [Nethereum.Web3](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Web3)| Ethereum Web3 Class Library simplifying the interaction via RPC includes contract interaction, deployment, transaction, encoding / decoding and event filters | 
