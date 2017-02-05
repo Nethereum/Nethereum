@@ -20,7 +20,7 @@ namespace Nethereum.Tutorials
           var byteCode = "0x606060405260405160208060ae833981016040528080519060200190919050505b806000600050819055505b5060768060386000396000f360606040526000357c0100000000000000000000000000000000000000000000000000000000900480631df4f144146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600060005054820290506071565b91905056";
           var multiplier = 7;
           var web3 = new Web3.Web3();
-          var unlockResult = await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(60));
+          var unlockResult = await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 60);
           Assert.True(unlockResult);
 
           var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);

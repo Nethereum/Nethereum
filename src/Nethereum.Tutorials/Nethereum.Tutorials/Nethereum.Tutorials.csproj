@@ -37,32 +37,32 @@
       <HintPath>..\packages\Portable.BouncyCastle.1.8.1\lib\net45\crypto.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EdjCase.JsonRpc.Client, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EdjCase.JsonRpc.Client.1.0.5\lib\portable45-net45+win8+wpa81\EdjCase.JsonRpc.Client.dll</HintPath>
+    <Reference Include="EdjCase.JsonRpc.Client, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EdjCase.JsonRpc.Client.1.1.0\lib\portable45-net45+win8+wpa81\EdjCase.JsonRpc.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EdjCase.JsonRpc.Core, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\EdjCase.JsonRpc.Core.1.0.4\lib\portable45-net45+win8+wpa81\EdjCase.JsonRpc.Core.dll</HintPath>
+    <Reference Include="EdjCase.JsonRpc.Core, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\EdjCase.JsonRpc.Core.1.1.0\lib\portable45-net45+win8+wpa81\EdjCase.JsonRpc.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.ABI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.ABI.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.ABI.dll</HintPath>
+    <Reference Include="Nethereum.ABI, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nethereum.ABI.1.0.6\lib\portable45-net45+win8+wpa81\Nethereum.ABI.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.Hex, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Hex.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.Hex.dll</HintPath>
+    <Reference Include="Nethereum.Hex, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nethereum.Hex.1.0.6\lib\portable45-net45+win8+wpa81\Nethereum.Hex.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.JsonRpc.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.JsonRpc.Client.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.JsonRpc.Client.dll</HintPath>
+    <Reference Include="Nethereum.JsonRpc.Client, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nethereum.JsonRpc.Client.1.0.6\lib\portable45-net45+win8+wpa81\Nethereum.JsonRpc.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.RPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.RPC.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.RPC.dll</HintPath>
+    <Reference Include="Nethereum.RPC, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nethereum.RPC.1.0.6\lib\portable45-net45+win8+wpa81\Nethereum.RPC.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nethereum.Web3, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Web3.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.Web3.dll</HintPath>
+    <Reference Include="Nethereum.Web3, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nethereum.Web3.1.0.6\lib\portable45-net45+win8+wpa81\Nethereum.Web3.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">

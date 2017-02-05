@@ -1,5 +1,5 @@
 ﻿{
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Nethereum.ENS Ethereum Name service library",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -16,7 +16,7 @@
     "summary": "Nethereum.ENS Ethereum Name service library"
   },
   "dependencies": {
-    "Nethereum.Web3": "1.0.5",
+    "Nethereum.Web3": "1.0.6",
     "NETStandard.Library": "1.6.0"
   },
 

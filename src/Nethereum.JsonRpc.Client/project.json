@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "JsonRpc.Client wrapper of Edjcase.JsonRpc.Client specific to Nethereum and additions to provide a generic inteface which can be switched with IPC, request and response handlers",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -18,7 +18,7 @@
   "dependencies": {
     "Newtonsoft.Json": "9.0.1",
     "NETStandard.Library": "1.6.0",
-    "EdjCase.JsonRpc.Client": "1.0.5"
+    "EdjCase.JsonRpc.Client": "1.0.6"
   },
   "frameworks": {
     "netstandard1.1": {

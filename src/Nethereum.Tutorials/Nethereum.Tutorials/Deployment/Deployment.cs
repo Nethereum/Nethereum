@@ -24,7 +24,7 @@ namespace Nethereum.Tutorials
 
             var web3 = new Web3.Web3();
             var unlockAccountResult =
-                await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
+                await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 120);
             Assert.True(unlockAccountResult);
 
             var transactionHash =

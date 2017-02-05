@@ -1,6 +1,6 @@
 ﻿{
-  "version": "0.0.1",
-  "description": "Nethereum.Quorum.RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
+  "version": "0.0.2",
+  "description": "Nethereum.Quorum. RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
   "title": "Nethereum.RPC.Quorum",
@@ -26,8 +26,8 @@
     "net451": {}
   },
   "dependencies": {
-    "Nethereum.RPC": "1.0.5",
-    "Nethereum.Web3": "1.0.5"
+    "Nethereum.RPC": "1.0.6",
+    "Nethereum.Web3": "1.0.6"
   }
 }
 
