@@ -33,7 +33,7 @@ namespace Nethereum.Web3.Tests.Issues
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var addChargeFunction = contract.GetFunction("addCharge");
 
-            await gethTester.UnlockAccount();
+            //await gethTester.UnlockAccount();
             await gethTester.StartMining();
 
             var tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, 20);

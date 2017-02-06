@@ -88,6 +88,7 @@ namespace Nethereum.JsonRpc.IpcClient
             return InnerSendRequestAsync(method, route, paramList);
         }
 
+     
         private Task<RpcResponse> InnerSendRequestAsync(string method, string route = null, params object[] paramList)
         {
             if (string.IsNullOrWhiteSpace(method))

@@ -14,7 +14,7 @@ namespace Nethereum.Web3.Interceptors
     {
         private readonly string account;
         private readonly string privateKey;
-        private readonly TransactionSigning signer;
+        private readonly TransactionSigner signer;
         private readonly Web3 web3;
 
 
@@ -23,7 +23,7 @@ namespace Nethereum.Web3.Interceptors
             this.account = account;
             this.privateKey = privateKey;
             this.web3 = web3;
-            signer = new TransactionSigning();
+            signer = new TransactionSigner();
         }
 
         public RpcResponse BuildResponse(object results, string route = null)

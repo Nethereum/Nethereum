@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;
@@ -55,7 +56,7 @@ namespace Nethereum.Web3.Tests
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
-            var web3 = new Web3(ClientFactory.GetClient());
+            var web3 = new Web3Geth(ClientFactory.GetClient());
 
             var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600000);
             Assert.True(result, "Account should be unlocked");
@@ -66,7 +67,7 @@ namespace Nethereum.Web3.Tests
             var transactions = eth.Transactions;
 
             //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
+            var transactionHash = await eth.GetDeployContract().SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
 
             Assert.NotNull(transactionHash);
 

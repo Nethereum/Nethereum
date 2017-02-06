@@ -17,7 +17,7 @@ namespace Nethereum.ENS
 
         public static Task<string> DeployContractAsync(Web3.Web3 web3, string addressFrom, string ensAddr, byte[] node, HexBigInteger gas = null, HexBigInteger valueAmount = null) 
         {
-            return web3.Eth.DeployContract.SendRequestAsync(ABI, BYTE_CODE, addressFrom, gas, valueAmount , ensAddr, node);
+            return web3.Eth.GetDeployContract().SendRequestAsync(ABI, BYTE_CODE, addressFrom, gas, valueAmount , ensAddr, node);
         }
 
         private Contract contract;

@@ -2,6 +2,8 @@
 using Nethereum.ABI.Util;
 using Nethereum.Core.Signing.Crypto;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.Services;
+using Nethereum.RPC.Eth.TransactionManagers;
 using Newtonsoft.Json;
 
 namespace Nethereum.Web3
@@ -24,23 +26,23 @@ namespace Nethereum.Web3
             InitialiseInnerServices();
         }
 
+        public ITransactionManager TransactionManager
+        {
+            get { return Eth.TransactionManager; }
+            set { Eth.TransactionManager = value; }
+        }
+
         public UnitConversion Convert { get; private set; }
-        public TransactionSigning OfflineTransactionSigning { get; private set; }
+        public TransactionSigner OfflineTransactionSigner { get; private set; }
 
         public IClient Client { get; private set; }
 
-        public Eth Eth { get; private set; }
-        public Shh Shh { get; private set; }
+        public EthApiService Eth { get; private set; }
+        public ShhApiService Shh { get; private set; }
 
-        public Net Net { get; private set; }
+        public NetApiService Net { get; private set; }
 
-        public Personal Personal { get; private set; }
-
-        public Admin Admin { get; private set; }
-
-        public DebugGeth DebugGeth { get; private set; }
-
-        public Miner Miner { get; private set; }
+        public PersonalApiService Personal { get; private set; }
 
         public string GetAddressFromPrivateKey(string privateKey)
         {
@@ -69,16 +71,13 @@ namespace Nethereum.Web3
 
         protected virtual void InitialiseInnerServices()
         {
-            Eth = new Eth(Client);
-            Shh = new Shh(Client);
-            Net = new Net(Client);
-            Personal = new Personal(Client);
-            Miner = new Miner(Client);
-            DebugGeth = new DebugGeth(Client);
-            Admin = new Admin(Client);
+            Eth = new EthApiService(Client);
+            Shh = new ShhApiService(Client);
+            Net = new NetApiService(Client);
+            Personal = new PersonalApiService(Client);
             Convert = new UnitConversion();
             sha3Keccack = new Sha3Keccack();
-            OfflineTransactionSigning = new TransactionSigning();
+            OfflineTransactionSigner = new TransactionSigner();
             addressUtil = new AddressUtil();
         }
 

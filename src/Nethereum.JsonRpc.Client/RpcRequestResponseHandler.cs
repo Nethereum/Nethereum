@@ -15,7 +15,6 @@ namespace Nethereum.JsonRpc.Client
             this.Client = client;
         }
 
-
         protected async Task<TResponse> SendRequestAsync(object id, params object[] paramList)
         {
             var request = BuildRequest(id, paramList);

@@ -46,6 +46,7 @@ namespace Nethereum.JsonRpc.Client
             }
             return innerRpcClient.SendRequestAsync(method, route, paramList);
         }
+
     }
 
 

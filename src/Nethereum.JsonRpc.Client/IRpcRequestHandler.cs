@@ -1,4 +1,6 @@
 
+using System.Threading.Tasks;
+
 namespace Nethereum.JsonRpc.Client
 {
     public interface IRpcRequestHandler
@@ -6,4 +8,7 @@ namespace Nethereum.JsonRpc.Client
         string MethodName { get; }
         IClient Client { get; }
     }
+
+   
+
 }

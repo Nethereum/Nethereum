@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Geth;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -18,7 +19,7 @@ namespace Nethereum.Web3.Tests
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
-            var web3 = new Web3();
+            var web3 = new Web3Geth();
             var transactionInterceptor = new TransactionRequestToOfflineSignedTransactionInterceptor(senderAddress, privateKey, web3);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
@@ -50,11 +51,11 @@ namespace Nethereum.Web3.Tests
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
 
-            var web3 = new Web3();
+            var web3 = new Web3Geth();
             var transactionInterceptor = new TransactionRequestToOfflineSignedTransactionInterceptor(senderAddress, privateKey, web3);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
-            var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
+            var txId = await web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
 
 
             await web3.Miner.Start.SendRequestAsync(4);

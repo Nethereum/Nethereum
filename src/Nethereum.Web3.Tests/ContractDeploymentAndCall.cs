@@ -1,3 +1,4 @@
+using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Xunit;
 
@@ -41,14 +42,14 @@ namespace Nethereum.Web3.Tests
             var abi =
                 @"[{'constant':false,'inputs':[{'name':'a','type':'int256'}],'name':'multiply','outputs':[{'name':'r','type':'int256'}],'payable':false,'type':'function'},{'inputs':[{'name':'multiplier','type':'int256'},{'name':'another','type':'int256'}],'type':'constructor'},{'anonymous':false,'inputs':[{'indexed':true,'name':'a','type':'int256'},{'indexed':true,'name':'sender','type':'address'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
 
-            var web3 = new Web3(ClientFactory.GetClient());
+            var web3 = new Web3Geth(ClientFactory.GetClient());
 
             var gethTester = GethTesterFactory.GetLocal(web3);
 
             await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
-                    web3.Eth.DeployContract.SignAndSendRequestAsync(gethTester.Password, abi, contractByteCode,
+                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), 7, 8);
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
@@ -159,14 +160,14 @@ contract Purchase {
             var abi =
                 "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
 
-            var web3 = new Web3(ClientFactory.GetClient());
+            var web3 = new Web3Geth(ClientFactory.GetClient());
 
             var gethTester = GethTesterFactory.GetLocal(web3);
 
             await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
-                    web3.Eth.DeployContract.SignAndSendRequestAsync(gethTester.Password, abi, contractByteCode,
+                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
@@ -183,8 +184,8 @@ contract Purchase {
             Assert.Equal(5000, callResult);
 
             var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
-            var tx = await confirmPurchaseFunction.SignAndSendTransactionAsync(gethTester.Password,
-                new HexBigInteger(900000), new HexBigInteger(10000), gethTester.Account);
+            var tx = await confirmPurchaseFunction.SendTransactionAsync(gethTester.Account,
+                new HexBigInteger(900000), new HexBigInteger(10000) );
             await web3.Miner.Start.SendRequestAsync(6);
             receipt = await gethTester.GetTransactionReceipt(tx);
             await web3.Miner.Stop.SendRequestAsync();
@@ -214,7 +215,7 @@ contract Purchase {
             
             var transaction =
                 await
-                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
+                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);

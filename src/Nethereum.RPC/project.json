@@ -1,5 +1,5 @@
 {
-  "version": "1.0.6",
+  "version": "2.0.0-rc1",
   "description": "Nethereum.RPC Ethereum Core RPC Class Library to interact via RCP with an Ethereum client, for example geth.",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
@@ -26,7 +26,7 @@
     "net451": {}
   },
   "dependencies": {
-    "Nethereum.Hex": "1.0.6",
+    "Nethereum.Hex": "2.0.0-rc1",
     "Nethereum.JsonRpc.Client": "1.0.6",
     "Portable.BouncyCastle": "1.8.1"
   }

@@ -71,7 +71,7 @@ namespace Nethereum.Web3.Tests
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash =
                 await
-                    web3.Eth.DeployContract.SendRequestAsync(contractByteCode, addressFrom,
+                    web3.Eth.GetDeployContract().SendRequestAsync(contractByteCode, addressFrom,
                         new HexBigInteger(900000));
 
             //get the contract address 
@@ -103,9 +103,6 @@ namespace Nethereum.Web3.Tests
 
             var test8 = contract.GetFunction("test8");
             Assert.True(await test8.CallAsync<bool>(BigInteger.Parse("9223372036854775808")));
-
-
-
 
             return "OK";
         }

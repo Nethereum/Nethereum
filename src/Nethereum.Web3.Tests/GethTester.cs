@@ -1,7 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.TransactionManagers;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -14,6 +16,7 @@ namespace Nethereum.Web3.Tests
 
         public GethTester(Web3 web3, string account, string password)
         {
+            web3.TransactionManager = new ClientPersonalTransactionManager(web3.Client, password);
             Web3 = web3;
             Account = account;
             Password = password;
@@ -26,12 +29,12 @@ namespace Nethereum.Web3.Tests
 
         public async Task<bool> StartMining()
         {
-            return await Web3.Miner.Start.SendRequestAsync();
+            return await new Web3Geth(Web3.Client).Miner.Start.SendRequestAsync();
         }
 
         public async Task<bool> StopMining()
         {
-            return await Web3.Miner.Stop.SendRequestAsync();
+            return await new Web3Geth(Web3.Client).Miner.Stop.SendRequestAsync();
         }
 
         public async Task<bool> LockAccount()
@@ -42,17 +45,17 @@ namespace Nethereum.Web3.Tests
         public async Task<TransactionReceipt> DeployTestContractLocal(string contractByteCode)
         {
 
-            var result = await UnlockAccount();
-            Assert.True(result, "Account should be unlocked");
+            //var result = await UnlockAccount();
+            //Assert.True(result, "Account should be unlocked");
             //deploy the contract, no need to use the abi as we don't have a constructor
-            var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
+            var transactionHash = await Web3.Eth.GetDeployContract().SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
             Assert.NotNull(transactionHash);
             //the contract should be mining now
 
-            result = await LockAccount();
-            Assert.True(result, "Account should be locked");
+            //result = await LockAccount();
+            //Assert.True(result, "Account should be locked");
 
-            result = await StartMining();
+            var result = await StartMining();
             Assert.True(result, "Mining should have started");
             //the contract should be mining now
 
