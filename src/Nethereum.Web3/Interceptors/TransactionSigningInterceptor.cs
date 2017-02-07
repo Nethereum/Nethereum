@@ -6,6 +6,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
+using Nethereum.Web3.Transactions;
 using Newtonsoft.Json.Linq;
 using Transaction = Nethereum.Signer.Transaction;
 
@@ -14,17 +15,12 @@ namespace Nethereum.Web3.Interceptors
     public class TransactionRequestToOfflineSignedTransactionInterceptor : RequestInterceptor
     {
         private readonly string account;
-        private readonly string privateKey;
-        private readonly TransactionSigner signer;
-        private readonly Web3 web3;
-
-
+        private readonly SignedTransactionManager signer;
+   
         public TransactionRequestToOfflineSignedTransactionInterceptor(string account, string privateKey, Web3 web3)
         {
             this.account = account;
-            this.privateKey = privateKey;
-            this.web3 = web3;
-            signer = new TransactionSigner();
+            signer = new SignedTransactionManager(web3.Client, privateKey, account);
         }
 
         public RpcResponse BuildResponse(object results, string route = null)
@@ -60,31 +56,8 @@ namespace Nethereum.Web3.Interceptors
 
         private async Task<RpcResponse> SignAndSendTransaction(TransactionInput transaction, string route)
         {
-            if (transaction.From != account) throw new Exception("Invalid account used for interceptor");
-
-            var nonce = transaction.Nonce;
-            if (nonce == null)
-                nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(account).ConfigureAwait(false);
-
-            var gasPrice = transaction.GasPrice;
-            if (gasPrice == null)
-                gasPrice = new HexBigInteger(Transaction.DEFAULT_GAS_PRICE);
-
-            var gasLimit = transaction.Gas;
-            if (gasLimit == null)
-                gasLimit = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT);
-
-            var value = transaction.Value;
-            if (value == null)
-                value = new HexBigInteger(0);
-
-            var signedTransaction = signer.SignTransaction(privateKey, transaction.To, value.Value, nonce,
-                gasPrice.Value, gasLimit.Value, transaction.Data);
-
-            var txnHash =
-                await
-                    web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix())
-                        .ConfigureAwait(false);
+            if (transaction.From.EnsureHexPrefix().ToLower() != account.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used for interceptor");
+            var txnHash = await signer.SendTransactionAsync(transaction).ConfigureAwait(false);
             return BuildResponse(txnHash, route);
         }
     }

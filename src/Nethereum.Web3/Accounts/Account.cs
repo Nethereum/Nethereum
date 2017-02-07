@@ -44,6 +44,7 @@ namespace Nethereum.Web3.Accounts
         {
             _privateKey = key.GetPrivateKey();
             Address = key.GetPublicAddress();
+            InitialiseDefaultTransactionManager();
         }
 
         protected virtual void InitialiseDefaultTransactionManager()

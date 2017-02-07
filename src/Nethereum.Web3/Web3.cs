@@ -35,7 +35,7 @@ namespace Nethereum.Web3
             InitialiseInnerServices();
         }
 
-        public Web3(IAccount account, string url = @"http://localhost:8545/")
+        public Web3(IAccount account, string url = @"http://localhost:8545/"):this(url)
         {
             this.TransactionManager = account.TransactionManager;
             this.TransactionManager.Client = this.Client;

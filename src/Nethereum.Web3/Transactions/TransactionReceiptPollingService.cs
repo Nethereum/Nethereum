@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Personal;
 
 namespace Nethereum.Web3.Transactions
 {
@@ -33,6 +31,31 @@ namespace Nethereum.Web3.Transactions
                 receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
             }
             return receipt;
+        }
+
+        public async Task<List<TransactionReceipt>> SendRequestAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+            CancellationTokenSource tokenSource = null)
+        {
+            var txnList = new List<string>();
+            foreach (var transactionFunction in transactionFunctions)
+            {
+                txnList.Add(await transactionFunction());    
+            }
+            
+            var receipts = new List<TransactionReceipt>();
+            foreach (var transaction in txnList)
+            {
+                var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
+                while (receipt == null)
+                {
+
+                    await Task.Delay(_retryMiliseconds);
+                    tokenSource?.Token.ThrowIfCancellationRequested();
+                    receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
+                }
+                receipts.Add(receipt);
+            }
+            return receipts;
         }
 
         public async Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
