@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Text;
+using Nethereum.ABI.Model;
 using Nethereum.ABI.Util;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
@@ -13,18 +15,6 @@ namespace Nethereum.ABI.FunctionEncoding
             sha3Keccack = new Sha3Keccack();
         }
 
-        public virtual string GenerateSignature(string name, Parameter[] parameters)
-        {
-            var signature = new StringBuilder();
-            signature.Append(name);
-            signature.Append("(");
-            var paramNames = string.Join(",", parameters.OrderBy(x => x.Order).Select(x => x.Type));
-            signature.Append(paramNames);
-            signature.Append(")");
-            return signature.ToString();
-        }
-
-
         public string GenerateSha3Signature(string name, Parameter[] parameters)
         {
             var signature = GenerateSignature(name, parameters);
@@ -34,6 +24,17 @@ namespace Nethereum.ABI.FunctionEncoding
         public string GenerateSha3Signature(string name, Parameter[] parameters, int numberOfFirstBytes)
         {
             return GenerateSha3Signature(name, parameters).Substring(0, numberOfFirstBytes*2);
+        }
+
+        public virtual string GenerateSignature(string name, Parameter[] parameters)
+        {
+            var signature = new StringBuilder();
+            signature.Append(name);
+            signature.Append("(");
+            var paramNames = string.Join(",", parameters.OrderBy(x => x.Order).Select(x => x.Type));
+            signature.Append(paramNames);
+            signature.Append(")");
+            return signature.ToString();
         }
     }
 }
