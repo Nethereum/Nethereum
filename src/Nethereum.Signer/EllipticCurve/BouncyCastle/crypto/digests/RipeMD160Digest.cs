@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
     * implementation of RipeMD see,
     * http://www.esat.kuleuven.ac.be/~bosselae/ripemd160.html
     */
-	public class RipeMD160Digest
+	internal class RipeMD160Digest
 		: GeneralDigest
 	{
 		private const int DigestLength = 20;

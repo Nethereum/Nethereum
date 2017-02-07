@@ -15,7 +15,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
      * SHA-512 1024   64    512
      * </pre>
      */
-	public class Sha384Digest
+	internal class Sha384Digest
 		: LongDigest
 	{
 		private const int DigestLength = 48;

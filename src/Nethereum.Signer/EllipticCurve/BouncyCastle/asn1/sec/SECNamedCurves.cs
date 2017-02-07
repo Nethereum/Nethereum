@@ -9,7 +9,7 @@ using NBitcoin.BouncyCastle.Utilities.Encoders;
 
 namespace NBitcoin.BouncyCastle.Asn1.Sec
 {
-	public sealed class SecNamedCurves
+	internal sealed class SecNamedCurves
 	{
 		private SecNamedCurves()
 		{
@@ -33,7 +33,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp112r1
          */
-		public class Secp112r1Holder
+		internal class Secp112r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp112r1Holder()
@@ -64,7 +64,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp112r2
          */
-		public class Secp112r2Holder
+		internal class Secp112r2Holder
 			: X9ECParametersHolder
 		{
 			private Secp112r2Holder()
@@ -95,7 +95,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp128r1
          */
-		public class Secp128r1Holder
+		internal class Secp128r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp128r1Holder()
@@ -126,7 +126,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp128r2
          */
-		public class Secp128r2Holder
+		internal class Secp128r2Holder
 			: X9ECParametersHolder
 		{
 			private Secp128r2Holder()
@@ -157,7 +157,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp160k1
          */
-		public class Secp160k1Holder
+		internal class Secp160k1Holder
 			: X9ECParametersHolder
 		{
 			private Secp160k1Holder()
@@ -201,7 +201,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp160r1
          */
-		public class Secp160r1Holder
+		internal class Secp160r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp160r1Holder()
@@ -232,7 +232,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp160r2
          */
-		public class Secp160r2Holder
+		internal class Secp160r2Holder
 			: X9ECParametersHolder
 		{
 			private Secp160r2Holder()
@@ -263,7 +263,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp192k1
          */
-		public class Secp192k1Holder
+		internal class Secp192k1Holder
 			: X9ECParametersHolder
 		{
 			private Secp192k1Holder()
@@ -307,7 +307,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp192r1
          */
-		public class Secp192r1Holder
+		internal class Secp192r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp192r1Holder()
@@ -338,7 +338,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp224k1
          */
-		public class Secp224k1Holder
+		internal class Secp224k1Holder
 			: X9ECParametersHolder
 		{
 			private Secp224k1Holder()
@@ -382,7 +382,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp224r1
          */
-		public class Secp224r1Holder
+		internal class Secp224r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp224r1Holder()
@@ -413,7 +413,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp256k1
          */
-		public class Secp256k1Holder
+		internal class Secp256k1Holder
 			: X9ECParametersHolder
 		{
 			private Secp256k1Holder()
@@ -457,7 +457,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp256r1
          */
-		public class Secp256r1Holder
+		internal class Secp256r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp256r1Holder()
@@ -488,7 +488,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp384r1
          */
-		public class Secp384r1Holder
+		internal class Secp384r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp384r1Holder()
@@ -519,7 +519,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * secp521r1
          */
-		public class Secp521r1Holder
+		internal class Secp521r1Holder
 			: X9ECParametersHolder
 		{
 			private Secp521r1Holder()
@@ -550,7 +550,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect113r1
          */
-		public class Sect113r1Holder
+		internal class Sect113r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect113r1Holder()
@@ -582,7 +582,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect113r2
          */
-		public class Sect113r2Holder
+		internal class Sect113r2Holder
 			: X9ECParametersHolder
 		{
 			private Sect113r2Holder()
@@ -614,7 +614,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect131r1
          */
-		public class Sect131r1Holder
+		internal class Sect131r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect131r1Holder()
@@ -648,7 +648,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect131r2
          */
-		public class Sect131r2Holder
+		internal class Sect131r2Holder
 			: X9ECParametersHolder
 		{
 			private Sect131r2Holder()
@@ -682,7 +682,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect163k1
          */
-		public class Sect163k1Holder
+		internal class Sect163k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect163k1Holder()
@@ -716,7 +716,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect163r1
          */
-		public class Sect163r1Holder
+		internal class Sect163r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect163r1Holder()
@@ -750,7 +750,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect163r2
          */
-		public class Sect163r2Holder
+		internal class Sect163r2Holder
 			: X9ECParametersHolder
 		{
 			private Sect163r2Holder()
@@ -784,7 +784,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect193r1
          */
-		public class Sect193r1Holder
+		internal class Sect193r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect193r1Holder()
@@ -816,7 +816,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect193r2
          */
-		public class Sect193r2Holder
+		internal class Sect193r2Holder
 			: X9ECParametersHolder
 		{
 			private Sect193r2Holder()
@@ -848,7 +848,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect233k1
          */
-		public class Sect233k1Holder
+		internal class Sect233k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect233k1Holder()
@@ -880,7 +880,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect233r1
          */
-		public class Sect233r1Holder
+		internal class Sect233r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect233r1Holder()
@@ -912,7 +912,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect239k1
          */
-		public class Sect239k1Holder
+		internal class Sect239k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect239k1Holder()
@@ -944,7 +944,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect283k1
          */
-		public class Sect283k1Holder
+		internal class Sect283k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect283k1Holder()
@@ -978,7 +978,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect283r1
          */
-		public class Sect283r1Holder
+		internal class Sect283r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect283r1Holder()
@@ -1012,7 +1012,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect409k1
          */
-		public class Sect409k1Holder
+		internal class Sect409k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect409k1Holder()
@@ -1044,7 +1044,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect409r1
          */
-		public class Sect409r1Holder
+		internal class Sect409r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect409r1Holder()
@@ -1076,7 +1076,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect571k1
          */
-		public class Sect571k1Holder
+		internal class Sect571k1Holder
 			: X9ECParametersHolder
 		{
 			private Sect571k1Holder()
@@ -1110,7 +1110,7 @@ namespace NBitcoin.BouncyCastle.Asn1.Sec
 		/*
          * sect571r1
          */
-		public class Sect571r1Holder
+		internal class Sect571r1Holder
 			: X9ECParametersHolder
 		{
 			private Sect571r1Holder()

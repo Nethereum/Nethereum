@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Asn1.X9
      * ASN.1 def for Elliptic-Curve Field ID structure. See
      * X9.62, for further details.
      */
-	public class X9FieldID
+	internal class X9FieldID
 		: Asn1Encodable
 	{
 		private readonly DerObjectIdentifier id;

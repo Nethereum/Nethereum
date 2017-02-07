@@ -2,7 +2,7 @@ using System;
 
 namespace NBitcoin.BouncyCastle.Security
 {
-	public class InvalidKeyException : KeyException
+	internal class InvalidKeyException : KeyException
 	{
 		public InvalidKeyException() : base() { }
 		public InvalidKeyException(string message) : base(message) { }

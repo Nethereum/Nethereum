@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class DerInteger
+	internal class DerInteger
 		: Asn1Object
 	{
 		private readonly byte[] bytes;

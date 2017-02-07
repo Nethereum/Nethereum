@@ -4,6 +4,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.Web3.Accounts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -16,10 +17,9 @@ namespace Nethereum.Web3.Tests
 
         public GethTester(Web3 web3, string account, string password)
         {
-            web3.TransactionManager = new ClientPersonalTransactionManager(web3.Client, password);
-            Web3 = web3;
-            Account = account;
-            Password = password;
+           this.Web3 = new Web3(new ManagedAccount(account, password), web3.Client);
+            this.Account = account;
+            this.Password = password;
         }
 
         public async Task<bool> UnlockAccount()

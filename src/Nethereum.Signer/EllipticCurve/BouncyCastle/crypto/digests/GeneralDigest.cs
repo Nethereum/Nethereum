@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
     * base implementation of MD4 family style digest as outlined in
     * "Handbook of Applied Cryptography", pages 344 - 347.
     */
-	public abstract class GeneralDigest
+	internal abstract class GeneralDigest
 		: IDigest, IMemoable
 	{
 		private const int BYTE_LENGTH = 64;

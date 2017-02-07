@@ -15,7 +15,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Abc
 	* result of a multiplication of two <code>SimpleBigDecimal</code>s returns a
 	* <code>SimpleBigDecimal</code> with double scale.
 	*/
-	public class SimpleBigDecimal
+	internal class SimpleBigDecimal
 	//	: Number
 	{
 		//	private static final long serialVersionUID = 1L;

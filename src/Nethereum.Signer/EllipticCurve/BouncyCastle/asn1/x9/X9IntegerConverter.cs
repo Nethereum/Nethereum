@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Math.EC;
 
 namespace NBitcoin.BouncyCastle.Asn1.X9
 {
-	public abstract class X9IntegerConverter
+	internal abstract class X9IntegerConverter
 	{
 		public static int GetByteLength(ECFieldElement fe)
 		{

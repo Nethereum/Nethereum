@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class DerOutputStream
+	internal class DerOutputStream
 		: FilterStream
 	{
 		public DerOutputStream(Stream os)

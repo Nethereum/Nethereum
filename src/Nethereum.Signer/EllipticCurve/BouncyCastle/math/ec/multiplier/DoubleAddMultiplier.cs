@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 {
-	public class DoubleAddMultiplier
+	internal class DoubleAddMultiplier
 		: AbstractECMultiplier
 	{
 		/**

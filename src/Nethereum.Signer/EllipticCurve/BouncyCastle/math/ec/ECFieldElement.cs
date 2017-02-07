@@ -6,7 +6,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Math.EC
 {
-	public abstract class ECFieldElement
+	internal abstract class ECFieldElement
 	{
 		public abstract BigInteger ToBigInteger();
 		public abstract string FieldName
@@ -116,7 +116,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
 		}
 	}
 
-	public class FpFieldElement
+	internal class FpFieldElement
 		: ECFieldElement
 	{
 		private readonly BigInteger q, r, x;
@@ -568,7 +568,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
      * basis representations are supported. Gaussian normal basis (GNB)
      * representation is not supported.
      */
-	public class F2mFieldElement
+	internal class F2mFieldElement
 		: ECFieldElement
 	{
 		/**

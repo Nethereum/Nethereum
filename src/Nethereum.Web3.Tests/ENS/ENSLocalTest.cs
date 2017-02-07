@@ -4,6 +4,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Transactions;
 using Xunit;
 
@@ -19,18 +20,17 @@ namespace Nethereum.Web3.Tests
            
             var defaultGas = new HexBigInteger(900000);
 
-            var web3 = new Web3(ClientFactory.GetClient());
+            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var pass = "password";
+
+            var web3 = new Web3(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient());
             var web3Geth = new Web3Geth(ClientFactory.GetClient());
 
             var txService = new TransactionReceiptPollingService(web3);
 
             // var addressFrom = (await web3.Eth.Accounts.SendRequestAsync()).First();
             //uncomment to use geth instead of test-rpc
-            // Our account
-            var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
-            var pass = "password";
-            web3.TransactionManager = new ClientPersonalTransactionManager(web3.Client, pass);
-            //await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 60000);
+        
             await web3Geth.Miner.Start.SendRequestAsync();
             //deploy ENS contract
             var ensAddress = await txService.DeployContractAndGetAddressAsync(() => EnsService.DeployContractAsync(web3, addressFrom, defaultGas));

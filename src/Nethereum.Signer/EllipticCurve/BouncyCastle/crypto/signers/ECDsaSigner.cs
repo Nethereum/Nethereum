@@ -9,7 +9,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Signers
 	/**
      * EC-DSA as described in X9.62
      */
-	public class ECDsaSigner
+	internal class ECDsaSigner
 		: IDsa
 	{
 		private static readonly BigInteger Eight = BigInteger.ValueOf(8);

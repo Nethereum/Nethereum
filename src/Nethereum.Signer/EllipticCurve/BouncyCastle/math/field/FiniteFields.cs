@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.Field
 {
-	public abstract class FiniteFields
+	internal abstract class FiniteFields
 	{
 		public static readonly IFiniteField GF_2 = new PrimeField(BigInteger.ValueOf(2));
 		public static readonly IFiniteField GF_3 = new PrimeField(BigInteger.ValueOf(3));

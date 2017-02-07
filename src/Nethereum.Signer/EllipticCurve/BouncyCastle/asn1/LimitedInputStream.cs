@@ -4,7 +4,7 @@ using NBitcoin.BouncyCastle.Utilities.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class LimitedInputStream
+	internal abstract class LimitedInputStream
 		: BaseInputStream
 	{
 		protected readonly Stream _in;

@@ -73,7 +73,7 @@ namespace Nethereum.Web3.Tests
 
             //Create a transaction from scratch
             var tx = new Transaction("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 10000, 324, 10000000000000, 21000);
-            tx.Sign(new ECKey(privateKey.HexToByteArray(), true));
+            tx.Sign(new EthECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
             var rlp =
@@ -117,7 +117,7 @@ namespace Nethereum.Web3.Tests
 
             Assert.Equal(HASH_TX, tx.RawHash.ToHex());
 
-            tx.Sign(new ECKey(KEY.HexToByteArray(), true));
+            tx.Sign(new EthECKey(KEY.HexToByteArray(), true));
             tx.Key.Verify(tx.RawHash, tx.Signature);
             Assert.Equal(EthECKey.GetPublicAddress(KEY), tx.Key.GetPublicAddress());
         }
@@ -140,10 +140,10 @@ namespace Nethereum.Web3.Tests
             Assert.Equal(27, tx.Signature.V);
 
             Assert.Equal("eab47c1a49bf2fe5d40e01d313900e19ca485867d462fe06e139e3a536c6d4f4",
-                tx.Signature.R.ToByteArrayUnsigned().ToHex());
+                tx.Signature.R.ToHex());
 
             Assert.Equal("14a569d327dcda4b29f74f93c0e9729d2f49ad726e703f9cd90dbb0fbf6649f1",
-                tx.Signature.S.ToByteArrayUnsigned().ToHex());
+                tx.Signature.S.ToHex());
         }
 
         [Fact]
@@ -154,7 +154,7 @@ namespace Nethereum.Web3.Tests
             var publicKey =
                 "87977ddf1e8e4c3f0a4619601fc08ac5c1dcf78ee64e826a63818394754cef52457a10a599cb88afb7c5a6473b7534b8b150d38d48a11c9b515dd01434cceb08";
 
-            var key = new ECKey(privateKey.HexToByteArray(), true);
+            var key = new EthECKey(privateKey.HexToByteArray(), true);
             var hash = "test".ToHexUTF8().HexToByteArray();
             var signature = key.Sign(hash);
             Assert.True(key.Verify(hash, signature));
@@ -168,7 +168,7 @@ namespace Nethereum.Web3.Tests
         {
             var ecKey = EthECKey.GenerateKey();
             var key = ecKey.GetPrivateKeyAsBytes();
-            var regeneratedKey = new ECKey(key, true);
+            var regeneratedKey = new EthECKey(key, true);
             Assert.Equal(key.ToHex(), regeneratedKey.GetPrivateKeyAsBytes().ToHex());
             Assert.Equal(ecKey.GetPublicAddress(), regeneratedKey.GetPublicAddress());
         }

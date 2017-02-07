@@ -59,7 +59,7 @@ namespace Nethereum.Web3.Tests
 
             //Create a transaction from scratch
             var tx = new RLPSigner(new byte[][] {nonce, gasPrice, gasLimit, to, amount, data});
-            tx.Sign(new ECKey(privateKey.HexToByteArray(), true));
+            tx.Sign(new EthECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
             var rlp =
@@ -99,7 +99,7 @@ namespace Nethereum.Web3.Tests
             var account = "12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var signedValue = new RLPSigner(new byte[][] { "hello".ToBytesForRLPEncoding() });
-            signedValue.Sign(new ECKey(privateKey.HexToByteArray(), true));
+            signedValue.Sign(new EthECKey(privateKey.HexToByteArray(), true));
             var encoded = signedValue.GetRLPEncoded();
             var hexEncoded = encoded.ToHex();
             var signedRecovery = new RLPSigner(encoded, 1);

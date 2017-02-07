@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Math.EC
 {
-	public class LongArray
+	internal class LongArray
 	{
 		//private static long DEInterleave_MASK = 0x5555555555555555L;
 

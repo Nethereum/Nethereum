@@ -3,7 +3,7 @@ namespace NBitcoin.BouncyCastle.Crypto
 	/**
      * The base interface for implementations of message authentication codes (MACs).
      */
-	public interface IMac
+	internal interface IMac
 	{
 		/**
          * Initialise the MAC.

@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class Asn1EncodableVector
+	internal class Asn1EncodableVector
 		: IEnumerable
 	{
 		private IList v = Platform.CreateArrayList();

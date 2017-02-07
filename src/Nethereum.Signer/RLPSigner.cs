@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using NBitcoin.Crypto;
 using Nethereum.RLP;
 using Nethereum.Util;
 
@@ -15,7 +14,7 @@ namespace Nethereum.Signer
         private byte[] rlpEncoded;
         private byte[] rlpRaw;
 
-        private ECDSASignature signature;
+        private EthECDSASignature signature;
 
         public RLPSigner(byte[] rawData, int numberOfElements)
         {
@@ -68,7 +67,7 @@ namespace Nethereum.Signer
             }
         }
 
-        public ECDSASignature Signature
+        public EthECDSASignature Signature
         {
             get
             {
@@ -77,7 +76,7 @@ namespace Nethereum.Signer
             }
         }
 
-        public ECKey Key => EthECKey.RecoverFromSignature(Signature, RawHash);
+        public EthECKey Key => EthECKey.RecoverFromSignature(Signature, RawHash);
 
         public byte[] BuildRLPEncoded(bool raw)
         {
@@ -92,8 +91,8 @@ namespace Nethereum.Signer
             if (signature != null)
             {
                 v = RLP.RLP.EncodeByte(signature.V);
-                r = RLP.RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
-                s = RLP.RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
+                r = RLP.RLP.EncodeElement(signature.R);
+                s = RLP.RLP.EncodeElement(signature.S);
             }
             else
             {
@@ -146,7 +145,7 @@ namespace Nethereum.Signer
             decoded = true;
         }
 
-        public void Sign(ECKey key)
+        public void Sign(EthECKey key)
         {
             signature = key.SignAndCalculateV(RawHash);
             rlpEncoded = null;

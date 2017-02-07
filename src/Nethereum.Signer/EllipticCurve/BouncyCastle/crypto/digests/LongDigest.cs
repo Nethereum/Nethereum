@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
 	/**
     * Base class for SHA-384 and SHA-512.
     */
-	public abstract class LongDigest
+	internal abstract class LongDigest
 		: IDigest, IMemoable
 	{
 		private int MyByteLength = 128;

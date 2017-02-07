@@ -2,7 +2,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class Asn1Generator
+	internal abstract class Asn1Generator
 	{
 		private Stream _out;
 

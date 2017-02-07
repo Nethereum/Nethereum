@@ -11,7 +11,7 @@ namespace NBitcoin.BouncyCastle.Crypto
 	* OFB one the last block may not be a multiple of the block size.
 	* </p>
 	*/
-	public class BufferedBlockCipher
+	internal class BufferedBlockCipher
 		: BufferedCipherBase
 	{
 		public byte[] buf;

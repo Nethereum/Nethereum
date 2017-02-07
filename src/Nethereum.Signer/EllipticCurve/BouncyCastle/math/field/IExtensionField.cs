@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.Field
 {
-	public interface IExtensionField
+	internal interface IExtensionField
 		: IFiniteField
 	{
 		IFiniteField Subfield

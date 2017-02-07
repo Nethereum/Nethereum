@@ -9,7 +9,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Abc
     * by Jerome A. Solinas. The paper first appeared in the Proceedings of
     * Crypto 1997.
     */
-	public class Tnaf
+	internal class Tnaf
 	{
 		private static readonly BigInteger MinusOne = BigInteger.One.Negate();
 		private static readonly BigInteger MinusTwo = BigInteger.Two.Negate();

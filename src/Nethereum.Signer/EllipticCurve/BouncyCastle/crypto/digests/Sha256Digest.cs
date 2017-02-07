@@ -17,7 +17,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
     * SHA-512 1024   64    512
     * </pre>
     */
-	public class Sha256Digest
+	internal class Sha256Digest
 		: GeneralDigest
 	{
 		private const int DigestLength = 32;

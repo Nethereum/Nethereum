@@ -1,7 +1,7 @@
 namespace NBitcoin.BouncyCastle.Crypto
 {
 	/// <remarks>Block cipher engines are expected to conform to this interface.</remarks>
-	public interface IBufferedCipher
+	internal interface IBufferedCipher
 	{
 		/// <summary>The name of the algorithm this cipher implements.</summary>
 		string AlgorithmName

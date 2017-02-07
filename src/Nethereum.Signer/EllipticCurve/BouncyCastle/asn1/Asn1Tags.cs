@@ -1,6 +1,6 @@
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class Asn1Tags
+	internal class Asn1Tags
 	{
 		public const int Boolean = 0x01;
 		public const int Integer = 0x02;

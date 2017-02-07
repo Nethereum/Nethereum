@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 {
-	public abstract class WNafUtilities
+	internal abstract class WNafUtilities
 	{
 		public static readonly string PRECOMP_NAME = "bc_wnaf";
 

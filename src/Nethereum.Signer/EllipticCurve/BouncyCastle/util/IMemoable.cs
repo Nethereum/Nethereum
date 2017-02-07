@@ -2,7 +2,7 @@ using System;
 
 namespace NBitcoin.BouncyCastle.Utilities
 {
-	public interface IMemoable
+	internal interface IMemoable
 	{
 		/// <summary>
 		/// Produce a copy of this object with its configuration and in its current state.

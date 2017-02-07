@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Crypto.Utilities;
 
 namespace NBitcoin.BouncyCastle.Math.Raw
 {
-	public abstract class Nat
+	internal abstract class Nat
 	{
 		private const ulong M = 0xFFFFFFFFUL;
 

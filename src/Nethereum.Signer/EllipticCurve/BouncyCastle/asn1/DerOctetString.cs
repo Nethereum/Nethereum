@@ -1,6 +1,6 @@
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class DerOctetString
+	internal class DerOctetString
 		: Asn1OctetString
 	{
 		/// <param name="str">The octets making up the octet string.</param>

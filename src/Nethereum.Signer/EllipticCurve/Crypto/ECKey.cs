@@ -9,7 +9,7 @@ using NBitcoin.BouncyCastle.Math.EC.Custom.Sec;
 
 namespace NBitcoin.Crypto
 {
-    public class ECKey
+    internal class ECKey
     {
         public static readonly BigInteger HALF_CURVE_ORDER;
         public static readonly BigInteger CURVE_ORDER;

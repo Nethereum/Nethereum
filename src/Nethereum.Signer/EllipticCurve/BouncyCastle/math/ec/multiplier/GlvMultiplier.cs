@@ -4,7 +4,7 @@ using NBitcoin.BouncyCastle.Math.EC.Endo;
 
 namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 {
-	public class GlvMultiplier
+	internal class GlvMultiplier
 		: AbstractECMultiplier
 	{
 		protected readonly ECCurve curve;

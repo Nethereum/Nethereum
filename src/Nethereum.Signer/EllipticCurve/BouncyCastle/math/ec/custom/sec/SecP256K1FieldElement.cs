@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Math.EC.Custom.Sec
 {
-	public class SecP256K1FieldElement
+	internal class SecP256K1FieldElement
 		: ECFieldElement
 	{
 		public static readonly BigInteger Q = SecP256K1Curve.q;

@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.EC.Endo
 {
-	public class GlvTypeBParameters
+	internal class GlvTypeBParameters
 	{
 		protected readonly BigInteger m_beta;
 		protected readonly BigInteger m_lambda;

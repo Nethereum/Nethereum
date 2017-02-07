@@ -13,7 +13,7 @@ namespace Nethereum.Web3.Transactions
 {
     public class SignedTransactionManager : ITransactionManager
     {
-        private readonly IClient _rpcClient;
+        private IClient _rpcClient;
         private readonly string _privateKey;
         private readonly string _account;
         private TransactionSigner _transactionSigner;
@@ -22,12 +22,24 @@ namespace Nethereum.Web3.Transactions
 
         public SignedTransactionManager(IClient rpcClient, string privateKey, string account)
         {
+            if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
+            if (account == null) throw new ArgumentNullException(nameof(account));
             _rpcClient = rpcClient;
             _privateKey = privateKey;
             _account = account;
             _transactionSigner = new TransactionSigner();
             _ethSendTransaction = new EthSendRawTransaction(_rpcClient);
             _ethGetTransactionCount = new EthGetTransactionCount(_rpcClient);
+        }
+
+        public SignedTransactionManager(string privateKey, string account):this(null, privateKey, account)
+        {
+        }
+
+        public IClient Client
+        {
+            get { return _rpcClient; }
+            set { _rpcClient = value; }
         }
 
         public Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput
@@ -46,6 +58,7 @@ namespace Nethereum.Web3.Transactions
 
         private async Task<string> SignAndSendTransaction(TransactionInput transaction)
         {
+            if(Client == null) throw new NullReferenceException("Client not configured");
             if (transaction.From != _account) throw new Exception("Invalid account used signing");
 
             var nonce = await GetNonceAsync(transaction);

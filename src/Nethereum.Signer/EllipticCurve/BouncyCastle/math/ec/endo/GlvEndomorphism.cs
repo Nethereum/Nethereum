@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.EC.Endo
 {
-	public interface GlvEndomorphism
+	internal interface GlvEndomorphism
 		: ECEndomorphism
 	{
 		BigInteger[] DecomposeScalar(BigInteger k);

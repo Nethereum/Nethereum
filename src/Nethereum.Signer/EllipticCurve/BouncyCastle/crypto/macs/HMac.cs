@@ -10,7 +10,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Macs
     *
     * H(K XOR opad, H(K XOR ipad, text))
     */
-	public class HMac
+	internal class HMac
 		: IMac
 	{
 		private const byte IPAD = (byte)0x36;

@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using NBitcoin.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 
@@ -27,15 +26,15 @@ namespace Nethereum.Signer
 
         public string HashAndSign(string plainMessage, string privateKey)
         {
-            return HashAndSign(Encoding.UTF8.GetBytes(plainMessage), new ECKey(privateKey.HexToByteArray(), true));
+            return HashAndSign(Encoding.UTF8.GetBytes(plainMessage), new EthECKey(privateKey.HexToByteArray(), true));
         }
 
         public string HashAndSign(byte[] plainMessage, string privateKey)
         {
-            return HashAndSign(plainMessage, new ECKey(privateKey.HexToByteArray(), true));
+            return HashAndSign(plainMessage, new EthECKey(privateKey.HexToByteArray(), true));
         }
 
-        public virtual string HashAndSign(byte[] plainMessage, ECKey key)
+        public virtual string HashAndSign(byte[] plainMessage, EthECKey key)
         {
             var hash = Hash(plainMessage);
             var signature = key.SignAndCalculateV(hash);
@@ -44,10 +43,10 @@ namespace Nethereum.Signer
 
         public string Sign(byte[] message, string privateKey)
         {
-            return Sign(message, new ECKey(privateKey.HexToByteArray(), true));
+            return Sign(message, new EthECKey(privateKey.HexToByteArray(), true));
         }
 
-        public virtual string Sign(byte[] message, ECKey key)
+        public virtual string Sign(byte[] message, EthECKey key)
         {
             var signature = key.SignAndCalculateV(message);
             return CreateStringSignature(signature);
@@ -58,14 +57,14 @@ namespace Nethereum.Signer
             return Sign(Encoding.UTF8.GetBytes(plainMessage), privateKey);
         }
 
-        private static string CreateStringSignature(ECDSASignature signature)
+        private static string CreateStringSignature(EthECDSASignature signature)
         {
-            return signature.R.ToByteArrayUnsigned().ToHex(true) +
-                   signature.S.ToByteArrayUnsigned().ToHex() +
+            return signature.R.ToHex(true) +
+                   signature.S.ToHex() +
                    signature.V.ToString("X2");
         }
 
-        private static ECDSASignature ExtractEcdsaSignature(string signature)
+        public static EthECDSASignature ExtractEcdsaSignature(string signature)
         {
             var signatureArray = signature.HexToByteArray();
 

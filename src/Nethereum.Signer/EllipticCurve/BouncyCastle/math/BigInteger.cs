@@ -9,7 +9,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Math
 {
-	public class BigInteger
+	internal class BigInteger
 	{
 		// The first few odd primes
 		/*

@@ -3,7 +3,7 @@
 	/**
      * Class holding precomputation data for fixed-point multiplications.
      */
-	public class FixedPointPreCompInfo
+	internal class FixedPointPreCompInfo
 		: PreCompInfo
 	{
 		/**

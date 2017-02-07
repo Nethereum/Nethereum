@@ -2,7 +2,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Utilities.IO
 {
-	public class FilterStream : Stream
+	internal class FilterStream : Stream
 	{
 		public FilterStream(Stream s)
 		{

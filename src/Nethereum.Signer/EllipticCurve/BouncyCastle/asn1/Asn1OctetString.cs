@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class Asn1OctetString
+	internal abstract class Asn1OctetString
 		: Asn1Object, Asn1OctetStringParser
 	{
 		public byte[] str;

@@ -1,6 +1,6 @@
 namespace NBitcoin.BouncyCastle.Crypto
 {
-	public abstract class BufferedCipherBase
+	internal abstract class BufferedCipherBase
 		: IBufferedCipher
 	{
 		protected static readonly byte[] EmptyBuffer = new byte[0];

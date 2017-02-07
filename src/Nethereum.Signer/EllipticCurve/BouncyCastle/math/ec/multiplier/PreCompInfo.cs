@@ -5,7 +5,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 	* algorithms. Used as a Memento (see GOF patterns) for
 	* <code>WNafMultiplier</code>.
 	*/
-	public interface PreCompInfo
+	internal interface PreCompInfo
 	{
 	}
 }

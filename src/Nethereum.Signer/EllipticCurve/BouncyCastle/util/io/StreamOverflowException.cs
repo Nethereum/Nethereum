@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Utilities.IO
 {
-	public class StreamOverflowException
+	internal class StreamOverflowException
 		: IOException
 	{
 		public StreamOverflowException()

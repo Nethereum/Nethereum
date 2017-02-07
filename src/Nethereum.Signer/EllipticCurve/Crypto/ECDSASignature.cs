@@ -5,7 +5,8 @@ using NBitcoin.BouncyCastle.Math;
 
 namespace NBitcoin.Crypto
 {
-    public class ECDSASignature
+    
+    internal class ECDSASignature
     {
         private const string InvalidDERSignature = "Invalid DER signature";
 
@@ -54,7 +55,6 @@ namespace NBitcoin.Crypto
         {
             return new ECDSASignature(sig);
         }
-
 
         public static bool IsValidDER(byte[] bytes)
         {

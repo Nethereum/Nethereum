@@ -2,7 +2,7 @@ using System;
 
 namespace NBitcoin.BouncyCastle.Security
 {
-	public class GeneralSecurityException
+	internal class GeneralSecurityException
 		: Exception
 	{
 		public GeneralSecurityException()

@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Abc
 	* are no accessor methods.
 	* Immutable class.
 	*/
-	public class ZTauElement
+	internal class ZTauElement
 	{
 		/**
 		* The &quot;real&quot; part of <code>&#955;</code>.

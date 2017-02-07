@@ -6,7 +6,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Paddings
 	/**
      * Block cipher padders are expected to conform to this interface
      */
-	public interface IBlockCipherPadding
+	internal interface IBlockCipherPadding
 	{
 		/**
          * Initialise the padder.

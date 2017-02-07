@@ -10,7 +10,7 @@ using NBitcoin.BouncyCastle.Utilities;
 namespace NBitcoin.BouncyCastle.Math.EC
 {
 	/// <remarks>Base class for an elliptic curve.</remarks>
-	public abstract class ECCurve
+	internal abstract class ECCurve
 	{
 		public const int COORD_AFFINE = 0;
 		public const int COORD_HOMOGENEOUS = 1;
@@ -27,7 +27,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
 				COORD_JACOBIAN_MODIFIED, COORD_LAMBDA_AFFINE, COORD_LAMBDA_PROJECTIVE, COORD_SKEWED };
 		}
 
-		public class Config
+		internal class Config
 		{
 			protected ECCurve outer;
 			protected int coord;
@@ -492,7 +492,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
 		}
 	}
 
-	public abstract class AbstractFpCurve
+	internal abstract class AbstractFpCurve
 		: ECCurve
 	{
 		protected AbstractFpCurve(BigInteger q)
@@ -530,7 +530,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
 	/**
      * Elliptic curve over Fp
      */
-	public class FpCurve
+	internal class FpCurve
 		: AbstractFpCurve
 	{
 		private const int FP_DEFAULT_COORDS = COORD_JACOBIAN_MODIFIED;
@@ -657,7 +657,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
 		}
 	}
 
-	public abstract class AbstractF2mCurve
+	internal abstract class AbstractF2mCurve
 		: ECCurve
 	{
 		public static BigInteger Inverse(int m, int[] ks, BigInteger x)
@@ -861,7 +861,7 @@ namespace NBitcoin.BouncyCastle.Math.EC
      * Elliptic curves over F2m. The Weierstrass equation is given by
      * <code>y<sup>2</sup> + xy = x<sup>3</sup> + ax<sup>2</sup> + b</code>.
      */
-	public class F2mCurve
+	internal class F2mCurve
 		: AbstractF2mCurve
 	{
 		private const int F2M_DEFAULT_COORDS = COORD_LAMBDA_PROJECTIVE;

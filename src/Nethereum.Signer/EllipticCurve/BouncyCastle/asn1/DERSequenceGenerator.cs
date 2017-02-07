@@ -2,7 +2,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class DerSequenceGenerator
+	internal class DerSequenceGenerator
 		: DerGenerator
 	{
 		private readonly MemoryStream _bOut = new MemoryStream();

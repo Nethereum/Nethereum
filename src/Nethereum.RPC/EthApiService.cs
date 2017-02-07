@@ -32,7 +32,7 @@ namespace Nethereum.RPC
             Compile = new EthApiCompilerService(client);
 
             DefaultBlock = BlockParameter.CreateLatest();
-            TransactionManager = new TransactionManager(this);
+            TransactionManager = new TransactionManager(client);
         }
 
         public BlockParameter DefaultBlock

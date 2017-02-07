@@ -10,14 +10,30 @@ using Org.BouncyCastle.Security;
 
 namespace Nethereum.Signer
 {
-    public static class EthECKey
+    public class EthECKey
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
+        private readonly ECKey _ecKey;
 
-        public static int CalculateRecId(this ECKey key, ECDSASignature signature, byte[] hash)
+        public EthECKey(string privateKey)
+        {
+            _ecKey = new ECKey(privateKey.HexToByteArray(), true);            
+        }
+
+        public EthECKey(byte[] vch, bool isPrivate)
+        {
+            _ecKey = new ECKey(vch, isPrivate);            
+        }
+
+        internal EthECKey(ECKey ecKey)
+        {
+            _ecKey = ecKey;
+        }
+
+        internal int CalculateRecId(ECDSASignature signature, byte[] hash)
         {
             var recId = -1;
-            var thisKey = key.GetPubKey(false); // compressed
+            var thisKey = _ecKey.GetPubKey(false); // compressed
 
             for (var i = 0; i < 4; i++)
             {
@@ -33,7 +49,7 @@ namespace Nethereum.Signer
             return recId;
         }
 
-        public static ECKey GenerateKey()
+        public static EthECKey GenerateKey()
         {
             //mixing bouncy implementation
             var gen = new ECKeyPairGenerator();
@@ -41,34 +57,44 @@ namespace Nethereum.Signer
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
             var privateBytes = ((ECPrivateKeyParameters) keyPair.Private).D.ToByteArray();
-            return new ECKey(privateBytes, true);
+            return new EthECKey(privateBytes, true);
         }
 
-        public static byte[] GetPrivateKeyAsBytes(this ECKey key)
+        public byte[] GetPrivateKeyAsBytes()
         {
-            return key.PrivateKey.D.ToByteArray();
+            return _ecKey.PrivateKey.D.ToByteArray();
         }
 
-        public static byte[] GetPubKeyNoPrefix(this ECKey key)
+        public string GetPrivateKey()
         {
-            var pubKey = key.GetPubKey(false);
+            return GetPrivateKeyAsBytes().ToHex(true);
+        }
+
+        public byte[] GetPubKey()
+        {
+            return _ecKey.GetPubKey(false);
+        }
+
+        public byte[] GetPubKeyNoPrefix()
+        {
+            var pubKey = _ecKey.GetPubKey(false);
             var arr = new byte[pubKey.Length - 1];
             //remove the prefix
             Array.Copy(pubKey, 1, arr, 0, arr.Length);
             return arr;
         }
 
-        public static string GetPublicAddress(this ECKey key)
+        public string GetPublicAddress()
         {
-            var initaddr = new Sha3Keccack().CalculateHash(key.GetPubKeyNoPrefix());
+            var initaddr = new Sha3Keccack().CalculateHash(GetPubKeyNoPrefix());
             var addr = new byte[initaddr.Length - 12];
             Array.Copy(initaddr, 12, addr, 0, initaddr.Length - 12);
-            return addr.ToHex();
+            return new AddressUtil().ConvertToChecksumAddress(addr.ToHex());
         }
 
         public static string GetPublicAddress(string privateKey)
         {
-            var key = new ECKey(privateKey.HexToByteArray(), true);
+            var key = new EthECKey(privateKey.HexToByteArray(), true);
             return key.GetPublicAddress();
         }
 
@@ -84,23 +110,35 @@ namespace Nethereum.Signer
             return header - 27;
         }
 
-        public static ECKey RecoverFromSignature(ECDSASignature signature, byte[] hash)
+        public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash)
         {
-            return ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature, hash, false);
+            return new EthECKey(ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature.ECDSASignature, hash, false));
         }
 
-        public static ECDSASignature SignAndCalculateV(this ECKey key, byte[] hash)
+        public EthECDSASignature SignAndCalculateV(byte[] hash)
         {
-            var signature = key.Sign(hash);
-            var recId = key.CalculateRecId(signature, hash);
+            var signature = _ecKey.Sign(hash);
+            var recId = CalculateRecId(signature, hash);
             signature.V = (byte) (recId + 27);
-            return signature;
+            return new EthECDSASignature(signature);
         }
 
-        public static bool VerifyAllowingOnlyLowS(this ECKey key, byte[] hash, ECDSASignature sig)
+        public EthECDSASignature Sign(byte[] hash)
+        {
+            var signature = _ecKey.Sign(hash);
+            return new EthECDSASignature(signature);
+        }
+
+        public bool Verify(byte[] hash, EthECDSASignature sig)
+        {
+            return _ecKey.Verify(hash, sig.ECDSASignature);
+        }
+
+        public bool VerifyAllowingOnlyLowS(byte[] hash, EthECDSASignature sig)
         {
             if (!sig.IsLowS) return false;
-            return key.Verify(hash, sig);
+            return _ecKey.Verify(hash, sig.ECDSASignature);
         }
     }
+
 }

@@ -6,7 +6,7 @@ using NBitcoin.BouncyCastle.Security;
 
 namespace NBitcoin.BouncyCastle.Math.Raw
 {
-	public abstract class Mod
+	internal abstract class Mod
 	{
 		private static readonly SecureRandom RandomSource = new SecureRandom();
 

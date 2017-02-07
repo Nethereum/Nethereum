@@ -7,7 +7,7 @@ using NBitcoin.BouncyCastle.Asn1.X9;
 
 namespace NBitcoin.BouncyCastle.Crypto.EC
 {
-	public sealed class CustomNamedCurves
+	internal sealed class CustomNamedCurves
 	{
 		private CustomNamedCurves()
 		{
@@ -29,7 +29,7 @@ namespace NBitcoin.BouncyCastle.Crypto.EC
 		/*
          * secp256k1
          */
-		public class SecP256K1Holder
+		internal class SecP256K1Holder
 			: X9ECParametersHolder
 		{
 			private SecP256K1Holder()

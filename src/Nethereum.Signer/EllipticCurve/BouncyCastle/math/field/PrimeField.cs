@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.Field
 {
-	public class PrimeField
+	internal class PrimeField
 		: IFiniteField
 	{
 		protected readonly BigInteger characteristic;

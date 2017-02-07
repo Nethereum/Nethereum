@@ -4,7 +4,7 @@ using NBitcoin.BouncyCastle.Math;
 
 namespace NBitcoin.BouncyCastle.Crypto.Parameters
 {
-	public class ECPrivateKeyParameters
+	internal class ECPrivateKeyParameters
 		: ECKeyParameters
 	{
 		private readonly BigInteger d;

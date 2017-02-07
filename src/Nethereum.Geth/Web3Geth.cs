@@ -1,4 +1,6 @@
 ﻿using Nethereum.JsonRpc.Client;
+using Nethereum.Web3;
+using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Geth
 {
@@ -10,6 +12,15 @@ namespace Nethereum.Geth
 
         public Web3Geth(string url = @"http://localhost:8545/") : base(url)
         {
+        }
+
+        public Web3Geth(IAccount account, IClient client):base(account, client)
+        {
+        }
+
+        public Web3Geth(IAccount account, string url = @"http://localhost:8545/"):base(account, url)
+        {
+           
         }
 
         public AdminApiService Admin { get; private set; }

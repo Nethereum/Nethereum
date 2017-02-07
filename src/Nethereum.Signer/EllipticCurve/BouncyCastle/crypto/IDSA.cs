@@ -5,7 +5,7 @@ namespace NBitcoin.BouncyCastle.Crypto
 	/**
      * interface for classes implementing the Digital Signature Algorithm
      */
-	public interface IDsa
+	internal interface IDsa
 	{
 		string AlgorithmName
 		{

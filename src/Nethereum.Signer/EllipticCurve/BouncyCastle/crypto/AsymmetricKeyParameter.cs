@@ -1,6 +1,6 @@
 namespace NBitcoin.BouncyCastle.Crypto
 {
-	public abstract class AsymmetricKeyParameter
+	internal abstract class AsymmetricKeyParameter
 		: ICipherParameters
 	{
 		private readonly bool privateKey;

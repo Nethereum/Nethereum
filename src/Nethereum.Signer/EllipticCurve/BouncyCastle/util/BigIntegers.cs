@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Utilities
 	/**
      * BigInteger utilities.
      */
-	public abstract class BigIntegers
+	internal abstract class BigIntegers
 	{
 		private const int MaxIterations = 1000;
 

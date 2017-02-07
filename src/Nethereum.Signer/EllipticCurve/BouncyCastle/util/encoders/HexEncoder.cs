@@ -2,7 +2,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Utilities.Encoders
 {
-	public class HexEncoder
+	internal class HexEncoder
 		: IEncoder
 	{
 		protected readonly byte[] encodingTable =

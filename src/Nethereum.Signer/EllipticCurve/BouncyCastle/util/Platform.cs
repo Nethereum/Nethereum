@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace NBitcoin.BouncyCastle.Utilities
 {
-	public abstract class Platform
+	internal abstract class Platform
 	{
 		private static readonly CompareInfo InvariantCompareInfo = CultureInfo.InvariantCulture.CompareInfo;
 

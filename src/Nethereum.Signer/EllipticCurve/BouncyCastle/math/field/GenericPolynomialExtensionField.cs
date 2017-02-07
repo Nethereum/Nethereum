@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.Field
 {
-	public class GenericPolynomialExtensionField
+	internal class GenericPolynomialExtensionField
 		: IPolynomialExtensionField
 	{
 		protected readonly IFiniteField subfield;

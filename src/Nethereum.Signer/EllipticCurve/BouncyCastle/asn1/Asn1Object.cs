@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class Asn1Object
+	internal abstract class Asn1Object
 		: Asn1Encodable
 	{
 		/// <summary>Create a base ASN.1 object from a byte array.</summary>

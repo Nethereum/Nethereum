@@ -9,7 +9,7 @@ namespace Nethereum.Signer
         public byte[] GetPublicKey(string rlp)
         {
             var transaction = new Transaction(rlp.HexToByteArray());
-            return transaction.Key.GetPubKey(false);
+            return transaction.Key.GetPubKey();
         }
 
         public string GetSenderAddress(string rlp)
@@ -21,14 +21,14 @@ namespace Nethereum.Signer
         public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce)
         {
             var transaction = new Transaction(to, amount, nonce);
-            transaction.Sign(new ECKey(key.HexToByteArray(), true));
+            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
         public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, string data)
         {
             var transaction = new Transaction(to, amount, nonce, data);
-            transaction.Sign(new ECKey(key.HexToByteArray(), true));
+            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
@@ -36,7 +36,7 @@ namespace Nethereum.Signer
             BigInteger gasLimit)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
-            transaction.Sign(new ECKey(key.HexToByteArray(), true));
+            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
@@ -44,7 +44,7 @@ namespace Nethereum.Signer
             BigInteger gasLimit, string data)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
-            transaction.Sign(new ECKey(key.HexToByteArray(), true));
+            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
         }
 

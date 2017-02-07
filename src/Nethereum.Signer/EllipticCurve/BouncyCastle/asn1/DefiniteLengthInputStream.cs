@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Utilities.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class DefiniteLengthInputStream
+	internal class DefiniteLengthInputStream
 		: LimitedInputStream
 	{
 		private static readonly byte[] EmptyBytes = new byte[0];

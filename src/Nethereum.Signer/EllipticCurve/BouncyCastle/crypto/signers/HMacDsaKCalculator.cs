@@ -11,7 +11,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Signers
 	/**
      * A deterministic K calculator based on the algorithm in section 3.2 of RFC 6979.
      */
-	public class HMacDsaKCalculator
+	internal class HMacDsaKCalculator
 		: IDsaKCalculator
 	{
 		private readonly HMac hMac;

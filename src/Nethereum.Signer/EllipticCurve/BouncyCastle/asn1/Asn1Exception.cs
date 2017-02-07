@@ -3,7 +3,7 @@ using System.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public class Asn1Exception
+	internal class Asn1Exception
 		: IOException
 	{
 		public Asn1Exception()

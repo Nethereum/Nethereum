@@ -1,6 +1,6 @@
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class Asn1Encodable
+	internal abstract class Asn1Encodable
 		: IAsn1Convertible
 	{
 		public const string Der = "DER";

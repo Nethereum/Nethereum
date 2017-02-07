@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
     * Class implementing the WTNAF (Window
     * <code>&#964;</code>-adic Non-Adjacent Form) algorithm.
     */
-	public class WTauNafMultiplier
+	internal class WTauNafMultiplier
 		: AbstractECMultiplier
 	{
 		// TODO Create WTauNafUtilities class and move various functionality into it

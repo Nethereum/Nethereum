@@ -30,7 +30,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Engines
     * This file contains the fast version with 8Kbytes of static tables for round precomputation
     * </p>
     */
-	public class AesFastEngine
+	internal class AesFastEngine
 		: IBlockCipher
 	{
 		// The S box

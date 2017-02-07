@@ -6,7 +6,7 @@ using NBitcoin.BouncyCastle.Math;
 namespace NBitcoin.BouncyCastle.Utilities
 {
 	/// <summary> General array utilities.</summary>
-	public abstract class Arrays
+	internal abstract class Arrays
 	{
 		public static bool AreEqual(
 			bool[] a,

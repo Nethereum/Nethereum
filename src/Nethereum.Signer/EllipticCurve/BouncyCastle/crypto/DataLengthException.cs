@@ -8,7 +8,7 @@ namespace NBitcoin.BouncyCastle.Crypto
      * insufficient input. In general this exception will Get thrown rather
      * than an ArrayOutOfBounds exception.
      */
-	public class DataLengthException
+	internal class DataLengthException
 		: CryptoException
 	{
 		/**

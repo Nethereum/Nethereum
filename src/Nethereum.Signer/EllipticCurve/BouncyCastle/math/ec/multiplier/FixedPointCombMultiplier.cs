@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 {
-	public class FixedPointCombMultiplier
+	internal class FixedPointCombMultiplier
 		: AbstractECMultiplier
 	{
 		protected override ECPoint MultiplyPositive(ECPoint p, BigInteger k)

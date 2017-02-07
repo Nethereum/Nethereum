@@ -1,8 +1,7 @@
-﻿using Nethereum.Contracts;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class EthApiContractService : EthApiService
     {

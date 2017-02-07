@@ -12,7 +12,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Digests
      * It is interesting to ponder why the, apart from the extra IV, the other difference here from MD5
      * is the "endianness" of the word processing!
      */
-	public class Sha1Digest
+	internal class Sha1Digest
 		: GeneralDigest
 	{
 		private const int DigestLength = 20;

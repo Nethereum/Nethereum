@@ -11,7 +11,7 @@ namespace NBitcoin.BouncyCastle.Asn1
 	 * the stream. If an ASN.1 Null is encountered a Der/BER Null object is
 	 * returned.
 	 */
-	public class Asn1InputStream
+	internal class Asn1InputStream
 		: FilterStream
 	{
 		private readonly int limit;

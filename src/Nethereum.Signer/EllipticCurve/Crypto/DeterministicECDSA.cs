@@ -39,7 +39,7 @@ namespace NBitcoin.Crypto
         }
     }
 
-    public class DeterministicECDSA : ECDsaSigner
+    internal class DeterministicECDSA : ECDsaSigner
     {
         private readonly IDigest _digest;
         private byte[] _buffer = new byte[0];

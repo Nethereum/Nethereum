@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Crypto
 {
-	public class Check
+	internal class Check
 	{
 		public static void DataLength(bool condition, string msg)
 		{

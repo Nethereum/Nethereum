@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.EC.Custom.Sec
 {
-	public class SecP256K1Curve
+	internal class SecP256K1Curve
 		: AbstractFpCurve
 	{
 		public static readonly BigInteger q = new BigInteger(1,

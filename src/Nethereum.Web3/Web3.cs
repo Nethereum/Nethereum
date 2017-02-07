@@ -1,10 +1,12 @@
 ﻿using System;
 using Nethereum.ABI.Util;
+using Nethereum.Contracts;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
+using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
 
 namespace Nethereum.Web3
@@ -21,10 +23,22 @@ namespace Nethereum.Web3
             InitialiseInnerServices();
         }
 
+        public Web3(IAccount account, IClient client):this(client)
+        {
+            this.TransactionManager = account.TransactionManager;
+            this.TransactionManager.Client = this.Client;
+        }
+
         public Web3(string url = @"http://localhost:8545/")
         {
             IntialiseRpcClient(url);
             InitialiseInnerServices();
+        }
+
+        public Web3(IAccount account, string url = @"http://localhost:8545/")
+        {
+            this.TransactionManager = account.TransactionManager;
+            this.TransactionManager.Client = this.Client;
         }
 
         public ITransactionManager TransactionManager

@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.EC.Endo
 {
-	public interface ECEndomorphism
+	internal interface ECEndomorphism
 	{
 		ECPointMap PointMap
 		{

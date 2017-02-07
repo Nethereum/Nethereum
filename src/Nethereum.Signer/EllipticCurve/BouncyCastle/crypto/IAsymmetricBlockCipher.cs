@@ -1,7 +1,7 @@
 namespace NBitcoin.BouncyCastle.Crypto
 {
 	/// <remarks>Base interface for a public/private key block cipher.</remarks>
-	public interface IAsymmetricBlockCipher
+	internal interface IAsymmetricBlockCipher
 	{
 		/// <summary>The name of the algorithm this cipher implements.</summary>
 		string AlgorithmName

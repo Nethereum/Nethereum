@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Math.Field
 {
-	public class GF2Polynomial
+	internal class GF2Polynomial
 		: IPolynomial
 	{
 		protected readonly int[] exponents;

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NBitcoin.BouncyCastle.Security
 {
-	public class SecureRandom : Random
+	internal class SecureRandom : Random
 	{
 		public SecureRandom()
 		{

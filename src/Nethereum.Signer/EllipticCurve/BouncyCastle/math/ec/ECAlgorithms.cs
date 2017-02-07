@@ -6,7 +6,7 @@ using NBitcoin.BouncyCastle.Math.Field;
 
 namespace NBitcoin.BouncyCastle.Math.EC
 {
-	public class ECAlgorithms
+	internal class ECAlgorithms
 	{
 		public static bool IsF2mCurve(ECCurve c)
 		{

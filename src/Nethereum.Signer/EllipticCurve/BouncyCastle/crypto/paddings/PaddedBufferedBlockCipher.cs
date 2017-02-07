@@ -11,7 +11,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Paddings
 	* or on a doFinal (unless the current block in the buffer is a pad block).
 	* The default padding mechanism used is the one outlined in Pkcs5/Pkcs7.
 	*/
-	public class PaddedBufferedBlockCipher
+	internal class PaddedBufferedBlockCipher
 		: BufferedBlockCipher
 	{
 		private readonly IBlockCipherPadding padding;

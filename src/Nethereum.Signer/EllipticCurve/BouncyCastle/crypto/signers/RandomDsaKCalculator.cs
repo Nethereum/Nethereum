@@ -5,7 +5,7 @@ using NBitcoin.BouncyCastle.Security;
 
 namespace NBitcoin.BouncyCastle.Crypto.Signers
 {
-	public class RandomDsaKCalculator
+	internal class RandomDsaKCalculator
 		: IDsaKCalculator
 	{
 		private BigInteger q;

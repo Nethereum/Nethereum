@@ -6,7 +6,7 @@ namespace NBitcoin.BouncyCastle.Crypto.Signers
 	/**
      * Interface define calculators of K values for DSA/ECDSA.
      */
-	public interface IDsaKCalculator
+	internal interface IDsaKCalculator
 	{
 		/**
          * Return true if this calculator is deterministic, false otherwise.

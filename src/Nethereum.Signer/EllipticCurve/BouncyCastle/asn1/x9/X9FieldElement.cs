@@ -6,7 +6,7 @@ namespace NBitcoin.BouncyCastle.Asn1.X9
 	/**
      * Class for processing an ECFieldElement as a DER object.
      */
-	public class X9FieldElement
+	internal class X9FieldElement
 		: Asn1Encodable
 	{
 		private ECFieldElement f;

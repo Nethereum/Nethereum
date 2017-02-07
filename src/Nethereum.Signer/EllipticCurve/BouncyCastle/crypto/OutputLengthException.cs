@@ -2,7 +2,7 @@
 
 namespace NBitcoin.BouncyCastle.Crypto
 {
-	public class OutputLengthException
+	internal class OutputLengthException
 		: DataLengthException
 	{
 		public OutputLengthException()

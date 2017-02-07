@@ -6,7 +6,7 @@ using NBitcoin.BouncyCastle.Utilities;
 
 namespace NBitcoin.BouncyCastle.Crypto.Parameters
 {
-	public class ECDomainParameters
+	internal class ECDomainParameters
 	{
 		public ECCurve curve;
 		public byte[] seed;

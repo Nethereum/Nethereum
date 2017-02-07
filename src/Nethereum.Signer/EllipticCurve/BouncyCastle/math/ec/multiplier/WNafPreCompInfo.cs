@@ -4,7 +4,7 @@ namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
     * Class holding precomputation data for the WNAF (Window Non-Adjacent Form)
     * algorithm.
     */
-	public class WNafPreCompInfo
+	internal class WNafPreCompInfo
 		: PreCompInfo
 	{
 		/**

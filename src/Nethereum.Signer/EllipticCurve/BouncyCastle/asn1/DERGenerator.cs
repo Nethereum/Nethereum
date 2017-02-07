@@ -4,7 +4,7 @@ using NBitcoin.BouncyCastle.Utilities.IO;
 
 namespace NBitcoin.BouncyCastle.Asn1
 {
-	public abstract class DerGenerator
+	internal abstract class DerGenerator
 		: Asn1Generator
 	{
 		private bool _tagged = false;

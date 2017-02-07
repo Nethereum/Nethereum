@@ -7,7 +7,7 @@ namespace NBitcoin.BouncyCastle.Asn1.X9
 	/**
      * class for describing an ECPoint as a Der object.
      */
-	public class X9ECPoint
+	internal class X9ECPoint
 		: Asn1Encodable
 	{
 		private readonly Asn1OctetString encoding;

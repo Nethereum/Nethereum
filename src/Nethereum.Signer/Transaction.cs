@@ -74,9 +74,9 @@ namespace Nethereum.Signer
 
         public byte[] Data => simpleRlpSigner.Data[5];
 
-        public ECDSASignature Signature => simpleRlpSigner.Signature;
+        public EthECDSASignature Signature => simpleRlpSigner.Signature;
 
-        public ECKey Key => simpleRlpSigner.Key;
+        public EthECKey Key => simpleRlpSigner.Key;
 
         public byte[] GetRLPEncoded()
         {
@@ -88,7 +88,7 @@ namespace Nethereum.Signer
             return simpleRlpSigner.GetRLPEncodedRaw();
         }
 
-        public void Sign(ECKey key)
+        public void Sign(EthECKey key)
         {
             simpleRlpSigner.Sign(key);
         }
@@ -99,8 +99,8 @@ namespace Nethereum.Signer
             return string.Format(s, Nonce.ToHex(),
                 GasPrice.ToHex(), GasLimit.ToHex(), ReceiveAddress.ToHex(), Value.ToHex(), ToHex(Data),
                 Signature.V.ToString("X"),
-                Signature.R.ToByteArrayUnsigned().ToHex(),
-                Signature.S.ToByteArrayUnsigned().ToHex());
+                Signature.R.ToHex(),
+                Signature.S.ToHex());
         }
 
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,

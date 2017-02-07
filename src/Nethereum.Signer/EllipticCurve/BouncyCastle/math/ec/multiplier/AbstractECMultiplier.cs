@@ -1,6 +1,6 @@
 ﻿namespace NBitcoin.BouncyCastle.Math.EC.Multiplier
 {
-	public abstract class AbstractECMultiplier
+	internal abstract class AbstractECMultiplier
 		: ECMultiplier
 	{
 		public virtual ECPoint Multiply(ECPoint p, BigInteger k)
