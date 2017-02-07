@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.Core.Signing.Crypto;
+using Nethereum.Signer;
 
 namespace Nethereum.KeyStore.Console.Sample
 {

@@ -1,9 +1,10 @@
 ﻿using System;
 using Nethereum.ABI.Util;
-using Nethereum.Core.Signing.Crypto;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.Services;
+using Nethereum.RPC;
 using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.Signer;
+using Nethereum.Util;
 using Newtonsoft.Json;
 
 namespace Nethereum.Web3
@@ -37,7 +38,7 @@ namespace Nethereum.Web3
 
         public IClient Client { get; private set; }
 
-        public EthApiService Eth { get; private set; }
+        public EthApiContractService Eth { get; private set; }
         public ShhApiService Shh { get; private set; }
 
         public NetApiService Net { get; private set; }
@@ -71,7 +72,7 @@ namespace Nethereum.Web3
 
         protected virtual void InitialiseInnerServices()
         {
-            Eth = new EthApiService(Client);
+            Eth = new EthApiContractService(Client);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);

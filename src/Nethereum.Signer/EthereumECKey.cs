@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Linq;
 using NBitcoin.Crypto;
-using Nethereum.ABI.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
-namespace Nethereum.Core.Signing.Crypto
+namespace Nethereum.Signer
 {
     public static class EthECKey
     {
@@ -31,6 +31,22 @@ namespace Nethereum.Core.Signing.Crypto
             if (recId == -1)
                 throw new Exception("Could not construct a recoverable key. This should never happen.");
             return recId;
+        }
+
+        public static ECKey GenerateKey()
+        {
+            //mixing bouncy implementation
+            var gen = new ECKeyPairGenerator();
+            var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
+            gen.Init(keyGenParam);
+            var keyPair = gen.GenerateKeyPair();
+            var privateBytes = ((ECPrivateKeyParameters) keyPair.Private).D.ToByteArray();
+            return new ECKey(privateBytes, true);
+        }
+
+        public static byte[] GetPrivateKeyAsBytes(this ECKey key)
+        {
+            return key.PrivateKey.D.ToByteArray();
         }
 
         public static byte[] GetPubKeyNoPrefix(this ECKey key)
@@ -56,7 +72,6 @@ namespace Nethereum.Core.Signing.Crypto
             return key.GetPublicAddress();
         }
 
-
         public static int GetRecIdFromV(byte v)
         {
             var header = v;
@@ -72,22 +87,6 @@ namespace Nethereum.Core.Signing.Crypto
         public static ECKey RecoverFromSignature(ECDSASignature signature, byte[] hash)
         {
             return ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature, hash, false);
-        }
-
-        public static ECKey GenerateKey()
-        {
-            //mixing bouncy implementation
-            var gen = new ECKeyPairGenerator();
-            var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
-            gen.Init(keyGenParam);
-            var keyPair =  gen.GenerateKeyPair();
-            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArray();
-            return new ECKey(privateBytes, true);
-        }
-
-        public static byte[] GetPrivateKeyAsBytes(this ECKey key)
-        {
-            return key.PrivateKey.D.ToByteArray();
         }
 
         public static ECDSASignature SignAndCalculateV(this ECKey key, byte[] hash)

@@ -9,7 +9,6 @@ namespace Nethereum.ABI.Encoders
         private readonly int arraySize;
         private readonly ABIType elementType;
 
-
         public StaticArrayTypeEncoder(ABIType elementType, int arraySize)
         {
             this.elementType = elementType;

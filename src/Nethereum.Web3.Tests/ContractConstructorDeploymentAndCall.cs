@@ -46,7 +46,7 @@ namespace Nethereum.Web3.Tests
             Assert.True(result, "Account should be unlocked");
 
             //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
+            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
 
             Assert.NotNull(transactionHash);
 

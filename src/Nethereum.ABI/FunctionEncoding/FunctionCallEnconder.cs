@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.FunctionEncoding
@@ -19,7 +20,6 @@ namespace Nethereum.ABI.FunctionEncoding
 
             return EncodeRequest(sha3Signature, encodedParameters.ToHex());
         }
-
 
         public string EncodeRequest(string sha3Signature, Parameter[] parameters, params object[] values)
         {

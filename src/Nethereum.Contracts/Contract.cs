@@ -1,26 +1,26 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
-using Nethereum.RPC.Eth.Services;
-using Nethereum.Web3.Contracts;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class Contract
     {
-        private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
-
         public Contract(EthApiService eth, string abi, string contractAddress)
         {
             Eth = eth;
             ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
             Address = contractAddress;
         }
+
+        private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
 
         public ContractABI ContractABI { get; set; }
 

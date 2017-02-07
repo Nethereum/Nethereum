@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.RLP;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -16,10 +16,10 @@ namespace Nethereum.Web3.Tests
             string test = "";
             byte[] testBytes = Encoding.UTF8.GetBytes(test);
             string expected = "80";
-            byte[] encoderesult = RLP.EncodeElement(testBytes);
+            byte[] encoderesult = RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0].RLPData;
             Assert.Equal(null, decodeResult);
         }
 
@@ -51,10 +51,10 @@ namespace Nethereum.Web3.Tests
         private static void AssertStringEncoding(string test, string expected)
         {
             byte[] testBytes = test.ToBytesForRLPEncoding();
-            byte[] encoderesult = RLP.EncodeElement(testBytes);
+            byte[] encoderesult = RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0].RLPData;
             Assert.Equal(test, decodeResult.ToStringFromRLPDecoded());
         }
 
@@ -89,10 +89,10 @@ namespace Nethereum.Web3.Tests
         private static void AssertIntEncoding(int test, string expected)
         {
             byte[] testBytes = test.ToBytesForRLPEncoding();
-            byte[] encoderesult = RLP.EncodeElement(testBytes);
+            byte[] encoderesult = RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0].RLPData;
             Assert.Equal(test, decodeResult.ToBigIntegerFromRLPDecoded());
         }
 
@@ -102,10 +102,10 @@ namespace Nethereum.Web3.Tests
             BigInteger test = "100102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f".HexToByteArray().ToBigIntegerFromRLPDecoded();
             string expected = "a0100102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
             byte[] testBytes = test.ToBytesForRLPEncoding();
-            byte[] encoderesult = RLP.EncodeElement(testBytes);
+            byte[] encoderesult = RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0].RLPData;
             Assert.Equal(test, decodeResult.ToBigIntegerFromRLPDecoded());
         }
 
@@ -114,10 +114,10 @@ namespace Nethereum.Web3.Tests
         {
             byte[][] test = new byte[0][];
             string expected = "c0";
-            byte[] encoderesult = RLP.EncodeList(test);
+            byte[] encoderesult = RLP.RLP.EncodeList(test);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0] as RLPCollection;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0] as RLPCollection;
             Assert.True(decodeResult.Count == 0);
         }
 
@@ -145,10 +145,10 @@ namespace Nethereum.Web3.Tests
 
         private static void AssertStringCollection(string[] test, string expected)
         {
-            byte[] encoderesult = RLP.EncodeList(EncodeElementsBytes(test.ToBytesForRLPEncoding()));
+            byte[] encoderesult = RLP.RLP.EncodeList(EncodeElementsBytes(test.ToBytesForRLPEncoding()));
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = RLP.Decode(encoderesult)[0] as RLPCollection;
+            var decodeResult = RLP.RLP.Decode(encoderesult)[0] as RLPCollection;
             for (int i = 0; i < test.Length; i++)
             {
                 Assert.Equal(test[i], decodeResult[i].RLPData.ToStringFromRLPDecoded());
@@ -160,7 +160,7 @@ namespace Nethereum.Web3.Tests
             var encodeElements = new List<byte[]>();
             foreach (var byteElement in bytes)
             {
-                encodeElements.Add(RLP.EncodeElement(byteElement));
+                encodeElements.Add(RLP.RLP.EncodeElement(byteElement));
             }
             return encodeElements.ToArray();
         }

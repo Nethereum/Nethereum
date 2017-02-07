@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
-using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class EventTopicBuilder
     {

@@ -1,6 +1,6 @@
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.Web3
+namespace Nethereum.RPC
 {
     public class RpcClientWrapper
     {

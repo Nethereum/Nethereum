@@ -1,4 +1,4 @@
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     public class RLPItem : IRLPElement
     {

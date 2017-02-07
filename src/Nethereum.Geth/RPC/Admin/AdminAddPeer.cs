@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Admin
+namespace Nethereum.Geth.RPC.Admin
 {
     /// <Summary>
     ///     The addPeer administrative method requests adding a new remote node to the list of tracked static nodes. The node
@@ -18,16 +18,16 @@ namespace Nethereum.RPC.Admin
         {
         }
 
-        public Task<bool> SendRequestAsync(string enodeUrl, object id = null)
-        {
-            if (enodeUrl == null) throw new ArgumentNullException(nameof(enodeUrl));
-            return base.SendRequestAsync(id, enodeUrl);
-        }
-
         public RpcRequest BuildRequest(string enodeUrl, object id = null)
         {
             if (enodeUrl == null) throw new ArgumentNullException(nameof(enodeUrl));
             return base.BuildRequest(id, enodeUrl);
+        }
+
+        public Task<bool> SendRequestAsync(string enodeUrl, object id = null)
+        {
+            if (enodeUrl == null) throw new ArgumentNullException(nameof(enodeUrl));
+            return base.SendRequestAsync(id, enodeUrl);
         }
     }
 }

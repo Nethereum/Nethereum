@@ -2,7 +2,7 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using Org.BouncyCastle.Crypto.Digests;
 
-namespace Nethereum.ABI.Util
+namespace Nethereum.Util
 {
     public class Sha3Keccack
     {

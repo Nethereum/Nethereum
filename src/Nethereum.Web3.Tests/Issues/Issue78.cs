@@ -27,7 +27,7 @@ namespace Nethereum.Web3.Tests.Issues
             //issue ran out of gas (putting 900 * 1000 instead of 200 * 1000 fixes this)
             w3.TransactionManager = new ClientPersonalTransactionManager(w3.Client, pass);
 
-            var contractHash = await w3.Eth.GetDeployContract().SendRequestAsync(pass, abi, byteCode, account, new HexBigInteger(900 * 1000), "My product");
+            var contractHash = await w3.Eth.DeployContract.SendRequestAsync(pass, abi, byteCode, account, new HexBigInteger(900 * 1000), "My product");
             var minerResult = await w3.Miner.Start.SendRequestAsync();
 
             var receipt = await w3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash);

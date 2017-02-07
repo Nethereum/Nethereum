@@ -7,11 +7,11 @@ namespace Nethereum.ABI.Encoders
 {
     public class Bytes32TypeEncoder : ITypeEncoder
     {
-        private readonly IntTypeEncoder intTypeEncoder;
+        private readonly IntTypeEncoder _intTypeEncoder;
 
         public Bytes32TypeEncoder()
         {
-            intTypeEncoder = new IntTypeEncoder();
+            _intTypeEncoder = new IntTypeEncoder();
         }
 
         public byte[] Encode(object value)
@@ -19,7 +19,7 @@ namespace Nethereum.ABI.Encoders
             if (value.IsNumber())
             {
                 var bigInt = BigInteger.Parse(value.ToString());
-                return intTypeEncoder.EncodeInt(bigInt);
+                return _intTypeEncoder.EncodeInt(bigInt);
             }
 
             var stringValue = value as string;

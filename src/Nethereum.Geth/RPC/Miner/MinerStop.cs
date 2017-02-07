@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC.Miner
+namespace Nethereum.Geth.RPC.Miner
 {
     /// <Summary>
     ///     Stop the CPU mining operation.

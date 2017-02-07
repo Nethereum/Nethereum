@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.ABI.Util
+namespace Nethereum.Util
 {
     public class AddressUtil
     {
@@ -19,6 +19,12 @@ namespace Nethereum.ABI.Util
             return checksumAddress;
         }
 
+        public string ConvertToValid20ByteAddress(string address)
+        {
+            address = address.RemoveHexPrefix();
+            return address.PadLeft(40, '0').EnsureHexPrefix();
+        }
+
         public bool IsChecksumAddress(string address)
         {
             address = address.RemoveHexPrefix();
@@ -33,12 +39,6 @@ namespace Nethereum.ABI.Util
                     return false;
             }
             return true;
-        }
-
-        public string ConvertToValid20ByteAddress(string address)
-        {
-            address = address.RemoveHexPrefix();
-            return address.PadLeft(40, '0').EnsureHexPrefix();
         }
     }
 }

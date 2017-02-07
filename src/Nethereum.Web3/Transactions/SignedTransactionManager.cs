@@ -6,6 +6,8 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.Signer;
+using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Transactions
 {
@@ -50,11 +52,11 @@ namespace Nethereum.Web3.Transactions
 
             var gasPrice = transaction.GasPrice;
             if (gasPrice == null)
-                gasPrice = new HexBigInteger(Nethereum.Core.Transaction.DEFAULT_GAS_PRICE);
+                gasPrice = new HexBigInteger(Transaction.DEFAULT_GAS_PRICE);
 
             var gasLimit = transaction.Gas;
             if (gasLimit == null)
-                gasLimit = new HexBigInteger(Nethereum.Core.Transaction.DEFFAULT_GAS_LIMIT);
+                gasLimit = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT);
 
             var value = transaction.Value;
             if (value == null)

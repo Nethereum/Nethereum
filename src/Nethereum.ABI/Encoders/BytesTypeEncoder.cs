@@ -6,11 +6,11 @@ namespace Nethereum.ABI.Encoders
 {
     public class BytesTypeEncoder : ITypeEncoder
     {
-        private readonly IntTypeEncoder intTypeEncoder;
+        private readonly IntTypeEncoder _intTypeEncoder;
 
         public BytesTypeEncoder()
         {
-            intTypeEncoder = new IntTypeEncoder();
+            _intTypeEncoder = new IntTypeEncoder();
         }
 
         public byte[] Encode(object value)
@@ -31,7 +31,7 @@ namespace Nethereum.ABI.Encoders
 
             Array.Copy(bb, 0, ret, 0, bb.Length);
 
-            return ByteUtil.Merge(intTypeEncoder.EncodeInt(bb.Length), ret);
+            return ByteUtil.Merge(_intTypeEncoder.EncodeInt(bb.Length), ret);
         }
     }
 }

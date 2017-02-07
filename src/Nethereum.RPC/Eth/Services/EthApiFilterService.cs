@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Filters;
 
-namespace Nethereum.Web3
+namespace Nethereum.RPC.Eth.Services
 {
     public class EthApiFilterService : RpcClientWrapper
     {

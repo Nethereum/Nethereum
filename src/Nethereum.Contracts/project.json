@@ -1,7 +1,7 @@
 ﻿{
   "version": "2.0.0-rc1",
   "description": "Nethereum Contracts library for interaction via RPC with Smart contracts in Ethereum",
-  "authors": [ "Juan Blanco" ],
+  "authors": ["Juan Blanco"],
   "copyright": "Juan Blanco",
   "title": "Nethereum.Contracts",
   "packOptions": {
@@ -9,15 +9,16 @@
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
     },
-    "summary": "Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters ",
-    "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+    "summary":
+      "Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters ",
+    "tags": ["Netherum", "Ethereum", "Blockchain", "Crypto 2.0"],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"
   },
   "frameworks": {
     "netstandard1.1": {
-      "imports": [ "dotnet52" ]
+      "imports": ["dotnet52"]
     },
     ".NETPortable,Version=v4.5,Profile=Profile111": {},
     "net451": {}

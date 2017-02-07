@@ -5,16 +5,11 @@ namespace Nethereum.ABI.Decoders
 {
     public class AddressTypeDecoder : TypeDecoder
     {
-        private IntTypeDecoder intTypeDecoder;
+        private IntTypeDecoder _intTypeDecoder;
 
         public AddressTypeDecoder()
         {
-            intTypeDecoder = new IntTypeDecoder();
-        }
-
-        public override bool IsSupportedType(Type type)
-        {
-            return (type == typeof(string)) || (type == typeof(object));
+            _intTypeDecoder = new IntTypeDecoder();
         }
 
         public override object Decode(byte[] encoded, Type type)
@@ -28,6 +23,11 @@ namespace Nethereum.ABI.Decoders
         public override Type GetDefaultDecodingType()
         {
             return typeof(string);
+        }
+
+        public override bool IsSupportedType(Type type)
+        {
+            return (type == typeof(string)) || (type == typeof(object));
         }
     }
 }

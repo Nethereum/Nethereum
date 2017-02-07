@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC.Admin
+namespace Nethereum.Geth.RPC.Admin
 {
     /// <Summary>
     ///     The stopRPC administrative method closes the currently open HTTP RPC endpoint. As the node can only have a single

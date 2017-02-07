@@ -2,11 +2,11 @@ using System.Diagnostics;
 using System.Numerics;
 using NBitcoin.Crypto;
 using Nethereum.ABI.Util;
-using Nethereum.ABI.Util.RLP;
-using Nethereum.Core;
-using Nethereum.Core.Signing.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Signer;
+using Nethereum.Util;
+using Nethereum.RLP;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

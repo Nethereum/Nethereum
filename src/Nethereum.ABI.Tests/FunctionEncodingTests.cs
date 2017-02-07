@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Xunit;
 
 namespace Nethereum.ABI.Tests

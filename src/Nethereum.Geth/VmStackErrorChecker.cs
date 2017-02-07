@@ -1,8 +1,7 @@
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.Web3
+namespace Nethereum.Geth
 {
-
     public class VmStackErrorChecker
     {
         public string GetError(JObject stack)

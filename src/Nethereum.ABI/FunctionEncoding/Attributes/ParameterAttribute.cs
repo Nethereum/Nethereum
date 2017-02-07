@@ -1,4 +1,5 @@
 using System;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.FunctionEncoding.Attributes
 {
@@ -20,7 +21,6 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
         }
 
         public Parameter Parameter { get; }
-
 
         public int Order => Parameter.Order;
         public string Name => Parameter.Name;

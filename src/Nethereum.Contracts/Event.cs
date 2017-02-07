@@ -2,23 +2,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class Event
     {
         private readonly Contract _contract;
-        private EthGetFilterLogsForEthNewFilter EthFilterLogs => _contract.Eth.Filters.GetFilterLogsForEthNewFilter;
-        private EthGetFilterChangesForEthNewFilter EthGetFilterChanges => _contract.Eth.Filters.GetFilterChangesForEthNewFilter;
-        private EthGetLogs EthGetLogs => _contract.Eth.Filters.GetLogs;
-        private EthNewFilter EthNewFilter => _contract.Eth.Filters.NewFilter;
 
         private readonly EventTopicBuilder _eventTopicBuilder;
 
@@ -28,6 +24,14 @@ namespace Nethereum.Web3
             EventABI = eventAbi;
             _eventTopicBuilder = new EventTopicBuilder(eventAbi);
         }
+
+        private EthGetFilterLogsForEthNewFilter EthFilterLogs => _contract.Eth.Filters.GetFilterLogsForEthNewFilter;
+
+        private EthGetFilterChangesForEthNewFilter EthGetFilterChanges
+            => _contract.Eth.Filters.GetFilterChangesForEthNewFilter;
+
+        private EthGetLogs EthGetLogs => _contract.Eth.Filters.GetLogs;
+        private EthNewFilter EthNewFilter => _contract.Eth.Filters.NewFilter;
 
         public EventABI EventABI { get; }
 
@@ -58,7 +62,6 @@ namespace Nethereum.Web3
                 new object[] {secondIndexedParameterValue}, new object[] {thirdIndexedParameterValue}, fromBlock,
                 toBlock);
         }
-
 
         public Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)

@@ -1,7 +1,6 @@
-using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 
-namespace Nethereum.RPC.Eth.Filters
+namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Object - The transaction object

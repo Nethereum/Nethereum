@@ -4,7 +4,7 @@ using EdjCase.JsonRpc.Core;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Miner
+namespace Nethereum.Geth.RPC.Miner
 {
     /// <Summary>
     ///     Sets the minimal accepted gas price when mining transactions. Any transactions that are below this limit are
@@ -16,16 +16,16 @@ namespace Nethereum.RPC.Miner
         {
         }
 
-        public Task<bool> SendRequestAsync(HexBigInteger price, object id = null)
-        {
-            if (price == null) throw new ArgumentNullException(nameof(price));
-            return base.SendRequestAsync(id, price);
-        }
-
         public RpcRequest BuildRequest(HexBigInteger price, object id = null)
         {
             if (price == null) throw new ArgumentNullException(nameof(price));
             return base.BuildRequest(id, price);
+        }
+
+        public Task<bool> SendRequestAsync(HexBigInteger price, object id = null)
+        {
+            if (price == null) throw new ArgumentNullException(nameof(price));
+            return base.SendRequestAsync(id, price);
         }
     }
 }

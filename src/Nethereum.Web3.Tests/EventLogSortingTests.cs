@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using Nethereum.Contracts;
+using Nethereum.Contracts.Comparers;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
-using Nethereum.Web3.Contracts.Comparers;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

@@ -1,7 +1,9 @@
+using Nethereum.Geth.RPC.Miner;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Miner;
+using Nethereum.RPC;
+using Nethereum.Web3;
 
-namespace Nethereum.Web3
+namespace Nethereum.Geth
 {
     public class MinerApiService : RpcClientWrapper
     {

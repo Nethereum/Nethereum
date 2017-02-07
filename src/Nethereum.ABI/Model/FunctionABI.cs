@@ -1,9 +1,11 @@
-namespace Nethereum.ABI.FunctionEncoding
+using Nethereum.ABI.FunctionEncoding;
+
+namespace Nethereum.ABI.Model
 {
     public class FunctionABI
     {
-        private string sha3Signature;
         private readonly SignatureEncoder signatureEncoder;
+        private string sha3Signature;
 
         public FunctionABI(string name, bool constant, bool serpent = false)
         {

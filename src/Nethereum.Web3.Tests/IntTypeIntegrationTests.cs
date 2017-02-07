@@ -71,7 +71,7 @@ namespace Nethereum.Web3.Tests
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash =
                 await
-                    web3.Eth.GetDeployContract().SendRequestAsync(contractByteCode, addressFrom,
+                    web3.Eth.DeployContract.SendRequestAsync(contractByteCode, addressFrom,
                         new HexBigInteger(900000));
 
             //get the contract address 

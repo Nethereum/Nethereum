@@ -21,33 +21,16 @@ namespace Nethereum.ABI.JsonDeserialisation
             get { return false; }
         }
 
-        private bool IsPrimitiveToken(JsonToken token)
-        {
-            switch (token)
-            {
-                case JsonToken.Integer:
-                case JsonToken.Float:
-                case JsonToken.String:
-                case JsonToken.Boolean:
-                case JsonToken.Undefined:
-                case JsonToken.Null:
-                case JsonToken.Date:
-                case JsonToken.Bytes:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         /// <summary>
-        ///     Writes the JSON representation of the object.
+        ///     Determines whether this instance can convert the specified object type.
         /// </summary>
-        /// <param name="writer">The <see cref="JsonWriter" /> to write to.</param>
-        /// <param name="value">The value.</param>
-        /// <param name="serializer">The calling serializer.</param>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        /// <param name="objectType">Type of the object.</param>
+        /// <returns>
+        ///     <c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool CanConvert(Type objectType)
         {
-            // can write is set to false
+            return objectType == typeof(ExpandoObject);
         }
 
         /// <summary>
@@ -64,23 +47,32 @@ namespace Nethereum.ABI.JsonDeserialisation
             return ReadValue(reader);
         }
 
-        private object ReadValue(JsonReader reader)
+        /// <summary>
+        ///     Writes the JSON representation of the object.
+        /// </summary>
+        /// <param name="writer">The <see cref="JsonWriter" /> to write to.</param>
+        /// <param name="value">The value.</param>
+        /// <param name="serializer">The calling serializer.</param>
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            while (reader.TokenType == JsonToken.Comment)
-                if (!reader.Read())
-                    throw new Exception("Unexpected end.");
+            // can write is set to false
+        }
 
-            switch (reader.TokenType)
+        private bool IsPrimitiveToken(JsonToken token)
+        {
+            switch (token)
             {
-                case JsonToken.StartObject:
-                    return ReadObject(reader);
-                case JsonToken.StartArray:
-                    return ReadList(reader);
+                case JsonToken.Integer:
+                case JsonToken.Float:
+                case JsonToken.String:
+                case JsonToken.Boolean:
+                case JsonToken.Undefined:
+                case JsonToken.Null:
+                case JsonToken.Date:
+                case JsonToken.Bytes:
+                    return true;
                 default:
-                    if (IsPrimitiveToken(reader.TokenType))
-                        return reader.Value;
-
-                    throw new Exception("Unexpected token when converting ExpandoObject");
+                    return false;
             }
         }
 
@@ -131,16 +123,24 @@ namespace Nethereum.ABI.JsonDeserialisation
             throw new Exception("Unexpected end.");
         }
 
-        /// <summary>
-        ///     Determines whether this instance can convert the specified object type.
-        /// </summary>
-        /// <param name="objectType">Type of the object.</param>
-        /// <returns>
-        ///     <c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.
-        /// </returns>
-        public override bool CanConvert(Type objectType)
+        private object ReadValue(JsonReader reader)
         {
-            return objectType == typeof(ExpandoObject);
+            while (reader.TokenType == JsonToken.Comment)
+                if (!reader.Read())
+                    throw new Exception("Unexpected end.");
+
+            switch (reader.TokenType)
+            {
+                case JsonToken.StartObject:
+                    return ReadObject(reader);
+                case JsonToken.StartArray:
+                    return ReadList(reader);
+                default:
+                    if (IsPrimitiveToken(reader.TokenType))
+                        return reader.Value;
+
+                    throw new Exception("Unexpected token when converting ExpandoObject");
+            }
         }
     }
 }

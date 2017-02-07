@@ -1,43 +1,42 @@
 using System.Collections.Generic;
 using System.Dynamic;
-using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 
-namespace Nethereum.ABI.FunctionEncoding
+namespace Nethereum.ABI.JsonDeserialisation
 {
     public class ABIDeserialiser
     {
-        public ContractABI DeserialiseContract(string abi)
-        {
-            var convertor = new ExpandoObjectConverter();
-            var contract = JsonConvert.DeserializeObject<List<ExpandoObject>>(abi, convertor);
-            var functions = new List<FunctionABI>();
-            var events = new List<EventABI>();
-            ConstructorABI constructor = null;
-
-            foreach (IDictionary<string, object> element in contract)
-            {
-                if ((string) element["type"] == "function")
-                    functions.Add(BuildFunction(element));
-                if ((string) element["type"] == "event")
-                    events.Add(BuildEvent(element));
-                if ((string) element["type"] == "constructor")
-                    constructor = BuildConstructor(element);
-            }
-
-            var contractABI = new ContractABI();
-            contractABI.Functions = functions.ToArray();
-            contractABI.Constructor = constructor;
-            contractABI.Events = events.ToArray();
-
-            return contractABI;
-        }
-
         public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
         {
             var constructorABI = new ConstructorABI();
             constructorABI.InputParameters = BuildFunctionParameters((List<object>) constructor["inputs"]);
             return constructorABI;
+        }
+
+        public EventABI BuildEvent(IDictionary<string, object> eventobject)
+        {
+            var eventABI = new EventABI((string) eventobject["name"]);
+            eventABI.InputParameters = BuildEventParameters((List<object>) eventobject["inputs"]);
+
+            return eventABI;
+        }
+
+        public Parameter[] BuildEventParameters(List<object> inputs)
+        {
+            var parameters = new List<Parameter>();
+            var parameterOrder = 0;
+            foreach (IDictionary<string, object> input in inputs)
+            {
+                parameterOrder = parameterOrder + 1;
+                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder)
+                {
+                    Indexed = (bool) input["indexed"]
+                };
+                parameters.Add(parameter);
+            }
+
+            return parameters.ToArray();
         }
 
         public FunctionABI BuildFunction(IDictionary<string, object> function)
@@ -64,6 +63,32 @@ namespace Nethereum.ABI.FunctionEncoding
             return parameters.ToArray();
         }
 
+        public ContractABI DeserialiseContract(string abi)
+        {
+            var convertor = new ExpandoObjectConverter();
+            var contract = JsonConvert.DeserializeObject<List<ExpandoObject>>(abi, convertor);
+            var functions = new List<FunctionABI>();
+            var events = new List<EventABI>();
+            ConstructorABI constructor = null;
+
+            foreach (IDictionary<string, object> element in contract)
+            {
+                if ((string) element["type"] == "function")
+                    functions.Add(BuildFunction(element));
+                if ((string) element["type"] == "event")
+                    events.Add(BuildEvent(element));
+                if ((string) element["type"] == "constructor")
+                    constructor = BuildConstructor(element);
+            }
+
+            var contractABI = new ContractABI();
+            contractABI.Functions = functions.ToArray();
+            contractABI.Constructor = constructor;
+            contractABI.Events = events.ToArray();
+
+            return contractABI;
+        }
+
         public bool TryGetSerpentValue(IDictionary<string, object> function)
         {
             try
@@ -88,32 +113,6 @@ namespace Nethereum.ABI.FunctionEncoding
             {
                 return null;
             }
-        }
-
-
-        public EventABI BuildEvent(IDictionary<string, object> eventobject)
-        {
-            var eventABI = new EventABI((string) eventobject["name"]);
-            eventABI.InputParameters = BuildEventParameters((List<object>) eventobject["inputs"]);
-
-            return eventABI;
-        }
-
-        public Parameter[] BuildEventParameters(List<object> inputs)
-        {
-            var parameters = new List<Parameter>();
-            var parameterOrder = 0;
-            foreach (IDictionary<string, object> input in inputs)
-            {
-                parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder)
-                {
-                    Indexed = (bool) input["indexed"]
-                };
-                parameters.Add(parameter);
-            }
-
-            return parameters.ToArray();
         }
     }
 }

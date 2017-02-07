@@ -18,7 +18,6 @@ namespace Nethereum.ABI.Util
             return result;
         }
 
-
         /// <param name="arrays"> - arrays to merge </param>
         /// <returns> - merged array </returns>
         public static byte[] Merge(params byte[][] arrays)

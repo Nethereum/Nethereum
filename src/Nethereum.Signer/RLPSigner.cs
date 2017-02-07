@@ -1,23 +1,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using NBitcoin.Crypto;
-using Nethereum.ABI.Util;
-using Nethereum.ABI.Util.RLP;
-using Nethereum.Core.Signing.Crypto;
-using Org.BouncyCastle.Asn1.Ocsp;
+using Nethereum.RLP;
+using Nethereum.Util;
 
-namespace Nethereum.Core
+namespace Nethereum.Signer
 {
     public class RLPSigner
     {
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private byte[][] data;
+        private bool decoded;
+        private readonly int numberOfElements;
         private byte[] rlpEncoded;
         private byte[] rlpRaw;
-        
+
         private ECDSASignature signature;
-        private bool decoded;
-        private int numberOfElements;
 
         public RLPSigner(byte[] rawData, int numberOfElements)
         {
@@ -28,16 +26,16 @@ namespace Nethereum.Core
 
         public RLPSigner(byte[][] data)
         {
-            this.numberOfElements = data.Length;
+            numberOfElements = data.Length;
             this.data = data;
             decoded = true;
         }
 
         public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v)
         {
-            this.numberOfElements = data.Length;
+            numberOfElements = data.Length;
             this.data = data;
-            this.signature = EthECDSASignatureFactory.FromComponents(r, s, v);
+            signature = EthECDSASignatureFactory.FromComponents(r, s, v);
             decoded = true;
         }
 
@@ -84,31 +82,31 @@ namespace Nethereum.Core
         public byte[] BuildRLPEncoded(bool raw)
         {
             var encodedData = new List<byte[]>();
-            encodedData.AddRange(this.Data.Select(RLP.EncodeElement).ToArray());
+            encodedData.AddRange(Data.Select(RLP.RLP.EncodeElement).ToArray());
 
             if (raw)
-                return RLP.EncodeList(encodedData.ToArray());
+                return RLP.RLP.EncodeList(encodedData.ToArray());
 
             byte[] v, r, s;
 
             if (signature != null)
             {
-                v = RLP.EncodeByte(signature.V);
-                r = RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
-                s = RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
+                v = RLP.RLP.EncodeByte(signature.V);
+                r = RLP.RLP.EncodeElement(signature.R.ToByteArrayUnsigned());
+                s = RLP.RLP.EncodeElement(signature.S.ToByteArrayUnsigned());
             }
             else
             {
-                v = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                r = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                s = RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                v = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                r = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                s = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
             }
 
             encodedData.Add(v);
             encodedData.Add(r);
             encodedData.Add(s);
 
-            return RLP.EncodeList(encodedData.ToArray());
+            return RLP.RLP.EncodeList(encodedData.ToArray());
         }
 
         public byte[] GetRLPEncoded()
@@ -128,16 +126,13 @@ namespace Nethereum.Core
             return rlpRaw;
         }
 
-
         public void RlpDecode()
         {
-            var decodedList = RLP.Decode(GetRLPEncoded());
+            var decodedList = RLP.RLP.Decode(GetRLPEncoded());
             var decodedData = new List<byte[]>();
-            var decodedElements = (RLPCollection)decodedList[0];
+            var decodedElements = (RLPCollection) decodedList[0];
             for (var i = 0; i < numberOfElements; i++)
-            {
-                decodedData.Add(decodedElements[i].RLPData);    
-            }
+                decodedData.Add(decodedElements[i].RLPData);
             // only parse signature in case is signed
             if (decodedElements[numberOfElements].RLPData != null)
             {

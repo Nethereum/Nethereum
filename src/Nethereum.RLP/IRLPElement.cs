@@ -1,4 +1,4 @@
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     /// <summary>
     ///     Wrapper class for decoded elements from an RLP encoded byte array.

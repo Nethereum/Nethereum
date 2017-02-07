@@ -1,6 +1,7 @@
 using Nethereum.ABI.Util;
-using Nethereum.Core;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Signer;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

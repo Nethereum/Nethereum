@@ -1,10 +1,11 @@
-namespace Nethereum.ABI.FunctionEncoding
+using Nethereum.ABI.FunctionEncoding;
+
+namespace Nethereum.ABI.Model
 {
     public class EventABI
     {
-        private string sha3Signature;
-
         private readonly SignatureEncoder signatureEncoder;
+        private string sha3Signature;
 
         public EventABI(string name)
         {

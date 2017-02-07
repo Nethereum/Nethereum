@@ -7,13 +7,6 @@ namespace Nethereum.ABI.Decoders
 {
     public class IntTypeDecoder : TypeDecoder
     {
-        public override bool IsSupportedType(Type type)
-        {
-            return (type == typeof(int)) || (type == typeof(ulong)) || (type == typeof(long)) || (type == typeof(uint)) ||
-                   ((type == typeof(BigInteger)) && (type == typeof(object)));
-        }
-
-
         public override object Decode(byte[] encoded, Type type)
         {
             if (type == typeof(int))
@@ -32,31 +25,6 @@ namespace Nethereum.ABI.Decoders
                 return DecodeBigInteger(encoded);
 
             throw new NotSupportedException(type + " is not a supported decoding type for IntType");
-        }
-
-        public override Type GetDefaultDecodingType()
-        {
-            return typeof(BigInteger);
-        }
-
-        public int DecodeInt(byte[] encoded)
-        {
-            return (int) DecodeBigInteger(encoded);
-        }
-
-        public uint DecodeUInt(byte[] encoded)
-        {
-            return (uint) DecodeBigInteger(encoded);
-        }
-
-        public long DecodeLong(byte[] encoded)
-        {
-            return (long) DecodeBigInteger(encoded);
-        }
-
-        public ulong DecodeULong(byte[] encoded)
-        {
-            return (ulong) DecodeBigInteger(encoded);
         }
 
         public BigInteger DecodeBigInteger(string hexString)
@@ -82,6 +50,37 @@ namespace Nethereum.ABI.Decoders
                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".HexToByteArray()) - 1;
 
             return new BigInteger(encoded);
+        }
+
+        public int DecodeInt(byte[] encoded)
+        {
+            return (int) DecodeBigInteger(encoded);
+        }
+
+        public long DecodeLong(byte[] encoded)
+        {
+            return (long) DecodeBigInteger(encoded);
+        }
+
+        public uint DecodeUInt(byte[] encoded)
+        {
+            return (uint) DecodeBigInteger(encoded);
+        }
+
+        public ulong DecodeULong(byte[] encoded)
+        {
+            return (ulong) DecodeBigInteger(encoded);
+        }
+
+        public override Type GetDefaultDecodingType()
+        {
+            return typeof(BigInteger);
+        }
+
+        public override bool IsSupportedType(Type type)
+        {
+            return (type == typeof(int)) || (type == typeof(ulong)) || (type == typeof(long)) || (type == typeof(uint)) ||
+                   ((type == typeof(BigInteger)) && (type == typeof(object)));
         }
     }
 }

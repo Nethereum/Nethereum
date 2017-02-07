@@ -1,4 +1,5 @@
 using System.Numerics;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

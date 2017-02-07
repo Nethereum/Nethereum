@@ -5,21 +5,14 @@ namespace Nethereum.ABI.Decoders
 {
     public class Bytes32TypeDecoder : TypeDecoder
     {
-        private readonly BoolTypeDecoder boolTypeDecoder;
-        private readonly IntTypeDecoder intTypeDecoder;
+        private readonly BoolTypeDecoder _boolTypeDecoder;
+        private readonly IntTypeDecoder _intTypeDecoder;
 
         public Bytes32TypeDecoder()
         {
-            intTypeDecoder = new IntTypeDecoder();
-            boolTypeDecoder = new BoolTypeDecoder();
+            _intTypeDecoder = new IntTypeDecoder();
+            _boolTypeDecoder = new BoolTypeDecoder();
         }
-
-        public override bool IsSupportedType(Type type)
-        {
-            return (type == typeof(byte[])) || (type == typeof(string)) || intTypeDecoder.IsSupportedType(type)
-                   || (type == typeof(bool)) || (type == typeof(object));
-        }
-
 
         public override object Decode(byte[] encoded, Type type)
         {
@@ -31,11 +24,11 @@ namespace Nethereum.ABI.Decoders
             if (type == typeof(string))
                 return DecodeString(encoded);
 
-            if (intTypeDecoder.IsSupportedType(type))
-                return intTypeDecoder.Decode(encoded, type);
+            if (_intTypeDecoder.IsSupportedType(type))
+                return _intTypeDecoder.Decode(encoded, type);
 
-            if (boolTypeDecoder.IsSupportedType(type))
-                return boolTypeDecoder.Decode(encoded, type);
+            if (_boolTypeDecoder.IsSupportedType(type))
+                return _boolTypeDecoder.Decode(encoded, type);
 
             throw new NotSupportedException();
         }
@@ -45,6 +38,11 @@ namespace Nethereum.ABI.Decoders
             return typeof(byte[]);
         }
 
+        public override bool IsSupportedType(Type type)
+        {
+            return (type == typeof(byte[])) || (type == typeof(string)) || _intTypeDecoder.IsSupportedType(type)
+                   || (type == typeof(bool)) || (type == typeof(object));
+        }
 
         private string DecodeString(byte[] encoded)
         {

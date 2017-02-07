@@ -1,7 +1,9 @@
+using Nethereum.Geth.RPC.Debug;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.DebugGeth;
+using Nethereum.RPC;
+using Nethereum.Web3;
 
-namespace Nethereum.Web3
+namespace Nethereum.Geth
 {
     public class DebugApiService : RpcClientWrapper
     {

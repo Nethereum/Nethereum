@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 

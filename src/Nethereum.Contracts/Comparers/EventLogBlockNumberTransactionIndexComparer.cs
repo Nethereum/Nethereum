@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Nethereum.Web3.Contracts.Comparers
+namespace Nethereum.Contracts.Comparers
 {
     public class EventLogBlockNumberTransactionIndexComparer : IComparer<object>
     {

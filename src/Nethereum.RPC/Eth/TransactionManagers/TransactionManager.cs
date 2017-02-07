@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Eth.TransactionManagers

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Admin
+namespace Nethereum.Geth.RPC.Admin
 {
     /// <Summary>
     ///     The startRPC administrative method starts an HTTP based JSON RPC API webserver to handle client requests. All the
@@ -18,6 +18,11 @@ namespace Nethereum.RPC.Admin
     {
         public AdminStartRPC(IClient client) : base(client, ApiMethods.admin_startRPC.ToString())
         {
+        }
+
+        public RpcRequest BuildRequest(string host, int port, string cors, string api, object id = null)
+        {
+            return base.BuildRequest(id, host, port, cors, api);
         }
 
         public Task<bool> SendRequestAsync(string host, int port, string cors, string api, object id = null)
@@ -43,11 +48,6 @@ namespace Nethereum.RPC.Admin
         public Task<bool> SendRequestAsync(object id = null)
         {
             return base.SendRequestAsync(id);
-        }
-
-        public RpcRequest BuildRequest(string host, int port, string cors, string api, object id = null)
-        {
-            return base.BuildRequest(id, host, port, cors, api);
         }
     }
 }

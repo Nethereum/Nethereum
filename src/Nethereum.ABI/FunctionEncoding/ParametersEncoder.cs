@@ -5,6 +5,7 @@ using System.Reflection;
 using Nethereum.ABI.Encoders;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.ABI.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
@@ -18,35 +19,9 @@ namespace Nethereum.ABI.FunctionEncoding
             intTypeEncoder = new IntTypeEncoder();
         }
 
-        public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
-        {
-            var properties = type.GetTypeInfo().DeclaredProperties;
-
-            var parameterObjects = new List<ParameterAttributeValue>();
-
-            foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
-                {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-                    var propertyValue = property.GetValue(instanceValue);
-                    parameterObjects.Add(new ParameterAttributeValue
-                    {
-                        ParameterAttribute = parameterAttribute,
-                        Value = propertyValue
-                    });
-                }
-
-            var abiParameters =
-                parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
-                    .Select(x => x.ParameterAttribute.Parameter)
-                    .ToArray();
-            var objectValues = parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
-            return EncodeParameters(abiParameters, objectValues);
-        }
-
         public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
         {
-            if(values == null && parameters.Length > 0)
+            if ((values == null) && (parameters.Length > 0))
                 throw new ArgumentNullException(nameof(values), "No values specified for encoding");
 
             if (values == null) return new byte[] {};
@@ -90,6 +65,32 @@ namespace Nethereum.ABI.FunctionEncoding
                     encodedBytes[i] = parameters[i].ABIType.Encode(values[i]);
                 }
             return ByteUtil.Merge(encodedBytes);
+        }
+
+        public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
+        {
+            var properties = type.GetTypeInfo().DeclaredProperties;
+
+            var parameterObjects = new List<ParameterAttributeValue>();
+
+            foreach (var property in properties)
+                if (property.IsDefined(typeof(ParameterAttribute), false))
+                {
+                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+                    var propertyValue = property.GetValue(instanceValue);
+                    parameterObjects.Add(new ParameterAttributeValue
+                    {
+                        ParameterAttribute = parameterAttribute,
+                        Value = propertyValue
+                    });
+                }
+
+            var abiParameters =
+                parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
+                    .Select(x => x.ParameterAttribute.Parameter)
+                    .ToArray();
+            var objectValues = parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
+            return EncodeParameters(abiParameters, objectValues);
         }
     }
 }

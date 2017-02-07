@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Net;
 
-namespace Nethereum.Web3
+namespace Nethereum.RPC
 {
     public class NetApiService : RpcClientWrapper
     {

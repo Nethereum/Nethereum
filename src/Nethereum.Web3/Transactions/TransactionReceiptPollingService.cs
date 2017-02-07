@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
-using Nethereum.Web3.Contracts;
 
 namespace Nethereum.Web3.Transactions
 {

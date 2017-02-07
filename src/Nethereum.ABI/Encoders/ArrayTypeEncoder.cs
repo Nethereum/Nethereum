@@ -14,7 +14,6 @@ namespace Nethereum.ABI.Encoders
             throw new Exception("Array value expected for type");
         }
 
-
         public abstract byte[] EncodeList(IList l);
     }
 }

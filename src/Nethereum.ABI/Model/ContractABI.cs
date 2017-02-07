@@ -1,4 +1,4 @@
-namespace Nethereum.ABI.FunctionEncoding
+namespace Nethereum.ABI.Model
 {
     public class ContractABI
     {

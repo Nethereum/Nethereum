@@ -4,6 +4,8 @@ using Nethereum.ABI.FunctionEncoding;
 using System.Text;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.Gen
 {
@@ -69,7 +71,7 @@ namespace Nethereum.{0}
         public string ContractGen(string abi, string contractName, string nameSpace)
         {
             contractName = MakeFirstCharUpper(contractName);
-            var des = new ABI.FunctionEncoding.ABIDeserialiser();
+            var des = new ABIDeserialiser();
             var contract = des.DeserialiseContract(abi);
             var operations = EventsGen(contract) + FunctionsGen(contract);
             var genContract = string.Format(ContractTemplate, abi.Replace("\"", "\"\""), contractName, operations);
@@ -153,12 +155,12 @@ namespace Nethereum.{0}
             return value.Substring(0, 1).ToUpper() + value.Substring(1);
         }
 
-        public string GetFunctionCallParameters(Nethereum.ABI.FunctionEncoding.Parameter[] parameters)
+        public string GetFunctionCallParameters(Parameter[] parameters)
         {
             return string.Join(",", parameters.Select(x => GetTypeMap(x.ABIType.Name) + "  " + x.Name).ToArray());
         }
 
-        public string GetFunctionParameters(Nethereum.ABI.FunctionEncoding.Parameter[] parameters)
+        public string GetFunctionParameters(Parameter[] parameters)
         {
             return string.Join(",", parameters.Select(x => x.Name).ToArray());
         }

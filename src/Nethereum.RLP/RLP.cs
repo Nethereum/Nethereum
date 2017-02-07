@@ -1,7 +1,7 @@
 ﻿using System;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     /// <summary>
     ///     Recursive Length Prefix (RLP) encoding.
@@ -100,6 +100,13 @@ namespace Nethereum.ABI.Util.RLP
         public static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         public static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
+        public static int ByteArrayToInt(byte[] bytes)
+        {
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(bytes);
+
+            return BitConverter.ToInt32(bytes, 0);
+        }
 
         /// <summary>
         ///     Parses byte[] message into RLP items
@@ -111,13 +118,6 @@ namespace Nethereum.ABI.Util.RLP
             var rlpCollection = new RLPCollection();
             Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
             return rlpCollection;
-        }
-
-        public static IRLPElement DecodeFirstElement(byte[] msgData, int startPos)
-        {
-            var rlpCollection = new RLPCollection();
-            Decode(msgData, 0, startPos, startPos + 1, 1, rlpCollection);
-            return rlpCollection[0];
         }
 
         /// <summary>
@@ -258,6 +258,13 @@ namespace Nethereum.ABI.Util.RLP
             }
         }
 
+        public static IRLPElement DecodeFirstElement(byte[] msgData, int startPos)
+        {
+            var rlpCollection = new RLPCollection();
+            Decode(msgData, 0, startPos, startPos + 1, 1, rlpCollection);
+            return rlpCollection[0];
+        }
+
         public static byte[] EncodeByte(byte singleByte)
         {
             if (singleByte == 0)
@@ -267,42 +274,10 @@ namespace Nethereum.ABI.Util.RLP
             return new[] {(byte) (OFFSET_SHORT_ITEM + 1), singleByte};
         }
 
-        public static int ByteArrayToInt(byte[] bytes)
-        {
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-
-            return BitConverter.ToInt32(bytes, 0);
-        }
-
-
-        private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
-        {
-            var pow = (byte) (lengthOfLength - 1);
-            var length = 0;
-            for (var i = 1; i <= lengthOfLength; ++i)
-            {
-                length += msgData[pos + i] << (8*pow);
-                pow--;
-            }
-            return length;
-        }
-
-        public static bool IsNullOrZeroArray(byte[] array)
-        {
-            return (array == null) || (array.Length == 0);
-        }
-
-        public static bool IsSingleZero(byte[] array)
-        {
-            return (array.Length == 1) && (array[0] == 0);
-        }
-
-
         public static byte[] EncodeElement(byte[] srcData)
         {
             if (IsNullOrZeroArray(srcData))
-                return new byte[] {OFFSET_SHORT_ITEM};
+                return new[] {OFFSET_SHORT_ITEM};
             if (IsSingleZero(srcData))
                 return srcData;
             if ((srcData.Length == 1) && (srcData[0] < 0x80))
@@ -344,7 +319,7 @@ namespace Nethereum.ABI.Util.RLP
         public static byte[] EncodeList(params byte[][] items)
         {
             if (items == null)
-                return new[] {(byte) OFFSET_SHORT_LIST};
+                return new[] {OFFSET_SHORT_LIST};
 
             var totalLength = 0;
             for (var i = 0; i < items.Length; i++)
@@ -397,6 +372,28 @@ namespace Nethereum.ABI.Util.RLP
                 copyPos += item.Length;
             }
             return data;
+        }
+
+        public static bool IsNullOrZeroArray(byte[] array)
+        {
+            return (array == null) || (array.Length == 0);
+        }
+
+        public static bool IsSingleZero(byte[] array)
+        {
+            return (array.Length == 1) && (array[0] == 0);
+        }
+
+        private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
+        {
+            var pow = (byte) (lengthOfLength - 1);
+            var length = 0;
+            for (var i = 1; i <= lengthOfLength; ++i)
+            {
+                length += msgData[pos + i] << (8*pow);
+                pow--;
+            }
+            return length;
         }
     }
 }

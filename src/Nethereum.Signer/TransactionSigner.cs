@@ -1,10 +1,8 @@
 ﻿using System.Numerics;
 using NBitcoin.Crypto;
-using Nethereum.Core;
-using Nethereum.Core.Signing.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.Web3
+namespace Nethereum.Signer
 {
     public class TransactionSigner
     {

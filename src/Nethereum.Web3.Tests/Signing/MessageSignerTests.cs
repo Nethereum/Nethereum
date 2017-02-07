@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.ABI.Util;
-using Nethereum.Core;
+using Nethereum.Signer;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.Signing

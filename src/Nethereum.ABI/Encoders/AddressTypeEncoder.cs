@@ -5,11 +5,11 @@ namespace Nethereum.ABI.Encoders
 {
     public class AddressTypeEncoder : ITypeEncoder
     {
-        private readonly IntTypeEncoder intTypeEncoder;
+        private readonly IntTypeEncoder _intTypeEncoder;
 
         public AddressTypeEncoder()
         {
-            intTypeEncoder = new IntTypeEncoder();
+            _intTypeEncoder = new IntTypeEncoder();
         }
 
         public byte[] Encode(object value)
@@ -20,7 +20,7 @@ namespace Nethereum.ABI.Encoders
                 && !strValue.StartsWith("0x", StringComparison.Ordinal))
                 value = "0x" + value;
 
-            var addr = intTypeEncoder.Encode(value);
+            var addr = _intTypeEncoder.Encode(value);
 
             for (var i = 0; i < 12; i++)
             {

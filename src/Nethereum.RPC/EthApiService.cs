@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
+﻿using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.Eth.TransactionManagers;
-using Nethereum.Web3;
 
-namespace Nethereum.RPC.Eth.Services
+namespace Nethereum.RPC
 {
     public class EthApiService : RpcClientWrapper
     {

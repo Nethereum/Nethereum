@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     public class RLPCollection : List<IRLPElement>, IRLPElement
     {

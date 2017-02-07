@@ -1,7 +1,7 @@
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
 
-namespace Nethereum.RPC.Eth.Filters
+namespace Nethereum.RPC.Eth.DTOs
 {
     public class FilterLog
     {

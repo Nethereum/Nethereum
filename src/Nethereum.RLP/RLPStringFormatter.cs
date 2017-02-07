@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     public class RLPStringFormatter
     {

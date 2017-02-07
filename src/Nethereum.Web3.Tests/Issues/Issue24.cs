@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI;
+using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
@@ -21,7 +22,7 @@ namespace Nethereum.Web3.Tests.Issues
             //var filterAllContract = dataFeedContract.CreateFilterAsync().Result;
             //var logs = web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract).Result;
 
-            Nethereum.Web3.Event e = dataFeedContract.GetEvent("BatchUploaded");
+            Event e = dataFeedContract.GetEvent("BatchUploaded");
             var filterId = e.CreateFilterAsync(new Nethereum.RPC.Eth.DTOs.BlockParameter(500000)).Result;
             var changes = e.GetAllChanges<EventBatchUploaded>(filterId).Result;
         }

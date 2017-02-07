@@ -1,4 +1,4 @@
-namespace Nethereum.ABI.FunctionEncoding
+namespace Nethereum.ABI.Model
 {
     //public class EventParameter : Parameter
     //{
@@ -11,7 +11,6 @@ namespace Nethereum.ABI.FunctionEncoding
     //    {
     //        this.Indexed = indexed;
     //    }
-
 
     //}
 }

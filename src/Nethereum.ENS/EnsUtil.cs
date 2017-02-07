@@ -1,14 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Nethereum.ABI.Util;
+﻿using Nethereum.ABI.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.ENS
 {
     public class EnsUtil
     {
+        public string GetEnsLabelHash(string label)
+        {
+            var kecckak = new Sha3Keccack();
+            return kecckak.CalculateHash(label);
+        }
+
         public string GetEnsNameHash(string name)
         {
             var node = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -23,12 +26,6 @@ namespace Nethereum.ENS
                 }
             }
             return node.EnsureHexPrefix();
-        }
-
-        public string GetEnsLabelHash(string label)
-        {
-            var kecckak = new Sha3Keccack();
-            return kecckak.CalculateHash(label);
         }
     }
 }

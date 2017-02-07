@@ -3,13 +3,13 @@ using System.Text;
 using NBitcoin.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.Core
+namespace Nethereum.Signer
 {
-    public class EthereumMessageSigner:MessageSigner
+    public class EthereumMessageSigner : MessageSigner
     {
-        public override string HashAndSign(byte[] plainMessage, ECKey key)
+        public override string EcRecover(byte[] message, string signature)
         {
-            return base.Sign(HashAndHashPrefixedMessage(plainMessage), key);
+            return base.EcRecover(HashPrefixedMessage(message), signature);
         }
 
         public byte[] HashAndHashPrefixedMessage(byte[] message)
@@ -17,12 +17,17 @@ namespace Nethereum.Core
             return HashPrefixedMessage(Hash(message));
         }
 
+        public override string HashAndSign(byte[] plainMessage, ECKey key)
+        {
+            return base.Sign(HashAndHashPrefixedMessage(plainMessage), key);
+        }
+
         public byte[] HashPrefixedMessage(byte[] message)
         {
             var byteList = new List<byte>();
             var bytePrefix = "0x19".HexToByteArray();
             var textBytePrefix = Encoding.UTF8.GetBytes("Ethereum Signed Message:\n" + message.Length);
-           
+
             byteList.AddRange(bytePrefix);
             byteList.AddRange(textBytePrefix);
             byteList.AddRange(message);
@@ -32,11 +37,6 @@ namespace Nethereum.Core
         public override string Sign(byte[] message, ECKey key)
         {
             return base.Sign(HashPrefixedMessage(message), key);
-        }
-
-        public override string EcRecover(byte[] message, string signature)
-        {
-            return base.EcRecover(HashPrefixedMessage(message), signature);
         }
     }
 }

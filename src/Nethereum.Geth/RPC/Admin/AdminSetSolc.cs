@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Admin
+namespace Nethereum.Geth.RPC.Admin
 {
     /// <Summary>
     ///     The setSolc administrative method sets the Solidity compiler path to be used by the node when invoking the
@@ -19,16 +19,16 @@ namespace Nethereum.RPC.Admin
         {
         }
 
-        public Task<string> SendRequestAsync(string path, object id = null)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-            return base.SendRequestAsync(id, path);
-        }
-
         public RpcRequest BuildRequest(string path, object id = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             return base.BuildRequest(id, path);
+        }
+
+        public Task<string> SendRequestAsync(string path, object id = null)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            return base.SendRequestAsync(id, path);
         }
     }
 }

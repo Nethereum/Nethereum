@@ -1,7 +1,7 @@
 ﻿using NBitcoin.BouncyCastle.Math;
 using NBitcoin.Crypto;
 
-namespace Nethereum.Core.Signing.Crypto
+namespace Nethereum.Signer
 {
     public class EthECDSASignatureFactory
     {

@@ -1,7 +1,7 @@
 ﻿{
   "version": "0.0.3",
   "description": "Nethereum.ENS Ethereum Name service library",
-  "authors": [ "Juan Blanco" ],
+  "authors": ["Juan Blanco"],
   "copyright": "Juan Blanco",
   "title": "Nethereum.ENS",
   "packOptions": {
@@ -9,7 +9,7 @@
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
     },
-    "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
+    "tags": ["Netherum", "Ethereum", "Blockchain", "Crypto 2.0"],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png",
@@ -22,7 +22,7 @@
 
   "frameworks": {
     "netstandard1.1": {
-      "imports": [ "dotnet52" ]
+      "imports": ["dotnet52"]
 
     },
     ".NETPortable,Version=v4.5,Profile=Profile111": {},

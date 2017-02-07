@@ -48,7 +48,7 @@ namespace Nethereum.Web3.Tests
             //var result = await UnlockAccount();
             //Assert.True(result, "Account should be unlocked");
             //deploy the contract, no need to use the abi as we don't have a constructor
-            var transactionHash = await Web3.Eth.GetDeployContract().SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
+            var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
             Assert.NotNull(transactionHash);
             //the contract should be mining now
 

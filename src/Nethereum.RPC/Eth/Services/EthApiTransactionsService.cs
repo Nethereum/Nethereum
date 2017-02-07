@@ -2,7 +2,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
-namespace Nethereum.Web3
+namespace Nethereum.RPC.Eth.Services
 {
     public class EthApiTransactionsService : RpcClientWrapper
     {

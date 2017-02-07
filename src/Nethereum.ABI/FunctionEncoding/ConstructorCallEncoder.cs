@@ -1,3 +1,4 @@
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.FunctionEncoding

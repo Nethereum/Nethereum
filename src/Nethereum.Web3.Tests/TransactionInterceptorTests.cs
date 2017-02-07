@@ -55,7 +55,7 @@ namespace Nethereum.Web3.Tests
             var transactionInterceptor = new TransactionRequestToOfflineSignedTransactionInterceptor(senderAddress, privateKey, web3);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
-            var txId = await web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
+            var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
 
 
             await web3.Miner.Start.SendRequestAsync(4);

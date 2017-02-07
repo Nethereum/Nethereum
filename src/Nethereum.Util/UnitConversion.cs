@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Nethereum.Web3
+namespace Nethereum.Util
 {
     public class UnitConversion
     {
@@ -166,7 +166,6 @@ namespace Nethereum.Web3
         {
             return ToWei(decimal.Parse(value), fromUnit);
         }
-
 
         private int CalculateNumberOfDecimalPlaces(double value, int currentNumberOfDecimals = 0)
         {

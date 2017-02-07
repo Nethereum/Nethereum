@@ -4,7 +4,6 @@ namespace Nethereum.ABI.Decoders
 {
     public interface ITypeDecoder
     {
-        bool IsSupportedType(Type type);
         object Decode(byte[] encoded, Type type);
 
         T Decode<T>(byte[] encoded);
@@ -13,5 +12,6 @@ namespace Nethereum.ABI.Decoders
 
         T Decode<T>(string hexString);
         Type GetDefaultDecodingType();
+        bool IsSupportedType(Type type);
     }
 }

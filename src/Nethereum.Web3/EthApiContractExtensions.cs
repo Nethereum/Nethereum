@@ -1,20 +1,24 @@
-﻿using Nethereum.RPC.Eth.Services;
+﻿using Nethereum.Contracts;
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC;
 
 namespace Nethereum.Web3
 {
-    public static class EthApiContractExtensions
+    public class EthApiContractService : EthApiService
     {
-        public static DeployContract GetDeployContract(this EthApiService apiService)
+        public DeployContract DeployContract => new DeployContract(this.TransactionManager);
+
+        public Contract GetContract(string abi, string contractAddress)
         {
-            return new DeployContract(apiService.TransactionManager);
-        }
-        public static Contract GetContract(this EthApiService apiService, string abi, string contractAddress)
-        {
-            var contract = new Contract(apiService, abi, contractAddress)
+            var contract = new Contract(this, abi, contractAddress)
             {
-                DefaultBlock = apiService.DefaultBlock
+                DefaultBlock = this.DefaultBlock
             };
             return contract;
+        }
+
+        public EthApiContractService(IClient client) : base(client)
+        {
         }
     }
 }

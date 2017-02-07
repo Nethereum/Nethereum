@@ -1,6 +1,7 @@
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class EventLog<T> : IEventLog
     {

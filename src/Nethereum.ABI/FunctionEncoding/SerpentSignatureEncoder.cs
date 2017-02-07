@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.FunctionEncoding
 {

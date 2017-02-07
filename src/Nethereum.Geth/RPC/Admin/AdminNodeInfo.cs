@@ -2,7 +2,7 @@
 using Nethereum.RPC.Infrastructure;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.RPC.Admin
+namespace Nethereum.Geth.RPC.Admin
 {
     /// <Summary>
     ///     The nodeInfo administrative property can be queried for all the information known about the running Geth node at

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
 
-namespace Nethereum.Web3.Contracts.Comparers
+namespace Nethereum.Contracts.Comparers
 {
     public class FilterLogBlockNumberTransactionIndexComparer : IComparer<FilterLog>
     {

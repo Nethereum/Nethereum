@@ -5,8 +5,9 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Signer;
 using Newtonsoft.Json.Linq;
-using Transaction = Nethereum.Core.Transaction;
+using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Interceptors
 {
@@ -71,7 +72,7 @@ namespace Nethereum.Web3.Interceptors
 
             var gasLimit = transaction.Gas;
             if (gasLimit == null)
-                gasLimit = new HexBigInteger(Transaction.DEFFAULT_GAS_LIMIT);
+                gasLimit = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT);
 
             var value = transaction.Value;
             if (value == null)

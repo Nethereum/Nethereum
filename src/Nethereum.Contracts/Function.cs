@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
-using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class Function : FunctionBase
     {
@@ -88,7 +87,6 @@ namespace Nethereum.Web3
             return EstimateGasFromEncAsync(encodedInput, callInput);
         }
 
-
         public string GetData(params object[] functionInput)
         {
             return FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature, FunctionABI.InputParameters,
@@ -114,7 +112,6 @@ namespace Nethereum.Web3
             var encodedInput = GetData(functionInput);
             return base.SendTransactionAsync(encodedInput, input);
         }
-
     }
 
     public class Function<TFunctionInput> : FunctionBase
@@ -222,7 +219,6 @@ namespace Nethereum.Web3
             return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
         }
 
-
         public Task<string> SendTransactionAsync(TFunctionInput functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -242,6 +238,5 @@ namespace Nethereum.Web3
             var encodedInput = GetData(functionInput);
             return base.SendTransactionAsync(encodedInput, input);
         }
-
     }
 }

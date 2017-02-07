@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Compilation;
 
-namespace Nethereum.Web3
+namespace Nethereum.RPC.Eth.Services
 {
     public class EthApiCompilerService : RpcClientWrapper
     {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Services;
 using Nethereum.StandardTokenEIP20;
 using Nethereum.StandardTokenEIP20.Events.DTO;
 using Xunit;
@@ -40,7 +41,7 @@ namespace Nethereum.Web3.Tests.StandardToken
 
                 var transactionHash =
                     await
-                        eth.GetDeployContract().SendRequestAsync(abi, contractByteCode, addressOwner,
+                        eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressOwner,
                             new HexBigInteger(900000), totalSupply);
 
                 result = await web3.Miner.Start.SendRequestAsync();

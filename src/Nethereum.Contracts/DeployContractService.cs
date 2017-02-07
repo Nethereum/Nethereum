@@ -1,15 +1,14 @@
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.TransactionManagers;
 
-
-namespace Nethereum.Web3
+namespace Nethereum.Contracts
 {
     public class DeployContract
     {
-        public ITransactionManager TransactionManager { get; set; }
         private readonly ABIDeserialiser _abiDeserialiser;
         private readonly ConstructorCallEncoder _constructorCallEncoder;
 
@@ -19,6 +18,8 @@ namespace Nethereum.Web3
             _constructorCallEncoder = new ConstructorCallEncoder();
             _abiDeserialiser = new ABIDeserialiser();
         }
+
+        public ITransactionManager TransactionManager { get; set; }
 
         public string GetData(string contractByteCode, string abi, params object[] values)
         {

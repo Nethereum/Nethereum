@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.JsonDeserialisation;
 using Xunit;
 
 namespace Nethereum.ABI.Tests

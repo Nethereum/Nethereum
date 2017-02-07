@@ -49,7 +49,7 @@ namespace Nethereum.Web3.Tests
             await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
-                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
+                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), 7, 8);
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
@@ -167,7 +167,7 @@ contract Purchase {
             await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
-                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
+                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
@@ -215,7 +215,7 @@ contract Purchase {
             
             var transaction =
                 await
-                    web3.Eth.GetDeployContract().SendRequestAsync(abi, contractByteCode,
+                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);

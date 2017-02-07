@@ -1,4 +1,5 @@
 using System;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.FunctionEncoding
 {

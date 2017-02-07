@@ -4,10 +4,18 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
-namespace Nethereum.ABI.Util.RLP
+namespace Nethereum.RLP
 {
     public static class ConvertorForRLPEncodingExtensions
     {
+        public static BigInteger ToBigIntegerFromRLPDecoded(this byte[] bytes)
+        {
+            if (bytes == null) return 0;
+            if (BitConverter.IsLittleEndian)
+                return new BigInteger(bytes.Reverse().ToArray());
+            return new BigInteger(bytes);
+        }
+
         public static byte[] ToBytesForRLPEncoding(this BigInteger bigInteger)
         {
             return ToBytesFromNumber(bigInteger.ToByteArray());
@@ -36,6 +44,22 @@ namespace Nethereum.ABI.Util.RLP
             return output.ToArray();
         }
 
+        public static int ToIntFromRLPDecoded(this byte[] bytes)
+        {
+            return (int) ToBigIntegerFromRLPDecoded(bytes);
+        }
+
+        public static long ToLongFromRLPDecoded(this byte[] bytes)
+        {
+            return (long) ToBigIntegerFromRLPDecoded(bytes);
+        }
+
+        public static string ToStringFromRLPDecoded(this byte[] bytes)
+        {
+            if (bytes == null) return "";
+            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+        }
+
         private static byte[] ToBytesFromNumber(byte[] bytes)
         {
             if (BitConverter.IsLittleEndian)
@@ -54,30 +78,6 @@ namespace Nethereum.ABI.Util.RLP
             }
 
             return trimmed.ToArray();
-        }
-
-        public static int ToIntFromRLPDecoded(this byte[] bytes)
-        {
-            return (int) ToBigIntegerFromRLPDecoded(bytes);
-        }
-
-        public static long ToLongFromRLPDecoded(this byte[] bytes)
-        {
-            return (long) ToBigIntegerFromRLPDecoded(bytes);
-        }
-
-        public static string ToStringFromRLPDecoded(this byte[] bytes)
-        {
-            if (bytes == null) return "";
-            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-        }
-
-        public static BigInteger ToBigIntegerFromRLPDecoded(this byte[] bytes)
-        {
-            if (bytes == null) return 0;
-            if (BitConverter.IsLittleEndian)
-                return new BigInteger(bytes.Reverse().ToArray());
-            return new BigInteger(bytes);
         }
     }
 }
