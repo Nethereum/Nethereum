@@ -19,7 +19,7 @@ namespace Nethereum.Web3.Tests.Signing
             {
                 var signer = new MessageSigner();
                 var account = signer.EcRecover("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".HexToByteArray(), "0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e996cdc8cae7690408b4e800f60ddac49d2ad34180e68f1da0aaf001");
-                Assert.Equal("0x8a3106a3e50576d4b6794a0e74d3bb5f8c9acaab", account.EnsureHexPrefix());
+                Assert.Equal("0x8a3106a3e50576d4b6794a0e74d3bb5f8c9acaab".ToLower(), account.EnsureHexPrefix().ToLower());
             }
 
             [Fact]
@@ -45,14 +45,14 @@ namespace Nethereum.Web3.Tests.Signing
 
                 var account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
 
-                Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
+                Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix().ToLower());
 
                 signature = signer.Sign(hashPrefix2.HexToByteArray(),
                     "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
 
                 account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
 
-                Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix());
+                Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
             }
         
 

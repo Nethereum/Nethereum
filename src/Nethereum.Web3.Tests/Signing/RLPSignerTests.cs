@@ -25,11 +25,11 @@ namespace Nethereum.Web3.Tests
                 "0xf87c80018261a894095e7baea6a6c7c4c2dfeb977efac326af552d870a9d00000000000000000000000000010000000000000000000000000000001ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
 
             var tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
-            Assert.Equal("67719a47cf3e3fe77b89c994d85395ad0f899d86", tx.Key.GetPublicAddress());
+            Assert.Equal("67719a47cf3e3fe77b89c994d85395ad0f899d86".EnsureHexPrefix().ToLower(), tx.Key.GetPublicAddress().ToLower());
             rlp =
                 "0xf85f800182520894095e7baea6a6c7c4c2dfeb977efac326af552d870a801ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
             tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
-            Assert.Equal("963f4a0d8a11b758de8d5b99ab4ac898d6438ea6", tx.Key.GetPublicAddress());
+            Assert.Equal("963f4a0d8a11b758de8d5b99ab4ac898d6438ea6".EnsureHexPrefix().ToLower(), tx.Key.GetPublicAddress().EnsureHexPrefix().ToLower());
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace Nethereum.Web3.Tests
             var value = signedRecovery.Data[0].ToStringFromRLPDecoded();
             Assert.Equal("hello", value);
             var addressSender = signedRecovery.Key.GetPublicAddress();
-            Assert.Equal(account.ToLower(), addressSender);
+            Assert.Equal(account.EnsureHexPrefix().ToLower(), addressSender.EnsureHexPrefix().ToLower());
         }
 
     }

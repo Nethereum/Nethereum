@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Mining;
-using Nethereum.RPC.Miner;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers

@@ -2,6 +2,7 @@ using System.Threading;
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3.Accounts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -40,18 +41,13 @@ namespace Nethereum.Web3.Tests
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
-            var web3 = new Web3Geth(ClientFactory.GetClient());
+            var web3 = new Web3Geth(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient() );
             var result = true;
-            result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600);
-            Assert.True(result, "Account should be unlocked");
-
+        
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
 
             Assert.NotNull(transactionHash);
-
-           // result = await web3.Personal.LockAccount.SendRequestAsync(addressFrom);
-            Assert.True(result, "Account should be locked");
 
             result = await web3.Miner.Start.SendRequestAsync();
             Assert.True(result, "Mining should have started");

@@ -1,5 +1,7 @@
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Web3;
+using Nethereum.Web3.Tests;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -49,7 +51,7 @@ namespace Nethereum.Web3.Tests
             await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
-                    web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
+                    gethTester.Web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), 7, 8);
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
@@ -160,11 +162,11 @@ contract Purchase {
             var abi =
                 "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
 
-            var web3 = new Web3Geth(ClientFactory.GetClient());
+        
+            var gethTester = GethTesterFactory.GetLocal(new Web3(ClientFactory.GetClient()));
+            var web3 = gethTester.Web3;
 
-            var gethTester = GethTesterFactory.GetLocal(web3);
-
-            await web3.Miner.Start.SendRequestAsync(6);
+            await gethTester.StartMining();
             var transaction =
                 await
                     web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
@@ -172,7 +174,7 @@ contract Purchase {
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
 
-            await web3.Miner.Stop.SendRequestAsync();
+            await gethTester.StopMining();
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
@@ -186,9 +188,9 @@ contract Purchase {
             var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
             var tx = await confirmPurchaseFunction.SendTransactionAsync(gethTester.Account,
                 new HexBigInteger(900000), new HexBigInteger(10000) );
-            await web3.Miner.Start.SendRequestAsync(6);
+            await gethTester.StartMining();
             receipt = await gethTester.GetTransactionReceipt(tx);
-            await web3.Miner.Stop.SendRequestAsync();
+            await gethTester.StopMining();
 
             var stateFunction = contract.GetFunction("state");
             callResult = await stateFunction.CallAsync<int>();
@@ -206,12 +208,11 @@ contract Purchase {
             var abi =
                 "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
 
-            var web3 = new Web3(ClientFactory.GetClient());
-
-            var gethTester = GethTesterFactory.GetLocal(web3);
+            var gethTester = GethTesterFactory.GetLocal(new Web3(ClientFactory.GetClient()));
 
             await gethTester.StartMining();
-            await gethTester.UnlockAccount();
+
+            var web3 = gethTester.Web3;
             
             var transaction =
                 await

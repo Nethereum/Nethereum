@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Geth;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -24,7 +25,7 @@ namespace Nethereum.Web3.Tests
             Assert.True(web3.OfflineTransactionSigner.VerifyTransaction(encoded));
 
             Debug.WriteLine(web3.OfflineTransactionSigner.GetSenderAddress(encoded));
-            Assert.Equal(senderAddress.ToLower(), "0x" + web3.OfflineTransactionSigner.GetSenderAddress(encoded));
+            Assert.Equal(senderAddress.EnsureHexPrefix().ToLower(), web3.OfflineTransactionSigner.GetSenderAddress(encoded).EnsureHexPrefix().ToLower());
 
             var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded);
             await web3.Miner.Start.SendRequestAsync(4);

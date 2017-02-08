@@ -1,6 +1,5 @@
 using System.Text;
 using Nethereum.ABI.Util;
-using Nethereum.ABI.Util.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Xunit;
