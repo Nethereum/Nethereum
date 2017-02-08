@@ -1,6 +1,6 @@
 ﻿{
   "version": "0.0.3",
-  "description": "Nethereum.Quorum. RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
+  "description": "Nethereum.Quorum. Extension to interact with Quorum, the permissioned implementation of Ethereum supporting data privacy created by JP Morgan",
   "authors": [ "Juan Blanco" ],
   "copyright": "Juan Blanco",
   "title": "Nethereum.RPC.Quorum",
@@ -9,7 +9,7 @@
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
     },
-    "summary": "Nethereum.Quorum.RPC Extension of the Core RPC Class Library to interact via RCP with a Quorum Ethereum client",
+    "summary": "Nethereum.Quorum. Extension to interact with Quorum, the permissioned implementation of Ethereum supporting data privacy created by JP Morgan",
     "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",

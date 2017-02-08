@@ -1,6 +1,6 @@
 ﻿{
-  "version": "1.0.6",
-  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, KeyStore, ENS, Quorum and StardardToken",
+  "version": "2.0.0-rc1",
+  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum and StardardToken",
   "authors": [
     "Juan Blanco"
   ],
@@ -13,7 +13,7 @@
       "Blockchain",
       "Crypto 2.0"
     ],
-    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package We3, ABI, RPC, Hex, KeyStore, ENS, Quorum and StardardToken",
+    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum and StardardToken",
     "repository": {
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
@@ -29,7 +29,6 @@
     "Portable.BouncyCastle": "1.8.1.1"
   },
   "frameworks": {
-
     ".NETPortable,Version=v4.5,Profile=Profile111": {}
 
   }

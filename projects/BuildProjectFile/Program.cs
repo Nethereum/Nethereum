@@ -19,6 +19,11 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.KeyStore", "KeyStore"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Quorum", "Quorum"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.ENS", "ENS"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Geth", "Geth"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Contracts", "Contracts"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Util", "Util"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Signer", "Signer"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
 
             //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
             //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
@@ -98,7 +103,7 @@ namespace BuildProjectFile
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -106,7 +111,7 @@ namespace BuildProjectFile
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>

@@ -9,8 +9,8 @@
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
     },
-    "summary": "RLP Encoding and decoding",
-    "tags": ["Netherum", "Ethereum", "Blockchain", "RLP"],
+    "summary": "Nethereum Utilities library, including Sha3 Keccack encoding and Address Checksum",
+    "tags": [ "Netherum", "Ethereum", "Blockchain" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
     "iconUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png"

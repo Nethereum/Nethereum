@@ -1,7 +1,7 @@
 ﻿{
   "version": "2.0.0-rc1",
   "description":
-    "Nethereum.Geth Non generic rpc api client methods to interact with the Go Ethereum Client (Geth) Admin, Debug, Miner",
+    "Nethereum.Geth Web3 Geth including non generic rpc api client methods to interact with the Go Ethereum Client (Geth) Admin, Debug, Miner",
   "authors": ["Juan Blanco"],
   "copyright": "Juan Blanco",
   "title": "Nethereum.Geth",
@@ -11,7 +11,7 @@
       "url": "https://github.com/Nethereum/Nethereum"
     },
     "summary":
-      "Nethereum.Geth Non generic rpc api client methods to interact with the Go Ethereum Client (Geth) Admin, Debug, Miner",
+      "Nethereum.Geth Web3 Geth including non generic rpc api client methods to interact with the Go Ethereum Client (Geth) Admin, Debug, Miner",
     "tags": ["Netherum", "Ethereum", "Blockchain", "Geth"],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",

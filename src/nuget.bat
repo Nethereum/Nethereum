@@ -30,6 +30,21 @@ cd ..
 cd Nethereum.Quorum*
 dotnet pack
 cd ..
+cd Nethereum.Geth*
+dotnet pack
+cd ..
+cd Nethereum.Contracts*
+dotnet pack
+cd ..
+cd Nethereum.RLP*
+dotnet pack
+cd ..
+cd Nethereum.Signer*
+dotnet pack
+cd ..
+cd Nethereum.Util*
+dotnet pack
+cd ..
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
