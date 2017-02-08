@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -7,12 +9,12 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
 using Xunit;
 
-namespace Nethereum.Web3.Tests
+namespace Nethereum.Web3.Tests.Issues
 {
-    public class TestIssueGas
+    public class TestIssueGasAllDataOutput
     {
         [Fact]
-        public async Task TestMethod2()
+        public async Task ShouldOutputAllData()
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
             var password = "password";
@@ -45,6 +47,9 @@ namespace Nethereum.Web3.Tests
             var results = await getCustomersByMobileNumberFunction.CallDeserializingToObjectAsync<CustomerData>(111);
 
             Assert.Equal(results.customerName, "Mahesh");
+
+            var getAllCustomers = contract.GetFunction("getAllCustomers");
+            var results2 = await getAllCustomers.CallDeserializingToObjectAsync<AllCustomerData>();
         }
 
         public async Task<TransactionReceipt> MineAndGetReceiptAsync(Web3Geth web3, string transactionHash)
@@ -77,6 +82,19 @@ namespace Nethereum.Web3.Tests
 
             [Parameter("bytes32", "serviceProvider", 3)]
             public string serviceProvider { get; set; }
+        }
+
+        [FunctionOutput]
+        public class AllCustomerData
+        {
+            [Parameter("int256[]", "mobile", 1)]
+            public List<BigInteger> mobile { get; set; }
+
+            [Parameter("bytes32[]", "customerName", 2)]
+            public List<string> customerName { get; set; }
+
+            [Parameter("bytes32[]", "serviceProvider", 3)]
+            public List<string> serviceProvider { get; set; }
         }
     }
 }
