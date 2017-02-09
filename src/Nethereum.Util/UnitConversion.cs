@@ -29,8 +29,8 @@ namespace Nethereum.Util
             Grand,
             Einstein,
             Mether,
-            Gether,
-            Tether
+            Gether
+           // Tether Not supported
         }
 
         private static UnitConversion convert;
@@ -109,23 +109,33 @@ namespace Nethereum.Util
                     return BigInteger.Parse("1000000000000000000000000");
                 case EthUnit.Gether:
                     return BigInteger.Parse("1000000000000000000000000000");
-                case EthUnit.Tether:
-                    return BigInteger.Parse("1000000000000000000000000000000");
+                 //Not supported 
+                //case EthUnit.Tether:
+                //    return BigInteger.Parse("1000000000000000000000000000000");
+                                                        
             }
             throw new NotImplementedException();
         }
 
         public BigInteger ToWei(decimal amount, BigInteger fromUnit)
         {
-            var decimalPlaces = CalculateNumberOfDecimalPlaces(amount);
-            if (decimalPlaces == 0) return BigInteger.Multiply(new BigInteger(amount), fromUnit);
+            var maxDigits = fromUnit.ToString().Length - 1;
+            var stringAmount = amount.ToString("#.#############################", System.Globalization.CultureInfo.InvariantCulture).TrimEnd('0');
+            var decimalPosition = stringAmount.IndexOf('.');
+            var decimalPlaces = decimalPosition == -1 ? 0 : stringAmount.Length - decimalPosition - 1;
+            if (decimalPlaces == 0)
+            {
+                return BigInteger.Parse(stringAmount) * fromUnit;
+            }
 
-            var decimalConversionUnit = System.Convert.ToInt64(Math.Pow(10, decimalPlaces));
+            if (decimalPlaces > maxDigits)
+            {
+                return BigInteger.Parse(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1, maxDigits));
+            }
 
-            var amountFromDec = new BigInteger(amount*decimalConversionUnit);
-            var unitFromDec = BigInteger.Divide(fromUnit, decimalConversionUnit);
-            return amountFromDec*unitFromDec;
+            return BigInteger.Parse(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1).PadRight(maxDigits, '0'));   
         }
+
 
         public BigInteger ToWei(decimal amount, EthUnit fromUnit = EthUnit.Ether)
         {
@@ -167,22 +177,28 @@ namespace Nethereum.Util
             return ToWei(decimal.Parse(value), fromUnit);
         }
 
-        private int CalculateNumberOfDecimalPlaces(double value, int currentNumberOfDecimals = 0)
+        private BigInteger CalculateNumberOfDecimalPlaces(double value, int maxNumberOfDecimals, int currentNumberOfDecimals = 0)
         {
-            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), currentNumberOfDecimals);
+            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), maxNumberOfDecimals, currentNumberOfDecimals);
         }
 
-        private int CalculateNumberOfDecimalPlaces(float value, int currentNumberOfDecimals = 0)
+        private BigInteger CalculateNumberOfDecimalPlaces(float value, int maxNumberOfDecimals, int currentNumberOfDecimals = 0)
         {
-            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), currentNumberOfDecimals);
+            return CalculateNumberOfDecimalPlaces(System.Convert.ToDecimal(value), maxNumberOfDecimals, currentNumberOfDecimals);
         }
 
-        private int CalculateNumberOfDecimalPlaces(decimal value, int currentNumberOfDecimals = 0)
+        private int CalculateNumberOfDecimalPlaces(decimal value, int maxNumberOfDecimals, int currentNumberOfDecimals = 0)
         {
-            var multiplied = value*System.Convert.ToInt64(Math.Pow(10, currentNumberOfDecimals));
+            if (currentNumberOfDecimals == 0)
+            {
+                if (value.ToString() == Math.Round(value).ToString()) return 0;
+                currentNumberOfDecimals = 1;
+            }
+            if (currentNumberOfDecimals == maxNumberOfDecimals) return maxNumberOfDecimals;
+            var multiplied = value * (decimal)BigInteger.Pow(10, currentNumberOfDecimals);
             if (Math.Round(multiplied) == multiplied)
                 return currentNumberOfDecimals;
-            return CalculateNumberOfDecimalPlaces(value, currentNumberOfDecimals + 1);
+            return CalculateNumberOfDecimalPlaces(value, maxNumberOfDecimals, currentNumberOfDecimals + 1);
         }
     }
 }
