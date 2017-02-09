@@ -1,6 +1,6 @@
 ﻿{
   "version": "2.0.0-rc1",
-  "description": "Nethereum Contracts library for interaction via RPC with Smart contracts in Ethereum",
+  "description": "Nethereum Contracts is the core library to interact via RPC with Smart contracts in Ethereum",
   "authors": ["Juan Blanco"],
   "copyright": "Juan Blanco",
   "title": "Nethereum.Contracts",
@@ -9,7 +9,7 @@
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
     },
-    "summary": "Nethereum Contracts library for interaction via RPC with Smart contracts in Ethereum",
+    "summary": "Nethereum Contracts is the core library to interact via RPC with Smart contracts in Ethereum",
     "tags": [ "Netherum", "Ethereum", "Blockchain", "Crypto 2.0" ],
     "projectUrl": "http://www.nethereum.com",
     "licenseUrl": "https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md",
