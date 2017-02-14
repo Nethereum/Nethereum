@@ -17,6 +17,7 @@ namespace Nethereum.Geth
             StartWS = new AdminStartWS(client);
             StopRPC = new AdminStopRPC(client);
             StopWS = new AdminStopWS(client);
+            Peers = new AdminPeers(client);
         }
 
         public AdminAddPeer AddPeer { get; private set; }
@@ -27,5 +28,6 @@ namespace Nethereum.Geth
         public AdminStartWS StartWS { get; private set; }
         public AdminStopRPC StopRPC { get; private set; }
         public AdminStopWS StopWS { get; private set; }
+        public AdminPeers Peers { get; private set; }
     }
 }

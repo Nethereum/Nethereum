@@ -35,6 +35,7 @@
         miner_hashrate,
         miner_start,
         miner_stop,
-        miner_setGasPrice
+        miner_setGasPrice,
+        admin_peers
     }
 }
