@@ -70,6 +70,7 @@ namespace Nethereum.Web3.Transactions
 
         private async Task<string> SignAndSendTransaction(TransactionInput transaction)
         {
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if(Client == null) throw new NullReferenceException("Client not configured");
             if (transaction.From.EnsureHexPrefix().ToLower() != _account.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
             var ethSendTransaction = new EthSendRawTransaction(Client);

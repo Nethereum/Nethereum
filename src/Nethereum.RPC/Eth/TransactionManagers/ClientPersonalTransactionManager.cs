@@ -28,8 +28,8 @@ namespace Nethereum.RPC.Eth.TransactionManagers
         public Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
-            if (transactionInput.From != _accountAddress) throw new Exception("Invalid account used signing");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
+            if (transactionInput.From != _accountAddress) throw new Exception("Invalid account used signing");
             var ethSendTransaction = new PersonalSignAndSendTransaction(Client);
             return ethSendTransaction.SendRequestAsync(transactionInput, _password);
         }
