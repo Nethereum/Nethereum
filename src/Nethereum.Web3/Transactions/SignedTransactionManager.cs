@@ -49,6 +49,7 @@ namespace Nethereum.Web3.Transactions
         public async Task<HexBigInteger> GetNonceAsync(TransactionInput transaction)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             var ethGetTransactionCount = new EthGetTransactionCount(Client);
             var nonce = transaction.Nonce;
             if (nonce == null)
@@ -70,8 +71,8 @@ namespace Nethereum.Web3.Transactions
 
         private async Task<string> SignAndSendTransaction(TransactionInput transaction)
         {
-            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if(Client == null) throw new NullReferenceException("Client not configured");
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (transaction.From.EnsureHexPrefix().ToLower() != _account.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
             var ethSendTransaction = new EthSendRawTransaction(Client);
             var nonce = await GetNonceAsync(transaction);
