@@ -12,7 +12,7 @@ namespace Nethereum.Web3.Transactions
         private readonly Web3 _web3;
         private readonly int _retryMiliseconds;
 
-        public TransactionReceiptPollingService(Web3 web3, int retryMiliseconds = 1000)
+        public TransactionReceiptPollingService(Web3 web3, int retryMiliseconds = 100)
         {
             _web3 = web3;
             _retryMiliseconds = retryMiliseconds;

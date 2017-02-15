@@ -81,7 +81,7 @@ namespace Nethereum.Web3.Tests
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(5000);
+                await Task.Delay(100);
                 receipt = await transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
@@ -124,7 +124,7 @@ namespace Nethereum.Web3.Tests
 
             while (receiptTransaction == null)
             {
-                await Task.Delay(5000);
+                await Task.Delay(100);
                 receiptTransaction = await transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
             }
 
