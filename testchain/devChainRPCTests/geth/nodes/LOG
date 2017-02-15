@@ -64,3 +64,37 @@
 09:24:52.584674 table@compaction committed F-1 S-8KiB Ke·0 D·324 T·152.4461ms
 09:24:52.585162 table@remove removed @13
 09:24:52.585663 table@remove removed @12
+=============== Jan 17, 2017 (GMT) ===============
+10:47:38.879074 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+10:47:38.963979 version@stat F·[0 1] S·321KiB[0B 321KiB] Sc·[0.00 0.00]
+10:47:38.963979 db@open opening
+10:47:38.964480 journal@recovery F·1
+10:47:38.968979 journal@recovery recovering @14
+10:47:39.038907 memdb@flush created L0@17 N·368 S·13KiB "n:\x04..ver,v40958":"n:\xfe..ing,v40902"
+10:47:39.040395 version@stat F·[1 1] S·334KiB[13KiB 321KiB] Sc·[0.25 0.00]
+10:47:39.049894 db@janitor F·4 G·0
+10:47:39.049894 db@open done T·85.9148ms
+10:47:39.112607 table@compaction L0·1 -> L1·1 S·334KiB Q·40960
+10:47:39.237624 table@build created L1@20 N·9587 S·327KiB "n:\x00..ing,v39942":"version,v1"
+10:47:39.237624 version@stat F·[0 1] S·327KiB[0B 327KiB] Sc·[0.00 0.00]
+10:47:39.258629 table@compaction committed F-1 S-7KiB Ke·0 D·239 T·146.0217ms
+10:47:39.259126 table@remove removed @17
+10:47:39.259630 table@remove removed @16
+11:20:35.293416 db@close closing
+11:20:35.304937 db@close done T·11.5204ms
+=============== Feb 8, 2017 (GMT) ===============
+06:18:31.540096 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+06:18:31.547596 version@stat F·[0 1] S·327KiB[0B 327KiB] Sc·[0.00 0.00]
+06:18:31.547596 db@open opening
+06:18:31.547596 journal@recovery F·1
+06:18:31.548611 journal@recovery recovering @18
+06:18:31.655336 memdb@flush created L0@21 N·299 S·12KiB "n:\x05..ver,v41033":"n:\xfc..ing,v41068"
+06:18:31.657827 version@stat F·[1 1] S·339KiB[12KiB 327KiB] Sc·[0.25 0.00]
+06:18:31.669812 db@janitor F·4 G·0
+06:18:31.669812 db@open done T·122.2156ms
+06:18:31.705531 table@compaction L0·1 -> L1·1 S·339KiB Q·41260
+06:18:31.857051 table@build created L1@24 N·9692 S·335KiB "n:\x00..ing,v39942":"version,v1"
+06:18:31.857051 version@stat F·[0 1] S·335KiB[0B 335KiB] Sc·[0.00 0.00]
+06:18:31.883556 table@compaction committed F-1 S-3KiB Ke·0 D·194 T·178.0251ms
+06:18:31.884054 table@remove removed @21
+06:18:31.885554 table@remove removed @20
