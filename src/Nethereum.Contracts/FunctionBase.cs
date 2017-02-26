@@ -73,6 +73,7 @@ namespace Nethereum.Contracts
 
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput)
         {
+            callInput.To = ContractAddress;
             callInput.Data = encodedFunctionCall;
             var result = await EthCall.SendRequestAsync(callInput, DefaultBlock).ConfigureAwait(false);
             return
@@ -83,6 +84,7 @@ namespace Nethereum.Contracts
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput,
             BlockParameter block)
         {
+            callInput.To = ContractAddress;
             callInput.Data = encodedFunctionCall;
             var result = await EthCall.SendRequestAsync(callInput, block).ConfigureAwait(false);
             return

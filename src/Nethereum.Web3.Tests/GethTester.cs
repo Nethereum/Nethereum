@@ -45,20 +45,12 @@ namespace Nethereum.Web3.Tests
         public async Task<TransactionReceipt> DeployTestContractLocal(string contractByteCode)
         {
 
-            //var result = await UnlockAccount();
-            //Assert.True(result, "Account should be unlocked");
-            //deploy the contract, no need to use the abi as we don't have a constructor
             var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
             Assert.NotNull(transactionHash);
             //the contract should be mining now
 
-            //result = await LockAccount();
-            //Assert.True(result, "Account should be locked");
-
             var result = await StartMining();
             Assert.True(result, "Mining should have started");
-            //the contract should be mining now
-
             //get the contract address 
             var receipt = await GetTransactionReceipt(transactionHash);
 
@@ -68,6 +60,26 @@ namespace Nethereum.Web3.Tests
             Assert.True(result, "Mining should have stopped");
             return receipt;
         }
+
+
+        public async Task<TransactionReceipt> DeployTestContractLocal(string abi, string contractByteCode, params object[] constructorParameters)
+        {
+
+            var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, Account, new HexBigInteger(900000), constructorParameters);
+            Assert.NotNull(transactionHash);
+            //the contract should be mining now
+            var result = await StartMining();
+            Assert.True(result, "Mining should have started");
+            //get the contract address 
+            var receipt = await GetTransactionReceipt(transactionHash);
+
+            Assert.NotNull(receipt.ContractAddress);
+
+            result = await StopMining();
+            Assert.True(result, "Mining should have stopped");
+            return receipt;
+        }
+
 
         public async Task<TransactionReceipt> GetTransactionReceipt(string transactionHash)
         {
