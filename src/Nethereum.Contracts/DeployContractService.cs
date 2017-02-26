@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.JsonDeserialisation;
@@ -81,7 +82,12 @@ namespace Nethereum.Contracts
 
         private string BuildEncodedData(string abi, string contractByteCode, object[] values)
         {
+            if (values == null || values.Length == 0)
+            {
+                return _constructorCallEncoder.EncodeRequest(contractByteCode, "");
+            }
             var contract = _abiDeserialiser.DeserialiseContract(abi);
+            if(contract.Constructor == null) throw  new Exception("Parameters supplied for a constructor but ABI does not contain a constructor definition");
             var encodedData = _constructorCallEncoder.EncodeRequest(contractByteCode,
                 contract.Constructor.InputParameters, values);
             return encodedData;

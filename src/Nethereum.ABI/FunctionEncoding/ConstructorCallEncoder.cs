@@ -8,11 +8,6 @@ namespace Nethereum.ABI.FunctionEncoding
         public string EncodeRequest<T>(T constructorInput, string contractByteCode)
         {
             var type = typeof(T);
-
-            //var function = type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>();
-            //if (function == null)
-            //    throw new ArgumentException("Function Attribute is required", nameof(functionInput));
-
             var encodedParameters = EncodeParametersFromTypeAttributes(type, constructorInput);
             return EncodeRequest(contractByteCode, encodedParameters.ToHex());
         }
