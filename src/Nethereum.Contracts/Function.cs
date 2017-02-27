@@ -25,18 +25,17 @@ namespace Nethereum.Contracts
             return base.CallAsync<TReturn>(encodedInput, from, gas, value);
         }
 
-        public Task<TReturn> CallAsync<TReturn>(
-            CallInput callInput, params object[] functionInput)
+        public Task<TReturn> CallAsync<TReturn>(string from, HexBigInteger gas,
+           HexBigInteger value, BlockParameter block, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, callInput);
+            return base.CallAsync<TReturn>(encodedInput, from, gas, value, block);
         }
 
-        public Task<TReturn> CallAsync<TReturn>(
-            CallInput callInput, BlockParameter blockParameter, params object[] functionInput)
+        public Task<TReturn> CallAsync<TReturn>(BlockParameter block, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, callInput, blockParameter);
+            return base.CallAsync<TReturn>(encodedInput, block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(params object[] functionInput)
@@ -47,24 +46,24 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(string from, HexBigInteger gas,
-            HexBigInteger value, TReturn functionOutput, params object[] functionInput) where TReturn : new()
+            HexBigInteger value, params object[] functionInput) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
             return base.CallAsync(new TReturn(), encodedInput, from, gas, value);
         }
 
-        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(
-            CallInput callInput, params object[] functionInput) where TReturn : new()
+        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(string from, HexBigInteger gas,
+           HexBigInteger value, BlockParameter block, params object[] functionInput) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, callInput);
+            return base.CallAsync(new TReturn(), encodedInput, from, gas, value, block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(
-            CallInput callInput, BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
+             BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, callInput, blockParameter);
+            return base.CallAsync(new TReturn(), encodedInput, blockParameter);
         }
 
         public Task<HexBigInteger> EstimateGasAsync(params object[] functionInput)
@@ -78,13 +77,6 @@ namespace Nethereum.Contracts
         {
             var encodedInput = GetData(functionInput);
             return EstimateGasFromEncAsync(encodedInput, from, gas, value);
-        }
-
-        public Task<HexBigInteger> EstimateGasAsync(
-            CallInput callInput, params object[] functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, callInput);
         }
 
         public string GetData(params object[] functionInput)
@@ -141,17 +133,10 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput)
+             BlockParameter blockParameter)
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, callInput);
-        }
-
-        public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput, BlockParameter blockParameter)
-        {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, callInput, blockParameter);
+            return base.CallAsync<TReturn>(encodedInput, blockParameter);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>() where TReturn : new()
@@ -160,10 +145,22 @@ namespace Nethereum.Contracts
             return base.CallAsync(new TReturn(), encodedInput);
         }
 
+        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(BlockParameter block) where TReturn : new()
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return base.CallAsync(new TReturn(), encodedInput, block);
+        }
+
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
             return base.CallAsync(new TReturn(), encodedInput);
+        }
+
+        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, BlockParameter block) where TReturn : new()
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CallAsync(new TReturn(), encodedInput, block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, string from,
@@ -174,18 +171,12 @@ namespace Nethereum.Contracts
             return base.CallAsync(new TReturn(), encodedInput, from, gas, value);
         }
 
-        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput) where TReturn : new()
+        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, string from,
+           HexBigInteger gas,
+           HexBigInteger value, BlockParameter block) where TReturn : new()
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, callInput);
-        }
-
-        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput,
-            CallInput callInput, BlockParameter blockParameter) where TReturn : new()
-        {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, callInput, blockParameter);
+            return base.CallAsync(new TReturn(), encodedInput, from, gas, value, block);
         }
 
         public Task<HexBigInteger> EstimateGasAsync()

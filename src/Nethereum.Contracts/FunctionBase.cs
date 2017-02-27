@@ -59,6 +59,18 @@ namespace Nethereum.Contracts
                     GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, BlockParameter block)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), block)
+                        .ConfigureAwait(false);
+
+            return
+                FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
+                    GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
+        }
+
         protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger gas,
             HexBigInteger value)
         {
@@ -71,32 +83,34 @@ namespace Nethereum.Contracts
                     GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput)
+        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, string from, HexBigInteger gas,
+           HexBigInteger value, BlockParameter block)
         {
-            callInput.To = ContractAddress;
-            callInput.Data = encodedFunctionCall;
-            var result = await EthCall.SendRequestAsync(callInput, DefaultBlock).ConfigureAwait(false);
+            var result =
+                await
+                    EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas, value),
+                        block).ConfigureAwait(false);
             return
                 FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
                     GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(string encodedFunctionCall, CallInput callInput,
-            BlockParameter block)
-        {
-            callInput.To = ContractAddress;
-            callInput.Data = encodedFunctionCall;
-            var result = await EthCall.SendRequestAsync(callInput, block).ConfigureAwait(false);
-            return
-                FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
-                    GetFirstParameterOrNull(FunctionABI.OutputParameters), result);
-        }
 
         protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall)
         {
             var result =
                 await
                     EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), DefaultBlock)
+                        .ConfigureAwait(false);
+
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
+        }
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall, BlockParameter block)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress), block)
                         .ConfigureAwait(false);
 
             return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
@@ -109,6 +123,16 @@ namespace Nethereum.Contracts
                 await
                     EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas, value),
                         DefaultBlock).ConfigureAwait(false);
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
+        }
+
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, string encodedFunctionCall, string from,
+        HexBigInteger gas, HexBigInteger value, BlockParameter block)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas, value),
+                        block).ConfigureAwait(false);
             return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result);
         }
 

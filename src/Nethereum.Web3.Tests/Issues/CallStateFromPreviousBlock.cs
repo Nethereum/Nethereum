@@ -41,7 +41,7 @@ namespace Nethereum.Web3.Tests.Issues
             var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress);
             var balanceOldBlock =
                 await
-                    balanceFunction.CallAsync<int>(new CallInput() {From = gethTester.Account, To = contract.Address},
+                    balanceFunction.CallAsync<int>(
                         new BlockParameter(receiptFirstBlock.BlockNumber), newAddress);
 
             await gethWeb3.Miner.Stop.SendRequestAsync();
