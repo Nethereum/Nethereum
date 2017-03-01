@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.IpcClient;
 using Nethereum.Web3.Accounts;
 using Xunit;
 
@@ -19,8 +20,9 @@ namespace Nethereum.Web3.Tests.Issues
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
-            var web3 = new Web3Geth(new ManagedAccount(addressFrom, pass));
-
+            var web3 = new Web3(new IpcClient("./geth.ipc"));
+           
+            await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 60);
             var transactionHash =
                 await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, addressFrom, new HexBigInteger(1999990), new HexBigInteger(10), new object[] {} );
 

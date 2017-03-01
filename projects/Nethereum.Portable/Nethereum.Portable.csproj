@@ -911,6 +911,10 @@
 				<Link>Geth\RPC\Admin\AdminNodeInfo.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\AdminPeers.cs">
+				<Link>Geth\RPC\Admin\AdminPeers.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\AdminSetSolc.cs">
 				<Link>Geth\RPC\Admin\AdminSetSolc.cs</Link>
 		</Compile>

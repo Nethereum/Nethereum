@@ -25,7 +25,7 @@
     ".NETPortable,Version=v4.5,Profile=Profile111": {},
     "net451": {}
   },
-  "dependencies": {
+  "dependencies": { 
     "Nethereum.Hex": "2.0.0-rc1",
     "Nethereum.JsonRpc.Client": "1.0.6",
     "Portable.BouncyCastle": "1.8.1"
