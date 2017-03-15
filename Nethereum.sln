@@ -1,25 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{653C520A-70D8-4276-8630-DF5EF2D5FD0F}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.ABI.Tests", "src\Nethereum.ABI.Tests\Nethereum.ABI.Tests.xproj", "{70DBE438-805E-432F-889A-7853B898EE75}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.ABI", "src\Nethereum.ABI\Nethereum.ABI.xproj", "{CD7D0813-C613-4788-A428-31DC5605CF7B}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Hex", "src\Nethereum.Hex\Nethereum.Hex.xproj", "{6E01FF7E-6178-466F-83D2-633E861B7617}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.RPC", "src\Nethereum.RPC\Nethereum.RPC.xproj", "{D127B70B-FDD2-4057-AAFE-989CDA1B8E51}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Web3", "src\Nethereum.Web3\Nethereum.Web3.xproj", "{AB3652F1-AC30-4522-A1EE-1758A6EF6F5C}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.RPC.Sample", "src\Nethereum.RPC.Sample\Nethereum.RPC.Sample.xproj", "{D6F5E214-4F43-4632-B204-44EFD195071E}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.RPC.ClassesExtractor", "src\Nethereum.RPC.ClassesExtractor\Nethereum.RPC.ClassesExtractor.xproj", "{4A8E6CED-0789-4DB3-9BD8-FE7D940A0AE9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{95D76B1F-AEEC-4C64-9C34-A0C95ACAC2D8}"
 EndProject
@@ -27,13 +13,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{CDD3B024
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A36B1E91-CE03-43D6-AA50-9C893AD33B75}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Gen", "src\Nethereum.Gen\Nethereum.Gen.xproj", "{57229BA6-2EB6-43EB-A3E4-1CC489D23766}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.JsonRpc.Client", "src\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.xproj", "{84A6BAA7-32B3-4D99-9280-87023BFF0A5B}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.JsonRpc.IpcClient", "src\Nethereum.JsonRpc.IpcClient\Nethereum.JsonRpc.IpcClient.xproj", "{3D85110C-80C3-4136-A828-22CB066362A0}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{6EE5CBBB-5BC9-47BB-9CE5-9099B0A91BAB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.ABI.Tests", "src\Nethereum.ABI.Tests\Nethereum.ABI.Tests.csproj", "{70DBE438-805E-432F-889A-7853B898EE75}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.ABI", "src\Nethereum.ABI\Nethereum.ABI.csproj", "{CD7D0813-C613-4788-A428-31DC5605CF7B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Hex", "src\Nethereum.Hex\Nethereum.Hex.csproj", "{6E01FF7E-6178-466F-83D2-633E861B7617}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RPC", "src\Nethereum.RPC\Nethereum.RPC.csproj", "{D127B70B-FDD2-4057-AAFE-989CDA1B8E51}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Web3", "src\Nethereum.Web3\Nethereum.Web3.csproj", "{AB3652F1-AC30-4522-A1EE-1758A6EF6F5C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RPC.Sample", "src\Nethereum.RPC.Sample\Nethereum.RPC.Sample.csproj", "{D6F5E214-4F43-4632-B204-44EFD195071E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RPC.ClassesExtractor", "src\Nethereum.RPC.ClassesExtractor\Nethereum.RPC.ClassesExtractor.csproj", "{4A8E6CED-0789-4DB3-9BD8-FE7D940A0AE9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Gen", "src\Nethereum.Gen\Nethereum.Gen.csproj", "{57229BA6-2EB6-43EB-A3E4-1CC489D23766}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.JsonRpc.Client", "src\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj", "{84A6BAA7-32B3-4D99-9280-87023BFF0A5B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.JsonRpc.IpcClient", "src\Nethereum.JsonRpc.IpcClient\Nethereum.JsonRpc.IpcClient.csproj", "{3D85110C-80C3-4136-A828-22CB066362A0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildProjectFile", "projects\BuildProjectFile\BuildProjectFile.csproj", "{AF8EB2BF-3026-4897-984E-DCAFFAC0644E}"
 EndProject
@@ -41,11 +41,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Portable", "proje
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Web.Sample", "src\Nethereum.Web.Sample\Nethereum.Web.Sample.csproj", "{6401F530-0A51-4561-8C60-281945EE69B9}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.RPC.Tests", "src\Nethereum.RPC.Tests\Nethereum.RPC.Tests.xproj", "{F2607CA0-8F0C-4052-8597-4C6031254754}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RPC.Tests", "src\Nethereum.RPC.Tests\Nethereum.RPC.Tests.csproj", "{F2607CA0-8F0C-4052-8597-4C6031254754}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.StandardTokenEIP20", "src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.xproj", "{032503EB-5C03-4C7A-851F-20886B43ED0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.StandardTokenEIP20", "src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj", "{032503EB-5C03-4C7A-851F-20886B43ED0D}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Web3.Tests", "src\Nethereum.Web3.Tests\Nethereum.Web3.Tests.xproj", "{F0C6733A-3D35-4138-A44C-51A729EF096A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Web3.Tests", "src\Nethereum.Web3.Tests\Nethereum.Web3.Tests.csproj", "{F0C6733A-3D35-4138-A44C-51A729EF096A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Gen.Console", "src\Nethereum.Gen.Console\Nethereum.Gen.Console.csproj", "{1D14B76D-491A-4EB3-A3D6-A39E68B3E404}"
 EndProject
@@ -53,35 +53,35 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.IntegrationTestin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Desktop.Sample", "src\Nethereum.Desktop.Sample\Nethereum.Desktop.Sample.csproj", "{9A5B91C1-5915-405C-A7A8-195AB7D95D98}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.EVM", "src\Nethereum.EVM\Nethereum.EVM.xproj", "{1E189EA8-AFFA-493B-AED8-3C058E617F30}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.EVM", "src\Nethereum.EVM\Nethereum.EVM.csproj", "{1E189EA8-AFFA-493B-AED8-3C058E617F30}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.EVM.Tests", "src\Nethereum.EVM.Tests\Nethereum.EVM.Tests.xproj", "{16EA5C6E-FC84-4E80-9CF1-A8AA7D056C93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.EVM.Tests", "src\Nethereum.EVM.Tests\Nethereum.EVM.Tests.csproj", "{16EA5C6E-FC84-4E80-9CF1-A8AA7D056C93}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.KeyStore", "src\Nethereum.KeyStore\Nethereum.KeyStore.xproj", "{1B8F4753-DDE4-4B12-B45A-B26EC900A95A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.KeyStore", "src\Nethereum.KeyStore\Nethereum.KeyStore.csproj", "{1B8F4753-DDE4-4B12-B45A-B26EC900A95A}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.KeyStore.Tests", "src\Nethereum.KeyStore.Tests\Nethereum.KeyStore.Tests.xproj", "{0A406E30-B959-4A39-9280-E2586545C86B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.KeyStore.Tests", "src\Nethereum.KeyStore.Tests\Nethereum.KeyStore.Tests.csproj", "{0A406E30-B959-4A39-9280-E2586545C86B}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.KeyStore.Console.Sample", "src\Nethereum.KeyStore.Console.Sample\Nethereum.KeyStore.Console.Sample.xproj", "{36699147-16BD-40A5-92E3-9E560120374F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.KeyStore.Console.Sample", "src\Nethereum.KeyStore.Console.Sample\Nethereum.KeyStore.Console.Sample.csproj", "{36699147-16BD-40A5-92E3-9E560120374F}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.ENS", "src\Nethereum.ENS\Nethereum.ENS.xproj", "{B5CDA814-736C-429D-B614-0BEBA70E185F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.ENS", "src\Nethereum.ENS\Nethereum.ENS.csproj", "{B5CDA814-736C-429D-B614-0BEBA70E185F}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Quorum", "src\Nethereum.Quorum\Nethereum.Quorum.xproj", "{CF1E0DE8-2609-4E5A-99A1-E7919ABC2EE5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Quorum", "src\Nethereum.Quorum\Nethereum.Quorum.csproj", "{CF1E0DE8-2609-4E5A-99A1-E7919ABC2EE5}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Quorum.Tests", "src\Nethereum.Quorum.Tests\Nethereum.Quorum.Tests.xproj", "{64BB7060-6AB9-463B-AEDB-93E24039AF65}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Quorum.Tests", "src\Nethereum.Quorum.Tests\Nethereum.Quorum.Tests.csproj", "{64BB7060-6AB9-463B-AEDB-93E24039AF65}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Signer", "src\Nethereum.Signer\Nethereum.Signer.xproj", "{7E50B6DE-499B-42F2-8419-6F87C71F8BB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer", "src\Nethereum.Signer\Nethereum.Signer.csproj", "{7E50B6DE-499B-42F2-8419-6F87C71F8BB2}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.RLP", "src\Nethereum.RLP\Nethereum.RLP.xproj", "{85376A51-1189-4B08-BF94-12A894D17AEB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RLP", "src\Nethereum.RLP\Nethereum.RLP.csproj", "{85376A51-1189-4B08-BF94-12A894D17AEB}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Util", "src\Nethereum.Util\Nethereum.Util.xproj", "{6E54CA25-CF76-4EAF-B445-6087432D20A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Util", "src\Nethereum.Util\Nethereum.Util.csproj", "{6E54CA25-CF76-4EAF-B445-6087432D20A1}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Contracts", "src\Nethereum.Contracts\Nethereum.Contracts.xproj", "{687FC7B7-9A07-4DC2-BDB2-5EAA3A58956A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Contracts", "src\Nethereum.Contracts\Nethereum.Contracts.csproj", "{687FC7B7-9A07-4DC2-BDB2-5EAA3A58956A}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Geth", "src\Nethereum.Geth\Nethereum.Geth.xproj", "{D86EAF2F-A6BE-4705-A9A7-E42CEA94D3FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Geth", "src\Nethereum.Geth\Nethereum.Geth.csproj", "{D86EAF2F-A6BE-4705-A9A7-E42CEA94D3FB}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Parity", "src\Nethereum.Parity\Nethereum.Parity.xproj", "{DC3EAAED-2E67-47EC-85A1-C1A140B5FBFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Parity", "src\Nethereum.Parity\Nethereum.Parity.csproj", "{DC3EAAED-2E67-47EC-85A1-C1A140B5FBFA}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nethereum.Geth.Tests", "src\Nethereum.Geth.Tests\Nethereum.Geth.Tests.xproj", "{181D7D74-213E-4B0A-9E20-CBCEC47585D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Geth.Tests", "src\Nethereum.Geth.Tests\Nethereum.Geth.Tests.csproj", "{181D7D74-213E-4B0A-9E20-CBCEC47585D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -644,6 +644,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{95D76B1F-AEEC-4C64-9C34-A0C95ACAC2D8} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{CDD3B024-0BCD-4985-9B5B-0A43D854EACC} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{A36B1E91-CE03-43D6-AA50-9C893AD33B75} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{70DBE438-805E-432F-889A-7853B898EE75} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
 		{CD7D0813-C613-4788-A428-31DC5605CF7B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{6E01FF7E-6178-466F-83D2-633E861B7617} = {962EC435-6130-4B75-BAC1-12323B067443}
@@ -651,9 +654,6 @@ Global
 		{AB3652F1-AC30-4522-A1EE-1758A6EF6F5C} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{D6F5E214-4F43-4632-B204-44EFD195071E} = {95D76B1F-AEEC-4C64-9C34-A0C95ACAC2D8}
 		{4A8E6CED-0789-4DB3-9BD8-FE7D940A0AE9} = {CDD3B024-0BCD-4985-9B5B-0A43D854EACC}
-		{95D76B1F-AEEC-4C64-9C34-A0C95ACAC2D8} = {962EC435-6130-4B75-BAC1-12323B067443}
-		{CDD3B024-0BCD-4985-9B5B-0A43D854EACC} = {962EC435-6130-4B75-BAC1-12323B067443}
-		{A36B1E91-CE03-43D6-AA50-9C893AD33B75} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{57229BA6-2EB6-43EB-A3E4-1CC489D23766} = {CDD3B024-0BCD-4985-9B5B-0A43D854EACC}
 		{84A6BAA7-32B3-4D99-9280-87023BFF0A5B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{3D85110C-80C3-4136-A828-22CB066362A0} = {962EC435-6130-4B75-BAC1-12323B067443}

@@ -131,6 +131,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj">
+      <Project>{687fc7b7-9a07-4dc2-bdb2-5eaa3a58956a}</Project>
+      <Name>Nethereum.Contracts</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

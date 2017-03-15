@@ -53,7 +53,7 @@
       <Project>{0f8da38c-5c65-4545-bff0-c40ec0ce40b4}</Project>
       <Name>Nethereum.Portable</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Nethereum.Gen\Nethereum.Gen.xproj">
+    <ProjectReference Include="..\Nethereum.Gen\Nethereum.Gen.csproj">
       <Project>{57229ba6-2eb6-43eb-a3e4-1cc489d23766}</Project>
       <Name>Nethereum.Gen</Name>
     </ProjectReference>

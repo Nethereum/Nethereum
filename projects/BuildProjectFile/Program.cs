@@ -134,8 +134,8 @@ namespace BuildProjectFile
 </Project>";
 
 
-static string fileTemplate1 =
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+        static string fileTemplate1 =
+        @"<?xml version=""1.0"" encoding=""utf-8""?>
 <Project DefaultTargets=""Build"" ToolsVersion=""4.0"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
   <PropertyGroup>
     <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>

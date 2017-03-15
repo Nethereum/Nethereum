@@ -6,6 +6,7 @@ using System.Web;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web.Sample.Model.Dao;
 using Nethereum.Web3;
+using Nethereum.Contracts;
 
 namespace Nethereum.Web.Sample.Services
 {
