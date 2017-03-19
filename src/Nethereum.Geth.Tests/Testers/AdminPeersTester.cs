@@ -10,7 +10,6 @@ namespace Nethereum.Geth.Tests.Testers
 {
     public class AdminPeersTester : RPCRequestTester<JArray>, IRPCRequestTester
     {
-
         [Fact]
         public async void ShouldReturnEmptyArray()
         {
