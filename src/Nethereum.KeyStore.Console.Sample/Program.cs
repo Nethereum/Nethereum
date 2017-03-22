@@ -23,7 +23,7 @@ namespace Nethereum.KeyStore.Console.Sample
            // var json = file.ReadToEnd();
             
            // //using the simple key store service
-           // var service = new KeyStoreService();
+           var service = new KeyStoreService();
            // //decrypt the private key
            // var key = service.DecryptKeyStoreFromJson(password, json);
             

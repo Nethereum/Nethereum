@@ -935,96 +935,96 @@
 				<Link>Geth\RPC\Admin\AdminStopWS.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugBacktraceAt.cs">
-				<Link>Geth\RPC\Debug\DebugBacktraceAt.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugBacktraceAt.cs">
+				<Link>Geth\RPC\GethDebug\DebugBacktraceAt.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugBlockProfile.cs">
-				<Link>Geth\RPC\Debug\DebugBlockProfile.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugBlockProfile.cs">
+				<Link>Geth\RPC\GethDebug\DebugBlockProfile.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugCpuProfile.cs">
-				<Link>Geth\RPC\Debug\DebugCpuProfile.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugCpuProfile.cs">
+				<Link>Geth\RPC\GethDebug\DebugCpuProfile.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugDumpBlock.cs">
-				<Link>Geth\RPC\Debug\DebugDumpBlock.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugDumpBlock.cs">
+				<Link>Geth\RPC\GethDebug\DebugDumpBlock.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugGcStats.cs">
-				<Link>Geth\RPC\Debug\DebugGcStats.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugGcStats.cs">
+				<Link>Geth\RPC\GethDebug\DebugGcStats.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugGetBlockRlp.cs">
-				<Link>Geth\RPC\Debug\DebugGetBlockRlp.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugGetBlockRlp.cs">
+				<Link>Geth\RPC\GethDebug\DebugGetBlockRlp.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugGoTrace.cs">
-				<Link>Geth\RPC\Debug\DebugGoTrace.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugGoTrace.cs">
+				<Link>Geth\RPC\GethDebug\DebugGoTrace.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugMemStats.cs">
-				<Link>Geth\RPC\Debug\DebugMemStats.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugMemStats.cs">
+				<Link>Geth\RPC\GethDebug\DebugMemStats.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugSeedHash.cs">
-				<Link>Geth\RPC\Debug\DebugSeedHash.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugSeedHash.cs">
+				<Link>Geth\RPC\GethDebug\DebugSeedHash.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugSetBlockProfileRate.cs">
-				<Link>Geth\RPC\Debug\DebugSetBlockProfileRate.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugSetBlockProfileRate.cs">
+				<Link>Geth\RPC\GethDebug\DebugSetBlockProfileRate.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugStacks.cs">
-				<Link>Geth\RPC\Debug\DebugStacks.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugStacks.cs">
+				<Link>Geth\RPC\GethDebug\DebugStacks.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugStartCPUProfile.cs">
-				<Link>Geth\RPC\Debug\DebugStartCPUProfile.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugStartCPUProfile.cs">
+				<Link>Geth\RPC\GethDebug\DebugStartCPUProfile.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugStartGoTrace.cs">
-				<Link>Geth\RPC\Debug\DebugStartGoTrace.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugStartGoTrace.cs">
+				<Link>Geth\RPC\GethDebug\DebugStartGoTrace.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugStopCPUProfile.cs">
-				<Link>Geth\RPC\Debug\DebugStopCPUProfile.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugStopCPUProfile.cs">
+				<Link>Geth\RPC\GethDebug\DebugStopCPUProfile.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugStopGoTrace.cs">
-				<Link>Geth\RPC\Debug\DebugStopGoTrace.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugStopGoTrace.cs">
+				<Link>Geth\RPC\GethDebug\DebugStopGoTrace.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugTraceBlock.cs">
-				<Link>Geth\RPC\Debug\DebugTraceBlock.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugTraceBlock.cs">
+				<Link>Geth\RPC\GethDebug\DebugTraceBlock.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugTraceBlockByHash.cs">
-				<Link>Geth\RPC\Debug\DebugTraceBlockByHash.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugTraceBlockByHash.cs">
+				<Link>Geth\RPC\GethDebug\DebugTraceBlockByHash.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugTraceBlockByNumber.cs">
-				<Link>Geth\RPC\Debug\DebugTraceBlockByNumber.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugTraceBlockByNumber.cs">
+				<Link>Geth\RPC\GethDebug\DebugTraceBlockByNumber.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugTraceBlockFromFile.cs">
-				<Link>Geth\RPC\Debug\DebugTraceBlockFromFile.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugTraceBlockFromFile.cs">
+				<Link>Geth\RPC\GethDebug\DebugTraceBlockFromFile.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugTraceTransaction.cs">
-				<Link>Geth\RPC\Debug\DebugTraceTransaction.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugTraceTransaction.cs">
+				<Link>Geth\RPC\GethDebug\DebugTraceTransaction.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugVerbosity.cs">
-				<Link>Geth\RPC\Debug\DebugVerbosity.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugVerbosity.cs">
+				<Link>Geth\RPC\GethDebug\DebugVerbosity.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DebugVmodule.cs">
-				<Link>Geth\RPC\Debug\DebugVmodule.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugVmodule.cs">
+				<Link>Geth\RPC\GethDebug\DebugVmodule.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Geth\RPC\Debug\DTOs\TraceTransactionOptions.cs">
-				<Link>Geth\RPC\Debug\DTOs\TraceTransactionOptions.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DTOs\TraceTransactionOptions.cs">
+				<Link>Geth\RPC\GethDebug\DTOs\TraceTransactionOptions.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\MinerSetGasPrice.cs">

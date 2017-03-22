@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <Folder Include="RPC\Main\" />
+    <Folder Include="RPC\Network\" />
+    <Folder Include="RPC\Tests\Network\" />
   </ItemGroup>
 
   <ItemGroup>
