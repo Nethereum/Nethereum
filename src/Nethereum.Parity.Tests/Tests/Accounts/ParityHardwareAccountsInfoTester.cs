@@ -5,10 +5,11 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
+using Nethereum.Parity.RPC.Main;
 
 namespace Nethereum.Parity.Test.Testers
 {
-    public class ParityAccountsInfoTester : RPCRequestTester<JObject>, IRPCRequestTester
+    public class ParityHardwareAccountsInfoTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
         
         [Fact]
@@ -20,13 +21,13 @@ namespace Nethereum.Parity.Test.Testers
 
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
-            var parityAccountsInfo = new ParityAccountsInfo(client);
-            return await parityAccountsInfo.SendRequestAsync();
+            var parityHardwareAccountsInfo = new ParityHardwareAccountsInfo(client);
+            return await parityHardwareAccountsInfo.SendRequestAsync();
         }
 
         public override Type GetRequestType()
         {
-            return typeof(ParityAccountsInfo);
+            return typeof(ParityHardwareAccountsInfo);
         }
     }
 }

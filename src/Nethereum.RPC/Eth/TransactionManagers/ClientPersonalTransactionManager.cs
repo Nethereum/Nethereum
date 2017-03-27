@@ -6,7 +6,7 @@ using Nethereum.RPC.Personal;
 
 namespace Nethereum.RPC.Eth.TransactionManagers
 {
-    public class ClientPersonalTransactionManager : ITransactionManager
+    public class ClientPersonalTransactionManager : TransactionManagerBase
     {
         private readonly string _accountAddress;
         private readonly string _password;
@@ -23,9 +23,7 @@ namespace Nethereum.RPC.Eth.TransactionManagers
  
         }
 
-        public IClient Client { get; set; }
-
-        public Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput
+        public override Task<string> SendTransactionAsync<T>(T transactionInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));

@@ -543,6 +543,10 @@
 				<Link>RPC\Eth\TransactionManagers\TransactionManager.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\TransactionManagers\TransactionManagerBase.cs">
+				<Link>RPC\Eth\TransactionManagers\TransactionManagerBase.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\EthCall.cs">
 				<Link>RPC\Eth\Transactions\EthCall.cs</Link>
 		</Compile>

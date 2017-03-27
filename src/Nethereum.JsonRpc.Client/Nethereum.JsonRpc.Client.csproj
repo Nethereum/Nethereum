@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.JsonRpc.Client</AssemblyTitle>
     <VersionPrefix>2.0.0-rc2</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;net451;</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.Client</AssemblyName>
     <PackageId>Nethereum.JsonRpc.Client</PackageId>
     <PackageTags>Json;RPC</PackageTags>
@@ -27,12 +27,12 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-    <PackageReference Include="EdjCase.JsonRpc.Client" Version="1.0.5" />
+    <PackageReference Include="EdjCase.JsonRpc.Client" Version="1.3.1" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-
+  
 </Project>

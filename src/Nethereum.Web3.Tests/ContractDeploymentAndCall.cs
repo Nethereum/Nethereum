@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Nethereum.Web3.Tests
 {
+
     public class ContractDeploymentAndCall
     {
         [Fact]

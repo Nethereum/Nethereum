@@ -22,7 +22,6 @@ namespace Nethereum.Contracts
         }
 
         private EthCall EthCall => _contract.Eth.Transactions.Call;
-        private EthEstimateGas EthEstimateGas => _contract.Eth.Transactions.EstimateGas;
         protected ITransactionManager TransactionManager => _contract.Eth.TransactionManager;
 
         public BlockParameter DefaultBlock => _contract.DefaultBlock;
@@ -156,7 +155,7 @@ namespace Nethereum.Contracts
         {
             return
                 await
-                    EthEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress))
+                    TransactionManager.EstimateGasAsync(new CallInput(encodedFunctionCall, ContractAddress))
                         .ConfigureAwait(false);
         }
 
@@ -165,7 +164,7 @@ namespace Nethereum.Contracts
         {
             return
                 await
-                    EthEstimateGas.SendRequestAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas,
+                    TransactionManager.EstimateGasAsync(new CallInput(encodedFunctionCall, ContractAddress, @from, gas,
                         value)).ConfigureAwait(false);
         }
 
@@ -173,7 +172,7 @@ namespace Nethereum.Contracts
         )
         {
             callInput.Data = encodedFunctionCall;
-            return await EthEstimateGas.SendRequestAsync(callInput).ConfigureAwait(false);
+            return await TransactionManager.EstimateGasAsync(callInput).ConfigureAwait(false);
         }
 
         protected Task<string> SendTransactionAsync(string encodedFunctionCall)

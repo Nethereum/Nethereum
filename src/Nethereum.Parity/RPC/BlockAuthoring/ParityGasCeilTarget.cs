@@ -1,4 +1,5 @@
 
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 using Newtonsoft.Json.Linq;
