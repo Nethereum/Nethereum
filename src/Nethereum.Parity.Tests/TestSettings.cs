@@ -3,7 +3,7 @@ using System.Configuration;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 
-namespace Nethereum.RPC.Tests;
+namespace Nethereum.RPC.Tests
 {
     public class TestSettings
     {

@@ -25,7 +25,6 @@ namespace Nethereum.Web3.Tests
             var web3 = new Web3Geth(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient());
   
             var estimate = await web3.Eth.DeployContract.EstimateGasAsync(abi, contractByteCode, addressFrom, 7);
-
         }
 
         [Fact]

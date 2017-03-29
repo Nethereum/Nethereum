@@ -1,9 +1,7 @@
-
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
-using Newtonsoft.Json.Linq;
 
-namespace Nethereum.Parity.RPC.Main
+namespace Nethereum.Parity.RPC.Accounts
 {
 
     ///<Summary>

@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 
-namespace Nethereum.RPC.Tests;
+namespace Nethereum.RPC.Tests
 {
     public abstract class RPCRequestTester<T>: IRPCRequestTester
     {

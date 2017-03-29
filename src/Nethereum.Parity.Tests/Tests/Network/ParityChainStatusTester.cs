@@ -5,17 +5,19 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
+using Newtonsoft.Json.Linq;
+using Nethereum.Parity.RPC.Network;
 
 namespace Nethereum.Parity.Test.Testers
 {
     public class ParityChainStatusTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        
+
         [Fact]
-        public async void Should()
+        public async void ShouldNotReturnNull()
         {
             var result = await ExecuteAsync();
-            Assert.True();
+            Assert.NotNull(result);
         }
 
         public override async Task<JObject> ExecuteAsync(IClient client)

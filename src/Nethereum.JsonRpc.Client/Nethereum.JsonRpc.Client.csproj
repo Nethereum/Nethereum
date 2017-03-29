@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.JsonRpc.Client</AssemblyTitle>
     <VersionPrefix>2.0.0-rc2</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451;</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.Client</AssemblyName>
     <PackageId>Nethereum.JsonRpc.Client</PackageId>
     <PackageTags>Json;RPC</PackageTags>

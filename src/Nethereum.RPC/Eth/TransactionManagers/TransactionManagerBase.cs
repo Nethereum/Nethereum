@@ -20,5 +20,9 @@ namespace Nethereum.RPC.Eth.TransactionManagers
 
         public abstract Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput;
         
-    }
+        public virtual Task<string> SendTransaction(string from, string to, HexBigInteger amount)
+        {
+            return SendTransactionAsync(new TransactionInput() { From = from, To = to, Value = amount});
+        }
+     }
 }

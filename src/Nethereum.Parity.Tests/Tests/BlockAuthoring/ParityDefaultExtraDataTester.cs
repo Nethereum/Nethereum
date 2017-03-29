@@ -2,10 +2,10 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Parity.RPC.BlockAuthoring;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Tests;
 using Xunit;
-using Nethereum.Parity.RPC.Main;
 
 namespace Nethereum.Parity.Test.Testers
 {
@@ -13,10 +13,10 @@ namespace Nethereum.Parity.Test.Testers
     {
         
         [Fact]
-        public async void Should()
+        public async void ShouldGetDefaultExtraData()
         {
             var result = await ExecuteAsync();
-            Assert.True();
+            Assert.NotNull(result);
         }
 
         public override async Task<string> ExecuteAsync(IClient client)

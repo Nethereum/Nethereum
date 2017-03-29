@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
@@ -27,9 +28,15 @@ namespace Nethereum.RPC.Eth.TransactionManagers
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            if (transactionInput.From != _accountAddress) throw new Exception("Invalid account used signing");
+            if (transactionInput.From != _accountAddress) throw new Exception("Invalid account used");
             var ethSendTransaction = new PersonalSignAndSendTransaction(Client);
             return ethSendTransaction.SendRequestAsync(transactionInput, _password);
+        }
+
+        public override Task<string> SendTransaction(string from, string to, HexBigInteger amount)
+        {
+            if (from != _accountAddress) throw new Exception("Invalid account used");
+            return base.SendTransaction(from, to, amount);
         }
     }
 }
