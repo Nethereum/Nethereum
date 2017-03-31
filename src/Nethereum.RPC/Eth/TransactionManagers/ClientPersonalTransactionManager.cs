@@ -33,10 +33,10 @@ namespace Nethereum.RPC.Eth.TransactionManagers
             return ethSendTransaction.SendRequestAsync(transactionInput, _password);
         }
 
-        public override Task<string> SendTransaction(string from, string to, HexBigInteger amount)
+        public override Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
         {
             if (from != _accountAddress) throw new Exception("Invalid account used");
-            return base.SendTransaction(from, to, amount);
+            return base.SendTransactionAsync(from, to, amount);
         }
     }
 }

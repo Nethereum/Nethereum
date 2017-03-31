@@ -66,6 +66,7 @@ namespace Nethereum.Web3.Tests
 
             //do a function call (not transaction) and get the result
             var callResult = await multiplyFunction.CallAsync<int>(69);
+           
             Assert.Equal(3864, callResult);
         }
 

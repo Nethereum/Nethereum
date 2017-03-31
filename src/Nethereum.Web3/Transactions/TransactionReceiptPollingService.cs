@@ -18,17 +18,38 @@ namespace Nethereum.Web3.Transactions
             _retryMiliseconds = retryMiliseconds;
         }
 
+        public Task<TransactionReceipt> SendRequestAsync(TransactionInput transactionInput,
+            CancellationTokenSource tokenSource = null)
+        {
+            return SendRequestAsync(() => _web3.TransactionManager.SendTransactionAsync(transactionInput), tokenSource);
+        }
+
+        public Task<List<TransactionReceipt>> SendRequestAsync(IEnumerable<TransactionInput> transactionInputs,
+            CancellationTokenSource tokenSource = null)
+        {
+            var funcs = new List<Func<Task<string>>>();
+            foreach (var transactionInput in transactionInputs)
+            {
+                funcs.Add(() => _web3.TransactionManager.SendTransactionAsync(transactionInput));
+            }
+            return SendRequestAsync(funcs.ToArray(), tokenSource);
+        }
+
         public async Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
             CancellationTokenSource tokenSource = null)
         {
             var transaction = await transactionFunction();
-            var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
+            return await PollForReceiptAsync(tokenSource, transaction);
+        }
+
+        private async Task<TransactionReceipt> PollForReceiptAsync(CancellationTokenSource tokenSource, string transaction)
+        {
+            var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             while (receipt == null)
             {
-
                 await Task.Delay(_retryMiliseconds);
                 tokenSource?.Token.ThrowIfCancellationRequested();
-                receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
+                receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             }
             return receipt;
         }
@@ -41,18 +62,11 @@ namespace Nethereum.Web3.Transactions
             {
                 txnList.Add(await transactionFunction());    
             }
-            
+
             var receipts = new List<TransactionReceipt>();
             foreach (var transaction in txnList)
             {
-                var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
-                while (receipt == null)
-                {
-
-                    await Task.Delay(_retryMiliseconds);
-                    tokenSource?.Token.ThrowIfCancellationRequested();
-                    receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction);
-                }
+                var receipt =  await PollForReceiptAsync(tokenSource, transaction);
                 receipts.Add(receipt);
             }
             return receipts;
@@ -63,7 +77,7 @@ namespace Nethereum.Web3.Transactions
         {
             var transactionReceipt = await SendRequestAsync(deployFunction, tokenSource);
             var contractAddress = transactionReceipt.ContractAddress;
-            var code = await _web3.Eth.GetCode.SendRequestAsync(contractAddress);
+            var code = await _web3.Eth.GetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
             if (code == "0x") throw new ContractDeploymentException("Code not deployed succesfully", transactionReceipt);
             return transactionReceipt;
         }
