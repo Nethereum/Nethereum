@@ -1,14 +1,14 @@
 ﻿using System;
-using EdjCase.JsonRpc.Core;
 
 namespace Nethereum.JsonRpc.Client
 {
-    public class RpcResponseException:Exception
+    public class RpcResponseException : Exception
     {
-        public RpcResponse RpcResponse { get; }
-        public RpcResponseException(RpcResponse rpcResponse):base(rpcResponse.Error.Message)
+        public RpcResponseException(RpcError rpcError) : base(rpcError.Message)
         {
-            this.RpcResponse = rpcResponse;
+            RpcError = rpcError;
         }
+
+        public RpcError RpcError { get; }
     }
 }

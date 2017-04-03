@@ -695,8 +695,12 @@
 				<Link>EIP20\Events\DTO\TransferEvent.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Constants.cs">
-				<Link>NethereumJsonRpc\Constants.cs</Link>
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\ClientBase.cs">
+				<Link>NethereumJsonRpc\ClientBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Configuration.cs">
+				<Link>NethereumJsonRpc\Configuration.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\DefaultJsonSerializerSettingsFactory.cs">
@@ -715,8 +719,12 @@
 				<Link>NethereumJsonRpc\RequestInterceptor.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClient.cs">
-				<Link>NethereumJsonRpc\RpcClient.cs</Link>
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcError.cs">
+				<Link>NethereumJsonRpc\RpcError.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequest.cs">
+				<Link>NethereumJsonRpc\RpcRequest.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequestResponseHandler.cs">
@@ -729,6 +737,10 @@
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RPCResponseException.cs">
 				<Link>NethereumJsonRpc\RPCResponseException.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\RpcClient.cs">
+				<Link>NethereumJsonRpcClient\RpcClient.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.KeyStore\IKeyStoreService.cs">

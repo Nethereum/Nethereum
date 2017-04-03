@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Linq;
 
 namespace Nethereum.JsonRpc.Client
 {
@@ -12,27 +12,29 @@ namespace Nethereum.JsonRpc.Client
         public static JsonSerializerSettings BuildDefaultJsonSerializerSettings()
         {
             return new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore};
-                //ContractResolver = new NullParamsFirstElementResolver()};
+            //ContractResolver = new NullParamsFirstElementResolver()}; Not required anymore.
         }
     }
 
     //Passing a null value as the first parameter in the rpc (as no value) causes issues on client as it is not being ignored deserialising, as it is treated as the first element of the array.
-    public class NullParamsFirstElementResolver : Newtonsoft.Json.Serialization.DefaultContractResolver
+    public class NullParamsFirstElementResolver : DefaultContractResolver
     {
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             return type.GetTypeInfo().DeclaredProperties
-                    .Select(p => {
-                        var jp = base.CreateProperty(p, memberSerialization);
-                        jp.ValueProvider = new NullParamsValueProvider(p);
-                        return jp;
-                    }).ToList();
+                .Select(p =>
+                {
+                    var jp = CreateProperty(p, memberSerialization);
+                    jp.ValueProvider = new NullParamsValueProvider(p);
+                    return jp;
+                }).ToList();
         }
     }
 
     public class NullParamsValueProvider : IValueProvider
     {
-        PropertyInfo memberInfo;
+        private readonly PropertyInfo memberInfo;
+
         public NullParamsValueProvider(PropertyInfo memberInfo)
         {
             this.memberInfo = memberInfo;
@@ -45,9 +47,7 @@ namespace Nethereum.JsonRpc.Client
             {
                 var array = result as object[];
                 if (array != null && array.Length == 1 && array[0] == null)
-                {
                     result = "[]";
-                }
             }
             return result;
         }

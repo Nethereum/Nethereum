@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.InterceptorTests
         public async void ShouldInterceptNoParamsRequest()
         {
             var client = new RpcClient(new Uri("http://localhost:8545/"));
-          
+      
             client.OverridingRequestInterceptor = new OverridingInterceptorMock();
             var ethAccounts = new EthAccounts(client);
             var accounts = await ethAccounts.SendRequestAsync();

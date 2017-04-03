@@ -1,20 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Nethereum.JsonRpc IpcClient for Windows Class Library</Description>
+    <Description>JsonRpc Rpc Client Nethereum provider using Edjcase.JsonRpc.Client</Description>
     <Copyright>Juan Blanco</Copyright>
-    <AssemblyTitle>Nethereum.JsonRpc.IpcClient</AssemblyTitle>
-    <VersionPrefix>1.0.6</VersionPrefix>
+    <AssemblyTitle>Nethereum.JsonRpc.RpcClient</AssemblyTitle>
+    <VersionPrefix>2.0.0-rc2</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>net451</TargetFramework>
-    <AssemblyName>Nethereum.JsonRpc.IpcClient</AssemblyName>
-    <PackageId>Nethereum.JsonRpc.IpcClient</PackageId>
-    <PackageTags>Json;RPC</PackageTags>
+    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <AssemblyName>Nethereum.JsonRpc.RpcClient</AssemblyName>
+    <PackageId>Nethereum.JsonRpc.RpcClient</PackageId>
+    <PackageTags>Json;RPC;Nethereum</PackageTags>
     <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
     <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.1' ">$(PackageTargetFallback);dotnet52</PackageTargetFallback>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -24,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="EdjCase.JsonRpc.Client" Version="1.3.1" />
   </ItemGroup>
 
@@ -33,4 +35,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+  </ItemGroup>
+  
 </Project>

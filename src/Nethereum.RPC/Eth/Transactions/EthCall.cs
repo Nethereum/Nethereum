@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 

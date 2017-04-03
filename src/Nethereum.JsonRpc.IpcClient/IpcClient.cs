@@ -1,102 +1,103 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using EdjCase.JsonRpc.Client;
 using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
+using RpcError = Nethereum.JsonRpc.Client.RpcError;
+using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
-    public class IpcClient : IClient, IDisposable
+    public class IpcClient : ClientBase, IDisposable
     {
+        private readonly string _ipcPath;
+
+        private readonly object _lockingObject = new object();
+
+        private NamedPipeClientStream _pipeClient;
+
+        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null)
+        {
+            if (jsonSerializerSettings == null)
+                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            this._ipcPath = ipcPath;
+            JsonSerializerSettings = jsonSerializerSettings;
+        }
+
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
-        private string ipcPath;
-
-        private object lockingObject = new object();
-
-        public RequestInterceptor OverridingRequestInterceptor { get; set; }
-
-        private NamedPipeClientStream pipeClient;
         private NamedPipeClientStream GetPipeClient()
         {
-            lock (lockingObject)
+            lock (_lockingObject)
             {
                 try
                 {
-                    if (pipeClient == null || !pipeClient.IsConnected)
+                    if (_pipeClient == null || !_pipeClient.IsConnected)
                     {
-                        pipeClient = new NamedPipeClientStream(ipcPath);
+                        _pipeClient = new NamedPipeClientStream(_ipcPath);
 
-                        pipeClient.Connect();
-
+                        _pipeClient.Connect();
                     }
                 }
                 catch
                 {
                     //Connection error we want to allow to retry.
-                    pipeClient = null;
+                    _pipeClient = null;
                     throw;
                 }
             }
 
-            return pipeClient;
+            return _pipeClient;
         }
 
-
-        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null)
+        protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
         {
-            if (jsonSerializerSettings == null)
-            {
-                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
-            }
-            this.ipcPath = ipcPath;
-            this.JsonSerializerSettings = jsonSerializerSettings;
+            var response =
+                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
+                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters))
+                    .ConfigureAwait(false);
+            HandleRpcError(response);
+            return response.GetResult<T>();
         }
 
-        public async Task<RpcResponse> SendRequestAsync(RpcRequest request, string route = null)
+        protected override async Task<T> SendInnerRequestAync<T>(string method, string route = null,
+            params object[] paramList)
         {
-            if (OverridingRequestInterceptor != null)
-            {
-                return await OverridingRequestInterceptor.InterceptSendRequestAsync(InnerSendRequestAsync, request, route).ConfigureAwait(false);
-            }
-            return await InnerSendRequestAsync(request);
+            var response =
+                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
+                        new EdjCase.JsonRpc.Core.RpcRequest(Configuration.DefaultRequestId, method, paramList))
+                    .ConfigureAwait(false);
+            HandleRpcError(response);
+            return response.GetResult<T>();
         }
 
-        private async Task<RpcResponse> InnerSendRequestAsync(RpcRequest request, string route = null)
+        private void HandleRpcError(RpcResponse response)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            return await this.SendAsync<RpcRequest, RpcResponse>(request).ConfigureAwait(false);
+            if (response.HasError)
+                throw new RpcResponseException(new RpcError(response.Error.Code, response.Error.Message,
+                    response.Error.Data));
         }
 
-        public Task<RpcResponse> SendRequestAsync(string method, string route = null, params object[] paramList)
+        public override async Task SendRequestAsync(RpcRequest request, string route = null)
         {
-            if (OverridingRequestInterceptor != null)
-            {
-                return OverridingRequestInterceptor.InterceptSendRequestAsync(InnerSendRequestAsync, method, route, paramList);
-            }
-            return InnerSendRequestAsync(method, route, paramList);
+            var response =
+                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
+                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters))
+                    .ConfigureAwait(false);
+            HandleRpcError(response);
         }
 
-     
-        private Task<RpcResponse> InnerSendRequestAsync(string method, string route = null, params object[] paramList)
+        public override async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
-            if (string.IsNullOrWhiteSpace(method))
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-            RpcRequest request = new RpcRequest(Guid.NewGuid().ToString(), method, paramList);
-            return this.SendRequestAsync(request);
+            var response =
+                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
+                        new EdjCase.JsonRpc.Core.RpcRequest(Configuration.DefaultRequestId, method, paramList))
+                    .ConfigureAwait(false);
+            HandleRpcError(response);
         }
 
         private async Task<byte[]> ReadResponseStream(NamedPipeClientStream pipeClientStream)
@@ -112,17 +113,15 @@ namespace Nethereum.JsonRpc.IpcClient
                     //if timesout (false returned) we have to close the pipestream and return the memory stream
                     var read = 0;
                     if (Task.Run(
-                            async () =>
-                            {
-                                read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                            }
-                            ).Wait(10000))
+                        async () =>
+                        {
+                            read = await pipeClientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        }
+                    ).Wait(10000))
                     {
                         ms.Write(buffer, 0, read);
                         if (read < 1024)
-                        {
                             return ms.ToArray();
-                        }
                     }
                     else
                     {
@@ -137,30 +136,27 @@ namespace Nethereum.JsonRpc.IpcClient
         {
             try
             {
-                var pipeClientStream = GetPipeClient();
-
-                string rpcRequestJson = JsonConvert.SerializeObject(request, this.JsonSerializerSettings);
-                byte[] requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
                 await GetPipeClient().WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
 
                 var responseBytes = await ReadResponseStream(GetPipeClient()).ConfigureAwait(false);
-                if(responseBytes == null) throw  new RpcClientUnknownException("Invalid response / null");
-                var totalMegs = (responseBytes.Length / 1024f) / 1024f;
-                if (totalMegs > 10) throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
-                string responseJson = Encoding.UTF8.GetString(responseBytes);
+                if (responseBytes == null) throw new RpcClientUnknownException("Invalid response / null");
+                var totalMegs = responseBytes.Length / 1024f / 1024f;
+                if (totalMegs > 10)
+                    throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
+                var responseJson = Encoding.UTF8.GetString(responseBytes);
 
                 try
                 {
-                    return JsonConvert.DeserializeObject<TResponse>(responseJson, this.JsonSerializerSettings);
+                    return JsonConvert.DeserializeObject<TResponse>(responseJson, JsonSerializerSettings);
                 }
                 catch (JsonSerializationException)
                 {
-                    RpcResponse rpcResponse = JsonConvert.DeserializeObject<RpcResponse>(responseJson, this.JsonSerializerSettings);
+                    var rpcResponse = JsonConvert.DeserializeObject<RpcResponse>(responseJson, JsonSerializerSettings);
                     if (rpcResponse == null)
-                    {
                         throw new RpcClientUnknownException(
-                        $"Unable to parse response from the ipc server. Response Json: {responseJson}");
-                    }
+                            $"Unable to parse response from the ipc server. Response Json: {responseJson}");
                     throw rpcResponse.Error.CreateException();
                 }
             }
@@ -168,24 +164,22 @@ namespace Nethereum.JsonRpc.IpcClient
             {
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
-
         }
 
         #region IDisposable Support
-        private bool disposedValue = false;
+
+        private bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
-                {
-                    if (pipeClient != null)
+                    if (_pipeClient != null)
                     {
-                        pipeClient.Close();
-                        pipeClient.Dispose();
+                        _pipeClient.Close();
+                        _pipeClient.Dispose();
                     }
-                }
 
                 disposedValue = true;
             }
@@ -195,10 +189,7 @@ namespace Nethereum.JsonRpc.IpcClient
         {
             Dispose(true);
         }
+
         #endregion
-
     }
-
 }
-
-

@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Geth.RPC.Debug

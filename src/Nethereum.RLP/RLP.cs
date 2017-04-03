@@ -104,7 +104,7 @@ namespace Nethereum.RLP
         }
 
         /// <summary>
-        ///     Parses byte[] message into RLP items
+        /// Parses byte[] message into RLP items
         /// </summary>
         /// <param name="msgData">raw RLP data </param>
         /// <returns> RlpList: outcome of recursive RLP structure </returns>
@@ -133,43 +133,37 @@ namespace Nethereum.RLP
 
                 while (currentPosition < endPosition)
                 {
-                    // It's a list with a payload more than 55 bytes
-                    // data[0] - 0xF7 = how many next bytes allocated
-                    // for the length of the list
+                  
                     if (IsListBiggerThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessListBiggerThan55Bytes(msgData, level, levelToIndex, rlpCollection, currentPosition);
                         continue;
                     }
 
-                    // It's a list with a payload less than 55 bytes
                     if (IsListLessThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessListLessThan55Bytes(msgData, level, levelToIndex, rlpCollection, currentPosition);
                         continue;
                     }
-                    // It's an item with a payload more than 55 bytes
-                    // data[0] - 0xB7 = how much next bytes allocated for
-                    // the length of the string
+                   
                     if (IsItemBiggerThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessItemBiggerThan55Bytes(msgData, rlpCollection, currentPosition);
                         continue;
                     }
-                    // It's an item less than 55 bytes long,
-                    // data[0] - 0x80 == length of the item
+                    
                     if (IsItemLessThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessItemLessThan55Bytes(msgData, rlpCollection, currentPosition);
                         continue;
                     }
-                    // null item
+                   
                     if (IsNullItem(msgData, currentPosition))
                     {
                         currentPosition = ProcessNullItem(rlpCollection, currentPosition);
                         continue;
                     }
-                    // single byte item
+                    
                     if (IsSigleByteItem(msgData, currentPosition))
                     {
                         currentPosition = ProcessSingleByteItem(msgData, rlpCollection, currentPosition);
@@ -183,6 +177,10 @@ namespace Nethereum.RLP
             }
         }
 
+        /// <summary>
+        /// data[0] - 0xF7 = how many next bytes allocated
+        /// for the length of the list
+        /// </summary>
         private static bool IsListBiggerThan55Bytes(byte[] msgData, int currentPosition)
         {
             return msgData[currentPosition] > OFFSET_LONG_LIST;
@@ -194,12 +192,16 @@ namespace Nethereum.RLP
                    && (msgData[currentPosition] <= OFFSET_LONG_LIST);
         }
 
+        // It's an item with a payload more than 55 bytes
+        // data[0] - 0xB7 = how much next bytes allocated for
+        // the length of the string
         private static bool IsItemBiggerThan55Bytes(byte[] msgData, int currentPosition)
         {
             return (msgData[currentPosition] > OFFSET_LONG_ITEM)
                    && (msgData[currentPosition] < OFFSET_SHORT_LIST);
         }
 
+        // data[0] - 0x80 == length of the item
         private static bool IsItemLessThan55Bytes(byte[] msgData, int currentPosition)
         {
             return (msgData[currentPosition] > OFFSET_SHORT_ITEM)

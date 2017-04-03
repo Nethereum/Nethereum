@@ -14,7 +14,6 @@ namespace Nethereum.Web3
     public class Web3
     {
         private AddressUtil addressUtil;
-
         private Sha3Keccack sha3Keccack;
 
         public Web3(IClient client)
@@ -31,7 +30,7 @@ namespace Nethereum.Web3
 
         public Web3(string url = @"http://localhost:8545/")
         {
-            IntialiseRpcClient(url);
+            IntialiseDefaultRpcClient(url);
             InitialiseInnerServices();
         }
 
@@ -96,10 +95,9 @@ namespace Nethereum.Web3
             addressUtil = new AddressUtil();
         }
 
-        private void IntialiseRpcClient(string url)
+        private void IntialiseDefaultRpcClient(string url)
         {
-            Client = new RpcClient(new Uri(url), null,
-                new JsonSerializerSettings {NullValueHandling = NullValueHandling.Ignore});
+            Client = new RpcClient(new Uri(url));
         }
     }
 }

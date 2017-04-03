@@ -16,6 +16,7 @@ namespace BuildProjectFile
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.Web3", "Web3"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.StandardTokenEIP20", "EIP20"));
             stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.JsonRpc.Client", "NethereumJsonRpc"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.JsonRpc.RpcClient", "NethereumJsonRpcClient"));
             stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.KeyStore", "KeyStore"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Quorum", "Quorum"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.ENS", "ENS"));
