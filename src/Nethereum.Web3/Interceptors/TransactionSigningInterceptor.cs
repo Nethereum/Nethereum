@@ -9,13 +9,11 @@ namespace Nethereum.Web3.Interceptors
 {
     public class TransactionRequestToOfflineSignedTransactionInterceptor : RequestInterceptor
     {
-        private readonly string account;
         private readonly SignedTransactionManager signer;
 
-        public TransactionRequestToOfflineSignedTransactionInterceptor(string account, string privateKey, Web3 web3)
-        {
-            this.account = account;
-            signer = new SignedTransactionManager(web3.Client, privateKey, account);
+        public TransactionRequestToOfflineSignedTransactionInterceptor(string privateKey, Web3 web3)
+        { 
+            signer = new SignedTransactionManager(web3.Client, privateKey);
         }
 
         public override async Task<object> InterceptSendRequestAsync<TResponse>(
@@ -24,10 +22,10 @@ namespace Nethereum.Web3.Interceptors
         {
             if (request.Method == "eth_sendTransaction")
             {
-                var transaction = (TransactionInput) ((object[])request.RawParameters)[0];
-                return await SignAndSendTransaction(transaction);
+                var transaction = (TransactionInput) request.RawParameters[0];
+                return await SignAndSendTransaction(transaction).ConfigureAwait(false);
             }
-            return base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route);
+            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route).ConfigureAwait(false);
         }
 
         public override async Task<object> InterceptSendRequestAsync<T>(
@@ -39,13 +37,11 @@ namespace Nethereum.Web3.Interceptors
                 var transaction = (TransactionInput) paramList[0];
                 return await SignAndSendTransaction(transaction).ConfigureAwait(false);
             }
-            return base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList);
+            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList).ConfigureAwait(false);
         }
 
         private async Task<string> SignAndSendTransaction(TransactionInput transaction)
         {
-            if (transaction.From.EnsureHexPrefix().ToLower() != account.EnsureHexPrefix().ToLower())
-                throw new Exception("Invalid account used for interceptor");
             return await signer.SendTransactionAsync(transaction).ConfigureAwait(false);
         }
 

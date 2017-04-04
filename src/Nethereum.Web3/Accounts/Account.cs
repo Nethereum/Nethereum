@@ -49,7 +49,7 @@ namespace Nethereum.Web3.Accounts
 
         protected virtual void InitialiseDefaultTransactionManager()
         {
-            TransactionManager = new SignedTransactionManager(_privateKey, Address);
+            TransactionManager = new SignedTransactionManager(_privateKey);
         }
 
         public string Address { get; protected set; }

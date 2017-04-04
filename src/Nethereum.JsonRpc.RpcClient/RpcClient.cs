@@ -25,7 +25,7 @@ namespace Nethereum.JsonRpc.Client
         {
             var response =
                 await _innerRpcClient.SendRequestAsync(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters), route)
+                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, (object[])request.RawParameters), route)
                     .ConfigureAwait(false);
             HandleRpcError(response);
             return response.GetResult<T>();
@@ -50,7 +50,7 @@ namespace Nethereum.JsonRpc.Client
         {
             var response =
                 await _innerRpcClient.SendRequestAsync(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters), route)
+                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, (object[])request.RawParameters), route)
                     .ConfigureAwait(false);
             HandleRpcError(response);
         }

@@ -11,6 +11,6 @@
 
         public object Id { get; private set; }
         public string Method { get; private set; }
-        public object RawParameters { get; private set; }
+        public object[] RawParameters { get; private set; }
     }
 }

@@ -16,18 +16,19 @@ namespace Nethereum.Web3.Transactions
     {
         private readonly string _privateKey;
         private readonly string _account;
-        private TransactionSigner _transactionSigner;
+        private readonly TransactionSigner _transactionSigner;
         private BigInteger _nonceCount = -1;
 
-        public SignedTransactionManager(IClient rpcClient, string privateKey, string account)
+        public SignedTransactionManager(IClient rpcClient, string privateKey)
         {
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
-            if (account == null) throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
+            _account = EthECKey.GetPublicAddress(privateKey);
+            _privateKey = privateKey;
             _transactionSigner = new TransactionSigner();
         }
 
-        public SignedTransactionManager(string privateKey, string account):this(null, privateKey, account)
+        public SignedTransactionManager(string privateKey):this(null, privateKey)
         {
         }
 

@@ -25,7 +25,7 @@ namespace Nethereum.Quorum.RPC.Interceptors
         {
             if (request.Method == "eth_sendTransaction")
             {
-                var transaction = (TransactionInput) ((object[])request.RawParameters)[0];
+                var transaction = (TransactionInput) request.RawParameters[0];
                 var privateTransaction = new PrivateTransactionInput(transaction, privateFor.ToArray(), privateFrom);
                 return await interceptedSendRequestAsync(new RpcRequest(request.Id, request.Method, privateTransaction), route).ConfigureAwait(false);
             }
