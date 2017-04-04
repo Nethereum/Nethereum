@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Numerics;
-using NBitcoin.Crypto;
 using Nethereum.ABI.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;

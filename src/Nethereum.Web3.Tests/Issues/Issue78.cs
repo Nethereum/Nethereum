@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Nethereum.Geth;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.Issues

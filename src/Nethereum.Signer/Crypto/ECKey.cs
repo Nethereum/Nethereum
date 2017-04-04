@@ -1,14 +1,18 @@
 ﻿using System;
-using NBitcoin.BouncyCastle.Asn1.X9;
-using NBitcoin.BouncyCastle.Crypto.EC;
-using NBitcoin.BouncyCastle.Crypto.Parameters;
-using NBitcoin.BouncyCastle.Crypto.Signers;
-using NBitcoin.BouncyCastle.Math;
-using NBitcoin.BouncyCastle.Math.EC;
-using NBitcoin.BouncyCastle.Math.EC.Custom.Sec;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC;
 
-namespace NBitcoin.Crypto
+namespace Nethereum.Signer.Crypto
 {
+    /// <summary>
+    /// ECKey based on the implementation of NBitcoin
+    /// https://github.com/MetacoSA/NBitcoin
+    /// Removed the dependency of the custom BouncyCastle
+    /// </summary>
     internal class ECKey
     {
         public static readonly BigInteger HALF_CURVE_ORDER;
@@ -21,7 +25,8 @@ namespace NBitcoin.Crypto
 
         static ECKey()
         {
-            _Secp256k1 = CustomNamedCurves.Secp256k1;
+            //using Bouncy
+            _Secp256k1 = SecNamedCurves.GetByName("secp256k1");
             CURVE = new ECDomainParameters(_Secp256k1.Curve, _Secp256k1.G, _Secp256k1.N, _Secp256k1.H);
             HALF_CURVE_ORDER = _Secp256k1.N.ShiftRight(1);
             CURVE_ORDER = _Secp256k1.N;
@@ -73,7 +78,7 @@ namespace NBitcoin.Crypto
         public ECPublicKeyParameters GetPublicKeyParameters()
         {
             if (_Key is ECPublicKeyParameters)
-                return (ECPublicKeyParameters) _Key;
+                return (ECPublicKeyParameters)_Key;
             var q = Secp256k1.G.Multiply(PrivateKey.D);
             return new ECPublicKeyParameters("EC", q, DomainParameter);
         }
@@ -97,7 +102,7 @@ namespace NBitcoin.Crypto
             //   1.1 Let x = r + jn
 
             var n = curve.N;
-            var i = BigInteger.ValueOf((long) recId/2);
+            var i = BigInteger.ValueOf((long)recId / 2);
             var x = sig.R.Add(i.Multiply(n));
 
             //   1.2. Convert the integer x to an octet string X of length mlen using the conversion routine
@@ -107,7 +112,9 @@ namespace NBitcoin.Crypto
             //        do another iteration of Step 1.
             //
             // More concisely, what these points mean is to use X as a compressed public key.
-            var prime = ((SecP256K1Curve) curve.Curve).QQ;
+
+            //using bouncy and Q value of Point
+            var prime = new BigInteger(1, Org.BouncyCastle.Utilities.Encoders.Hex.Decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"));
             if (x.CompareTo(prime) >= 0)
                 return null;
 
@@ -140,7 +147,10 @@ namespace NBitcoin.Crypto
             var q = ECAlgorithms.SumOfTwoMultiplies(curve.G, eInvrInv, R, srInv);
             q = q.Normalize();
             if (compressed)
-                q = new SecP256K1Point(curve.Curve, q.XCoord, q.YCoord, true);
+            {
+                q = Secp256k1.Curve.CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger());
+                return new ECKey(q.GetEncoded(true), false);
+            }
             return new ECKey(q.GetEncoded(), false);
         }
 
@@ -171,7 +181,7 @@ namespace NBitcoin.Crypto
         {
             var curve = Secp256k1.Curve;
             var compEnc = X9IntegerConverter.IntegerToBytes(xBN, 1 + X9IntegerConverter.GetByteLength(curve));
-            compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
+            compEnc[0] = (byte)(yBit ? 0x03 : 0x02);
             return curve.DecodePoint(compEnc);
         }
     }

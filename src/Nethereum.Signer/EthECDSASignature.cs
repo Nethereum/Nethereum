@@ -1,6 +1,6 @@
 ﻿using System;
-using NBitcoin.BouncyCastle.Math;
-using NBitcoin.Crypto;
+using Nethereum.Signer.Crypto;
+using Org.BouncyCastle.Math;
 
 namespace Nethereum.Signer
 {

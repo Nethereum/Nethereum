@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using NBitcoin.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Signer.Crypto;
 using Nethereum.Util;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
@@ -50,8 +50,7 @@ namespace Nethereum.Signer
         }
 
         public static EthECKey GenerateKey()
-        {
-            //mixing bouncy implementation
+        { 
             var gen = new ECKeyPairGenerator();
             var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
             gen.Init(keyGenParam);

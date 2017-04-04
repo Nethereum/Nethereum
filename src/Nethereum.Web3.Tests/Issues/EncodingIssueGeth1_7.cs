@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NBitcoin.BouncyCastle.Math;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using Xunit;

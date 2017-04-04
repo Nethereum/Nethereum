@@ -7,6 +7,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.Issues

@@ -23,6 +23,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="EllipticCurve\**" />
+    <EmbeddedResource Remove="EllipticCurve\**" />
+    <None Remove="EllipticCurve\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />

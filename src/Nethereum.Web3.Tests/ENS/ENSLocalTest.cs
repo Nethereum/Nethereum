@@ -4,6 +4,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Nethereum.Web3.TransactionReceipts;
 using Xunit;
 

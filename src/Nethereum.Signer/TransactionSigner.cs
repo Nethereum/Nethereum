@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using NBitcoin.Crypto;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Signer

@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
-using NBitcoin.BouncyCastle.Asn1;
-using NBitcoin.BouncyCastle.Math;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Math;
 
-namespace NBitcoin.Crypto
+namespace Nethereum.Signer.Crypto
 {
-    
     internal class ECDSASignature
     {
         private const string InvalidDERSignature = "Invalid DER signature";
@@ -30,8 +29,8 @@ namespace NBitcoin.Crypto
                 var seq = decoder.ReadObject() as DerSequence;
                 if ((seq == null) || (seq.Count != 2))
                     throw new FormatException(InvalidDERSignature);
-                R = ((DerInteger) seq[0]).Value;
-                S = ((DerInteger) seq[1]).Value;
+                R = ((DerInteger)seq[0]).Value;
+                S = ((DerInteger)seq[1]).Value;
             }
             catch (Exception ex)
             {
@@ -69,7 +68,6 @@ namespace NBitcoin.Crypto
             }
             catch (Exception ex)
             {
-                //	Utils.error("Unexpected exception in ECDSASignature.IsValidDER " + ex.Message);
                 return false;
             }
         }
