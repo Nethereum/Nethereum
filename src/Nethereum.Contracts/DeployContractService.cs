@@ -4,7 +4,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts
 {

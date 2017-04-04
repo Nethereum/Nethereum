@@ -1,4 +1,5 @@
 ﻿using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Web3.Accounts
 {
@@ -15,7 +16,7 @@ namespace Nethereum.Web3.Accounts
 
         protected virtual void InitialiseDefaultTransactionManager(string password)
         {
-            TransactionManager = new ClientPersonalTransactionManager(Address, password);
+            TransactionManager = new ManagedAccountTransactionManager(Address, password);
         }
     }
 }

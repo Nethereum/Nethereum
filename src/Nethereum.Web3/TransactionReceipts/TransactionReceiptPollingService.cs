@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Web3.Transactions
+namespace Nethereum.Web3.TransactionReceipts
 {
     public class TransactionReceiptPollingService : ITransactionReceiptService
     {
-        private readonly Web3 _web3;
+        private readonly Nethereum.Web3.Web3 _web3;
         private readonly int _retryMiliseconds;
 
-        public TransactionReceiptPollingService(Web3 web3, int retryMiliseconds = 100)
+        public TransactionReceiptPollingService(Nethereum.Web3.Web3 web3, int retryMiliseconds = 100)
         {
             _web3 = web3;
             _retryMiliseconds = retryMiliseconds;

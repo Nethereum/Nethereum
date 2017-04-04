@@ -2,7 +2,7 @@
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
-using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.RPC
 {

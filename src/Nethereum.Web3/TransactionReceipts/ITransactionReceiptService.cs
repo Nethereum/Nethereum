@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Web3.Transactions
+namespace Nethereum.Web3.TransactionReceipts
 {
     public interface ITransactionReceiptService
     {

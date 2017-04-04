@@ -1,4 +1,5 @@
 ﻿using Nethereum.RPC.Eth.TransactionManagers;
+using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Web3.Transactions;
 
@@ -49,7 +50,7 @@ namespace Nethereum.Web3.Accounts
 
         protected virtual void InitialiseDefaultTransactionManager()
         {
-            TransactionManager = new SignedTransactionManager(_privateKey);
+            TransactionManager = new AccountSignerTransactionManager(_privateKey);
         }
 
         public string Address { get; protected set; }

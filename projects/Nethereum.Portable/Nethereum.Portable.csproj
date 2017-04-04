@@ -531,22 +531,6 @@
 				<Link>RPC\Eth\Services\EthApiUncleService.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.RPC\Eth\TransactionManagers\ClientPersonalTransactionManager.cs">
-				<Link>RPC\Eth\TransactionManagers\ClientPersonalTransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.RPC\Eth\TransactionManagers\ITransactionManager.cs">
-				<Link>RPC\Eth\TransactionManagers\ITransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.RPC\Eth\TransactionManagers\TransactionManager.cs">
-				<Link>RPC\Eth\TransactionManagers\TransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.RPC\Eth\TransactionManagers\TransactionManagerBase.cs">
-				<Link>RPC\Eth\TransactionManagers\TransactionManagerBase.cs</Link>
-		</Compile>
-		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\EthCall.cs">
 				<Link>RPC\Eth\Transactions\EthCall.cs</Link>
 		</Compile>
@@ -643,6 +627,18 @@
 				<Link>RPC\Shh\ShhVersion.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\ITransactionManager.cs">
+				<Link>RPC\TransactionManagers\ITransactionManager.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\TransactionManager.cs">
+				<Link>RPC\TransactionManagers\TransactionManager.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\TransactionManagerBase.cs">
+				<Link>RPC\TransactionManagers\TransactionManagerBase.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Web3\Web3ClientVersion.cs">
 				<Link>RPC\Web3\Web3ClientVersion.cs</Link>
 		</Compile>
@@ -659,28 +655,32 @@
 				<Link>Web3\Accounts\Account.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Web3\Accounts\AccountSignerTransactionManager.cs">
+				<Link>Web3\Accounts\AccountSignerTransactionManager.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Web3\Accounts\AccountTransactionSigningInterceptor.cs">
+				<Link>Web3\Accounts\AccountTransactionSigningInterceptor.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Web3\Accounts\IAccount.cs">
 				<Link>Web3\Accounts\IAccount.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\ManagedAccount.cs">
-				<Link>Web3\Accounts\ManagedAccount.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Web3\Accounts\Managed\ManagedAccount.cs">
+				<Link>Web3\Accounts\Managed\ManagedAccount.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Interceptors\TransactionSigningInterceptor.cs">
-				<Link>Web3\Interceptors\TransactionSigningInterceptor.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Web3\Accounts\Managed\ManagedAccountTransactionManager.cs">
+				<Link>Web3\Accounts\Managed\ManagedAccountTransactionManager.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Transactions\ITransactionReceiptService.cs">
-				<Link>Web3\Transactions\ITransactionReceiptService.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Web3\TransactionReceipts\ITransactionReceiptService.cs">
+				<Link>Web3\TransactionReceipts\ITransactionReceiptService.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Transactions\SignedTransactionManager.cs">
-				<Link>Web3\Transactions\SignedTransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\Transactions\TransactionReceiptPollingService.cs">
-				<Link>Web3\Transactions\TransactionReceiptPollingService.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Web3\TransactionReceipts\TransactionReceiptPollingService.cs">
+				<Link>Web3\TransactionReceipts\TransactionReceiptPollingService.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">

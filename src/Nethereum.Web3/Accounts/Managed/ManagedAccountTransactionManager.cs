@@ -4,22 +4,23 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.RPC.Eth.TransactionManagers
 {
-    public class ClientPersonalTransactionManager : TransactionManagerBase
+    public class ManagedAccountTransactionManager : TransactionManagerBase
     {
         private readonly string _accountAddress;
         private readonly string _password;
 
-        public ClientPersonalTransactionManager(IClient client, string accountAddress, string password)
+        public ManagedAccountTransactionManager(IClient client, string accountAddress, string password)
         {
             _accountAddress = accountAddress;
             _password = password;
             Client = client;
         }
 
-        public ClientPersonalTransactionManager(string accountAddress, string password):this(null, accountAddress, password)
+        public ManagedAccountTransactionManager(string accountAddress, string password):this(null, accountAddress, password)
         {
  
         }

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 
-namespace Nethereum.RPC.Eth.TransactionManagers
+namespace Nethereum.RPC.TransactionManagers
 {
     public class TransactionManager : TransactionManagerBase
     {

@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Web3.Interceptors
 {
-    public class TransactionRequestToOfflineSignedTransactionInterceptor : RequestInterceptor
+    public class AccountTransactionSigningInterceptor : RequestInterceptor
     {
-        private readonly SignedTransactionManager signer;
+        private readonly AccountSignerTransactionManager signer;
 
-        public TransactionRequestToOfflineSignedTransactionInterceptor(string privateKey, Web3 web3)
+        public AccountTransactionSigningInterceptor(string privateKey, Web3 web3)
         { 
-            signer = new SignedTransactionManager(web3.Client, privateKey);
+            signer = new AccountSignerTransactionManager(web3.Client, privateKey);
         }
 
         public override async Task<object> InterceptSendRequestAsync<TResponse>(

@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Hex.HexTypes;
 
-namespace Nethereum.RPC.Eth.TransactionManagers
+namespace Nethereum.RPC.TransactionManagers
 {
     public interface ITransactionManager
     {

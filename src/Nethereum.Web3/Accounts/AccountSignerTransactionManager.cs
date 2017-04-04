@@ -7,19 +7,20 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Transactions
 {
-    public class SignedTransactionManager : TransactionManagerBase
+    public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly string _privateKey;
         private readonly string _account;
         private readonly TransactionSigner _transactionSigner;
         private BigInteger _nonceCount = -1;
 
-        public SignedTransactionManager(IClient rpcClient, string privateKey)
+        public AccountSignerTransactionManager(IClient rpcClient, string privateKey)
         {
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             Client = rpcClient;
@@ -28,7 +29,7 @@ namespace Nethereum.Web3.Transactions
             _transactionSigner = new TransactionSigner();
         }
 
-        public SignedTransactionManager(string privateKey):this(null, privateKey)
+        public AccountSignerTransactionManager(string privateKey):this(null, privateKey)
         {
         }
 
