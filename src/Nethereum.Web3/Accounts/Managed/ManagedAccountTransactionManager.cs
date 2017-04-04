@@ -2,11 +2,10 @@
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
 
-namespace Nethereum.RPC.Eth.TransactionManagers
+namespace Nethereum.Web3.Accounts.Managed
 {
     public class ManagedAccountTransactionManager : TransactionManagerBase
     {

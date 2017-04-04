@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.Services;
 using Nethereum.StandardTokenEIP20;
 using Nethereum.StandardTokenEIP20.Events.DTO;
 using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.StandardToken

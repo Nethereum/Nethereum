@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.Web3.Accounts;
 using Xunit;
 

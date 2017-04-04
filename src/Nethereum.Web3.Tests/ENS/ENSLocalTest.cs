@@ -3,10 +3,8 @@ using Nethereum.ENS;
 using Nethereum.Geth;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.TransactionReceipts;
-using Nethereum.Web3.Transactions;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

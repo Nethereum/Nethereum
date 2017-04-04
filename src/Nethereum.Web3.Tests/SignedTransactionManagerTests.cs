@@ -4,7 +4,6 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.TransactionReceipts;
-using Nethereum.Web3.Transactions;
 using Xunit;
 
 namespace Nethereum.Web3.Tests

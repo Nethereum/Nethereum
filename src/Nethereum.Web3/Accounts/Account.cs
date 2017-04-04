@@ -1,7 +1,5 @@
-﻿using Nethereum.RPC.Eth.TransactionManagers;
-using Nethereum.RPC.TransactionManagers;
+﻿using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
-using Nethereum.Web3.Transactions;
 
 
 namespace Nethereum.Web3.Accounts

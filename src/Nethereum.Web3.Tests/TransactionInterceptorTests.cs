@@ -1,5 +1,4 @@
 ﻿using Nethereum.Hex.HexTypes;
-using Nethereum.Web3.Interceptors;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.Web3;
 using Nethereum.Web3.TransactionReceipts;
-using Nethereum.Web3.Transactions;
 using Xunit;
 
 namespace Nethereum.Quorum.Tests

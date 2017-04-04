@@ -1,11 +1,9 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System;
+using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Web3.Transactions;
-using System;
-using System.Threading.Tasks;
 
-namespace Nethereum.Web3.Interceptors
+namespace Nethereum.Web3.Accounts
 {
     public class AccountTransactionSigningInterceptor : RequestInterceptor
     {

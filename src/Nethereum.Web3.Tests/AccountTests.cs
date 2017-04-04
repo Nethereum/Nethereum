@@ -1,8 +1,8 @@
 ﻿using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
-using Nethereum.Web3.Transactions;
 using System.Threading.Tasks;
+using Nethereum.Web3.Accounts.Managed;
 using Nethereum.Web3.TransactionReceipts;
 using Xunit;
 

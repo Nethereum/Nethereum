@@ -5,13 +5,12 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.TransactionManagers;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Transaction = Nethereum.Signer.Transaction;
 
-namespace Nethereum.Web3.Transactions
+namespace Nethereum.Web3.Accounts
 {
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
