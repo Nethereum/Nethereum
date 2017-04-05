@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <VersionMajor>2</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionPatch>0</VersionPatch>
+    <ReleaseSuffix>rc2</ReleaseSuffix>
+    
+    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(ReleaseSuffix)</FullNugetVersion> 
+    
+    <NugetVersion Condition=" '$(ReleaseSuffix)' != '' ">$(FullNugetVersion)</NugetVersion> 
+    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
+
+    <NethereumVersion>$(NugetVersion)</NethereumVersion>
+    <ENSVersion>0.0.5</ENSVersion>
+    <ParityVersion>0.0.1-dev</ParityVersion>
+    <QuorumVersion>0.0.5</QuorumVersion>
+  </PropertyGroup>
+</Project>
