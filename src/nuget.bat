@@ -1,7 +1,7 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
 cd Nethereum.Hex
-dotnet pack
+dotnet pack 
 cd ..
 cd Nethereum.ABI
 dotnet pack
@@ -19,6 +19,9 @@ cd Nethereum.StandardToken*
 dotnet pack
 cd ..
 cd Nethereum.JsonRpc.IpcClient*
+dotnet pack
+cd ..
+cd Nethereum.JsonRpc.RpcClient*
 dotnet pack
 cd ..
 cd Nethereum.KeyStore*
@@ -43,6 +46,9 @@ cd Nethereum.Signer*
 dotnet pack
 cd ..
 cd Nethereum.Util*
+dotnet pack
+cd ..
+cd Nethereum.Parity*
 dotnet pack
 cd ..
 setlocal
