@@ -4,7 +4,7 @@
     <Description>Nethereum.Quorum. Extension to interact with Quorum, the permissioned implementation of Ethereum supporting data privacy created by JP Morgan</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.RPC.Quorum</AssemblyTitle>
-    <Version>$(QuorumVersion)</Version>
+    <VersionPrefix>$(QuorumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.Quorum</AssemblyName>

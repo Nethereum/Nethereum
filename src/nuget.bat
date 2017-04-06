@@ -1,54 +1,68 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
+SET releaseSuffix=rc2-fix
 cd Nethereum.Hex
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack 
 cd ..
 cd Nethereum.ABI
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.JsonRpc.Client
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.RPC
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Web3
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.StandardToken*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.JsonRpc.IpcClient*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.JsonRpc.RpcClient*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.KeyStore*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.ENS*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Quorum*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Geth*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Contracts*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.RLP*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Signer*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Util*
-dotnet pack
-cd ..
-cd Nethereum.Parity*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 setlocal

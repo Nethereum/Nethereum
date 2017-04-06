@@ -4,7 +4,7 @@
     <Description>Nethereum JsonRpc.Client core library to use in conjunction with either the JsonRpc.RpcClient, the JsonRpc.IpcClient or other custom Rpc provider</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.Client</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.Client</AssemblyName>

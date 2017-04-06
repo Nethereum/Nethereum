@@ -4,7 +4,7 @@
     <Description>Nethereum.JsonRpc IpcClient for Windows Class Library</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.IpcClient</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFramework>net451</TargetFramework>
     <AssemblyName>Nethereum.JsonRpc.IpcClient</AssemblyName>

@@ -4,7 +4,7 @@
     <Description>HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Hex</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <OutputType>Library</OutputType>

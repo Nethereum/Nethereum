@@ -4,7 +4,7 @@
     <Description>Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.StandardTokenEIP20</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.StandardTokenEIP20</AssemblyName>

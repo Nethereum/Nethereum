@@ -4,7 +4,7 @@
     <Description>RLP Encoding and decoding</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.RLP</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.RLP</AssemblyName>

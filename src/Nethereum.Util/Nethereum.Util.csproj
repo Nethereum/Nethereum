@@ -4,7 +4,7 @@
     <Description>Nethereum Utilities library, including Sha3 Keccack encoding and Address Checksum</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Util</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.Util</AssemblyName>

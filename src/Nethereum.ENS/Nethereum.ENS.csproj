@@ -4,7 +4,7 @@
     <Description>Nethereum.ENS Ethereum Name service library</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
-    <Version>$(ENSVersion)</Version>
+    <VersionPrefix>$(ENSVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.ENS</AssemblyName>

@@ -4,7 +4,7 @@
     <Description>Nethereum signer library to sign and verify messages, RLP and transactions using an Ethereum account</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Signer</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.Signer</AssemblyName>

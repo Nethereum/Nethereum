@@ -1,2 +1,2 @@
 del /S *.*.nupkg
-dotnet pack
+nuget.exe pack
