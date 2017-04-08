@@ -5,7 +5,7 @@
     <Description>Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Web3</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
     <AssemblyName>Nethereum.Web3</AssemblyName>

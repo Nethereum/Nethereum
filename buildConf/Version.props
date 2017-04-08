@@ -6,13 +6,14 @@
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
     <RelSuffix Condition=" '$(ReleaseSuffix)' == '' ">rc2-fix</RelSuffix>
     
-    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(ReleaseSuffix)</FullNugetVersion> 
+    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
     
     <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion> 
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
     <ENSVersion>0.0.6</ENSVersion>
+    <UportVersion>0.0.1</UportVersion>
     <ParityVersion>0.0.2-dev</ParityVersion>
     <QuorumVersion>0.0.6</QuorumVersion>
   </PropertyGroup>

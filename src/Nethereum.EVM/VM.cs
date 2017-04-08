@@ -369,7 +369,6 @@ namespace Nethereum.EVM
 
         public byte[] PadTo32Bytes(byte[] bytesToPad)
         {
-     
             var ret = new byte[32];
 
             for (var i = 0; i < ret.Length; i++)

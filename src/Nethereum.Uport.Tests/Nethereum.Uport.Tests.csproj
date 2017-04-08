@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net451</TargetFramework>
+    <AssemblyName>Nethereum.Uport.Tests</AssemblyName>
+    <PackageId>Nethereum.Uport.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Uport\Nethereum.Uport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0-preview-20170106-08" />
+    <PackageReference Include="Nethereum.TestRPCRunner.Net45" Version="1.0.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0-beta5-build1225" />
+    <PackageReference Include="xunit" Version="2.2.0-beta5-build3474" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="1.0.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+
+</Project>
