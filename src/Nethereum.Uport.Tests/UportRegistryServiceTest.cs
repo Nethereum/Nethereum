@@ -43,7 +43,7 @@ namespace Nethereum.Uport.Tests
         }
 
         [Fact]
-        public async void ShouldDeployAContractWithConstructor2()
+        public async void ShouldRegisterVerification()
         {
             using (var testrpcRunner = new TestRPCEmbeddedRunner())
             {
@@ -54,14 +54,24 @@ namespace Nethereum.Uport.Tests
 
                     var web3 = new Web3.Web3();
                     var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
+
                     var transactionService = new TransactionReceiptPollingService(web3);
                     var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
-                    var contractAddress = await transactionService.DeployContractAndGetAddressAsync(() =>
-                        UportRegistryService.DeployContractAsync(web3, addressFrom, previousVersionAddress, new HexBigInteger(4712388)
-                            ));
+                    var registrySevice = await UportRegistryService.DeployContractAndGetServiceAsync(transactionService,
+                        web3,
+                        addressFrom,
+                        previousVersionAddress,
+                        new HexBigInteger(4712388));
 
-                    var registrySevice = new UportRegistryService(web3, contractAddress);
-                    Assert.Equal(previousVersionAddress, await registrySevice.PreviousPublishedVersionAsyncCall());
+                    var attestationId = "superAttestation";
+                    var subject = "0x22890d2cce102216644c59dae5baed380d84830c";
+                    var value = "true";
+
+                    var txnReceipt = await registrySevice.SetAsyncAndGetReceipt(addressFrom, attestationId, subject,
+                        value, transactionService);
+
+                    var storedValue = await registrySevice.GetAsyncCall(attestationId, addressFrom, subject);
+                    Assert.Equal(value, storedValue);
                 }
                 finally
                 {

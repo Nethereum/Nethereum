@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using Nethereum.Web3.TransactionReceipts;
 
@@ -67,9 +68,9 @@ namespace Nethereum.Uport
             return contract.GetEvent("Set");
         }
 
-        public Task<byte[]> GetAsyncCall(byte[] registrationIdentifier, string issuerAddres, string subject) {
+        public Task<string> GetAsyncCall(string registrationIdentifier, string issuerAddres, string subject) {
             var function = GetFunctionGet();
-            return function.CallAsync<byte[]>(registrationIdentifier, issuerAddres, subject);
+            return function.CallAsync<string>(registrationIdentifier, issuerAddres, subject);
         }
         public Task<Int32> VersionAsyncCall() {
             var function = GetFunctionVersion();
@@ -84,9 +85,16 @@ namespace Nethereum.Uport
             return function.CallAsync<string>(registrationIdentifier, issuerAddress, subject);
         }
 
-        public Task<string> SetAsync(string addressFrom, byte[] registrationIdentifier, string subject, byte[] value, HexBigInteger gas = null, HexBigInteger valueAmount = null) {
+        public Task<string> SetAsync(string addressFrom, string registrationIdentifier, string subject, string value, HexBigInteger gas = null, HexBigInteger valueAmount = null) {
             var function = GetFunctionSet();
             return function.SendTransactionAsync(addressFrom, gas, valueAmount, registrationIdentifier, subject, value);
+        }
+
+        public Task<TransactionReceipt> SetAsyncAndGetReceipt(string addressFrom, string registrationIdentifier, string subject, string value, ITransactionReceiptService transactionReceiptService, HexBigInteger gas = null, HexBigInteger valueAmount = null, CancellationTokenSource cancellationTokenSource = null)
+        {
+            return transactionReceiptService.SendRequestAsync(
+                    () => SetAsync(addressFrom, registrationIdentifier, subject, value, gas, valueAmount),
+                cancellationTokenSource);
         }
     }
 
@@ -94,7 +102,7 @@ namespace Nethereum.Uport
     public class SetEventDTO 
     {
         [Parameter("bytes32", "registrationIdentifier", 1, true)]
-        public byte[] RegistrationIdentifier {get; set;}
+        public string RegistrationIdentifier {get; set;}
 
         [Parameter("address", "issuer", 2, true)]
         public string Issuer {get; set;}
