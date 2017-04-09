@@ -3,12 +3,12 @@
   <PropertyGroup>
     <Description>Nethereum.Uport Uport integration library</Description>
     <Copyright>Juan Blanco</Copyright>
-    <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
+    <AssemblyTitle>Nethereum.Uport</AssemblyTitle>
     <VersionPrefix>$(UportVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
-    <AssemblyName>Nethereum.ENS</AssemblyName>
-    <PackageId>Nethereum.ENS</PackageId>
+    <AssemblyName>Nethereum.Uport</AssemblyName>
+    <PackageId>Nethereum.Uport</PackageId>
     <PackageTags>Netherum;Uport;Identity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
     <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
     <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
@@ -34,6 +34,5 @@
   <ItemGroup>
     <Folder Include="contracts\" />
   </ItemGroup>
-
 
 </Project>

@@ -27,4 +27,10 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net451'">
+    <PackageReference Include="RazorEngine">
+      <Version>4.4.3-rc1</Version>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
