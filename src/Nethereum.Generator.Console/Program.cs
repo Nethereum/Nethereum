@@ -22,7 +22,15 @@ namespace Nethereum.Generator.Console
             var result = engine.Parse("Service", model);
 
             System.Console.WriteLine(result);
+
+            var fileName = model.ContractName + "Service.cs";
+             var fileOutput = System.IO.File.CreateText(fileName);
+            fileOutput.Write(result);
+            fileOutput.Flush();
+
             System.Console.ReadLine();
+
+
         }
     }
 }
