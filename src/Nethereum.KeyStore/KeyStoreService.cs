@@ -71,7 +71,7 @@ namespace Nethereum.KeyStore
             if (password == null) throw new ArgumentNullException(nameof(password));
             if (address == null) throw new ArgumentNullException(nameof(address));
 
-            return _keyStorePbkdf2Service.EncryptAndGenerateKeyStoreAsJson(password, key, address);
+            return _keyStoreScryptService.EncryptAndGenerateKeyStoreAsJson(password, key, address);
         }
     }
 }

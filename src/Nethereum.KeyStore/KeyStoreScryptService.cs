@@ -29,7 +29,7 @@ namespace Nethereum.KeyStore
 
         protected override ScryptParams GetDefaultParams()
         {
-            return new ScryptParams() { Dklen = 32, N = 262145, R = 1, P = 8 };
+            return new ScryptParams() { Dklen = 32, N = 262144, R = 1, P = 8 };
         }
 
         public override byte[] DecryptKeyStore(string password, KeyStore<ScryptParams> keyStore)
