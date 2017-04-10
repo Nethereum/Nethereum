@@ -6,14 +6,16 @@ namespace Nethereum.Generator.Console
 {
     public class ServiceModel
     {
+        public const string DEFAULT_NAMESPACE = "DefaultNamespace";
+        public const string DEFAULT_CONTRACTNAME = "Contract";
         public string Namespace { get; }
         public string ContractName { get; }
         public string Abi { get; }
         public string ByteCode { get; }
         public ContractABI Contract { get; }
 
-        public ServiceModel(string abi, string byteCode, string contractName = "Contract",
-            string namespaceName = "DefaultNamespace")
+        public ServiceModel(string abi, string byteCode, string contractName = DEFAULT_CONTRACTNAME,
+            string namespaceName = DEFAULT_NAMESPACE)
         {
             ContractName = CapitaliseFirstChar(contractName);
             Namespace = CapitaliseFirstChar(namespaceName);
