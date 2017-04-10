@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using Nethereum.Web3;
 
 namespace @Model.Namespace
@@ -117,7 +118,7 @@ namespace @Model.Namespace
 	    @foreach (var parameter in eventItem.InputParameters)
 	    {
 <text>
-        [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order, "@(Model.GetBooleanAsString(parameter.Indexed))")]
+        [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order, @(Model.GetBooleanAsString(parameter.Indexed)))]
         public @Model.GetTypeMap(parameter.Type) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
 </text>
 	    }

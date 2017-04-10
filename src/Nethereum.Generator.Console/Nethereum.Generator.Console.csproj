@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp1.1;net461</TargetFrameworks>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <RuntimeIdentifiers>win7-x86;osx.10.10-x64;portable</RuntimeIdentifiers>
   </PropertyGroup>
