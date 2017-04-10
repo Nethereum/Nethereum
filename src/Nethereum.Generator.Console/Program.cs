@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace Nethereum.Generator.Console
 {
@@ -16,8 +15,6 @@ namespace Nethereum.Generator.Console
                 System.Console.Write(ex);
                 return 1;
             }
-
-           
         }
     }
 }
