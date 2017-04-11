@@ -49,19 +49,31 @@ namespace Nethereum.KeyStore.Console.Sample
             System.Console.WriteLine("New key: " + key.ToHex());
             System.Console.ReadLine();
 
-
-            //We can use EthECKey to generate a new ECKey pair, this is using SecureRandom
+            //Creating a new key and file
             var ecKey = EthECKey.GenerateKey();
+            //We can use EthECKey to generate a new ECKey pair, this is using SecureRandom
             var privateKey = ecKey.GetPrivateKeyAsBytes();
             var genAddress = ecKey.GetPublicAddress();
 
+
+            password = "monkey123445";
             //instead of the default service we can use either
             //Scrypt
             var scryptService = new KeyStoreScryptService();
             var scryptResult = scryptService.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
             //or pkbdf2
-            var pbkdf2Service = new KeyStorePbkdf2Service();
+            var  pbkdf2Service = new KeyStorePbkdf2Service();
             var pkbdf2Result = pbkdf2Service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
+
+            fileName = service.GenerateUTCFileName(genAddress);
+
+            using (var newfile = File.CreateText(fileName))
+            {
+                //generate the encrypted and key store content as json. (The default uses pbkdf2)                
+                newfile.Write(pkbdf2Result);
+                newfile.Flush();
+
+            }
 
             //Both services can be configured with a new IRandomBytesGenerator for the IV and Salt, currently uses SecureRandom for both.
             //also when encrypting we can pass custom KdfParameters

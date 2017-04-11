@@ -25,6 +25,7 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Util", "Util"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Signer", "Signer"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Uport", "Uport"));
 
             //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
             //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));

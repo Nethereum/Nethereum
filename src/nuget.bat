@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
-SET releaseSuffix=rc2-fix
+SET releaseSuffix=rc3
 cd Nethereum.Hex
 dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack 
@@ -62,6 +62,10 @@ dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..
 cd Nethereum.Util*
+dotnet restore /property:ReleaseSuffix=%releaseSuffix%
+dotnet pack
+cd ..
+cd Nethereum.Uport*
 dotnet restore /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack
 cd ..

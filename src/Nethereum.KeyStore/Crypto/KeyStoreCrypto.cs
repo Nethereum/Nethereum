@@ -46,9 +46,11 @@ namespace Nethereum.KeyStore.Crypto
         {
             var pdb = new Pkcs5S2ParametersGenerator(new Sha256Digest());
 
+            //note Pkcs5PasswordToUtf8Bytes is the same as Encoding.UTF8.GetBytes(password)
+            //changing it to keep it as bouncy
+
             pdb.Init(PbeParametersGenerator.Pkcs5PasswordToUtf8Bytes(password.ToCharArray()), salt,
                      count);
-           // pdb.Init(password, salt, count);
             //if dklen == 32, then it is 256 (8 * 32)
             var key = (KeyParameter)pdb.GenerateDerivedMacParameters(8 * dklen);
             return key.GetKey();
