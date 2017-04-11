@@ -46,7 +46,7 @@ namespace Nethereum.KeyStore
 
             var salt = RandomBytesGenerator.GenerateRandomSalt();
 
-            var derivedKey = GenerateDerivedKey(KeyStoreCrypto.GetPasswordAsBytes(password), salt, kdfParams);
+            var derivedKey = GenerateDerivedKey(password, salt, kdfParams);
 
             var cipherKey = KeyStoreCrypto.GenerateCipherKey(derivedKey);
 
@@ -101,7 +101,7 @@ namespace Nethereum.KeyStore
 
         public abstract string GetKdfType();
 
-        protected abstract byte[] GenerateDerivedKey(byte[] pasword, byte[] salt, T kdfParams);
+        protected abstract byte[] GenerateDerivedKey(string pasword, byte[] salt, T kdfParams);
 
         protected abstract T GetDefaultParams();
 

@@ -7,7 +7,7 @@ namespace Nethereum.KeyStore.Model
         [JsonProperty("c")]
         public int Count { get; set; }
 
-        [JsonProperty("prg")]
+        [JsonProperty("prf")]
         public string Prf { get; set; }
     }
 }

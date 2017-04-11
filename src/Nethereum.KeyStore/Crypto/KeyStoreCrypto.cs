@@ -5,6 +5,7 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Org.BouncyCastle.Crypto;
 
 namespace Nethereum.KeyStore.Crypto
 {
@@ -41,10 +42,13 @@ namespace Nethereum.KeyStore.Crypto
         }
 
         //http://stackoverflow.com/questions/34950611/how-to-create-a-pbkdf2-sha256-password-hash-in-c-sharp-bouncy-castle//
-        public byte[] GeneratePbkdf2Sha256DerivedKey(byte[] password, byte[] salt, int count, int dklen)
+        public byte[] GeneratePbkdf2Sha256DerivedKey(string password, byte[] salt, int count, int dklen)
         {
             var pdb = new Pkcs5S2ParametersGenerator(new Sha256Digest());
-            pdb.Init(password, salt, count);
+
+            pdb.Init(PbeParametersGenerator.Pkcs5PasswordToUtf8Bytes(password.ToCharArray()), salt,
+                     count);
+           // pdb.Init(password, salt, count);
             //if dklen == 32, then it is 256 (8 * 32)
             var key = (KeyParameter)pdb.GenerateDerivedMacParameters(8 * dklen);
             return key.GetKey();
@@ -68,7 +72,7 @@ namespace Nethereum.KeyStore.Crypto
 
         public byte[] DecryptPbkdf2Sha256(string password, byte[] mac, byte[] iv, byte[] cipherText, int c, byte[] salt, int dklen)
         {
-            var derivedKey = GeneratePbkdf2Sha256DerivedKey(GetPasswordAsBytes(password), salt, c, dklen);
+            var derivedKey = GeneratePbkdf2Sha256DerivedKey(password, salt, c, dklen);
             return Decrypt(mac, iv, cipherText, derivedKey);
         }
 

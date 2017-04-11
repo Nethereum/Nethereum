@@ -21,9 +21,9 @@ namespace Nethereum.KeyStore
         {
         }
 
-        protected override byte[] GenerateDerivedKey(byte[] password, byte[] salt, ScryptParams kdfParams)
+        protected override byte[] GenerateDerivedKey(string password, byte[] salt, ScryptParams kdfParams)
         {
-            return KeyStoreCrypto.GenerateDerivedScryptKey(password, salt, kdfParams.N, kdfParams.R,
+            return KeyStoreCrypto.GenerateDerivedScryptKey(KeyStoreCrypto.GetPasswordAsBytes(password), salt, kdfParams.N, kdfParams.R,
                 kdfParams.P, kdfParams.Dklen);
         }
 

@@ -22,7 +22,7 @@ namespace Nethereum.KeyStore
 
         }
 
-        protected override byte[] GenerateDerivedKey(byte[] pasword, byte[] salt, Pbkdf2Params kdfParams)
+        protected override byte[] GenerateDerivedKey(string pasword, byte[] salt, Pbkdf2Params kdfParams)
         {
             return KeyStoreCrypto.GeneratePbkdf2Sha256DerivedKey(pasword, salt, kdfParams.Count, kdfParams.Dklen);
         }
