@@ -12,71 +12,74 @@ namespace Nethereum.Contracts
         {
         }
 
-        public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
+        public CallInput CreateCallInput(params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput);
+            return base.CreateCallInput(encodedInput);
+        }
+
+        public CallInput CreateCallInput(string from, HexBigInteger gas,
+            HexBigInteger value, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateCallInput(encodedInput, from, gas, value);
+        }
+
+        public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
+        {
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput));
         }
 
         public Task<TReturn> CallAsync<TReturn>(string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, from, gas, value);
+            return base.CallAsync<TReturn>(CreateCallInput(from, gas, value, functionInput));
         }
 
         public Task<TReturn> CallAsync<TReturn>(string from, HexBigInteger gas,
            HexBigInteger value, BlockParameter block, params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, from, gas, value, block);
+            return base.CallAsync<TReturn>(CreateCallInput(from, gas, value, functionInput), block);
         }
 
         public Task<TReturn> CallAsync<TReturn>(BlockParameter block, params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, block);
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput), block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(params object[] functionInput)
             where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput));
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, from, gas, value);
+            return base.CallAsync(new TReturn(), CreateCallInput(from, gas, value, functionInput));
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(string from, HexBigInteger gas,
            HexBigInteger value, BlockParameter block, params object[] functionInput) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, from, gas, value, block);
+            return base.CallAsync(new TReturn(), CreateCallInput(from, gas, value, functionInput), block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(
              BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, blockParameter);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput), blockParameter);
         }
 
         public Task<HexBigInteger> EstimateGasAsync(params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput);
+            return EstimateGasFromEncAsync(CreateCallInput(functionInput));
         }
 
         public Task<HexBigInteger> EstimateGasAsync(string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput)
-        {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
+        { 
+            return EstimateGasFromEncAsync(CreateCallInput(from, gas, value,functionInput));
         }
 
         public string GetData(params object[] functionInput)
@@ -85,24 +88,39 @@ namespace Nethereum.Contracts
                 functionInput);
         }
 
-        public Task<string> SendTransactionAsync(string from, params object[] functionInput)
+        public TransactionInput CreateTransactionInput(string from, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput, from, null, null);
+            return base.CreateTransactionInput(encodedInput, from, null, null);
+        }
+
+        public TransactionInput CreateTransactionInput(string from, HexBigInteger gas,
+            HexBigInteger value, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(encodedInput, from, gas, value);
+        }
+
+        public TransactionInput CreateTransactionInput(TransactionInput input, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(encodedInput, input);
+        }
+
+        public Task<string> SendTransactionAsync(string from, params object[] functionInput)
+        {
+            return base.SendTransactionAsync(CreateTransactionInput(from, functionInput));
         }
 
         public Task<string> SendTransactionAsync(string from, HexBigInteger gas,
             HexBigInteger value, params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput, from, gas, value);
+            return base.SendTransactionAsync(CreateTransactionInput(from, gas, value, functionInput));
         }
 
-        public Task<string> SendTransactionAsync(
-            TransactionInput input, params object[] functionInput)
+        public Task<string> SendTransactionAsync(TransactionInput input, params object[] functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput, input);
+            return base.SendTransactionAsync(CreateTransactionInput(input, functionInput));
         }
     }
 
@@ -113,96 +131,102 @@ namespace Nethereum.Contracts
         {
         }
 
+        public CallInput CreateCallInputParameterless()
+        {
+            return CreateCallInput(FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature));
+        }
+
         public Task<TReturn> CallAsync<TReturn>()
         {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return base.CallAsync<TReturn>(encodedInput);
+            return base.CallAsync<TReturn>(CreateCallInputParameterless());
         }
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput)
         {
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput));
+        }
+
+        private CallInput CreateCallInput(TFunctionInput functionInput)
+        {
             var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput);
+            return base.CreateCallInput(encodedInput);
+        }
+
+        private CallInput CreateCallInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateCallInput(encodedInput, from, gas, value);
         }
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value)
-        {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, from, gas, value);
+        {  
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput, from, gas, value));
         }
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
              BlockParameter blockParameter)
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync<TReturn>(encodedInput, blockParameter);
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput), blockParameter);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>() where TReturn : new()
         {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return base.CallAsync(new TReturn(), encodedInput);
+            return base.CallAsync(new TReturn(), CreateCallInputParameterless());
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(BlockParameter block) where TReturn : new()
         {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return base.CallAsync(new TReturn(), encodedInput, block);
+            return base.CallAsync(new TReturn(), CreateCallInputParameterless(), block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput));
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, BlockParameter block) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, block);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput), block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, string from,
             HexBigInteger gas,
             HexBigInteger value) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, from, gas, value);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput, from, gas, value));
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, string from,
            HexBigInteger gas,
            HexBigInteger value, BlockParameter block) where TReturn : new()
         {
-            var encodedInput = GetData(functionInput);
-            return base.CallAsync(new TReturn(), encodedInput, from, gas, value, block);
+            return base.CallAsync(new TReturn(), CreateCallInput(functionInput, from, gas, value), block);
         }
 
         public Task<HexBigInteger> EstimateGasAsync()
         {
-            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
-            return EstimateGasFromEncAsync(encodedInput);
+            return EstimateGasFromEncAsync(CreateCallInputParameterless());
         }
 
         public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput)
         {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput);
+            return EstimateGasFromEncAsync(CreateCallInput(functionInput));
         }
 
         public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value)
         {
-            var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, from, gas, value);
+            return EstimateGasFromEncAsync(CreateCallInput(functionInput, from, gas, value));
         }
 
         public Task<HexBigInteger> EstimateGasAsync(TFunctionInput functionInput,
             CallInput callInput)
         {
             var encodedInput = GetData(functionInput);
-            return EstimateGasFromEncAsync(encodedInput, callInput);
+            callInput.Data = encodedInput;
+            return EstimateGasFromEncAsync(callInput);
         }
 
         public string GetData(TFunctionInput functionInput)
@@ -210,24 +234,35 @@ namespace Nethereum.Contracts
             return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
         }
 
-        public Task<string> SendTransactionAsync(TFunctionInput functionInput)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from)
         {
             var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput);
+            return base.CreateTransactionInput(encodedInput, from);
+        }
+
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger value)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(encodedInput, from, gas, value);
+        }
+
+        public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from)
+        {
+            return base.SendTransactionAsync(CreateTransactionInput(functionInput, from));
         }
 
         public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value)
         {
-            var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput, from, gas, value);
+            return base.SendTransactionAsync(CreateTransactionInput(functionInput, from, gas, value));
         }
 
         public Task<string> SendTransactionAsync(TFunctionInput functionInput,
             TransactionInput input)
         {
             var encodedInput = GetData(functionInput);
-            return base.SendTransactionAsync(encodedInput, input);
+            input.Data = encodedInput;
+            return base.SendTransactionAsync(input);
         }
     }
 }

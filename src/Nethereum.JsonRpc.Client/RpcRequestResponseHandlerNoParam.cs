@@ -18,7 +18,7 @@ namespace Nethereum.JsonRpc.Client
             return await Client.SendRequestAsync<TResponse>(BuildRequest(id)).ConfigureAwait(false);
         }
 
-        public RpcRequest BuildRequest(object id)
+        public RpcRequest BuildRequest(object id = null)
         {
             if (id == null) id = Configuration.DefaultRequestId;
 
