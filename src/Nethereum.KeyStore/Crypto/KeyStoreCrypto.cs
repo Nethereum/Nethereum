@@ -91,7 +91,7 @@ namespace Nethereum.KeyStore.Crypto
         {
             var generatedMac = GenerateMac(derivedKey, cipherText);
             if (generatedMac.ToHex() != mac.ToHex())
-                throw new Exception("Cannot derived the same mac as the one provided from the cipher and derived key");
+                throw new DecryptionException("Cannot derive the same mac as the one provided from the cipher and derived key");
         }
 
         public byte[] GetPasswordAsBytes(string password)
