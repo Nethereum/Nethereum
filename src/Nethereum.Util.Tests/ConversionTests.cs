@@ -2,7 +2,7 @@ using System.Numerics;
 using Nethereum.Util;
 using Xunit;
 
-namespace Nethereum.Web3.Tests
+namespace Nethereum.Util.Tests
 {
    
     public class ConversionTests

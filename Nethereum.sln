@@ -12,6 +12,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{CDD3B024-0BCD-4985-9B5B-0A43D854EACC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A36B1E91-CE03-43D6-AA50-9C893AD33B75}"
+	ProjectSection(SolutionItems) = preProject
+		src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj = src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{6EE5CBBB-5BC9-47BB-9CE5-9099B0A91BAB}"
 EndProject

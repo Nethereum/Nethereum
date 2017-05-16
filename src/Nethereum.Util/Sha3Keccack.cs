@@ -1,4 +1,6 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System;
+using System.Linq;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Org.BouncyCastle.Crypto.Digests;
 using System.Text;
 
@@ -11,6 +13,12 @@ namespace Nethereum.Util
             var input = Encoding.UTF8.GetBytes(value);
             var output = CalculateHash(input);
             return output.ToHex();
+        }
+
+        public string CalculateHashFromHex(params string[] hexValues)
+        {
+            var joinedHex = String.Join("", hexValues.Select(x => x.RemoveHexPrefix()).ToArray());
+            return CalculateHash(joinedHex.HexToByteArray()).ToHex();
         }
 
         public byte[] CalculateHash(byte[] value)

@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Util</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;net451;net35</TargetFrameworks>
     <AssemblyName>Nethereum.Util</AssemblyName>
     <PackageId>Nethereum.Util</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain</PackageTags>
@@ -35,6 +35,15 @@
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
    <PackageReference Include="BouncyCastle" Version="1.8.1" />
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
+    <Reference Include="System" />
+   <PackageReference Include="BouncyCastle" Version="1.8.1" />
+   <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
