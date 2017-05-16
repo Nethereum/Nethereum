@@ -8,7 +8,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
         public static string ToHex(this byte[] value, bool prefix = false)
         {
             var strPrex = prefix ? "0x" : "";
-            return strPrex  + string.Concat(value.Select(b =>  b.ToString("x2")));
+            return strPrex  + string.Concat(value.Select(b =>  b.ToString("x2")).ToArray());
         }
 
         public static bool HasHexPrefix(this string value)

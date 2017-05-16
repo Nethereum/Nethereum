@@ -15,7 +15,7 @@ namespace Nethereum.JsonRpc.Client
             //ContractResolver = new NullParamsFirstElementResolver()}; Not required anymore.
         }
     }
-
+#if !DOTNET35
     //Passing a null value as the first parameter in the rpc (as no value) causes issues on client as it is not being ignored deserialising, as it is treated as the first element of the array.
     public class NullParamsFirstElementResolver : DefaultContractResolver
     {
@@ -57,4 +57,5 @@ namespace Nethereum.JsonRpc.Client
             memberInfo.SetValue(target, value);
         }
     }
+#endif
 }

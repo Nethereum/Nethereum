@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
+//using System.Dynamic;
 using Newtonsoft.Json;
 
 namespace Nethereum.ABI.JsonDeserialisation
@@ -30,7 +30,7 @@ namespace Nethereum.ABI.JsonDeserialisation
         /// </returns>
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof(ExpandoObject);
+            return objectType == typeof(Dictionary<string, object>);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Nethereum.ABI.JsonDeserialisation
 
         private object ReadObject(JsonReader reader)
         {
-            IDictionary<string, object> expandoObject = new ExpandoObject();
+            IDictionary<string, object> expandoObject = new Dictionary<string, object>();
 
             while (reader.Read())
                 switch (reader.TokenType)

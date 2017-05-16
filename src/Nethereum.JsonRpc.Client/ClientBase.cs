@@ -1,3 +1,4 @@
+#if !DOTNET35
 using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.Client
@@ -35,3 +36,4 @@ namespace Nethereum.JsonRpc.Client
             params object[] paramList);
     }
 }
+#endif

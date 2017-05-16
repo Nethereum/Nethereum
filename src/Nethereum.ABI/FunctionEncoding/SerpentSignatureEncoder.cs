@@ -11,7 +11,8 @@ namespace Nethereum.ABI.FunctionEncoding
             var signature = new StringBuilder();
             signature.Append(name);
             signature.Append(" ");
-            signature.Append(string.Join("", parameters.OrderBy(x => x.Order).Select(x => x.SerpentSignature)));
+            var paramSignature = parameters.OrderBy(x => x.Order).Select(x => x.SerpentSignature).ToArray();
+            signature.Append(string.Join("", paramSignature));
             return signature.ToString();
         }
     }

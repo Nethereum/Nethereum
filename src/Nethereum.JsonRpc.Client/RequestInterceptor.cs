@@ -1,3 +1,4 @@
+#if !DOTNET35
 using System;
 using System.Threading.Tasks;
 
@@ -26,11 +27,12 @@ namespace Nethereum.JsonRpc.Client
             return await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);
         }
 
-        public virtual async Task InterceptSendRequestAsync(
+        public virtual Task InterceptSendRequestAsync(
             Func<string, string, object[], Task> interceptedSendRequestAsync, string method,
             string route = null, params object[] paramList)
         {
-            await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);
+             return interceptedSendRequestAsync(method, route, paramList);
         }
     }
 }
+#endif

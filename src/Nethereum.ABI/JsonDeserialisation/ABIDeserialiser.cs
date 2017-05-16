@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Dynamic;
+//using System.Dynamic;
 using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 
@@ -66,7 +66,7 @@ namespace Nethereum.ABI.JsonDeserialisation
         public ContractABI DeserialiseContract(string abi)
         {
             var convertor = new ExpandoObjectConverter();
-            var contract = JsonConvert.DeserializeObject<List<ExpandoObject>>(abi, convertor);
+            var contract = JsonConvert.DeserializeObject<List<Dictionary<string,object>>>(abi, convertor);
             var functions = new List<FunctionABI>();
             var events = new List<EventABI>();
             ConstructorABI constructor = null;

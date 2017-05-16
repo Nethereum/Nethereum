@@ -14,16 +14,15 @@ namespace Nethereum.JsonRpc.Client
 
         public IClient Client { get; }
 
-        protected async Task<TResponse> SendRequestAsync(object id, params object[] paramList)
+        protected Task<TResponse> SendRequestAsync(object id, params object[] paramList)
         {
             var request = BuildRequest(id, paramList);
-            return await Client.SendRequestAsync<TResponse>(request).ConfigureAwait(false);
+            return Client.SendRequestAsync<TResponse>(request);
         }
 
         public RpcRequest BuildRequest(object id, params object[] paramList)
         {
             if (id == null) id = Configuration.DefaultRequestId;
-
             return new RpcRequest(id, MethodName, paramList);
         }
     }

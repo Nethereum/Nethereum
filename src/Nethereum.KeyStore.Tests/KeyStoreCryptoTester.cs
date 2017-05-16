@@ -32,7 +32,7 @@ namespace Nethereum.KeyStore.Tests
             int dklen = 32;
             string salt = "ae3cd4e7013836a3df6bd7241b12db061dbe2c6785853cce422d148a624ce0bd";
 
-            var derived = keyStoreCrypto.GeneratePbkdf2Sha256DerivedKey(Encoding.UTF8.GetBytes(password), salt.HexToByteArray(), c, 32);
+            var derived = keyStoreCrypto.GeneratePbkdf2Sha256DerivedKey(password, salt.HexToByteArray(), c, 32);
             Assert.Equal("f06d69cdc7da0faffb1008270bca38f5e31891a3a773950e6d0fea48a7188551", derived.ToHex(false));
         }
 

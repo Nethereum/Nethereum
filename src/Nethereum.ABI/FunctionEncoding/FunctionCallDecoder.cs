@@ -11,6 +11,7 @@ namespace Nethereum.ABI.FunctionEncoding
 {
     public class ParameterDecoder
     {
+      
         public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties)
         {
             if (output == "0x") return result;
@@ -19,7 +20,12 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (var property in properties)
                 if (property.IsDefined(typeof(ParameterAttribute), false))
                 {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+
+#if DOTNET35
+                   var parameterAttribute = (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), false)[0];
+#else
+                   var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+#endif
                     parameterObjects.Add(new ParameterOutputProperty
                     {
                         Parameter = parameterAttribute.Parameter,
@@ -34,7 +40,12 @@ namespace Nethereum.ABI.FunctionEncoding
             {
                 var parameter = (ParameterOutputProperty) parameterResult;
                 var propertyInfo = parameter.PropertyInfo;
+
+#if DOTNET35
+                propertyInfo.SetValue(result, parameter.Result, null);
+#else
                 propertyInfo.SetValue(result, parameter.Result);
+#endif
             }
 
             return result;
@@ -142,8 +153,11 @@ namespace Nethereum.ABI.FunctionEncoding
             if (function == null)
                 throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
 
+#if DOTNET35
+            var properties = type.GetTypeInfo().DeclaredProperties();
+#else
             var properties = type.GetTypeInfo().DeclaredProperties;
-
+#endif
             DecodeAttributes(output, functionOutputResult, properties.ToArray());
 
             return functionOutputResult;

@@ -12,7 +12,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var type = typeof(T);
             var result = new T();
 
+#if DOTNET35
+            var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties().ToArray());
+#else
             var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties.ToArray());
+#endif
+
             var topicNumber = 0;
             foreach (var topic in topics)
             {
@@ -33,8 +38,11 @@ namespace Nethereum.ABI.FunctionEncoding
                             throw new Exception(
                                 "Indexed Dynamic Types (string, arrays) value is the Keccak SHA3 of the value, the property type of " +
                                 property.Name + "should be a string");
-
+#if DOTNET35
+                        property.SetValue(result, topic.ToString(), null);
+#else
                         property.SetValue(result, topic.ToString());
+#endif
                     }
                 }
                 topicNumber = topicNumber + 1;

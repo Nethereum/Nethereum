@@ -1,18 +1,31 @@
 # Nethereum
 
-Nethereum is the .Net integration library for Ethereum, it allows you to interact with Ethereum clients like geth, eth or parity using RPC. 
+Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, Parity or Quorum. 
 
-The library has very similar functionality as the Javascript Etherum Web3 RPC Client Library.
+Nethereum is developed targetting netstandard 1.1, net451 and also as a portable library, hence it is compabitable with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, xbox, hololens and windows IoT. 
 
-All the JSON RPC/IPC methods are implemented as they appear in new versions of the clients. 
+## Features
 
-The geth client is the one that is closely supported and tested, including its management extensions for admin, personal, debugging, miner.
+* JSON RPC / IPC Ethereum core methods
+* Geth management api (admin, personal, debugging, miner)
+* Parity managment api (WIP)
+* Quorum
+* Simplified smart contract interaction for deployment, function calling, transaction and event filtering and decoding of topics.
+* ABI to .Net type encoding and decoding, including attribute based for complex object deserialisation.
+* Transaction, RLP and message signing, verification and recovery of accounts
+* Libraries for standard contracts Token, ENS and Uport
+* Integrated TestRPC testing to simplify TDD and BDD (Specflow) development
+* Key storage using Web3 storage standard, compatible with Geth and Parity.
+* Simplified account lifecycle for both managed by third party client (personal) or stand alone (signed transactions)
+* Low level Interception of RPC calls.
+* Code generation of smart contracts services.
 
-Interaction with contracts has been simplified for deployment, function calling, transaction and event filtering and decoding of topics.
-
-The library has been tested in all the platforms .Net Core, Mono, Linux, iOS, Android, Raspberry PI, Xbox and of course Windows.
+## Projects and samples
+*
 
 ## Quick installation
+
+Nethereum provides 
 
 Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages embedded in one. (Apart from IPC which is windows specific).
 

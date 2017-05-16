@@ -69,15 +69,23 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
-            var properties = type.GetTypeInfo().DeclaredProperties;
 
+#if DOTNET35
+            var properties = type.GetTypeInfo().DeclaredProperties();
+#else
+            var properties = type.GetTypeInfo().DeclaredProperties;
+#endif
             var parameterObjects = new List<ParameterAttributeValue>();
 
             foreach (var property in properties)
                 if (property.IsDefined(typeof(ParameterAttribute), false))
                 {
                     var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-                    var propertyValue = property.GetValue(instanceValue);
+#if DOTNET35
+                    var propertyValue = property.GetValue(instanceValue, null);
+#else
+                     var propertyValue = property.GetValue(instanceValue);
+#endif
                     parameterObjects.Add(new ParameterAttributeValue
                     {
                         ParameterAttribute = parameterAttribute,

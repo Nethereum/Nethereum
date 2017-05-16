@@ -63,6 +63,7 @@ namespace Nethereum.Contracts
             return new TransactionInput(encodedInput, from, gas, value);
         }
 
+#if !DOTNET35
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput)
         {
             var result =
@@ -111,6 +112,50 @@ namespace Nethereum.Contracts
                     TransactionManager.EstimateGasAsync(callInput)
                         .ConfigureAwait(false);
         }
+#else
+        protected Task<TReturn> CallAsync<TReturn>(CallInput callInput)
+        {
+
+           return EthCall.SendRequestAsync(callInput, DefaultBlock).ContinueWith(result =>
+           {
+               if (result.Exception != null) throw result.Exception;
+               return DecodeSimpleTypeOutput<TReturn>(result.Result);
+           });
+        }
+
+        protected Task<TReturn> CallAsync<TReturn>(CallInput callInput, BlockParameter block)
+        {
+            return EthCall.SendRequestAsync(callInput, block).ContinueWith(result =>
+            {
+                if (result.Exception != null) throw result.Exception;
+                return DecodeSimpleTypeOutput<TReturn>(result.Result);
+            });
+           
+        }
+
+        protected  Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput)
+        {
+            return EthCall.SendRequestAsync(callInput, DefaultBlock).ContinueWith(result =>
+            {
+                if (result.Exception != null) throw result.Exception;
+                return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result.Result);
+            });
+        }
+
+        protected  Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput, BlockParameter block)
+        {
+            return EthCall.SendRequestAsync(callInput, block).ContinueWith(result =>
+            {
+                if (result.Exception != null) throw result.Exception;
+                return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, result.Result);
+            });
+        }
+
+        protected Task<HexBigInteger> EstimateGasFromEncAsync(CallInput callInput)
+        {
+            return TransactionManager.EstimateGasAsync(callInput);          
+        }
+#endif
 
         protected CallInput CreateCallInput(string encodedFunctionCall)
         {

@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Text;
 using Nethereum.ABI.Model;
-using Nethereum.ABI.Util;
 using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
@@ -31,7 +30,8 @@ namespace Nethereum.ABI.FunctionEncoding
             var signature = new StringBuilder();
             signature.Append(name);
             signature.Append("(");
-            var paramNames = string.Join(",", parameters.OrderBy(x => x.Order).Select(x => x.Type));
+            var paramslist = parameters.OrderBy(x => x.Order).Select(x => x.Type).ToArray();
+            var paramNames = string.Join(",", paramslist);
             signature.Append(paramNames);
             signature.Append(")");
             return signature.ToString();

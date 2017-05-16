@@ -13,9 +13,9 @@ namespace Nethereum.JsonRpc.Client
         public string MethodName { get; }
         public IClient Client { get; }
 
-        public virtual async Task<TResponse> SendRequestAsync(object id)
+        public virtual Task<TResponse> SendRequestAsync(object id)
         {
-            return await Client.SendRequestAsync<TResponse>(BuildRequest(id)).ConfigureAwait(false);
+            return Client.SendRequestAsync<TResponse>(BuildRequest(id));
         }
 
         public RpcRequest BuildRequest(object id = null)

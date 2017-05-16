@@ -44,6 +44,7 @@ namespace Nethereum.RPC.Eth
         {
         }
 
+#if !DOTNET35
         public new async Task<SyncingOutput> SendRequestAsync(object id = null)
         {
             var response = await base.SendRequestAsync(id).ConfigureAwait(false);
@@ -60,5 +61,6 @@ namespace Nethereum.RPC.Eth
                 StartingBlock = new HexBigInteger(syncingResponse["startingBlock"].ToString())
             };
         }
+#endif
     }
 }

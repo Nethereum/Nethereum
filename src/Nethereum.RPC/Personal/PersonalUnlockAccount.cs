@@ -29,28 +29,28 @@ namespace Nethereum.RPC.Personal
         /// <summary>
         /// This is compatible with newer versions of Geth
         /// </summary>
-        public async Task<bool> SendRequestAsync(string address, string passPhrase, int? durationInSeconds,
+        public Task<bool> SendRequestAsync(string address, string passPhrase, int? durationInSeconds,
             object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
 
-            
-            return await base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds).ConfigureAwait(false);
+            return base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds);
         }
 
         /// <summary>
         /// This is compatible with older versions of Geth and Parity
         /// </summary>
-        public async Task<bool> SendRequestAsync(string address, string passPhrase, HexBigInteger durationInSeconds,
+        public Task<bool> SendRequestAsync(string address, string passPhrase, HexBigInteger durationInSeconds,
            object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
 
-            return await base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds).ConfigureAwait(false);
+            return base.SendRequestAsync(id, address.EnsureHexPrefix(), passPhrase, durationInSeconds);
         }
 
+#if !DOTNET35
         public async Task<bool> SendRequestAsync(EthCoinBase coinbaseRequest, string passPhrase,
             object id = null)
         {
@@ -62,6 +62,7 @@ namespace Nethereum.RPC.Personal
                         .ConfigureAwait(false);
         }
 
+#endif
         public RpcRequest BuildRequest(string address, string passPhrase, int? durationInSeconds,
             object id = null)
         {

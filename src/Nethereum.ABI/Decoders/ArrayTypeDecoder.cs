@@ -59,11 +59,17 @@ namespace Nethereum.ABI.Decoders
 
         protected static Type GetIListElementType(Type listType)
         {
+#if DOTNET35
+            var enumType = listType.GetTypeInfo().ImplementedInterfaces()
+            .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments().Length == 1))
+            .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            return enumType?.GenericTypeArguments()[0];
+#else
             var enumType = listType.GetTypeInfo().ImplementedInterfaces
-                .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments.Length == 1))
-                .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
+            .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments.Length == 1))
+            .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return enumType?.GenericTypeArguments[0];
+#endif
         }
     }
 }

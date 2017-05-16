@@ -39,6 +39,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="..\..\src\Nethereum.Hex\BigInteger.cs">
+				<Link>Hex\BigInteger.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Hex\HexConvertors\HexBigIntegerBigEndianConvertor.cs">
 				<Link>Hex\HexConvertors\HexBigIntegerBigEndianConvertor.cs</Link>
 		</Compile>
@@ -285,6 +289,10 @@
 		
         <Compile Include="..\..\src\Nethereum.ABI\Model\Parameter.cs">
 				<Link>ABI\Model\Parameter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\net35\IntrospectionExtensions.cs">
+				<Link>ABI\net35\IntrospectionExtensions.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\Util\ByteUtil.cs">

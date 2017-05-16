@@ -156,6 +156,7 @@ namespace Nethereum.Contracts
             return result;
         }
 
+#if !DOTNET35
         public async Task<List<EventLog<T>>> GetAllChanges<T>(NewFilterInput filterInput) where T : new()
         {
             var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
@@ -173,7 +174,9 @@ namespace Nethereum.Contracts
             var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
+#else
 
+#endif
         public bool IsLogForEvent(JToken log)
         {
             return IsLogForEvent(JsonConvert.DeserializeObject<FilterLog>(log.ToString()));
