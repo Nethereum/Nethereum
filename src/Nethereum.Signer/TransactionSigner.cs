@@ -17,33 +17,57 @@ namespace Nethereum.Signer
             return transaction.Key.GetPublicAddress();
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce)
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
+        {
+            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce);
+        }
+
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, string data)
+        {
+            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, data);
+        }
+
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit)
+        {
+            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit);
+        }
+
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, string data)
+        {
+            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit, data);
+        }
+
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce)
         {
             var transaction = new Transaction(to, amount, nonce);
-            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
-            return transaction.GetRLPEncoded().ToHex();
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, string data)
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, string data)
         {
             var transaction = new Transaction(to, amount, nonce, data);
-            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
-            return transaction.GetRLPEncoded().ToHex();
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
-            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
-            return transaction.GetRLPEncoded().ToHex();
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
-            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
+            return SignTransaction(privateKey, transaction);
+        }
+
+        private string SignTransaction(byte[] privateKey, Transaction transaction)
+        {
+            transaction.Sign(new EthECKey(privateKey, true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
