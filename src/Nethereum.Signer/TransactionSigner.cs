@@ -17,35 +17,35 @@ namespace Nethereum.Signer
             return transaction.Key.GetPublicAddress();
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce)
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
         {
             var transaction = new Transaction(to, amount, nonce);
-            return SignTransaction(key, transaction);
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, string data)
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, string data)
         {
             var transaction = new Transaction(to, amount, nonce, data);
-            return SignTransaction(key, transaction);
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
-            return SignTransaction(key, transaction);
+            return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(string key, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
-            return SignTransaction(key, transaction);
+            return SignTransaction(privateKey, transaction);
         }
 
-        private string SignTransaction(string key, Transaction transaction)
+        private string SignTransaction(string privateKey, Transaction transaction)
         {
-            transaction.Sign(new EthECKey(key.HexToByteArray(), true));
+            transaction.Sign(new EthECKey(privateKey.HexToByteArray(), true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
