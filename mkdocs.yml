@@ -2,7 +2,8 @@ site_name: Nethereum
 pages: 
 - 'Home': 'index.md'
 - 'Ethereum': 'ethereum.md'
-- 'Ethereum and Clients': 'ethereum-and-clients/index.md'
+- 'Ethereum and Clients': 
+    - Introduction: 'ethereum-and-clients/index.md'
     - 'Geth (Go client)' : 'ethereum-and-clients/geth.md'
     - 'Parity' : 'ethereum-and-clients/parity.md'
     - 'Quorum' : 'ethereum-and-clients/quorum.md'
