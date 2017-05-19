@@ -20,35 +20,22 @@ Nethereum is developed targetting netstandard 1.1, net451 and also as a portable
 * Low level Interception of RPC calls.
 * Code generation of smart contracts services.
 
-## Projects and samples
-*
 
 ## Quick installation
 
-Nethereum provides 
+Nethereum provides two types of packages. Standalone packages targetting Netstandard 1.1, net451 and where possible net350 and the Nethereum.Portable library which combines all the packages into one as a portable library. As netstandard evolves and is more widely supported the portable library might be eventually deprecated, as it won't be longer needed.
 
-Here is a list of all the nuget packages, if in doubt use Nethereum.Portable as it includes all the packages embedded in one. (Apart from IPC which is windows specific).
+To install the latest version you can either:
 
 ```
 PM > Install-Package Nethereum.Portable -Pre
 ```
-
-Another option (if targeting netstardad 1.1) is to use the Nethereum.Web3 package. This top level package include all the dependencies for RPC, ABI and Hex. 
-
-If you have issues installing the packages make sure you have a reference to System.Runtime specific to your environment.
+or
 
 ```
 PM > Install-Package Nethereum.Web3 -Pre
 ```
 
-| Package       | Nuget         | 
-| ------------- |:-------------:|
-| Nethereum.Portable    | [![NuGet version](https://badge.fury.io/nu/nethereum.portable.svg)](https://badge.fury.io/nu/nethereum.portable)| 
-| Nethereum.Web3    | [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)|
-| Nethereum.ABI    | [![NuGet version](https://badge.fury.io/nu/nethereum.abi.svg)](https://badge.fury.io/nu/nethereum.abi)| 
-| Nethereum.RPC    | [![NuGet version](https://badge.fury.io/nu/nethereum.rpc.svg)](https://badge.fury.io/nu/nethereum.rpc)| 
-| Nethereum.Hex    | [![NuGet version](https://badge.fury.io/nu/nethereum.hex.svg)](https://badge.fury.io/nu/nethereum.hex)| 
-| Nethereum.JsonRpc.IpcClient| [![NuGet version](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient.svg)](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient)| 
 
 
 Finally if you want to use IPC you will need the specific IPC Client library for Windows. 
