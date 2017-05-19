@@ -1,14 +1,14 @@
 site_name: Nethereum
 pages: 
-- Home: 'index.md'
-- Ethereum: 'ethereum.md'
+- 'Home': 'index.md'
+- 'Ethereum': 'ethereum.md'
 - 'Ethereum and Clients': 'ethereum-and-clients/index.md'
    - 'Geth (Go client)' : 'ethereum-and-clients/geth.md'
    - 'Parity' : 'ethereum-and-clients/parity.md'
    - 'Quorum' : 'ethereum-and-clients/quorum.md'
    - 'Infura' : 'ethereum-and-clients/infura.md'
    - 'TestRPC' : 'ethereum-and-clients/test-rpc.md'
-- Accounts: 'accounts.md'
+- 'Accounts': 'accounts.md'
 - 'Web3 and RPC':
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
