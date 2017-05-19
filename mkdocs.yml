@@ -1,12 +1,20 @@
 site_name: Nethereum
 pages: 
 - Home: 'index.md'
-- RPC interface:
-    - 'Getting started with the Ethereum Client' : 'introduction/ethereum-client.md'
+- Ethereum: 'ethereum.md'
+- 'Ethereum and Clients': 'ethereum-and-clients/index.md'
+   - 'Geth (Go client)' : 'ethereum-and-clients/geth.md'
+   - 'Parity' : 'ethereum-and-clients/parity.md'
+   - 'Quorum' : 'ethereum-and-clients/quorum.md'
+   - 'Infura' : 'ethereum-and-clients/infura.md'
+   - 'TestRPC' : 'ethereum-and-clients/test-rpc.md'
+- Accounts: 'accounts.md'
+- 'Web3 and RPC':
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
     - 'IPC' : 'introduction/ipc.md'
-- Working with Contracts:
+- 'Client Libraries': 'client-libraries.md'
+- 'Working with Contracts':
     - 'Create and deploy contracts' : 'contracts/deploying.md'
     - 'Calls, transactions, events, filters and topics' : 'contracts/calling-transactions-events.md'
     - 'Multiple output parameters and function DTOs' : 'contracts/functiondtos.md'

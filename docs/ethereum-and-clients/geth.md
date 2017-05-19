@@ -1,14 +1,4 @@
-#Getting started with the Ethereum Client
-
-Nethereum requires an Ethereum client like Geth, eth (c++), parity, etc with RPC / IPC enabled to interact with the network.
-
-The client might be installed locally, a server you control or be a public node depending on your needs and use case. 
-
-For example if you are just interested to retrieve existing data from contracts, or sending offline signed transations you can just use a public node. 
-
-Here are some quick instructions to get you setup.
-
-## Installation and configuration of the Ethereum client (Geth)
+## Installation and configuration of the Ethereum client Geth
 
 You can download the latest version stable version of geth from [Github](https://github.com/ethereum/go-ethereum/releases), installation is  as simple as extracting geth.exe from your chosen OS.
 
