@@ -1,13 +1,12 @@
 site_name: Nethereum
 pages: 
-- Home: 'index.md'
-- Introduction:
-    - 'Introduction' : 'introduction/introduction.md'
+- Home: 'introduction.md'
+- RPC interface:
     - 'Getting started with the Ethereum Client' : 'introduction/ethereum-client.md'
     - 'Web3' : 'introduction/web3.md'
     - 'RPC' : 'introduction/rpc.md'
     - 'IPC' : 'introduction/ipc.md'
-- Contracts:
+- Working with Contracts:
     - 'Create and deploy contracts' : 'contracts/deploying.md'
     - 'Calls, transactions, events, filters and topics' : 'contracts/calling-transactions-events.md'
     - 'Multiple output parameters and function DTOs' : 'contracts/functiondtos.md'

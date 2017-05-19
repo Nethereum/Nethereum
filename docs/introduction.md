@@ -1,4 +1,4 @@
-# Nethereum
+# What is Nethereum ?
 
 Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, Parity or Quorum. 
 
