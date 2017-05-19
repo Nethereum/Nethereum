@@ -2,7 +2,7 @@
 
 Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, Parity or Quorum. 
 
-Nethereum is developed targetting netstandard 1.1, net451 and also as a portable library, hence it is compabitable with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, xbox, hololens and windows IoT. 
+Nethereum is developed targetting netstandard 1.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, xbox, hololens and windows IoT. 
 
 ## Features
 
