@@ -65,7 +65,7 @@ var web3 = new Nethereum.Web3.Web3(account);
 Now all these type of transactions will be signed offline 
 Transfer an amount to another address, using the transaction manager
  
- ```csharp
+```csharp
 await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
 
  ```
@@ -116,7 +116,7 @@ When used in conjuction with Web3, now in the same way to an "Account", you can:
 
 Transfer an amount to another address, using the transaction manager
  
- ```csharp
+```csharp
 await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
 
  ```
