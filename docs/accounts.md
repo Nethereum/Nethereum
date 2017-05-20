@@ -5,7 +5,7 @@ Every transaction in Ethereum needs to be sent and signed by an account. The acc
 
 To send a transaction you will either mananage your account and sign the raw transaction locally, or the account will be managed by the client (Parity / Geth), requiring to send the password at the time of sending a transaction or unlock the account before hand.
  
-In Nethereum when using Web3, to simplify and abstract the process, there are two types of account that you can use. An "Account" object or a "ManagedAccount" object. Both store the account information required to send a transaction, private key, or password.
+In Nethereum.Web3, to simplify and abstract the process, there are two types of account that you can use. An "Account" object or a "ManagedAccount" object. Both store the account information required to send a transaction, private key, or password.
 
 At the time of sending a transaction if using the TransactionManager, deploying a contract or using a contract function, the right method to deliver the transaction will be chosen, either the transaction will be signed offline using the private key or a personal_sendTransaction message will be sent using the password.
 
@@ -31,7 +31,7 @@ Parity:
 * Mac: /Library/Application Support/io.parity.ethereum
 * Linux: ~/.local/share/io.parity.ethereum
 
-To load an account if you are using net451 or above you can load directly your file:
+When using net451 or above you can load directly your file:
 
 ```csharp
 var password = "password";
@@ -85,7 +85,7 @@ await multiplyFunction.SendTransactionAsync(senderAddress,7);
 
 #### Creating a new Account
 
-To create a new account you just need to generate a new Private Key, Nethereum provides a method to do this using SecureRandom. Needless to say you may want to generate an account another different random mechanism, or seeding mechanism.
+To create a new account you just need to generate a new private key, Nethereum.Signer provides a method to do this using SecureRandom. The Account object accepts just the private key as a constructor, to reduce any coupling with private key generation, and prescriptive way to generate private keys.
 
 ```csharp
 var ecKey = Nethereum.Signer.EthECKey.GenerateKey();
@@ -93,15 +93,15 @@ var privateKey = ecKey.GetPrivateKeyAsBytes().ToHex();
 var account = new Nethereum.Accounts.Account(privateKey);
 ```
 
-You can save also your private key, so it can be used by any client using the Nethereum.KeyStore library. 
+The Nethereum.KeyStore library, allows you to encrypt and save your private key, in a compatible way to all the clients.
 
 ### Working with a Managed Account in Web3
 
-If you have a client installed locally, or in a server you control, the client can retrieve the private key for an account (if stored on their keystore folder) using a password provided to decrypt the file. This is normally done at the time of unlocking an account for a certain period of time, or at the time of sending a transaction if using personal_sendTransaction.
+Clients retrieve the private key for an account (if stored on their keystore folder) using a password provided to decrypt the file. This is done when unlocking an account, or just at the time of sending a transaction if using personal_sendTransaction with a password.
 
-To prevent unlocking an account for certain period of times, and hence open it to potential attacks, the prefered option in this scenario, is used to use the rpc method personal_sendTransaction.
+Having an account unlocked for a certain period of time might be a security issue, so the prefered option in this scenario, is to use the rpc method personal_sendTransaction.
 
-Nethereum wraps this functionality by using a ManagedAccount. Creating a ManagedAccount and instantiating Web3 with this account will be as follows:
+Nethereum.Web3 wraps this functionality by using a ManagedAccount, having the managed account storing the account address and the password information.
 
 ```csharp
 var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
@@ -111,7 +111,7 @@ var account = new ManagedAccount(senderAddress, password);
 var web3 = new Web3.Web3(account);
 ```
 
-Now in the same way to an "Account", you can:
+When used in conjuction with Web3, now in the same way to an "Account", you can:
 
 Transfer an amount to another address, using the transaction manager
  
