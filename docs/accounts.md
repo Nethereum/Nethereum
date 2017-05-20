@@ -67,6 +67,7 @@ Transfer an amount to another address, using the transaction manager
  
  ```csharp
 await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
+
  ```
 
 Deploy a contract
@@ -117,6 +118,7 @@ Transfer an amount to another address, using the transaction manager
  
  ```csharp
 await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
+
  ```
 
 Deploy a contract
