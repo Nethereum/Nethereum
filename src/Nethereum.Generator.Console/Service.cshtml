@@ -51,10 +51,10 @@ namespace @Model.Namespace
     if (function.OutputParameters != null && function.OutputParameters.Length == 1)
     {
 <text>
-        public Task@(Raw(Model.GetGenericReturnType(function))) @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Model.GenerateFunctionInputParameters(function.InputParameters)))
+        public Task@(Raw(Model.GetGenericReturnType(function))) @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
         {
            var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
-           return function.CallAsync@(Raw(Model.GetGenericReturnType(function)))(@(Model.GenerateFunctionParameters(function.InputParameters)));
+           return function.CallAsync@(Raw(Model.GetGenericReturnType(function)))(@(Raw((Model.GenerateFunctionParameters(function.InputParameters)))));
         }
 </text>
     }
@@ -64,10 +64,10 @@ namespace @Model.Namespace
     if (function.OutputParameters != null && function.OutputParameters.Length > 1)
     {
 <text>
-        public Task<@(Model.CapitaliseFirstChar(function.Name))DTO> @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Model.GenerateFunctionInputParameters(function.InputParameters)))
+        public Task<@(Model.CapitaliseFirstChar(function.Name))DTO> @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
         {
            var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
-           return function.CallAsync<@(Model.CapitaliseFirstChar(function.Name))DTO>(@(Model.GenerateFunctionParameters(function.InputParameters)));
+           return function.CallAsync<@(Model.CapitaliseFirstChar(function.Name))DTO>(@(Raw((Model.GenerateFunctionParameters(function.InputParameters)))));
         }
 </text>
     }
@@ -77,10 +77,10 @@ namespace @Model.Namespace
     if (function.Constant == false)
     {
 <text>
-        public Task<string> @(Model.CapitaliseFirstChar(function.Name))Async(string addressFrom, @(Model.GenerateFunctionTransactionInputParameters(function.InputParameters)) HexBigInteger gas = null, HexBigInteger valueAmount = null)
+        public Task<string> @(Model.CapitaliseFirstChar(function.Name))Async(string addressFrom, @(Raw(Model.GenerateFunctionTransactionInputParameters(function.InputParameters))) HexBigInteger gas = null, HexBigInteger valueAmount = null)
         {
            var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
-           return function.SendTransactionAsync(addressFrom, gas, valueAmount@(Model.GenerateFunctionParametersCommaPrefix(function.InputParameters)));
+           return function.SendTransactionAsync(addressFrom, gas, valueAmount@(Raw(Model.GenerateFunctionParametersCommaPrefix(function.InputParameters))));
         }
 </text>
     }
@@ -99,7 +99,7 @@ namespace @Model.Namespace
 	    {
 <text>
         [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order)]
-        public @Model.GetTypeMap(parameter.Type) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
 </text>
 	    }
     }
@@ -119,7 +119,7 @@ namespace @Model.Namespace
 	    {
 <text>
         [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order, @(Model.GetBooleanAsString(parameter.Indexed)))]
-        public @Model.GetTypeMap(parameter.Type) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) { get; set; }
 </text>
 	    }
     }

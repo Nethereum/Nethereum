@@ -46,7 +46,7 @@ namespace Nethereum.Generator.Console
                 {
                     var prefix = ", ";
                     if (parametersOuput == String.Empty) prefix = String.Empty;
-                    parametersOuput = parametersOuput + prefix + GetTypeMap(parameter.Type) + ' ' + GetParameterName(parameter.Name, parameter.Order);
+                    parametersOuput = parametersOuput + prefix + GetTypeMap(parameter.Type, false) + ' ' + GetParameterName(parameter.Name, parameter.Order);
                 }
             }
                 
@@ -125,18 +125,25 @@ namespace Nethereum.Generator.Console
         {
             if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1)
             {
-                return GetTypeMap(functionABI.OutputParameters[0].Type);
+                return GetTypeMap(functionABI.OutputParameters[0].Type, true);
             }
             return null;
         }
 
-        public string GetTypeMap(string typeName)
+        public string GetTypeMap(string typeName, bool output = false)
         {
             var indexFirstBracket = typeName.IndexOf("[");
             if (indexFirstBracket > -1)
             {
                 var elementTypeName = typeName.Substring(0, indexFirstBracket);
-                return GetTypeMap(elementTypeName) + "[]";
+                if (output)
+                {
+                    return "List<" + GetTypeMap(elementTypeName, true) + ">";
+                }
+                else
+                {
+                    return GetTypeMap(elementTypeName) + "[]";
+                }
             }
             if ("bool" == typeName)
             {
