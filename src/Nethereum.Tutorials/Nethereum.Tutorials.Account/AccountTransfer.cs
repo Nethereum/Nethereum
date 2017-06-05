@@ -84,13 +84,9 @@ namespace Nethereum.Tutorials
             //Mac: /Library/Ethereum/keystore
             //Windows: %APPDATA%/Ethereum
 
-
             //if not using portable or netstandard (^net45) you can use LoadFromKeyStoreFile to load the file from the file system.
 
-            var keyStoreService = new KeyStore.KeyStoreService();
-            var key = keyStoreService.DecryptKeyStoreFromJson(password, keyStoreEncryptedJson);
-
-            var account = new Account(key);
+            var account = Account.LoadFromKeyStore(keyStoreEncryptedJson, password);
             var web3 = new Web3.Web3(account);
 
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
