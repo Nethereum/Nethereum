@@ -20,13 +20,11 @@ One of the major advantages, apart from security (avoiding transfer in plain tex
 Encrypted Accounts key store files can be found in different locations depending on the client and operating system:
 
 Geth:
-
 * Linux: ~/.ethereum/keystore
 * Mac: /Library/Ethereum/keystore
 * Windows: %APPDATA%/Ethereum
 
 Parity:
-
 * Windows %APPDATA%\Roaming\Parity\Ethereum
 * Mac: /Library/Application Support/io.parity.ethereum
 * Linux: ~/.local/share/io.parity.ethereum
