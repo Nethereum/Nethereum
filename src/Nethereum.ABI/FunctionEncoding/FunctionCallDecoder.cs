@@ -96,7 +96,7 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (currentDataItem != null)
                 {
                     var bytes =
-                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart).ToArray();
+                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart - currentDataItem.DataIndexStart).ToArray();
                     currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.DecodedType);
                 }
                 currentDataItem = nextDataItem;

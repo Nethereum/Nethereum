@@ -88,6 +88,37 @@ namespace Nethereum.ABI.Tests
           
         }
 
+        [Fact]
+        public virtual void ShouldDecodeMultipleArrays()
+        {
+
+            var functionCallDecoder = new FunctionCallDecoder();
+
+            var outputParameters = new[]
+            {
+                CreateParamO("uint[]", "a", typeof(List<int>)),
+                CreateParamO("uint[]", "b", typeof(List<int>))
+            };
+
+            var result = functionCallDecoder.
+              DecodeOutput("0x" + "000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002",
+              outputParameters);
+            Assert.True(result.Count == 2);
+            var output1 = (List<int>)result[0].Result;
+            var output2 = (List<int>)result[1].Result;
+
+            Assert.Equal(3, output1.Count);
+            Assert.Equal(3, output2.Count);
+
+            Assert.Equal(0, output1[0]);
+            Assert.Equal(1, output1[1]);
+            Assert.Equal(2, output1[2]);
+
+            Assert.Equal(0, output2[0]);
+            Assert.Equal(1, output2[1]);
+            Assert.Equal(2, output2[2]);
+
+        }
 
         [Fact]
         public virtual void ShouldDecodeMultipleTypesIncludingDynamicStringAndIntArray()
