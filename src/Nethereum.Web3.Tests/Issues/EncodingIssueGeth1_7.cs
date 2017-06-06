@@ -29,12 +29,12 @@ namespace Nethereum.Web3.Tests.Issues
 
             var gethTester = GethTesterFactory.GetLocal(web3);
 
+            await gethTester.UnlockAccount();
             var receipt = await gethTester.DeployTestContractLocal(byteCode);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var addChargeFunction = contract.GetFunction("addCharge");
 
-            //await gethTester.UnlockAccount();
             await gethTester.StartMining();
 
             var tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, 20);
