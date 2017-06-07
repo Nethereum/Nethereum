@@ -179,6 +179,12 @@ namespace Nethereum.Contracts
             return new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, value);
         }
 
+        protected TransactionInput CreateTransactionInput(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger gasPrice,
+           HexBigInteger value)
+        {
+            return new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, gasPrice, value);
+        }
+
         protected TransactionInput CreateTransactionInput(string encodedFunctionCall,
             TransactionInput input)
         {

@@ -18,6 +18,8 @@ namespace Nethereum.Web3.Accounts
         private readonly string _account;
         private readonly TransactionSigner _transactionSigner;
         private BigInteger _nonceCount = -1;
+        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
+        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
         public AccountSignerTransactionManager(IClient rpcClient, string privateKey)
         {
@@ -66,17 +68,14 @@ namespace Nethereum.Web3.Accounts
             if(Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (transaction.From.EnsureHexPrefix().ToLower() != _account.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
+            SetDefaultGasPriceAndCostIfNotSet(transaction);
+
             var ethSendTransaction = new EthSendRawTransaction(Client);
             var nonce = await GetNonceAsync(transaction);
 
             var gasPrice = transaction.GasPrice;
-            if (gasPrice == null)
-                gasPrice = new HexBigInteger(Transaction.DEFAULT_GAS_PRICE);
-
             var gasLimit = transaction.Gas;
-            if (gasLimit == null)
-                gasLimit = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT);
-
+            
             var value = transaction.Value;
             if (value == null)
                 value = new HexBigInteger(0);

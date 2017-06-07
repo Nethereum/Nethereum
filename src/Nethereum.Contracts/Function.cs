@@ -101,6 +101,14 @@ namespace Nethereum.Contracts
             return base.CreateTransactionInput(encodedInput, from, gas, value);
         }
 
+        public TransactionInput CreateTransactionInput(string from, HexBigInteger gas, HexBigInteger gasPrice,
+           HexBigInteger value, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(encodedInput, from, gas, value);
+        }
+
+
         public TransactionInput CreateTransactionInput(TransactionInput input, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
@@ -116,6 +124,12 @@ namespace Nethereum.Contracts
             HexBigInteger value, params object[] functionInput)
         {
             return base.SendTransactionAsync(CreateTransactionInput(from, gas, value, functionInput));
+        }
+
+        public Task<string> SendTransactionAsync(string from, HexBigInteger gas, HexBigInteger gasPrice,
+            HexBigInteger value, params object[] functionInput)
+        {
+            return base.SendTransactionAsync(CreateTransactionInput(from, gas, gasPrice, value, functionInput));
         }
 
         public Task<string> SendTransactionAsync(TransactionInput input, params object[] functionInput)
@@ -246,6 +260,12 @@ namespace Nethereum.Contracts
             return base.CreateTransactionInput(encodedInput, from, gas, value);
         }
 
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
+        }
+
         public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from)
         {
             return base.SendTransactionAsync(CreateTransactionInput(functionInput, from));
@@ -255,6 +275,12 @@ namespace Nethereum.Contracts
             HexBigInteger value)
         {
             return base.SendTransactionAsync(CreateTransactionInput(functionInput, from, gas, value));
+        }
+
+        public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice,
+            HexBigInteger value)
+        {
+            return base.SendTransactionAsync(CreateTransactionInput(functionInput, from, gas, gasPrice, value));
         }
 
         public Task<string> SendTransactionAsync(TFunctionInput functionInput,

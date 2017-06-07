@@ -4,6 +4,8 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.Signer;
+using System.Numerics;
 
 namespace Nethereum.Web3.Accounts.Managed
 {
@@ -11,6 +13,9 @@ namespace Nethereum.Web3.Accounts.Managed
     {
         private readonly string _accountAddress;
         private readonly string _password;
+
+        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
+        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
         public ManagedAccountTransactionManager(IClient client, string accountAddress, string password)
         {
@@ -29,6 +34,7 @@ namespace Nethereum.Web3.Accounts.Managed
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
             if (transactionInput.From != _accountAddress) throw new Exception("Invalid account used");
+            SetDefaultGasPriceAndCostIfNotSet(transactionInput);
             var ethSendTransaction = new PersonalSignAndSendTransaction(Client);
             return ethSendTransaction.SendRequestAsync(transactionInput, _password);
         }

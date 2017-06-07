@@ -63,6 +63,14 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
+        public Task<string> SendRequestAsync(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
+           HexBigInteger value,
+           params object[] values)
+        {
+            var transaction = BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, values);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
+
         public Task<string> SendRequestAsync(string abi, string contractByteCode, string from,
             params object[] values)
         {
@@ -73,6 +81,16 @@ namespace Nethereum.Contracts
         public Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas)
         {
             return TransactionManager.SendTransactionAsync(new TransactionInput(contractByteCode, gas, from));
+        }
+
+        public Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+        {
+            return TransactionManager.SendTransactionAsync(new TransactionInput(contractByteCode, null, from, gas, gasPrice, value));
+        }
+
+        public Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger value)
+        {
+            return TransactionManager.SendTransactionAsync(new TransactionInput(contractByteCode, null, from, gas, value));
         }
 
         public Task<string> SendRequestAsync(string contractByteCode, string from)
@@ -94,6 +112,13 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
+        public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams)
+        {
+            var transaction = BuildTransaction(contractByteCode, from, gas, gasPrice, value, inputParams);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
+
         private string BuildEncodedData(string abi, string contractByteCode, object[] values)
         {
             if (values == null || values.Length == 0)
@@ -112,6 +137,14 @@ namespace Nethereum.Contracts
         {
             var encodedData = BuildEncodedData(abi, contractByteCode, values);
             var transaction = new TransactionInput(encodedData, gas, from);
+            return transaction;
+        }
+
+        private TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
+            HexBigInteger value, object[] values)
+        {
+            var encodedData = BuildEncodedData(abi, contractByteCode, values);
+            var transaction = new TransactionInput(encodedData, null, from, gas, gasPrice, value);
             return transaction;
         }
 
@@ -143,6 +176,14 @@ namespace Nethereum.Contracts
         {
             var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
             var transaction = new TransactionInput(encodedData, gas, from);
+            return transaction;
+        }
+
+        private TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams)
+        {
+            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
+            var transaction = new TransactionInput(encodedData, null, from,  gas, gasPrice, value);
             return transaction;
         }
     }
