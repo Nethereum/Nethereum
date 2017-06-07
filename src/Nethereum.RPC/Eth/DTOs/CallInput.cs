@@ -36,6 +36,12 @@ namespace Nethereum.RPC.Eth.DTOs
             Gas = gas;
         }
 
+        public CallInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+            : this(data, addressTo, adddressFrom, gas, value)
+        {
+            GasPrice = gasPrice;
+        }
+
         public CallInput(string data, string adddressFrom, HexBigInteger gas, HexBigInteger value)
             : this(data, null, value)
         {
@@ -49,7 +55,6 @@ namespace Nethereum.RPC.Eth.DTOs
             Gas = gas;
             From = addressFrom;
         }
-
 
         /// <summary>
         ///     DATA, 20 Bytes - The address the transaction is send from.
