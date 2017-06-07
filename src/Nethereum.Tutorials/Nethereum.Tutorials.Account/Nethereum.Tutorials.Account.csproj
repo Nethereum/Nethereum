@@ -111,6 +111,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountCreator.cs" />
     <Compile Include="AccountTransfer.cs" />
     <Compile Include="Deployment\Deployment.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
