@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <Description>Nethereum.ClassesExtractor RPC classes extractor</Description>
-    <VersionPrefix>1.0.0-alpha</VersionPrefix>
+    <VersionPrefix>1.0.0</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
     <AssemblyName>Nethereum.RPC.ClassesExtractor</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>Nethereum.RPC.ClassesExtractor</PackageId>
@@ -12,7 +12,6 @@
     <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
     <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
-    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
     <PackageTargetFallback>$(PackageTargetFallback);net451</PackageTargetFallback>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Nethereum.RPC.Eth;
 using System.Reflection;
 using Nethereum.JsonRpc.Client;
-
+using System.Text;
 
 namespace Nethereum.RPC.ClassesExtractor
 {
@@ -16,15 +16,15 @@ namespace Nethereum.RPC.ClassesExtractor
         {
             try
             {
-                Type accountType = typeof (EthAccounts);
-                var assembly = accountType.GetTypeInfo().Assembly;
-                var types = assembly.GetTypes();
+                var requestInfoCollection = RPCRequestInfoExtractor.ExtractRequestInfo();
 
-                foreach (var type in types)
+                foreach (var requestInfo in requestInfoCollection)
                 {
-                    if (typeof (IRpcRequestHandler).IsAssignableFrom(type))
-                     Debug.WriteLine(type.Name);
+                    Console.WriteLine(requestInfo.ToString());
+                    Console.WriteLine(new RequestUnityGenerator().Generate(requestInfo));
                 }
+
+                new RequestUnityGenerator().GenerateToFile("UnityRPCRequests.cs", requestInfoCollection);
 
                 Console.ReadLine();
             }
