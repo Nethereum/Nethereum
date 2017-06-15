@@ -37,11 +37,14 @@ namespace Nethereum.Signer
 
             for (var i = 0; i < 4; i++)
             {
-                var k = ECKey.RecoverFromSignature(i, signature, hash, false).GetPubKey(false);
-                if ((k != null) && k.SequenceEqual(thisKey))
-                {
-                    recId = i;
-                    break;
+                var rec = ECKey.RecoverFromSignature(i, signature, hash, false);
+                if (rec != null) {
+                    var k = rec.GetPubKey(false);
+                    if ((k != null) && k.SequenceEqual(thisKey))
+                    {
+                        recId = i;
+                        break;
+                    }
                 }
             }
             if (recId == -1)

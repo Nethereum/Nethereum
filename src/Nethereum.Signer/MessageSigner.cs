@@ -52,15 +52,15 @@ namespace Nethereum.Signer
             return CreateStringSignature(signature);
         }
 
-        public string Sign(string plainMessage, string privateKey)
+        public virtual EthECDSASignature SignAndCalculateV(byte[] message, string privateKey)
         {
-            return Sign(Encoding.UTF8.GetBytes(plainMessage), privateKey);
+            return new EthECKey(privateKey.HexToByteArray(), true).SignAndCalculateV(message);
         }
 
         private static string CreateStringSignature(EthECDSASignature signature)
         {
-            return signature.R.ToHex(true) +
-                   signature.S.ToHex() +
+            return "0x" + signature.R.ToHex().PadLeft(64, '0') +
+                   signature.S.ToHex().PadLeft(64, '0') +
                    signature.V.ToString("X2");
         }
 

@@ -8,13 +8,34 @@ using Nethereum.ABI.Util;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.ABI.Encoders;
 
 namespace Nethereum.Web3.Tests.Signing
 {
     public class MessageSignerTests
     {
       
-            [Fact]
+        [Fact]
+        public void ShouldSignHash()
+        {
+            var address1 = "0x6A849e2036A36EB4Cd37b9aFA3c770064899f1A2";
+            var address2 = "0x12890D2cce102216644c59daE5baed380d84830c";
+            var numberBytes = new IntTypeEncoder().Encode(1); //Number is a big integer so we need 32 bytes if it was int32 it will be 4 bytes. Using the abi encoder it takes care of padding
+
+            var sha3 = new Util.Sha3Keccack();
+            var output = sha3.CalculateHashFromHex(address1, address2, numberBytes.ToHex());
+
+            Assert.Equal("0xc11d3d2b8e0c5b8b645b9e7502751352ecaf8c3fdf3a0124dae9c1556fb2ce37", output.EnsureHexPrefix());
+
+            var signer = new MessageSigner();
+            var signature = signer.Sign(output.HexToByteArray(), "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
+            var ethEcdsa = MessageSigner.ExtractEcdsaSignature(signature);
+            var adddress = signer.EcRecover(output.HexToByteArray(), signature);
+            Assert.Equal(adddress, new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7".HexToByteArray(), true).GetPublicAddress());
+
+        }
+
+        [Fact]
             public void ShouldRecoverSimple()
             {
                 var signer = new MessageSigner();

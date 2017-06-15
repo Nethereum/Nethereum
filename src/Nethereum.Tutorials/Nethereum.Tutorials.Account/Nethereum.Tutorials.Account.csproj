@@ -10,10 +10,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Nethereum.Tutorials</RootNamespace>
     <AssemblyName>Nethereum.Tutorials</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
     <Reference Include="crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>..\packages\Portable.BouncyCastle.1.8.1.1\lib\netstandard1.0\crypto.dll</HintPath>
     </Reference>
@@ -43,37 +47,37 @@
       <HintPath>..\packages\EdjCase.JsonRpc.Core.1.3.1\lib\portable45-net45+win8+wpa81\EdjCase.JsonRpc.Core.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.ABI, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.ABI.2.0.0-rc3\lib\netstandard1.1\Nethereum.ABI.dll</HintPath>
+      <HintPath>..\packages\Nethereum.ABI.2.0.0-rc4\lib\net451\Nethereum.ABI.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.Contracts, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Contracts.2.0.0-rc3\lib\netstandard1.1\Nethereum.Contracts.dll</HintPath>
+      <HintPath>..\packages\Nethereum.Contracts.2.0.0-rc4\lib\net451\Nethereum.Contracts.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.Hex, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Hex.2.0.0-rc3\lib\netstandard1.1\Nethereum.Hex.dll</HintPath>
+      <HintPath>..\packages\Nethereum.Hex.2.0.0-rc4\lib\net451\Nethereum.Hex.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.JsonRpc.Client, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.JsonRpc.Client.2.0.0-rc3\lib\netstandard1.1\Nethereum.JsonRpc.Client.dll</HintPath>
+      <HintPath>..\packages\Nethereum.JsonRpc.Client.2.0.0-rc4\lib\net451\Nethereum.JsonRpc.Client.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.JsonRpc.RpcClient, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.JsonRpc.RpcClient.2.0.0-rc3\lib\netstandard1.1\Nethereum.JsonRpc.RpcClient.dll</HintPath>
+      <HintPath>..\packages\Nethereum.JsonRpc.RpcClient.2.0.0-rc4\lib\net451\Nethereum.JsonRpc.RpcClient.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.KeyStore, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.KeyStore.2.0.0-rc3\lib\netstandard1.1\Nethereum.KeyStore.dll</HintPath>
+      <HintPath>..\packages\Nethereum.KeyStore.2.0.0-rc4\lib\net451\Nethereum.KeyStore.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.RLP, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.RLP.2.0.0-rc3\lib\netstandard1.1\Nethereum.RLP.dll</HintPath>
+      <HintPath>..\packages\Nethereum.RLP.2.0.0-rc4\lib\net451\Nethereum.RLP.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.RPC, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.RPC.2.0.0-rc3\lib\netstandard1.1\Nethereum.RPC.dll</HintPath>
+      <HintPath>..\packages\Nethereum.RPC.2.0.0-rc4\lib\net451\Nethereum.RPC.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.Signer, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Signer.2.0.0-rc3\lib\netstandard1.1\Nethereum.Signer.dll</HintPath>
+      <HintPath>..\packages\Nethereum.Signer.2.0.0-rc4\lib\net451\Nethereum.Signer.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.Util, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Util.2.0.0-rc3\lib\netstandard1.1\Nethereum.Util.dll</HintPath>
+      <HintPath>..\packages\Nethereum.Util.2.0.0-rc4\lib\net451\Nethereum.Util.dll</HintPath>
     </Reference>
     <Reference Include="Nethereum.Web3, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nethereum.Web3.2.0.0-rc3\lib\netstandard1.1\Nethereum.Web3.dll</HintPath>
+      <HintPath>..\packages\Nethereum.Web3.2.0.0-rc4\lib\net451\Nethereum.Web3.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
