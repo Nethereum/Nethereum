@@ -4,7 +4,7 @@
     <VersionMinor>0</VersionMinor>
     <VersionPatch>0</VersionPatch>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
-    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' ">rc4</RelSuffix>
+    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' ">rc5</RelSuffix>
     
     <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
     
@@ -15,6 +15,6 @@
     <ENSVersion>0.0.7</ENSVersion>
     <UportVersion>0.0.1</UportVersion>
     <ParityVersion>0.0.1-dev</ParityVersion>
-    <QuorumVersion>0.0.7</QuorumVersion>
+    <QuorumVersion>0.0.8</QuorumVersion>
   </PropertyGroup>
 </Project>

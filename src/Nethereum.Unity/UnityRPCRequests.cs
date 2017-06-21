@@ -12,7 +12,7 @@ using System.Collections;
 namespace Nethereum.JsonRpc.UnityClient
 {
 
-    public class Web3ClientVersionUnityRequest:UnityRpcWebRequest<System.String>
+    public class Web3ClientVersionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Web3.Web3ClientVersion _web3ClientVersion;
 
@@ -29,7 +29,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class Web3Sha3UnityRequest:UnityRpcWebRequest<System.String>
+    public class Web3Sha3UnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Web3.Web3Sha3 _web3Sha3;
 
@@ -46,7 +46,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class ShhNewIdentityUnityRequest:UnityRpcWebRequest<System.String>
+    public class ShhNewIdentityUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Shh.ShhNewIdentity _shhNewIdentity;
 
@@ -63,7 +63,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class ShhVersionUnityRequest:UnityRpcWebRequest<System.String>
+    public class ShhVersionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Shh.ShhVersion _shhVersion;
 
@@ -80,7 +80,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class PersonalListAccountsUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class PersonalListAccountsUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Personal.PersonalListAccounts _personalListAccounts;
 
@@ -97,7 +97,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class PersonalLockAccountUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class PersonalLockAccountUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Personal.PersonalLockAccount _personalLockAccount;
 
@@ -114,7 +114,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class PersonalNewAccountUnityRequest:UnityRpcWebRequest<System.String>
+    public class PersonalNewAccountUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Personal.PersonalNewAccount _personalNewAccount;
 
@@ -131,7 +131,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class PersonalSignAndSendTransactionUnityRequest:UnityRpcWebRequest<System.String>
+    public class PersonalSignAndSendTransactionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Personal.PersonalSignAndSendTransaction _personalSignAndSendTransaction;
 
@@ -148,7 +148,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class PersonalUnlockAccountUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class PersonalUnlockAccountUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Personal.PersonalUnlockAccount _personalUnlockAccount;
 
@@ -165,7 +165,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class NetListeningUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class NetListeningUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Net.NetListening _netListening;
 
@@ -182,7 +182,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class NetPeerCountUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class NetPeerCountUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Net.NetPeerCount _netPeerCount;
 
@@ -199,7 +199,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class NetVersionUnityRequest:UnityRpcWebRequest<System.String>
+    public class NetVersionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Net.NetVersion _netVersion;
 
@@ -216,7 +216,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthAccountsUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class EthAccountsUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Eth.EthAccounts _ethAccounts;
 
@@ -233,7 +233,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthCoinBaseUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthCoinBaseUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.EthCoinBase _ethCoinBase;
 
@@ -250,7 +250,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGasPriceUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGasPriceUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.EthGasPrice _ethGasPrice;
 
@@ -267,7 +267,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBalanceUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetBalanceUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.EthGetBalance _ethGetBalance;
 
@@ -284,7 +284,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetCodeUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthGetCodeUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.EthGetCode _ethGetCode;
 
@@ -301,7 +301,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetStorageAtUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthGetStorageAtUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.EthGetStorageAt _ethGetStorageAt;
 
@@ -318,7 +318,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthProtocolVersionUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthProtocolVersionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.EthProtocolVersion _ethProtocolVersion;
 
@@ -335,7 +335,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSignUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthSignUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.EthSign _ethSign;
 
@@ -352,7 +352,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSyncingUnityRequest:UnityRpcWebRequest<System.Object>
+    public class EthSyncingUnityRequest:UnityRpcClient<System.Object>
     {
         private readonly Nethereum.RPC.Eth.EthSyncing _ethSyncing;
 
@@ -369,7 +369,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetUncleByBlockHashAndIndexUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+    public class EthGetUncleByBlockHashAndIndexUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
     {
         private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex _ethGetUncleByBlockHashAndIndex;
 
@@ -386,7 +386,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetUncleByBlockNumberAndIndexUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+    public class EthGetUncleByBlockNumberAndIndexUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
     {
         private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex _ethGetUncleByBlockNumberAndIndex;
 
@@ -403,7 +403,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetUncleCountByBlockHashUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetUncleCountByBlockHashUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockHash _ethGetUncleCountByBlockHash;
 
@@ -420,7 +420,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetUncleCountByBlockNumberUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetUncleCountByBlockNumberUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockNumber _ethGetUncleCountByBlockNumber;
 
@@ -437,7 +437,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthCallUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthCallUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthCall _ethCall;
 
@@ -454,7 +454,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthEstimateGasUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthEstimateGasUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthEstimateGas _ethEstimateGas;
 
@@ -471,7 +471,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetTransactionByBlockHashAndIndexUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+    public class EthGetTransactionByBlockHashAndIndexUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.Transaction>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex _ethGetTransactionByBlockHashAndIndex;
 
@@ -488,7 +488,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetTransactionByBlockNumberAndIndexUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+    public class EthGetTransactionByBlockNumberAndIndexUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.Transaction>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex _ethGetTransactionByBlockNumberAndIndex;
 
@@ -505,7 +505,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetTransactionByHashUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+    public class EthGetTransactionByHashUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.Transaction>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByHash _ethGetTransactionByHash;
 
@@ -522,7 +522,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetTransactionCountUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetTransactionCountUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionCount _ethGetTransactionCount;
 
@@ -539,7 +539,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetTransactionReceiptUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.TransactionReceipt>
+    public class EthGetTransactionReceiptUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.TransactionReceipt>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionReceipt _ethGetTransactionReceipt;
 
@@ -556,7 +556,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSendRawTransactionUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthSendRawTransactionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthSendRawTransaction _ethSendRawTransaction;
 
@@ -573,7 +573,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSendTransactionUnityRequest:UnityRpcWebRequest<System.String>
+    public class EthSendTransactionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Eth.Transactions.EthSendTransaction _ethSendTransaction;
 
@@ -590,7 +590,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetWorkUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class EthGetWorkUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Eth.Mining.EthGetWork _ethGetWork;
 
@@ -607,7 +607,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthHashrateUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthHashrateUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Mining.EthHashrate _ethHashrate;
 
@@ -624,7 +624,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthMiningUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class EthMiningUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Eth.Mining.EthMining _ethMining;
 
@@ -641,7 +641,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSubmitHashrateUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class EthSubmitHashrateUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Eth.Mining.EthSubmitHashrate _ethSubmitHashrate;
 
@@ -658,7 +658,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthSubmitWorkUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class EthSubmitWorkUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Eth.Mining.EthSubmitWork _ethSubmitWork;
 
@@ -675,7 +675,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetFilterChangesForEthNewFilterUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+    public class EthGetFilterChangesForEthNewFilterUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.FilterLog[]>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter _ethGetFilterChangesForEthNewFilter;
 
@@ -692,7 +692,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetFilterChangesForBlockOrTransactionUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class EthGetFilterChangesForBlockOrTransactionUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction _ethGetFilterChangesForBlockOrTransaction;
 
@@ -709,7 +709,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetFilterLogsForBlockOrTransactionUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class EthGetFilterLogsForBlockOrTransactionUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction _ethGetFilterLogsForBlockOrTransaction;
 
@@ -726,7 +726,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetFilterLogsForEthNewFilterUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+    public class EthGetFilterLogsForEthNewFilterUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.FilterLog[]>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter _ethGetFilterLogsForEthNewFilter;
 
@@ -743,7 +743,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetLogsUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+    public class EthGetLogsUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.FilterLog[]>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthGetLogs _ethGetLogs;
 
@@ -760,7 +760,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthNewBlockFilterUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthNewBlockFilterUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthNewBlockFilter _ethNewBlockFilter;
 
@@ -777,7 +777,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthNewFilterUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthNewFilterUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthNewFilter _ethNewFilter;
 
@@ -794,7 +794,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthNewPendingTransactionFilterUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthNewPendingTransactionFilterUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthNewPendingTransactionFilter _ethNewPendingTransactionFilter;
 
@@ -811,7 +811,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthUninstallFilterUnityRequest:UnityRpcWebRequest<System.Boolean>
+    public class EthUninstallFilterUnityRequest:UnityRpcClient<System.Boolean>
     {
         private readonly Nethereum.RPC.Eth.Filters.EthUninstallFilter _ethUninstallFilter;
 
@@ -828,7 +828,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthCompileLLLUnityRequest:UnityRpcWebRequest<Newtonsoft.Json.Linq.JObject>
+    public class EthCompileLLLUnityRequest:UnityRpcClient<Newtonsoft.Json.Linq.JObject>
     {
         private readonly Nethereum.RPC.Eth.Compilation.EthCompileLLL _ethCompileLLL;
 
@@ -845,7 +845,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthCompileSerpentUnityRequest:UnityRpcWebRequest<Newtonsoft.Json.Linq.JObject>
+    public class EthCompileSerpentUnityRequest:UnityRpcClient<Newtonsoft.Json.Linq.JObject>
     {
         private readonly Nethereum.RPC.Eth.Compilation.EthCompileSerpent _ethCompileSerpent;
 
@@ -862,7 +862,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthCompileSolidityUnityRequest:UnityRpcWebRequest<Newtonsoft.Json.Linq.JToken>
+    public class EthCompileSolidityUnityRequest:UnityRpcClient<Newtonsoft.Json.Linq.JToken>
     {
         private readonly Nethereum.RPC.Eth.Compilation.EthCompileSolidity _ethCompileSolidity;
 
@@ -879,7 +879,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetCompilersUnityRequest:UnityRpcWebRequest<System.String[]>
+    public class EthGetCompilersUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Eth.Compilation.EthGetCompilers _ethGetCompilers;
 
@@ -896,7 +896,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthBlockNumberUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthBlockNumberUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthBlockNumber _ethBlockNumber;
 
@@ -913,7 +913,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockWithTransactionsByHashUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
+    public class EthGetBlockWithTransactionsByHashUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash _ethGetBlockWithTransactionsByHash;
 
@@ -930,7 +930,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockWithTransactionsHashesByHashUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+    public class EthGetBlockWithTransactionsHashesByHashUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash _ethGetBlockWithTransactionsHashesByHash;
 
@@ -947,7 +947,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockWithTransactionsByNumberUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
+    public class EthGetBlockWithTransactionsByNumberUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber _ethGetBlockWithTransactionsByNumber;
 
@@ -964,7 +964,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockTransactionCountByHashUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetBlockTransactionCountByHashUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByHash _ethGetBlockTransactionCountByHash;
 
@@ -981,7 +981,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockTransactionCountByNumberUnityRequest:UnityRpcWebRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthGetBlockTransactionCountByNumberUnityRequest:UnityRpcClient<Nethereum.Hex.HexTypes.HexBigInteger>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber _ethGetBlockTransactionCountByNumber;
 
@@ -998,7 +998,7 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class EthGetBlockWithTransactionsHashesByNumberUnityRequest:UnityRpcWebRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+    public class EthGetBlockWithTransactionsHashesByNumberUnityRequest:UnityRpcClient<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
     {
         private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashesByNumber;
 

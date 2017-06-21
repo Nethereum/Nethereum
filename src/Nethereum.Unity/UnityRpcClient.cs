@@ -5,7 +5,7 @@ using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Networking; 
+using UnityEngine.Networking;
 using RpcError = Nethereum.JsonRpc.Client.RpcError;
 using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
 using Nethereum.RPC.Eth.Transactions;
@@ -13,26 +13,11 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class UnityRequest<TResult>
-    {
-        public TResult Result { get; set; }
-        private Exception _exception;
-
-        public Exception Exception
-        {
-            get { return _exception; }
-            set
-            {
-                _exception = value;
-            }
-        }
-    }
-
-    public class UnityRpcWebRequest<TResult>:UnityRequest<TResult>
+    public class UnityRpcClient<TResult>:UnityRequest<TResult>
     {
         private readonly string _url;
         
-        public UnityRpcWebRequest(string url, JsonSerializerSettings jsonSerializerSettings = null)
+        public UnityRpcClient(string url, JsonSerializerSettings jsonSerializerSettings = null)
         {
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
