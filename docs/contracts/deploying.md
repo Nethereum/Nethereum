@@ -61,9 +61,14 @@ First of all you will need to unlock your account to do so you can use web3.Pers
 To unlock an account you will need to pass the address, password and the duration in seconds that you want to unlock your account.
 
 ```csharp
- var unlockAccountResult =
+   var unlockAccountResult =
+        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 120);
+  ```
+ Note - If using Geth 1.5.9-, duration of seconds requires a HexBigInteger.
+  ```csharp
+   var unlockAccountResult =
         await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
-```
+  ```
 
 ### The deployment transaction
 After unlocking your account you are ready to create the transaction to deploy it.
@@ -142,7 +147,7 @@ All the source code can be found under deployment in the [Tutorials solution](ht
 
     var web3 = new Web3.Web3();
     var unlockAccountResult =
-        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
+        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 120);
     Assert.True(unlockAccountResult);
 
     var transactionHash =
