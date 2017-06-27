@@ -64,6 +64,11 @@ To unlock an account you will need to pass the address, password and the duratio
  var unlockAccountResult =
         await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, new HexBigInteger(120));
 ```
+Note - If you have Geth 1.5.9+, an integer has to be passed for duration of seconds.
+```csharp
+ var unlockAccountResult =
+        await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 120);
+```
 
 ### The deployment transaction
 After unlocking your account you are ready to create the transaction to deploy it.
