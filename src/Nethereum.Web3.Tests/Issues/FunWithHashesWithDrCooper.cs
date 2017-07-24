@@ -27,7 +27,7 @@ namespace Nethereum.Web3.Tests.Issues
             var hash = "0x1c21348936d43dc62d853ff6238cff94e361f8dcee9fde6fd5fbfed9ff663150";
             var web3 = new Web3(ClientFactory.GetClient());
 
-            var sha3Hello = web3.Sha3(text);
+            var sha3Hello = Web3.Sha3(text);
             Assert.Equal(hash, "0x" + sha3Hello);
 
             var contractByteCode =

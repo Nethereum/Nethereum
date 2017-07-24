@@ -13,8 +13,10 @@ namespace Nethereum.Web3
 {
     public class Web3
     {
-        private AddressUtil addressUtil;
-        private Sha3Keccack sha3Keccack;
+        private static AddressUtil addressUtil = new AddressUtil();
+        private static Sha3Keccack sha3Keccack = new Sha3Keccack();
+        private static TransactionSigner transactionSigner = new TransactionSigner();
+        private static UnitConversion unitConversion = new UnitConversion();
 
         public Web3(IClient client)
         {
@@ -46,8 +48,9 @@ namespace Nethereum.Web3
             set { Eth.TransactionManager = value; }
         }
 
-        public UnitConversion Convert { get; private set; }
-        public TransactionSigner OfflineTransactionSigner { get; private set; }
+        public static UnitConversion Convert { get { return unitConversion; } }
+
+        public static TransactionSigner OfflineTransactionSigner { get { return transactionSigner; } }
 
         public IClient Client { get; private set; }
 
@@ -58,27 +61,27 @@ namespace Nethereum.Web3
 
         public PersonalApiService Personal { get; private set; }
 
-        public string GetAddressFromPrivateKey(string privateKey)
+        public static string GetAddressFromPrivateKey(string privateKey)
         {
             return EthECKey.GetPublicAddress(privateKey);
         }
 
-        public bool IsChecksumAddress(string address)
+        public static bool IsChecksumAddress(string address)
         {
             return addressUtil.IsChecksumAddress(address);
         }
 
-        public string Sha3(string value)
+        public static string Sha3(string value)
         {
             return sha3Keccack.CalculateHash(value);
         }
 
-        public string ToChecksumAddress(string address)
+        public static string ToChecksumAddress(string address)
         {
             return addressUtil.ConvertToChecksumAddress(address);
         }
 
-        public string ToValid20ByteAddress(string address)
+        public static string ToValid20ByteAddress(string address)
         {
             return addressUtil.ConvertToValid20ByteAddress(address);
         }
@@ -88,11 +91,7 @@ namespace Nethereum.Web3
             Eth = new EthApiContractService(Client);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
-            Personal = new PersonalApiService(Client);
-            Convert = new UnitConversion();
-            sha3Keccack = new Sha3Keccack();
-            OfflineTransactionSigner = new TransactionSigner();
-            addressUtil = new AddressUtil();
+            Personal = new PersonalApiService(Client);   
         }
 
         private void IntialiseDefaultRpcClient(string url)
