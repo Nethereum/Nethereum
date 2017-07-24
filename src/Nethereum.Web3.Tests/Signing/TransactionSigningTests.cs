@@ -19,13 +19,13 @@ namespace Nethereum.Web3.Tests
             var web3 = new Web3Geth();
 
             var txCount = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(senderAddress);
-            var encoded = web3.OfflineTransactionSigner.SignTransaction(privateKey, receiveAddress, 10,
+            var encoded = Web3.OfflineTransactionSigner.SignTransaction(privateKey, receiveAddress, 10,
                 txCount.Value);
 
-            Assert.True(web3.OfflineTransactionSigner.VerifyTransaction(encoded));
+            Assert.True(Web3.OfflineTransactionSigner.VerifyTransaction(encoded));
 
-            Debug.WriteLine(web3.OfflineTransactionSigner.GetSenderAddress(encoded));
-            Assert.Equal(senderAddress.EnsureHexPrefix().ToLower(), web3.OfflineTransactionSigner.GetSenderAddress(encoded).EnsureHexPrefix().ToLower());
+            Debug.WriteLine(Web3.OfflineTransactionSigner.GetSenderAddress(encoded));
+            Assert.Equal(senderAddress.EnsureHexPrefix().ToLower(), Web3.OfflineTransactionSigner.GetSenderAddress(encoded).EnsureHexPrefix().ToLower());
 
             var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded);
             await web3.Miner.Start.SendRequestAsync(4);

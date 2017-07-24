@@ -66,6 +66,26 @@ namespace Nethereum.Util.Tests
         }
 
         [Fact]
+        public void TrimmingOf0sShouldOnlyHappenForDecimalValues()
+        {
+            var unitConversion = new UnitConversion();
+            var result1 = unitConversion.ToWei(10m);
+            var result2 = unitConversion.ToWei(100m);
+            Assert.NotEqual(result1.ToString(), result2.ToString());
+        }
+
+        [Fact]
+        public void ShouldConvertNoDecimalIn10s()
+        {
+            var unitConversion = new UnitConversion();
+            var ether = 10m;
+            var wei = UnitConversion.Convert.ToWei(ether, UnitConversion.EthUnit.Ether);
+            var val = BigInteger.Parse("1".PadRight(20, '0'));
+            var result = unitConversion.FromWei(val, 18);
+            Assert.Equal(UnitConversion.Convert.ToWei(result), wei);
+        }
+
+        [Fact]
         public void ShouldConvertPeriodicTether()
         {
             var unitConversion = new UnitConversion();

@@ -67,13 +67,11 @@ namespace Nethereum.Util
                     return BigInteger.Parse("1");
                 case EthUnit.Kwei:
                     return BigInteger.Parse("1000");
-                case EthUnit.Ada:
+                case EthUnit.Babbage:
                     return BigInteger.Parse("1000");
                 case EthUnit.Femtoether:
                     return BigInteger.Parse("1000");
                 case EthUnit.Mwei:
-                    return BigInteger.Parse("1000000");
-                case EthUnit.Babbage:
                     return BigInteger.Parse("1000000");
                 case EthUnit.Picoether:
                     return BigInteger.Parse("1000000");
@@ -120,13 +118,16 @@ namespace Nethereum.Util
         public BigInteger ToWei(decimal amount, BigInteger fromUnit)
         {
             var maxDigits = fromUnit.ToString().Length - 1;
-            var stringAmount = amount.ToString("#.#############################", System.Globalization.CultureInfo.InvariantCulture).TrimEnd('0');
-            var decimalPosition = stringAmount.IndexOf('.');
-            var decimalPlaces = decimalPosition == -1 ? 0 : stringAmount.Length - decimalPosition - 1;
-            if (decimalPlaces == 0)
+            var stringAmount = amount.ToString("#.#############################", System.Globalization.CultureInfo.InvariantCulture);
+            if (stringAmount.IndexOf(".") == -1)
             {
                 return BigInteger.Parse(stringAmount) * fromUnit;
             }
+
+            stringAmount = stringAmount.TrimEnd('0');
+            var decimalPosition = stringAmount.IndexOf('.');
+            var decimalPlaces = decimalPosition == -1 ? 0 : stringAmount.Length - decimalPosition - 1;
+           
 
             if (decimalPlaces > maxDigits)
             {

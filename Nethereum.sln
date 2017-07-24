@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
@@ -12,9 +12,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{CDD3B024-0BCD-4985-9B5B-0A43D854EACC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A36B1E91-CE03-43D6-AA50-9C893AD33B75}"
-	ProjectSection(SolutionItems) = preProject
-		src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj = src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{6EE5CBBB-5BC9-47BB-9CE5-9099B0A91BAB}"
 EndProject
@@ -95,6 +92,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Unity", "src\Nethereum.Unity\Nethereum.Unity.csproj", "{A295CBA8-DBE4-44EF-A673-6372728CEDB0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.JsonRpc.UnixIpcClient", "src\Nethereum.JsonRpc.UnixIpcClient\Nethereum.JsonRpc.UnixIpcClient.csproj", "{F3FC9487-0A98-4180-BDED-771A1BA68F2E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Util.Tests", "src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj", "{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -732,6 +731,22 @@ Global
 		{F3FC9487-0A98-4180-BDED-771A1BA68F2E}.Release|x64.Build.0 = Release|Any CPU
 		{F3FC9487-0A98-4180-BDED-771A1BA68F2E}.Release|x86.ActiveCfg = Release|Any CPU
 		{F3FC9487-0A98-4180-BDED-771A1BA68F2E}.Release|x86.Build.0 = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|ARM.Build.0 = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|x64.Build.0 = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Debug|x86.Build.0 = Debug|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|ARM.ActiveCfg = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|ARM.Build.0 = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|x64.ActiveCfg = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|x64.Build.0 = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|x86.ActiveCfg = Release|Any CPU
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -779,5 +794,6 @@ Global
 		{5A9F1DA7-7931-4869-8E3A-B2F26DBFC303} = {CDD3B024-0BCD-4985-9B5B-0A43D854EACC}
 		{A295CBA8-DBE4-44EF-A673-6372728CEDB0} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{F3FC9487-0A98-4180-BDED-771A1BA68F2E} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
 	EndGlobalSection
 EndGlobal
