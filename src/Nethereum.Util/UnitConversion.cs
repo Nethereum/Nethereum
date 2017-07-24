@@ -67,13 +67,11 @@ namespace Nethereum.Util
                     return BigInteger.Parse("1");
                 case EthUnit.Kwei:
                     return BigInteger.Parse("1000");
-                case EthUnit.Ada:
+                case EthUnit.Babbage:
                     return BigInteger.Parse("1000");
                 case EthUnit.Femtoether:
                     return BigInteger.Parse("1000");
                 case EthUnit.Mwei:
-                    return BigInteger.Parse("1000000");
-                case EthUnit.Babbage:
                     return BigInteger.Parse("1000000");
                 case EthUnit.Picoether:
                     return BigInteger.Parse("1000000");
