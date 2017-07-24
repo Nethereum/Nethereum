@@ -6,7 +6,7 @@ namespace Nethereum.Signer
 {
     public class Transaction
     {
-        public static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("10000000000000");
+        public static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("20000000000");
         public static readonly BigInteger DEFAULT_GAS_LIMIT = BigInteger.Parse("21000");
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private static readonly byte[] ZERO_BYTE_ARRAY = {0};
