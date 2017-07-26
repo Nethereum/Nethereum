@@ -12,9 +12,9 @@
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
-    <ENSVersion>0.0.7</ENSVersion>
-    <UportVersion>0.0.1</UportVersion>
-    <ParityVersion>0.0.1-dev</ParityVersion>
-    <QuorumVersion>0.0.8</QuorumVersion>
+    <ENSVersion>0.0.8</ENSVersion>
+    <UportVersion>0.0.2</UportVersion>
+    <ParityVersion>0.0.2-dev</ParityVersion>
+    <QuorumVersion>0.0.9</QuorumVersion>
   </PropertyGroup>
 </Project>
