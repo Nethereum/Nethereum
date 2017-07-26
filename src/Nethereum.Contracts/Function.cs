@@ -105,7 +105,7 @@ namespace Nethereum.Contracts
            HexBigInteger value, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
-            return base.CreateTransactionInput(encodedInput, from, gas, value);
+            return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
         }
 
 
