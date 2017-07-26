@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
-SET releaseSuffix=rc6
+SET releaseSuffix=rc6.1
 SET targetNet35=false
 cd Nethereum.Hex
 dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
