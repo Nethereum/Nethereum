@@ -5,7 +5,7 @@ using Org.BouncyCastle.Math;
 
 namespace Nethereum.Signer.Crypto
 {
-    internal class ECDSASignature
+    public class ECDSASignature
     {
         private const string InvalidDERSignature = "Invalid DER signature";
 

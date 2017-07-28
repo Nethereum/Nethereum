@@ -13,7 +13,7 @@ namespace Nethereum.Signer.Crypto
     /// https://github.com/MetacoSA/NBitcoin
     /// Removed the dependency of the custom BouncyCastle
     /// </summary>
-    internal class ECKey
+    public class ECKey
     {
         public static readonly BigInteger HALF_CURVE_ORDER;
         public static readonly BigInteger CURVE_ORDER;

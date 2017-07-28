@@ -42,7 +42,7 @@ namespace Nethereum.Web3.TransactionReceipts
             return await PollForReceiptAsync(tokenSource, transaction);
         }
 
-        private async Task<TransactionReceipt> PollForReceiptAsync(CancellationTokenSource tokenSource, string transaction)
+        public async Task<TransactionReceipt> PollForReceiptAsync(CancellationTokenSource tokenSource, string transaction)
         {
             var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             while (receipt == null)

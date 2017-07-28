@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Nethereum.Generator.Console": {
+      "commandName": "Project",
+      "commandLineArgs": "gen-service-sample"
+    }
+  }
+}
