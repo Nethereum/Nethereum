@@ -22,6 +22,13 @@ namespace Nethereum.Web3
         {
             Client = client;
             InitialiseInnerServices();
+            IntialiseDefaultGasAndGasPrice();
+        }
+
+        private void IntialiseDefaultGasAndGasPrice()
+        {
+            this.TransactionManager.DefaultGas = Transaction.DEFAULT_GAS_LIMIT;
+            this.TransactionManager.DefaultGasPrice = Transaction.DEFAULT_GAS_PRICE;
         }
 
         public Web3(IAccount account, IClient client):this(client)
@@ -34,6 +41,7 @@ namespace Nethereum.Web3
         {
             IntialiseDefaultRpcClient(url);
             InitialiseInnerServices();
+            IntialiseDefaultGasAndGasPrice();
         }
 
         public Web3(IAccount account, string url = @"http://localhost:8545/"):this(url)
