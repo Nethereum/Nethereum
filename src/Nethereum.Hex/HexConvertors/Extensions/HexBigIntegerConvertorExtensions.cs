@@ -36,6 +36,8 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static BigInteger HexToBigInteger(this string hex, bool isHexLittleEndian)
         {
+            if (hex == "0x0") return 0;
+
             var encoded = hex.HexToByteArray();
 
             if ((BitConverter.IsLittleEndian != isHexLittleEndian))

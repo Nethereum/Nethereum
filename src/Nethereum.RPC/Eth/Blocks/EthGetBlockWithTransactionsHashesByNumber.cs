@@ -93,7 +93,7 @@ namespace Nethereum.RPC.Eth.Blocks
         public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
             if (number == null) throw new ArgumentNullException(nameof(number));
-            return base.BuildRequest(id, number);
+            return base.BuildRequest(id, number, false);
         }
     }
 }

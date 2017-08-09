@@ -55,6 +55,9 @@ namespace Nethereum.JsonRpc.UnityClient
             if(unityRequest.error != null) 
             {
                 this.Exception = new Exception(unityRequest.error);
+#if DEBUG
+                Debug.Log(unityRequest.error);
+#endif
             } 
             else 
             {
@@ -62,14 +65,19 @@ namespace Nethereum.JsonRpc.UnityClient
                 {
                     byte[] results = unityRequest.downloadHandler.data;
                     var responseJson = Encoding.UTF8.GetString(results);
+#if DEBUG
+                    Debug.Log(responseJson);
+#endif
                     var responseObject = JsonConvert.DeserializeObject<RpcResponse>(responseJson, JsonSerializerSettings);
-                    this.Result = responseObject.GetResult<TResult>();
+                    this.Result = responseObject.GetResult<TResult>(true, JsonSerializerSettings);
                     this.Exception = HandleRpcError(responseObject); 
                 }
                 catch (Exception ex)
                 { 
                     this.Exception = new Exception(ex.Message);
-                   
+#if DEBUG
+                    Debug.Log(ex.Message);
+#endif
                 }
             }
         }
