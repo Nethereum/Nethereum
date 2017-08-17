@@ -29,7 +29,6 @@ namespace Nethereum.IntegrationTesting
             return receitps[0];
         }
 
-
         public async Task<TransactionReceipt[]> SendTransactionsAsync(Web3.Web3 web3, string addressFrom,
             string pass, params Func<Task<string>>[] transactionsTask)
         {

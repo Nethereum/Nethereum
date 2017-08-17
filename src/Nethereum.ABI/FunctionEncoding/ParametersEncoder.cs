@@ -7,6 +7,7 @@ using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.ABI.Util;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
 {

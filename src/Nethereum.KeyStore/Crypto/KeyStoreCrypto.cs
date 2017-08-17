@@ -6,6 +6,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Macs;
 
 namespace Nethereum.KeyStore.Crypto
 {
@@ -31,6 +32,25 @@ namespace Nethereum.KeyStore.Crypto
             digest.BlockUpdate(value, 0, value.Length);
             digest.DoFinal(output, 0);
             return output;
+        }
+
+        public byte[] CalculateSha256Hash(byte[] value)
+        {
+            var digest = new Sha256Digest();
+            var output = new byte[digest.GetDigestSize()];
+            digest.BlockUpdate(value, 0, value.Length);
+            digest.DoFinal(output, 0);
+            return output;
+        }
+
+        public byte[] HmacSha256(byte[] data, byte[] key)
+        {
+            var hmac = new HMac(new Sha256Digest());
+            hmac.Init(new KeyParameter(key));
+            byte[] result = new byte[hmac.GetMacSize()];
+            hmac.BlockUpdate(data, 0, data.Length);
+            hmac.DoFinal(result, 0);
+            return result;
         }
 
         public byte[] GenerateMac(byte[] derivedKey, byte[] cipherText)
@@ -60,11 +80,26 @@ namespace Nethereum.KeyStore.Crypto
         {
             //ctr https://gist.github.com/hanswolff/8809275 
             var key = ParameterUtilities.CreateKeyParameter("AES", encryptKey);
+            
             var parametersWithIv = new ParametersWithIV(key, iv);
+           
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
             cipher.Init(true, parametersWithIv);
             return cipher.DoFinal(input);
         }
+
+        public byte[] GenerateAesCtrDeCipher(byte[] iv, byte[] encryptKey, byte[] input)
+        {
+            //ctr https://gist.github.com/hanswolff/8809275 
+            var key = ParameterUtilities.CreateKeyParameter("AES", encryptKey);
+            var parametersWithIv = new ParametersWithIV(key, iv);
+
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+           
+            cipher.Init(false, parametersWithIv);
+            return cipher.DoFinal(input);
+        }
+
 
         public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r, byte[] salt, int dklen)
         {

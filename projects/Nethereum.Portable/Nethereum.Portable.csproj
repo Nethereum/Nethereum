@@ -1119,6 +1119,10 @@
 				<Link>Util\AddressUtil.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Util\ByteUtil.cs">
+				<Link>Util\ByteUtil.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Util\Sha3Keccack.cs">
 				<Link>Util\Sha3Keccack.cs</Link>
 		</Compile>

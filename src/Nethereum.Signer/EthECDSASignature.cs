@@ -1,6 +1,7 @@
 ﻿using System;
 using Nethereum.Signer.Crypto;
 using Org.BouncyCastle.Math;
+using Nethereum.Util;
 
 namespace Nethereum.Signer
 {
@@ -14,7 +15,7 @@ namespace Nethereum.Signer
             _ecdsaSignature = new ECDSASignature(r, s);
         }
 
-        internal EthECDSASignature(BigInteger r, BigInteger s, byte v)
+        public EthECDSASignature(BigInteger r, BigInteger s, byte v)
         {
             _ecdsaSignature = new ECDSASignature(r, s);
             _ecdsaSignature.V = v;
@@ -47,6 +48,22 @@ namespace Nethereum.Signer
         public static EthECDSASignature FromDER(byte[] sig)
         {
             return new EthECDSASignature(sig);
+        }
+
+        public byte[] ToDER()
+        {
+           return _ecdsaSignature.ToDER();
+        }
+
+        public byte[] To64ByteArray()
+        {
+            byte[] rsigPad = new byte[32];
+            Array.Copy(R, 0, rsigPad, rsigPad.Length - R.Length, R.Length);
+
+            byte[] ssigPad = new byte[32];
+            Array.Copy(S, 0, ssigPad, ssigPad.Length - S.Length, S.Length);
+
+            return ByteUtil.Merge(rsigPad, ssigPad);
         }
 
         public static bool IsValidDER(byte[] bytes)

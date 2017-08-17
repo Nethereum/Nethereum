@@ -11,14 +11,43 @@ namespace Nethereum.Web3.Tests.Issues
 {
     public class EventAddressIntString
     {
+        public async void TestChinese()
+        {
+            var account = new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
+            var web3 = new Web3(account, ClientFactory.GetClient());
+            var pollingService = new TransactionReceiptPollingService(web3);
+            var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
+              CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
+            var coinService = new CoinService(web3, contractAddress);
+
+            var input = new RaiseEventMetadataInput()
+            {
+                Creator = account.Address,
+                Id = 101,
+                Description = @"中国，China",
+                Metadata = @"中国，China"
+            };
+
+            var txn = await coinService.RaiseEventMetadataAsync(account.Address, input, new HexBigInteger(4000000));
+            var receipt = await pollingService.PollForReceiptAsync(txn);
+
+            var metadataEvent = coinService.GetEventMetadataEvent();
+            var metadata = await metadataEvent.GetAllChanges<MetadataEventEventDTO>(metadataEvent.CreateFilterInput());
+            var result = metadata[0].Event;
+            Assert.Equal(result.Creator.ToLower(), account.Address.ToLower());
+            Assert.Equal(result.Id, 101);
+            Assert.Equal(result.Metadata, @"中国，China");
+            Assert.Equal(result.Description, @"中国，China");
+        }
+
        [Fact]
        public async void Test()
        {
           var account = new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
           var web3 = new Web3(account, ClientFactory.GetClient());
           var pollingService = new TransactionReceiptPollingService(web3);
-          var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
-                CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
+            var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
+              CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
           var coinService = new CoinService(web3, contractAddress);
           var txn = await coinService.MintAsync(account.Address, account.Address, 100, new HexBigInteger(4000000));
           var receipt = await pollingService.PollForReceiptAsync(txn);
@@ -35,8 +64,8 @@ namespace Nethereum.Web3.Tests.Issues
           Assert.Equal(result.Id, 100);
           Assert.Equal(result.Metadata, "The metadata created here blah blah blah");
           Assert.Equal(result.Description, "Description");
-
         }
+
 
         /*
          pragma solidity ^0.4.14;
@@ -150,6 +179,13 @@ contract Coin {
                 var function = GetFunctionRaiseEventMetadata();
                 return function.SendTransactionAsync(addressFrom, gas, valueAmount, creator, id, description, metadata);
             }
+
+            public Task<string> RaiseEventMetadataAsync(string addressFrom, RaiseEventMetadataInput input, HexBigInteger gas = null, HexBigInteger valueAmount = null)
+            {
+                var function = contract.GetFunction<RaiseEventMetadataInput>();
+                return function.SendTransactionAsync(input, addressFrom,  gas, valueAmount);
+            }
+
             public Task<string> SendAsync(string addressFrom, string receiver, BigInteger amount, HexBigInteger gas = null, HexBigInteger valueAmount = null)
             {
                 var function = GetFunctionSend();
@@ -158,6 +194,22 @@ contract Coin {
 
 
 
+        }
+
+        [Function(Name = "RaiseEventMetadata")]
+        public class RaiseEventMetadataInput
+        {
+            [Parameter("address", "creator", 1, false)]
+            public string Creator { get; set; }
+
+            [Parameter("int256", "id", 2, false)]
+            public int Id { get; set; }
+
+            [Parameter("string", "description", 3, false)]
+            public string Description { get; set; }
+
+            [Parameter("string", "metadata", 4, false)]
+            public string Metadata { get; set; }
         }
 
 

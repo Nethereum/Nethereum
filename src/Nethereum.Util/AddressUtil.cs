@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System;
 
 namespace Nethereum.Util
 {
+
     public class AddressUtil
     {
         public string ConvertToChecksumAddress(string address)

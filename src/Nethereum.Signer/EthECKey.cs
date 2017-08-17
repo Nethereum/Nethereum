@@ -7,6 +7,8 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Math.EC;
+using Org.BouncyCastle.Crypto.Agreement;
 
 namespace Nethereum.Signer
 {
@@ -14,21 +16,41 @@ namespace Nethereum.Signer
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
         private readonly ECKey _ecKey;
+        public static byte DEFAULT_PREFIX = 0x04;
 
         public EthECKey(string privateKey)
         {
             _ecKey = new ECKey(privateKey.HexToByteArray(), true);            
         }
 
+
         public EthECKey(byte[] vch, bool isPrivate)
         {
-            _ecKey = new ECKey(vch, isPrivate);            
+      
+             _ecKey = new ECKey(vch, isPrivate);
+            
+        }
+
+        public EthECKey(byte[] vch, bool isPrivate, byte prefix)
+        {
+             _ecKey = new ECKey(ByteUtil.Merge(new byte[] { prefix }, vch), isPrivate); 
         }
 
         internal EthECKey(ECKey ecKey)
         {
             _ecKey = ecKey;
         }
+
+
+        public byte[] CalculateCommonSecret(EthECKey publicKey)
+        {
+            var agreement = new ECDHBasicAgreement();
+            agreement.Init(this._ecKey.PrivateKey);
+            var z =  agreement.CalculateAgreement(publicKey._ecKey.GetPublicKeyParameters());
+     
+            return Org.BouncyCastle.Utilities.BigIntegers.AsUnsignedByteArray(agreement.GetFieldSize(), z);
+        }
+
 
         internal int CalculateRecId(ECDSASignature signature, byte[] hash)
         {
@@ -54,7 +76,7 @@ namespace Nethereum.Signer
 
         public static EthECKey GenerateKey()
         { 
-            var gen = new ECKeyPairGenerator();
+            var gen = new ECKeyPairGenerator("EC");
             var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
@@ -119,6 +141,11 @@ namespace Nethereum.Signer
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash)
         {
             return new EthECKey(ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature.ECDSASignature, hash, false));
+        }
+
+        public static EthECKey RecoverFromSignature(EthECDSASignature signature, int recId, byte[] hash)
+        {
+            return new EthECKey(ECKey.RecoverFromSignature(recId, signature.ECDSASignature, hash, false));
         }
 
         public EthECDSASignature SignAndCalculateV(byte[] hash)

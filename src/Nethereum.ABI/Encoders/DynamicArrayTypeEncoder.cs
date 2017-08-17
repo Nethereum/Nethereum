@@ -1,5 +1,6 @@
 using System.Collections;
 using Nethereum.ABI.Util;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.Encoders
 {

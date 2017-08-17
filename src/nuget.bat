@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
-SET releaseSuffix=rc6-2
+SET releaseSuffix=rc7
 SET targetNet35=false
 
 cd Nethereum.Hex
