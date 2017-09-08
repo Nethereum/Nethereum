@@ -1,7 +1,7 @@
 using System;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Contracts
+namespace Nethereum.RPC.Eth.Exceptions
 {
     public class ContractDeploymentException : Exception
     {

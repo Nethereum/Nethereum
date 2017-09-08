@@ -459,6 +459,10 @@
 				<Link>RPC\Eth\DTOs\TransactionReceipt.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\Exceptions\ContractDeploymentException.cs">
+				<Link>RPC\Eth\Exceptions\ContractDeploymentException.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\EthGetFilterChanges.cs">
 				<Link>RPC\Eth\Filters\EthGetFilterChanges.cs</Link>
 		</Compile>
@@ -647,6 +651,14 @@
 				<Link>RPC\TransactionManagers\TransactionManagerBase.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionReceipts\ITransactionReceiptService.cs">
+				<Link>RPC\TransactionReceipts\ITransactionReceiptService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionReceipts\TransactionReceiptPollingService.cs">
+				<Link>RPC\TransactionReceipts\TransactionReceiptPollingService.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Web3\Web3ClientVersion.cs">
 				<Link>RPC\Web3\Web3ClientVersion.cs</Link>
 		</Compile>
@@ -681,14 +693,6 @@
 		
         <Compile Include="..\..\src\Nethereum.Web3\Accounts\Managed\ManagedAccountTransactionManager.cs">
 				<Link>Web3\Accounts\Managed\ManagedAccountTransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\TransactionReceipts\ITransactionReceiptService.cs">
-				<Link>Web3\TransactionReceipts\ITransactionReceiptService.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\TransactionReceipts\TransactionReceiptPollingService.cs">
-				<Link>Web3\TransactionReceipts\TransactionReceiptPollingService.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">
@@ -1071,12 +1075,12 @@
 				<Link>Contracts\Contract.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\ContractDeploymentException.cs">
-				<Link>Contracts\ContractDeploymentException.cs</Link>
-		</Compile>
-		
         <Compile Include="..\..\src\Nethereum.Contracts\DeployContractService.cs">
 				<Link>Contracts\DeployContractService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeployContractTransactionBuilder.cs">
+				<Link>Contracts\DeployContractTransactionBuilder.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\EthApiContractService.cs">

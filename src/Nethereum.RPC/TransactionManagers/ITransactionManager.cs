@@ -3,6 +3,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using System.Numerics;
+using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -14,5 +15,8 @@ namespace Nethereum.RPC.TransactionManagers
         Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);
         BigInteger DefaultGasPrice { get; set; }
         BigInteger DefaultGas { get; set; }
+#if !DOTNET35
+        ITransactionReceiptService TransactionReceiptService { get; set; }
+#endif
     }
 }

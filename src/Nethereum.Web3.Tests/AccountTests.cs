@@ -11,6 +11,14 @@ namespace Nethereum.Web3.Tests
     public class AccountTests
     {
         [Fact]
+        public async void ShouldReceiveAllLogs()
+        {
+            var web3 = new Web3("https://mainnet.infura.io/");
+            var result = await web3.Eth.Filters.GetLogs.SendRequestAsync(new RPC.Eth.DTOs.NewFilterInput() { Address = new[] { "0x5c6226801Eef33db1fB807081f183eA75210f62B" } });
+
+        }
+
+        [Fact]
         public async Task ShouldBeAbleToDeployAContractUsingPersonalUnlock()
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";

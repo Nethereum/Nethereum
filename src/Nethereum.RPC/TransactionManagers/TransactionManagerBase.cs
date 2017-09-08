@@ -5,6 +5,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using System.Numerics;
+using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -14,6 +15,20 @@ namespace Nethereum.RPC.TransactionManagers
         public abstract BigInteger DefaultGasPrice { get; set; }
         public abstract BigInteger DefaultGas { get; set; }
 
+#if !DOTNET35
+        private ITransactionReceiptService _transactionReceiptService;
+        public ITransactionReceiptService TransactionReceiptService {
+            get
+            {
+                if (_transactionReceiptService == null) return TransactionReceiptServiceFactory.GetDefaultransactionReceiptService(this);
+                return _transactionReceiptService;
+            }
+            set
+            {
+                _transactionReceiptService = value;
+            }
+        }
+#endif               
         public virtual Task<HexBigInteger> EstimateGasAsync<T>(T callInput) where T : CallInput
         {
             if (Client == null) throw new NullReferenceException("Client not configured");

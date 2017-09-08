@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Web3.TransactionReceipts
+namespace Nethereum.RPC.TransactionReceipts
 {
     public interface ITransactionReceiptService
     {
@@ -12,6 +12,9 @@ namespace Nethereum.Web3.TransactionReceipts
             CancellationTokenSource tokenSource = null);
 
         Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
+            CancellationTokenSource tokenSource = null);
+
+        Task<TransactionReceipt> DeployContractAsync(TransactionInput transactionInput,
             CancellationTokenSource tokenSource = null);
 
         Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,

@@ -5,53 +5,50 @@ using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionManagers;
+using System.Threading;
 
 namespace Nethereum.Contracts
 {
     public class DeployContract
     {
-        private readonly ABIDeserialiser _abiDeserialiser;
-        private readonly ConstructorCallEncoder _constructorCallEncoder;
+        private readonly DeployContractTransactionBuilder _deployContractTransactionBuilder;
 
         public DeployContract(ITransactionManager transactionManager)
         {
             TransactionManager = transactionManager;
-            _constructorCallEncoder = new ConstructorCallEncoder();
-            _abiDeserialiser = new ABIDeserialiser();
+            _deployContractTransactionBuilder = new DeployContractTransactionBuilder();
         }
 
         public ITransactionManager TransactionManager { get; set; }
 
         public string GetData(string contractByteCode, string abi, params object[] values)
         {
-            var contract = _abiDeserialiser.DeserialiseContract(abi);
-            return _constructorCallEncoder.EncodeRequest(contractByteCode,
-                contract.Constructor.InputParameters, values);
+            return _deployContractTransactionBuilder.GetData(contractByteCode, abi, values);
         }
 
         public string GetData<TConstructorParams>(string contractByteCode, TConstructorParams inputParams)
         {
-            return _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
+            return _deployContractTransactionBuilder.GetData(contractByteCode, inputParams);
         }
 
         public Task<HexBigInteger> EstimateGasAsync(string abi, string contractByteCode, string from,
            params object[] values)
         {
-            var callInput = BuildTransaction(abi, contractByteCode, from, values);
+            var callInput = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, values);
             return TransactionManager.EstimateGasAsync(callInput);
         }
 
         public Task<HexBigInteger> EstimateGasAsync<TConstructorParams>(string contractByteCode, string from, 
             TConstructorParams inputParams)
         {
-            var callInput = BuildTransaction(contractByteCode, from, inputParams);
+            var callInput = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, inputParams);
             return TransactionManager.EstimateGasAsync(callInput);
         }
 
         public Task<string> SendRequestAsync(string abi, string contractByteCode, string from, HexBigInteger gas,
             params object[] values)
         {
-            var transaction = BuildTransaction(abi, contractByteCode, from, gas, values);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, values);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
@@ -59,7 +56,7 @@ namespace Nethereum.Contracts
             HexBigInteger value,
             params object[] values)
         {
-            var transaction = BuildTransaction(abi, contractByteCode, from, gas, value, values);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, value, values);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
@@ -67,14 +64,14 @@ namespace Nethereum.Contracts
            HexBigInteger value,
            params object[] values)
         {
-            var transaction = BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, values);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, values);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
         public Task<string> SendRequestAsync(string abi, string contractByteCode, string from,
             params object[] values)
         {
-            var transaction = BuildTransaction(abi, contractByteCode, from, values);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, values);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
@@ -101,90 +98,95 @@ namespace Nethereum.Contracts
         public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
             TConstructorParams inputParams)
         {
-            var transaction = BuildTransaction(contractByteCode, from, inputParams);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, inputParams);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
         public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
             HexBigInteger gas, TConstructorParams inputParams)
         {
-            var transaction = BuildTransaction(contractByteCode, from, gas, inputParams);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, inputParams);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
         public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
             HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams)
         {
-            var transaction = BuildTransaction(contractByteCode, from, gas, gasPrice, value, inputParams);
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, inputParams);
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
-        private string BuildEncodedData(string abi, string contractByteCode, object[] values)
+#if !DOTNET35
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, HexBigInteger gas, CancellationTokenSource receiptRequestCancellationToken = null,
+            params object[] values)
         {
-            if (values == null || values.Length == 0)
-            {
-                return _constructorCallEncoder.EncodeRequest(contractByteCode, "");
-            }
-            var contract = _abiDeserialiser.DeserialiseContract(abi);
-            if(contract.Constructor == null) throw  new Exception("Parameters supplied for a constructor but ABI does not contain a constructor definition");
-            var encodedData = _constructorCallEncoder.EncodeRequest(contractByteCode,
-                contract.Constructor.InputParameters, values);
-            return encodedData;
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, values);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
-            object[] values)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, HexBigInteger gas,
+            HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null,
+            params object[] values)
         {
-            var encodedData = BuildEncodedData(abi, contractByteCode, values);
-            var transaction = new TransactionInput(encodedData, gas, from);
-            return transaction;
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, value, values);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
-            HexBigInteger value, object[] values)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
+           HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null,
+           params object[] values)
         {
-            var encodedData = BuildEncodedData(abi, contractByteCode, values);
-            var transaction = new TransactionInput(encodedData, null, from, gas, gasPrice, value);
-            return transaction;
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, values);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
-            HexBigInteger value, object[] values)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, CancellationTokenSource receiptRequestCancellationToken = null,
+            params object[] values)
         {
-            var encodedData = BuildEncodedData(abi, contractByteCode, values);
-            var transaction = new TransactionInput(encodedData, from, gas, value);
-            return transaction;
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, values);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction(string abi, string contractByteCode, string from, object[] values)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            var encodedData = BuildEncodedData(abi, contractByteCode, values);
-            var transaction = new TransactionInput(encodedData, null, from);
-            return transaction;
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, gas, from), receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
-            TConstructorParams inputParams)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
-            var transaction = new TransactionInput(encodedData, null, from);
-            return transaction;
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from, gas, gasPrice, value), receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
-            HexBigInteger gas, TConstructorParams inputParams)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
-            var transaction = new TransactionInput(encodedData, gas, from);
-            return transaction;
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from, gas, value), receiptRequestCancellationToken);
         }
 
-        private TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
-            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams)
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
-            var transaction = new TransactionInput(encodedData, null, from,  gas, gasPrice, value);
-            return transaction;
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from), receiptRequestCancellationToken);
         }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
+            TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, inputParams);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, inputParams);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
+           HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, inputParams);
+            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+        }
+#endif
     }
 }
