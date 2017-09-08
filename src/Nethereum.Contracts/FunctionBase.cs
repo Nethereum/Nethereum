@@ -6,6 +6,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
+using System.Threading;
 
 namespace Nethereum.Contracts
 {
@@ -197,6 +198,13 @@ namespace Nethereum.Contracts
         {
             return TransactionManager.SendTransactionAsync(transactionInput);
         }
+
+#if !DOTNET35
+        protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            return TransactionManager.TransactionReceiptService.SendRequestAsync(transactionInput, receiptRequestCancellationToken);
+        }
+#endif
 
         private Parameter GetFirstParameterOrNull(Parameter[] parameters)
         {
