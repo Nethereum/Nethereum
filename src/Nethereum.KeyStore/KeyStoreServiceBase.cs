@@ -43,9 +43,10 @@ namespace Nethereum.KeyStore
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (kdfParams == null) throw new ArgumentNullException(nameof(kdfParams));
 
-            privateKey = BigIntegers.AsUnsignedByteArray(new Org.BouncyCastle.Math.BigInteger(privateKey));
+            //Validate length unsigned but store the parameter
+            var keyValidation = BigIntegers.AsUnsignedByteArray(new Org.BouncyCastle.Math.BigInteger(privateKey));
 
-            if (privateKey.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
+            if (keyValidation.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
 
             var salt = RandomBytesGenerator.GenerateRandomSalt();
 
