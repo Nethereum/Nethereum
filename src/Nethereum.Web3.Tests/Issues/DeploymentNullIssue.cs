@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.Issues
@@ -23,7 +23,7 @@ namespace Nethereum.Web3.Tests.Issues
 
             var web3 = new Web3(new ManagedAccount(senderAddress, password));
             var gas = await web3.Eth.DeployContract.EstimateGasAsync(ABI, BYTE_CODE, senderAddress);
-            var transactionReceiptService = new TransactionReceiptPollingService(web3);
+            var transactionReceiptService = new TransactionReceiptPollingService(web3.TransactionManager);
             var receipt = await transactionReceiptService.DeployContractAsync(
                 () =>
                     web3.Eth.DeployContract.SendRequestAsync(ABI, BYTE_CODE, senderAddress, new HexBigInteger(3905820)));

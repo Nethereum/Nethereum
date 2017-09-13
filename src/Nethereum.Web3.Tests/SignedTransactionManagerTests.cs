@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -26,11 +26,11 @@ namespace Nethereum.Web3.Tests
             var web3 = new Web3Geth(new Account(privateKey));
             await web3.Miner.Start.SendRequestAsync(4);
 
-            var transactionReceiptService = new TransactionReceiptPollingService(web3);
-            var contractAddress = await transactionReceiptService.DeployContractAndGetAddressAsync(() =>
-                web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
-                    new HexBigInteger(900000), 7));
-
+            
+            var receipt = await 
+                web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
+                    new HexBigInteger(900000), null, 7);
+            var contractAddress = receipt.ContractAddress;
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var multiplyFunction = contract.GetFunction("multiply");
 
@@ -41,7 +41,7 @@ namespace Nethereum.Web3.Tests
                 () =>  multiplyFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), new HexBigInteger(0), 8)
             };
 
-            var transactionsReceipts = await transactionReceiptService.SendRequestAsync(transactions);
+            var transactionsReceipts = await web3.TransactionManager.TransactionReceiptService.SendRequestsAsync(transactions);
 
             await web3.Miner.Stop.SendRequestAsync();
 

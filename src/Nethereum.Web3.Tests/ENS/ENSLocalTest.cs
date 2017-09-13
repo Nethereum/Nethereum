@@ -5,7 +5,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -26,7 +26,7 @@ namespace Nethereum.Web3.Tests
             var web3 = new Web3(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient());
             var web3Geth = new Web3Geth(ClientFactory.GetClient());
 
-            var txService = new TransactionReceiptPollingService(web3);
+            var txService = new TransactionReceiptPollingService(web3.TransactionManager);
 
             // var addressFrom = (await web3.Eth.Accounts.SendRequestAsync()).First();
             //uncomment to use geth instead of test-rpc

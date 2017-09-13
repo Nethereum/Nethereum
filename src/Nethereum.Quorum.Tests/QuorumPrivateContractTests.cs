@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.Web3;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Quorum.Tests
@@ -26,7 +26,7 @@ namespace Nethereum.Quorum.Tests
            
 
             var web3Node1 = new Web3Quorum(urlNode1);
-            var transactionService = new TransactionReceiptPollingService(web3Node1);
+            var transactionService = new TransactionReceiptPollingService(web3Node1.TransactionManager);
             var account = await web3Node1.Eth.CoinBase.SendRequestAsync();
             var contract = web3Node1.Eth.GetContract(abi, address);
             var functionSet = contract.GetFunction("set");

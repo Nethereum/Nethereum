@@ -1,5 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.IpcClient;
+//using Nethereum.JsonRpc.IpcClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;

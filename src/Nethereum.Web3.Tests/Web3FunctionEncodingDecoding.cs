@@ -1,6 +1,8 @@
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Numerics;
 using Xunit;
 
@@ -56,7 +58,8 @@ namespace Nethereum.Web3.Tests
 
             if (listObjects != null)
             {
-                var newArray = System.Array.ConvertAll(listObjects.ToArray(), x => (int)((BigInteger)x));
+                //System.Array.ConvertAll(listObjects.ToArray(), x => (int)((BigInteger)x));
+                var newArray = listObjects.Select(x => (int)((BigInteger)x)).ToArray();  
                 Assert.Equal(array, newArray);
             }
         }

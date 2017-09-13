@@ -1,6 +1,7 @@
 using System.Text;
 using Nethereum.ABI.Util;
 using Xunit;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.Tests
 {

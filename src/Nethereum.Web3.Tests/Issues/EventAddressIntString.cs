@@ -2,7 +2,7 @@
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
@@ -15,7 +15,7 @@ namespace Nethereum.Web3.Tests.Issues
         {
             var account = new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
             var web3 = new Web3(account, ClientFactory.GetClient());
-            var pollingService = new TransactionReceiptPollingService(web3);
+            var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
               CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
             var coinService = new CoinService(web3, contractAddress);
@@ -45,7 +45,7 @@ namespace Nethereum.Web3.Tests.Issues
        {
           var account = new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
           var web3 = new Web3(account, ClientFactory.GetClient());
-          var pollingService = new TransactionReceiptPollingService(web3);
+          var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
               CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
           var coinService = new CoinService(web3, contractAddress);

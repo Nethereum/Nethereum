@@ -1,6 +1,6 @@
 ﻿using Nethereum.Geth;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Web3.TransactionReceipts;
+using Nethereum.RPC.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests.Issues
@@ -30,14 +30,13 @@ namespace Nethereum.Web3.Tests.Issues
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var transferFunction = contract.GetFunction("transfer");
             var balanceFunction = contract.GetFunction("balanceOf");
-            var transactionService = new TransactionReceiptPollingService(web3);
-
+ 
             var gethWeb3 = new Web3Geth(web3.Client);
             await gethWeb3.Miner.Start.SendRequestAsync(6);
 
-            var receiptFirstBlock = await transactionService.SendRequestAsync(() => transferFunction.SendTransactionAsync(gethTester.Account, newAddress, 1000));
+            var receiptFirstBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, null, newAddress, 1000);
             var balanceFirstBlock = await balanceFunction.CallAsync<int>(newAddress);
-            var receiptSecondBlock = await transactionService.SendRequestAsync(() => transferFunction.SendTransactionAsync(gethTester.Account, newAddress, 1000));
+            var receiptSecondBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, null, newAddress, 1000);
             var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress);
             var balanceOldBlock =
                 await

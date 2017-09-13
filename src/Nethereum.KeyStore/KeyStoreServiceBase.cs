@@ -2,6 +2,7 @@
 using Nethereum.KeyStore.Crypto;
 using Nethereum.KeyStore.Model;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities;
 
 namespace Nethereum.KeyStore
 {
@@ -41,6 +42,8 @@ namespace Nethereum.KeyStore
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (kdfParams == null) throw new ArgumentNullException(nameof(kdfParams));
+
+            privateKey = BigIntegers.AsUnsignedByteArray(new Org.BouncyCastle.Math.BigInteger(privateKey));
 
             if (privateKey.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
 

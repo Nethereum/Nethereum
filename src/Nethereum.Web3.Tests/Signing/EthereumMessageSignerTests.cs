@@ -43,5 +43,6 @@ namespace Nethereum.Web3.Tests
 
             Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
         }
+        
     }
 }

@@ -5,8 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.TestRPCRunner;
-using Nethereum.Web3.TransactionReceipts;
 using Xunit;
+using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.Uport.Tests
 {
@@ -25,7 +25,7 @@ namespace Nethereum.Uport.Tests
                     var web3 = new Web3.Web3();
                     var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
-                    var transactionService = new TransactionReceiptPollingService(web3);
+                    var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
                     var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
                     var registrySevice = await UportRegistryService.DeployContractAndGetServiceAsync(transactionService,
                         web3,
@@ -55,7 +55,7 @@ namespace Nethereum.Uport.Tests
                     var web3 = new Web3.Web3();
                     var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
-                    var transactionService = new TransactionReceiptPollingService(web3);
+                    var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
                     var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
                     var registrySevice = await UportRegistryService.DeployContractAndGetServiceAsync(transactionService,
                         web3,

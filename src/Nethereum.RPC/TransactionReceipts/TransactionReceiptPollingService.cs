@@ -37,7 +37,7 @@ namespace Nethereum.RPC.TransactionReceipts
             return SendRequestAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
         }
 
-        public Task<List<TransactionReceipt>> SendRequestAsync(IEnumerable<TransactionInput> transactionInputs,
+        public Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<TransactionInput> transactionInputs,
             CancellationTokenSource tokenSource = null)
         {
             var funcs = new List<Func<Task<string>>>();
@@ -45,7 +45,7 @@ namespace Nethereum.RPC.TransactionReceipts
             {
                 funcs.Add(() => _transactionManager.SendTransactionAsync(transactionInput));
             }
-            return SendRequestAsync(funcs.ToArray(), tokenSource);
+            return SendRequestsAsync(funcs.ToArray(), tokenSource);
         }
 
         public async Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
@@ -68,7 +68,7 @@ namespace Nethereum.RPC.TransactionReceipts
             return receipt;
         }
 
-        public async Task<List<TransactionReceipt>> SendRequestAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+        public async Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
             CancellationTokenSource tokenSource = null)
         {
             var txnList = new List<string>();

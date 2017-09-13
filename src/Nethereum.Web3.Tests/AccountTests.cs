@@ -3,7 +3,6 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using System.Threading.Tasks;
 using Nethereum.Web3.Accounts.Managed;
-using Nethereum.Web3.TransactionReceipts;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -31,15 +30,15 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3(new ManagedAccount(senderAddress, password), ClientFactory.GetClient());
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+           // var transactionPolling = new TransactionReceiptPollingService(web3);
 
             var web3Geth = new Web3Geth(ClientFactory.GetClient());
             await web3Geth.Miner.Start.SendRequestAsync();
 
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                        () => web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), multiplier)
-                    );
+            var receipt = await
+                web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
+
+            var contractAddress = receipt.ContractAddress;
 
             await web3Geth.Miner.Stop.SendRequestAsync();
 
@@ -68,13 +67,11 @@ namespace Nethereum.Web3.Tests
             var web3Geth = new Web3Geth(ClientFactory.GetClient());
             await web3Geth.Miner.Start.SendRequestAsync();
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
 
-            //assumed client is mining already
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                        () => web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), multiplier)
-                    );
+            var receipt = await
+                web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
+
+            var contractAddress = receipt.ContractAddress;
 
             await web3Geth.Miner.Stop.SendRequestAsync();
 
@@ -113,16 +110,17 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3(acccount, ClientFactory.GetClient());
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+          
 
             var web3Geth = new Web3Geth(ClientFactory.GetClient());
             await web3Geth.Miner.Start.SendRequestAsync();
 
             //assumed client is mining already
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                        () => web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), multiplier)
-                    );
+
+            var receipt = await
+                web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
+
+            var contractAddress = receipt.ContractAddress;
 
             await web3Geth.Miner.Stop.SendRequestAsync();
 

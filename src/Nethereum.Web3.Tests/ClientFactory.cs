@@ -1,6 +1,6 @@
 ﻿using System;
 using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.IpcClient;
+//using Nethereum.JsonRpc.IpcClient;
 
 namespace Nethereum.Web3.Tests
 {

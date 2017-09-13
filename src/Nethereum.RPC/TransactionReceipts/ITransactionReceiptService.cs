@@ -23,7 +23,12 @@ namespace Nethereum.RPC.TransactionReceipts
         Task<TransactionReceipt> SendRequestAsync(TransactionInput transactionInput,
             CancellationTokenSource tokenSource = null);
 
-        Task<List<TransactionReceipt>> SendRequestAsync(IEnumerable<TransactionInput> transactionInputs,
+        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<TransactionInput> transactionInputs,
             CancellationTokenSource tokenSource = null);
+
+        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+          CancellationTokenSource tokenSource = null);
+
+
     }
 }
