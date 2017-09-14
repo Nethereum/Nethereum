@@ -3,20 +3,26 @@ using System.Text;
 
 namespace Nethereum.ABI.Decoders
 {
-    public class Bytes32TypeDecoder : TypeDecoder
+    public class FixedSizeBytesTypeDecoder : TypeDecoder
     {
         private readonly BoolTypeDecoder _boolTypeDecoder;
         private readonly IntTypeDecoder _intTypeDecoder;
+        private readonly byte _arraySize;
 
-        public Bytes32TypeDecoder()
+        public FixedSizeBytesTypeDecoder(byte arraySize)
         {
             _intTypeDecoder = new IntTypeDecoder();
             _boolTypeDecoder = new BoolTypeDecoder();
+            _arraySize = arraySize;
         }
 
         public override object Decode(byte[] encoded, Type type)
         {
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
+
+            if (encoded.Length != _arraySize) {
+                throw new ArgumentException("Encoded data does not match expected length", nameof(encoded));
+            }
 
             if ((type == typeof(byte[])) || (type == typeof(object)))
                 return encoded;

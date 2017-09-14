@@ -3,10 +3,11 @@ using Nethereum.ABI.Encoders;
 
 namespace Nethereum.ABI
 {
-    public class Bytes32Type : FixedSizeBytesType
+    public class Bytes16Type : FixedSizeBytesType
     {
-        public Bytes32Type(string name) : base(name, 32)
+        public Bytes16Type(string name) : base(name, 16)
         {
+    
         }
     }
 }

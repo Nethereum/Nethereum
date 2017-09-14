@@ -23,7 +23,7 @@ namespace Nethereum.ABI.Tests
             Assert.False(function.Constant);
             var param = function.InputParameters.FirstOrDefault(x => x.Name == "a");
             Assert.NotNull(param);
-            Assert.Equal(param.Type, "uint256");
+            Assert.Equal("uint256", param.Type);
             Assert.Equal("c6888fa1", function.Sha3Signature);
             Assert.Equal("ea6ace3d", contract.Functions[1].Sha3Signature);
         }
