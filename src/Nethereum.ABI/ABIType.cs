@@ -47,7 +47,13 @@ namespace Nethereum.ABI
             if ("bytes".Equals(typeName))
                 return new BytesType();
             if (typeName.StartsWith("bytes", StringComparison.Ordinal))
-                return new Bytes32Type(typeName);
+            {
+                var size = Convert.ToInt32(typeName.Substring(5));
+                if (size == 32)
+                    return new Bytes32Type(typeName);
+                else
+                    return new BytesElementaryType(typeName, size);
+            }
             throw new ArgumentException("Unknown type: " + typeName);
         }
 

@@ -16,7 +16,8 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value)
         {
-            return Encode(value, true);
+            //default to false, this is a byte array we are not responsible for endianism
+            return Encode(value, false);
         }
 
         public byte[] Encode(object value, bool checkEndian)
