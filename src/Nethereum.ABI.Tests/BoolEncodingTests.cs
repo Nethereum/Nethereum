@@ -26,7 +26,7 @@ namespace Nethereum.ABI.Tests
         {
             var boolType = new BoolType();
             var result = boolType.Decode<bool>("0000000000000000000000000000000000000000000000000000000000000000");
-            Assert.Equal(false, result);
+            Assert.False(result);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Nethereum.ABI.Tests
         {
             var boolType = new BoolType();
             var result = boolType.Decode<bool>("0000000000000000000000000000000000000000000000000000000000000001");
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
     }
 }
