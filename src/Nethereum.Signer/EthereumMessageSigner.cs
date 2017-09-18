@@ -37,5 +37,15 @@ namespace Nethereum.Signer
         {
             return base.Sign(HashPrefixedMessage(message), key);
         }
+
+        public string EncodeUTF8AndSign(string message, EthECKey key)
+        {
+            return base.Sign(HashPrefixedMessage(Encoding.UTF8.GetBytes(message)), key);
+        }
+
+        public string EncodeUTF8AndEcRecover(string message, string signature)
+        {
+            return EcRecover(Encoding.UTF8.GetBytes(message), signature);
+        }
     }
 }
