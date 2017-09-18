@@ -90,6 +90,14 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger value, TConstructorParams inputParams)
+        {
+            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
+            var transaction = new TransactionInput(encodedData, null, from, gas, value);
+            return transaction;
+        }
+
+        public TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from,
             HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams)
         {
             var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);

@@ -45,6 +45,20 @@ namespace Nethereum.Contracts
             return TransactionManager.EstimateGasAsync(callInput);
         }
 
+        public Task<HexBigInteger> EstimateGasAsync<TConstructorParams>(string contractByteCode, string from, HexBigInteger gas,
+          TConstructorParams inputParams)
+        {
+            var callInput = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, inputParams);
+            return TransactionManager.EstimateGasAsync(callInput);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync<TConstructorParams>(string contractByteCode, string from, HexBigInteger gas, HexBigInteger value,
+         TConstructorParams inputParams)
+        {
+            var callInput = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, null, value, inputParams);
+            return TransactionManager.EstimateGasAsync(callInput);
+        }
+
         public Task<string> SendRequestAsync(string abi, string contractByteCode, string from, HexBigInteger gas,
             params object[] values)
         {
