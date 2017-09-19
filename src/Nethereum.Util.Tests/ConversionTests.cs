@@ -1,12 +1,9 @@
 using System.Numerics;
 using Nethereum.Util;
 using Xunit;
-using System;
 using System.Linq;
 namespace Nethereum.Util.Tests
 {
-
-   
 
     public class ConversionTests
     {
@@ -125,6 +122,18 @@ namespace Nethereum.Util.Tests
             var ether = 10m;
             var wei = UnitConversion.Convert.ToWei(ether, UnitConversion.EthUnit.Ether);
             var val = BigInteger.Parse("1".PadRight(20, '0'));
+            var result = unitConversion.FromWei(val, 18);
+            Assert.Equal(UnitConversion.Convert.ToWei(result), wei);
+        }
+
+
+        [Fact]
+        public void ShouldConvertFromDecimalUnit()
+        {
+            var unitConversion = new UnitConversion();
+            var ether = 0.0010m;
+            var wei = UnitConversion.Convert.ToWei(ether, UnitConversion.EthUnit.Ether);
+            var val = BigInteger.Parse("1".PadRight(16, '0'));
             var result = unitConversion.FromWei(val, 18);
             Assert.Equal(UnitConversion.Convert.ToWei(result), wei);
         }

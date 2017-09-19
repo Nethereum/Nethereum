@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace Nethereum.Util
 {
-    ///     BigNumber based on (slightly modified and corrected) http://uberscraper.blogspot.co.uk/2013/09/c-bigdecimal-class-from-stackoverflow.html
+    ///     BigNumber based on the original http://uberscraper.blogspot.co.uk/2013/09/c-bigdecimal-class-from-stackoverflow.html
     ///     which was inspired by http://stackoverflow.com/a/4524254
     ///     Original Author: Jan Christoph Bernack (contact: jc.bernack at googlemail.com)
     ///     http://stackoverflow.com/a/13813535/956364" />
@@ -134,14 +134,21 @@ namespace Nethereum.Util
 
         public override string ToString()
         {
+            Normalize();
             string s = Mantissa.ToString();
             if (Exponent != 0)
             {
-                Normalize();
                 int decimalPos = s.Length + Exponent;
                 if (decimalPos < s.Length)
                 {
-                    s = s.Insert(decimalPos, decimalPos == 0 ? "0." : ".");
+                    if (decimalPos >= 0)
+                    {
+                        s = s.Insert(decimalPos, decimalPos == 0 ? "0." : ".");
+                    }
+                    else
+                    {
+                        s = "0." + s.PadLeft(decimalPos * -1 + s.Length, '0');
+                    }
                 }
                 else
                 {
@@ -153,7 +160,11 @@ namespace Nethereum.Util
 
         public bool Equals(BigDecimal other)
         {
-            return other.Mantissa.Equals(this.Mantissa) && other.Exponent == this.Exponent;
+            var first = this;
+            var second = other;
+            first.Normalize();
+            second.Normalize();
+            return second.Mantissa.Equals(first.Mantissa) && second.Exponent == first.Exponent;
         }
 
         public override bool Equals(object obj)
@@ -209,27 +220,27 @@ namespace Nethereum.Util
 
         public static explicit operator double(BigDecimal value)
         {
-            return (double)value.Mantissa * Math.Pow(10, value.Exponent);
+            return Double.Parse(value.ToString());
         }
 
         public static explicit operator float(BigDecimal value)
         {
-            return Convert.ToSingle((double)value);
+            return Single.Parse(value.ToString());
         }
 
         public static explicit operator Decimal(BigDecimal value)
         {
-            return (Decimal)value.Mantissa * (Decimal)Math.Pow(10, value.Exponent);
+            return decimal.Parse(value.ToString());
         }
 
         public static explicit operator int(BigDecimal value)
         {
-            return (int)(value.Mantissa * BigInteger.Pow(10, value.Exponent));
+            return Convert.ToInt32((decimal)value);
         }
 
         public static explicit operator uint(BigDecimal value)
         {
-            return (uint)(value.Mantissa * BigInteger.Pow(10, value.Exponent));
+            return Convert.ToUInt32((decimal)value);
         }
         #endregion
 
@@ -316,6 +327,19 @@ namespace Nethereum.Util
             return left.Exponent > right.Exponent ? AlignExponent(left, right) >= right.Mantissa : left.Mantissa >= AlignExponent(right, left);
         }
 
+        public static BigDecimal Parse(string value)
+        {
+            //todo culture format
+            var decimalCharacter = ".";
+            var indexOfDecimal = value.IndexOf(".");
+            var exponent = 0;
+            if (indexOfDecimal != -1)
+            {
+                exponent = (value.Length - (indexOfDecimal + 1)) * -1;
+            }
+            var mantissa = BigInteger.Parse(value.Replace(decimalCharacter, ""));
+            return new BigDecimal(mantissa, exponent);
+        }
         /// <summary>
         ///     Returns the mantissa of value, aligned to the exponent of reference.
         ///     Assumes the exponent of value is larger than of value.

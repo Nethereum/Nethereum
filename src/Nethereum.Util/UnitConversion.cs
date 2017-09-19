@@ -4,14 +4,6 @@ using System.Numerics;
 namespace Nethereum.Util
 {
 
-    public static class BigIntegerExtensions
-        {
-            public static int NumberOfDigits(this BigInteger value)
-            {
-                return (value * value.Sign).ToString().Length;
-            }
-        }
-
     public class UnitConversion
     {
         public enum EthUnit
@@ -74,7 +66,7 @@ namespace Nethereum.Util
         /// </summary>
         public decimal FromWei(BigInteger value, int decimalPlacesToUnit)
         {
-            return Decimal.Parse(new BigDecimal(value, decimalPlacesToUnit * -1).ToString());
+            return (decimal)new BigDecimal(value, decimalPlacesToUnit * -1);
         }
 
         public BigDecimal FromWeiToBigDecimal(BigInteger value, int decimalPlacesToUnit)
