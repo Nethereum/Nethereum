@@ -1,17 +1,61 @@
 using System.Numerics;
 using Nethereum.Util;
 using Xunit;
-
+using System;
+using System.Linq;
 namespace Nethereum.Util.Tests
 {
+
    
+
     public class ConversionTests
     {
+        [Theory]
+        [InlineData(18, "1111111111.111111111111111111",  "1111111111111111111111111111")]
+        [InlineData(18, "11111111111.111111111111111111", "11111111111111111111111111111")]
+        //Rounding happens when having more than 29 digits
+        [InlineData(18, "111111111111.11111111111111111", "111111111111111111111111111111")]
+        [InlineData(18, "1111111111111.1111111111111111", "1111111111111111111111111111111")]
+        public void ShouldConvertFromWeiToDecimal(int units, string expected, string weiAmount)
+        {
+            var unitConversion = new UnitConversion();
+            var result = unitConversion.FromWei(BigInteger.Parse(weiAmount), units);
+            Assert.Equal(expected, result.ToString());
+        }
+
+        [Theory]
+        [InlineData(18, "1111111111.111111111111111111", "1111111111111111111111111111")]
+        [InlineData(18, "11111111111.111111111111111111", "11111111111111111111111111111")]
+        [InlineData(18, "111111111111.111111111111111111", "111111111111111111111111111111")]
+        [InlineData(18, "1111111111111.111111111111111111", "1111111111111111111111111111111")]
+        public void ShouldConvertFromWeiToBigDecimal(int units, string expected, string weiAmount)
+        {
+            var unitConversion = new UnitConversion();
+            var result = unitConversion.FromWeiToBigDecimal(BigInteger.Parse(weiAmount), units);
+            Assert.Equal(expected, result.ToString());
+        }
+
+       
         [Fact]
         public void ShouldConvertFromWeiAndBackToEth()
         {
             var unitConversion = new UnitConversion();
             var val = BigInteger.Parse("1000000000000000000000000001");
+            var result = unitConversion.FromWei(val, 18);
+            var result2 = unitConversion.FromWei(val);
+            Assert.Equal(result, result2);
+            result2 = unitConversion.FromWei(val, BigInteger.Parse("1000000000000000000"));
+            Assert.Equal(result, result2);
+            Assert.Equal(val, UnitConversion.Convert.ToWei(result));
+        }
+
+        [Fact]
+        public void ShouldConverFromWei()
+        {
+            var unitConversion = new UnitConversion();
+            var unit = BigInteger.Parse("100000000000000000000000000");
+            var val = BigInteger.Parse("1000000000000000000000000001");
+
             var result = unitConversion.FromWei(val, 18);
             var result2 = unitConversion.FromWei(val);
             Assert.Equal(result, result2);
