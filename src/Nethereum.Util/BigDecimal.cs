@@ -6,6 +6,7 @@ namespace Nethereum.Util
     ///     BigNumber based on the original http://uberscraper.blogspot.co.uk/2013/09/c-bigdecimal-class-from-stackoverflow.html
     ///     which was inspired by http://stackoverflow.com/a/4524254
     ///     Original Author: Jan Christoph Bernack (contact: jc.bernack at googlemail.com)
+    ///     Changes JB: Added parse, Fix Normalise, Added Floor, New ToString, Change Equals (normalise to validate first), Change Casting to avoid overflows (even if might be slower, Added Normalise Bigger than zero, test on operations, parsing, casting, and other test coverage for ethereum unit conversions
     ///     http://stackoverflow.com/a/13813535/956364" />
 
     /// <summary>
