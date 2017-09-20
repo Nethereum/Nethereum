@@ -25,6 +25,7 @@ namespace Nethereum.Util.Tests
         [InlineData(18, "11111111111.111111111111111111", "11111111111111111111111111111")]
         [InlineData(18, "111111111111.111111111111111111", "111111111111111111111111111111")]
         [InlineData(18, "1111111111111.111111111111111111", "1111111111111111111111111111111")]
+        [InlineData(30, "1111111111111111111.111111111111111111111111111111", "1111111111111111111111111111111111111111111111111")]
         public void ShouldConvertFromWeiToBigDecimal(int units, string expected, string weiAmount)
         {
             var unitConversion = new UnitConversion();
@@ -139,7 +140,7 @@ namespace Nethereum.Util.Tests
         }
 
         [Fact]
-        public void ShouldConvertPeriodicTether()
+        public void ShouldConvertPeriodicGether()
         {
             var unitConversion = new UnitConversion();
             var ether = (decimal)1 / 3;
@@ -147,6 +148,17 @@ namespace Nethereum.Util.Tests
             var val = BigInteger.Parse("3".PadLeft(27, '3'));
             var result = unitConversion.FromWei(val, UnitConversion.EthUnit.Gether);
             Assert.Equal(UnitConversion.Convert.ToWei(result, UnitConversion.EthUnit.Gether), wei);
+        }
+
+        [Fact]
+        public void ShouldConvertPeriodicTether()
+        {
+            var unitConversion = new UnitConversion();
+            var ether = new BigDecimal(1)  / new BigDecimal(3);
+            var wei = UnitConversion.Convert.ToWei(ether, UnitConversion.EthUnit.Tether);
+            var val = BigInteger.Parse("3".PadLeft(30, '3'));
+            var result = unitConversion.FromWeiToBigDecimal(val, UnitConversion.EthUnit.Tether);
+            Assert.Equal(UnitConversion.Convert.ToWei(result, UnitConversion.EthUnit.Tether), wei);
         }
     }
 }

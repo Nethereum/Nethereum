@@ -30,8 +30,8 @@ namespace Nethereum.Util
             Grand,
             Einstein,
             Mether,
-            Gether
-           // Tether Not supported
+            Gether,
+            Tether 
         }
 
         private static UnitConversion convert;
@@ -137,9 +137,8 @@ namespace Nethereum.Util
                     return BigInteger.Parse("1000000000000000000000000");
                 case EthUnit.Gether:
                     return BigInteger.Parse("1000000000000000000000000000");
-                 //Not supported 
-                //case EthUnit.Tether:
-                //    return BigInteger.Parse("1000000000000000000000000000000");
+                case EthUnit.Tether:
+                    return BigInteger.Parse("1000000000000000000000000000000");
                                                         
             }
             throw new NotImplementedException();
@@ -155,6 +154,16 @@ namespace Nethereum.Util
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
             var conversion = amount * bigDecimalFromUnit;
             return conversion.Floor().Mantissa;
+        }
+
+        public BigInteger ToWei(BigDecimal amount, EthUnit fromUnit = EthUnit.Ether)
+        {
+            return ToWei(amount, GetEthUnitValue(fromUnit));
+        }
+
+        public BigInteger ToWei(BigDecimal amount, int decimalPlacesFromUnit)
+        {
+            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
         }
 
 
