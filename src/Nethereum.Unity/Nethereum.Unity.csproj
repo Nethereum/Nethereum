@@ -8,7 +8,7 @@
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>net35</TargetFrameworks>
     <AssemblyName>Nethereum.Unity</AssemblyName>
-    <PackageId>Nethereum.RPC</PackageId>
+    <PackageId>Nethereum.Unity</PackageId>
     <PackageTags>Netherum;Unity3d;Unity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
