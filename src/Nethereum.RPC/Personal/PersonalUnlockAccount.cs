@@ -20,6 +20,7 @@ namespace Nethereum.RPC.Personal
     ///     Example
     ///     personal.unlockAccount(eth.coinbase, "mypasswd", 300)
     /// </Summary>
+    [Obsolete("Unsafe and geth specific (e.g. not compatible with Parity). Use PersonalSignAndSendTransaction instead.")]
     public class PersonalUnlockAccount : RpcRequestResponseHandler<bool>
     {
         public PersonalUnlockAccount(IClient client) : base(client, ApiMethods.personal_unlockAccount.ToString())
