@@ -52,8 +52,10 @@ namespace Nethereum.RPC.Eth.DTOs
         public CallInput(string data, HexBigInteger gas, string addressFrom)
         {
             Data = data;
-            Gas = gas;
+            Gas = (gas == null) ? new HexBigInteger(0L) : gas;
+            GasPrice = new HexBigInteger(0L);
             From = addressFrom;
+            Value = new HexBigInteger(0L);
         }
 
         /// <summary>
