@@ -33,10 +33,10 @@ namespace Nethereum.Web3.Tests.Issues
  
             var gethWeb3 = new Web3Geth(web3.Client);
             await gethWeb3.Miner.Start.SendRequestAsync(6);
-
-            var receiptFirstBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, null, newAddress, 1000);
+            var gas = await transferFunction.EstimateGasAsync(gethTester.Account, null, null, newAddress, 1000);
+            var receiptFirstBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, gas, null, null, newAddress, 1000);
             var balanceFirstBlock = await balanceFunction.CallAsync<int>(newAddress);
-            var receiptSecondBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, null, newAddress, 1000);
+            var receiptSecondBlock = await transferFunction.SendTransactionAndWaitForReceiptAsync(gethTester.Account, gas, null, null, newAddress, 1000);
             var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress);
             var balanceOldBlock =
                 await

@@ -52,7 +52,8 @@ namespace Nethereum.Web3.Tests.Issues
             var storeMyHash = contract.GetFunction("storeMyHash");
             await gethTester.StartMining();
             await gethTester.UnlockAccount();
-            var txn = await storeMyHash.SendTransactionAsync(gethTester.Account, hash.HexToByteArray());
+            var gas = await storeMyHash.EstimateGasAsync(gethTester.Account, null, null, hash.HexToByteArray());
+            var txn = await storeMyHash.SendTransactionAsync(gethTester.Account, gas, null, hash.HexToByteArray());
             await gethTester.GetTransactionReceipt(txn);
             await gethTester.StopMining();
 

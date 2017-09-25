@@ -29,8 +29,6 @@ namespace Nethereum.Web3.Tests.Issues
 
             var mineResult = await web3.Miner.Start.SendRequestAsync(2);
 
-            Assert.True(mineResult);
-
             var receipt = await MineAndGetReceiptAsync(web3, transactionHash);
 
             var contractAddress = receipt.ContractAddress;
@@ -57,7 +55,7 @@ namespace Nethereum.Web3.Tests.Issues
         {
 
             var miningResult = await web3.Miner.Start.SendRequestAsync(6);
-            Assert.True(miningResult);
+           
 
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 

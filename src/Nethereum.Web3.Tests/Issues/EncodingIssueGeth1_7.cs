@@ -37,8 +37,9 @@ namespace Nethereum.Web3.Tests.Issues
 
             await gethTester.StartMining();
 
-            var tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, 20);
-            tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, 30);
+            var gas = await addChargeFunction.EstimateGasAsync(gethTester.Account, null,  null, 20);
+            var tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, gas, null, 20);
+            tx = await addChargeFunction.SendTransactionAsync(gethTester.Account, gas, null, 30);
             receipt = await gethTester.GetTransactionReceipt(tx);
 
             await gethTester.StopMining();
