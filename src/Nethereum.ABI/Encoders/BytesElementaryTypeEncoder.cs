@@ -21,6 +21,11 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value, bool checkEndian)
         {
+            if(_size == 1 && value is byte)
+            {
+                value = new byte[1] { (byte)value };
+            }
+
             if (!(value is byte[]))
                 throw new Exception("byte[] value expected for type 'bytes'");
             var byteArray = (byte[])value;
