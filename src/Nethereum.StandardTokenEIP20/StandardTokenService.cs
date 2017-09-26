@@ -26,7 +26,7 @@ namespace Nethereum.StandardTokenEIP20
             return await function.CallAsync<TNumber>();
         }
 
-        private Function GetTotalSupplyFunction()
+        protected Function GetTotalSupplyFunction()
         {
             return Contract.GetFunction("totalSupply");
         }
@@ -37,7 +37,7 @@ namespace Nethereum.StandardTokenEIP20
             return await function.CallAsync<T>(address);
         }
 
-        private Function GetBalanceOfFunction()
+        protected Function GetBalanceOfFunction()
         {
             return Contract.GetFunction("balanceOf");
         }
@@ -48,7 +48,7 @@ namespace Nethereum.StandardTokenEIP20
             return await function.CallAsync<T>(addressOwner, addressSpender);
         }
 
-        private Function GetAllowanceFunction()
+        protected Function GetAllowanceFunction()
         {
             return Contract.GetFunction("allowance");
         }
@@ -59,7 +59,7 @@ namespace Nethereum.StandardTokenEIP20
            return await function.SendTransactionAsync(addressFrom, gas, null, addressTo, value);
         }
 
-        private Function GetTransferFunction()
+        protected Function GetTransferFunction()
         {
             return Contract.GetFunction("transfer");
         }
@@ -77,7 +77,7 @@ namespace Nethereum.StandardTokenEIP20
            return await function.SendTransactionAsync(addressFrom, gas, null, addressTransferedFrom, addressTransferedTo, value);
         }
 
-        private Function GetTransferFromFunction()
+        protected Function GetTransferFromFunction()
         {
             return Contract.GetFunction("transferFrom");
         }
@@ -95,7 +95,7 @@ namespace Nethereum.StandardTokenEIP20
             await function.SendTransactionAsync(addressFrom, gas, null, addressSpender, value);
         }
 
-        private Function GetApproveFunction()
+        protected Function GetApproveFunction()
         {
             return Contract.GetFunction("approve");
         }
