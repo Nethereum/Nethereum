@@ -1,17 +1,18 @@
-﻿using System;
+﻿using Nethereum.Web3.Accounts.Managed;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
 using Xunit;
 
 namespace Nethereum.Tutorials
 {
     public class Deployment
     {
-		[Fact(Skip="Unskip it if want to demo")]
+		//[Fact(Skip="Unskip it if want to demo")]
+        [Fact]
         public async Task ShouldBeAbleToDeployAContract()
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
@@ -21,18 +22,18 @@ namespace Nethereum.Tutorials
                 "0x60606040526040516020806052833950608060405251600081905550602b8060276000396000f3606060405260e060020a60003504631df4f1448114601a575b005b600054600435026060908152602090f3";
 
             var multiplier = 7;
+            
+            //a managed account uses personal_sendTransanction with the given password, this way we don't need to unlock the account for a certain period of time
+            var account = new ManagedAccount(senderAddress, password);
 
-            var web3 = new Web3.Web3();
-            var unlockAccountResult =
-                await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 120);
-            Assert.True(unlockAccountResult);
+            //using the specific geth web3 library to allow us manage the mining.
+            var web3 = new Geth.Web3Geth(account);
+
+            // start mining
+            await web3.Miner.Start.SendRequestAsync(6);
 
             var transactionHash =
-                await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
-
-            var mineResult = await web3.Miner.Start.SendRequestAsync(6);
-
-            Assert.True(mineResult);
+                await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new Hex.HexTypes.HexBigInteger(900000), multiplier);
 
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 
@@ -42,7 +43,7 @@ namespace Nethereum.Tutorials
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
-            mineResult = await web3.Miner.Stop.SendRequestAsync();
+            var mineResult = await web3.Miner.Stop.SendRequestAsync();
             Assert.True(mineResult);
 
             var contractAddress = receipt.ContractAddress;

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Xunit;
+using Nethereum.Web3.Accounts.Managed;
 
 namespace Nethereum.Tutorials
 {
@@ -19,14 +20,16 @@ namespace Nethereum.Tutorials
           var abi = @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""r"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
           var byteCode = "0x606060405260405160208060ae833981016040528080519060200190919050505b806000600050819055505b5060768060386000396000f360606040526000357c0100000000000000000000000000000000000000000000000000000000900480631df4f144146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600060005054820290506071565b91905056";
           var multiplier = 7;
-          var web3 = new Web3.Web3();
-          var unlockResult = await web3.Personal.UnlockAccount.SendRequestAsync(senderAddress, password, 60);
-          Assert.True(unlockResult);
+          //a managed account uses personal_sendTransanction with the given password, this way we don't need to unlock the account for a certain period of time
+          var account = new ManagedAccount(senderAddress, password);
+
+          //using the specific geth web3 library to allow us manage the mining.
+          var web3 = new Geth.Web3Geth(account);
 
           var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, multiplier);
 
           var miningResult = await web3.Miner.Start.SendRequestAsync(6);
-          Assert.True(miningResult);
+    
           
           var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 
