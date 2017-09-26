@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.DTOs;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-
 using Xunit;
 using Nethereum.Web3.Accounts.Managed;
 
@@ -38,8 +31,8 @@ namespace Nethereum.Tutorials
            await web3.Miner.Start.SendRequestAsync(6);
 
 
-           var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), multiplier);
-          var receipt = await MineAndGetReceiptAsync(web3, transactionHash);
+          var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
+          
           
           var contractAddress = receipt.ContractAddress;
 
@@ -52,12 +45,11 @@ namespace Nethereum.Tutorials
           var filterAll = await multiplyEvent.CreateFilterAsync();
           var filter7 = await multiplyEvent.CreateFilterAsync(7);
           
-          transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, 7);
-          transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, 8);
-          
-          receipt = await MineAndGetReceiptAsync(web3, transactionHash);
+          var transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, 7);
+          receipt =  await multiplyFunction.SendTransactionAndWaitForReceiptAsync(senderAddress, null, 8);
 
-          
+          var miningResult = await web3.Miner.Stop.SendRequestAsync();
+
           var log = await multiplyEvent.GetFilterChanges<MultipliedEvent>(filterAll);
           var log7 = await multiplyEvent.GetFilterChanges<MultipliedEvent>(filter7);
 
@@ -65,8 +57,6 @@ namespace Nethereum.Tutorials
           Assert.Equal(1, log7.Count);
           Assert.Equal(7, log7[0].Event.MultiplicationInput);
           Assert.Equal(49, log7[0].Event.Result);
-        
-          
 
         }
 
@@ -85,23 +75,5 @@ namespace Nethereum.Tutorials
             public int Result {get; set;}
 
         }
-
-
-        public async Task<TransactionReceipt> MineAndGetReceiptAsync(Geth.Web3Geth web3, string transactionHash){
-
-          var miningResult = await web3.Miner.Start.SendRequestAsync(6);
-          
-          var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-
-          while(receipt == null){
-              Thread.Sleep(1000);
-              receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-          }
-          
-          miningResult = await web3.Miner.Stop.SendRequestAsync();
-          Assert.True(miningResult);
-          return receipt;
-        }
-
     }
 }

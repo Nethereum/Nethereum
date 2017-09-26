@@ -32,16 +32,8 @@ namespace Nethereum.Tutorials
             // start mining
             await web3.Miner.Start.SendRequestAsync(6);
 
-            var transactionHash =
-                await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new Hex.HexTypes.HexBigInteger(900000), multiplier);
-
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-
-            while (receipt == null)
-            {
-                Thread.Sleep(5000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-            }
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new Hex.HexTypes.HexBigInteger(900000), null, multiplier);
 
             var mineResult = await web3.Miner.Stop.SendRequestAsync();
             Assert.True(mineResult);

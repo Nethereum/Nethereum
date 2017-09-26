@@ -8,7 +8,6 @@ using Nethereum.Hex.HexTypes;
 using Xunit;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
-using Nethereum.Web3.TransactionReceipts;
 
 namespace Nethereum.Tutorials
 {
@@ -28,17 +27,13 @@ namespace Nethereum.Tutorials
 
             var web3 = new Web3.Web3(new ManagedAccount(senderAddress, password));
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
-
             //assumed client is mining already
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                    () =>
-                        web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000),
-                            multiplier)
-                );
 
-            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
+                           multiplier);
+               
+
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var multiplyFunction = contract.GetFunction("multiply");
 
@@ -62,17 +57,11 @@ namespace Nethereum.Tutorials
 
             var web3 = new Web3.Web3(new Account(privateKey));
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+            var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
+                          multiplier);
 
-            //assumed client is mining already
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                    () =>
-                        web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000),
-                            multiplier)
-                );
 
-            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var multiplyFunction = contract.GetFunction("multiply");
 
@@ -111,17 +100,11 @@ namespace Nethereum.Tutorials
 
             var web3 = new Web3.Web3(new Account(key));
 
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+            var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
+                          multiplier);
 
-            //assumed client is mining already
-            var contractAddress = await
-                transactionPolling.DeployContractAndGetAddressAsync(
-                    () =>
-                        web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000),
-                            multiplier)
-                );
 
-            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var multiplyFunction = contract.GetFunction("multiply");
 

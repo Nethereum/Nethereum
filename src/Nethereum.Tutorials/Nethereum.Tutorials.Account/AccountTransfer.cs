@@ -2,8 +2,8 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
-using Nethereum.Web3.TransactionReceipts;
 using Xunit;
+using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.Tutorials
 {
@@ -21,7 +21,7 @@ namespace Nethereum.Tutorials
             var web3 = new Web3.Web3(account);
 
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+            var transactionPolling = web3.TransactionManager.TransactionReceiptService;
 
             var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
             //assumed client is mining already
@@ -52,7 +52,7 @@ namespace Nethereum.Tutorials
             var web3 = new Web3.Web3(account);
 
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+            var transactionPolling = web3.TransactionManager.TransactionReceiptService;
 
             var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
             //assumed client is mining already
@@ -90,7 +90,7 @@ namespace Nethereum.Tutorials
             var web3 = new Web3.Web3(account);
 
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
-            var transactionPolling = new TransactionReceiptPollingService(web3);
+            var transactionPolling = web3.TransactionManager.TransactionReceiptService;
 
             var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
 
