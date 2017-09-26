@@ -4,7 +4,7 @@
     <VersionMinor>0</VersionMinor>
     <VersionPatch>0</VersionPatch>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
-    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' ">rc7</RelSuffix>
+    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
     
     <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
     
@@ -12,9 +12,9 @@
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
-    <ENSVersion>0.0.10</ENSVersion>
-    <UportVersion>0.0.4</UportVersion>
-    <ParityVersion>0.0.4-dev</ParityVersion>
-    <QuorumVersion>0.0.11</QuorumVersion>
+    <ENSVersion>0.0.11</ENSVersion>
+    <UportVersion>0.0.5</UportVersion>
+    <ParityVersion>0.0.5-dev</ParityVersion>
+    <QuorumVersion>0.0.12</QuorumVersion>
   </PropertyGroup>
 </Project>

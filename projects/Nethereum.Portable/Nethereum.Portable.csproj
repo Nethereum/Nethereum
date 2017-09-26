@@ -107,6 +107,10 @@
 				<Link>ABI\Bytes32Type.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\BytesElementaryType.cs">
+				<Link>ABI\BytesElementaryType.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\BytesType.cs">
 				<Link>ABI\BytesType.cs</Link>
 		</Compile>
@@ -147,6 +151,10 @@
 				<Link>ABI\Decoders\Bytes32TypeDecoder.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\Decoders\BytesElementaryTypeDecoder .cs">
+				<Link>ABI\Decoders\BytesElementaryTypeDecoder .cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\Decoders\BytesTypeDecoder.cs">
 				<Link>ABI\Decoders\BytesTypeDecoder.cs</Link>
 		</Compile>
@@ -185,6 +193,10 @@
 		
         <Compile Include="..\..\src\Nethereum.ABI\Encoders\Bytes32TypeEncoder.cs">
 				<Link>ABI\Encoders\Bytes32TypeEncoder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\Encoders\BytesElementaryTypeEncoder.cs">
+				<Link>ABI\Encoders\BytesElementaryTypeEncoder.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\Encoders\BytesTypeEncoder.cs">
@@ -1121,6 +1133,14 @@
 		
         <Compile Include="..\..\src\Nethereum.Util\AddressUtil.cs">
 				<Link>Util\AddressUtil.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\BigDecimal.cs">
+				<Link>Util\BigDecimal.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\BigIntegerExtensions.cs">
+				<Link>Util\BigIntegerExtensions.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Util\ByteUtil.cs">
