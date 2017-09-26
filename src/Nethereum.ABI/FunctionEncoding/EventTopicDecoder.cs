@@ -17,6 +17,8 @@ namespace Nethereum.ABI.FunctionEncoding
 #else
             var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties.ToArray());
 #endif
+            var indexedProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Parameter.Indexed == true).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order).ToArray();
+            var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Parameter.Indexed == false).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order).ToArray();
 
             var topicNumber = 0;
             foreach (var topic in topics)
@@ -24,8 +26,8 @@ namespace Nethereum.ABI.FunctionEncoding
                 //skip the first one as it is the signature
                 if (topicNumber > 0)
                 {
-                    var property =
-                        properties.FirstOrDefault(x => x.GetCustomAttribute<ParameterAttribute>().Order == topicNumber);
+                    var property = indexedProperties[topicNumber - 1];
+                        
                     var attribute = property.GetCustomAttribute<ParameterAttribute>();
                     //skip dynamic types as the topic value is the sha3 keccak
                     if (!attribute.Parameter.ABIType.IsDynamic())
@@ -48,7 +50,7 @@ namespace Nethereum.ABI.FunctionEncoding
                 topicNumber = topicNumber + 1;
             }
 
-            var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Order >= topicNumber);
+           // var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Order >= topicNumber);
             result = DecodeAttributes(data, result, dataProperties.ToArray());
             return result;
         }

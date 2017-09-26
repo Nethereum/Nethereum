@@ -192,5 +192,40 @@ namespace Nethereum.Contracts
             }
             return false;
         }
+
+        public FilterLog[] GetLogsForEvent(JArray logs)
+        {
+            var returnList = new List<FilterLog>();
+            foreach(JToken log in logs)
+            {
+                var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
+                if (IsLogForEvent(filterLog))
+                {
+                    returnList.Add(filterLog);
+                }
+            }
+            return returnList.ToArray();
+        }
+
+        public List<EventLog<T>> DecodeAllEventsForEvent<T>(FilterLog[] logs) where T : new()
+        {
+            var result = new List<EventLog<T>>();
+            if (logs == null) return result;
+            var eventDecoder = new EventTopicDecoder();
+            foreach (var log in logs)
+            {
+                if (IsLogForEvent(log))
+                {
+                    var eventObject = eventDecoder.DecodeTopics<T>(log.Topics, log.Data);
+                    result.Add(new EventLog<T>(eventObject, log));
+                }
+            }
+            return result;
+        }
+
+        public List<EventLog<T>> DecodeAllEventsForEvent<T>(JArray logs) where T : new()
+        {
+            return DecodeAllEventsForEvent<T>(GetLogsForEvent(logs));
+        }
     }
 }
