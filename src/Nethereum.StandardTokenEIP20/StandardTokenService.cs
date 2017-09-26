@@ -7,17 +7,17 @@ namespace Nethereum.StandardTokenEIP20
 {
     public class StandardTokenService
     {
-        private readonly Web3.Web3 web3;
+        protected Web3.Web3 Web3 { get; set; }
 
         private string abi =
             @"[{""constant"":false,""inputs"":[{""name"":""spender"",""type"":""address""},{""name"":""value"",""type"":""uint256""}],""name"":""approve"",""outputs"":[{""name"":""ok"",""type"":""bool""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""totalSupply"",""outputs"":[{""name"":""supply"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""from"",""type"":""address""},{""name"":""to"",""type"":""address""},{""name"":""value"",""type"":""uint256""}],""name"":""transferFrom"",""outputs"":[{""name"":""ok"",""type"":""bool""}],""type"":""function""},{""constant"":true,""inputs"":[{""name"":""who"",""type"":""address""}],""name"":""balanceOf"",""outputs"":[{""name"":""value"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""to"",""type"":""address""},{""name"":""value"",""type"":""uint256""}],""name"":""transfer"",""outputs"":[{""name"":""ok"",""type"":""bool""}],""type"":""function""},{""constant"":true,""inputs"":[{""name"":""owner"",""type"":""address""},{""name"":""spender"",""type"":""address""}],""name"":""allowance"",""outputs"":[{""name"":""_allowance"",""type"":""uint256""}],""type"":""function""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""from"",""type"":""address""},{""indexed"":true,""name"":""to"",""type"":""address""},{""indexed"":false,""name"":""value"",""type"":""uint256""}],""name"":""Transfer"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":true,""name"":""owner"",""type"":""address""},{""indexed"":true,""name"":""spender"",""type"":""address""},{""indexed"":false,""name"":""value"",""type"":""uint256""}],""name"":""Approval"",""type"":""event""}]";
 
-        private Contract contract;
+        protected Contract Contract { get; set; }
 
         public StandardTokenService(Web3.Web3 web3, string address)
         {
-            this.web3 = web3;
-            this.contract = web3.Eth.GetContract(abi, address);
+            this.Web3 = web3;
+            this.Contract = web3.Eth.GetContract(abi, address);
         }
 
         public async Task<TNumber> GetTotalSupplyAsync<TNumber>()
@@ -28,7 +28,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetTotalSupplyFunction()
         {
-            return contract.GetFunction("totalSupply");
+            return Contract.GetFunction("totalSupply");
         }
 
         public async Task<T> GetBalanceOfAsync<T>(string address)
@@ -39,7 +39,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetBalanceOfFunction()
         {
-            return contract.GetFunction("balanceOf");
+            return Contract.GetFunction("balanceOf");
         }
 
         public async Task<T> GetAllowanceAsync<T>(string addressOwner, string addressSpender)
@@ -50,7 +50,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetAllowanceFunction()
         {
-            return contract.GetFunction("allowance");
+            return Contract.GetFunction("allowance");
         }
 
         public async Task<string> TransferAsync<T>(string addressFrom, string addressTo, T value, HexBigInteger gas = null)
@@ -61,7 +61,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetTransferFunction()
         {
-            return contract.GetFunction("transfer");
+            return Contract.GetFunction("transfer");
         }
 
         public async Task<bool> TransferAsyncCall<T>(string addressFrom, string addressTo, T value)
@@ -79,7 +79,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetTransferFromFunction()
         {
-            return contract.GetFunction("transferFrom");
+            return Contract.GetFunction("transferFrom");
         }
 
         public async Task<bool> TransferFromAsyncCall<T>(string addressFrom, string addressTransferedFrom,
@@ -97,7 +97,7 @@ namespace Nethereum.StandardTokenEIP20
 
         private Function GetApproveFunction()
         {
-            return contract.GetFunction("approve");
+            return Contract.GetFunction("approve");
         }
 
         public async Task<bool> ApproveAsyncCall<T>(string addressFrom, string addressSpender, T value)
@@ -108,12 +108,12 @@ namespace Nethereum.StandardTokenEIP20
 
         public Event GetApprovalEvent()
         {
-            return contract.GetEvent("Approval");
+            return Contract.GetEvent("Approval");
         }
 
         public Event GetTransferEvent()
         {
-            return contract.GetEvent("Transfer");
+            return Contract.GetEvent("Transfer");
         }
 
     }
