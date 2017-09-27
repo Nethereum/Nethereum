@@ -49,15 +49,12 @@ namespace Nethereum.Web3.Tests
 
             var gethTester = GethTesterFactory.GetLocal(web3);
 
-            await web3.Miner.Start.SendRequestAsync(6);
             var transaction =
                 await
                     gethTester.Web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), 7, 8);
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
-
-            await web3.Miner.Stop.SendRequestAsync();
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
@@ -168,15 +165,12 @@ contract Purchase {
             var gethTester = GethTesterFactory.GetLocal(new Web3(ClientFactory.GetClient()));
             var web3 = gethTester.Web3;
 
-            await gethTester.StartMining();
             var transaction =
                 await
                     web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
-
-            await gethTester.StopMining();
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
@@ -190,9 +184,8 @@ contract Purchase {
             var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
             var tx = await confirmPurchaseFunction.SendTransactionAsync(gethTester.Account,
                 new HexBigInteger(900000), new HexBigInteger(10000) );
-            await gethTester.StartMining();
+ 
             receipt = await gethTester.GetTransactionReceipt(tx);
-            await gethTester.StopMining();
 
             var stateFunction = contract.GetFunction("state");
             callResult = await stateFunction.CallAsync<int>();
@@ -212,8 +205,6 @@ contract Purchase {
 
             var gethTester = GethTesterFactory.GetLocal(new Web3(ClientFactory.GetClient()));
 
-            await gethTester.StartMining();
-
             var web3 = gethTester.Web3;
             
             var transaction =
@@ -222,8 +213,6 @@ contract Purchase {
                         gethTester.Account, new HexBigInteger(900000), new HexBigInteger(10000));
 
             var receipt = await gethTester.GetTransactionReceipt(transaction);
-
-            await gethTester.StopMining();
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
@@ -237,9 +226,8 @@ contract Purchase {
             var confirmPurchaseFunction = contract.GetFunction("confirmPurchase");
             var tx = await confirmPurchaseFunction.SendTransactionAsync(gethTester.Account,
                 new HexBigInteger(900000), new HexBigInteger(10000));
-            await gethTester.StartMining();
+
             receipt = await gethTester.GetTransactionReceipt(tx);
-            await gethTester.StopMining();
 
             var stateFunction = contract.GetFunction("state");
             callResult = await stateFunction.CallAsync<int>();

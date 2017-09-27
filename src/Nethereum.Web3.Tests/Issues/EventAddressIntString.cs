@@ -6,6 +6,7 @@ using Nethereum.RPC.TransactionReceipts;
 using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Web3.Tests.Issues
 {
@@ -58,7 +59,7 @@ namespace Nethereum.Web3.Tests.Issues
           receipt = await pollingService.PollForReceiptAsync(txn);
 
           var metadataEvent = coinService.GetEventMetadataEvent();
-          var metadata = await metadataEvent.GetAllChanges<MetadataEventEventDTO>(metadataEvent.CreateFilterInput());
+          var metadata = await metadataEvent.GetAllChanges<MetadataEventEventDTO>(metadataEvent.CreateFilterInput(new BlockParameter(receipt.BlockNumber)));
           var result = metadata[0].Event;
           Assert.Equal(result.Creator.ToLower(), account.Address.ToLower());
           Assert.Equal(result.Id, 100);

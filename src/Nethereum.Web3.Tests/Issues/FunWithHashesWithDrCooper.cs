@@ -50,13 +50,10 @@ namespace Nethereum.Web3.Tests.Issues
             Assert.Equal(hash, "0x" + result.ToHex());
 
             var storeMyHash = contract.GetFunction("storeMyHash");
-            await gethTester.StartMining();
             await gethTester.UnlockAccount();
             var gas = await storeMyHash.EstimateGasAsync(gethTester.Account, null, null, hash.HexToByteArray());
             var txn = await storeMyHash.SendTransactionAsync(gethTester.Account, gas, null, hash.HexToByteArray());
             await gethTester.GetTransactionReceipt(txn);
-            await gethTester.StopMining();
-
 
             var myHashFuction = contract.GetFunction("myHash");
             result = await myHashFuction.CallAsync<byte[]>();

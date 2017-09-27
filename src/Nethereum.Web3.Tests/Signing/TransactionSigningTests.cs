@@ -28,14 +28,13 @@ namespace Nethereum.Web3.Tests
             Assert.Equal(senderAddress.EnsureHexPrefix().ToLower(), Web3.OfflineTransactionSigner.GetSenderAddress(encoded).EnsureHexPrefix().ToLower());
 
             var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded);
-            await web3.Miner.Start.SendRequestAsync(4);
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             }
-            await web3.Miner.Stop.SendRequestAsync();
+
             Assert.Equal(txId, receipt.TransactionHash);
             return true;
         }

@@ -4,7 +4,7 @@
     <Description>Nethereum.Web3.Tests </Description>
     <VersionPrefix>1.0.2</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp1.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net451</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

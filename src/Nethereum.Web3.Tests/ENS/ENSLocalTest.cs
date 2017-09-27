@@ -30,8 +30,7 @@ namespace Nethereum.Web3.Tests
 
             // var addressFrom = (await web3.Eth.Accounts.SendRequestAsync()).First();
             //uncomment to use geth instead of test-rpc
-        
-            await web3Geth.Miner.Start.SendRequestAsync();
+
             //deploy ENS contract
             var ensAddress = await txService.DeployContractAndGetAddressAsync(() => EnsService.DeployContractAsync(web3, addressFrom, defaultGas));
             
@@ -96,8 +95,6 @@ namespace Nethereum.Web3.Tests
             //and get the address from the resolver
             var theAddress = await resolverService.AddrAsyncCall(fullNameNode.HexToByteArray());
             Assert.Equal(addressToResolve, theAddress);
-
-            await web3Geth.Miner.Stop.SendRequestAsync();
 
         }
     }

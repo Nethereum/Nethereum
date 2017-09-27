@@ -24,9 +24,7 @@ namespace Nethereum.Web3.Tests
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
 
             var web3 = new Web3Geth(new Account(privateKey));
-            await web3.Miner.Start.SendRequestAsync(4);
 
-            
             var receipt = await 
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
                     new HexBigInteger(900000), null, 7);
@@ -42,8 +40,6 @@ namespace Nethereum.Web3.Tests
             };
 
             var transactionsReceipts = await web3.TransactionManager.TransactionReceiptService.SendRequestsAsync(transactions);
-
-            await web3.Miner.Stop.SendRequestAsync();
 
             Assert.Equal(4, transactionsReceipts.Count);
 

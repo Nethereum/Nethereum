@@ -68,10 +68,6 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(transactionHash);
 
-            result = await web3.Miner.Start.SendRequestAsync();
-            //Assert.True(result, "Mining should have started");
-            ////the contract should be mining now
-
             //get the contract address 
             TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
@@ -82,9 +78,6 @@ namespace Nethereum.Web3.Tests
             }
 
             Assert.NotNull(receipt.ContractAddress);
-
-            result = await web3.Miner.Stop.SendRequestAsync();
-            Assert.True(result, "Mining should have stopped");
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             
@@ -151,10 +144,6 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(transactionHash);
 
-            result = await web3.Miner.Start.SendRequestAsync();
-            //Assert.True(result, "Mining should have started");
-            ////the contract should be mining now
-
             //get the contract address 
             TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
@@ -165,9 +154,6 @@ namespace Nethereum.Web3.Tests
             }
 
             Assert.NotNull(receipt.ContractAddress);
-
-            result = await web3.Miner.Stop.SendRequestAsync();
-            Assert.True(result, "Mining should have stopped");
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 

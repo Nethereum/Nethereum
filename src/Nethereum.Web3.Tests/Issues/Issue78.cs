@@ -28,7 +28,6 @@ namespace Nethereum.Web3.Tests.Issues
             //issue ran out of gas (putting 900 * 1000 instead of 200 * 1000 fixes this)
 
             var contractHash = await w3.Eth.DeployContract.SendRequestAsync(abi, byteCode, account, new HexBigInteger(900 * 1000), "My product");
-            var minerResult = await w3.Miner.Start.SendRequestAsync();
 
             var receipt = await w3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash);
             while (receipt == null)
@@ -36,8 +35,6 @@ namespace Nethereum.Web3.Tests.Issues
                 await Task.Delay(1000);
                 receipt = await w3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash);
             }
-
-            await w3.Miner.Stop.SendRequestAsync();
 
             var contract = w3.Eth.GetContract(abi, receipt.ContractAddress);
             var code = await w3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress);

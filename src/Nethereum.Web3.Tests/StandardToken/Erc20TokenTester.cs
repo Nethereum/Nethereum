@@ -38,7 +38,6 @@ namespace Nethereum.Web3.Tests.StandardToken
                 Assert.NotNull(newAddress);
                 Console.WriteLine(newAddress);
                 var gas = await eth.DeployContract.EstimateGasAsync(abi, contractByteCode, addressOwner, totalSupply);
-                var result = await web3.Miner.Start.SendRequestAsync();
                 var receipt =
                     await
                         eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, addressOwner,
@@ -77,10 +76,8 @@ namespace Nethereum.Web3.Tests.StandardToken
             }
             finally
             {
-                var result = await web3.Miner.Stop.SendRequestAsync();
-                Assert.True(result, "Mining should have stop");
-                result = await web3.Personal.LockAccount.SendRequestAsync(addressOwner);
-                Assert.True(result, "Account should be locked");
+               // var result = await web3.Personal.LockAccount.SendRequestAsync(addressOwner);
+               // Assert.True(result, "Account should be locked");
             }
            
         }

@@ -71,9 +71,6 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(transactionHash);
 
-            result = await web3.Miner.Start.SendRequestAsync(4);
-            //Assert.True(result, "Mining should have started");
-
             //the contract should be mining now
 
             //get the contract address 
@@ -127,9 +124,6 @@ namespace Nethereum.Web3.Tests
                 await Task.Delay(100);
                 receiptTransaction = await transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
             }
-
-            result = await web3.Miner.Stop.SendRequestAsync();
-            Assert.True(result, "Mining should have stopped");
 
             var logs = await eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract);    
             var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);

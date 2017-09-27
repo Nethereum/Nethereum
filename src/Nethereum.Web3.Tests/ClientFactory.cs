@@ -1,6 +1,8 @@
 ﻿using System;
 using Nethereum.JsonRpc.Client;
-//using Nethereum.JsonRpc.IpcClient;
+#if NET451
+using Nethereum.JsonRpc.IpcClient;
+#endif
 
 namespace Nethereum.Web3.Tests
 {
@@ -8,10 +10,12 @@ namespace Nethereum.Web3.Tests
     {
         public static IClient GetClient()
         {
-            //var client = new IpcClient("./geth.ipc");
-             //return client;
-            //
-            return new RpcClient(new Uri("http://localhost:8545/"));
+#if NET451
+            var client = new IpcClient("geth.ipc");
+            return client;
+#else      
+           return new RpcClient(new Uri("http://localhost:8545/"));
+#endif
            
         }
     }

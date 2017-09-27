@@ -24,14 +24,12 @@ namespace Nethereum.Web3.Tests
 
             var txId = await web3.Eth.Transactions.SendTransaction.SendRequestAsync(new RPC.Eth.DTOs.TransactionInput() { From = senderAddress, To = receiveAddress, Value = new Hex.HexTypes.HexBigInteger(10) });
 
-            await web3.Miner.Start.SendRequestAsync(4);
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             }
-            await web3.Miner.Stop.SendRequestAsync();
             Assert.Equal(txId, receipt.TransactionHash);
 
         }
@@ -56,8 +54,6 @@ namespace Nethereum.Web3.Tests
 
             var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress, new HexBigInteger(900000), 7);
 
-
-            await web3.Miner.Start.SendRequestAsync(4);
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             while (receipt == null)
             {
@@ -79,8 +75,6 @@ namespace Nethereum.Web3.Tests
                 Thread.Sleep(1000);
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
             }
-
-            await web3.Miner.Stop.SendRequestAsync();
 
             Assert.Equal(txId, receipt.TransactionHash);
         }
