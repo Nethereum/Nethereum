@@ -141,10 +141,8 @@ namespace Nethereum.JsonRpc.IpcClient
                 await GetPipeClient().WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
 
                 var responseBytes = await ReadResponseStream(GetPipeClient()).ConfigureAwait(false);
-                if (responseBytes == null) throw new RpcClientUnknownException("Invalid response / null");
-                var totalMegs = responseBytes.Length / 1024f / 1024f;
-                if (totalMegs > 10)
-                    throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
+                if (responseBytes == null) throw new RpcClientUnknownException("Invalid response / null");               
+               
                 var responseJson = Encoding.UTF8.GetString(responseBytes);
 
                 try

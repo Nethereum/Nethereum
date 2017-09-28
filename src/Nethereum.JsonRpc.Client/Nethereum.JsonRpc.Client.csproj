@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition=" '$(TargetFramework)' != 'net35'" Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Condition=" '$(TargetFramework)' != 'net35'" Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
