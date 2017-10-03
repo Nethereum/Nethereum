@@ -34,13 +34,15 @@ namespace Nethereum.JsonRpc.IpcClient
                     using (StreamReader streamReader = new StreamReader(networkStream))
                     using (JsonTextReader reader = new JsonTextReader(streamReader))
                     {
-                        var serializer = new JsonSerializer();
-                        serializer.CopySerializerSettings(JsonSerializerSettings);
                         //NOTE: A reader is used because the clients do not send a termination of the stream.
                         // Combining the sererialiser with the stream as we know we are dealing with just one object
                         // means that once we finished deserializing the Response object we have finished with the stream
                         // and we can dispose the stream.
-                        return serializer.Deserialize<TResponse>(reader);
+                        if (TryRead(reader))
+                        {
+                            string content = ReadJson(reader);
+                            return JsonConvert.DeserializeObject<TResponse>(content, JsonSerializerSettings);
+                        }
                     }
                     throw new RpcClientUnknownException(
                             $"Unable to parse response from the ipc server");
@@ -57,7 +59,7 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private bool disposedValue;
 
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {

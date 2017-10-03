@@ -6,6 +6,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;
+using System.Threading;
 
 namespace Nethereum.Web3.Tests
 {
@@ -58,11 +59,6 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3Geth(ClientFactory.GetClient());
 
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600000);
-            Assert.True(result, "Account should be unlocked");
-
-           
-
             var eth = web3.Eth;
             var transactions = eth.Transactions;
 
@@ -78,7 +74,7 @@ namespace Nethereum.Web3.Tests
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(100);
+                Thread.Sleep(100);
                 receipt = await transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
@@ -121,7 +117,7 @@ namespace Nethereum.Web3.Tests
 
             while (receiptTransaction == null)
             {
-                await Task.Delay(100);
+                Thread.Sleep(100);
                 receiptTransaction = await transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
             }
 
