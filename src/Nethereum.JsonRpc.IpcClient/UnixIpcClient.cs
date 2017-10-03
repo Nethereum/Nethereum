@@ -56,13 +56,15 @@ namespace Nethereum.JsonRpc.IpcClient
             while (bytesRead > 0)
             {
                 memoryStream.Write(buffer, 0, bytesRead);
-                if (bytesRead == readBufferSize)
+                var lastByte = buffer[bytesRead - 1];
+
+                if (lastByte == 10)  //return signalled with a line feed
                 {
-                    bytesRead = ReceiveBufferedResponse(client, buffer);
+                    bytesRead = 0;
                 }
                 else
                 {
-                    bytesRead = 0;
+                    bytesRead = ReceiveBufferedResponse(client, buffer);
                 }
             }
             return memoryStream;
