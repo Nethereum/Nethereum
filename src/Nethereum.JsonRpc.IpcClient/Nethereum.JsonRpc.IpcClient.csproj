@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Nethereum.JsonRpc IpcClient for Windows Class Library</Description>
+    <Description>Nethereum.JsonRpc IpcClient for NamedPipes and UnixSockets Class Library</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.IpcClient</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>

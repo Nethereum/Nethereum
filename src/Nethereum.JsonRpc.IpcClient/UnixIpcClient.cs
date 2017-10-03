@@ -27,10 +27,7 @@ namespace Nethereum.JsonRpc.IpcClient
 
                 using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
-                    Console.WriteLine("Connecting");
                     client.Connect(endPoint);
-                    Console.WriteLine("Connected: " + client.Connected + " Now sending");
-                   
                     var val = client.Send(requestBytes, SocketFlags.None);
 
                     using (NetworkStream networkStream = new NetworkStream(client))
@@ -38,6 +35,11 @@ namespace Nethereum.JsonRpc.IpcClient
                     using (JsonTextReader reader = new JsonTextReader(streamReader))
                     {
                         var serializer = new JsonSerializer();
+                        serializer.CopySerializerSettings(JsonSerializerSettings);
+                        //NOTE: A reader is used because the clients do not send a termination of the stream.
+                        // Combining the sererialiser with the stream as we know we are dealing with just one object
+                        // means that once we finished deserializing the Response object we have finished with the stream
+                        // and we can dispose the stream.
                         return serializer.Deserialize<TResponse>(reader);
                     }
                     throw new RpcClientUnknownException(

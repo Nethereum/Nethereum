@@ -28,23 +28,19 @@ namespace Nethereum.JsonRpc.IpcClient
 
         private NamedPipeClientStream GetPipeClient()
         {
-            lock (_lockingObject)
+            try
             {
-                try
+                if (_pipeClient == null || !_pipeClient.IsConnected)
                 {
-                    if (_pipeClient == null || !_pipeClient.IsConnected)
-                    {
-                        _pipeClient = new NamedPipeClientStream(IpcPath);
-
-                        _pipeClient.Connect();
-                    }
+                    _pipeClient = new NamedPipeClientStream(IpcPath);
+                    _pipeClient.Connect();
                 }
-                catch
-                {
-                    //Connection error we want to allow to retry.
-                    _pipeClient = null;
-                    throw;
-                }
+            }
+            catch
+            {
+                //Connection error we want to allow to retry.
+                _pipeClient = null;
+                throw;
             }
             return _pipeClient;
         }
@@ -54,17 +50,27 @@ namespace Nethereum.JsonRpc.IpcClient
         {
             try
             {
-                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-                await GetPipeClient().WriteAsync(requestBytes, 0, requestBytes.Length).ConfigureAwait(false);
-                using (StreamReader streamReader = new StreamReader(GetPipeClient()))
-                using (JsonTextReader reader = new JsonTextReader(streamReader))
+                lock (_lockingObject)
                 {
-                    var serializer = new JsonSerializer();
-                    return serializer.Deserialize<TResponse>(reader);
+                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                    var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+
+                    GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
+
+                    using (StreamReader streamReader = new StreamReader(GetPipeClient()))
+                    using (JsonTextReader reader = new JsonTextReader(streamReader))
+                    {
+                        var serializer = new JsonSerializer();
+                        serializer.CopySerializerSettings(JsonSerializerSettings);
+                        //NOTE: A reader is used because the clients do not send a termination of the stream.
+                        // Combining the sererialiser with the stream as we know we are dealing with just one object
+                        // means that once we finished deserializing the Response object we have finished with the stream
+                        // and we can dispose the stream.
+                        return serializer.Deserialize<TResponse>(reader);
+                    }
+                    throw new RpcClientUnknownException(
+                                 $"Unable to parse response from the ipc server");
                 }
-                throw new RpcClientUnknownException(
-                             $"Unable to parse response from the ipc server");
 
             }
             catch (Exception ex) when (!(ex is RpcClientException) && !(ex is RpcException))
