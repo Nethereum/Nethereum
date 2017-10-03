@@ -16,6 +16,58 @@ namespace Nethereum.JsonRpc.IpcClient
 
         }
 
+        public int ReceiveBufferedResponse(Socket client, byte[] buffer)
+        {
+#if NET462
+            int bytesRead = 0;
+            if (Task.Run(() => 
+                    bytesRead = client.Receive(buffer, SocketFlags.None)
+                ).Wait(2000))
+            {
+                return bytesRead;
+            }
+            else
+            {
+                return bytesRead;
+            }
+#else
+             int bytesRead = 0;
+            if (Task.Run(async () => 
+                    bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
+                ).Wait(2000))
+            {
+                return bytesRead;
+            }
+            else
+            {
+                return bytesRead;
+            }
+#endif
+        }
+
+        public MemoryStream ReceiveFullResponse(Socket client)
+        {
+            var readBufferSize = 512;
+            var memoryStream = new MemoryStream();
+
+            int bytesRead = 0;
+            byte[] buffer = new byte[readBufferSize];
+            bytesRead = ReceiveBufferedResponse(client, buffer);
+            while (bytesRead > 0)
+            {
+                memoryStream.Write(buffer, 0, bytesRead);
+                if (bytesRead == readBufferSize)
+                {
+                    bytesRead = ReceiveBufferedResponse(client, buffer);
+                }
+                else
+                {
+                    bytesRead = 0;
+                }
+            }
+            return memoryStream;
+        }
+
         protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
         {
             try
@@ -24,28 +76,29 @@ namespace Nethereum.JsonRpc.IpcClient
                 var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
 
                 var endPoint = new UnixDomainSocketEndPoint(IpcPath);
+              
 
                 using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
                     client.Connect(endPoint);
+                    client.SendBufferSize = requestBytes.Length;
+#if NET462
                     var val = client.Send(requestBytes, SocketFlags.None);
-
-                    using (NetworkStream networkStream = new NetworkStream(client))
-                    using (StreamReader streamReader = new StreamReader(networkStream))
-                    using (JsonTextReader reader = new JsonTextReader(streamReader))
+#else
+                    var val = await client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).ConfigureAwait(false);
+#endif
+                    using (var memoryStream = ReceiveFullResponse(client))
                     {
-                        //NOTE: A reader is used because the clients do not send a termination of the stream.
-                        // Combining the sererialiser with the stream as we know we are dealing with just one object
-                        // means that once we finished deserializing the Response object we have finished with the stream
-                        // and we can dispose the stream.
-                        if (TryRead(reader))
+                        memoryStream.Position = 0;
+                        using (StreamReader streamReader = new StreamReader(memoryStream))
+                        using (JsonTextReader reader = new JsonTextReader(streamReader))
                         {
-                            string content = ReadJson(reader);
-                            return JsonConvert.DeserializeObject<TResponse>(content, JsonSerializerSettings);
+                            var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                            return serializer.Deserialize<TResponse>(reader);
                         }
+                        throw new RpcClientUnknownException(
+                                $"Unable to parse response from the ipc server");
                     }
-                    throw new RpcClientUnknownException(
-                            $"Unable to parse response from the ipc server");
                 }
 
             }
@@ -55,7 +108,7 @@ namespace Nethereum.JsonRpc.IpcClient
             }
         }
 
-        #region IDisposable Support
+#region IDisposable Support
 
         private bool disposedValue;
 
@@ -67,6 +120,6 @@ namespace Nethereum.JsonRpc.IpcClient
             }
         }
 
-        #endregion
+#endregion
     }
 }

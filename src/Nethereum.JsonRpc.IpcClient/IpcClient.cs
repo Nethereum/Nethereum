@@ -46,6 +46,45 @@ namespace Nethereum.JsonRpc.IpcClient
             return _pipeClient;
         }
 
+
+        public int ReceiveBufferedResponse(NamedPipeClientStream client, byte[] buffer)
+        {
+            int bytesRead = 0;
+            if (Task.Run(async () =>
+                    bytesRead = await client.ReadAsync(buffer, 0, buffer.Length)
+                ).Wait(2000))
+            {
+                return bytesRead;
+            }
+            else
+            {
+                return bytesRead;
+            }
+        }
+
+        public MemoryStream ReceiveFullResponse(NamedPipeClientStream client)
+        {
+            var readBufferSize = 512;
+            var memoryStream = new MemoryStream();
+
+            int bytesRead = 0;
+            byte[] buffer = new byte[readBufferSize];
+            bytesRead = ReceiveBufferedResponse(client, buffer);
+            while (bytesRead > 0)
+            {
+                memoryStream.Write(buffer, 0, bytesRead);
+                if (bytesRead == readBufferSize)
+                {
+                    bytesRead = ReceiveBufferedResponse(client, buffer);
+                }
+                else
+                {
+                    bytesRead = 0;
+                }
+            }
+            return memoryStream;
+        }
+
         protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
         {
             try
@@ -57,17 +96,18 @@ namespace Nethereum.JsonRpc.IpcClient
 
                     GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
 
-                    using (StreamReader streamReader = new StreamReader(GetPipeClient()))
-                    using (JsonTextReader reader = new JsonTextReader(streamReader))
+                    using (var memoryData = ReceiveFullResponse(GetPipeClient()))
                     {
-                        if (TryRead(reader))
+                        memoryData.Position = 0;
+                        using (StreamReader streamReader = new StreamReader(memoryData))
+                        using (JsonTextReader reader = new JsonTextReader(streamReader))
                         {
-                            string content = ReadJson(reader);
-                            return JsonConvert.DeserializeObject<TResponse>(content, JsonSerializerSettings);
+                            var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                            return serializer.Deserialize<TResponse>(reader);
                         }
+                        throw new RpcClientUnknownException(
+                                     $"Unable to parse response from the ipc server");
                     }
-                    throw new RpcClientUnknownException(
-                                 $"Unable to parse response from the ipc server");
                 }
 
             }
