@@ -6,9 +6,29 @@ using System.Threading.Tasks;
 namespace Nethereum.Contracts.CQS
 {
 #if !DOTNET35
-    public class ContractDeploymentHandler<TContractDeploymentMessage>: ContractTransactionHandlerBase<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeployment
+    public class ContractDeploymentHandler<TContractDeploymentMessage>: ContractHandler<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage
     {
-        protected override Task<TransactionReceipt> ExecuteTransactionAsync(TContractDeploymentMessage contractDeploymentMessage, HexBigInteger gasEstimate, CancellationTokenSource tokenSource = null)
+
+        public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractDeploymentMessage contractDeploymentMessage, CancellationTokenSource tokenSource = null)
+        {
+            ValidateContractMessage(contractDeploymentMessage);
+                var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
+            return await SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, gasEstimate, tokenSource);
+        }
+
+        protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TContractDeploymentMessage contractDeploymentMessage)
+        {
+            var maxGas = GetMaximumGas(contractDeploymentMessage);
+
+            if (maxGas == null)
+            {
+                maxGas = await EstimateGasAsync(contractDeploymentMessage).ConfigureAwait(false);
+            }
+
+            return maxGas;
+        }
+
+        protected Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractDeploymentMessage contractDeploymentMessage, HexBigInteger gasEstimate, CancellationTokenSource tokenSource = null)
         {
             return Eth.DeployContract.SendRequestAndWaitForReceiptAsync<TContractDeploymentMessage>(contractDeploymentMessage.ByteCode,
                                                                                       contractDeploymentMessage.FromAddress,
@@ -19,7 +39,7 @@ namespace Nethereum.Contracts.CQS
                                                                                       tokenSource);
         }
 
-        protected override Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage contractDeploymentMessage)
+        protected Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage contractDeploymentMessage)
         {
             return Eth.DeployContract.EstimateGasAsync<TContractDeploymentMessage>(contractDeploymentMessage.ByteCode, contractDeploymentMessage.FromAddress, null, GetValue(contractDeploymentMessage), contractDeploymentMessage);
         }

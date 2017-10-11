@@ -43,8 +43,8 @@ namespace Nethereum.RPC.Eth.Transactions
 
         public Task<string> SendRequestAsync(CallInput callInput, BlockParameter block, object id = null)
         {
+            if (block == null) return SendRequestAsync(callInput, id);
             if (callInput == null) throw new ArgumentNullException(nameof(callInput));
-            if (block == null) throw new ArgumentNullException(nameof(block));
             return base.SendRequestAsync(id, callInput, block);
         }
 

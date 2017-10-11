@@ -2,11 +2,11 @@
 
 namespace Nethereum.Contracts.CQS
 {
-    public class ContractDeployment: ContractMessage
+    public class ContractDeploymentMessage: ContractMessage
     {
         public string ByteCode { get; protected set; }
 
-        public ContractDeployment(string byteCode)
+        public ContractDeploymentMessage(string byteCode)
         {
             this.ByteCode = byteCode;
         }

@@ -7,11 +7,32 @@ namespace Nethereum.Contracts.CQS
 {
 
 #if !DOTNET35
-    public abstract class ContractTransactionHandler<TFunctionDTO> : ContractTransactionHandlerBase<TFunctionDTO> where TFunctionDTO : ContractMessage
+    public class ContractTransactionHandler<TContractMessage> : ContractHandler<TContractMessage> where TContractMessage : ContractMessage
     {
-        protected override Task<TransactionReceipt> ExecuteTransactionAsync(TFunctionDTO functionMessage, HexBigInteger gasEstimate, CancellationTokenSource tokenSource = null)
+        public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractMessage functionMessage, string contractAddress, CancellationTokenSource tokenSource = null)
         {
-            var function = GetFunction();
+            ValidateContractMessage(functionMessage);
+            var contract = Eth.GetContract<TContractMessage>(contractAddress);
+            var function = contract.GetFunction<TContractMessage>();
+
+            var gasEstimate = await GetOrEstimateMaximumGas(functionMessage, function).ConfigureAwait(false);
+            return await ExecuteTransactionAsync(functionMessage, gasEstimate, function, tokenSource);
+        }
+
+        protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TContractMessage functionMessage, Function<TContractMessage> function)
+        {
+            var maxGas = GetMaximumGas(functionMessage);
+
+            if (maxGas == null)
+            {
+                maxGas = await EstimateGasAsync(functionMessage, function).ConfigureAwait(false);
+            }
+
+            return maxGas;
+        }
+
+        protected Task<TransactionReceipt> ExecuteTransactionAsync(TContractMessage functionMessage, HexBigInteger gasEstimate, Function<TContractMessage> function, CancellationTokenSource tokenSource = null)
+        {
             return function.SendTransactionAndWaitForReceiptAsync(
                                             functionMessage,
                                             functionMessage.FromAddress,
@@ -21,9 +42,8 @@ namespace Nethereum.Contracts.CQS
                                             tokenSource);
         }
 
-        protected override Task<HexBigInteger> EstimateGasAsync(TFunctionDTO functionMessage)
+        protected Task<HexBigInteger> EstimateGasAsync(TContractMessage functionMessage, Function<TContractMessage> function)
         {
-            var function = GetFunction();
             return function.EstimateGasAsync(functionMessage, functionMessage.FromAddress, null, GetValue(functionMessage));
         }
     }

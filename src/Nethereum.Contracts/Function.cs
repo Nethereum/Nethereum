@@ -204,6 +204,12 @@ namespace Nethereum.Contracts
             return base.CallAsync<TReturn>(CreateCallInput(functionInput, from, gas, value));
         }
 
+        public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value, BlockParameter block)
+        {
+            return base.CallAsync<TReturn>(CreateCallInput(functionInput, from, gas, value), block);
+        }
+
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
              BlockParameter blockParameter)
         {

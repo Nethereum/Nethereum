@@ -8,12 +8,6 @@ namespace Nethereum.Contracts.CQS
 #if !DOTNET35
     public abstract class ContractTransactionHandlerBase<TFunctionDTO> : ContractHandler<TFunctionDTO> where TFunctionDTO : ContractMessage
     {
-        public async Task<TransactionReceipt> ExecuteAsync(TFunctionDTO functionMessage, CancellationTokenSource tokenSource = null)
-        {
-            ValidateFunctionDTO(functionMessage);
-            var gasEstimate = await GetOrEstimateMaximumGas(functionMessage).ConfigureAwait(false);
-            return await ExecuteTransactionAsync(functionMessage, gasEstimate, tokenSource); 
-        }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TFunctionDTO functionMessage)
         {

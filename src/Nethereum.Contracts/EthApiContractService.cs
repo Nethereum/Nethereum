@@ -27,10 +27,31 @@ namespace Nethereum.Contracts
             return contract;
         }
 
-        //public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<TContractDeploymentMessage>()
-        //{
-        //     return new ContractDeploymentHandler<TContractDeploymentMessage>(this.Client, )
-        //}
+#if !DOTNET35
+        public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<TContractDeploymentMessage>() 
+            where TContractDeploymentMessage: ContractDeploymentMessage
+        {
+            var contractDeploymentHandler = new ContractDeploymentHandler<TContractDeploymentMessage>();
+            contractDeploymentHandler.Initialise(this);
+            return contractDeploymentHandler;
+        }
+
+        public ContractTransactionHandler<TContractFunctionMessage> GetContractTrasactionHandler<TContractFunctionMessage>() 
+                   where TContractFunctionMessage : ContractMessage
+        {
+            var contractTransactionHandler = new ContractTransactionHandler<TContractFunctionMessage>();
+            contractTransactionHandler.Initialise(this);
+            return contractTransactionHandler;
+        }
+
+        public ContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>() 
+                   where TContractFunctionMessage : ContractMessage
+        {
+            var contractQueryHandler = new ContractQueryHandler<TContractFunctionMessage>();
+            contractQueryHandler.Initialise(this);
+            return contractQueryHandler;
+        }
+#endif
 
         public EthApiContractService(IClient client) : base(client)
         {

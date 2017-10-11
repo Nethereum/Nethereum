@@ -24,6 +24,7 @@ namespace Nethereum.Contracts
 
         public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
         {
+            Eth = eth;
             var abiExtractor = new AttributesToABIExtractor();
             ContractABI = abiExtractor.ExtractContractABI(contractMessageType);
             Address = contractAddress;
@@ -31,6 +32,7 @@ namespace Nethereum.Contracts
 
         public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
         {
+            Eth = eth;
             var abiExtractor = new AttributesToABIExtractor();
             ContractABI = abiExtractor.ExtractContractABI(contractMessagesTypes);
             Address = contractAddress;
