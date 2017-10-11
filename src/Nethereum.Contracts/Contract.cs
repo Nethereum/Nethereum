@@ -8,6 +8,8 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace Nethereum.Contracts
 {
@@ -17,6 +19,20 @@ namespace Nethereum.Contracts
         {
             Eth = eth;
             ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
+            Address = contractAddress;
+        }
+
+        public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
+        {
+            var abiExtractor = new AttributesToABIExtractor();
+            ContractABI = abiExtractor.ExtractContractABI(contractMessageType);
+            Address = contractAddress;
+        }
+
+        public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
+        {
+            var abiExtractor = new AttributesToABIExtractor();
+            ContractABI = abiExtractor.ExtractContractABI(contractMessagesTypes);
             Address = contractAddress;
         }
 

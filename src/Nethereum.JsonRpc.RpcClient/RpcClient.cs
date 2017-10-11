@@ -18,7 +18,7 @@ namespace Nethereum.JsonRpc.Client
             {
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
             }
-            this._innerRpcClient = new EdjCase.JsonRpc.Client.RpcClient(baseUrl, authHeaderValue, jsonSerializerSettings);
+            this._innerRpcClient = new EdjCase.JsonRpc.Client.RpcClient(baseUrl, (AuthenticationHeaderValue)authHeaderValue, (JsonSerializerSettings)jsonSerializerSettings, null, null);
         }
 
         protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)

@@ -11,7 +11,12 @@ namespace Nethereum.RPC
         private BlockParameter defaultBlock;
         private ITransactionManager _transactionManager;
 
-        public EthApiService(IClient client) : base(client)
+        public EthApiService(IClient client) : this(client, new TransactionManager(client))
+        {
+           
+        }
+
+        public EthApiService(IClient client, ITransactionManager transactionManager) : base(client)
         {
             Client = client;
             Accounts = new EthAccounts(client);
@@ -32,7 +37,7 @@ namespace Nethereum.RPC
             Compile = new EthApiCompilerService(client);
 
             DefaultBlock = BlockParameter.CreateLatest();
-            TransactionManager = new TransactionManager(client);
+            TransactionManager = transactionManager;
         }
 
         public BlockParameter DefaultBlock

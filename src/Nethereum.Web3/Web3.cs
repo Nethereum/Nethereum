@@ -8,6 +8,7 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
+using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Web3
 {

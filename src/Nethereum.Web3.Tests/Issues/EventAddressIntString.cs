@@ -121,7 +121,7 @@ contract Coin {
                 return web3.Eth.DeployContract.SendRequestAsync(ABI, BYTE_CODE, addressFrom, gas, valueAmount);
             }
 
-            private Contract contract;
+            private Nethereum.Contracts.Contract contract;
 
             public CoinService(Web3 web3, string address)
             {
@@ -197,7 +197,7 @@ contract Coin {
 
         }
 
-        [Function(Name = "RaiseEventMetadata")]
+        [Function("RaiseEventMetadata")]
         public class RaiseEventMetadataInput
         {
             [Parameter("address", "creator", 1, false)]
