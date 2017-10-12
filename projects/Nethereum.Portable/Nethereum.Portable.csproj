@@ -834,9 +834,6 @@
     <Compile Include="..\..\src\Nethereum.Contracts\DeployContractService.cs">
       <Link>Contracts\DeployContractService.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Nethereum.Contracts\DeployContractTransactionBuilder.cs">
-      <Link>Contracts\DeployContractTransactionBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\EthApiContractService.cs">
       <Link>Contracts\EthApiContractService.cs</Link>
     </Compile>
@@ -846,9 +843,6 @@
     <Compile Include="..\..\src\Nethereum.Contracts\EventLog.cs">
       <Link>Contracts\EventLog.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Nethereum.Contracts\EventTopicBuilder.cs">
-      <Link>Contracts\EventTopicBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Function.cs">
       <Link>Contracts\Function.cs</Link>
     </Compile>
@@ -857,6 +851,24 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\IEventLog.cs">
       <Link>Contracts\IEventLog.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\ContractBuilder.cs">
+      <Link>Contracts\Builders\ContractBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\DeployContractTransactionBuilder.cs">
+      <Link>Contracts\Builders\DeployContractTransactionBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\EventBuilder.cs">
+      <Link>Contracts\Builders\EventBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\EventTopicBuilder.cs">
+      <Link>Contracts\Builders\EventTopicBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\FunctionBuilder.cs">
+      <Link>Contracts\Builders\FunctionBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Builders\FunctionBuilderBase.cs">
+      <Link>Contracts\Builders\FunctionBuilderBase.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs">
       <Link>Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs</Link>

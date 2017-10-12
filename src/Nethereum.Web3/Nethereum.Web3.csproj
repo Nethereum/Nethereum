@@ -15,10 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Accounts\IAccount.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />

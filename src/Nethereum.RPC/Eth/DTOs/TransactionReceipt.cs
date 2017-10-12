@@ -49,6 +49,12 @@ namespace Nethereum.RPC.Eth.DTOs
         public string ContractAddress { get; set; }
 
         /// <summary>
+        ///     QUANTITY / BOOLEAN Transaction Success 1, Transaction Failed 0
+        /// </summary>
+        [JsonProperty(PropertyName = "status")]
+        public HexBigInteger Status { get; set; }
+
+        /// <summary>
         ///     logs: Array - Array of log objects, which this transaction generated.
         /// </summary>
         [JsonProperty(PropertyName = "logs")]
