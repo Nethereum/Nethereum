@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Numerics;
 
 namespace Nethereum.Util
@@ -221,17 +222,17 @@ namespace Nethereum.Util
 
         public static explicit operator double(BigDecimal value)
         {
-            return Double.Parse(value.ToString());
+            return Double.Parse(value.ToString(), CultureInfo.InvariantCulture);
         }
 
         public static explicit operator float(BigDecimal value)
         {
-            return Single.Parse(value.ToString());
+            return Single.Parse(value.ToString(), CultureInfo.InvariantCulture);
         }
 
         public static explicit operator Decimal(BigDecimal value)
         {
-            return decimal.Parse(value.ToString());
+            return decimal.Parse(value.ToString(), CultureInfo.InvariantCulture);
         }
 
         public static explicit operator int(BigDecimal value)
