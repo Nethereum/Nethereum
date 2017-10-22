@@ -30,7 +30,7 @@ namespace Nethereum.ABI.Tests
     }
     public class FunctionAttributeEncodingTests
     {
-        [Function(Name ="test")]
+        [Function("test")]
         public class FunctionIntInput
         {
             [Parameter("int")]
@@ -46,7 +46,7 @@ namespace Nethereum.ABI.Tests
             Assert.Equal("0xc6888fa10000000000000000000000000000000000000000000000000000000000000045", result);
         }
 
-        [Function(Name = "test")]
+        [Function("test")]
         [FunctionOutput]
         public class FunctionMultipleInputOutput
         {

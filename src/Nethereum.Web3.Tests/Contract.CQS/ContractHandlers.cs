@@ -1,8 +1,10 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
+using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using Xunit;
 
@@ -37,7 +39,7 @@ namespace Nethereum.Web3.Tests.Contract.CQS
                 {
                     FromAddress = senderAddress,
                     To = newAddress,
-                    TokenAmount = 1000
+                    TokenAmount = 1000,
                 };
 
                 var transferHandler = web3.Eth.GetContractTrasactionHandler<TransferFunction>();
@@ -78,9 +80,11 @@ namespace Nethereum.Web3.Tests.Contract.CQS
 
         [Function("balanceOf", "uint256")]
         public class BalanceOfFunction : ContractMessage
-        {
+        { 
+
             [Parameter("address", "_owner", 1)]
             public string Owner { get; set; }
+            
         }
 
         [FunctionOutput]

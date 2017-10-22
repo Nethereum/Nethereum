@@ -1,5 +1,6 @@
 ﻿using Nethereum.JsonRpc.Client;
 using Nethereum.Parity;
+using Nethereum.RPC.Accounts;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 

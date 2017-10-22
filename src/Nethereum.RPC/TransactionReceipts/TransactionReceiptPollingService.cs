@@ -51,8 +51,8 @@ namespace Nethereum.RPC.TransactionReceipts
         public async Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
             CancellationTokenSource tokenSource = null)
         {
-            var transaction = await transactionFunction();
-            return await PollForReceiptAsync(transaction, tokenSource);
+            var transaction = await transactionFunction().ConfigureAwait(false);
+            return await PollForReceiptAsync(transaction, tokenSource).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationTokenSource tokenSource = null)
@@ -61,7 +61,7 @@ namespace Nethereum.RPC.TransactionReceipts
             var receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             while (receipt == null)
             {
-                await Task.Delay(_retryMiliseconds);
+                await Task.Delay(_retryMiliseconds).ConfigureAwait(false);
                 tokenSource?.Token.ThrowIfCancellationRequested();
                 receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             }
@@ -74,13 +74,13 @@ namespace Nethereum.RPC.TransactionReceipts
             var txnList = new List<string>();
             foreach (var transactionFunction in transactionFunctions)
             {
-                txnList.Add(await transactionFunction());
+                txnList.Add(await transactionFunction().ConfigureAwait(false));
             }
 
             var receipts = new List<TransactionReceipt>();
             foreach (var transaction in txnList)
             {
-                var receipt = await PollForReceiptAsync(transaction, tokenSource);
+                var receipt = await PollForReceiptAsync(transaction, tokenSource).ConfigureAwait(false);
                 receipts.Add(receipt);
             }
             return receipts;
@@ -89,7 +89,7 @@ namespace Nethereum.RPC.TransactionReceipts
         public async Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null)
         {
-            var transactionReceipt = await SendRequestAsync(deployFunction, tokenSource);
+            var transactionReceipt = await SendRequestAsync(deployFunction, tokenSource).ConfigureAwait(false);
             var contractAddress = transactionReceipt.ContractAddress;
             var ethGetCode = new EthGetCode(_transactionManager.Client);
             var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
@@ -100,7 +100,7 @@ namespace Nethereum.RPC.TransactionReceipts
         public async Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null)
         {
-            var transactionReceipt = await DeployContractAsync(deployFunction, tokenSource);
+            var transactionReceipt = await DeployContractAsync(deployFunction, tokenSource).ConfigureAwait(false);
             return transactionReceipt.ContractAddress;
         }
 
