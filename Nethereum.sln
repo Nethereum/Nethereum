@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
@@ -91,11 +91,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generator.Console
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Unity", "src\Nethereum.Unity\Nethereum.Unity.csproj", "{A295CBA8-DBE4-44EF-A673-6372728CEDB0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.JsonRpc.UnixIpcClient", "src\Nethereum.JsonRpc.UnixIpcClient\Nethereum.JsonRpc.UnixIpcClient.csproj", "{F3FC9487-0A98-4180-BDED-771A1BA68F2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.JsonRpc.UnixIpcClient", "src\Nethereum.JsonRpc.UnixIpcClient\Nethereum.JsonRpc.UnixIpcClient.csproj", "{F3FC9487-0A98-4180-BDED-771A1BA68F2E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Util.Tests", "src\Nethereum.Util.Tests\Nethereum.Util.Tests.csproj", "{780EF0B9-0331-4FD0-B3D9-0A73950C3C67}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.DevP2P.Tests", "src\Nethereum.DevP2P.Tests\Nethereum.DevP2P.Tests.csproj", "{CF951C07-D403-40DB-A4A7-7F282BBBE3FF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.HdWallet", "src\Nethereum.HDWallet\Nethereum.HdWallet.csproj", "{B998C26B-90BD-4AEB-93C3-9AA35F888C69}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.HdWallet.Tests", "src\Nethereum.HdWallet.Tests\Nethereum.HdWallet.Tests.csproj", "{9C77A407-BA59-4414-BC4A-1DA81F4B6168}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -765,6 +769,38 @@ Global
 		{CF951C07-D403-40DB-A4A7-7F282BBBE3FF}.Release|x64.Build.0 = Release|Any CPU
 		{CF951C07-D403-40DB-A4A7-7F282BBBE3FF}.Release|x86.ActiveCfg = Release|Any CPU
 		{CF951C07-D403-40DB-A4A7-7F282BBBE3FF}.Release|x86.Build.0 = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|ARM.Build.0 = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|x64.Build.0 = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Debug|x86.Build.0 = Debug|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|ARM.ActiveCfg = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|ARM.Build.0 = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|x64.ActiveCfg = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|x64.Build.0 = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|x86.ActiveCfg = Release|Any CPU
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69}.Release|x86.Build.0 = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|ARM.Build.0 = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|x64.Build.0 = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Debug|x86.Build.0 = Debug|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|ARM.ActiveCfg = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|ARM.Build.0 = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|x64.ActiveCfg = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|x64.Build.0 = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|x86.ActiveCfg = Release|Any CPU
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -814,5 +850,10 @@ Global
 		{F3FC9487-0A98-4180-BDED-771A1BA68F2E} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{780EF0B9-0331-4FD0-B3D9-0A73950C3C67} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
 		{CF951C07-D403-40DB-A4A7-7F282BBBE3FF} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
+		{B998C26B-90BD-4AEB-93C3-9AA35F888C69} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{9C77A407-BA59-4414-BC4A-1DA81F4B6168} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}
 	EndGlobalSection
 EndGlobal
