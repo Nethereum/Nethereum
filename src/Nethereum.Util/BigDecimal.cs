@@ -154,7 +154,7 @@ namespace Nethereum.Util
                 }
                 else
                 {
-                    s.PadRight(decimalPos, '0');
+                    s = s.PadRight(decimalPos, '0');
                 }
             }
             return s;
