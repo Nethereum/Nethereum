@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Nethereum.Contracts.CQS
 {
 #if !DOTNET35
-    public class ContractQueryHandler<TContractMessage> : ContractHandler<TContractMessage>
+    public class ContractQueryHandler<TContractMessage> : ContractHandlerBase<TContractMessage>
         where TContractMessage : ContractMessage
     {
         public async Task<TFunctionOutput> QueryDeserializingToObjectAsync<TFunctionOutput>(TContractMessage contractFunctionMessage, string contractAddress,

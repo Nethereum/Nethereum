@@ -1,49 +1,80 @@
-﻿using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
-using Nethereum.RPC.TransactionManagers;
-using System.Numerics;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.CQS
 {
-    public abstract class ContractHandler<TContractMessage> where TContractMessage : ContractMessage
+#if !DOTNET35
+    public class ContractHandler
     {
-        public EthApiContractService Eth { get; protected set; }
-
-        public void Initialise(IClient client, ITransactionManager transactionManager)
+        public ContractHandler(string contractAddress, EthApiContractService ethApiContractService, string addressFrom = null)
         {
-            this.Eth = new EthApiContractService(client, transactionManager);
+            ContractAddress = contractAddress;
+            EthApiContractService = ethApiContractService;
+            AddressFrom = addressFrom;
         }
 
-        public void Initialise(EthApiContractService ethApiContractService)
+        protected string AddressFrom { get; set; }
+
+        public string ContractAddress { get; }
+        public EthApiContractService EthApiContractService { get; }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage transferMessage, CancellationTokenSource tokenSource = null) where TEthereumContractFunctionMessage : ContractMessage
         {
-            this.Eth = ethApiContractService;
+            var command = EthApiContractService.GetContractTrasactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transferMessage);
+            return command.SendRequestAndWaitForReceiptAsync(transferMessage, ContractAddress, tokenSource);
         }
 
-        protected virtual HexBigInteger GetMaximumGas(TContractMessage contractMessage)
+        public Task<TransactionReceipt> SendDeploymentRequestAndWaitForReceiptAsync<TEthereumContractDeploymentMessage>(TEthereumContractDeploymentMessage ethereumDeploymentMessage, CancellationTokenSource tokenSource = null)
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
         {
-            return GetDefaultValue(contractMessage.Gas);
+            SetAddressFrom(ethereumDeploymentMessage);
+            var deploymentHandler = EthApiContractService.GetContractDeploymentHandler<TEthereumContractDeploymentMessage>();
+            return deploymentHandler.SendRequestAndWaitForReceiptAsync(ethereumDeploymentMessage, tokenSource);
         }
 
-        protected virtual HexBigInteger GetValue(TContractMessage contractMessage)
+        public Task<string> SendDeploymentRequestAsync<TEthereumContractDeploymentMessage>(TEthereumContractDeploymentMessage ethereumDeploymentMessage)
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
         {
-            return GetDefaultValue(contractMessage.AmountToSend);
+            SetAddressFrom(ethereumDeploymentMessage);
+            var deploymentHandler = EthApiContractService.GetContractDeploymentHandler<TEthereumContractDeploymentMessage>();
+            return deploymentHandler.SendRequestAsync(ethereumDeploymentMessage);
         }
 
-        protected virtual HexBigInteger GetGasPrice(TContractMessage contractMessage)
+        public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage, TEthereumFunctionReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : ContractMessage
+            where TEthereumFunctionReturn : new()
         {
-            return GetDefaultValue(contractMessage.GasPrice);
+            SetAddressFrom(ethereumContractFunctionMessage);
+            var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
+            return queryHandler.QueryDeserializingToObjectAsync<TEthereumFunctionReturn>(ethereumContractFunctionMessage,
+                ContractAddress, blockParameter);
         }
 
-        protected HexBigInteger GetDefaultValue(BigInteger? bigInteger)
+        public Task<TReturn> QueryAsync<TEthereumContractFunctionMessage, TReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : ContractMessage
         {
-            return bigInteger == null ? null : new HexBigInteger(bigInteger.Value);
+            SetAddressFrom(ethereumContractFunctionMessage);
+            var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
+            return queryHandler.QueryAsync<TReturn>(ethereumContractFunctionMessage,
+                ContractAddress, blockParameter);
         }
 
-        protected virtual void ValidateContractMessage(TContractMessage contractMessage)
+        public Task<TReturn> QueryAsync<TEthereumContractFunctionMessage, TReturn>(BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : ContractMessage, new()
         {
-            //check attribute type?
+            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
+            SetAddressFrom(ethereumContractFunctionMessage);
+            var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
+            return queryHandler.QueryAsync<TReturn>(ethereumContractFunctionMessage,
+                ContractAddress, blockParameter);
         }
 
+        protected void SetAddressFrom(ContractMessage contractMessage)
+        {
+            contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;
+        }
     }
+#endif
 }

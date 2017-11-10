@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Nethereum.Contracts.CQS
 {
 #if !DOTNET35
-    public abstract class ContractTransactionHandlerBase<TFunctionDTO> : ContractHandler<TFunctionDTO> where TFunctionDTO : ContractMessage
+    public abstract class ContractTransactionHandlerBase<TFunctionDTO> : ContractHandlerBase<TFunctionDTO> where TFunctionDTO : ContractMessage
     {
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TFunctionDTO functionMessage)

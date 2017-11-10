@@ -7,7 +7,7 @@ namespace Nethereum.Contracts.CQS
 {
 
 #if !DOTNET35
-    public class ContractTransactionHandler<TContractMessage> : ContractHandler<TContractMessage> where TContractMessage : ContractMessage
+    public class ContractTransactionHandler<TContractMessage> : ContractHandlerBase<TContractMessage> where TContractMessage : ContractMessage
     {
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractMessage functionMessage, string contractAddress, CancellationTokenSource tokenSource = null)
         {

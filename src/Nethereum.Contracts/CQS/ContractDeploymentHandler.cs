@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Nethereum.Contracts.CQS
 {
 #if !DOTNET35
-    public class ContractDeploymentHandler<TContractDeploymentMessage>: ContractHandler<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage
+    public class ContractDeploymentHandler<TContractDeploymentMessage>: ContractHandlerBase<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage
     {
 
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractDeploymentMessage contractDeploymentMessage, CancellationTokenSource tokenSource = null)
@@ -14,6 +14,13 @@ namespace Nethereum.Contracts.CQS
             ValidateContractMessage(contractDeploymentMessage);
                 var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
             return await SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, gasEstimate, tokenSource);
+        }
+
+        public async Task<string> SendRequestAsync(TContractDeploymentMessage contractDeploymentMessage)
+        {
+            ValidateContractMessage(contractDeploymentMessage);
+            var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
+            return await SendRequestAsync(contractDeploymentMessage, gasEstimate);
         }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TContractDeploymentMessage contractDeploymentMessage)
@@ -26,6 +33,16 @@ namespace Nethereum.Contracts.CQS
             }
 
             return maxGas;
+        }
+
+        protected Task<string> SendRequestAsync(TContractDeploymentMessage contractDeploymentMessage, HexBigInteger gasEstimate)
+        {
+            return Eth.DeployContract.SendRequestAsync(contractDeploymentMessage.ByteCode,
+                contractDeploymentMessage.FromAddress,
+                gasEstimate,
+                GetGasPrice(contractDeploymentMessage),
+                GetValue(contractDeploymentMessage),
+                contractDeploymentMessage);
         }
 
         protected Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractDeploymentMessage contractDeploymentMessage, HexBigInteger gasEstimate, CancellationTokenSource tokenSource = null)
