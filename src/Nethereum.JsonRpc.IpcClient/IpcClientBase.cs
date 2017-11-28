@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Client;
-using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using RpcError = Nethereum.JsonRpc.Client.RpcError;
 using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
 using System.Text;
 using System.IO;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
@@ -28,8 +27,8 @@ namespace Nethereum.JsonRpc.IpcClient
         protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
         {
             var response =
-                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters))
+                await SendAsync<RpcRequestMessage, RpcResponseMessage>(
+                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters))
                     .ConfigureAwait(false);
             HandleRpcError(response);
             return response.GetResult<T>();
@@ -39,14 +38,14 @@ namespace Nethereum.JsonRpc.IpcClient
             params object[] paramList)
         {
             var response =
-                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
-                        new EdjCase.JsonRpc.Core.RpcRequest(Configuration.DefaultRequestId, method, paramList))
+                await SendAsync<RpcRequestMessage, RpcResponseMessage>(
+                        new RpcRequestMessage(Configuration.DefaultRequestId, method, paramList))
                     .ConfigureAwait(false);
             HandleRpcError(response);
             return response.GetResult<T>();
         }
 
-        private void HandleRpcError(RpcResponse response)
+        private void HandleRpcError(RpcResponseMessage response)
         {
             if (response.HasError)
                 throw new RpcResponseException(new RpcError(response.Error.Code, response.Error.Message,
@@ -56,8 +55,8 @@ namespace Nethereum.JsonRpc.IpcClient
         public override async Task SendRequestAsync(RpcRequest request, string route = null)
         {
             var response =
-                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, request.RawParameters))
+                await SendAsync<RpcRequestMessage, RpcResponseMessage>(
+                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters))
                     .ConfigureAwait(false);
             HandleRpcError(response);
         }
@@ -65,8 +64,8 @@ namespace Nethereum.JsonRpc.IpcClient
         public override async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
             var response =
-                await SendAsync<EdjCase.JsonRpc.Core.RpcRequest, RpcResponse>(
-                        new EdjCase.JsonRpc.Core.RpcRequest(Configuration.DefaultRequestId, method, paramList))
+                await SendAsync<RpcRequestMessage, RpcResponseMessage>(
+                        new RpcRequestMessage(Configuration.DefaultRequestId, method, paramList))
                     .ConfigureAwait(false);
             HandleRpcError(response);
         }

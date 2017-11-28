@@ -12,7 +12,7 @@ namespace Nethereum.Contracts.CQS
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TContractDeploymentMessage contractDeploymentMessage, CancellationTokenSource tokenSource = null)
         {
             ValidateContractMessage(contractDeploymentMessage);
-                var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
+            var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
             return await SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, gasEstimate, tokenSource);
         }
 

@@ -3,8 +3,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Client;
-using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using RpcError = Nethereum.JsonRpc.Client.RpcError;
@@ -107,13 +105,10 @@ namespace Nethereum.JsonRpc.IpcClient
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
                             return serializer.Deserialize<TResponse>(reader);
                         }
-                        throw new RpcClientUnknownException(
-                                     $"Unable to parse response from the ipc server");
                     }
                 }
-
             }
-            catch (Exception ex) when (!(ex is RpcClientException) && !(ex is RpcException))
+            catch (Exception ex)
             {
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
