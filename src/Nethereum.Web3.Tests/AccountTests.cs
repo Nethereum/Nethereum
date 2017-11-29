@@ -103,12 +103,6 @@ namespace Nethereum.Web3.Tests
 
             var web3 = new Web3(acccount, ClientFactory.GetClient());
 
-          
-
-            var web3Geth = new Web3Geth(ClientFactory.GetClient());
-
-            //assumed client is mining already
-
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
 

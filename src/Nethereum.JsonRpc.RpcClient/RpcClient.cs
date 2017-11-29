@@ -119,31 +119,39 @@ namespace Nethereum.JsonRpc.Client
                 {
                     CreateNewHttpClient();
                 }
+                return GetClient();
             }
-            return GetClient();
         }
 
         private HttpClient GetClient()
         {
-            if (_firstHttpClient) return _httpClient;
-            return _httpClient2;
+            lock (_lockObject)
+            {
+                return _firstHttpClient ? _httpClient : _httpClient2;
+            }
         }
 
         private void CreateNewHttpClient()
         {
-            var httpClient = new HttpClient(_httpClientHandler);
+            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
             httpClient.BaseAddress = _baseUrl;
             _httpClientLastCreatedAt = DateTime.UtcNow;
             if (_firstHttpClient)
             {
-                _firstHttpClient = false;
-                _httpClient2 = httpClient;
+                lock (_lockObject)
+                {
+                    _firstHttpClient = false;
+                    _httpClient2 = httpClient;
+                }
             }
             else
             {
-                _firstHttpClient = true;
-                _httpClient = httpClient;
+                lock (_lockObject)
+                {
+                    _firstHttpClient = true;
+                    _httpClient = httpClient;
+                }
             }
         }
     }
