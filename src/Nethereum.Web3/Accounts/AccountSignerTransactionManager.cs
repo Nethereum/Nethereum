@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -12,14 +13,76 @@ using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
+
+    public interface INonceProvider
+    {
+        IClient Client { get; set; }
+        Task<HexBigInteger> GetNonceAsync();
+    }
+
+    public class InMemoryMultithreadedNonceProvider: INonceProvider
+    {
+        private BigInteger _initialNonce;
+        private object _lockObject = new object();
+
+        public InMemoryMultithreadedNonceProvider(BigInteger initialNonce)
+        {
+            _initialNonce = initialNonce;
+        }
+
+        public IClient Client { get; set; }
+
+        public async Task<HexBigInteger> GetNonceAsync()
+        {
+            lock (_lockObject)
+            {
+                _initialNonce = _initialNonce + 1;
+            }
+            return new HexBigInteger(_initialNonce);
+        }
+    }
+
+
+    public class InMemoryNonceProvider: INonceProvider
+    {
+        private BigInteger _nonceCount = -1;
+        public IClient Client { get; set; }
+        private readonly string _account;
+
+        public InMemoryNonceProvider(string account, IClient client)
+        {
+            Client = client;
+            _account = account;
+        }
+
+        public async Task<HexBigInteger> GetNonceAsync()
+        {
+            if (Client == null) throw new NullReferenceException("Client not configured");
+            var ethGetTransactionCount = new EthGetTransactionCount(Client);
+            //we are doing a check all the time on current nonce, we could just cache an increment but we might get out of sync.
+            var nonce = await ethGetTransactionCount.SendRequestAsync(_account, BlockParameter.CreatePending()).ConfigureAwait(false);
+            if (nonce.Value <= _nonceCount)
+            {
+                _nonceCount = _nonceCount + 1;
+                nonce = new HexBigInteger(_nonceCount);
+            }
+            else
+            {
+                _nonceCount = nonce.Value;
+            }
+            return nonce;
+        }
+    }
+
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly string _privateKey;
         private readonly string _account;
         private readonly TransactionSigner _transactionSigner;
-        private BigInteger _nonceCount = -1;
         public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
         public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+
+        public INonceProvider NonceProvider { get; set; }
 
         public AccountSignerTransactionManager(IClient rpcClient, string privateKey)
         {
@@ -28,6 +91,7 @@ namespace Nethereum.Web3.Accounts
             _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
             _transactionSigner = new TransactionSigner();
+            NonceProvider = new InMemoryNonceProvider(_account, Client);
         }
 
         public AccountSignerTransactionManager(string privateKey):this(null, privateKey)
@@ -44,21 +108,11 @@ namespace Nethereum.Web3.Accounts
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            var ethGetTransactionCount = new EthGetTransactionCount(Client);
             var nonce = transaction.Nonce;
             if (nonce == null)
-            {   
-                //we are doing a check all the time on current nonce, we could just cache an increment but we might get out of sync.
-                nonce = await ethGetTransactionCount.SendRequestAsync(_account).ConfigureAwait(false);
-                if (nonce.Value <= _nonceCount)
-                {
-                    _nonceCount = _nonceCount + 1;
-                    nonce = new HexBigInteger(_nonceCount);
-                }
-                else
-                {
-                    _nonceCount = nonce.Value;
-                }
+            {
+                NonceProvider.Client = Client;
+                nonce = await NonceProvider.GetNonceAsync();
             }
             return nonce;
         }
