@@ -20,34 +20,12 @@ namespace Nethereum.Web3.Accounts
         Task<HexBigInteger> GetNonceAsync();
     }
 
-    public class InMemoryMultithreadedNonceProvider: INonceProvider
-    {
-        private BigInteger _initialNonce;
-        private object _lockObject = new object();
-
-        public InMemoryMultithreadedNonceProvider(BigInteger initialNonce)
-        {
-            _initialNonce = initialNonce;
-        }
-
-        public IClient Client { get; set; }
-
-        public async Task<HexBigInteger> GetNonceAsync()
-        {
-            lock (_lockObject)
-            {
-                _initialNonce = _initialNonce + 1;
-            }
-            return new HexBigInteger(_initialNonce);
-        }
-    }
-
-
     public class InMemoryNonceProvider: INonceProvider
     {
         private BigInteger _nonceCount = -1;
         public IClient Client { get; set; }
         private readonly string _account;
+        private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1,1);
 
         public InMemoryNonceProvider(string account, IClient client)
         {
@@ -57,20 +35,29 @@ namespace Nethereum.Web3.Accounts
 
         public async Task<HexBigInteger> GetNonceAsync()
         {
+
             if (Client == null) throw new NullReferenceException("Client not configured");
             var ethGetTransactionCount = new EthGetTransactionCount(Client);
-            //we are doing a check all the time on current nonce, we could just cache an increment but we might get out of sync.
-            var nonce = await ethGetTransactionCount.SendRequestAsync(_account, BlockParameter.CreatePending()).ConfigureAwait(false);
-            if (nonce.Value <= _nonceCount)
+            await _semaphoreSlim.WaitAsync();
+            try
             {
-                _nonceCount = _nonceCount + 1;
-                nonce = new HexBigInteger(_nonceCount);
+                var nonce = await ethGetTransactionCount.SendRequestAsync(_account, BlockParameter.CreatePending())
+                    .ConfigureAwait(false);
+                if (nonce.Value <= _nonceCount)
+                {
+                    _nonceCount = _nonceCount + 1;
+                    nonce = new HexBigInteger(_nonceCount);
+                }
+                else
+                {
+                    _nonceCount = nonce.Value;
+                }
+                return nonce;
             }
-            else
+            finally
             {
-                _nonceCount = nonce.Value;
+                _semaphoreSlim.Release();
             }
-            return nonce;
         }
     }
 

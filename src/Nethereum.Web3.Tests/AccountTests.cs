@@ -2,7 +2,6 @@
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
 using System.Threading.Tasks;
-using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
@@ -16,35 +15,6 @@ namespace Nethereum.Web3.Tests
             var web3 = new Web3("https://mainnet.infura.io/");
             var result = await web3.Eth.Filters.GetLogs.SendRequestAsync(new RPC.Eth.DTOs.NewFilterInput() { Address = new[] { "0x5c6226801Eef33db1fB807081f183eA75210f62B" } });
 
-        }
-
-        [Fact]
-        public async void ShouldBeAbleToHandleNoncesOfMultipleTxn()
-        {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var password = "password";
-            var abi = @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
-            var byteCode =
-                "0x60606040526040516020806052833950608060405251600081905550602b8060276000396000f3606060405260e060020a60003504631df4f1448114601a575b005b600054600435026060908152602090f3";
-
-            var multiplier = 7;
-
-            var web3 = new Web3(new ManagedAccount(senderAddress, password), ClientFactory.GetClient());
-
-            var txn1 = await
-                web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
-
-            var txn2 = await
-                web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
-
-            var txn3 = await
-                web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
-
-            var pollService = new TransactionReceiptPollingService(web3.TransactionManager);
-
-            var receipt1 = pollService.PollForReceiptAsync(txn1);
-            var receipt2 = pollService.PollForReceiptAsync(txn2);
-            var receipt3 = pollService.PollForReceiptAsync(txn3);
         }
 
         [Fact]
