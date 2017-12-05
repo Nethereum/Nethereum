@@ -635,6 +635,14 @@
 				<Link>RPC\Net\NetVersion.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\NonceServices\InMemoryNonceService.cs">
+				<Link>RPC\NonceServices\InMemoryNonceService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\NonceServices\INonceService.cs">
+				<Link>RPC\NonceServices\INonceService.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalListAccounts.cs">
 				<Link>RPC\Personal\PersonalListAccounts.cs</Link>
 		</Compile>

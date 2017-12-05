@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Nethereum.RPC.NonceServices;
 
 namespace Nethereum.RPC.Accounts
 {
@@ -9,5 +10,7 @@ namespace Nethereum.RPC.Accounts
     {
         string Address { get; }
         ITransactionManager TransactionManager { get; }
+
+        INonceService NonceService { get; set; }
     }
 }

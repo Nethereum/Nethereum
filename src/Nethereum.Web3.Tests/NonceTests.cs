@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts;
 using Xunit;
@@ -23,8 +24,8 @@ namespace Nethereum.Web3.Tests
             var multiplier = 7;
 
             var client = ClientFactory.GetClient();
-            var nonceProvider = new InMemoryNonceProvider(senderAddress, client);
-
+            var nonceProvider = new InMemoryNonceService(senderAddress, client);
+            //tested with 1000
             var listTasks = 10;
             var taskItems = new List<int>();
             for (int i = 0; i < listTasks; i++)
@@ -39,9 +40,9 @@ namespace Nethereum.Web3.Tests
 
             Parallel.ForEach(taskItems, async (item, state) =>
             {
-                var web3 = new Web3(new Account(privateKey), client);
-                ((AccountSignerTransactionManager)web3.TransactionManager).NonceProvider = nonceProvider;
-
+                var account = new Account(privateKey);
+                account.NonceService = nonceProvider;
+                var web3 = new Web3(account, client);
                 var txn = await
                     web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000),
                         null, multiplier);
@@ -73,25 +74,21 @@ namespace Nethereum.Web3.Tests
             var multiplier = 7;
 
             var client = ClientFactory.GetClient();
-            var nonceProvider = new InMemoryNonceProvider(senderAddress, client);
-
-            var web31 = new Web3(new Account(privateKey), client);
-            ((AccountSignerTransactionManager)web31.TransactionManager).NonceProvider = nonceProvider;
-
+            var nonceProvider = new InMemoryNonceService(senderAddress, client);
+            var account = new Account(privateKey) {NonceService = nonceProvider};
+            var web31 = new Web3(account, client);
+            
             var txn1 = await
                 web31.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
 
-            var web32 = new Web3(new Account(privateKey), client);
-            ((AccountSignerTransactionManager)web32.TransactionManager).NonceProvider = nonceProvider;
-
+            var web32 = new Web3(account, client);
+            
 
             var txn2 = await
                 web32.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
 
-            var web33 = new Web3(new Account(privateKey), client);
-            ((AccountSignerTransactionManager)web33.TransactionManager).NonceProvider = nonceProvider;
-
-
+            var web33 = new Web3(account, client);
+            
             var txn3 = await
                 web33.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
 

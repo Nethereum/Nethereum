@@ -1,4 +1,5 @@
 ﻿using Nethereum.RPC.Accounts;
+using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 
@@ -23,7 +24,7 @@ namespace Nethereum.Web3.Accounts
             return new Account(key);
         }
 
-        private string _privateKey;
+        public string PrivateKey { get; private set; }
 
         public Account(EthECKey key)
         {
@@ -42,17 +43,18 @@ namespace Nethereum.Web3.Accounts
 
         private void Initialise(EthECKey key)
         {
-            _privateKey = key.GetPrivateKey();
+            PrivateKey = key.GetPrivateKey();
             Address = key.GetPublicAddress();
             InitialiseDefaultTransactionManager();
         }
 
         protected virtual void InitialiseDefaultTransactionManager()
         {
-            TransactionManager = new AccountSignerTransactionManager(_privateKey);
+            TransactionManager = new AccountSignerTransactionManager(null, this);
         }
 
         public string Address { get; protected set; }
         public ITransactionManager TransactionManager { get; protected set; }
+        public INonceService NonceService { get; set; }
     }
 }

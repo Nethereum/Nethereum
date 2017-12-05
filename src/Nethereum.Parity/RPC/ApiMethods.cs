@@ -58,6 +58,9 @@
         parity_enode,
         parity_mode,
         parity_nodeName,
-        parity_signerPort
+        parity_signerPort,
+        trace_block,
+        trace_get,
+        trace_transaction
     }
 }
