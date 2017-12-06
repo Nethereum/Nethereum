@@ -61,6 +61,9 @@
         parity_signerPort,
         trace_block,
         trace_get,
-        trace_transaction
+        trace_transaction,
+        trace_filter,
+        trace_call,
+        trace_rawTransaction
     }
 }

@@ -7,7 +7,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Parity.RPC.Trace.TraceDTOs
 {
-    public class TraceFilter
+    public class TraceFilterDTO
     {
         /// <summary>
         /// From this block
