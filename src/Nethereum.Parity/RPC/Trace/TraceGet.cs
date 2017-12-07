@@ -16,11 +16,11 @@ namespace Nethereum.Parity.RPC.Trace
         {
             public TraceGet(IClient client) : base(client, ApiMethods.trace_get.ToString()) { }
 
-            public async Task<JObject> SendRequestAsync(string transactionHash, HexBigInteger index, object id = null)
+            public async Task<JObject> SendRequestAsync(string transactionHash, HexBigInteger[] index, object id = null)
             {
                 return await base.SendRequestAsync(id, transactionHash, index);
             }
-            public RpcRequest BuildRequest(string transactionHash, HexBigInteger index, object id = null)
+            public RpcRequest BuildRequest(string transactionHash, HexBigInteger[] index, object id = null)
             {
                 return base.BuildRequest(id, transactionHash, index);
             }

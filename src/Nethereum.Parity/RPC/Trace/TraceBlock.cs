@@ -11,13 +11,13 @@ namespace Nethereum.Parity.RPC.Trace
     ///<Summary>
     /// Returns traces created at given block    
     ///</Summary>
-    public class TraceBlock : RpcRequestResponseHandler<JObject>
+    public class TraceBlock : RpcRequestResponseHandler<JArray>
     {
         public TraceBlock(IClient client) : base(client, ApiMethods.trace_block.ToString())
         {
         }
 
-        public async Task<JObject> SendRequestAsync(HexBigInteger blockNumber, object id = null)
+        public async Task<JArray> SendRequestAsync(HexBigInteger blockNumber, object id = null)
         {
             return await base.SendRequestAsync(id, blockNumber);
         }
