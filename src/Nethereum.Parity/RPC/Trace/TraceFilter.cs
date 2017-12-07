@@ -9,11 +9,11 @@ namespace Nethereum.Parity.RPC.Trace
     ///<Summary>
        /// Returns traces matching given filter    
     ///</Summary>
-    public class TraceFilter : RpcRequestResponseHandler<JObject>
+    public class TraceFilter : RpcRequestResponseHandler<JArray>
     {
         public TraceFilter(IClient client) : base(client, ApiMethods.trace_filter.ToString()) { }
 
-        public async Task<JObject> SendRequestAsync(TraceFilterDTO traceFilter, object id = null)
+        public async Task<JArray> SendRequestAsync(TraceFilterDTO traceFilter, object id = null)
         {
             return await base.SendRequestAsync(id, traceFilter);
         }

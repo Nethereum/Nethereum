@@ -23,13 +23,20 @@ namespace Nethereum.Parity.RPC.Trace.TraceDTOs
         /// <summary>
         /// From address
         /// </summary>
-        [JsonProperty(PropertyName = "fromAddres")]
+        [JsonProperty(PropertyName = "fromAddress")]
         public string[] FromAddresses { get; set; }
+
+        /// <summary>
+        /// Count
+        /// </summary>
+        [JsonProperty(PropertyName = "count")]
+        public int Count { get; set; }
+
 
         /// <summary>
         /// To address
         /// </summary>
         [JsonProperty(PropertyName = "toAddress")]
-        public string ToAddress { get; set; }
+        public string[] ToAddress { get; set; }
     }
 }
