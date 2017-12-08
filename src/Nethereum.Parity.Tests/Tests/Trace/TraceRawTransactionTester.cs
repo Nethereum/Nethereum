@@ -1,20 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.Parity.RPC.Admin;
 using Nethereum.Parity.RPC.Trace;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Tests;
+using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Nethereum.Parity.Tests.Tests.Trace
 {
-    public class TraceTransactionTester: RPCRequestTester<JObject>
+    public class TraceRawTransactionTester : RPCRequestTester<JObject>
     {
         [Fact]
         public async void ShouldNotReturnNull()
@@ -35,18 +34,25 @@ namespace Nethereum.Parity.Tests.Tests.Trace
 
             var web3 = new Web3.Web3(new Account(privateKey), client);
 
-            //var receipt = await web3.TransactionManager.TransactionReceiptService.SendRequestAsync(new TransactionInput(){From = senderAddress, To = senderAddress, Value = new HexBigInteger(Web3.Web3.Convert.ToWei(1))});
             var receipt = await
-               web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
+                web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
 
+            var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
-            var traceTransaction = new TraceTransaction(client);
-            return await traceTransaction.SendRequestAsync(receipt.TransactionHash);
+            var function = contract.GetFunction("multiply");
+            var transactionInput = function.CreateTransactionInput(senderAddress, null, null, 7);
+            var signer = new TransactionSigner();
+            var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(senderAddress);
+            var signedTransaction = signer.SignTransaction(privateKey, transactionInput.To, 0, nonce.Value, Signer.Transaction.DEFAULT_GAS_PRICE, 900000,
+                transactionInput.Data);
+
+            var traceTransaction = new TraceRawTransaction(client);
+            return await traceTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix(), new[] { TraceType.vmTrace }, BlockParameter.CreateLatest());
         }
 
         public override Type GetRequestType()
         {
-            return typeof(TraceTransaction);
+            return typeof(TraceRawTransaction);
         }
     }
 }
