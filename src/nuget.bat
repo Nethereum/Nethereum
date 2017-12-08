@@ -75,6 +75,10 @@ cd Nethereum.HdWallet*
 CALL :restorepack
 cd ..
 
+cd Nethereum.Parity*
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages

@@ -29,8 +29,8 @@ namespace Nethereum.Parity
         public AccountsApiService Accounts { get; private set; }
         public BlockAuthoringApiService BlockAuthoring { get; private set; }
         public NetworkApiService Network { get; private set; }
-        
-        
+        public TraceApiService Trace { get; private set; }
+
 
         protected override void InitialiseInnerServices()
         {
@@ -39,6 +39,9 @@ namespace Nethereum.Parity
             Accounts = new AccountsApiService(Client);
             BlockAuthoring = new BlockAuthoringApiService(Client);
             Network = new NetworkApiService(Client);
+            Trace = new TraceApiService(Client);
         }
+
+       
     }
 }

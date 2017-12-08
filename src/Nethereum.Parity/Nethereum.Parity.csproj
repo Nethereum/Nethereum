@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Parity is the extended Web3 library for Parity. including the non-generic RPC API client methods to interact with Parity.</Description>
+    <Description>Netherum.Parity is the extended Web3 library for Parity, including the non-generic RPC API client methods.</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Parity</AssemblyTitle>
     <VersionPrefix>$(ParityVersion)</VersionPrefix>

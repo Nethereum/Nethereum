@@ -1307,6 +1307,162 @@
 				<Link>Uport\UportRegistry.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Parity\AccountsApiService.cs">
+				<Link>Parity\AccountsApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\AdminApiService.cs">
+				<Link>Parity\AdminApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\BlockAuthoringApiService.cs">
+				<Link>Parity\BlockAuthoringApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\NetworkApiService.cs">
+				<Link>Parity\NetworkApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\TraceApiService.cs">
+				<Link>Parity\TraceApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\Web3Parity.cs">
+				<Link>Parity\Web3Parity.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\ApiMethods.cs">
+				<Link>Parity\RPC\ApiMethods.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityAccountsInfo.cs">
+				<Link>Parity\RPC\Accounts\ParityAccountsInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityDefaultAccount.cs">
+				<Link>Parity\RPC\Accounts\ParityDefaultAccount.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityGenerateSecretPhrase.cs">
+				<Link>Parity\RPC\Accounts\ParityGenerateSecretPhrase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityHardwareAccountsInfo.cs">
+				<Link>Parity\RPC\Accounts\ParityHardwareAccountsInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityConsensusCapability.cs">
+				<Link>Parity\RPC\Admin\ParityConsensusCapability.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityListOpenedVaults.cs">
+				<Link>Parity\RPC\Admin\ParityListOpenedVaults.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityListVaults.cs">
+				<Link>Parity\RPC\Admin\ParityListVaults.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityLocalTransactions.cs">
+				<Link>Parity\RPC\Admin\ParityLocalTransactions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityPendingTransactionsStats.cs">
+				<Link>Parity\RPC\Admin\ParityPendingTransactionsStats.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityReleasesInfo.cs">
+				<Link>Parity\RPC\Admin\ParityReleasesInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityVersionInfo.cs">
+				<Link>Parity\RPC\Admin\ParityVersionInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityDefaultExtraData.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityDefaultExtraData.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityExtraData.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityExtraData.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityGasCeilTarget.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityGasCeilTarget.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityGasFloorTarget.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityGasFloorTarget.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityMinGasPrice.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityMinGasPrice.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\BlockAuthoring\ParityTransactionsLimit.cs">
+				<Link>Parity\RPC\BlockAuthoring\ParityTransactionsLimit.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Development\ParityDevLogs.cs">
+				<Link>Parity\RPC\Development\ParityDevLogs.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Development\ParityDevLogsLevels.cs">
+				<Link>Parity\RPC\Development\ParityDevLogsLevels.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityChainStatus.cs">
+				<Link>Parity\RPC\Network\ParityChainStatus.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityGasPriceHistogram.cs">
+				<Link>Parity\RPC\Network\ParityGasPriceHistogram.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityNetPeers.cs">
+				<Link>Parity\RPC\Network\ParityNetPeers.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityNetPort.cs">
+				<Link>Parity\RPC\Network\ParityNetPort.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityPendingTransactions.cs">
+				<Link>Parity\RPC\Network\ParityPendingTransactions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceBlock.cs">
+				<Link>Parity\RPC\Trace\TraceBlock.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceCall.cs">
+				<Link>Parity\RPC\Trace\TraceCall.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceFilter.cs">
+				<Link>Parity\RPC\Trace\TraceFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceGet.cs">
+				<Link>Parity\RPC\Trace\TraceGet.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceRawTransaction.cs">
+				<Link>Parity\RPC\Trace\TraceRawTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceTransaction.cs">
+				<Link>Parity\RPC\Trace\TraceTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceType.cs">
+				<Link>Parity\RPC\Trace\TraceType.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceDTOs\TraceFilterDTO.cs">
+				<Link>Parity\RPC\Trace\TraceDTOs\TraceFilterDTO.cs</Link>
+		</Compile>
+		
         </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
