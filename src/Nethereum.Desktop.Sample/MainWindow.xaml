@@ -11,7 +11,7 @@
             <ColumnDefinition></ColumnDefinition>
             <ColumnDefinition></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <Button Width="200" Height="50" x:Name="btnGetAccoutns" Content="Get Accounts"  Click="BtnGetAccoutns_OnClick"></Button>
+        <Button Width="200" Height="50" x:Name="btnGetAccoutns" Content="Get Balance Eth Foundation"  Click="BtnGetAccoutns_OnClick"></Button>
         <TextBox Grid.Column="1" Width="200" Height="50" x:Name="txtAccounts"></TextBox> 
     </Grid>
 </Window>

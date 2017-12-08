@@ -28,11 +28,10 @@ namespace Nethereum.Desktop.Sample
 
         private async void BtnGetAccoutns_OnClick(object sender, RoutedEventArgs e)
         {
-            var web3 = new Web3.Web3();
-            var accounts = await web3.Eth.Accounts.SendRequestAsync();
-            this.Dispatcher.Invoke(() => {
-                                             txtAccounts.Text = string.Join(",", accounts);
-            });
+            var web3 = new Web3.Web3("https://mainnet.infura.io");
+            var balance = await web3.Eth.GetBalance.SendRequestAsync("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe");
+            this.Dispatcher.Invoke(() => { txtAccounts.Text = Web3.Web3.Convert.FromWei(balance.Value).ToString(); });
+
         }
     }
 }
