@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Nethereum.Util;
 using Xunit;
@@ -33,7 +34,41 @@ namespace Nethereum.Util.Tests
             Assert.Equal(expected, result.ToString());
         }
 
-       
+        [Fact]
+        public void ShouldConvertToWeiUsingNumberOfDecimalsEth()
+        {
+            var unitConversion = new UnitConversion();
+            var val = BigInteger.Parse("1000000000000000000000000001");
+            var result = unitConversion.FromWei(val, 18);
+            var result2 = unitConversion.FromWei(val);
+            Assert.Equal(result, result2);
+            result2 = unitConversion.FromWei(val, BigInteger.Parse("1000000000000000000"));
+            Assert.Equal(result, result2);
+            Assert.Equal(val, UnitConversion.Convert.ToWei(result, 18));
+        }
+
+        [Fact]
+        public void ShouldNotFailToConvertUsing0DecimalUnits()
+        {
+            var unitConversion = new UnitConversion();
+            var val = BigInteger.Parse("1000000000000000000000000001");
+            var result = unitConversion.FromWei(val, 18);
+            Assert.Equal(1000000000, UnitConversion.Convert.ToWei(result, (int)0));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void ShouldFailToConvertUsingNonPowerOf10Units(int value)
+        {
+            var unitConversion = new UnitConversion();
+            var val = BigInteger.Parse("1000000000000000000000000001");
+            var result = unitConversion.FromWei(val, 18);
+            Assert.Throws<Exception>(() => UnitConversion.Convert.ToWei(result, new BigInteger(value)));
+        }
+
         [Fact]
         public void ShouldConvertFromWeiAndBackToEth()
         {
