@@ -144,13 +144,21 @@ namespace Nethereum.Util
             throw new NotImplementedException();
         }
 
-        public BigInteger ToWei(decimal amount, BigInteger fromUnit)
+
+        public bool TryValidateUnitValue(BigInteger ethUnit)
+        {
+            if (ethUnit.ToString().Trim('0') == "1") return true;
+            throw new Exception("Invalid unit value, it should be a power of 10 ");
+        }
+
+        private BigInteger ToWei(decimal amount, BigInteger fromUnit)
         {
             return ToWei((BigDecimal)amount, fromUnit);
         }
 
         public BigInteger ToWei(BigDecimal amount, BigInteger fromUnit)
         {
+            TryValidateUnitValue(fromUnit);
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
             var conversion = amount * bigDecimalFromUnit;
             return conversion.Floor().Mantissa;
@@ -163,6 +171,13 @@ namespace Nethereum.Util
 
         public BigInteger ToWei(BigDecimal amount, int decimalPlacesFromUnit)
         {
+            if (decimalPlacesFromUnit == 0) ToWei(amount, 1);
+            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
+        }
+
+        public BigInteger ToWei(decimal amount, int decimalPlacesFromUnit)
+        {
+            if (decimalPlacesFromUnit == 0) ToWei(amount, 1);
             return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
         }
 
@@ -172,10 +187,7 @@ namespace Nethereum.Util
             return ToWei(amount, GetEthUnitValue(fromUnit));
         }
 
-        public BigInteger ToWei(decimal amount, int decimalPlacesFromUnit)
-        {
-            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
-        }
+   
 
         public BigInteger ToWei(BigInteger value, EthUnit fromUnit = EthUnit.Ether)
         {
