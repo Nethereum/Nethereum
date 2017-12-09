@@ -66,7 +66,7 @@ namespace Nethereum.Util.Tests
             var unitConversion = new UnitConversion();
             var val = BigInteger.Parse("1000000000000000000000000001");
             var result = unitConversion.FromWei(val, 18);
-            Assert.Throws<Exception>(() => UnitConversion.Convert.ToWei(result, new BigInteger(value)));
+            Assert.Throws<Exception>(() => UnitConversion.Convert.ToWeiFromUnit(result, new BigInteger(value)));
         }
 
         [Fact]

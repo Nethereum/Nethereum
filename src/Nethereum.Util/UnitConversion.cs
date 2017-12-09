@@ -151,12 +151,12 @@ namespace Nethereum.Util
             throw new Exception("Invalid unit value, it should be a power of 10 ");
         }
 
-        private BigInteger ToWei(decimal amount, BigInteger fromUnit)
+        public BigInteger ToWeiFromUnit(decimal amount, BigInteger fromUnit)
         {
-            return ToWei((BigDecimal)amount, fromUnit);
+            return ToWeiFromUnit((BigDecimal)amount, fromUnit);
         }
 
-        public BigInteger ToWei(BigDecimal amount, BigInteger fromUnit)
+        public BigInteger ToWeiFromUnit(BigDecimal amount, BigInteger fromUnit)
         {
             TryValidateUnitValue(fromUnit);
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
@@ -166,25 +166,25 @@ namespace Nethereum.Util
 
         public BigInteger ToWei(BigDecimal amount, EthUnit fromUnit = EthUnit.Ether)
         {
-            return ToWei(amount, GetEthUnitValue(fromUnit));
+            return ToWeiFromUnit(amount, GetEthUnitValue(fromUnit));
         }
 
         public BigInteger ToWei(BigDecimal amount, int decimalPlacesFromUnit)
         {
             if (decimalPlacesFromUnit == 0) ToWei(amount, 1);
-            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
+            return ToWeiFromUnit(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
         }
 
         public BigInteger ToWei(decimal amount, int decimalPlacesFromUnit)
         {
             if (decimalPlacesFromUnit == 0) ToWei(amount, 1);
-            return ToWei(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
+            return ToWeiFromUnit(amount, BigInteger.Pow(10, decimalPlacesFromUnit));
         }
 
 
         public BigInteger ToWei(decimal amount, EthUnit fromUnit = EthUnit.Ether)
         {
-            return ToWei(amount, GetEthUnitValue(fromUnit));
+            return ToWeiFromUnit(amount, GetEthUnitValue(fromUnit));
         }
 
    
