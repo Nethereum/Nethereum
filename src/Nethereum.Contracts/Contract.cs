@@ -21,23 +21,30 @@ namespace Nethereum.Contracts
         {
             Eth = eth;
             ContractBuilder = new ContractBuilder(abi, contractAddress);
-            DefaultBlock = eth.DefaultBlock;
+            if (eth != null)
+            {
+                DefaultBlock = eth.DefaultBlock;
+            }
         }
 
         public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
         {
             Eth = eth;
-            var abiExtractor = new AttributesToABIExtractor();
             ContractBuilder = new ContractBuilder(contractMessageType, contractAddress);
-            DefaultBlock = eth.DefaultBlock;
+            if (eth != null)
+            {
+                DefaultBlock = eth.DefaultBlock;
+            }
         }
 
         public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
         {
             Eth = eth;
-            var abiExtractor = new AttributesToABIExtractor();
             ContractBuilder = new ContractBuilder(contractMessagesTypes, contractAddress);
-            DefaultBlock = eth.DefaultBlock;
+            if (eth != null)
+            {
+                DefaultBlock = eth.DefaultBlock;
+            }
         }
 
         private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
