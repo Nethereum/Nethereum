@@ -94,13 +94,13 @@ namespace Nethereum.HdWallet
 
         public string[] GetAddresses(int numberOfAddresses = 20)
         {
-            var addresses = new List<string>(numberOfAddresses);
+            var addresses = new string[numberOfAddresses];
             for (int i = 0; i < numberOfAddresses; i++)
             {
                 var ethereumKey = GetEthereumKey(i);
-                addresses.Add(ethereumKey.GetPublicAddress());
+                addresses[i] = ethereumKey.GetPublicAddress();
             }
-            return null;
+            return addresses;
         }
 
         public Account GetAccount(string address, int maxIndexSearch = 20)
