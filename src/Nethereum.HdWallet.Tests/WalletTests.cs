@@ -19,6 +19,17 @@ namespace Nethereum.HdWallet.Tests
             Assert.Equal("0x27Ef5cDBe01777D62438AfFeb695e33fC2335979", account.Address);
         }
 
+        [Fact]
+        public void ShouldFindAddressesUsingGivenWords() {
+            var wallet = new Wallet(Words, Password);
+            var addresses = wallet.GetAddresses(5);
+            Assert.Equal("0x27Ef5cDBe01777D62438AfFeb695e33fC2335979", addresses[0]);
+            Assert.Equal("0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47", addresses[1]);
+            Assert.Equal("0xA4267Fb4d2300e82E16441A740996d75402a2140", addresses[2]);
+            Assert.Equal("0xD6D7a427d6fd40B4109ACD5a5AF455E7c02a3310", addresses[3]);
+            Assert.Equal("0xd94C2F0Ae3E5cc074668a4D220801C0Ab96082E1", addresses[4]);
+        }
+
         [Theory]
         [InlineData("0x27Ef5cDBe01777D62438AfFeb695e33fC2335979")]
         [InlineData("0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47")]
