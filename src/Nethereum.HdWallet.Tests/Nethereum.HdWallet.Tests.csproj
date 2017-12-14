@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.HDWallet\Nethereum.HdWallet.csproj" />
+    <ProjectReference Include="..\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
   <ItemGroup>
