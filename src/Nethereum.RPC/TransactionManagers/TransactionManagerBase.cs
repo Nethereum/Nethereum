@@ -5,6 +5,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using System.Numerics;
+using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -14,6 +15,7 @@ namespace Nethereum.RPC.TransactionManagers
         public virtual IClient Client { get; set; }
         public abstract BigInteger DefaultGasPrice { get; set; }
         public abstract BigInteger DefaultGas { get; set; }
+        public IAccount Account { get; protected set; }
 
 #if !DOTNET35
         private ITransactionReceiptService _transactionReceiptService;

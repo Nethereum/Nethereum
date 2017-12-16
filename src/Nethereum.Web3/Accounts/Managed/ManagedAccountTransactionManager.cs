@@ -16,17 +16,20 @@ namespace Nethereum.Web3.Accounts.Managed
         public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
         public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
-        public ManagedAccount Account { get; }
-
         public ManagedAccountTransactionManager(IClient client, ManagedAccount account)
         {
             Account = account;
             Client = client;
         }
 
+        public void SetAccount(ManagedAccount account)
+        {
+            Account = account;
+        }
+
         public ManagedAccountTransactionManager(IClient client, string accountAddress, string password)
         {
-            Account = new ManagedAccount(accountAddress, password);
+            Account = new ManagedAccount(accountAddress, password, this);
             Client = client;
         }
 
@@ -61,7 +64,7 @@ namespace Nethereum.Web3.Accounts.Managed
             var nonce = await GetNonceAsync(transactionInput).ConfigureAwait(false);
             if (nonce != null) transactionInput.Nonce = nonce;
             var ethSendTransaction = new PersonalSignAndSendTransaction(Client);
-            return await ethSendTransaction.SendRequestAsync(transactionInput, Account.Password).ConfigureAwait(false);
+            return await ethSendTransaction.SendRequestAsync(transactionInput, ((ManagedAccount)Account).Password).ConfigureAwait(false);
         }
 
         public override async Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)

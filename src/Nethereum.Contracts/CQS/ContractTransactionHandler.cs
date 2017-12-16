@@ -16,10 +16,10 @@ namespace Nethereum.Contracts.CQS
             var function = contract.GetFunction<TContractMessage>();
 
             var gasEstimate = await GetOrEstimateMaximumGas(functionMessage, function).ConfigureAwait(false);
-            return await ExecuteTransactionAsync(functionMessage, gasEstimate, function, tokenSource).ConfigureAwait(false);
+            return await ExecuteTransactionAndWaitForReceiptAsync(functionMessage, gasEstimate, function, tokenSource).ConfigureAwait(false);
         }
 
-        public async Task<TransactionReceipt> SendRequestAsync(TContractMessage functionMessage, string contractAddress)
+        public async Task<string> SendRequestAsync(TContractMessage functionMessage, string contractAddress)
         {
             ValidateContractMessage(functionMessage);
             var contract = Eth.GetContract<TContractMessage>(contractAddress);
@@ -35,7 +35,17 @@ namespace Nethereum.Contracts.CQS
             return maxGas;
         }
 
-        protected Task<TransactionReceipt> ExecuteTransactionAsync(TContractMessage functionMessage, HexBigInteger gasEstimate, Function<TContractMessage> function, CancellationTokenSource tokenSource = null)
+        protected Task<string> ExecuteTransactionAsync(TContractMessage functionMessage, HexBigInteger gasEstimate, Function<TContractMessage> function, CancellationTokenSource tokenSource = null)
+        {
+            return function.SendTransactionAsync(
+                functionMessage,
+                functionMessage.FromAddress,
+                gasEstimate,
+                GetGasPrice(functionMessage),
+                GetValue(functionMessage) );
+        }
+
+        protected Task<TransactionReceipt> ExecuteTransactionAndWaitForReceiptAsync(TContractMessage functionMessage, HexBigInteger gasEstimate, Function<TContractMessage> function, CancellationTokenSource tokenSource = null)
         {
             return function.SendTransactionAndWaitForReceiptAsync(
                                             functionMessage,

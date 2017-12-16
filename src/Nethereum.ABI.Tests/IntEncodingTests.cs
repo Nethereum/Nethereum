@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -23,6 +24,70 @@ namespace Nethereum.ABI.Tests
             IntType intType = new IntType("int");
             var result = intType.Encode(69).ToHex();
             Assert.Equal("0000000000000000000000000000000000000000000000000000000000000045", result);
+        }
+
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeInt()
+        {
+            IntType intType = new IntType("int");
+            var result = intType.Encode(Int32.MaxValue).ToHex();
+            var intresult = intType.Decode<int>(result);
+            Assert.Equal(Int32.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeInt64()
+        {
+            IntType intType = new IntType("int64");
+            var result = intType.Encode(Int64.MaxValue).ToHex();
+            var intresult = intType.Decode<long>(result);
+            Assert.Equal(Int64.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeUInt64()
+        {
+            IntType intType = new IntType("uint64");
+            var result = intType.Encode(UInt64.MaxValue).ToHex();
+            var intresult = intType.Decode<UInt64>(result);
+            Assert.Equal(UInt64.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeUShort()
+        {
+            IntType intType = new IntType("uint16");
+            var result = intType.Encode(ushort.MaxValue).ToHex();
+            var intresult = intType.Decode<ushort>(result);
+            Assert.Equal(ushort.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeShort()
+        {
+            IntType intType = new IntType("int16");
+            var result = intType.Encode(short.MaxValue).ToHex();
+            var intresult = intType.Decode<short>(result);
+            Assert.Equal(short.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeByte()
+        {
+            IntType intType = new IntType("uint8");
+            var result = intType.Encode(byte.MaxValue).ToHex();
+            var intresult = intType.Decode<byte>(result);
+            Assert.Equal(byte.MaxValue, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeSByte()
+        {
+            IntType intType = new IntType("int8");
+            var result = intType.Encode(sbyte.MaxValue).ToHex();
+            var intresult = intType.Decode<sbyte>(result);
+            Assert.Equal(sbyte.MaxValue, intresult);
         }
 
         [Fact]

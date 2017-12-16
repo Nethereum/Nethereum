@@ -735,6 +735,10 @@
 				<Link>EIP20\Events\DTO\TransferEvent.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Functions\TransferFunction.cs">
+				<Link>EIP20\Functions\TransferFunction.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\ClientBase.cs">
 				<Link>NethereumJsonRpc\ClientBase.cs</Link>
 		</Compile>

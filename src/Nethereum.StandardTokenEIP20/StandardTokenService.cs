@@ -1,6 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Contracts;
+using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.StandardTokenEIP20.Functions;
 using Nethereum.Web3;
 
 namespace Nethereum.StandardTokenEIP20
@@ -18,7 +21,10 @@ namespace Nethereum.StandardTokenEIP20
         {
             this.Web3 = web3;
             this.Contract = web3.Eth.GetContract(abi, address);
+            this.ContractHandler = web3.Eth.GetContractHandler(address);
         }
+
+        protected ContractHandler ContractHandler { get; set; }
 
         public async Task<TNumber> GetTotalSupplyAsync<TNumber>()
         {
@@ -53,10 +59,20 @@ namespace Nethereum.StandardTokenEIP20
             return Contract.GetFunction("allowance");
         }
 
-        public async Task<string> TransferAsync<T>(string addressFrom, string addressTo, T value, HexBigInteger gas = null)
+        public async Task<string> TransferAsync<T>(string addressFrom, string addressTo, T value, HexBigInteger gas)
         {
             var function = GetTransferFunction();
            return await function.SendTransactionAsync(addressFrom, gas, null, addressTo, value);
+        }
+
+        public async Task<string> TransferAsync(TransferFunction transferMessage)
+        {
+            return await ContractHandler.SendRequestAsync(transferMessage).ConfigureAwait(false);
+        }
+
+        public async Task<TransactionReceipt> TransferAndWaitForReceiptAsync(TransferFunction transferMessage)
+        {
+            return await ContractHandler.SendRequestAndWaitForReceiptAsync(transferMessage).ConfigureAwait(false);
         }
 
         protected Function GetTransferFunction()
@@ -64,14 +80,8 @@ namespace Nethereum.StandardTokenEIP20
             return Contract.GetFunction("transfer");
         }
 
-        public async Task<bool> TransferAsyncCall<T>(string addressFrom, string addressTo, T value)
-        {
-            var function = GetTransferFunction();
-            return await function.CallAsync<bool>(addressFrom, addressTo, value);
-        }
-
         public async Task<string> TransferFromAsync<T>(string addressFrom, string addressTransferedFrom, string addressTransferedTo,
-            T value, HexBigInteger gas = null)
+            T value, HexBigInteger gas)
         {
             var function = GetTransferFromFunction();
            return await function.SendTransactionAsync(addressFrom, gas, null, addressTransferedFrom, addressTransferedTo, value);
@@ -80,13 +90,6 @@ namespace Nethereum.StandardTokenEIP20
         protected Function GetTransferFromFunction()
         {
             return Contract.GetFunction("transferFrom");
-        }
-
-        public async Task<bool> TransferFromAsyncCall<T>(string addressFrom, string addressTransferedFrom,
-            string addressTransferedTo, T value)
-        {
-            var function = GetTransferFromFunction();
-            return await function.CallAsync<bool>(addressFrom, addressTransferedFrom, addressTransferedTo, value);
         }
 
         public async Task ApproveAsync<T>(string addressFrom, string addressSpender, T value, HexBigInteger gas = null)
@@ -98,12 +101,6 @@ namespace Nethereum.StandardTokenEIP20
         protected Function GetApproveFunction()
         {
             return Contract.GetFunction("approve");
-        }
-
-        public async Task<bool> ApproveAsyncCall<T>(string addressFrom, string addressSpender, T value)
-        {
-            var function = GetApproveFunction();
-            return await function.CallAsync<bool>(addressFrom, addressSpender, value);
         }
 
         public Event GetApprovalEvent()

@@ -26,7 +26,7 @@ namespace Nethereum.Contracts.CQS
             return command.SendRequestAndWaitForReceiptAsync(transferMessage, ContractAddress, tokenSource);
         }
 
-        public Task<TransactionReceipt> SendRequestAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage transferMessage, CancellationTokenSource tokenSource = null) where TEthereumContractFunctionMessage : ContractMessage
+        public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage transferMessage) where TEthereumContractFunctionMessage : ContractMessage
         {
             var command = EthApiContractService.GetContractTrasactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transferMessage);

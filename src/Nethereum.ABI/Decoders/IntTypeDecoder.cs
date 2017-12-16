@@ -9,17 +9,29 @@ namespace Nethereum.ABI.Decoders
     {
         public override object Decode(byte[] encoded, Type type)
         {
+            if (type == typeof(byte))
+                return DecodeByte(encoded);
+
+            if (type == typeof(sbyte))
+                return DecodeSbyte(encoded);
+
+            if (type == typeof(short))
+                return DecodeShort(encoded);
+
+            if (type == typeof(ushort))
+                return DecodeUShort(encoded);
+
             if (type == typeof(int))
                 return DecodeInt(encoded);
+
+            if (type == typeof(uint))
+                return DecodeUInt(encoded);
 
             if (type == typeof(long))
                 return DecodeLong(encoded);
 
             if (type == typeof(ulong))
                 return DecodeULong(encoded);
-
-            if (type == typeof(uint))
-                return DecodeUInt(encoded);
 
             if ((type == typeof(BigInteger)) || (type == typeof(object)))
                 return DecodeBigInteger(encoded);
@@ -52,6 +64,26 @@ namespace Nethereum.ABI.Decoders
             return new BigInteger(encoded);
         }
 
+        public byte DecodeByte(byte[] encoded)
+        {
+            return (byte)DecodeBigInteger(encoded);
+        }
+
+        public sbyte DecodeSbyte(byte[] encoded)
+        {
+            return (sbyte)DecodeBigInteger(encoded);
+        }
+
+        public short DecodeShort(byte[] encoded)
+        {
+            return (short)DecodeBigInteger(encoded);
+        }
+
+        public ushort DecodeUShort(byte[] encoded)
+        {
+            return (ushort)DecodeBigInteger(encoded);
+        }
+
         public int DecodeInt(byte[] encoded)
         {
             return (int) DecodeBigInteger(encoded);
@@ -79,8 +111,11 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(int)) || (type == typeof(ulong)) || (type == typeof(long)) || (type == typeof(uint)) ||
-                   ((type == typeof(BigInteger)) && (type == typeof(object)));
+            return (type == typeof(int)) || (type == typeof(uint)) || 
+                   (type == typeof(ulong)) || (type == typeof(long))  ||
+                   (type == typeof(short)) || (type == typeof(ushort)) ||
+                   (type == typeof(byte)) || (type == typeof(sbyte)) ||
+                   (type == typeof(BigInteger)) || (type == typeof(object)) ;
         }
     }
 }

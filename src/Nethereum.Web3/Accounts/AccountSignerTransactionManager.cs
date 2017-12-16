@@ -15,14 +15,13 @@ namespace Nethereum.Web3.Accounts
 {
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
-        private readonly Account _account;
         private readonly TransactionSigner _transactionSigner;
         public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
         public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account)
         {
-            _account = account ?? throw new ArgumentNullException(nameof(account));
+            Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
             _transactionSigner = new TransactionSigner();
         }
@@ -31,8 +30,8 @@ namespace Nethereum.Web3.Accounts
         {
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             Client = rpcClient;
-            _account = new Account(privateKey);
-            _account.NonceService = new InMemoryNonceService(_account.Address, rpcClient);
+            Account = new Account(privateKey);
+            Account.NonceService = new InMemoryNonceService(Account.Address, rpcClient);
             _transactionSigner = new TransactionSigner();
         }
 
@@ -55,12 +54,12 @@ namespace Nethereum.Web3.Accounts
             var nonce = transaction.Nonce;
             if (nonce == null)
             {
-                if (_account.NonceService == null)
+                if (Account.NonceService == null)
                 {
-                    _account.NonceService = new InMemoryNonceService(_account.Address, Client);
+                    Account.NonceService = new InMemoryNonceService(Account.Address, Client);
                 }
-                _account.NonceService.Client = Client;
-                nonce = await _account.NonceService.GetNextNonceAsync();
+                Account.NonceService.Client = Client;
+                nonce = await Account.NonceService.GetNextNonceAsync();
             }
             return nonce;
         }
@@ -69,7 +68,7 @@ namespace Nethereum.Web3.Accounts
         {
             if(Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (transaction.From.EnsureHexPrefix().ToLower() != _account.Address.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
+            if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
             var ethSendTransaction = new EthSendRawTransaction(Client);
@@ -82,7 +81,7 @@ namespace Nethereum.Web3.Accounts
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(_account.PrivateKey, transaction.To, value.Value, nonce,
+            var signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, transaction.To, value.Value, nonce,
                 gasPrice.Value, gasLimit.Value, transaction.Data);
 
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);

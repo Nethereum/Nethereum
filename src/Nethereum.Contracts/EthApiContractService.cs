@@ -28,6 +28,20 @@ namespace Nethereum.Contracts
         }
 
 #if !DOTNET35
+
+        public ContractHandler GetContractHandler(string contractAddress)
+        {
+            string address = null;
+            if (this.TransactionManager != null)
+            {
+                if (TransactionManager.Account != null)
+                {
+                    address = TransactionManager.Account.Address;
+                }
+            } 
+            return new ContractHandler(contractAddress, this, address);
+        }
+
         public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<TContractDeploymentMessage>() 
             where TContractDeploymentMessage: ContractDeploymentMessage
         {
