@@ -23,6 +23,9 @@ namespace Nethereum.Web.Sample
                       "~/Scripts/bootstrap.js",
                       "~/Scripts/respond.js"));
 
+            bundles.Add(new ScriptBundle("~/bundles/nethereumwebsample").Include(
+                      "~/Scripts/nethereum.web.sample.js"));
+
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",
                       "~/Content/site.css"));

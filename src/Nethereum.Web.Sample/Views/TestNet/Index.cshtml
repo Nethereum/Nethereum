@@ -1,0 +1,172 @@
+﻿@using Nethereum.Web.Sample.ViewModels
+@{
+    ViewBag.Title = "Test Networks";
+}
+
+@model SelectedTestNetViewModel
+
+<div class="panel panel-default">
+    <div class="panel-heading">Select TestNet</div>
+    <div class="panel-body">
+        <div class="dropdown">
+            @Html.DropDownListFor(m => m.SelectedTestnetId, new SelectList(Model.TestNetList, "Id", "DisplayName"), new { @class = "form-control", onchange = "TestNetChanged(this)" })
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Endpoints Info</div>
+    <div class="panel-body">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">Endpoint</label>
+            <label id="endpoint" class="col-sm-10 control-label">@Model.EndpointUrl</label>        
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Transactions from Last Block</div>
+    <div class="panel-body">
+        @if (Model.Transactions.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <!--<th>TransactionHash</th>-->
+                        <th>Transaction From</th>
+                        <th>Value</th>
+                        <th>Transaction To</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var transaction in Model.Transactions)
+                    {
+                        <tr>
+                            <!--<td>@transaction.TransactionHash</td>-->
+                            <td>@transaction.From</td>
+                            <td>@transaction.Value</td>
+                            <td>@transaction.To</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else{
+            <h3>No transaction found</h3>
+        }
+
+        
+        <p>
+            <a class="btn btn-primary" data-toggle="collapse" href="#collapseTransactionsExample" aria-expanded="false" aria-controls="collapseTransactionsExample">
+                Show Code
+            </a>
+        </p>
+        <div class="collapse" id="collapseTransactionsExample">
+            <div class="card card-body">
+                <pre><code>
+var web3 = new Web3.Web3(&quot;Model.EndpointUrl&quot;);
+
+var lastBockInChaing = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+
+var transactions = lastBockInChaing.Transactions.Select(x => new TransactionViewModel(...));
+                </code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="panel panel-default">
+    <div class="panel-heading">Address Info</div>
+        <div class="panel-body">
+            <div class="form-horizontal">
+                <div class="form-group">
+                    <label for="account" class="col-sm-2 control-label">Account Address</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control col-sm-10" id="account" placeholder="Account">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-10">
+                        <button type="button" id="ballanceButton" class="btn btn-danger">Get Ballance</button>
+                    </div>
+                </div>
+                <div id="ballanceResult" class="form-group invisible">
+                    <label class="col-sm-2 control-label">Account Balance</label>
+                    <label id="ballanceLabel" class="control-label pull-left"></label>
+                </div>
+            </div>
+            <p>
+                <a class="btn btn-primary" data-toggle="collapse" href="#collapseBallanceExample" aria-expanded="false" aria-controls="collapseBallanceExample">
+                    Show Code
+                </a>
+            </p>
+            <div class="collapse" id="collapseBallanceExample">
+                <div>
+                    <pre><code>
+var ballance = await web3.Eth.GetBalance.SendRequestAsync(accountAddress);
+                    </code></pre>
+                </div>
+            </div>
+     </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Transfer to</div>
+    <div class="panel-body">
+        <div class="form-horizontal">
+            <div class="form-group">
+                <label for="password" class="col-sm-2 control-label">Sender Private Key</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="privatekey" placeholder="Private Key">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="recipientAccount" class="col-sm-2 control-label">Receiver Address</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="recipientAccount" placeholder="To Address">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="col-sm-2 control-label">Amount</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="amount" placeholder="Amount">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-10">
+                    <button type="button" id="transferButton" class="btn btn-danger">Transfer Coins</button>
+                </div>
+            </div>            
+            <div id="transferResult" class="form-group invisible">
+                <label class="col-sm-2 control-label">Transfer Status</label>
+                <label id="transferLabel" class="control-label pull-left"></label>
+            </div>
+        </div>
+        <p>
+            <a class="btn btn-primary" data-toggle="collapse" href="#collapseTransferExample" aria-expanded="false" aria-controls="collapseTransferExample">
+                Show Code
+            </a>
+        </p>
+        <div class="collapse" id="collapseTransferExample">
+            <div>
+                <pre><code>
+var account = new Account(privateKey);
+
+var web3 = new Web3.Web3(account);
+
+var transactionReceipt = await web3.TransactionManager.TransactionReceiptService.SendRequestAsync(
+() => web3.TransactionManager.SendTransactionAsync(account.Address, recieverAddress,
+    new HexBigInteger(Web3.Web3.Convert.ToWei(transferProperties.Amount)))
+);
+                </code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

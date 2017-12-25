@@ -9,7 +9,6 @@ namespace Nethereum.Web.Sample
         public void Configuration(IAppBuilder app)
         {
             ConfigureAuth(app);
-            AutomapperWebConfiguration.Configure();
         }
     }
 }
