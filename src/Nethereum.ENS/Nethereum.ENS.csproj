@@ -5,7 +5,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
     <VersionPrefix>$(ENSVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.ENS</AssemblyName>
     <PackageId>Nethereum.ENS</PackageId>
   </PropertyGroup>

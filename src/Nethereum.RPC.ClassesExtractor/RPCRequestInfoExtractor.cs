@@ -19,7 +19,7 @@ namespace Nethereum.RPC.ClassesExtractor
 
             foreach (var type in types)
             {
-                if (typeof(IRpcRequestHandler).IsAssignableFrom(type))
+                if (typeof(IRpcRequestHandler).GetTypeInfo().IsAssignableFrom(type))
                 {
 
                     if (!type.GetTypeInfo().IsGenericType)
@@ -30,11 +30,11 @@ namespace Nethereum.RPC.ClassesExtractor
                         requestInfo.RequestType = type;
 
                         Console.WriteLine(type.Name);
-                        foreach (var method in type.GetMethods())
+                        foreach (var method in type.GetTypeInfo().GetMethods())
                         {
                             if (method.Name == "SendRequestAsync")
                             {
-                                requestInfo.ReturnType = method.ReturnType.GetGenericArguments()[0];
+                                requestInfo.ReturnType = method.ReturnType.GetTypeInfo().GetGenericArguments()[0];
                             }
 
                             if (method.Name == "BuildRequest")

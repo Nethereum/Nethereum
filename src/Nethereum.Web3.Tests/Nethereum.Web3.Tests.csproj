@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.Web3.Tests </Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp2.0;net462</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

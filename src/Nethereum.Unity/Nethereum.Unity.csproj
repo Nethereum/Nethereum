@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Unity</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>net35</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Unity</AssemblyName>
     <PackageId>Nethereum.Unity</PackageId>
     <PackageTags>Netherum;Unity3d;Unity;Ethereum;Blockchain;Crypto 2.0</PackageTags>

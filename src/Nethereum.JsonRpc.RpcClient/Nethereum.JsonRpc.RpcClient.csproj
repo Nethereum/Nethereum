@@ -5,7 +5,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.RpcClient</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.RpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.RpcClient</PackageId>
     <PackageTags>Json;RPC;Nethereum</PackageTags>

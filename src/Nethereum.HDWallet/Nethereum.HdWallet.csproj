@@ -8,7 +8,7 @@
     <AssemblyTitle>Nethereum.HdWallet</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net452</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.HdWallet</AssemblyName>
     <PackageId>Nethereum.HdWallet</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;HdWallet</PackageTags>

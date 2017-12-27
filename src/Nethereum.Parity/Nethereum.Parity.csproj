@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Parity</AssemblyTitle>
     <VersionPrefix>$(ParityVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Parity</AssemblyName>
     <PackageId>Nethereum.Parity</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Parity</PackageTags>

@@ -7,7 +7,7 @@
    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
    <RepositoryType>git</RepositoryType>
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
-   <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+   <NetStandardImplicitPackageVersion Condition=" '$(TargetNetCore)' != 'true'">1.6.1</NetStandardImplicitPackageVersion>
    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.1' ">$(PackageTargetFallback);dotnet52</PackageTargetFallback>
    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>

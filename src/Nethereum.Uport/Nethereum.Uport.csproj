@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Uport</AssemblyTitle>
     <VersionPrefix>$(UportVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Uport</AssemblyName>
     <PackageId>Nethereum.Uport</PackageId>
     <PackageTags>Netherum;Uport;Identity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
