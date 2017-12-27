@@ -1,8 +1,12 @@
 <Project>
   <PropertyGroup>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
     <TargetNet35>true</TargetNet35>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;net35;net451</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;net451</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>netstandard1.1;net451</DefaultFrameworks>
+    <TargetNetCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</TargetNetCore>
+    <NetStandardVersion>netstandard2.0</NetStandardVersion>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">$(NetStandardVersion);net35;net451</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">$(NetStandardVersion);net451</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)' == 'true' ">$(NetStandardVersion)</DefaultFrameworksUnitySupport>
+    <TargetFramework>$(NetStandardVersion)</TargetFramework>
   </PropertyGroup>
 </Project>

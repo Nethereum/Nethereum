@@ -4,7 +4,6 @@
   <PropertyGroup>
     <AssemblyName>Nethereum.EVM</AssemblyName>
     <PackageId>Nethereum.EVM</PackageId>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
   </PropertyGroup>
 

@@ -40,10 +40,10 @@ namespace BuildProjectFile
             if (File.Exists(fileOutputPath))
                 File.Delete(fileOutputPath);
 
-            var outputFile = File.CreateText(fileOutputPath);
-            outputFile.Write(template1 + content + template2);
-            outputFile.Flush();
-            outputFile.Close();
+            using (var outputFile = File.CreateText(fileOutputPath))
+            {
+              outputFile.Write(template1 + content + template2);
+            }
         }
         
 		static string[] excludeFiles  = new []{"*AssemblyInfo.cs"};

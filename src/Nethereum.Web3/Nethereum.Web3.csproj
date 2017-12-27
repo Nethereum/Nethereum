@@ -25,7 +25,7 @@
     <ProjectReference Include="..\Nethereum.KeyStore\Nethereum.KeyStore.csproj" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetNetCore)' == 'true' ">
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
