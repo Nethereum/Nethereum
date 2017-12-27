@@ -7,7 +7,7 @@
     <AssemblyTitle>Nethereum.Web3</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Web3</AssemblyName>
     <PackageId>Nethereum.Web3</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>

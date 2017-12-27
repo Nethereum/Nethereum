@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.JsonRpc.UnixIpcClient</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco, djsowa</Authors>
-    <TargetFrameworks>netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.UnixIpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.UnixIpcClient</PackageId>
     <PackageTags>Json;RPC</PackageTags>

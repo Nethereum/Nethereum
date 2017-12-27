@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
     <Description>Nethereum.Quorum.Tests </Description>
-    <VersionPrefix>0.0.1</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Quorum.Tests</AssemblyName>
     <PackageId>Nethereum.Quorum.Tests</PackageId>
   </PropertyGroup>
