@@ -24,7 +24,7 @@ namespace Nethereum.Generator.Console
             var model = new ServiceModel(abi, contractByteCode, "sample", "SampleNamespace" );
   
             var fileName = model.ContractName + "Service.cs";
-            CodeGeneratorService.GenerateFile("Service", model, fileName);
+            CodeGeneratorService.GenerateFileAsync("Service", model, fileName).Wait();
               
             return 1;
         }

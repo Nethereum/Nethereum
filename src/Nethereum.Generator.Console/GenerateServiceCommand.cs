@@ -75,8 +75,8 @@ namespace Nethereum.Generator.Console
                 byteCode = file.ReadToEnd();
             }
 
-            CodeGeneratorService.GenerateFile("Service",
-                new ServiceModel(abi, byteCode, contractName, namespaceName), contractName + "Service.cs");
+            CodeGeneratorService.GenerateFileAsync("Service.cshtml",
+                new ServiceModel(abi, byteCode, contractName, namespaceName), contractName + "Service.cs").Wait();
 
             return 0;
         }

@@ -50,7 +50,7 @@ namespace Nethereum.Generator.Console
                 }
             }
                 
-            return parametersOuput;
+            return parametersOuput + " ";
         }
 
         public string GetParameterName(string name, int order)
@@ -118,7 +118,7 @@ namespace Nethereum.Generator.Console
                     parametersOutput = parametersOutput + prefix + GetParameterName(parameter.Name, parameter.Order);
                 }
             }
-            return parametersOutput;
+            return parametersOutput + " ";
         }
 
         public string GetReturnType(FunctionABI functionABI)
@@ -126,6 +126,15 @@ namespace Nethereum.Generator.Console
             if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1)
             {
                 return GetTypeMap(functionABI.OutputParameters[0].Type, true);
+            }
+            return null;
+        }
+
+        public string GetSingleAbiReturnType(FunctionABI functionABI)
+        {
+            if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1)
+            {
+                return functionABI.OutputParameters[0].Type;
             }
             return null;
         }

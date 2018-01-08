@@ -7,6 +7,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Web3;
+using Nethereum.Contracts.CQS;
 
 namespace @Model.Namespace
 {
@@ -126,5 +127,45 @@ namespace @Model.Namespace
 </text>
     }
 }    
+
+@foreach (var function in @Model.Contract.Functions) //Function Messages
+{
+    if (function.OutputParameters != null && function.OutputParameters.Length > 1)
+    {
+        <text>
+    [Function("@function.Name", "@Raw(Model.CapitaliseFirstChar(function.Name))DTO")]
+    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    {
+        </text>
+    }
+
+    if (function.OutputParameters != null && function.OutputParameters.Length == 1)
+    {
+        <text>
+    [Function("@function.Name", "@Raw(Model.GetSingleAbiReturnType(function))")]
+    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    {
+        </text>
+    }
+
+    if (function.OutputParameters != null && function.OutputParameters.Length == 0)
+    {
+        <text>
+    [Function("@function.Name")]
+    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    {
+        </text>
+    }
+    <text>
+@foreach (var parameter in function.InputParameters)
+{
+    <text>
+        [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order)]
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
+    </text>
+}
+    }
+    </text>
+}
 
 }

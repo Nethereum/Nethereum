@@ -1,0 +1,1 @@
+dotnet run gen-service -af "sample/UportRegistry.abi" -bf "sample/UportRegistry.bin" -c UportRegistry -n Uport
