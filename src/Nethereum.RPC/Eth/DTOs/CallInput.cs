@@ -29,23 +29,23 @@ namespace Nethereum.RPC.Eth.DTOs
             Value = value;
         }
 
-        public CallInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger value)
+        public CallInput(string data, string addressTo, string addressFrom, HexBigInteger gas, HexBigInteger value)
             : this(data, addressTo, value)
         {
-            From = adddressFrom;
+            From = addressFrom;
             Gas = gas;
         }
 
-        public CallInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
-            : this(data, addressTo, adddressFrom, gas, value)
+        public CallInput(string data, string addressTo, string addressFrom, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+            : this(data, addressTo, addressFrom, gas, value)
         {
             GasPrice = gasPrice;
         }
 
-        public CallInput(string data, string adddressFrom, HexBigInteger gas, HexBigInteger value)
+        public CallInput(string data, string addressFrom, HexBigInteger gas, HexBigInteger value)
             : this(data, null, value)
         {
-            From = adddressFrom;
+            From = addressFrom;
             Gas = gas;
         }
 
