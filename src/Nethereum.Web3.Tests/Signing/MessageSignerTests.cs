@@ -30,8 +30,8 @@ namespace Nethereum.Web3.Tests.Signing
             var signer = new MessageSigner();
             var signature = signer.Sign(output.HexToByteArray(), "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
             var ethEcdsa = MessageSigner.ExtractEcdsaSignature(signature);
-            var adddress = signer.EcRecover(output.HexToByteArray(), signature);
-            Assert.Equal(adddress, new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7".HexToByteArray(), true).GetPublicAddress());
+            var address = signer.EcRecover(output.HexToByteArray(), signature);
+            Assert.Equal(address, new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7".HexToByteArray(), true).GetPublicAddress());
 
         }
 
