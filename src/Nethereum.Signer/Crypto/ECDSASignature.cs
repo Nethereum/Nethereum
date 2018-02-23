@@ -66,7 +66,7 @@ namespace Nethereum.Signer.Crypto
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

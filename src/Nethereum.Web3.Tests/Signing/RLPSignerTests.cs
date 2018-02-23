@@ -35,9 +35,6 @@ namespace Nethereum.Web3.Tests
         public void ShouldCreateASignedTransaction()
         {
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var sendersAddress = "12890d2cce102216644c59daE5baed380d84830c";
-            var publicKey =
-                "87977ddf1e8e4c3f0a4619601fc08ac5c1dcf78ee64e826a63818394754cef52457a10a599cb88afb7c5a6473b7534b8b150d38d48a11c9b515dd01434cceb08";
 
             //data use for other tools for comparison
             Debug.WriteLine(new HexBigInteger(10000).HexValue);

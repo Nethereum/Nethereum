@@ -24,7 +24,6 @@ namespace Nethereum.Parity.Tests.Tests.Trace
         public override async Task<JArray> ExecuteAsync(IClient client)
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var receiverAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
          
             var web3 = new Web3.Web3(new Account(privateKey), client);
