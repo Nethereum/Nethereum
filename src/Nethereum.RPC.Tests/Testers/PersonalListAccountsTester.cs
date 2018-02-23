@@ -19,7 +19,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var personalListAccounts = new PersonalListAccounts(client);
             
-            var accounts = personalListAccounts.SendRequestAsync().Result;
+            var accounts = await personalListAccounts.SendRequestAsync();
             return accounts;
         }
 

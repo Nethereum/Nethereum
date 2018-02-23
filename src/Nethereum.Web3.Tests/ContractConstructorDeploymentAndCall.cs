@@ -61,7 +61,6 @@ namespace Nethereum.Web3.Tests
             var pass = "password";
 
             var web3 = new Web3Geth(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient() );
-            var result = true;
         
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), 7);
@@ -137,7 +136,6 @@ namespace Nethereum.Web3.Tests
             var pass = "password";
 
             var web3 = new Web3Geth(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient());
-            var result = true;
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, new HexBigInteger(900000), new HexBigInteger(1000), new HexBigInteger(0), 7);

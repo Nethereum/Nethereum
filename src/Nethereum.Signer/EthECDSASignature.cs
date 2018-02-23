@@ -77,7 +77,7 @@ namespace Nethereum.Signer
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //	Utils.error("Unexpected exception in ECDSASignature.IsValidDER " + ex.Message);
                 return false;

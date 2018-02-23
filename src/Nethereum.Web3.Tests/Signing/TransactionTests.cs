@@ -15,9 +15,6 @@ namespace Nethereum.Web3.Tests
         private readonly string HASH_TX = "328ea6d24659dec48adea1aced9a136e5ebdf40258db30d1b1d97ed2b74be34e";
         private readonly string KEY = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
 
-        private string RLP_ENCODED_RAW_TX =
-            "e88085e8d4a510008227109413978aee95f38490e9769c39b2773ed763d9cd5f872386f26fc1000080";
-
         private readonly string RLP_ENCODED_SIGNED_TX =
             "f86b8085e8d4a510008227109413978aee95f38490e9769c39b2773ed763d9cd5f872386f26fc10000801ba0eab47c1a49bf2fe5d40e01d313900e19ca485867d462fe06e139e3a536c6d4f4a014a569d327dcda4b29f74f93c0e9729d2f49ad726e703f9cd90dbb0fbf6649f1";
 
@@ -60,9 +57,6 @@ namespace Nethereum.Web3.Tests
         public void ShouldCreateASignedTransaction()
         {
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var sendersAddress = "12890d2cce102216644c59daE5baed380d84830c";
-            var publicKey =
-                "87977ddf1e8e4c3f0a4619601fc08ac5c1dcf78ee64e826a63818394754cef52457a10a599cb88afb7c5a6473b7534b8b150d38d48a11c9b515dd01434cceb08";
 
             //data use for other tools for comparison
             Debug.WriteLine(new HexBigInteger(10000).HexValue);
