@@ -17,7 +17,7 @@ namespace Nethereum.JsonRpc.IpcClient
 
         public int ReceiveBufferedResponse(Socket client, byte[] buffer)
         {
-#if NET462
+#if NET461
             int bytesRead = 0;
             if (Task.Run(() => 
                     bytesRead = client.Receive(buffer, SocketFlags.None)
@@ -83,7 +83,7 @@ namespace Nethereum.JsonRpc.IpcClient
                 {
                     client.Connect(endPoint);
                     client.SendBufferSize = requestBytes.Length;
-#if NET462
+#if NET461
                     var val = client.Send(requestBytes, SocketFlags.None);
 #else
                     var val = await client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).ConfigureAwait(false);
