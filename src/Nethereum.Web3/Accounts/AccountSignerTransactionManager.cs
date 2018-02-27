@@ -41,7 +41,7 @@ namespace Nethereum.Web3.Accounts
 
 
 
-        public override Task<string> SendTransactionAsync<T>(T transactionInput)
+        public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
             return SignAndSendTransactionAsync(transactionInput);
