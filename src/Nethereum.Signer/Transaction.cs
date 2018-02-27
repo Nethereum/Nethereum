@@ -112,7 +112,7 @@ namespace Nethereum.Signer
             return new[] {nonce, gasPrice, gasLimit, receiveAddress, value, data};
         }
 
-        private string ToHex(byte[] x)
+        private static string ToHex(byte[] x)
         {
             if (x == null) return "0x";
             return x.ToHex();
