@@ -1,10 +1,26 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Signer
 {
+    public class PrivateKey
+    {
+        public PrivateKey(byte[] key)
+        {
+            this.Key = new EthECKey(key, true);
+        }
+        public PrivateKey(string keyInHex) : this(keyInHex.HexToByteArray())
+        {
+        }
+
+        internal EthECKey Key { get; private set; }
+    }
+
     public class TransactionSigner
     {
+        private const string ObsoleteWarningMsg = "This maps to the old Homestead-way of signing, which might be vulnerable to Replay Attacks";
+
         public byte[] GetPublicKey(string rlp)
         {
             var transaction = new Transaction(rlp.HexToByteArray());
@@ -17,57 +33,76 @@ namespace Nethereum.Signer
             return transaction.Key.GetPublicAddress();
         }
 
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
-        {
-            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce);
-        }
-
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, string data)
-        {
-            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, data);
-        }
-
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit)
-        {
-            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit);
-        }
-
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string data)
-        {
-            return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit, data);
-        }
-
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce)
+        [Obsolete(ObsoleteWarningMsg)]
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce)
         {
             var transaction = new Transaction(to, amount, nonce);
-            return SignTransaction(privateKey, transaction);
+            return SignTransaction(privateKey, transaction, null);
         }
 
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, string data)
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, Chain chain)
+        {
+            return SignTransaction(privateKey, to, amount, nonce, (int)chain);
+        }
+
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, int chainId)
+        {
+            var transaction = new Transaction(to, amount, nonce);
+            return SignTransaction(privateKey, transaction, chainId);
+        }
+
+        [Obsolete(ObsoleteWarningMsg)]
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, string data)
         {
             var transaction = new Transaction(to, amount, nonce, data);
-            return SignTransaction(privateKey, transaction);
+            return SignTransaction(privateKey, transaction, null);
         }
 
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit)
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, string data, Chain chain)
+        {
+            var transaction = new Transaction(to, amount, nonce, data);
+            return SignTransaction(privateKey, transaction, chain);
+        }
+
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, Chain chain)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
-            return SignTransaction(privateKey, transaction);
+            return SignTransaction(privateKey, transaction, chain);
         }
 
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, string data, Chain chain)
+        {
+            return SignTransaction(privateKey, to, amount, nonce, gasPrice, gasLimit, data, (int)chain);
+        }
+
+        [Obsolete(ObsoleteWarningMsg)]
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
-            return SignTransaction(privateKey, transaction);
+            return SignTransaction(privateKey, transaction, null);
         }
 
-        private string SignTransaction(byte[] privateKey, Transaction transaction)
+        public string SignTransaction(PrivateKey privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, string data, int chainId)
         {
-            transaction.Sign(new EthECKey(privateKey, true));
+            var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
+            return SignTransaction(privateKey, transaction, chainId);
+        }
+
+        private string SignTransaction(PrivateKey privateKey, Transaction transaction, Chain chain)
+        {
+            return SignTransaction(privateKey, transaction, (int)chain);
+        }
+
+        private string SignTransaction(PrivateKey privateKey, Transaction transaction, int? chain)
+        {
+            if (chain != null)
+                transaction.Sign(privateKey.Key, chain.Value);
+            else
+                transaction.Sign(privateKey.Key);
             return transaction.GetRLPEncoded().ToHex();
         }
 
