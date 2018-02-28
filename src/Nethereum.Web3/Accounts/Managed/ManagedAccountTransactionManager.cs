@@ -55,7 +55,7 @@ namespace Nethereum.Web3.Accounts.Managed
         }
 
 
-        public override async Task<string> SendTransactionAsync<T>(T transactionInput)
+        public override async Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));

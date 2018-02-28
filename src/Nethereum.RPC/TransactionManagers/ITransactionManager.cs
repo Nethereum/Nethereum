@@ -11,8 +11,8 @@ namespace Nethereum.RPC.TransactionManagers
     public interface ITransactionManager
     {
         IClient Client { get; set; }
-        Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput;
-        Task<HexBigInteger> EstimateGasAsync<T>(T callInput) where T : CallInput;
+        Task<string> SendTransactionAsync(TransactionInput transactionInput);
+        Task<HexBigInteger> EstimateGasAsync(CallInput callInput);
         Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);
         BigInteger DefaultGasPrice { get; set; }
         BigInteger DefaultGas { get; set; }

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Eth.DTOs;
 using System.Numerics;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -16,7 +17,7 @@ namespace Nethereum.RPC.TransactionManagers
             this.Client = client;
         }
 
-        public override Task<string> SendTransactionAsync<T>(T transactionInput)
+        public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
