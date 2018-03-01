@@ -29,7 +29,7 @@ namespace Nethereum.Parity.Tests.Tests.Trace
          
             var web3 = new Web3.Web3(new Account(privateKey), client);
 
-            var receipt = await web3.TransactionManager.TransactionReceiptService.SendRequestAsync(new TransactionInput(){From = senderAddress, To = senderAddress, Value = new HexBigInteger(Web3.Web3.Convert.ToWei(1))});
+            var receipt = await web3.TransactionManager.TransactionReceiptService.SendRequestAndWaitForReceiptAsync(new TransactionInput(){From = senderAddress, To = senderAddress, Value = new HexBigInteger(Web3.Web3.Convert.ToWei(1))});
           
             var traceTransaction = new TraceFilter(client);
             //ToAddress = new []{receiverAdddress}, FromBlock = new BlockParameter(receipt.BlockNumber), Count = 1}

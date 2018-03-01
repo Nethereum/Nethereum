@@ -8,25 +8,25 @@ namespace Nethereum.RPC.TransactionReceipts
 {
     public interface ITransactionReceiptService
     {
-        Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
+        Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(Func<Task<string>> transactionFunction,
             CancellationTokenSource tokenSource = null);
 
-        Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
+        Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null);
 
-        Task<TransactionReceipt> DeployContractAsync(TransactionInput transactionInput,
+        Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput,
             CancellationTokenSource tokenSource = null);
 
         Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null);
 
-        Task<TransactionReceipt> SendRequestAsync(TransactionInput transactionInput,
+        Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
             CancellationTokenSource tokenSource = null);
 
-        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<TransactionInput> transactionInputs,
+        Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<TransactionInput> transactionInputs,
             CancellationTokenSource tokenSource = null);
 
-        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+        Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
           CancellationTokenSource tokenSource = null);
 
 

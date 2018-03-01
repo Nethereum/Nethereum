@@ -39,7 +39,7 @@ namespace Nethereum.Web3.Tests
                 () =>  multiplyFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), new HexBigInteger(0), 8)
             };
 
-            var transactionsReceipts = await web3.TransactionManager.TransactionReceiptService.SendRequestsAsync(transactions);
+            var transactionsReceipts = await web3.TransactionManager.TransactionReceiptService.SendRequestsAndWaitForReceiptAsync(transactions);
 
             Assert.Equal(4, transactionsReceipts.Count);
 

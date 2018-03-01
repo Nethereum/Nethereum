@@ -29,6 +29,23 @@ namespace Nethereum.Contracts.CQS
             return await ExecuteTransactionAsync(functionMessage, gasEstimate, function).ConfigureAwait(false);
         }
 
+        public async Task<TransactionInput> CreateTransactionInputAsync(TContractMessage functionMessage, string contractAddress)
+        {
+            ValidateContractMessage(functionMessage);
+            var contract = Eth.GetContract<TContractMessage>(contractAddress);
+            var function = contract.GetFunction<TContractMessage>();
+
+            var gasEstimate = await GetOrEstimateMaximumGas(functionMessage, function).ConfigureAwait(false);
+
+            return function.CreateTransactionInput(
+                functionMessage,
+                functionMessage.FromAddress,
+                gasEstimate,
+                GetGasPrice(functionMessage),
+                GetValue(functionMessage));
+           
+        }
+
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TContractMessage functionMessage, Function<TContractMessage> function)
         {
             var maxGas = GetMaximumGas(functionMessage) ?? await EstimateGasAsync(functionMessage, function).ConfigureAwait(false);

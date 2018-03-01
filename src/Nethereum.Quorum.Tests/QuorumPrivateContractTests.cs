@@ -35,7 +35,7 @@ namespace Nethereum.Quorum.Tests
             var privateFor = new List<string>(new[] { "ROAZBWtSacxXQrOe3FGAqJDyJjFePR5ce4TSIzmJ0Bc=" });
             web3Node1.SetPrivateRequestParameters(privateFor);
             //send transaction
-            var txnHash = await transactionService.SendRequestAsync(() => functionSet.SendTransactionAsync(account, 4));
+            var txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 4));
 
             var node1Value = await GetValue(abi, address, urlNode1);
             Assert.Equal(4, node1Value);
@@ -46,7 +46,7 @@ namespace Nethereum.Quorum.Tests
             var node7Value = await GetValue(abi, address, urlNode7);
             Assert.Equal(4, node7Value);
 
-            txnHash = await transactionService.SendRequestAsync(() => functionSet.SendTransactionAsync(account, 42));
+            txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 42));
 
             //node1
             node1Value = await GetValue(abi, address, urlNode1);

@@ -135,7 +135,7 @@ namespace Nethereum.Contracts
             params object[] values)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, values);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, HexBigInteger gas,
@@ -143,7 +143,7 @@ namespace Nethereum.Contracts
             params object[] values)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, value, values);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
@@ -151,55 +151,55 @@ namespace Nethereum.Contracts
            params object[] values)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, values);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode, string from, CancellationTokenSource receiptRequestCancellationToken = null,
             params object[] values)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, values);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, gas, from), receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(new TransactionInput(contractByteCode, gas, from), receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from, gas, gasPrice, value), receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(new TransactionInput(contractByteCode, null, from, gas, gasPrice, value), receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, HexBigInteger gas, HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from, gas, value), receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(new TransactionInput(contractByteCode, null, from, gas, value), receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(new TransactionInput(contractByteCode, null, from), receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(new TransactionInput(contractByteCode, null, from), receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
             TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, inputParams);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
             HexBigInteger gas, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, inputParams);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
         {
             var transaction = _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, inputParams);
-            return TransactionManager.TransactionReceiptService.DeployContractAsync(transaction, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction, receiptRequestCancellationToken);
         }
 #endif
     }

@@ -31,13 +31,13 @@ namespace Nethereum.RPC.TransactionReceipts
             _retryMiliseconds = retryMiliseconds;
         }
 
-        public Task<TransactionReceipt> SendRequestAsync(TransactionInput transactionInput,
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
             CancellationTokenSource tokenSource = null)
         {
-            return SendRequestAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
+            return SendRequestAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
         }
 
-        public Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<TransactionInput> transactionInputs,
+        public Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<TransactionInput> transactionInputs,
             CancellationTokenSource tokenSource = null)
         {
             var funcs = new List<Func<Task<string>>>();
@@ -45,10 +45,10 @@ namespace Nethereum.RPC.TransactionReceipts
             {
                 funcs.Add(() => _transactionManager.SendTransactionAsync(transactionInput));
             }
-            return SendRequestsAsync(funcs.ToArray(), tokenSource);
+            return SendRequestsAndWaitForReceiptAsync(funcs.ToArray(), tokenSource);
         }
 
-        public async Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
+        public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(Func<Task<string>> transactionFunction,
             CancellationTokenSource tokenSource = null)
         {
             var transaction = await transactionFunction().ConfigureAwait(false);
@@ -68,7 +68,7 @@ namespace Nethereum.RPC.TransactionReceipts
             return receipt;
         }
 
-        public async Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+        public async Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
             CancellationTokenSource tokenSource = null)
         {
             var txnList = new List<string>();
@@ -86,10 +86,10 @@ namespace Nethereum.RPC.TransactionReceipts
             return receipts;
         }
 
-        public async Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
+        public async Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null)
         {
-            var transactionReceipt = await SendRequestAsync(deployFunction, tokenSource).ConfigureAwait(false);
+            var transactionReceipt = await SendRequestAndWaitForReceiptAsync(deployFunction, tokenSource).ConfigureAwait(false);
             var contractAddress = transactionReceipt.ContractAddress;
             var ethGetCode = new EthGetCode(_transactionManager.Client);
             var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
@@ -100,13 +100,13 @@ namespace Nethereum.RPC.TransactionReceipts
         public async Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
             CancellationTokenSource tokenSource = null)
         {
-            var transactionReceipt = await DeployContractAsync(deployFunction, tokenSource).ConfigureAwait(false);
+            var transactionReceipt = await DeployContractAndWaitForReceiptAsync(deployFunction, tokenSource).ConfigureAwait(false);
             return transactionReceipt.ContractAddress;
         }
 
-        public Task<TransactionReceipt> DeployContractAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource = null)
         {
-             return DeployContractAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
+             return DeployContractAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
         }
     }
 #endif

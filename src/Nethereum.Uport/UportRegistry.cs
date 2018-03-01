@@ -92,7 +92,7 @@ namespace Nethereum.Uport
 
         public Task<TransactionReceipt> SetAsyncAndGetReceipt(string addressFrom, string registrationIdentifier, string subject, string value, ITransactionReceiptService transactionReceiptService, HexBigInteger gas = null, HexBigInteger valueAmount = null, CancellationTokenSource cancellationTokenSource = null)
         {
-            return transactionReceiptService.SendRequestAsync(
+            return transactionReceiptService.SendRequestAndWaitForReceiptAsync(
                     () => SetAsync(addressFrom, registrationIdentifier, subject, value, gas, valueAmount),
                 cancellationTokenSource);
         }

@@ -20,7 +20,18 @@ namespace Nethereum.Contracts.CQS
         {
             ValidateContractMessage(contractDeploymentMessage);
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
-            return await SendRequestAsync(contractDeploymentMessage, gasEstimate);
+            return await SendRequestAsync(contractDeploymentMessage, gasEstimate).ConfigureAwait(false);
+        }
+
+        public async Task<TransactionInput> CreateTransactionInputAsync(TContractDeploymentMessage contractDeploymentMessage)
+        {
+            ValidateContractMessage(contractDeploymentMessage);
+            var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
+            var deployContractTransactionBuilder = new DeployContractTransactionBuilder(); 
+            return deployContractTransactionBuilder.BuildTransaction(contractDeploymentMessage.ByteCode,
+                contractDeploymentMessage.FromAddress,
+                gasEstimate, GetGasPrice(contractDeploymentMessage), GetValue(contractDeploymentMessage),
+                contractDeploymentMessage);
         }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TContractDeploymentMessage contractDeploymentMessage)

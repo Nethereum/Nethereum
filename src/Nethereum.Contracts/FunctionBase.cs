@@ -41,7 +41,7 @@ namespace Nethereum.Contracts
 #if !DOTNET35
         protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.SendRequestAsync(transactionInput, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput, receiptRequestCancellationToken);
         }
 #endif
 

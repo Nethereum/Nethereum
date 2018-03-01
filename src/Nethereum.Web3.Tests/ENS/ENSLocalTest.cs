@@ -57,7 +57,7 @@ namespace Nethereum.Web3.Tests
             //we are owners of "", so a subnode label "eth" will now be owned by the FIFS registar, which will allow to also to set ownership in Ens of further subnodes of Eth.
             var ethLabel = ensUtil.GetEnsLabelHash("eth");
 
-            await txService.SendRequestAsync(() => ensService.SetSubnodeOwnerAsync(addressFrom, ensUtil.GetEnsNameHash("").HexToByteArray(),
+            await txService.SendRequestAndWaitForReceiptAsync(() => ensService.SetSubnodeOwnerAsync(addressFrom, ensUtil.GetEnsNameHash("").HexToByteArray(),
                 ethLabel.HexToByteArray(), fifsAddress, defaultGas));
 
             //Now the owner of Eth is the FIFS
@@ -73,16 +73,16 @@ namespace Nethereum.Web3.Tests
             //create a label
             var testLabel = ensUtil.GetEnsLabelHash("myname");
             //submit the registration using the label bytes, and set ourselves as the owner
-            await txService.SendRequestAsync(() => fifsService.RegisterAsync(addressFrom, testLabel.HexToByteArray(), addressFrom, defaultGas));
+            await txService.SendRequestAndWaitForReceiptAsync(() => fifsService.RegisterAsync(addressFrom, testLabel.HexToByteArray(), addressFrom, defaultGas));
 
             //now using the the full name
             var fullNameNode = ensUtil.GetEnsNameHash("myname.eth");
             //set the resolver (the public one)
-            await txService.SendRequestAsync(() => ensService.SetResolverAsync(addressFrom, fullNameNode.HexToByteArray(), publicResolverAddress, defaultGas));
+            await txService.SendRequestAndWaitForReceiptAsync(() => ensService.SetResolverAsync(addressFrom, fullNameNode.HexToByteArray(), publicResolverAddress, defaultGas));
 
             var publicResolverService = new PublicResolverService(web3, publicResolverAddress);
             // set the address in the resolver which we want to resolve, ownership is validated using ENS in the background
-            await txService.SendRequestAsync(() => publicResolverService.SetAddrAsync(addressFrom, fullNameNode.HexToByteArray(), addressToResolve, defaultGas));
+            await txService.SendRequestAndWaitForReceiptAsync(() => publicResolverService.SetAddrAsync(addressFrom, fullNameNode.HexToByteArray(), addressToResolve, defaultGas));
 
             //Now as "end user" we can start resolving... 
 

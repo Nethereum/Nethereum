@@ -24,7 +24,7 @@ namespace Nethereum.Web3.Tests.Issues
             var web3 = new Web3(new ManagedAccount(senderAddress, password));
             var gas = await web3.Eth.DeployContract.EstimateGasAsync(ABI, BYTE_CODE, senderAddress);
             var transactionReceiptService = new TransactionReceiptPollingService(web3.TransactionManager);
-            var receipt = await transactionReceiptService.DeployContractAsync(
+            var receipt = await transactionReceiptService.DeployContractAndWaitForReceiptAsync(
                 () =>
                     web3.Eth.DeployContract.SendRequestAsync(ABI, BYTE_CODE, senderAddress, new HexBigInteger(3905820)));
             Assert.NotNull(receipt.ContractAddress);
