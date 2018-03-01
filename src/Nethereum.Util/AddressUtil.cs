@@ -1,10 +1,8 @@
 ﻿using System.Globalization;
 using Nethereum.Hex.HexConvertors.Extensions;
-using System;
 
 namespace Nethereum.Util
 {
-
     public class AddressUtil
     {
         public string ConvertToChecksumAddress(string address)
@@ -42,8 +40,8 @@ namespace Nethereum.Util
             {
                 var value = int.Parse(addressHash[i].ToString(), NumberStyles.HexNumber);
                 // the nth letter should be uppercase if the nth digit of casemap is 1
-                if (((value > 7) && (address[i].ToString().ToUpper() != address[i].ToString())) ||
-                    ((value <= 7) && (address[i].ToString().ToLower() != address[i].ToString())))
+                if (value > 7 && address[i].ToString().ToUpper() != address[i].ToString() ||
+                    value <= 7 && address[i].ToString().ToLower() != address[i].ToString())
                     return false;
             }
             return true;

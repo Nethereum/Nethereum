@@ -13,7 +13,8 @@ namespace Nethereum.Web3.Accounts.Managed
             InitialiseDefaultTransactionManager();
         }
 
-        public ManagedAccount(string accountAddress, string password, ManagedAccountTransactionManager transactionManager)
+        public ManagedAccount(string accountAddress, string password,
+            ManagedAccountTransactionManager transactionManager)
         {
             Address = accountAddress;
             Password = password;
@@ -21,8 +22,9 @@ namespace Nethereum.Web3.Accounts.Managed
             transactionManager.SetAccount(this);
         }
 
-        public string Address { get; protected set; }
         public string Password { get; protected set; }
+
+        public string Address { get; protected set; }
 
 
         public ITransactionManager TransactionManager { get; protected set; }

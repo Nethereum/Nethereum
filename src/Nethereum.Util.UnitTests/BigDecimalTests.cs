@@ -1,6 +1,6 @@
 ﻿using Xunit;
-using System;
-namespace Nethereum.Util.Tests
+
+namespace Nethereum.Util.UnitTests
 {
     public class BigDecimalTests
     {
@@ -19,7 +19,7 @@ namespace Nethereum.Util.Tests
         [InlineData("0.0020", "0.11", "0.00022")]
         public void ShouldMultiply(string first, string second, string expected)
         {
-            Assert.Equal(expected, (((BigDecimal)Decimal.Parse(first)) * ((BigDecimal)Decimal.Parse(second))).ToString());
+            Assert.Equal(expected, (decimal.Parse(first) * (BigDecimal) decimal.Parse(second)).ToString());
         }
 
 
@@ -38,7 +38,7 @@ namespace Nethereum.Util.Tests
         [InlineData("0.002", "0.11", "0.00022")]
         public void ShouldDivide(string expected, string denominator, string numerator)
         {
-            Assert.Equal(expected, (BigDecimal.Parse(numerator) / ((BigDecimal)Decimal.Parse(denominator))).ToString());
+            Assert.Equal(expected, (BigDecimal.Parse(numerator) / decimal.Parse(denominator)).ToString());
         }
 
         [Theory]
@@ -60,25 +60,28 @@ namespace Nethereum.Util.Tests
         }
 
         [Fact]
-        public void ShouldCastToInt()
+        public void ShouldCastToDecimal()
         {
-            Assert.Equal(200, (int)(BigDecimal)200.002m);
+            Assert.Equal(200.002m, (decimal) (BigDecimal) 200.002m);
+            Assert.Equal(15241576832799933607683.320835m,
+                (decimal) BigDecimal.Parse("15241576832799933607683.3208352565279684"));
+            Assert.Equal(152415768327999.32083525652797m,
+                (decimal) BigDecimal.Parse("152415768327999.3208352565279684"));
         }
 
         [Fact]
         public void ShouldCastToDouble()
         {
-            Assert.Equal(200.002, (double)(BigDecimal)200.002m);
-            Assert.Equal(15241576832799933607683.320835, (double)BigDecimal.Parse("15241576832799933607683.3208352565279684"));
-            Assert.Equal(152415768327999.320835, (double)BigDecimal.Parse("152415768327999.3208352565279684"));
+            Assert.Equal(200.002, (double) (BigDecimal) 200.002m);
+            Assert.Equal(15241576832799933607683.320835,
+                (double) BigDecimal.Parse("15241576832799933607683.3208352565279684"));
+            Assert.Equal(152415768327999.320835, (double) BigDecimal.Parse("152415768327999.3208352565279684"));
         }
 
         [Fact]
-        public void ShouldCastToDecimal()
+        public void ShouldCastToInt()
         {
-            Assert.Equal(200.002m, (decimal)(BigDecimal)200.002m);
-            Assert.Equal(15241576832799933607683.320835m, (decimal)BigDecimal.Parse("15241576832799933607683.3208352565279684"));
-            Assert.Equal(152415768327999.32083525652797m, (decimal)BigDecimal.Parse("152415768327999.3208352565279684"));
+            Assert.Equal(200, (int) (BigDecimal) 200.002m);
         }
     }
 }

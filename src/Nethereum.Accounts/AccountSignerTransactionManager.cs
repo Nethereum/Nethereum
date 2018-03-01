@@ -16,8 +16,6 @@ namespace Nethereum.Web3.Accounts
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly TransactionSigner _transactionSigner;
-        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
-        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account)
         {
@@ -35,10 +33,12 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new TransactionSigner();
         }
 
-        public AccountSignerTransactionManager(string privateKey):this(null, privateKey)
+        public AccountSignerTransactionManager(string privateKey) : this(null, privateKey)
         {
         }
 
+        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
+        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -55,9 +55,7 @@ namespace Nethereum.Web3.Accounts
             if (nonce == null)
             {
                 if (Account.NonceService == null)
-                {
                     Account.NonceService = new InMemoryNonceService(Account.Address, Client);
-                }
                 Account.NonceService.Client = Client;
                 nonce = await Account.NonceService.GetNextNonceAsync();
             }
@@ -66,9 +64,10 @@ namespace Nethereum.Web3.Accounts
 
         private async Task<string> SignAndSendTransactionAsync(TransactionInput transaction)
         {
-            if(Client == null) throw new NullReferenceException("Client not configured");
+            if (Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower()) throw new Exception("Invalid account used signing");
+            if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower())
+                throw new Exception("Invalid account used signing");
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
             var ethSendTransaction = new EthSendRawTransaction(Client);
@@ -76,12 +75,13 @@ namespace Nethereum.Web3.Accounts
 
             var gasPrice = transaction.GasPrice;
             var gasLimit = transaction.Gas;
-            
+
             var value = transaction.Value;
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, transaction.To, value.Value, nonce,
+            var signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey, transaction.To,
+                value.Value, nonce,
                 gasPrice.Value, gasLimit.Value, transaction.Data);
 
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);

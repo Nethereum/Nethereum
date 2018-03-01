@@ -1,7 +1,7 @@
 ﻿using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 
-namespace Nethereum.Signer.IntegrationTests
+namespace Nethereum.Web3.IntegrationTests
 {
     public static class AccountFactory
     {

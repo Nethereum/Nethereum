@@ -1,14 +1,13 @@
-﻿using Nethereum.RPC.Accounts;
+﻿using Nethereum.KeyStore;
+using Nethereum.RPC.Accounts;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
-
 
 namespace Nethereum.Web3.Accounts
 {
     public class Account : IAccount
     {
-
 #if !PCL
         public static Account LoadFromKeyStoreFile(string filePath, string password)
         {
@@ -19,7 +18,7 @@ namespace Nethereum.Web3.Accounts
 #endif
         public static Account LoadFromKeyStore(string json, string password)
         {
-            var keyStoreService = new Nethereum.KeyStore.KeyStoreService();
+            var keyStoreService = new KeyStoreService();
             var key = keyStoreService.DecryptKeyStoreFromJson(password, json);
             return new Account(key);
         }

@@ -10,7 +10,7 @@ namespace Nethereum.Web3.Accounts
         private readonly AccountSignerTransactionManager signer;
 
         public AccountTransactionSigningInterceptor(string privateKey, IClient client)
-        { 
+        {
             signer = new AccountSignerTransactionManager(client, privateKey);
         }
 
@@ -23,7 +23,8 @@ namespace Nethereum.Web3.Accounts
                 var transaction = (TransactionInput) request.RawParameters[0];
                 return await SignAndSendTransaction(transaction).ConfigureAwait(false);
             }
-            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route).ConfigureAwait(false);
+            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route)
+                .ConfigureAwait(false);
         }
 
         public override async Task<object> InterceptSendRequestAsync<T>(
@@ -35,13 +36,13 @@ namespace Nethereum.Web3.Accounts
                 var transaction = (TransactionInput) paramList[0];
                 return await SignAndSendTransaction(transaction).ConfigureAwait(false);
             }
-            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList).ConfigureAwait(false);
+            return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList)
+                .ConfigureAwait(false);
         }
 
         private async Task<string> SignAndSendTransaction(TransactionInput transaction)
         {
             return await signer.SendTransactionAsync(transaction).ConfigureAwait(false);
         }
-
     }
 }

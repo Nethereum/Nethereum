@@ -1,22 +1,18 @@
 ﻿using System;
-using Nethereum.ABI.Util;
 using Nethereum.Contracts;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
+using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
-using Newtonsoft.Json;
-using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Web3
 {
     public class Web3
     {
-        private static AddressUtil addressUtil = new AddressUtil();
-        private static Sha3Keccack sha3Keccack = new Sha3Keccack();
-        private static TransactionSigner transactionSigner = new TransactionSigner();
-        private static UnitConversion unitConversion = new UnitConversion();
+        private static readonly AddressUtil addressUtil = new AddressUtil();
+        private static readonly Sha3Keccack sha3Keccack = new Sha3Keccack();
 
         public Web3(IClient client)
         {
@@ -25,16 +21,10 @@ namespace Nethereum.Web3
             IntialiseDefaultGasAndGasPrice();
         }
 
-        private void IntialiseDefaultGasAndGasPrice()
+        public Web3(IAccount account, IClient client) : this(client)
         {
-            this.TransactionManager.DefaultGas = Transaction.DEFAULT_GAS_LIMIT;
-            this.TransactionManager.DefaultGasPrice = Transaction.DEFAULT_GAS_PRICE;
-        }
-
-        public Web3(IAccount account, IClient client):this(client)
-        {
-            this.TransactionManager = account.TransactionManager;
-            this.TransactionManager.Client = this.Client;
+            TransactionManager = account.TransactionManager;
+            TransactionManager.Client = Client;
         }
 
         public Web3(string url = @"http://localhost:8545/")
@@ -44,21 +34,21 @@ namespace Nethereum.Web3
             IntialiseDefaultGasAndGasPrice();
         }
 
-        public Web3(IAccount account, string url = @"http://localhost:8545/"):this(url)
+        public Web3(IAccount account, string url = @"http://localhost:8545/") : this(url)
         {
-            this.TransactionManager = account.TransactionManager;
-            this.TransactionManager.Client = this.Client;
+            TransactionManager = account.TransactionManager;
+            TransactionManager.Client = Client;
         }
 
         public ITransactionManager TransactionManager
         {
-            get { return Eth.TransactionManager; }
-            set { Eth.TransactionManager = value; }
+            get => Eth.TransactionManager;
+            set => Eth.TransactionManager = value;
         }
 
-        public static UnitConversion Convert { get { return unitConversion; } }
+        public static UnitConversion Convert { get; } = new UnitConversion();
 
-        public static TransactionSigner OfflineTransactionSigner { get { return transactionSigner; } }
+        public static TransactionSigner OfflineTransactionSigner { get; } = new TransactionSigner();
 
         public IClient Client { get; private set; }
 
@@ -68,6 +58,12 @@ namespace Nethereum.Web3
         public NetApiService Net { get; private set; }
 
         public PersonalApiService Personal { get; private set; }
+
+        private void IntialiseDefaultGasAndGasPrice()
+        {
+            TransactionManager.DefaultGas = Transaction.DEFAULT_GAS_LIMIT;
+            TransactionManager.DefaultGasPrice = Transaction.DEFAULT_GAS_PRICE;
+        }
 
         public static string GetAddressFromPrivateKey(string privateKey)
         {
@@ -99,7 +95,7 @@ namespace Nethereum.Web3
             Eth = new EthApiContractService(Client);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
-            Personal = new PersonalApiService(Client);   
+            Personal = new PersonalApiService(Client);
         }
 
         private void IntialiseDefaultRpcClient(string url)

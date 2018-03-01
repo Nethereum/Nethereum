@@ -3,8 +3,6 @@ using Nethereum.Web3.Accounts.Managed;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
-
-
     public static class AccountFactory
     {
         public static string PrivateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";

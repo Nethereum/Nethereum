@@ -1,30 +1,21 @@
 ﻿using System;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
-using System.Numerics;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.NonceServices;
 using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts.Managed
 {
     public class ManagedAccountTransactionManager : TransactionManagerBase
-    { 
-        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
-        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
-
+    {
         public ManagedAccountTransactionManager(IClient client, ManagedAccount account)
         {
             Account = account;
             Client = client;
-        }
-
-        public void SetAccount(ManagedAccount account)
-        {
-            Account = account;
         }
 
         public ManagedAccountTransactionManager(IClient client, string accountAddress, string password)
@@ -33,9 +24,17 @@ namespace Nethereum.Web3.Accounts.Managed
             Client = client;
         }
 
-        public ManagedAccountTransactionManager(string accountAddress, string password):this(null, accountAddress, password)
+        public ManagedAccountTransactionManager(string accountAddress, string password) : this(null, accountAddress,
+            password)
         {
- 
+        }
+
+        public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
+        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+
+        public void SetAccount(ManagedAccount account)
+        {
+            Account = account;
         }
 
         public async Task<HexBigInteger> GetNonceAsync(TransactionInput transaction)
@@ -44,13 +43,11 @@ namespace Nethereum.Web3.Accounts.Managed
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             var nonce = transaction.Nonce;
             if (nonce == null)
-            {
                 if (Account.NonceService != null)
                 {
                     Account.NonceService.Client = Client;
                     nonce = await Account.NonceService.GetNextNonceAsync();
                 }
-            }
             return nonce;
         }
 
@@ -64,7 +61,8 @@ namespace Nethereum.Web3.Accounts.Managed
             var nonce = await GetNonceAsync(transactionInput).ConfigureAwait(false);
             if (nonce != null) transactionInput.Nonce = nonce;
             var ethSendTransaction = new PersonalSignAndSendTransaction(Client);
-            return await ethSendTransaction.SendRequestAsync(transactionInput, ((ManagedAccount)Account).Password).ConfigureAwait(false);
+            return await ethSendTransaction.SendRequestAsync(transactionInput, ((ManagedAccount) Account).Password)
+                .ConfigureAwait(false);
         }
 
         public override async Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
