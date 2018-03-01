@@ -1,5 +1,6 @@
 ﻿@using Nethereum.ABI.Model
-@model Nethereum.Generator.Console.ServiceModel
+@using Nethereum.Generator.Console.Generators.Services
+@model Nethereum.Generator.Console.Generators.Services.ServiceModel
 using System;
 using System.Threading.Tasks;
 using System.Numerics;
@@ -33,7 +34,7 @@ namespace @Model.Namespace
         }
 @foreach (var function in @Model.Contract.Functions) {
 <text>
-        public Function GetFunction@(Model.CapitaliseFirstChar(function.Name))()
+        public Function GetFunction@(Model.Utils.CapitaliseFirstChar(function.Name))()
         {
             return contract.GetFunction("@(function.Name)");
         }
@@ -41,7 +42,7 @@ namespace @Model.Namespace
 }
 @foreach (var eventItem in @Model.Contract.Events) {
 <text>
-        public Event GetEvent@(Model.CapitaliseFirstChar(eventItem.Name))()
+        public Event GetEvent@(Model.Utils.CapitaliseFirstChar(eventItem.Name))()
         {
             return contract.GetEvent("@(eventItem.Name)");
         }
@@ -52,9 +53,9 @@ namespace @Model.Namespace
     if (function.OutputParameters != null && function.OutputParameters.Length == 1)
     {
 <text>
-        public Task@(Raw(Model.GetGenericReturnType(function))) @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
+        public Task@(Raw(Model.GetGenericReturnType(function))) @(Model.Utils.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
         {
-           var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
+           var function = GetFunction@(Model.Utils.CapitaliseFirstChar(function.Name))();
            return function.CallAsync@(Raw(Model.GetGenericReturnType(function)))(@(Raw((Model.GenerateFunctionParameters(function.InputParameters)))));
         }
 </text>
@@ -65,10 +66,10 @@ namespace @Model.Namespace
     if (function.OutputParameters != null && function.OutputParameters.Length > 1)
     {
 <text>
-        public Task<@(Model.CapitaliseFirstChar(function.Name))DTO> @(Model.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
+        public Task<@(Model.Utils.CapitaliseFirstChar(function.Name))DTO> @(Model.Utils.CapitaliseFirstChar(function.Name))AsyncCall(@(Raw(Model.GenerateFunctionInputParameters(function.InputParameters))))
         {
-           var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
-           return function.CallAsync<@(Model.CapitaliseFirstChar(function.Name))DTO>(@(Raw((Model.GenerateFunctionParameters(function.InputParameters)))));
+           var function = GetFunction@(Model.Utils.CapitaliseFirstChar(function.Name))();
+           return function.CallAsync<@(Model.Utils.CapitaliseFirstChar(function.Name))DTO>(@(Raw((Model.GenerateFunctionParameters(function.InputParameters)))));
         }
 </text>
     }
@@ -78,9 +79,9 @@ namespace @Model.Namespace
     if (function.Constant == false)
     {
 <text>
-        public Task<string> @(Model.CapitaliseFirstChar(function.Name))Async(string addressFrom, @(Raw(Model.GenerateFunctionTransactionInputParameters(function.InputParameters))) HexBigInteger gas = null, HexBigInteger valueAmount = null)
+        public Task<string> @(Model.Utils.CapitaliseFirstChar(function.Name))Async(string addressFrom, @(Raw(Model.GenerateFunctionTransactionInputParameters(function.InputParameters))) HexBigInteger gas = null, HexBigInteger valueAmount = null)
         {
-           var function = GetFunction@(Model.CapitaliseFirstChar(function.Name))();
+           var function = GetFunction@(Model.Utils.CapitaliseFirstChar(function.Name))();
            return function.SendTransactionAsync(addressFrom, gas, valueAmount@(Raw(Model.GenerateFunctionParametersCommaPrefix(function.InputParameters))));
         }
 </text>
@@ -94,13 +95,13 @@ namespace @Model.Namespace
     {
 <text>
     [FunctionOutput]
-    public class @Model.CapitaliseFirstChar(function.Name)DTO
+    public class @(Model.Utils.CapitaliseFirstChar(function.Name))DTO
     {
 	    @foreach (var parameter in function.OutputParameters)
 	    {
 <text>
         [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order)]
-        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.Utils.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
 </text>
 	    }
     }
@@ -114,13 +115,13 @@ namespace @Model.Namespace
     if (eventItem.InputParameters != null && eventItem.InputParameters.Length > 1)
     {
 <text>
-    public class @(Model.CapitaliseFirstChar(eventItem.Name))EventDTO
+    public class @(Model.Utils.CapitaliseFirstChar(eventItem.Name))EventDTO
     {
 	    @foreach (var parameter in eventItem.InputParameters)
 	    {
 <text>
-        [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order, @(Model.GetBooleanAsString(parameter.Indexed)))]
-        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) { get; set; }
+        [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order, @Model.Utils.GetBooleanAsString(parameter.Indexed))]
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.Utils.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) { get; set; }
 </text>
 	    }
     }
@@ -133,8 +134,8 @@ namespace @Model.Namespace
     if (function.OutputParameters != null && function.OutputParameters.Length > 1)
     {
         <text>
-    [Function("@function.Name", "@Raw(Model.CapitaliseFirstChar(function.Name))DTO")]
-    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    [Function("@function.Name", "@(Raw(Model.Utils.CapitaliseFirstChar(function.Name)))DTO")]
+    public class @(Model.Utils.CapitaliseFirstChar(function.Name))Function:ContractMessage
     {
         </text>
     }
@@ -143,7 +144,7 @@ namespace @Model.Namespace
     {
         <text>
     [Function("@function.Name", "@Raw(Model.GetSingleAbiReturnType(function))")]
-    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    public class @(Model.Utils.CapitaliseFirstChar(function.Name))Function:ContractMessage
     {
         </text>
     }
@@ -152,7 +153,7 @@ namespace @Model.Namespace
     {
         <text>
     [Function("@function.Name")]
-    public class @Model.CapitaliseFirstChar(function.Name)Function:ContractMessage
+    public class @(Model.Utils.CapitaliseFirstChar(function.Name))Function:ContractMessage
     {
         </text>
     }
@@ -161,7 +162,7 @@ namespace @Model.Namespace
 {
     <text>
         [Parameter("@parameter.Type", "@parameter.Name", @parameter.Order)]
-        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
+        public @(Raw(Model.GetTypeMap(parameter.Type, true))) @Model.Utils.CapitaliseFirstChar(Model.GetParameterName(parameter.Name, parameter.Order)) {get; set;}
     </text>
 }
     }

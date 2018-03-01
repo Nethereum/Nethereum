@@ -1,12 +1,12 @@
 using System;
 using Microsoft.Extensions.CommandLineUtils;
 
-namespace Nethereum.Generator.Console
+namespace Nethereum.Generator.Console.Generators.Services
 {
     public class GenerateSampleServiceCommand : CommandLineApplication
     {
         public GenerateSampleServiceCommand()
-        {
+        {   
             Name = "gen-service-sample";
             Description = "Generates a sample Nethereum (c#) contract service file";
             HelpOption("-? | -h | --help");

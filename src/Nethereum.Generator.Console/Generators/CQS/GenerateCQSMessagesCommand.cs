@@ -1,25 +1,26 @@
-﻿using System;
+using System;
 using System.IO;
 using Microsoft.Extensions.CommandLineUtils;
+using Nethereum.Generator.Console.Generators.Services;
 
-namespace Nethereum.Generator.Console
+namespace Nethereum.Generator.Console.Generators.CQS
 {
-    public class GenerateServiceCommand : CommandLineApplication
+    public class GenerateCQSMessagesCommand : CommandLineApplication
     {
         private readonly CommandOption _abiFile;
         private readonly CommandOption _binFile;
-        private readonly CommandOption _contractName;
         private readonly CommandOption _namespaceName;
+        private readonly CommandOption _functionName;
 
 
-        public GenerateServiceCommand()
+        public GenerateCQSMessagesCommand()
         {
-            Name = "gen-service";
+            Name = "gen-cqsFunctionMessage";
             Description = "Generates a Nethereum (c#) contract service based on the abi";
             _abiFile = Option("-af | --abiFile", "The file containing the abi", CommandOptionType.SingleValue);
             _binFile = Option("-bf | --binFile", "The file containing the bin", CommandOptionType.SingleValue);
-            _contractName = Option("-c | --contractName", "Optional: The contract name used as the name of the Service", CommandOptionType.SingleValue);
             _namespaceName = Option("-n | --namespace", "Optional: The namespace name for the Service", CommandOptionType.SingleValue);
+            _functionName = Option("-f | --functionName", "Optional: The single function / message name to generate", CommandOptionType.SingleValue);
             HelpOption("-? | -h | --help");
             OnExecute((Func<int>)RunCommand);
         }
@@ -40,11 +41,8 @@ namespace Nethereum.Generator.Console
                 return 1;
             }
 
-            var contractName = _contractName.Value();
-            if (string.IsNullOrWhiteSpace(contractName))
-            {
-                contractName = ServiceModel.DEFAULT_CONTRACTNAME;
-            }
+            var functionName = _functionName.Value();
+           
             var namespaceName = _namespaceName.Value();
             if (string.IsNullOrWhiteSpace(namespaceName))
             {
@@ -75,9 +73,32 @@ namespace Nethereum.Generator.Console
                 byteCode = file.ReadToEnd();
             }
 
-            CodeGeneratorService.GenerateFileAsync("Service.cshtml",
-                new ServiceModel(abi, byteCode, contractName, namespaceName), contractName + "Service.cs").Wait();
+            string directoryPath = null;
+            if (!Directory.Exists("FunctionMessages"))
+            {
+                directoryPath = Directory.CreateDirectory("FunctionMessages").FullName;
+            }
+            else
+            {
+                directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "FunctionMessages");
+            }
 
+            if (!String.IsNullOrEmpty(functionName))
+            {
+                var model = new CQSMessageModel(abi, byteCode, functionName, namespaceName);
+                CodeGeneratorService.GenerateFileAsync("Generators.CQS.CQSMessage.cshtml",
+                    model, Path.Combine(directoryPath, model.GetFunctionMessageName() + ".cs")).Wait();
+            }
+            else
+            {
+                var model = new CQSMessageModel(abi, byteCode, namespaceName);
+                foreach (var function in model.Contract.Functions)
+                {
+                    model.FunctionName = function.Name;
+                    CodeGeneratorService.GenerateFileAsync("Generators.CQS.CQSMessage.cshtml",
+                        model, Path.Combine(directoryPath, model.GetFunctionMessageName() + ".cs")).Wait();
+                }
+            }
             return 0;
         }
     }
