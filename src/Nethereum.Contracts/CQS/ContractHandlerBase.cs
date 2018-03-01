@@ -1,8 +1,7 @@
-﻿using Nethereum.Hex.HexTypes;
+﻿using System.Numerics;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
-using System.Numerics;
 
 namespace Nethereum.Contracts.CQS
 {
@@ -12,12 +11,12 @@ namespace Nethereum.Contracts.CQS
 
         public void Initialise(IClient client, ITransactionManager transactionManager)
         {
-            this.Eth = new EthApiContractService(client, transactionManager);
+            Eth = new EthApiContractService(client, transactionManager);
         }
 
         public void Initialise(EthApiContractService ethApiContractService)
         {
-            this.Eth = ethApiContractService;
+            Eth = ethApiContractService;
         }
 
         protected virtual HexBigInteger GetMaximumGas(TContractMessage contractMessage)
@@ -44,6 +43,5 @@ namespace Nethereum.Contracts.CQS
         {
             //check attribute type?
         }
-
     }
 }

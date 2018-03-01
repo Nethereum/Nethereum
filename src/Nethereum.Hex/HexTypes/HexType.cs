@@ -7,6 +7,10 @@ namespace Nethereum.Hex.HexTypes
     {
         protected IHexConvertor<T> convertor;
 
+        protected string hexValue;
+
+        protected T value;
+
         protected HexRPCType(IHexConvertor<T> convertor)
         {
             this.convertor = convertor;
@@ -15,7 +19,7 @@ namespace Nethereum.Hex.HexTypes
         public HexRPCType(IHexConvertor<T> convertor, string hexValue)
         {
             this.convertor = convertor;
-            InitialiseFromHex(hexValue);            
+            InitialiseFromHex(hexValue);
         }
 
         public HexRPCType(T value, IHexConvertor<T> convertor)
@@ -24,25 +28,22 @@ namespace Nethereum.Hex.HexTypes
             InitialiseFromValue(value);
         }
 
-        protected string hexValue;
         public string HexValue
         {
-            get { return hexValue; }
-            set { InitialiseFromHex(hexValue); }
+            get => hexValue;
+            set => InitialiseFromHex(hexValue);
+        }
+
+        public T Value
+        {
+            get => value;
+            set => InitialiseFromValue(value);
         }
 
         protected void InitialiseFromHex(string newHexValue)
         {
             value = ConvertFromHex(newHexValue);
             hexValue = newHexValue.EnsureHexPrefix();
-        }
-
-        protected T value;
-
-        public T Value
-        {
-            get { return value; }
-            set { InitialiseFromValue(value); }
         }
 
         protected void InitialiseFromValue(T newValue)
@@ -66,7 +67,7 @@ namespace Nethereum.Hex.HexTypes
             return HexValue.HexToByteArray();
         }
 
-        public static implicit operator byte[] (HexRPCType<T> hexRpcType)
+        public static implicit operator byte[](HexRPCType<T> hexRpcType)
         {
             return hexRpcType.ToHexByteArray();
         }

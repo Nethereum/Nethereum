@@ -1,5 +1,4 @@
-﻿using Org.BouncyCastle.Crypto.Prng;
-using Org.BouncyCastle.Security;
+﻿using Org.BouncyCastle.Security;
 
 namespace Nethereum.KeyStore.Crypto
 {
@@ -11,7 +10,7 @@ namespace Nethereum.KeyStore.Crypto
         {
             return GenerateRandomBytes(16);
         }
-      
+
         public byte[] GenerateRandomSalt()
         {
             return GenerateRandomBytes(32);
@@ -19,7 +18,7 @@ namespace Nethereum.KeyStore.Crypto
 
         public byte[] GenerateRandomBytes(int size)
         {
-            byte[] bytes = new byte[size];
+            var bytes = new byte[size];
             Random.NextBytes(bytes);
             return bytes;
         }

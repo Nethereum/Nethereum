@@ -1,9 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.IO;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 
 namespace Nethereum.KeyStore.Console.Sample
@@ -12,7 +8,6 @@ namespace Nethereum.KeyStore.Console.Sample
     {
         public static void Main(string[] args)
         {
-
             //Reading an existing file
             var address = "12890d2cce102216644c59dae5baed380d84830c";
             var password = "password";
@@ -62,7 +57,7 @@ namespace Nethereum.KeyStore.Console.Sample
             var scryptService = new KeyStoreScryptService();
             var scryptResult = scryptService.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
             //or pkbdf2
-            var  pbkdf2Service = new KeyStorePbkdf2Service();
+            var pbkdf2Service = new KeyStorePbkdf2Service();
             var pkbdf2Result = pbkdf2Service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, genAddress);
 
             fileName = service.GenerateUTCFileName(genAddress);
@@ -72,7 +67,6 @@ namespace Nethereum.KeyStore.Console.Sample
                 //generate the encrypted and key store content as json. (The default uses pbkdf2)                
                 newfile.Write(pkbdf2Result);
                 newfile.Flush();
-
             }
 
             //Both services can be configured with a new IRandomBytesGenerator for the IV and Salt, currently uses SecureRandom for both.

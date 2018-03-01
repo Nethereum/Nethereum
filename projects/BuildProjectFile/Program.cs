@@ -27,10 +27,6 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Uport", "Uport"));
 		    stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Parity", "Parity"));
-
-            //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
-            //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
-            //GenerateFile("Nethereum-XS\\Nethereum - XS.csproj", fileTemplate1, fileTemplate2, stringBuilder.ToString());
             GenerateFile("Nethereum.Portable\\Nethereum.Portable.csproj", fileTemplatePortable1, fileTemplatePortable2, stringBuilder.ToString());
         }
 

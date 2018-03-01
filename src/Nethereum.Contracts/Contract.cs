@@ -1,15 +1,9 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.JsonDeserialisation;
-using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
-using System.Reflection;
-using System.Collections.Generic;
 
 namespace Nethereum.Contracts
 {
@@ -22,9 +16,7 @@ namespace Nethereum.Contracts
             Eth = eth;
             ContractBuilder = new ContractBuilder(abi, contractAddress);
             if (eth != null)
-            {
                 DefaultBlock = eth.DefaultBlock;
-            }
         }
 
         public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
@@ -32,9 +24,7 @@ namespace Nethereum.Contracts
             Eth = eth;
             ContractBuilder = new ContractBuilder(contractMessageType, contractAddress);
             if (eth != null)
-            {
                 DefaultBlock = eth.DefaultBlock;
-            }
         }
 
         public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
@@ -42,9 +32,7 @@ namespace Nethereum.Contracts
             Eth = eth;
             ContractBuilder = new ContractBuilder(contractMessagesTypes, contractAddress);
             if (eth != null)
-            {
                 DefaultBlock = eth.DefaultBlock;
-            }
         }
 
         private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
@@ -53,7 +41,7 @@ namespace Nethereum.Contracts
 
         public BlockParameter DefaultBlock
         {
-            get { return defaultBlock; }
+            get => defaultBlock;
             set
             {
                 defaultBlock = value;
@@ -109,10 +97,7 @@ namespace Nethereum.Contracts
         private void SetDefaultBlock()
         {
             if (ContractBuilder != null)
-            {
                 ContractBuilder.DefaultBlock = DefaultBlock;
-            }
         }
-
     }
 }

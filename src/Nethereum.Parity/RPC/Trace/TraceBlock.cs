@@ -1,16 +1,13 @@
-
-
-using System;
-using Nethereum.Hex.HexTypes;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Parity.RPC.Trace
 {
-    ///<Summary>
-    /// Returns traces created at given block    
-    ///</Summary>
+    /// <Summary>
+    ///     Returns traces created at given block
+    /// </Summary>
     public class TraceBlock : RpcRequestResponseHandler<JArray>
     {
         public TraceBlock(IClient client) : base(client, ApiMethods.trace_block.ToString())
@@ -28,4 +25,3 @@ namespace Nethereum.Parity.RPC.Trace
         }
     }
 }
-

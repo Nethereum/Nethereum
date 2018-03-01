@@ -1,5 +1,4 @@
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Contracts
 {

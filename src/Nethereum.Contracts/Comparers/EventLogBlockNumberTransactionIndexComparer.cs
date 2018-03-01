@@ -9,7 +9,7 @@ namespace Nethereum.Contracts.Comparers
         {
             var xLog = x as IEventLog;
             var yLog = y as IEventLog;
-            if ((xLog == null) || (yLog == null)) throw new Exception("Both instances should implement IEventLog");
+            if (xLog == null || yLog == null) throw new Exception("Both instances should implement IEventLog");
             return new FilterLogBlockNumberTransactionIndexComparer().Compare(xLog.Log, yLog.Log);
         }
     }

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Text;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Security;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Macs;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 
 namespace Nethereum.KeyStore.Crypto
 {
@@ -47,7 +47,7 @@ namespace Nethereum.KeyStore.Crypto
         {
             var hmac = new HMac(new Sha256Digest());
             hmac.Init(new KeyParameter(key));
-            byte[] result = new byte[hmac.GetMacSize()];
+            var result = new byte[hmac.GetMacSize()];
             hmac.BlockUpdate(data, 0, data.Length);
             hmac.DoFinal(result, 0);
             return result;
@@ -70,9 +70,9 @@ namespace Nethereum.KeyStore.Crypto
             //changing it to keep it as bouncy
 
             pdb.Init(PbeParametersGenerator.Pkcs5PasswordToUtf8Bytes(password.ToCharArray()), salt,
-                     count);
+                count);
             //if dklen == 32, then it is 256 (8 * 32)
-            var key = (KeyParameter)pdb.GenerateDerivedMacParameters(8 * dklen);
+            var key = (KeyParameter) pdb.GenerateDerivedMacParameters(8 * dklen);
             return key.GetKey();
         }
 
@@ -80,9 +80,9 @@ namespace Nethereum.KeyStore.Crypto
         {
             //ctr https://gist.github.com/hanswolff/8809275 
             var key = ParameterUtilities.CreateKeyParameter("AES", encryptKey);
-            
+
             var parametersWithIv = new ParametersWithIV(key, iv);
-           
+
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
             cipher.Init(true, parametersWithIv);
             return cipher.DoFinal(input);
@@ -95,19 +95,21 @@ namespace Nethereum.KeyStore.Crypto
             var parametersWithIv = new ParametersWithIV(key, iv);
 
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-           
+
             cipher.Init(false, parametersWithIv);
             return cipher.DoFinal(input);
         }
 
 
-        public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r, byte[] salt, int dklen)
+        public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r,
+            byte[] salt, int dklen)
         {
             var derivedKey = GenerateDerivedScryptKey(GetPasswordAsBytes(password), salt, n, r, p, dklen);
             return Decrypt(mac, iv, cipherText, derivedKey);
         }
 
-        public byte[] DecryptPbkdf2Sha256(string password, byte[] mac, byte[] iv, byte[] cipherText, int c, byte[] salt, int dklen)
+        public byte[] DecryptPbkdf2Sha256(string password, byte[] mac, byte[] iv, byte[] cipherText, int c, byte[] salt,
+            int dklen)
         {
             var derivedKey = GeneratePbkdf2Sha256DerivedKey(password, salt, c, dklen);
             return Decrypt(mac, iv, cipherText, derivedKey);
@@ -126,7 +128,8 @@ namespace Nethereum.KeyStore.Crypto
         {
             var generatedMac = GenerateMac(derivedKey, cipherText);
             if (generatedMac.ToHex() != mac.ToHex())
-                throw new DecryptionException("Cannot derive the same mac as the one provided from the cipher and derived key");
+                throw new DecryptionException(
+                    "Cannot derive the same mac as the one provided from the cipher and derived key");
         }
 
         public byte[] GetPasswordAsBytes(string password)
@@ -134,5 +137,4 @@ namespace Nethereum.KeyStore.Crypto
             return Encoding.UTF8.GetBytes(password);
         }
     }
-  
 }

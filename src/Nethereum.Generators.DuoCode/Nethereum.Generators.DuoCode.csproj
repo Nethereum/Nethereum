@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{EB8AD30C-1914-42C9-9E10-A810B2CA296B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Nethereum.Generators.DuoCode</RootNamespace>
+    <AssemblyName>Nethereum.Generators.DuoCode</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <DisableHandlePackageFileConflicts>true</DisableHandlePackageFileConflicts>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>scripts\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>scripts\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+        <Compile Include="..\Nethereum.Generators\Core\ABIServiceBase.cs">
+				<Link>\Core\ABIServiceBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\ABITypeToCSharpType.cs">
+				<Link>\Core\ABITypeToCSharpType.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\CommonGenerators.cs">
+				<Link>\Core\CommonGenerators.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\FunctionABIModel.cs">
+				<Link>\Core\FunctionABIModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\ParameterABIModel.cs">
+				<Link>\Core\ParameterABIModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\SpaceUtils.cs">
+				<Link>\Core\SpaceUtils.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\Utils.cs">
+				<Link>\Core\Utils.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageGenerator.cs">
+				<Link>\CQS\ContractDeploymentCQSMessageGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageModel.cs">
+				<Link>\CQS\ContractDeploymentCQSMessageModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageTemplate.cs">
+				<Link>\CQS\ContractDeploymentCQSMessageTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageGenerator.cs">
+				<Link>\CQS\FunctionCQSMessageGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageModel.cs">
+				<Link>\CQS\FunctionCQSMessageModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageTemplate.cs">
+				<Link>\CQS\FunctionCQSMessageTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\EventDTOGenerator.cs">
+				<Link>\DTOs\EventDTOGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\EventDTOModel.cs">
+				<Link>\DTOs\EventDTOModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\EventDTOTemplate.cs">
+				<Link>\DTOs\EventDTOTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOGenerator.cs">
+				<Link>\DTOs\FunctionOutputDTOGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOModel.cs">
+				<Link>\DTOs\FunctionOutputDTOModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOTemplate.cs">
+				<Link>\DTOs\FunctionOutputDTOTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\ParameterABIEventDTOTemplate.cs">
+				<Link>\DTOs\ParameterABIEventDTOTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\DTOs\ParameterABIFunctionDTOTemplate.cs">
+				<Link>\DTOs\ParameterABIFunctionDTOTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Model\ConstructorABI.cs">
+				<Link>\Model\ConstructorABI.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Model\ContractABI.cs">
+				<Link>\Model\ContractABI.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Model\EventABI.cs">
+				<Link>\Model\EventABI.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Model\FunctionABI.cs">
+				<Link>\Model\FunctionABI.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Model\Parameter.cs">
+				<Link>\Model\Parameter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Service\FunctionOutputDTOTemplate.cs">
+				<Link>\Service\FunctionOutputDTOTemplate.cs</Link>
+		</Compile>
+		
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets" Condition="Exists('..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

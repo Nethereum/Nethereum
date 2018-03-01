@@ -70,7 +70,7 @@ namespace Nethereum.RLP
 
             for (var i = 0; i < bytes.Length; i++)
             {
-                if (previousByteWasZero && (bytes[i] == 0))
+                if (previousByteWasZero && bytes[i] == 0)
                     continue;
 
                 previousByteWasZero = false;

@@ -16,11 +16,11 @@ namespace Nethereum.Parity
             TransactionsLimit = new ParityTransactionsLimit(client);
         }
 
-        public ParityDefaultExtraData DefaultExtraData { get; private set; }
-        public ParityExtraData ExtraData { get; private set; }
-        public ParityGasCeilTarget GasCeilTarget { get; private set; }
-        public ParityGasFloorTarget GasFloorTarget { get; private set; }
-        public ParityMinGasPrice MinGasPrice { get; private set; }
-        public ParityTransactionsLimit TransactionsLimit { get; private set; }
+        public ParityDefaultExtraData DefaultExtraData { get; }
+        public ParityExtraData ExtraData { get; }
+        public ParityGasCeilTarget GasCeilTarget { get; }
+        public ParityGasFloorTarget GasFloorTarget { get; }
+        public ParityMinGasPrice MinGasPrice { get; }
+        public ParityTransactionsLimit TransactionsLimit { get; }
     }
 }

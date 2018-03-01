@@ -1,7 +1,6 @@
 using Nethereum.Geth.RPC.Admin;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
-using Nethereum.Web3;
 
 namespace Nethereum.Geth
 {
@@ -20,14 +19,14 @@ namespace Nethereum.Geth
             Peers = new AdminPeers(client);
         }
 
-        public AdminAddPeer AddPeer { get; private set; }
-        public AdminDatadir Datadir { get; private set; }
-        public AdminNodeInfo NodeInfo { get; private set; }
-        public AdminSetSolc SetSolc { get; private set; }
-        public AdminStartRPC StartRPC { get; private set; }
-        public AdminStartWS StartWS { get; private set; }
-        public AdminStopRPC StopRPC { get; private set; }
-        public AdminStopWS StopWS { get; private set; }
-        public AdminPeers Peers { get; private set; }
+        public AdminAddPeer AddPeer { get; }
+        public AdminDatadir Datadir { get; }
+        public AdminNodeInfo NodeInfo { get; }
+        public AdminSetSolc SetSolc { get; }
+        public AdminStartRPC StartRPC { get; }
+        public AdminStartWS StartWS { get; }
+        public AdminStopRPC StopRPC { get; }
+        public AdminStopWS StopWS { get; }
+        public AdminPeers Peers { get; }
     }
 }

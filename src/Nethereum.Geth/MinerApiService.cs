@@ -1,7 +1,6 @@
 using Nethereum.Geth.RPC.Miner;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
-using Nethereum.Web3;
 
 namespace Nethereum.Geth
 {
@@ -14,8 +13,8 @@ namespace Nethereum.Geth
             Stop = new MinerStop(client);
         }
 
-        public MinerSetGasPrice SetGasPrice { get; private set; }
-        public MinerStart Start { get; private set; }
-        public MinerStop Stop { get; private set; }
+        public MinerSetGasPrice SetGasPrice { get; }
+        public MinerStart Start { get; }
+        public MinerStop Stop { get; }
     }
 }

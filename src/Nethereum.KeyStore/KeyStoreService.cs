@@ -17,7 +17,8 @@ namespace Nethereum.KeyStore
             _keyStoreScryptService = new KeyStoreScryptService();
         }
 
-        public KeyStoreService(KeyStoreKdfChecker keyStoreKdfChecker, KeyStoreScryptService keyStoreScryptService, KeyStorePbkdf2Service keyStorePbkdf2Service)
+        public KeyStoreService(KeyStoreKdfChecker keyStoreKdfChecker, KeyStoreScryptService keyStoreScryptService,
+            KeyStorePbkdf2Service keyStorePbkdf2Service)
         {
             _keyStoreKdfChecker = keyStoreKdfChecker;
             _keyStoreScryptService = keyStoreScryptService;
@@ -54,14 +55,10 @@ namespace Nethereum.KeyStore
 
             var type = _keyStoreKdfChecker.GetKeyStoreKdfType(json);
             if (type == KeyStoreKdfChecker.KdfType.pbkdf2)
-            {
                 return _keyStorePbkdf2Service.DecryptKeyStoreFromJson(password, json);
-            }
 
             if (type == KeyStoreKdfChecker.KdfType.scrypt)
-            {
                 return _keyStoreScryptService.DecryptKeyStoreFromJson(password, json);
-            }
             //shold not reach here, already handled by the checker
             throw new Exception("Invalid kdf type");
         }

@@ -1,12 +1,11 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
-using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
-using System.Threading;
 
 namespace Nethereum.Contracts
 {
@@ -28,7 +27,7 @@ namespace Nethereum.Contracts
         }
 
         public Task<string> SendTransactionAsync(string from, HexBigInteger gas,
-          HexBigInteger value)
+            HexBigInteger value)
         {
             return SendTransactionAsync(FunctionBuilderBase.CreateTransactionInput(from, gas, value));
         }
@@ -39,9 +38,11 @@ namespace Nethereum.Contracts
         }
 
 #if !DOTNET35
-        protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource receiptRequestCancellationToken = null)
+        protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput,
+            CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return TransactionManager.TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput, receiptRequestCancellationToken);
+            return TransactionManager.TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput,
+                receiptRequestCancellationToken);
         }
 #endif
 
@@ -74,17 +75,18 @@ namespace Nethereum.Contracts
                     EthCall.SendRequestAsync(callInput, DefaultBlock)
                         .ConfigureAwait(false);
 
-            return FunctionBuilderBase.DecodeDTOTypeOutput<TReturn>(functionOuput, result);
+            return FunctionBuilderBase.DecodeDTOTypeOutput(functionOuput, result);
         }
 
-        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput, BlockParameter block)
+        protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput,
+            BlockParameter block)
         {
             var result =
                 await
                     EthCall.SendRequestAsync(callInput, block)
                         .ConfigureAwait(false);
 
-            return FunctionBuilderBase.DecodeDTOTypeOutput<TReturn>(functionOuput, result);
+            return FunctionBuilderBase.DecodeDTOTypeOutput(functionOuput, result);
         }
 
         protected async Task<HexBigInteger> EstimateGasFromEncAsync(CallInput callInput)
@@ -151,7 +153,7 @@ namespace Nethereum.Contracts
 
         public TReturn DecodeDTOTypeOutput<TReturn>(TReturn functionOuput, string output)
         {
-            return FunctionBuilderBase.DecodeDTOTypeOutput<TReturn>(functionOuput, output);
+            return FunctionBuilderBase.DecodeDTOTypeOutput(functionOuput, output);
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(string output) where TReturn : new()
@@ -160,7 +162,7 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput CreateTransactionInput(string from, HexBigInteger gas,
-           HexBigInteger value)
+            HexBigInteger value)
         {
             return FunctionBuilderBase.CreateTransactionInput(from, gas, value);
         }

@@ -1,5 +1,4 @@
-#if DOTNET35
-// Licensed to the .NET Foundation under one or more agreements.
+#if DOTNET35 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -358,7 +357,8 @@ namespace System.Globalization
                 }
 
                 int state = 0;
-                bool bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
+                bool bigNumber =
+(sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
                 int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
 
                 char* p = str;
@@ -373,7 +373,9 @@ namespace System.Globalization
                     // "-Kr 1231.47" is legal but "- 1231.47" is not.
                     if (!IsWhite(ch) || (options & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && numfmt.NumberNegativePattern != 2)))
                     {
-                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, numfmt.PositiveSign)) != null || ((next = MatchChars(p, numfmt.NegativeSign)) != null && (number.sign = true))))
+                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next =
+MatchChars(p, numfmt.PositiveSign)) != null || ((next = MatchChars(p, numfmt.NegativeSign)) != null && (number.sign =
+true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -432,12 +434,16 @@ namespace System.Globalization
                             number.scale--;
                         }
                     }
-                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, decSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, numfmt.NumberDecimalSeparator)) != null))
+                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next
+= MatchChars(p, decSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next =
+MatchChars(p, numfmt.NumberDecimalSeparator)) != null))
                     {
                         state |= StateDecimal;
                         p = next - 1;
                     }
-                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, groupSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, numfmt.NumberGroupSeparator)) != null))
+                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next
+= MatchChars(p, groupSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next =
+MatchChars(p, numfmt.NumberGroupSeparator)) != null))
                     {
                         p = next - 1;
                     }
@@ -501,7 +507,9 @@ namespace System.Globalization
                     {
                         if (!IsWhite(ch) || (options & NumberStyles.AllowTrailingWhite) == 0)
                         {
-                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, numfmt.PositiveSign)) != null || (((next = MatchChars(p, numfmt.NegativeSign)) != null) && (number.sign = true))))
+                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next
+= MatchChars(p, numfmt.PositiveSign)) != null || (((next = MatchChars(p, numfmt.NegativeSign)) != null) && (number.sign
+= true))))
                             {
                                 state |= StateSign;
                                 p = next - 1;
@@ -717,7 +725,8 @@ namespace System.Globalization
                     case 'n':
                         {
                             if (nMaxDigits < 0)
-                                nMaxDigits = nMinDigits = info.NumberDecimalDigits; // Since we are using digits in our calculation
+                                nMaxDigits = nMinDigits =
+info.NumberDecimalDigits; // Since we are using digits in our calculation
                             else
                                 nMinDigits = nMaxDigits;
 
@@ -758,7 +767,8 @@ namespace System.Globalization
                                     // Default to 29 digits precision only for G formatting without a precision specifier
                                     // This ensures that the PAL code pads out to the correct place even when we use the default precision
                                     nMaxDigits = nMinDigits = DECIMAL_PRECISION;
-                                    enableRounding = false;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
+                                    enableRounding =
+false;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
                                 }
                                 else
                                 {
@@ -1327,7 +1337,8 @@ namespace System.Globalization
                         int groupTotalSizeCount = 0;
                         int groupSizeLen = groupDigits.Length;    // The length of groupDigits array.
                         if (groupSizeLen != 0)
-                            groupTotalSizeCount = groupDigits[groupSizeIndex];   // The current running total of group size.
+                            groupTotalSizeCount =
+groupDigits[groupSizeIndex];   // The current running total of group size.
                         int groupSize = groupTotalSizeCount;
 
                         int totalDigits = digPos + ((adjust < 0) ? adjust : 0); // Actual number of digits in o/p

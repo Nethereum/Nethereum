@@ -1,7 +1,6 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.Parity.RPC.Admin;
 using Nethereum.RPC;
-using Nethereum.Web3;
 
 namespace Nethereum.Parity
 {
@@ -18,13 +17,12 @@ namespace Nethereum.Parity
             VersionInfo = new ParityVersionInfo(client);
         }
 
-        public ParityConsensusCapability ConsensusCapability { get; private set; }
-        public ParityListOpenedVaults ListOpenedVaults { get; private set; }
-        public ParityListVaults ListVaults { get; private set; }
-        public ParityLocalTransactions LocalTransactions { get; private set; }
-        public ParityPendingTransactionsStats PendingTransactionsStats { get; private set; }
-        public ParityReleasesInfo ReleasesInfo { get; private set; }
-        public ParityVersionInfo VersionInfo { get; private set; }
-            
+        public ParityConsensusCapability ConsensusCapability { get; }
+        public ParityListOpenedVaults ListOpenedVaults { get; }
+        public ParityListVaults ListVaults { get; }
+        public ParityLocalTransactions LocalTransactions { get; }
+        public ParityPendingTransactionsStats PendingTransactionsStats { get; }
+        public ParityReleasesInfo ReleasesInfo { get; }
+        public ParityVersionInfo VersionInfo { get; }
     }
 }

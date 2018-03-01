@@ -1,19 +1,17 @@
-using System;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Hex.HexConvertors
 {
     public class HexUTF8StringConvertor : IHexConvertor<string>
     {
-        public string ConvertToHex(String value)
+        public string ConvertToHex(string value)
         {
             return value.ToHexUTF8();
         }
 
-        public String ConvertFromHex(string hex)
+        public string ConvertFromHex(string hex)
         {
             return hex.HexToUTF8String();
         }
-
     }
 }

@@ -1,19 +1,17 @@
+using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using System.Threading;
 
 namespace Nethereum.Contracts
 {
-    public class Function: FunctionBase
+    public class Function : FunctionBase
     {
-        protected FunctionBuilder FunctionBuilder => (FunctionBuilder)FunctionBuilderBase;
-
         public Function(Contract contract, FunctionBuilder functionBuilder) : base(contract, functionBuilder)
         {
-
         }
+
+        protected FunctionBuilder FunctionBuilder => (FunctionBuilder) FunctionBuilderBase;
 
         public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
         {
@@ -27,7 +25,7 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallAsync<TReturn>(string from, HexBigInteger gas,
-           HexBigInteger value, BlockParameter block, params object[] functionInput)
+            HexBigInteger value, BlockParameter block, params object[] functionInput)
         {
             return base.CallAsync<TReturn>(CreateCallInput(from, gas, value, functionInput), block);
         }
@@ -50,13 +48,13 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(string from, HexBigInteger gas,
-           HexBigInteger value, BlockParameter block, params object[] functionInput) where TReturn : new()
+            HexBigInteger value, BlockParameter block, params object[] functionInput) where TReturn : new()
         {
             return base.CallAsync(new TReturn(), CreateCallInput(from, gas, value, functionInput), block);
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(
-             BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
+            BlockParameter blockParameter, params object[] functionInput) where TReturn : new()
         {
             return base.CallAsync(new TReturn(), CreateCallInput(functionInput), blockParameter);
         }
@@ -94,30 +92,6 @@ namespace Nethereum.Contracts
             return base.SendTransactionAsync(CreateTransactionInput(input, functionInput));
         }
 
-#if !DOTNET35
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from, CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
-        {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(from, functionInput), receiptRequestCancellationToken);
-        }
-      
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from, HexBigInteger gas,
-            HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
-        {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(from, gas, value, functionInput), receiptRequestCancellationToken);
-        }
-
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from, HexBigInteger gas, HexBigInteger gasPrice,
-            HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
-        {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(from, gas, gasPrice, value, functionInput), receiptRequestCancellationToken);
-        }
-
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput input, CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
-        {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(input, functionInput), receiptRequestCancellationToken);
-        }
-#endif
-
 
         public CallInput CreateCallInput(params object[] functionInput)
         {
@@ -147,7 +121,7 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput CreateTransactionInput(string from, HexBigInteger gas, HexBigInteger gasPrice,
-           HexBigInteger value, params object[] functionInput)
+            HexBigInteger value, params object[] functionInput)
         {
             return FunctionBuilder.CreateTransactionInput(from, gas, gasPrice, value, functionInput);
         }
@@ -157,16 +131,49 @@ namespace Nethereum.Contracts
             return FunctionBuilder.CreateTransactionInput(input, functionInput);
         }
 
+#if !DOTNET35
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from,
+            CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
+        {
+            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(from, functionInput),
+                receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from, HexBigInteger gas,
+            HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null,
+            params object[] functionInput)
+        {
+            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(from, gas, value, functionInput),
+                receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(string from, HexBigInteger gas,
+            HexBigInteger gasPrice,
+            HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null,
+            params object[] functionInput)
+        {
+            return base.SendTransactionAndWaitForReceiptAsync(
+                CreateTransactionInput(from, gas, gasPrice, value, functionInput), receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput input,
+            CancellationTokenSource receiptRequestCancellationToken = null, params object[] functionInput)
+        {
+            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(input, functionInput),
+                receiptRequestCancellationToken);
+        }
+#endif
     }
 
     public class Function<TFunctionInput> : FunctionBase
     {
-        protected FunctionBuilder<TFunctionInput> FunctionBuilder => (FunctionBuilder<TFunctionInput>)FunctionBuilderBase;
-
         public Function(Contract contract, FunctionBuilder<TFunctionInput> functionBuilder)
             : base(contract, functionBuilder)
         {
         }
+
+        protected FunctionBuilder<TFunctionInput> FunctionBuilder =>
+            (FunctionBuilder<TFunctionInput>) FunctionBuilderBase;
 
 
         public CallInput CreateCallInputParameterless()
@@ -195,12 +202,14 @@ namespace Nethereum.Contracts
             return FunctionBuilder.CreateTransactionInput(functionInput, from);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
         {
             return FunctionBuilder.CreateTransactionInput(functionInput, from, gas, value);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger gasPrice, HexBigInteger value)
         {
             return FunctionBuilder.CreateTransactionInput(functionInput, from, gas, gasPrice, value);
         }
@@ -219,7 +228,7 @@ namespace Nethereum.Contracts
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput, string from, HexBigInteger gas,
             HexBigInteger value)
-        {  
+        {
             return base.CallAsync<TReturn>(CreateCallInput(functionInput, from, gas, value));
         }
 
@@ -230,7 +239,7 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallAsync<TReturn>(TFunctionInput functionInput,
-             BlockParameter blockParameter)
+            BlockParameter blockParameter)
         {
             return base.CallAsync<TReturn>(CreateCallInput(functionInput), blockParameter);
         }
@@ -250,7 +259,8 @@ namespace Nethereum.Contracts
             return base.CallAsync(new TReturn(), CreateCallInput(functionInput));
         }
 
-        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, BlockParameter block) where TReturn : new()
+        public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, BlockParameter block)
+            where TReturn : new()
         {
             return base.CallAsync(new TReturn(), CreateCallInput(functionInput), block);
         }
@@ -263,8 +273,8 @@ namespace Nethereum.Contracts
         }
 
         public Task<TReturn> CallDeserializingToObjectAsync<TReturn>(TFunctionInput functionInput, string from,
-           HexBigInteger gas,
-           HexBigInteger value, BlockParameter block) where TReturn : new()
+            HexBigInteger gas,
+            HexBigInteger value, BlockParameter block) where TReturn : new()
         {
             return base.CallAsync(new TReturn(), CreateCallInput(functionInput, from, gas, value), block);
         }
@@ -293,7 +303,7 @@ namespace Nethereum.Contracts
             return EstimateGasFromEncAsync(callInput);
         }
 
-        
+
         public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from)
         {
             return base.SendTransactionAsync(CreateTransactionInput(functionInput, from));
@@ -305,7 +315,8 @@ namespace Nethereum.Contracts
             return base.SendTransactionAsync(CreateTransactionInput(functionInput, from, gas, value));
         }
 
-        public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice,
+        public Task<string> SendTransactionAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger gasPrice,
             HexBigInteger value)
         {
             return base.SendTransactionAsync(CreateTransactionInput(functionInput, from, gas, gasPrice, value));
@@ -320,21 +331,27 @@ namespace Nethereum.Contracts
         }
 
 #if !DOTNET35
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from, CancellationTokenSource receiptRequestCancellationToken = null)
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from,
+            CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(functionInput, from), receiptRequestCancellationToken);
+            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(functionInput, from),
+                receiptRequestCancellationToken);
         }
 
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from, HexBigInteger gas,
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from,
+            HexBigInteger gas,
             HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(functionInput, from, gas, value), receiptRequestCancellationToken);
+            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(functionInput, from, gas, value),
+                receiptRequestCancellationToken);
         }
 
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice,
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput, string from,
+            HexBigInteger gas, HexBigInteger gasPrice,
             HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
-            return base.SendTransactionAndWaitForReceiptAsync(CreateTransactionInput(functionInput, from, gas, gasPrice, value), receiptRequestCancellationToken);
+            return base.SendTransactionAndWaitForReceiptAsync(
+                CreateTransactionInput(functionInput, from, gas, gasPrice, value), receiptRequestCancellationToken);
         }
 
         public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TFunctionInput functionInput,

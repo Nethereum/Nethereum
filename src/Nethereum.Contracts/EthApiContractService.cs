@@ -7,13 +7,22 @@ namespace Nethereum.Contracts
 {
     public class EthApiContractService : EthApiService
     {
-        public DeployContract DeployContract => new DeployContract(this.TransactionManager);
+        public EthApiContractService(IClient client) : base(client)
+        {
+        }
+
+        public EthApiContractService(IClient client, ITransactionManager transactionManager) : base(client,
+            transactionManager)
+        {
+        }
+
+        public DeployContract DeployContract => new DeployContract(TransactionManager);
 
         public Contract GetContract(string abi, string contractAddress)
         {
             var contract = new Contract(this, abi, contractAddress)
             {
-                DefaultBlock = this.DefaultBlock
+                DefaultBlock = DefaultBlock
             };
             return contract;
         }
@@ -22,7 +31,7 @@ namespace Nethereum.Contracts
         {
             var contract = new Contract(this, typeof(TContractMessage), contractAddress)
             {
-                DefaultBlock = this.DefaultBlock
+                DefaultBlock = DefaultBlock
             };
             return contract;
         }
@@ -32,47 +41,37 @@ namespace Nethereum.Contracts
         public ContractHandler GetContractHandler(string contractAddress)
         {
             string address = null;
-            if (this.TransactionManager != null)
-            {
+            if (TransactionManager != null)
                 if (TransactionManager.Account != null)
-                {
                     address = TransactionManager.Account.Address;
-                }
-            } 
             return new ContractHandler(contractAddress, this, address);
         }
 
-        public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<TContractDeploymentMessage>() 
-            where TContractDeploymentMessage: ContractDeploymentMessage
+        public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<
+            TContractDeploymentMessage>()
+            where TContractDeploymentMessage : ContractDeploymentMessage
         {
             var contractDeploymentHandler = new ContractDeploymentHandler<TContractDeploymentMessage>();
             contractDeploymentHandler.Initialise(this);
             return contractDeploymentHandler;
         }
 
-        public ContractTransactionHandler<TContractFunctionMessage> GetContractTrasactionHandler<TContractFunctionMessage>() 
-                   where TContractFunctionMessage : ContractMessage
+        public ContractTransactionHandler<TContractFunctionMessage> GetContractTrasactionHandler<
+            TContractFunctionMessage>()
+            where TContractFunctionMessage : ContractMessage
         {
             var contractTransactionHandler = new ContractTransactionHandler<TContractFunctionMessage>();
             contractTransactionHandler.Initialise(this);
             return contractTransactionHandler;
         }
 
-        public ContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>() 
-                   where TContractFunctionMessage : ContractMessage
+        public ContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>()
+            where TContractFunctionMessage : ContractMessage
         {
             var contractQueryHandler = new ContractQueryHandler<TContractFunctionMessage>();
             contractQueryHandler.Initialise(this);
             return contractQueryHandler;
         }
 #endif
-
-        public EthApiContractService(IClient client) : base(client)
-        {
-        }
-
-        public EthApiContractService(IClient client, ITransactionManager transactionManager) : base(client, transactionManager)
-        {
-        }
     }
 }

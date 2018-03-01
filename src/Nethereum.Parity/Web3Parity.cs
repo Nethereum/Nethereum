@@ -1,8 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.Parity;
 using Nethereum.RPC.Accounts;
-using Nethereum.Web3;
-using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Parity
 {
@@ -16,13 +13,12 @@ namespace Nethereum.Parity
         {
         }
 
-        public Web3Parity(IAccount account, IClient client):base(account, client)
+        public Web3Parity(IAccount account, IClient client) : base(account, client)
         {
         }
 
-        public Web3Parity(IAccount account, string url = @"http://localhost:8545/"):base(account, url)
+        public Web3Parity(IAccount account, string url = @"http://localhost:8545/") : base(account, url)
         {
-           
         }
 
         public AdminApiService Admin { get; private set; }
@@ -35,13 +31,11 @@ namespace Nethereum.Parity
         protected override void InitialiseInnerServices()
         {
             base.InitialiseInnerServices();
-            Admin = new  AdminApiService(Client);
+            Admin = new AdminApiService(Client);
             Accounts = new AccountsApiService(Client);
             BlockAuthoring = new BlockAuthoringApiService(Client);
             Network = new NetworkApiService(Client);
             Trace = new TraceApiService(Client);
         }
-
-       
     }
 }

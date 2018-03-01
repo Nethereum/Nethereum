@@ -10,8 +10,8 @@ namespace Nethereum.Contracts
 {
     public class EventBuilder
     {
-        private readonly EventTopicBuilder _eventTopicBuilder;
         private readonly ContractBuilder _contract;
+        private readonly EventTopicBuilder _eventTopicBuilder;
 
         public EventBuilder(ContractBuilder contract, EventABI eventAbi)
         {
@@ -25,7 +25,7 @@ namespace Nethereum.Contracts
         public NewFilterInput CreateFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = new[] { _eventTopicBuilder.GetSignaguteTopic() };
+            ethFilterInput.Topics = new[] {_eventTopicBuilder.GetSignaguteTopic()};
             return ethFilterInput;
         }
 
@@ -60,7 +60,7 @@ namespace Nethereum.Contracts
 
         public bool IsLogForEvent(FilterLog log)
         {
-            if ((log.Topics != null) && (log.Topics.Length > 0))
+            if (log.Topics != null && log.Topics.Length > 0)
             {
                 var eventtopic = log.Topics[0].ToString();
                 if (EventABI.Sha33Signature.IsTheSameHex(eventtopic))
@@ -72,13 +72,11 @@ namespace Nethereum.Contracts
         public FilterLog[] GetLogsForEvent(JArray logs)
         {
             var returnList = new List<FilterLog>();
-            foreach (JToken log in logs)
+            foreach (var log in logs)
             {
                 var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
                 if (IsLogForEvent(filterLog))
-                {
                     returnList.Add(filterLog);
-                }
             }
             return returnList.ToArray();
         }
@@ -89,13 +87,11 @@ namespace Nethereum.Contracts
             if (logs == null) return result;
             var eventDecoder = new EventTopicDecoder();
             foreach (var log in logs)
-            {
                 if (IsLogForEvent(log))
                 {
                     var eventObject = eventDecoder.DecodeTopics<T>(log.Topics, log.Data);
                     result.Add(new EventLog<T>(eventObject, log));
                 }
-            }
             return result;
         }
 

@@ -32,11 +32,11 @@ namespace Nethereum.Contracts
         private string BuildEncodedData(string abi, string contractByteCode, object[] values)
         {
             if (values == null || values.Length == 0)
-            {
                 return _constructorCallEncoder.EncodeRequest(contractByteCode, "");
-            }
             var contract = _abiDeserialiser.DeserialiseContract(abi);
-            if (contract.Constructor == null) throw new Exception("Parameters supplied for a constructor but ABI does not contain a constructor definition");
+            if (contract.Constructor == null)
+                throw new Exception(
+                    "Parameters supplied for a constructor but ABI does not contain a constructor definition");
             var encodedData = _constructorCallEncoder.EncodeRequest(contractByteCode,
                 contract.Constructor.InputParameters, values);
             return encodedData;
@@ -50,7 +50,8 @@ namespace Nethereum.Contracts
             return transaction;
         }
 
-        public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger gasPrice,
+        public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
+            HexBigInteger gasPrice,
             HexBigInteger value, object[] values)
         {
             var encodedData = BuildEncodedData(abi, contractByteCode, values);

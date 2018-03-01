@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Nethereum.JsonRpc.Client;
-using Nethereum.Parity.RPC.Network;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.Parity.RPC.Trace;
 using Nethereum.RPC;
 

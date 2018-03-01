@@ -18,7 +18,7 @@ namespace Nethereum.Contracts
             FunctionCallEncoder = new FunctionCallEncoder();
         }
 
-       // public BlockParameter DefaultBlock => _contract.DefaultBlock;
+        // public BlockParameter DefaultBlock => _contract.DefaultBlock;
 
         public string ContractAddress => _contract.Address;
 
@@ -30,18 +30,19 @@ namespace Nethereum.Contracts
 
         public List<ParameterOutput> DecodeInput(string data)
         {
-            return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data, FunctionABI.InputParameters);
+            return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data,
+                FunctionABI.InputParameters);
         }
 
         public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
         {
-           return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
-                   GetFirstParameterOrNull(FunctionABI.OutputParameters), output);
+            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
+                GetFirstParameterOrNull(FunctionABI.OutputParameters), output);
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(TReturn functionOuput, string output)
         {
-            return FunctionCallDecoder.DecodeFunctionOutput<TReturn>(functionOuput, output);
+            return FunctionCallDecoder.DecodeFunctionOutput(functionOuput, output);
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(string output) where TReturn : new()
@@ -50,7 +51,7 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput CreateTransactionInput(string from, HexBigInteger gas,
-           HexBigInteger value)
+            HexBigInteger value)
         {
             var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
             return new TransactionInput(encodedInput, from, gas, value);
@@ -61,14 +62,15 @@ namespace Nethereum.Contracts
             return new CallInput(encodedFunctionCall, ContractAddress);
         }
 
-        protected CallInput CreateCallInput(string encodedFunctionCall, string @from, HexBigInteger gas, HexBigInteger value)
+        protected CallInput CreateCallInput(string encodedFunctionCall, string from, HexBigInteger gas,
+            HexBigInteger value)
         {
-            return new CallInput(encodedFunctionCall, ContractAddress, @from, gas, value);
+            return new CallInput(encodedFunctionCall, ContractAddress, from, gas, value);
         }
 
         protected TransactionInput CreateTransactionInput(string encodedFunctionCall, string from)
         {
-            var tx = new TransactionInput(encodedFunctionCall, ContractAddress) {From = @from};
+            var tx = new TransactionInput(encodedFunctionCall, ContractAddress) {From = from};
             return tx;
         }
 
@@ -78,8 +80,9 @@ namespace Nethereum.Contracts
             return new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, value);
         }
 
-        protected TransactionInput CreateTransactionInput(string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger gasPrice,
-           HexBigInteger value)
+        protected TransactionInput CreateTransactionInput(string encodedFunctionCall, string from, HexBigInteger gas,
+            HexBigInteger gasPrice,
+            HexBigInteger value)
         {
             return new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, gasPrice, value);
         }

@@ -1,11 +1,5 @@
-﻿using Nethereum.Hex.HexTypes;
+﻿using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nethereum.Contracts.CQS
 {
@@ -13,29 +7,33 @@ namespace Nethereum.Contracts.CQS
     public class ContractQueryHandler<TContractMessage> : ContractHandlerBase<TContractMessage>
         where TContractMessage : ContractMessage
     {
-        public async Task<TFunctionOutput> QueryDeserializingToObjectAsync<TFunctionOutput>(TContractMessage contractFunctionMessage, string contractAddress,
-                                                   BlockParameter block = null) where TFunctionOutput : new()
+        public async Task<TFunctionOutput> QueryDeserializingToObjectAsync<TFunctionOutput>(
+            TContractMessage contractFunctionMessage, string contractAddress,
+            BlockParameter block = null) where TFunctionOutput : new()
 
         {
             var contract = Eth.GetContract<TContractMessage>(contractAddress);
             var function = contract.GetFunction<TContractMessage>();
             ValidateContractMessage(contractFunctionMessage);
-            return await function.CallDeserializingToObjectAsync<TFunctionOutput>(contractFunctionMessage, contractFunctionMessage.FromAddress,
+            return await function.CallDeserializingToObjectAsync<TFunctionOutput>(contractFunctionMessage,
+                contractFunctionMessage.FromAddress,
                 GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
         }
 
-        public async Task<TFunctionOutput> QueryAsync<TFunctionOutput>(TContractMessage contractFunctionMessage, string contractAddress,
-                                                   BlockParameter block = null) 
+        public async Task<TFunctionOutput> QueryAsync<TFunctionOutput>(TContractMessage contractFunctionMessage,
+            string contractAddress,
+            BlockParameter block = null)
 
         {
             var contract = Eth.GetContract<TContractMessage>(contractAddress);
             var function = contract.GetFunction<TContractMessage>();
             ValidateContractMessage(contractFunctionMessage);
-            return await function.CallAsync<TFunctionOutput>(contractFunctionMessage, contractFunctionMessage.FromAddress,
+            return await function.CallAsync<TFunctionOutput>(contractFunctionMessage,
+                contractFunctionMessage.FromAddress,
                 GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
         }
     }
 
- 
+
 #endif
 }

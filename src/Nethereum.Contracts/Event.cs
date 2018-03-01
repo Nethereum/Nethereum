@@ -1,13 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.ABI.FunctionEncoding;
-using Nethereum.ABI.Model;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
@@ -60,7 +56,8 @@ namespace Nethereum.Contracts
                 toBlock);
         }
 
-        public Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues, BlockParameter fromBlock = null,
+        public Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues,
+            BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
             return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), fromBlock, toBlock);
@@ -96,7 +93,8 @@ namespace Nethereum.Contracts
             return EthNewFilter.SendRequestAsync(ethFilterInput);
         }
 
-        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
+            object[] filterTopic3,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, filterTopic3, fromBlock, toBlock);

@@ -7,10 +7,10 @@ namespace Nethereum.KeyStore.Model
     {
         public CryptoInfo()
         {
-
         }
 
-        public CryptoInfo(string cipher, byte[] cipherText, byte[] iv, byte[] mac, byte[] salt, TKdfParams kdfParams, string kdfType)
+        public CryptoInfo(string cipher, byte[] cipherText, byte[] iv, byte[] mac, byte[] salt, TKdfParams kdfParams,
+            string kdfType)
         {
             Cipher = cipher;
             CipherText = cipherText.ToHex();

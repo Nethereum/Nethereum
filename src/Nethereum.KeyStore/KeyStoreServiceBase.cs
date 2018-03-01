@@ -2,19 +2,19 @@
 using Nethereum.KeyStore.Crypto;
 using Nethereum.KeyStore.Model;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Utilities;
 
 namespace Nethereum.KeyStore
 {
     public abstract class KeyStoreServiceBase<T> : IKeyStoreService<T> where T : KdfParams
     {
-        protected readonly IRandomBytesGenerator RandomBytesGenerator;
-        protected readonly KeyStoreCrypto KeyStoreCrypto;
         public const int CurrentVersion = 3;
+        protected readonly KeyStoreCrypto KeyStoreCrypto;
+        protected readonly IRandomBytesGenerator RandomBytesGenerator;
 
         protected KeyStoreServiceBase() : this(new RandomBytesGenerator(), new KeyStoreCrypto())
         {
-
         }
 
         protected KeyStoreServiceBase(IRandomBytesGenerator randomBytesGenerator, KeyStoreCrypto keyStoreCrypto)
@@ -30,10 +30,30 @@ namespace Nethereum.KeyStore
             KeyStoreCrypto = new KeyStoreCrypto();
         }
 
-        public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address) 
+        public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address)
         {
             var kdfParams = GetDefaultParams();
             return EncryptAndGenerateKeyStore(password, privateKey, address, kdfParams);
+        }
+
+        public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss)
+        {
+            var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss);
+            return JsonConvert.SerializeObject(keyStore);
+        }
+
+        public KeyStore<T> DeserializeKeyStoreFromJson(string json)
+        {
+            return JsonConvert.DeserializeObject<KeyStore<T>>(json);
+        }
+
+        public abstract byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);
+
+        public abstract string GetKdfType();
+
+        public virtual string GetCipherType()
+        {
+            return "aes-128-ctr";
         }
 
         public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address, T kdfParams)
@@ -44,9 +64,10 @@ namespace Nethereum.KeyStore
             if (kdfParams == null) throw new ArgumentNullException(nameof(kdfParams));
 
             //Validate length unsigned but store the parameter
-            var keyValidation = BigIntegers.AsUnsignedByteArray(new Org.BouncyCastle.Math.BigInteger(privateKey));
+            var keyValidation = BigIntegers.AsUnsignedByteArray(new BigInteger(privateKey));
 
-            if (keyValidation.Length != 32) throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
+            if (keyValidation.Length != 32)
+                throw new ArgumentException("Private key should be 32 bytes", nameof(privateKey));
 
             var salt = RandomBytesGenerator.GenerateRandomSalt();
 
@@ -73,24 +94,11 @@ namespace Nethereum.KeyStore
             return keyStore;
         }
 
-        public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss)
-        {
-            var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss);
-            return JsonConvert.SerializeObject(keyStore);
-        }
-
         public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss, T kdfParams)
         {
             var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss, kdfParams);
             return JsonConvert.SerializeObject(keyStore);
         }
-
-        public KeyStore<T> DeserializeKeyStoreFromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<KeyStore<T>>(json);
-        }
-
-        public abstract byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);
 
         public byte[] DecryptKeyStoreFromJson(string password, string json)
         {
@@ -103,16 +111,8 @@ namespace Nethereum.KeyStore
             return KeyStoreCrypto.GenerateAesCtrCipher(iv, cipherKey, privateKey);
         }
 
-        public abstract string GetKdfType();
-
         protected abstract byte[] GenerateDerivedKey(string pasword, byte[] salt, T kdfParams);
 
         protected abstract T GetDefaultParams();
-
-        public virtual string GetCipherType()
-        {
-            return "aes-128-ctr";
-        }
-
     }
 }

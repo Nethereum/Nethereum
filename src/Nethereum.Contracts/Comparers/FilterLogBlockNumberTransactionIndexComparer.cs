@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Contracts.Comparers
 {

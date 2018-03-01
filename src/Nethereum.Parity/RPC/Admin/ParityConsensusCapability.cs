@@ -3,38 +3,29 @@ using Nethereum.RPC.Infrastructure;
 
 namespace Nethereum.Parity.RPC.Admin
 {
-
-    ///<Summary>
-    /// parity_consensusCapability
-/// 
-/// Returns information on current consensus capability.
-/// 
-/// Parameters
-/// 
-/// None
-/// 
-/// Returns
-/// 
-/// Object - or String - Either "capable", {"capableUntil":N}, {"incapableSince":N} or "unknown" (N is a block number).
-/// Example
-/// 
-/// Request
-/// 
-/// curl --data '{"method":"parity_consensusCapability","params":[],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545
-/// Response
-/// 
-/// {
-///   "id": 1,
-///   "jsonrpc": "2.0",
-///   "result": "capable"
-/// }
-///     
-    ///</Summary>
+    /// <Summary>
+    ///     parity_consensusCapability
+    ///     Returns information on current consensus capability.
+    ///     Parameters
+    ///     None
+    ///     Returns
+    ///     Object - or String - Either "capable", {"capableUntil":N}, {"incapableSince":N} or "unknown" (N is a block number).
+    ///     Example
+    ///     Request
+    ///     curl --data '{"method":"parity_consensusCapability","params":[],"id":1,"jsonrpc":"2.0"}' -H "Content-Type:
+    ///     application/json" -X POST localhost:8545
+    ///     Response
+    ///     {
+    ///     "id": 1,
+    ///     "jsonrpc": "2.0",
+    ///     "result": "capable"
+    ///     }
+    /// </Summary>
     public class ParityConsensusCapability : GenericRpcRequestResponseHandlerNoParam<string>
     {
-            public ParityConsensusCapability(IClient client) : base(client, ApiMethods.parity_consensusCapability.ToString()) { }
+        public ParityConsensusCapability(IClient client) : base(client,
+            ApiMethods.parity_consensusCapability.ToString())
+        {
+        }
     }
-
 }
-            
-        

@@ -6,7 +6,6 @@ namespace Nethereum.Contracts
 {
     public class FunctionBuilder : FunctionBuilderBase
     {
-      
         public FunctionBuilder(ContractBuilder contract, FunctionABI function)
             : base(contract, function)
         {
@@ -45,7 +44,7 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput CreateTransactionInput(string from, HexBigInteger gas, HexBigInteger gasPrice,
-           HexBigInteger value, params object[] functionInput)
+            HexBigInteger value, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
@@ -57,13 +56,12 @@ namespace Nethereum.Contracts
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, input);
         }
-  
     }
 
     public class FunctionBuilder<TFunctionInput> : FunctionBuilderBase
     {
         public FunctionBuilder(ContractBuilder contract, FunctionABI function)
-           : base(contract, function)
+            : base(contract, function)
         {
         }
 
@@ -96,17 +94,18 @@ namespace Nethereum.Contracts
             return base.CreateTransactionInput(encodedInput, from);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, value);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger gasPrice, HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
         }
-
     }
 }

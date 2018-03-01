@@ -15,10 +15,10 @@ namespace Nethereum.Parity
             PendingTransactions = new ParityPendingTransactions(client);
         }
 
-        public ParityChainStatus ChainStatus { get; private set; }
-        public ParityGasPriceHistogram GasPriceHistogram { get; private set; }
-        public ParityNetPeers NetPeers { get; private set; }
-        public ParityNetPort NetPort { get; private set; }
-        public ParityPendingTransactions PendingTransactions { get; private set; }
+        public ParityChainStatus ChainStatus { get; }
+        public ParityGasPriceHistogram GasPriceHistogram { get; }
+        public ParityNetPeers NetPeers { get; }
+        public ParityNetPort NetPort { get; }
+        public ParityPendingTransactions PendingTransactions { get; }
     }
 }

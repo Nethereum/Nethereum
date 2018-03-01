@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
+using Nethereum.Generator.Console.Generators.Services;
 
 namespace Nethereum.Generator.Console
 {

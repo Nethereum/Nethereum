@@ -14,9 +14,9 @@ namespace Nethereum.Parity
             HardwareAccountsInfo = new ParityHardwareAccountsInfo(client);
         }
 
-        public ParityAccountsInfo AccountsInfo { get; private set; }
-        public ParityDefaultAccount DefaultAccount { get; private set; }
-        public ParityGenerateSecretPhrase GenerateSecretPhrase { get; private set; }
-        public ParityHardwareAccountsInfo HardwareAccountsInfo { get; private set; }
+        public ParityAccountsInfo AccountsInfo { get; }
+        public ParityDefaultAccount DefaultAccount { get; }
+        public ParityGenerateSecretPhrase GenerateSecretPhrase { get; }
+        public ParityHardwareAccountsInfo HardwareAccountsInfo { get; }
     }
 }

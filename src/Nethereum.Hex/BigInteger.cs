@@ -751,7 +751,7 @@
 //				data = CoreSub (data, 1);
 //			else
 //				data = CoreAdd (data, 1);
-		
+
 //			return new BigInteger (sign, data);
 //		}
 
@@ -770,7 +770,7 @@
 //				data = CoreAdd (data, 1);
 //			else
 //				data = CoreSub (data, 1);
-		
+
 //			return new BigInteger (sign, data);
 //		}
 
@@ -827,7 +827,7 @@
 //			for (i = result.Length - 1; i >= 0 && result [i] == 0; --i) ;
 //			if (i == -1)
 //				return new BigInteger (0, ZERO);
-	
+
 //			if (i < result.Length - 1)
 //				result = Resize (result, i + 1);
 
@@ -887,7 +887,7 @@
 //			for (i = result.Length - 1; i >= 0 && result [i] == 0; --i) ;
 //			if (i == -1)
 //				return new BigInteger (0, ZERO);
-	
+
 //			if (i < result.Length - 1)
 //				result = Resize (result, i + 1);
 
@@ -947,7 +947,7 @@
 //			for (i = result.Length - 1; i >= 0 && result [i] == 0; --i) ;
 //			if (i == -1)
 //				return new BigInteger (0, ZERO);
-	
+
 //			if (i < result.Length - 1)
 //				result = Resize (result, i + 1);
 
@@ -991,7 +991,7 @@
 //			for (i = result.Length - 1; i >= 0 && result [i] == 0; --i) ;
 //			if (i == -1)
 //				return new BigInteger (0, ZERO);
-	
+
 //			if (i < result.Length - 1)
 //				result = Resize (result, i + 1);
 
@@ -1410,7 +1410,7 @@
 //			char last = digits [digits.Count - 1];
 //			if (sign == 1 && radix > 10 && (last < '0' || last > '9'))
 //				digits.Add ('0');
-		
+
 //			digits.Reverse ();
 
 //			return new String (digits.ToArray ());
@@ -1441,10 +1441,10 @@
 //		static bool ProcessTrailingWhitespace (bool tryParse, string s, int position, ref Exception exc)
 //		{
 //			int len = s.Length;
-			
+
 //			for (int i = position; i < len; i++){
 //				char c = s [i];
-				
+
 //				if (c != 0 && !Char.IsWhiteSpace (c)){
 //					if (!tryParse)
 //						exc = GetFormatException ();
@@ -1477,7 +1477,7 @@
 //				if (!Char.IsWhiteSpace (c))
 //					break;
 //			}
-			
+
 //			if (i == len) {
 //				if (!tryParse)
 //					exc = GetFormatException ();
@@ -1485,7 +1485,7 @@
 //			}
 
 //			var info = Thread.CurrentThread.CurrentCulture.NumberFormat;
-			
+
 //			string negative = info.NegativeSign;
 //			string positive = info.PositiveSign;
 
@@ -1715,7 +1715,7 @@
 
 //			if (baseValue == 0.0d || baseValue == Double.PositiveInfinity)
 //				return value.IsOne ? 0 : double.NaN;
-	
+
 //			if (value.sign == 0)
 //				return double.NegativeInfinity;
 
@@ -1809,7 +1809,7 @@
 //		{
 //			if (obj == null)
 //				return 1;
-			
+
 //			if (!(obj is BigInteger))
 //				return -1;
 
@@ -4961,7 +4961,6 @@
 //    }
 
 
-
 //    public static uint[] Subtract(uint[] left, uint right)
 //    {
 //        Debug.Assert(left != null);
@@ -5075,3 +5074,4 @@
 
 //}
 //#endif
+
