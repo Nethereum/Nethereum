@@ -9,9 +9,9 @@ namespace Nethereum.Web3.Accounts
     {
         private readonly AccountSignerTransactionManager signer;
 
-        public AccountTransactionSigningInterceptor(string privateKey, Web3 web3)
+        public AccountTransactionSigningInterceptor(string privateKey, IClient client)
         { 
-            signer = new AccountSignerTransactionManager(web3.Client, privateKey);
+            signer = new AccountSignerTransactionManager(client, privateKey);
         }
 
         public override async Task<object> InterceptSendRequestAsync<TResponse>(
