@@ -18,7 +18,9 @@ namespace Nethereum.Web3.Accounts
         private readonly TransactionSigner _transactionSigner;
         public override BigInteger DefaultGasPrice { get; set; } = Transaction.DEFAULT_GAS_PRICE;
         public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+        private Web3 web3;
 
+        [Obsolete(Web3.ObsoleteWarningMsg)]
         public AccountSignerTransactionManager(IClient rpcClient, Account account)
         {
             Account = account ?? throw new ArgumentNullException(nameof(account));
@@ -26,6 +28,12 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new TransactionSigner();
         }
 
+        public AccountSignerTransactionManager(Web3 web3, Account account) : this(web3?.Client, account)
+        {
+            this.web3 = web3;
+        }
+
+        [Obsolete(Web3.ObsoleteWarningMsg)]
         public AccountSignerTransactionManager(IClient rpcClient, string privateKey)
         {
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
@@ -35,11 +43,15 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new TransactionSigner();
         }
 
-        public AccountSignerTransactionManager(string privateKey):this(null, privateKey)
+        public AccountSignerTransactionManager(Web3 web3, string privateKey) : this(web3?.Client, privateKey)
         {
+            this.web3 = web3;
         }
 
-
+        [Obsolete(Web3.ObsoleteWarningMsg)]
+        public AccountSignerTransactionManager(string privateKey):this((IClient)null, privateKey)
+        {
+        }
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
@@ -81,8 +93,15 @@ namespace Nethereum.Web3.Accounts
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, transaction.To, value.Value, nonce,
-                gasPrice.Value, gasLimit.Value, transaction.Data);
+            var privateKey = new PrivateKey(((Account)Account).PrivateKey);
+
+            string signedTransaction;
+            if (web3 != null && web3.ChainId.HasValue)
+                signedTransaction = _transactionSigner.SignTransaction(privateKey, transaction.To, value.Value, nonce,
+                    gasPrice.Value, gasLimit.Value, transaction.Data, web3.ChainId.Value);
+            else
+                signedTransaction = _transactionSigner.SignTransaction(privateKey, transaction.To, value.Value, nonce,
+                    gasPrice.Value, gasLimit.Value, transaction.Data);
 
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
         }

@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -11,24 +12,38 @@ namespace Nethereum.Signer
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
-        private readonly RLPSigner simpleRlpSigner;
+        private readonly LegacyRlpSigner legacyRlpSigner;
+        private readonly RLPSigner eip155Signer;
+        private IRlpSigner signer;
+
+        private const string ObsoleteWarningMsg = "This maps to the old Homestead-way of signing, which might be vulnerable to Replay Attacks";
 
         public Transaction(byte[] rawData)
         {
-            simpleRlpSigner = new RLPSigner(rawData, 6);
+            legacyRlpSigner = new LegacyRlpSigner(rawData, 6);
+            eip155Signer = new RLPSigner(rawData, 6);
+            signer = eip155Signer;
+            this.Signature = eip155Signer.Signature;
         }
 
         public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data)
         {
-            simpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
+            legacyRlpSigner = new LegacyRlpSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
+            eip155Signer = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
+            signer = eip155Signer;
+            this.Signature = eip155Signer.Signature;
         }
 
         public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] r, byte[] s, byte v)
         {
-            simpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
+            legacyRlpSigner = new LegacyRlpSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
                 r, s, v);
+            eip155Signer = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
+                r, s, v);
+            signer = eip155Signer;
+            this.Signature = eip155Signer.Signature;
         }
 
         public Transaction(string to, BigInteger amount, BigInteger nonce)
@@ -53,43 +68,58 @@ namespace Nethereum.Signer
         {
         }
 
-        public byte[] Hash => simpleRlpSigner.Hash;
+        public byte[] Hash => signer.Hash;
 
-        public byte[] RawHash => simpleRlpSigner.RawHash;
+        public byte[] RawHash => signer.RawHash;
 
         /// <summary>
         ///     The counter used to make sure each transaction can only be processed once, you may need to regenerate the
         ///     transaction if is too low or too high, simples way is to get the number of transacations
         /// </summary>
-        public byte[] Nonce => simpleRlpSigner.Data[0] ?? ZERO_BYTE_ARRAY;
+        public byte[] Nonce => signer.Data[0] ?? ZERO_BYTE_ARRAY;
 
-        public byte[] Value => simpleRlpSigner.Data[4] ?? ZERO_BYTE_ARRAY;
+        public byte[] Value => signer.Data[4] ?? ZERO_BYTE_ARRAY;
 
-        public byte[] ReceiveAddress => simpleRlpSigner.Data[3];
+        public byte[] ReceiveAddress => signer.Data[3];
 
-        public byte[] GasPrice => simpleRlpSigner.Data[1] ?? ZERO_BYTE_ARRAY;
+        public byte[] GasPrice => signer.Data[1] ?? ZERO_BYTE_ARRAY;
 
-        public byte[] GasLimit => simpleRlpSigner.Data[2];
+        public byte[] GasLimit => signer.Data[2];
 
-        public byte[] Data => simpleRlpSigner.Data[5];
+        public byte[] Data => signer.Data[5];
 
-        public EthECDSASignature Signature => simpleRlpSigner.Signature;
+        public EthECDSASignature Signature { get; private set; }
 
-        public EthECKey Key => simpleRlpSigner.Key;
+        public EthECKey Key => signer.Key;
 
         public byte[] GetRLPEncoded()
         {
-            return simpleRlpSigner.GetRLPEncoded();
+            return signer.GetRLPEncoded();
         }
 
         public byte[] GetRLPEncodedRaw()
         {
-            return simpleRlpSigner.GetRLPEncodedRaw();
+            return signer.GetRLPEncodedRaw();
         }
 
+        [Obsolete(ObsoleteWarningMsg)]
         public void Sign(EthECKey key)
         {
-            simpleRlpSigner.Sign(key);
+            legacyRlpSigner.Sign(key);
+            this.Signature = legacyRlpSigner.Signature;
+            signer = legacyRlpSigner;
+        }
+
+        public void Sign(EthECKey key, int chainId)
+        {
+            eip155Signer.Sign(key, chainId);
+            this.Signature = eip155Signer.Signature;
+            signer = eip155Signer;
+        }
+
+        public void Sign(EthECKey key, Chain chain)
+        {
+            Sign(key, (int)chain);
         }
 
         public string ToJsonHex()

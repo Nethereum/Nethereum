@@ -1,11 +1,12 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Nethereum.RLP;
 using Nethereum.Util;
 
 namespace Nethereum.Signer
 {
-    public class RLPSigner : IRlpSigner
+    // the one used for Homestead, before requiring ChainId
+    public class LegacyRlpSigner : IRlpSigner
     {
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         private byte[][] data;
@@ -13,25 +14,24 @@ namespace Nethereum.Signer
         private readonly int numberOfElements;
         private byte[] rlpEncoded;
         private byte[] rlpRaw;
-        private bool duringSigningOrAfter = false;
 
         private EthECDSASignature signature;
 
-        public RLPSigner(byte[] rawData, int numberOfElements)
+        public LegacyRlpSigner(byte[] rawData, int numberOfElements)
         {
             rlpEncoded = rawData;
             decoded = false;
             this.numberOfElements = numberOfElements;
         }
 
-        public RLPSigner(byte[][] data)
+        public LegacyRlpSigner(byte[][] data)
         {
             numberOfElements = data.Length;
             this.data = data;
             decoded = true;
         }
 
-        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v)
+        public LegacyRlpSigner(byte[][] data, byte[] r, byte[] s, byte v)
         {
             numberOfElements = data.Length;
             this.data = data;
@@ -84,9 +84,8 @@ namespace Nethereum.Signer
             var encodedData = new List<byte[]>();
             encodedData.AddRange(Data.Select(RLP.RLP.EncodeElement).ToArray());
 
-            if (raw && !duringSigningOrAfter) {
+            if (raw)
                 return RLP.RLP.EncodeList(encodedData.ToArray());
-            }
 
             byte[] v, r, s;
 
@@ -147,18 +146,10 @@ namespace Nethereum.Signer
             decoded = true;
         }
 
-        public void Sign(EthECKey key, int chainId)
+        public void Sign(EthECKey key)
         {
-            duringSigningOrAfter = true;
             signature = key.SignAndCalculateV(RawHash);
-            //FIXME: add chainId index, this only works for chainId = 1 (27+10=37)
-            signature.V = (byte)((signature.V) + 10);
             rlpEncoded = null;
-        }
-
-        public void Sign(EthECKey key, Chain chain)
-        {
-            Sign(key, (int)chain);
         }
 
         private void EnsuredRPLDecoded()
