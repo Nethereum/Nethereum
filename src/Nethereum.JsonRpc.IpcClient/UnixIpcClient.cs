@@ -10,9 +10,33 @@ namespace Nethereum.JsonRpc.IpcClient
 {
     public class UnixIpcClient : IpcClientBase
     {
+        private readonly object _lockingObject = new object();
+
         public UnixIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null) : base(ipcPath, jsonSerializerSettings)
         {
 
+        }
+
+        private Socket _socket;
+
+        private Socket GetSocket()
+        {
+            try
+            {
+                if (_socket == null || !_socket.Connected)    
+                {
+                    var endPoint = new UnixDomainSocketEndPoint(IpcPath);
+                    _socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    _socket.Connect(endPoint);
+                }
+            }
+            catch
+            {
+                //Connection error we want to allow to retry.
+                _socket = null;
+                throw;
+            }
+            return _socket;
         }
 
         public int ReceiveBufferedResponse(Socket client, byte[] buffer)
@@ -73,36 +97,31 @@ namespace Nethereum.JsonRpc.IpcClient
         {
             try
             {
-                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-
-                var endPoint = new UnixDomainSocketEndPoint(IpcPath);
-              
-
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                lock (_lockingObject)
                 {
-                    client.Connect(endPoint);
+                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                    var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+
+                    var client = GetSocket();
                     client.SendBufferSize = requestBytes.Length;
 #if NET462
                     var val = client.Send(requestBytes, SocketFlags.None);
 #else
-                    var val = await client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).ConfigureAwait(false);
+                    var val = client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).Result;
 #endif
                     using (var memoryStream = ReceiveFullResponse(client))
                     {
                         memoryStream.Position = 0;
-                        using (StreamReader streamReader = new StreamReader(memoryStream))
-                        using (JsonTextReader reader = new JsonTextReader(streamReader))
+                        using (var streamReader = new StreamReader(memoryStream))
+                        using (var reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
                             return serializer.Deserialize<TResponse>(reader);
                         }
                     }
                 }
-
-            }
-            catch (Exception ex)
-            {
+            
+            } catch (Exception ex) {
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
         }
