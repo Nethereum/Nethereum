@@ -78,18 +78,23 @@ namespace Nethereum.HdWallet
             return key.PrivateKey.ToBytes();
         }
 
-        public byte[] GetPrivateKey(string address, int maxIndexSearch = 20)
+        public byte[] GetPrivateKey(int startIndex, string address, int maxIndexSearch = 20)
         {
             var checkSumAddress = new Util.AddressUtil().ConvertToChecksumAddress(address);
-            for(int i=0; i < maxIndexSearch; i++)
+            for (int i = startIndex; i < startIndex + maxIndexSearch; i++)
             {
                 var ethereumKey = GetEthereumKey(i);
-                if(ethereumKey.GetPublicAddress() == checkSumAddress)
+                if (ethereumKey.GetPublicAddress() == checkSumAddress)
                 {
                     return ethereumKey.GetPrivateKeyAsBytes();
                 }
             }
             return null;
+        }
+
+        public byte[] GetPrivateKey(string address, int maxIndexSearch = 20)
+        {
+            return GetPrivateKey(0, address, maxIndexSearch);
         }
 
         public string[] GetAddresses(int numberOfAddresses = 20)
