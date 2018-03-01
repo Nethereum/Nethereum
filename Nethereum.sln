@@ -43,7 +43,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.RPC.Tests", "src\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.StandardTokenEIP20", "src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj", "{032503EB-5C03-4C7A-851F-20886B43ED0D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Web3.Tests", "src\Nethereum.Web3.Tests\Nethereum.Web3.Tests.csproj", "{F0C6733A-3D35-4138-A44C-51A729EF096A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Web3.Tests.Unit", "src\Nethereum.Web3.Tests.Unit\Nethereum.Web3.Tests.Unit.csproj", "{F0C6733A-3D35-4138-A44C-51A729EF096A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.IntegrationTesting", "src\Nethereum.IntegrationTesting\Nethereum.IntegrationTesting.csproj", "{C1389653-9C1F-4A5B-818B-AF4CE59CFD92}"
 EndProject
@@ -100,6 +100,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.HdWallet.Tests", "src\Nethereum.HdWallet.Tests\Nethereum.HdWallet.Tests.csproj", "{9C77A407-BA59-4414-BC4A-1DA81F4B6168}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.BigInteger.N351", "src\Nethereum.BigInteger.N351\Nethereum.BigInteger.N351.csproj", "{B6F7564D-DE39-4724-894A-EE49CE2AEE47}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Web3.Tests.Integration", "src\Nethereum.Web3.Tests.Integration\Nethereum.Web3.Tests.Integration.csproj", "{C33612FA-44F9-4F8F-9B55-974E12C70DA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -801,6 +803,22 @@ Global
 		{B6F7564D-DE39-4724-894A-EE49CE2AEE47}.Release|x64.Build.0 = Release|Any CPU
 		{B6F7564D-DE39-4724-894A-EE49CE2AEE47}.Release|x86.ActiveCfg = Release|Any CPU
 		{B6F7564D-DE39-4724-894A-EE49CE2AEE47}.Release|x86.Build.0 = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|ARM.Build.0 = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|x64.Build.0 = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Debug|x86.Build.0 = Debug|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|ARM.ActiveCfg = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|ARM.Build.0 = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|x64.ActiveCfg = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|x64.Build.0 = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|x86.ActiveCfg = Release|Any CPU
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -852,6 +870,7 @@ Global
 		{B998C26B-90BD-4AEB-93C3-9AA35F888C69} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{9C77A407-BA59-4414-BC4A-1DA81F4B6168} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
 		{B6F7564D-DE39-4724-894A-EE49CE2AEE47} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{C33612FA-44F9-4F8F-9B55-974E12C70DA5} = {A36B1E91-CE03-43D6-AA50-9C893AD33B75}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}
