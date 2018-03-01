@@ -4,7 +4,7 @@
     <Description>Nethereum.Quorum.Tests </Description>
     <VersionPrefix>0.0.1</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <AssemblyName>Nethereum.Quorum.Tests</AssemblyName>
     <PackageId>Nethereum.Quorum.Tests</PackageId>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <ProjectReference Include="..\Nethereum.Quorum\Nethereum.Quorum.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <ProjectReference Include="..\Nethereum.JsonRpc.IpcClient\Nethereum.JsonRpc.IpcClient.csproj" />
     <Reference Include="System.Numerics" />
     <Reference Include="System" />

@@ -49,8 +49,6 @@ namespace Nethereum.ABI.Decoders
 
         public BigInteger DecodeBigInteger(byte[] encoded)
         {
-            var paddedPrefix = true;
-
             var negative = encoded.First() == 0xFF;
 
             if (BitConverter.IsLittleEndian)

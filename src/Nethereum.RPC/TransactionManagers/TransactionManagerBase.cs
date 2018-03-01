@@ -31,7 +31,7 @@ namespace Nethereum.RPC.TransactionManagers
             }
         }
 #endif               
-        public virtual Task<HexBigInteger> EstimateGasAsync<T>(T callInput) where T : CallInput
+        public virtual Task<HexBigInteger> EstimateGasAsync(CallInput callInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (callInput == null) throw new ArgumentNullException(nameof(callInput));
@@ -39,7 +39,7 @@ namespace Nethereum.RPC.TransactionManagers
             return ethEstimateGas.SendRequestAsync(callInput);
         }
 
-        public abstract Task<string> SendTransactionAsync<T>(T transactionInput) where T : TransactionInput;
+        public abstract Task<string> SendTransactionAsync(TransactionInput transactionInput);
         
         public virtual Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
         {  
