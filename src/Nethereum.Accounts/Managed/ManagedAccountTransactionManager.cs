@@ -68,7 +68,7 @@ namespace Nethereum.Web3.Accounts.Managed
         public override async Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
         {
             if (from != Account.Address) throw new Exception("Invalid account used");
-            var transactionInput = new TransactionInput(from, to, amount);
+            var transactionInput = new TransactionInput(null, to, from, null, null, amount);
             return await SendTransactionAsync(transactionInput);
         }
     }

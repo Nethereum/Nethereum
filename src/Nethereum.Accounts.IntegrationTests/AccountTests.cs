@@ -1,6 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
@@ -106,5 +108,33 @@ namespace Nethereum.Accounts.IntegrationTests
 
             Assert.Equal(49, result);
         }
+
+        [Fact]
+        public async Task ShouldBeAbleToTransferBetweenAccountsUsingManagedAccount()
+        {
+            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var addressTo = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
+            var password = "password";
+            // A managed account is an account which is maintained by the client (Geth / Parity)
+            var account = new ManagedAccount(senderAddress, password);
+            var web3 = new Web3.Web3(account);
+
+            //The transaction receipt polling service is a simple utility service to poll for receipts until mined
+            var transactionPolling = (TransactionReceiptPollingService)web3.TransactionManager.TransactionReceiptService;
+
+            var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
+            //assumed client is mining already
+
+            //When sending the transaction using the transaction manager for a managed account, personal_sendTransaction is used.
+
+            var txnHash =
+                await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
+            var receipt = await transactionPolling.PollForReceiptAsync(txnHash);         
+
+            var newBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
+
+            Assert.Equal(currentBalance.Value + 20, newBalance.Value);
+        }
+
     }
 }
