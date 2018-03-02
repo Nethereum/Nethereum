@@ -21,7 +21,7 @@ namespace Nethereum.Signer.IntegrationTests
             var privateKey = AccountFactory.PrivateKey;
             var senderAddress = AccountFactory.Address;
 
-            var web3 = new Web3.Web3(new Account(privateKey, 4500));
+            var web3 = new Web3.Web3(new Account(privateKey, 444444444500));
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
