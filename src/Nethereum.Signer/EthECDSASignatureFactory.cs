@@ -13,6 +13,13 @@ namespace Nethereum.Signer
         public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte v)
         {
             var signature = FromComponents(r, s);
+            signature.V = new byte[]{v};
+            return signature;
+        }
+
+        public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte[] v)
+        {
+            var signature = FromComponents(r, s);
             signature.V = v;
             return signature;
         }

@@ -15,7 +15,7 @@ namespace Nethereum.Signer
             _ecdsaSignature = new ECDSASignature(r, s);
         }
 
-        public EthECDSASignature(BigInteger r, BigInteger s, byte v)
+        public EthECDSASignature(BigInteger r, BigInteger s, byte[] v)
         {
             _ecdsaSignature = new ECDSASignature(r, s);
             _ecdsaSignature.V = v;
@@ -40,8 +40,15 @@ namespace Nethereum.Signer
 
         public byte[] S => _ecdsaSignature.S.ToByteArrayUnsigned();
 
+        public byte[] V { get { return _ecdsaSignature.V; } set { _ecdsaSignature.V = value; } }
 
-        public byte V { get { return _ecdsaSignature.V; } set { _ecdsaSignature.V = value; } }
+        ////Special V calculated using the chainId
+        //public byte[] VChain { get { return _ecdsaSignature.VChain; } set { _ecdsaSignature.VChain = value; } }
+
+        //public bool IsVChain()
+        //{
+        //    return VChain != null;
+        //}
 
         public bool IsLowS => _ecdsaSignature.IsLowS;
       

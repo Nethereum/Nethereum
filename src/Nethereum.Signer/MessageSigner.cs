@@ -61,7 +61,7 @@ namespace Nethereum.Signer
         {
             return "0x" + signature.R.ToHex().PadLeft(64, '0') +
                    signature.S.ToHex().PadLeft(64, '0') +
-                   signature.V.ToString("X2");
+                   signature.V.ToHex();
         }
 
         public static EthECDSASignature ExtractEcdsaSignature(string signature)
