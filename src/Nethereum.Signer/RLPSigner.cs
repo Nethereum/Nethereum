@@ -10,10 +10,10 @@ namespace Nethereum.Signer
     {
         private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
+        private readonly int numberOfEncodingElements;
+
         private byte[][] data;
         private bool decoded;
-
-        private readonly int numberOfEncodingElements;
 
         private byte[] rlpEncoded;
         private byte[] rlpRaw;
@@ -27,7 +27,7 @@ namespace Nethereum.Signer
             this.numberOfEncodingElements = numberOfEncodingElements;
         }
 
-        public RLPSigner(byte[][] data):this(data, data.Length)
+        public RLPSigner(byte[][] data) : this(data, data.Length)
         {
         }
 
@@ -38,9 +38,8 @@ namespace Nethereum.Signer
             decoded = true;
         }
 
-        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v):this(data, r, s, v, data.Length)
+        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v) : this(data, r, s, v, data.Length)
         {
-          
         }
 
         public RLPSigner(byte[][] data, byte[] r, byte[] s, byte v, int numberOfEncodingElements)
@@ -51,9 +50,8 @@ namespace Nethereum.Signer
             decoded = true;
         }
 
-        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte[] v) :this(data, r, s, v, data.Length)
+        public RLPSigner(byte[][] data, byte[] r, byte[] s, byte[] v) : this(data, r, s, v, data.Length)
         {
-         
         }
 
         public RLPSigner(byte[][] data, byte[] r, byte[] s, byte[] v, int numberOfEncodingElements)
@@ -92,7 +90,6 @@ namespace Nethereum.Signer
             }
         }
 
-        public EthECKey Key => EthECKey.RecoverFromSignature(Signature, RawHash);
 
         public byte[] BuildRLPRawEncoding()
         {
@@ -104,11 +101,9 @@ namespace Nethereum.Signer
         public byte[] BuildRLPEncoding()
         {
             var encodedData = new List<byte[]>();
-            for (int i = 0; i < numberOfEncodingElements; i++)
-            {
-                encodedData.Add(RLP.RLP.EncodeElement(Data[i]));    
-            }
-            
+            for (var i = 0; i < numberOfEncodingElements; i++)
+                encodedData.Add(RLP.RLP.EncodeElement(Data[i]));
+
             byte[] v, r, s;
 
             if (signature != null)
@@ -143,8 +138,8 @@ namespace Nethereum.Signer
         {
             EnsuredRPLDecoded();
 
-            if (rlpRaw != null)
-                return rlpRaw;
+            //if (rlpRaw != null)
+            //    return rlpRaw;
             rlpRaw = BuildRLPRawEncoding();
             return rlpRaw;
         }
@@ -168,6 +163,14 @@ namespace Nethereum.Signer
             }
             data = decodedData.ToArray();
             decoded = true;
+        }
+
+        public void AppendData(params byte[][] extraData)
+        {
+            var fullData = new List<byte[]>();
+            fullData.AddRange(Data);
+            fullData.AddRange(extraData);
+            data = fullData.ToArray();
         }
 
         public void Sign(EthECKey key)

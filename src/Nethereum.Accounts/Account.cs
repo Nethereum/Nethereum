@@ -1,4 +1,5 @@
-﻿using Nethereum.KeyStore;
+﻿using System.Numerics;
+using Nethereum.KeyStore;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
@@ -8,6 +9,8 @@ namespace Nethereum.Web3.Accounts
 {
     public class Account : IAccount
     {
+        public BigInteger? ChainId { get; private set; }
+
 #if !PCL
         public static Account LoadFromKeyStoreFile(string filePath, string password)
         {
@@ -16,28 +19,46 @@ namespace Nethereum.Web3.Accounts
             return new Account(key);
         }
 #endif
-        public static Account LoadFromKeyStore(string json, string password)
+        public static Account LoadFromKeyStore(string json, string password, BigInteger? chainId = null)
         {
             var keyStoreService = new KeyStoreService();
             var key = keyStoreService.DecryptKeyStoreFromJson(password, json);
-            return new Account(key);
+            return new Account(key, chainId);
         }
 
         public string PrivateKey { get; private set; }
 
-        public Account(EthECKey key)
+        public Account(EthECKey key, BigInteger? chainId = null)
         {
+            ChainId = chainId;
             Initialise(key);
         }
 
-        public Account(string privateKey)
+        public Account(string privateKey, BigInteger? chainId = null)
         {
+            ChainId = chainId;
             Initialise(new EthECKey(privateKey));
         }
 
-        public Account(byte[] privateKey)
+        public Account(byte[] privateKey, BigInteger? chainId = null)
         {
+            ChainId = chainId;
             Initialise(new EthECKey(privateKey, true));
+        }
+
+        public Account(EthECKey key, ChainId chainId):this(key, (int)chainId)
+        {
+            
+        }
+
+        public Account(string privateKey, ChainId chainId) : this(privateKey, (int)chainId)
+        {
+            
+        }
+
+        public Account(byte[] privateKey, ChainId chainId) : this(privateKey, (int)chainId)
+        {
+
         }
 
         private void Initialise(EthECKey key)
@@ -49,7 +70,7 @@ namespace Nethereum.Web3.Accounts
 
         protected virtual void InitialiseDefaultTransactionManager()
         {
-            TransactionManager = new AccountSignerTransactionManager(null, this);
+            TransactionManager = new AccountSignerTransactionManager(null, this, ChainId);
         }
 
         public string Address { get; protected set; }

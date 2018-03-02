@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.Signer.IntegrationTests;
+using Nethereum.Web3.Accounts;
 using Xunit;
 
 namespace Nethereum.Signer.IntegrationTests
 {
-    public class SignedTransactionManagerTests
+    public class SignedEIP155
     {
         [Fact]
         public async Task ShouldSendSignTransaction()
@@ -21,7 +21,7 @@ namespace Nethereum.Signer.IntegrationTests
             var privateKey = AccountFactory.PrivateKey;
             var senderAddress = AccountFactory.Address;
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = new Web3.Web3(new Account(privateKey, 4500));
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,

@@ -16,16 +16,20 @@ namespace Nethereum.Web3.Accounts
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly TransactionSigner _transactionSigner;
+        public BigInteger? ChainId { get; private set; }
 
-        public AccountSignerTransactionManager(IClient rpcClient, Account account)
+        public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
         {
+            ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
             _transactionSigner = new TransactionSigner();
         }
 
-        public AccountSignerTransactionManager(IClient rpcClient, string privateKey)
+
+        public AccountSignerTransactionManager(IClient rpcClient, string privateKey, BigInteger? chainId = null)
         {
+            ChainId = chainId;
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             Client = rpcClient;
             Account = new Account(privateKey);
@@ -33,7 +37,7 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new TransactionSigner();
         }
 
-        public AccountSignerTransactionManager(string privateKey) : this(null, privateKey)
+        public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey, chainId)
         {
         }
 
@@ -80,9 +84,22 @@ namespace Nethereum.Web3.Accounts
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey, transaction.To,
-                value.Value, nonce,
-                gasPrice.Value, gasLimit.Value, transaction.Data);
+            string signedTransaction;
+
+            if (ChainId == null)
+            {
+                    signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey,
+                    transaction.To,
+                    value.Value, nonce,
+                    gasPrice.Value, gasLimit.Value, transaction.Data);
+            }
+            else
+            {
+                    signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, ChainId.Value,
+                    transaction.To,
+                    value.Value, nonce,
+                    gasPrice.Value, gasLimit.Value, transaction.Data);
+            }
 
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
         }

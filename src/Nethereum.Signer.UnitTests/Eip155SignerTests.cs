@@ -10,6 +10,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         // ported from the main example in the spec:
         // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
+        // Modified from the original pull request of Andres Aragoneses @Knocte
         public void BasicSigning()
         {
             var nonce = 9.ToBytesForRLPEncoding();
@@ -39,7 +40,8 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(expectedSigningHash, tx.RawHash.ToHex());
 
             var privateKey = "4646464646464646464646464646464646464646464646464646464646464646";
-            tx.Sign(new EthECKey(privateKey));
+            var key = new EthECKey(privateKey);
+            tx.Sign(key);
 
             var rFromSignature = tx.Signature.R.ToBigIntegerFromRLPDecoded();
             var expectedRFromSignature = "18515461264373351373200002665853028612451056578545711640558177340181847433846";
@@ -56,6 +58,12 @@ namespace Nethereum.Signer.UnitTests
             var expectedSignedTx = "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
             Assert.Equal(expectedSignedTx.Length, tx.GetRLPEncoded().ToHex().Length);
             Assert.Equal(expectedSignedTx, tx.GetRLPEncoded().ToHex());
+
+            var recoveryTransaction = new TransactionChainId(tx.GetRLPEncoded(), 1);
+            Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
+
+            Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());
+
         }
     }
 }

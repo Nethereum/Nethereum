@@ -9,9 +9,9 @@ using Org.BouncyCastle.Math.EC;
 namespace Nethereum.Signer.Crypto
 {
     /// <summary>
-    /// ECKey based on the implementation of NBitcoin
-    /// https://github.com/MetacoSA/NBitcoin
-    /// Removed the dependency of the custom BouncyCastle
+    ///     ECKey based on the implementation of NBitcoin
+    ///     https://github.com/MetacoSA/NBitcoin
+    ///     Removed the dependency of the custom BouncyCastle
     /// </summary>
     public class ECKey
     {
@@ -35,7 +35,9 @@ namespace Nethereum.Signer.Crypto
         public ECKey(byte[] vch, bool isPrivate)
         {
             if (isPrivate)
+            {
                 _Key = new ECPrivateKeyParameters(new BigInteger(1, vch), DomainParameter);
+            }
             else
             {
                 var q = Secp256k1.Curve.DecodePoint(vch);
@@ -43,16 +45,10 @@ namespace Nethereum.Signer.Crypto
             }
         }
 
-        public ECPrivateKeyParameters PrivateKey
-        {
-            get { return _Key as ECPrivateKeyParameters; }
-        }
+        public ECPrivateKeyParameters PrivateKey => _Key as ECPrivateKeyParameters;
 
 
-        public static X9ECParameters Secp256k1
-        {
-            get { return _Secp256k1; }
-        }
+        public static X9ECParameters Secp256k1 => _Secp256k1;
 
         public ECDomainParameters DomainParameter
         {
@@ -78,7 +74,7 @@ namespace Nethereum.Signer.Crypto
         public ECPublicKeyParameters GetPublicKeyParameters()
         {
             if (_Key is ECPublicKeyParameters)
-                return (ECPublicKeyParameters)_Key;
+                return (ECPublicKeyParameters) _Key;
             var q = Secp256k1.G.Multiply(PrivateKey.D);
             return new ECPublicKeyParameters("EC", q, DomainParameter);
         }
@@ -102,7 +98,7 @@ namespace Nethereum.Signer.Crypto
             //   1.1 Let x = r + jn
 
             var n = curve.N;
-            var i = BigInteger.ValueOf((long)recId / 2);
+            var i = BigInteger.ValueOf((long) recId / 2);
             var x = sig.R.Add(i.Multiply(n));
 
             //   1.2. Convert the integer x to an octet string X of length mlen using the conversion routine
@@ -114,7 +110,9 @@ namespace Nethereum.Signer.Crypto
             // More concisely, what these points mean is to use X as a compressed public key.
 
             //using bouncy and Q value of Point
-            var prime = new BigInteger(1, Org.BouncyCastle.Utilities.Encoders.Hex.Decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"));
+            var prime = new BigInteger(1,
+                Org.BouncyCastle.Utilities.Encoders.Hex.Decode(
+                    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"));
             if (x.CompareTo(prime) >= 0)
                 return null;
 
@@ -181,7 +179,7 @@ namespace Nethereum.Signer.Crypto
         {
             var curve = Secp256k1.Curve;
             var compEnc = X9IntegerConverter.IntegerToBytes(xBN, 1 + X9IntegerConverter.GetByteLength(curve));
-            compEnc[0] = (byte)(yBit ? 0x03 : 0x02);
+            compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
             return curve.DecodePoint(compEnc);
         }
     }

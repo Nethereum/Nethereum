@@ -1,5 +1,5 @@
-﻿using Org.BouncyCastle.Math;
-using System;
+﻿using System;
+using Org.BouncyCastle.Math;
 
 namespace Nethereum.Signer
 {
@@ -13,7 +13,7 @@ namespace Nethereum.Signer
         public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte v)
         {
             var signature = FromComponents(r, s);
-            signature.V = new byte[]{v};
+            signature.V = new[] {v};
             return signature;
         }
 

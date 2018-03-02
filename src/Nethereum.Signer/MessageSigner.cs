@@ -70,7 +70,7 @@ namespace Nethereum.Signer
 
             var v = signatureArray[64];
 
-            if ((v == 0) || (v == 1))
+            if (v == 0 || v == 1)
                 v = (byte) (v + 27);
 
             var r = new byte[32];

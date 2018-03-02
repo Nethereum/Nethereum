@@ -23,6 +23,25 @@ namespace Nethereum.Signer
             return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
         }
 
+
+        public byte[] GetPublicKey(string rlp, BigInteger chainId)
+        {
+            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
+            return transaction.Key.GetPubKey();
+        }
+
+        public string GetSenderAddress(string rlp, BigInteger chainId)
+        {
+            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
+            return transaction.Key.GetPublicAddress();
+        }
+
+        public bool VerifyTransaction(string rlp, BigInteger chainId)
+        {
+            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
+            return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
+        }
+
         public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
         {
             return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce);
@@ -33,13 +52,15 @@ namespace Nethereum.Signer
             return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, data);
         }
 
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce,
+            BigInteger gasPrice,
             BigInteger gasLimit)
         {
             return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit);
         }
 
-        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce,
+            BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce, gasPrice, gasLimit, data);
@@ -57,14 +78,16 @@ namespace Nethereum.Signer
             return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce,
+            BigInteger gasPrice,
             BigInteger gasLimit)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
             return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce,
+            BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
@@ -72,49 +95,56 @@ namespace Nethereum.Signer
         }
 
 
-        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce)
+        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce)
         {
             return SignTransaction(privateKey.HexToByteArray(), chainId, to, amount, nonce);
         }
 
-        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce, string data)
+        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, string data)
         {
             return SignTransaction(privateKey.HexToByteArray(), chainId, to, amount, nonce, data);
         }
 
-        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
             return SignTransaction(privateKey.HexToByteArray(), chainId, to, amount, nonce, gasPrice, gasLimit);
         }
 
-        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(string privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             return SignTransaction(privateKey.HexToByteArray(), chainId, to, amount, nonce, gasPrice, gasLimit, data);
         }
 
-        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce)
+        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce)
         {
             var transaction = new TransactionChainId(to, amount, nonce, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(byte[] privateKey, BigInteger string to, BigInteger amount, BigInteger nonce, string data)
+        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, string data)
         {
-            var transaction = new Transaction(to, amount, nonce, data);
+            var transaction = new TransactionChainId(to, amount, nonce, data, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
-
-        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
             var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
-        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
+            BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
             var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
@@ -132,6 +162,5 @@ namespace Nethereum.Signer
             transaction.Sign(new EthECKey(privateKey, true));
             return transaction.GetRLPEncoded().ToHex();
         }
-
     }
 }

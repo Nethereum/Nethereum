@@ -1,11 +1,11 @@
 {
   "config": {
-    "chainId": 46211,
-    "homesteadBlock": 1,
-    "eip150Block": 2,
+    "chainID": 4500,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
     "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "eip155Block": 3,
-    "eip158Block": 3,
+    "eip155Block": 0,
+    "eip158Block": 0,
     "clique": {
       "period": 1,
       "epoch": 30000

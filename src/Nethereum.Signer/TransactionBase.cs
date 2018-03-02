@@ -8,7 +8,7 @@ namespace Nethereum.Signer
         public static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("20000000000");
         public static readonly BigInteger DEFAULT_GAS_LIMIT = BigInteger.Parse("21000");
         protected static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
-        protected static readonly byte[] ZERO_BYTE_ARRAY = { 0 };
+        protected static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
         protected RLPSigner SimpleRlpSigner { get; set; }
 
@@ -32,7 +32,8 @@ namespace Nethereum.Signer
 
         public EthECDSASignature Signature => SimpleRlpSigner.Signature;
 
-        public EthECKey Key => SimpleRlpSigner.Key;
+        public virtual EthECKey Key =>
+            EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature, SimpleRlpSigner.RawHash);
 
         public byte[] GetRLPEncoded()
         {

@@ -4,9 +4,8 @@ using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
-    public class Transaction: TransactionBase
+    public class Transaction : TransactionBase
     {
-
         public Transaction(byte[] rawData)
         {
             SimpleRlpSigner = new RLPSigner(rawData, 6);
@@ -66,7 +65,5 @@ namespace Nethereum.Signer
             //order  nonce, gasPrice, gasLimit, receiveAddress, value, data
             return new[] {nonce, gasPrice, gasLimit, receiveAddress, value, data};
         }
-
-       
     }
 }

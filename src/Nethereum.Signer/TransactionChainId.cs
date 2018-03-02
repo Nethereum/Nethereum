@@ -8,28 +8,28 @@ namespace Nethereum.Signer
     {
         private const int NUMBER_ENCODING_ELEMENTS = 6;
 
-        public byte[] ChainId => SimpleRlpSigner.Data[6];
-
-        public byte[] RHash => SimpleRlpSigner.Data[7];
-
-        public byte[] SHash => SimpleRlpSigner.Data[8];
-
-        public TransactionChainId(byte[] rawData)
+        public TransactionChainId(byte[] rawData, BigInteger chainId)
         {
-            //TODO: Recover the ChainId and add r and s for recovery
+            //Instantiate and decode
             SimpleRlpSigner = new RLPSigner(rawData, 6);
+            //append the chainId, r and s so it can be recovered using the raw hash
+            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), 0.ToBytesForRLPEncoding(),
+                0.ToBytesForRLPEncoding());
         }
 
         public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId)
         {
-            SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId), NUMBER_ENCODING_ELEMENTS);
+            SimpleRlpSigner =
+                new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
+                    NUMBER_ENCODING_ELEMENTS);
         }
 
         public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId, byte[] r, byte[] s, byte[] v)
         {
-            SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
+            SimpleRlpSigner = new RLPSigner(
+                GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
                 r, s, v, NUMBER_ENCODING_ELEMENTS);
         }
 
@@ -43,17 +43,30 @@ namespace Nethereum.Signer
         {
         }
 
-        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice, BigInteger gasLimit, BigInteger chainId)
+        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+            BigInteger gasLimit, BigInteger chainId)
             : this(to, amount, nonce, gasPrice, gasLimit, "", chainId)
         {
         }
 
         public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string data, BigInteger chainId) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
-            gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray(), chainId.ToBytesForRLPEncoding()
+            BigInteger gasLimit, string data, BigInteger chainId) : this(nonce.ToBytesForRLPEncoding(),
+            gasPrice.ToBytesForRLPEncoding(),
+            gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(),
+            data.HexToByteArray(), chainId.ToBytesForRLPEncoding()
         )
         {
         }
+
+        public byte[] ChainId => SimpleRlpSigner.Data[6];
+
+        public byte[] RHash => SimpleRlpSigner.Data[7];
+
+        public byte[] SHash => SimpleRlpSigner.Data[8];
+
+        public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature,
+            SimpleRlpSigner.RawHash,
+            ChainId.ToBigIntegerFromRLPDecoded());
 
         public string ToJsonHex()
         {
@@ -61,9 +74,7 @@ namespace Nethereum.Signer
                 $"['{Nonce.ToHex()}','{GasPrice.ToHex()}','{GasLimit.ToHex()}','{ReceiveAddress.ToHex()}','{Value.ToHex()}','{ToHex(Data)}','{ChainId.ToHex()}','{RHash.ToHex()}','{SHash.ToHex()}'";
 
             if (Signature != null)
-            {
                 data = data + $", '{Signature.V.ToHex()}', '{Signature.R.ToHex()}', '{Signature.S.ToHex()}'";
-            }
             return data + "]";
         }
 
@@ -78,8 +89,11 @@ namespace Nethereum.Signer
         {
             if (receiveAddress == null)
                 receiveAddress = EMPTY_BYTE_ARRAY;
-            //order  nonce, gasPrice, gasLimit, receiveAddress, value, data
-            return new[] { nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, 0.ToBytesForRLPEncoding(), 0.ToBytesForRLPEncoding()
+            //order  nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, r = 0, s =0
+            return new[]
+            {
+                nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, 0.ToBytesForRLPEncoding(),
+                0.ToBytesForRLPEncoding()
             };
         }
     }
