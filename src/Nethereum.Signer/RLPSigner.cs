@@ -137,9 +137,6 @@ namespace Nethereum.Signer
         public byte[] GetRLPEncodedRaw()
         {
             EnsuredRPLDecoded();
-
-            //if (rlpRaw != null)
-            //    return rlpRaw;
             rlpRaw = BuildRLPRawEncoding();
             return rlpRaw;
         }

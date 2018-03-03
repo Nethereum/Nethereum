@@ -6,15 +6,20 @@ namespace Nethereum.Signer
 {
     public class TransactionChainId : TransactionBase
     {
+        //Number of encoding elements (output for transaction)
         private const int NUMBER_ENCODING_ELEMENTS = 6;
+        //The R and S Hashing values
+        private static readonly byte[] RHASH_DEFAULT = 0.ToBytesForRLPEncoding();
+        private static readonly byte[] SHASH_DEFAULT = 0.ToBytesForRLPEncoding();
 
         public TransactionChainId(byte[] rawData, BigInteger chainId)
         {
             //Instantiate and decode
-            SimpleRlpSigner = new RLPSigner(rawData, 6);
+            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
             //append the chainId, r and s so it can be recovered using the raw hash
-            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), 0.ToBytesForRLPEncoding(),
-                0.ToBytesForRLPEncoding());
+            //the encoding has only the default 6 values.
+            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
+                SHASH_DEFAULT);
         }
 
         public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
@@ -58,6 +63,11 @@ namespace Nethereum.Signer
         {
         }
 
+        public BigInteger GetChainIdAsBigInteger()
+        {
+            return ChainId.ToBigIntegerFromRLPDecoded();
+        }
+
         public byte[] ChainId => SimpleRlpSigner.Data[6];
 
         public byte[] RHash => SimpleRlpSigner.Data[7];
@@ -80,7 +90,7 @@ namespace Nethereum.Signer
 
         public override void Sign(EthECKey key)
         {
-            SimpleRlpSigner.Sign(key, ChainId.ToBigIntegerFromRLPDecoded());
+            SimpleRlpSigner.Sign(key, GetChainIdAsBigInteger());
         }
 
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,
@@ -92,8 +102,8 @@ namespace Nethereum.Signer
             //order  nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, r = 0, s =0
             return new[]
             {
-                nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, 0.ToBytesForRLPEncoding(),
-                0.ToBytesForRLPEncoding()
+                nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId, RHASH_DEFAULT,
+                SHASH_DEFAULT
             };
         }
     }

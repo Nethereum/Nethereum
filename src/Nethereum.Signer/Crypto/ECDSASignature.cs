@@ -9,7 +9,6 @@ namespace Nethereum.Signer.Crypto
     {
         private const string InvalidDERSignature = "Invalid DER signature";
 
-
         public ECDSASignature(BigInteger r, BigInteger s)
         {
             R = r;
@@ -45,14 +44,7 @@ namespace Nethereum.Signer.Crypto
 
         public byte[] V { get; set; }
 
-        //public byte[] VChain { get; set; }
-
         public bool IsLowS => S.CompareTo(ECKey.HALF_CURVE_ORDER) <= 0;
-
-        //public bool IsVChain()
-        //{
-        //    return VChain != null;
-        //}
 
         public static ECDSASignature FromDER(byte[] sig)
         {

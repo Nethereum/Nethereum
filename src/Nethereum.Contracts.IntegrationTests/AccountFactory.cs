@@ -11,7 +11,7 @@ namespace Nethereum.Contracts.IntegrationTests
 
         public static Account GetAccount()
         {
-            return new Account(PrivateKey);
+            return new Account(PrivateKey, 444444444500);
         }
 
         public static ManagedAccount GetManagedAccount()
