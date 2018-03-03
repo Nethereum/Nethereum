@@ -88,14 +88,14 @@ namespace Nethereum.Web3.Accounts
 
             if (ChainId == null)
             {
-                    signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey,
+                signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey,
                     transaction.To,
                     value.Value, nonce,
                     gasPrice.Value, gasLimit.Value, transaction.Data);
             }
             else
             {
-                    signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, ChainId.Value,
+                signedTransaction = _transactionSigner.SignTransaction(((Account) Account).PrivateKey, ChainId.Value,
                     transaction.To,
                     value.Value, nonce,
                     gasPrice.Value, gasLimit.Value, transaction.Data);
