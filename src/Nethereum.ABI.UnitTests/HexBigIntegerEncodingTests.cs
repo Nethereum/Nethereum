@@ -84,5 +84,21 @@ namespace Nethereum.ABI.UnitTests
             var x = new HexBigInteger(new BigInteger(1024));
             Assert.Equal("0x400", x.HexValue); // not "0x0400"
         }
+
+
+        [Fact]
+        public void HexBigIntergerTest()
+        {
+            HexBigInteger TestValue = new HexBigInteger("0x100");
+
+            Assert.Equal(TestValue.HexValue, "0x100");
+            Assert.Equal(TestValue.Value, 256);
+
+            TestValue.Value = 1024;
+            Assert.Equal(TestValue.Value, 1024);        // It works perfectly!   
+
+            TestValue.HexValue = "0x200";            // It doesn't work now!
+            Assert.Equal(TestValue.HexValue, "0x200");
+        }
     }
 }

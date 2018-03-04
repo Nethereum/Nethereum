@@ -31,7 +31,7 @@ namespace Nethereum.Hex.HexTypes
         public string HexValue
         {
             get => hexValue;
-            set => InitialiseFromHex(hexValue);
+            set => InitialiseFromHex(value);
         }
 
         public T Value
