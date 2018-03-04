@@ -46,17 +46,17 @@ namespace Nethereum.Web3.Accounts
             Initialise(new EthECKey(privateKey, true));
         }
 
-        public Account(EthECKey key, ChainId chainId):this(key, (int)chainId)
+        public Account(EthECKey key, Chain chain) : this(key, (int)chain)
         {
             
         }
 
-        public Account(string privateKey, ChainId chainId) : this(privateKey, (int)chainId)
+        public Account(string privateKey, Chain chain) : this(privateKey, (int)chain)
         {
             
         }
 
-        public Account(byte[] privateKey, ChainId chainId) : this(privateKey, (int)chainId)
+        public Account(byte[] privateKey, Chain chain) : this(privateKey, (int)chain)
         {
 
         }

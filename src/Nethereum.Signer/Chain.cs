@@ -1,6 +1,6 @@
 ﻿namespace Nethereum.Signer
 {
-    public enum ChainId
+    public enum Chain
     {
         MainNet = 1,
         Morden = 2,
