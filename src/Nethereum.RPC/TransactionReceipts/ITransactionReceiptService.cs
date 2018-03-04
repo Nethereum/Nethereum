@@ -29,6 +29,6 @@ namespace Nethereum.RPC.TransactionReceipts
         Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
           CancellationTokenSource tokenSource = null);
 
-
+        Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationTokenSource tokenSource = null);
     }
 }
