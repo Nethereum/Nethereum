@@ -95,9 +95,9 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(TestValue.Value, 256);
 
             TestValue.Value = 1024;
-            Assert.Equal(TestValue.Value, 1024);        // It works perfectly!   
+            Assert.Equal(TestValue.Value, 1024);      
 
-            TestValue.HexValue = "0x200";            // It doesn't work now!
+            TestValue.HexValue = "0x200";            
             Assert.Equal(TestValue.HexValue, "0x200");
         }
     }

@@ -51,6 +51,7 @@ namespace Nethereum.Signer
             return BigIntegers.AsUnsignedByteArray(agreement.GetFieldSize(), z);
         }
 
+        //Note: Y coordinates can only be forced, so it is assumed 0 and 1 will be the recId (even if implementation allows for 2 and 3)
         internal int CalculateRecId(ECDSASignature signature, byte[] hash)
         {
             var recId = -1;
@@ -129,6 +130,7 @@ namespace Nethereum.Signer
             return GetRecIdFromV(v[0]);
         }
 
+
         public static int GetRecIdFromV(byte v)
         {
             var header = v;
@@ -146,11 +148,18 @@ namespace Nethereum.Signer
             return (int) (vChain - chainId * 2 - 35);
         }
 
+        public static BigInteger GetChainFromVChain(BigInteger vChain)
+        {
+            var start = vChain - 35;
+            var even = start % 2 == 0;
+            if (even) return start / 2;
+            return (start - 1) / 2;
+        }
+
         public static int GetRecIdFromVChain(byte[] vChain, BigInteger chainId)
         {
             return GetRecIdFromVChain(vChain.ToBigIntegerFromRLPDecoded(), chainId);
         }
-
 
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash)
         {

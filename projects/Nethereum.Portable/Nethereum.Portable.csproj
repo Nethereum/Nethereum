@@ -299,10 +299,6 @@
 				<Link>ABI\Model\EventABI.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.ABI\Model\EventParameter.cs">
-				<Link>ABI\Model\EventParameter.cs</Link>
-		</Compile>
-		
         <Compile Include="..\..\src\Nethereum.ABI\Model\FunctionABI.cs">
 				<Link>ABI\Model\FunctionABI.cs</Link>
 		</Compile>
@@ -703,26 +699,6 @@
 				<Link>Web3\Web3.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\Account.cs">
-				<Link>Web3\Accounts\Account.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\AccountSignerTransactionManager.cs">
-				<Link>Web3\Accounts\AccountSignerTransactionManager.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\AccountTransactionSigningInterceptor.cs">
-				<Link>Web3\Accounts\AccountTransactionSigningInterceptor.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\Managed\ManagedAccount.cs">
-				<Link>Web3\Accounts\Managed\ManagedAccount.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Web3\Accounts\Managed\ManagedAccountTransactionManager.cs">
-				<Link>Web3\Accounts\Managed\ManagedAccountTransactionManager.cs</Link>
-		</Compile>
-		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">
 				<Link>EIP20\StandardTokenService.cs</Link>
 		</Compile>
@@ -769,6 +745,10 @@
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcError.cs">
 				<Link>NethereumJsonRpc\RpcError.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RPCLogger.cs">
+				<Link>NethereumJsonRpc\RPCLogger.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequest.cs">
@@ -1235,6 +1215,10 @@
 				<Link>Util\UnitConversion.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Signer\Chain.cs">
+				<Link>Signer\Chain.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Signer\EthECDSASignature.cs">
 				<Link>Signer\EthECDSASignature.cs</Link>
 		</Compile>
@@ -1261,6 +1245,14 @@
 		
         <Compile Include="..\..\src\Nethereum.Signer\Transaction.cs">
 				<Link>Signer\Transaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Signer\TransactionBase.cs">
+				<Link>Signer\TransactionBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Signer\TransactionChainId.cs">
+				<Link>Signer\TransactionChainId.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Signer\TransactionSigner.cs">
@@ -1465,6 +1457,26 @@
 		
         <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceDTOs\TraceFilterDTO.cs">
 				<Link>Parity\RPC\Trace\TraceDTOs\TraceFilterDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Accounts\Account.cs">
+				<Link>Accounts\Account.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Accounts\AccountSignerTransactionManager.cs">
+				<Link>Accounts\AccountSignerTransactionManager.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Accounts\AccountTransactionSigningInterceptor.cs">
+				<Link>Accounts\AccountTransactionSigningInterceptor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Accounts\Managed\ManagedAccount.cs">
+				<Link>Accounts\Managed\ManagedAccount.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Accounts\Managed\ManagedAccountTransactionManager.cs">
+				<Link>Accounts\Managed\ManagedAccountTransactionManager.cs</Link>
 		</Compile>
 		
         </ItemGroup>

@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <VersionMajor>2</VersionMajor>
-    <VersionMinor>2</VersionMinor>
-    <VersionPatch>3</VersionPatch>
+    <VersionMinor>3</VersionMinor>
+    <VersionPatch>0</VersionPatch>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
     <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
     
@@ -12,9 +12,9 @@
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
-    <ENSVersion>0.0.16</ENSVersion>
-    <UportVersion>0.0.10</UportVersion>
-    <ParityVersion>2.2.3</ParityVersion>
-    <QuorumVersion>0.0.17</QuorumVersion>
+    <ENSVersion>0.0.17</ENSVersion>
+    <UportVersion>0.0.11</UportVersion>
+    <ParityVersion>2.3.0</ParityVersion>
+    <QuorumVersion>0.0.18</QuorumVersion>
   </PropertyGroup>
 </Project>

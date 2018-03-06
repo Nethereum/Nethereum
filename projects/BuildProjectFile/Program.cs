@@ -27,6 +27,7 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Uport", "Uport"));
 		    stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Parity", "Parity"));
+		    stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Accounts", "Accounts"));
             GenerateFile("Nethereum.Portable\\Nethereum.Portable.csproj", fileTemplatePortable1, fileTemplatePortable2, stringBuilder.ToString());
         }
 

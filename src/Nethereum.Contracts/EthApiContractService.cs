@@ -56,7 +56,7 @@ namespace Nethereum.Contracts
             return contractDeploymentHandler;
         }
 
-        public ContractTransactionHandler<TContractFunctionMessage> GetContractTrasactionHandler<
+        public ContractTransactionHandler<TContractFunctionMessage> GetContractTransactionHandler<
             TContractFunctionMessage>()
             where TContractFunctionMessage : ContractMessage
         {

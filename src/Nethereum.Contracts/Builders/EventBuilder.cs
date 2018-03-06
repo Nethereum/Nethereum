@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -25,7 +27,7 @@ namespace Nethereum.Contracts
         public NewFilterInput CreateFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = new[] {_eventTopicBuilder.GetSignaguteTopic()};
+            ethFilterInput.Topics = _eventTopicBuilder.GetSignatureTopic();
             return ethFilterInput;
         }
 
@@ -65,6 +67,32 @@ namespace Nethereum.Contracts
                 var eventtopic = log.Topics[0].ToString();
                 if (EventABI.Sha33Signature.IsTheSameHex(eventtopic))
                     return true;
+            }
+            return false;
+        }
+
+
+        public bool IsFilterInputForEvent(NewFilterInput filterInput)
+        {
+            if (filterInput.Topics != null && filterInput.Topics.Length > 0)
+            {
+                if (!IsFilterInputForContractAddress(filterInput))
+                {
+                    return false;
+                }
+                var eventtopic = filterInput.Topics[0].ToString();
+                if (EventABI.Sha33Signature.IsTheSameHex(eventtopic))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool IsFilterInputForContractAddress(NewFilterInput filterInput)
+        {
+            if (filterInput.Address != null && filterInput.Address.Length > 0)
+            {
+                return filterInput.Address.Count(x =>
+                           string.Equals(x, _contract.Address, StringComparison.CurrentCultureIgnoreCase)) > 0;
             }
             return false;
         }

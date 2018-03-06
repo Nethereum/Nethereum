@@ -116,7 +116,7 @@ SOFTWARE.
         /// <summary>
         /// Reponse result object (Required)
         /// </summary>
-        [JsonProperty("result", Required = Required.Default)] //TODO somehow enforce this or an error, not both
+        [JsonProperty("result", Required = Required.Default)] 
         public JToken Result { get; private set; }
 
         /// <summary>

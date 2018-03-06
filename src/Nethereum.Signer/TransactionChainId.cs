@@ -22,6 +22,17 @@ namespace Nethereum.Signer
                 SHASH_DEFAULT);
         }
 
+        public TransactionChainId(byte[] rawData)
+        {
+            //Instantiate and decode
+            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
+            //append the chainId, r and s so it can be recovered using the raw hash
+            //the encoding has only the default 6 values.
+            var chainId = EthECKey.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
+            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
+                SHASH_DEFAULT);
+        }
+
         public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId)
         {

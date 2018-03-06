@@ -25,7 +25,7 @@ namespace Nethereum.Contracts.CQS
             TEthereumContractFunctionMessage transactionMesssage, CancellationTokenSource tokenSource = null)
             where TEthereumContractFunctionMessage : ContractMessage
         {
-            var command = EthApiContractService.GetContractTrasactionHandler<TEthereumContractFunctionMessage>();
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAndWaitForReceiptAsync(transactionMesssage, ContractAddress, tokenSource);
         }
@@ -34,7 +34,7 @@ namespace Nethereum.Contracts.CQS
             TEthereumContractFunctionMessage transactionMesssage)
             where TEthereumContractFunctionMessage : ContractMessage
         {
-            var command = EthApiContractService.GetContractTrasactionHandler<TEthereumContractFunctionMessage>();
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAsync(transactionMesssage, ContractAddress);
         }

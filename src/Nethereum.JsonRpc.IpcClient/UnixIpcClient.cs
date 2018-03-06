@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net.Sockets;
+using Common.Logging;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.JsonRpc.IpcClient
@@ -11,10 +12,10 @@ namespace Nethereum.JsonRpc.IpcClient
     public class UnixIpcClient : IpcClientBase
     {
         private readonly object _lockingObject = new object();
-
-        public UnixIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null) : base(ipcPath, jsonSerializerSettings)
+        private readonly ILog _log;
+        public UnixIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : base(ipcPath, jsonSerializerSettings)
         {
-
+            _log = log;
         }
 
         private Socket _socket;
@@ -95,13 +96,14 @@ namespace Nethereum.JsonRpc.IpcClient
 
         protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
         {
+            var logger = new RpcLogger(_log);
             try
             {
                 lock (_lockingObject)
                 {
                     var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                     var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-
+                    logger.LogRequest(rpcRequestJson);
                     var client = GetSocket();
                     client.SendBufferSize = requestBytes.Length;
 #if NET461
@@ -116,12 +118,15 @@ namespace Nethereum.JsonRpc.IpcClient
                         using (var reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            return serializer.Deserialize<TResponse>(reader);
+                            var message = serializer.Deserialize<TResponse>(reader);
+                            logger.LogResponse(message);
+                            return message;
                         }
                     }
                 }
             
             } catch (Exception ex) {
+                logger.LogException(ex);
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
         }

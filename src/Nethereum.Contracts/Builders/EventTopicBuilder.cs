@@ -14,26 +14,26 @@ namespace Nethereum.Contracts
             this.eventABI = eventABI;
         }
 
-        public object GetSignaguteTopic()
+        public object[] GetSignatureTopic()
         {
             return new[] {EnsureHexPrefix(eventABI.Sha33Signature)};
         }
 
         public object[] GetTopics(object[] firstTopic)
         {
-            return new[] {GetSignaguteTopic(), GetValueTopic(firstTopic, 1)};
+            return new[] {GetSignatureTopic(), GetValueTopic(firstTopic, 1)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic)
         {
-            return new[] {GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2)};
+            return new[] {GetSignatureTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic, object[] thirdTopic)
         {
             return new[]
             {
-                GetSignaguteTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2),
+                GetSignatureTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2),
                 GetValueTopic(thirdTopic, 3)
             };
         }

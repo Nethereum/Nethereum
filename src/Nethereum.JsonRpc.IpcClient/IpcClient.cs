@@ -10,6 +10,8 @@ using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
 using System.Net.Sockets;
 using System.Net;
 using System.Diagnostics;
+using Common.Logging;
+using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.JsonRpc.IpcClient
@@ -17,12 +19,13 @@ namespace Nethereum.JsonRpc.IpcClient
     public class IpcClient : IpcClientBase
     {
         private readonly object _lockingObject = new object();
+        private readonly ILog _log;
 
         private NamedPipeClientStream _pipeClient;
 
-        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null) : base(ipcPath, jsonSerializerSettings)
+        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : base(ipcPath, jsonSerializerSettings)
         {
-
+            _log = log;
         }
 
         private NamedPipeClientStream GetPipeClient()
@@ -87,13 +90,14 @@ namespace Nethereum.JsonRpc.IpcClient
 
         protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
         {
+            var logger = new RpcLogger(_log);
             try
             {
                 lock (_lockingObject)
                 {
                     var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                     var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-
+                    logger.LogRequest(rpcRequestJson);
                     GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
 
                     using (var memoryData = ReceiveFullResponse(GetPipeClient()))
@@ -103,13 +107,16 @@ namespace Nethereum.JsonRpc.IpcClient
                         using (JsonTextReader reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            return serializer.Deserialize<TResponse>(reader);
+                            var message = serializer.Deserialize<TResponse>(reader);
+                            logger.LogResponse(message);
+                            return message;
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                logger.LogException(ex);
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
             }
         }

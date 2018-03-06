@@ -137,7 +137,7 @@ namespace Nethereum.JsonRpc.IpcClient
             }
         }
 
-        protected abstract Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request);
+        protected abstract Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request) where TResponse: RpcResponseMessage;
 
         #region IDisposable Support
 

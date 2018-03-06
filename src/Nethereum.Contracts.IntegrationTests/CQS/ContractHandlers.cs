@@ -34,7 +34,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
                 TokenAmount = 1000
             };
 
-            var transferHandler = web3.Eth.GetContractTrasactionHandler<TransferFunction>();
+            var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
             var transferReceipt =
                 await transferHandler.SendRequestAndWaitForReceiptAsync(transactionMessage, contractAddress);
 

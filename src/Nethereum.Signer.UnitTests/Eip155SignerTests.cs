@@ -59,7 +59,7 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(expectedSignedTx.Length, tx.GetRLPEncoded().ToHex().Length);
             Assert.Equal(expectedSignedTx, tx.GetRLPEncoded().ToHex());
 
-            var recoveryTransaction = new TransactionChainId(tx.GetRLPEncoded(), 1);
+            var recoveryTransaction = new TransactionChainId(tx.GetRLPEncoded());
             Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
 
             Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());
