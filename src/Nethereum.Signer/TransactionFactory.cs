@@ -1,5 +1,4 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
@@ -14,7 +13,7 @@ namespace Nethereum.Signer
         {
             var rlpSigner = TransactionBase.CreateDefaultRLPSigner(rlp);
             return rlpSigner.IsVSignatureForChain()
-                ? (TransactionBase)new TransactionChainId(rlpSigner)
+                ? (TransactionBase) new TransactionChainId(rlpSigner)
                 : new Transaction(rlpSigner);
         }
     }

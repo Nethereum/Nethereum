@@ -1255,6 +1255,10 @@
 				<Link>Signer\TransactionChainId.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Signer\TransactionFactory.cs">
+				<Link>Signer\TransactionFactory.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Signer\TransactionSigner.cs">
 				<Link>Signer\TransactionSigner.cs</Link>
 		</Compile>
