@@ -12,7 +12,12 @@ namespace Nethereum.RLP
         {
             if (bytes == null) return 0;
             if (BitConverter.IsLittleEndian)
-                return new BigInteger(bytes.Reverse().ToArray());
+            {
+                var listEncoded = bytes.ToList();
+                listEncoded.Insert(0, 0x00);
+                bytes = listEncoded.ToArray().Reverse().ToArray();
+                return new BigInteger(bytes);
+            }
             return new BigInteger(bytes);
         }
 
