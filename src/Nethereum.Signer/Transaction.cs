@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -8,7 +9,20 @@ namespace Nethereum.Signer
     {
         public Transaction(byte[] rawData)
         {
-            SimpleRlpSigner = new RLPSigner(rawData, 6);
+            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
+            ValidateValidV(SimpleRlpSigner);
+        }
+
+        public Transaction(RLPSigner rlpSigner)
+        {
+            ValidateValidV(rlpSigner);
+            SimpleRlpSigner = rlpSigner;
+        }
+
+        private static void ValidateValidV(RLPSigner rlpSigner)
+        {
+            if (rlpSigner.IsVSignatureForChain())
+                throw new Exception("TransactionChainId should be used instead of Transaction");
         }
 
         public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
@@ -65,5 +79,7 @@ namespace Nethereum.Signer
             //order  nonce, gasPrice, gasLimit, receiveAddress, value, data
             return new[] {nonce, gasPrice, gasLimit, receiveAddress, value, data};
         }
+
+        public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature, SimpleRlpSigner.RawHash);
     }
 }

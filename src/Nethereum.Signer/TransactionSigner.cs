@@ -7,19 +7,19 @@ namespace Nethereum.Signer
     {
         public byte[] GetPublicKey(string rlp)
         {
-            var transaction = new Transaction(rlp.HexToByteArray());
+            var transaction = TransactionFactory.CreateTransaction(rlp);
             return transaction.Key.GetPubKey();
         }
 
         public string GetSenderAddress(string rlp)
         {
-            var transaction = new Transaction(rlp.HexToByteArray());
+            var transaction = TransactionFactory.CreateTransaction(rlp);
             return transaction.Key.GetPublicAddress();
         }
 
         public bool VerifyTransaction(string rlp)
         {
-            var transaction = new Transaction(rlp.HexToByteArray());
+            var transaction = TransactionFactory.CreateTransaction(rlp);
             return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
         }
 

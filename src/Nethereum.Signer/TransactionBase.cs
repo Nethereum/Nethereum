@@ -3,8 +3,15 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Signer
 {
-    public class TransactionBase
+    public abstract class TransactionBase
     {
+        public static RLPSigner CreateDefaultRLPSigner(byte[] rawData)
+        {
+           return new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);  
+        }
+
+        //Number of encoding elements (output for transaction)
+        public const int NUMBER_ENCODING_ELEMENTS = 6;
         public static readonly BigInteger DEFAULT_GAS_PRICE = BigInteger.Parse("20000000000");
         public static readonly BigInteger DEFAULT_GAS_LIMIT = BigInteger.Parse("21000");
         protected static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -32,8 +39,8 @@ namespace Nethereum.Signer
 
         public EthECDSASignature Signature => SimpleRlpSigner.Signature;
 
-        public virtual EthECKey Key =>
-            EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature, SimpleRlpSigner.RawHash);
+        public abstract EthECKey Key { get;  }
+            
 
         public byte[] GetRLPEncoded()
         {

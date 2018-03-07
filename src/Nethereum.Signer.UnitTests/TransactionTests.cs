@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -153,20 +154,9 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void TestTransactionFromUnSignedRLP()
         {
-            var tx = new Transaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray());
-
-            Assert.Equal(RLP_ENCODED_UNSIGNED_TX, tx.GetRLPEncoded().ToHex());
-            Assert.Equal(BigInteger.Zero, tx.Nonce.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testGasPrice.ToBigIntegerFromRLPDecoded(), tx.GasPrice.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testGasLimit.ToBigIntegerFromRLPDecoded(), tx.GasLimit.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testReceiveAddress.ToHex(), tx.ReceiveAddress.ToHex());
-            Assert.Equal(testValue.ToBigIntegerFromRLPDecoded(), tx.Value.ToBigIntegerFromRLPDecoded());
-
-            Assert.Equal(HASH_TX, tx.RawHash.ToHex());
-
-            tx.Sign(new EthECKey(KEY.HexToByteArray(), true));
-            tx.Key.Verify(tx.RawHash, tx.Signature);
-            Assert.Equal(EthECKey.GetPublicAddress(KEY), tx.Key.GetPublicAddress());
+            Exception ex = Assert.Throws<Exception>(() =>
+                new Transaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray()));
+            Assert.Equal("Signature not initiated or calculatated", ex.Message);
         }
     }
 }

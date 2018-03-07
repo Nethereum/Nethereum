@@ -1,13 +1,12 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
     public class TransactionChainId : TransactionBase
-    {
-        //Number of encoding elements (output for transaction)
-        private const int NUMBER_ENCODING_ELEMENTS = 6;
+    {  
         //The R and S Hashing values
         private static readonly byte[] RHASH_DEFAULT = 0.ToBytesForRLPEncoding();
         private static readonly byte[] SHASH_DEFAULT = 0.ToBytesForRLPEncoding();
@@ -16,8 +15,32 @@ namespace Nethereum.Signer
         {
             //Instantiate and decode
             SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
+            ValidateValidV(SimpleRlpSigner);
+            AppendDataForHashRecovery(chainId);
+        }
+
+        public TransactionChainId(RLPSigner rlpSigner)
+        {
+            SimpleRlpSigner = rlpSigner;
+            ValidateValidV(SimpleRlpSigner);
+            GetChainIdFromVAndAppendDataForHashRecovery();
+        }
+
+        private static void ValidateValidV(RLPSigner rlpSigner)
+        {
+            if (!rlpSigner.IsVSignatureForChain())
+                throw new Exception("Transaction should be used instead of TransactionChainId, invalid V");
+        }
+        private void GetChainIdFromVAndAppendDataForHashRecovery()
+        {
+            var chainId = GetChainFromVChain();
+            AppendDataForHashRecovery(chainId);
+        }
+
+        private void AppendDataForHashRecovery(BigInteger chainId)
+        {
             //append the chainId, r and s so it can be recovered using the raw hash
-            //the encoding has only the default 6 values.
+            //the encoding has only the default 6 values
             SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
                 SHASH_DEFAULT);
         }
@@ -26,11 +49,13 @@ namespace Nethereum.Signer
         {
             //Instantiate and decode
             SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
-            //append the chainId, r and s so it can be recovered using the raw hash
-            //the encoding has only the default 6 values.
-            var chainId = EthECKey.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
-            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
-                SHASH_DEFAULT);
+            ValidateValidV(SimpleRlpSigner);
+            GetChainIdFromVAndAppendDataForHashRecovery();
+        }
+
+        private BigInteger GetChainFromVChain()
+        {
+            return EthECKey.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
         }
 
         public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,

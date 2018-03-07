@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using Nethereum.Util;
 using Org.BouncyCastle.Math;
@@ -45,14 +46,6 @@ namespace Nethereum.Signer
             set => ECDSASignature.V = value;
         }
 
-        ////Special V calculated using the chainId
-        //public byte[] VChain { get { return _ecdsaSignature.VChain; } set { _ecdsaSignature.VChain = value; } }
-
-        //public bool IsVChain()
-        //{
-        //    return VChain != null;
-        //}
-
         public bool IsLowS => ECDSASignature.IsLowS;
 
         public static EthECDSASignature FromDER(byte[] sig)
@@ -63,6 +56,11 @@ namespace Nethereum.Signer
         public byte[] ToDER()
         {
             return ECDSASignature.ToDER();
+        }
+
+        public bool IsVSignedForChain()
+        {
+            return V.ToBigIntegerFromRLPDecoded() >= 35;
         }
 
         public byte[] To64ByteArray()

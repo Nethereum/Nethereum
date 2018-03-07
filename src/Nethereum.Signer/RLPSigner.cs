@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -180,6 +181,12 @@ namespace Nethereum.Signer
         {
             signature = key.SignAndCalculateV(RawHash, chainId);
             rlpEncoded = null;
+        }
+
+        public bool IsVSignatureForChain()
+        {
+            if(Signature == null) throw new Exception("Signature not initiated or calculatated");
+            return Signature.IsVSignedForChain();
         }
 
         private void EnsuredRPLDecoded()
