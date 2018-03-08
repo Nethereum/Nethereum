@@ -79,6 +79,14 @@ namespace Nethereum.Contracts.CQS
                 tokenSource);
         }
 
+        public Task<HexBigInteger> EstimateGasAsync(TContractMessage functionMessage, string contractAddress)
+        {
+            ValidateContractMessage(functionMessage);
+            var contract = Eth.GetContract<TContractMessage>(contractAddress);
+            var function = contract.GetFunction<TContractMessage>();
+            return EstimateGasAsync()
+        }
+
         protected Task<HexBigInteger> EstimateGasAsync(TContractMessage functionMessage,
             Function<TContractMessage> function)
         {

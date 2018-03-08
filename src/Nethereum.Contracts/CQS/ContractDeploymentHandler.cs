@@ -70,9 +70,10 @@ namespace Nethereum.Contracts.CQS
                 contractDeploymentMessage,
                 tokenSource);
         }
-
-        protected Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage contractDeploymentMessage)
+       
+        public Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage contractDeploymentMessage)
         {
+            ValidateContractMessage(contractDeploymentMessage);
             return Eth.DeployContract.EstimateGasAsync(contractDeploymentMessage.ByteCode,
                 contractDeploymentMessage.FromAddress, null, GetValue(contractDeploymentMessage),
                 contractDeploymentMessage);
