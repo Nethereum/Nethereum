@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.CQS
@@ -39,6 +40,15 @@ namespace Nethereum.Contracts.CQS
             return command.SendRequestAsync(transactionMesssage, ContractAddress);
         }
 
+        public Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMesssage)
+            where TEthereumContractFunctionMessage : ContractMessage
+        {
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.EstimateGasAsync(transactionMesssage, ContractAddress);
+        }
+
 
         public Task<TransactionReceipt> SendDeploymentRequestAndWaitForReceiptAsync<TEthereumContractDeploymentMessage>(
             TEthereumContractDeploymentMessage ethereumDeploymentMessage, CancellationTokenSource tokenSource = null)
@@ -58,6 +68,16 @@ namespace Nethereum.Contracts.CQS
             var deploymentHandler =
                 EthApiContractService.GetContractDeploymentHandler<TEthereumContractDeploymentMessage>();
             return deploymentHandler.SendRequestAsync(ethereumDeploymentMessage);
+        }
+
+        public Task<HexBigInteger> EstimateDeploymentGasAsync<TEthereumContractDeploymentMessage>(
+            TEthereumContractDeploymentMessage ethereumDeploymentMessage)
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
+        {
+            {
+            var command = EthApiContractService.GetContractDeploymentHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.EstimateGasAsync(transactionMesssage, ContractAddress);
         }
 
         public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
