@@ -27,7 +27,7 @@ namespace Nethereum.Tutorials
             //assumed client is mining already
 
             //When sending the transaction using the transaction manager for a managed account, personal_sendTransaction is used.
-            var transactionReceipt = await transactionPolling.SendRequestAsync(() =>
+            var transactionReceipt = await transactionPolling.SendRequestAndWaitForReceiptAsync(() =>
                 web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20))
             );
 
@@ -58,7 +58,7 @@ namespace Nethereum.Tutorials
             //assumed client is mining already
 
             //when sending a transaction using an Account, a raw transaction is signed and send using the private key
-            var transactionReceipt = await transactionPolling.SendRequestAsync(() =>
+            var transactionReceipt = await transactionPolling.SendRequestAndWaitForReceiptAsync(() =>
                 web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20))
             );
 
@@ -96,7 +96,7 @@ namespace Nethereum.Tutorials
 
             //assumed client is mining already
             //when sending a transaction using an Account, a raw transaction is signed and send using the private key
-            var transactionReceipt = await transactionPolling.SendRequestAsync(() =>
+            var transactionReceipt = await transactionPolling.SendRequestAndWaitForReceiptAsync(() =>
                 web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20))
             );
 

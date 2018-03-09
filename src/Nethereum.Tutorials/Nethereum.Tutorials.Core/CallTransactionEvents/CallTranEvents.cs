@@ -45,8 +45,8 @@ namespace Nethereum.Tutorials
           var filterAll = await multiplyEvent.CreateFilterAsync();
           var filter7 = await multiplyEvent.CreateFilterAsync(7);
           
-          var transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, 7);
-          receipt =  await multiplyFunction.SendTransactionAndWaitForReceiptAsync(senderAddress, null, 8);
+          var transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null,  7);
+          receipt =  await multiplyFunction.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000), null, null, 8);
 
           var miningResult = await web3.Miner.Stop.SendRequestAsync();
 
