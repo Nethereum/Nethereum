@@ -37,7 +37,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
             var transferReceipt =
                 await transferHandler.SendRequestAndWaitForReceiptAsync(transactionMessage, contractAddress);
-
+      
             var balanceOfFunctionMessage = new BalanceOfFunction
             {
                 Owner = newAddress,

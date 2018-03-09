@@ -74,10 +74,9 @@ namespace Nethereum.Contracts.CQS
             TEthereumContractDeploymentMessage ethereumDeploymentMessage)
             where TEthereumContractDeploymentMessage : ContractDeploymentMessage
         {
-            {
-            var command = EthApiContractService.GetContractDeploymentHandler<TEthereumContractFunctionMessage>();
-            SetAddressFrom(transactionMesssage);
-            return command.EstimateGasAsync(transactionMesssage, ContractAddress);
+            var command = EthApiContractService.GetContractDeploymentHandler<TEthereumContractDeploymentMessage>();
+            SetAddressFrom(ethereumDeploymentMessage);
+            return command.EstimateGasAsync(ethereumDeploymentMessage);
         }
 
         public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
