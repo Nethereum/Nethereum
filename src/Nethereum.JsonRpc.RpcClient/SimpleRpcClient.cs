@@ -10,18 +10,17 @@ namespace Nethereum.JsonRpc.Client
 {
     public class SimpleRpcClient : ClientBase
     {
-        private readonly Uri _baseUrl;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private HttpClient _httpClient;
+        private readonly HttpClient _httpClient;
 
         public SimpleRpcClient(Uri baseUrl, HttpClient httpClient,
             JsonSerializerSettings jsonSerializerSettings = null)
-        {
-            _baseUrl = baseUrl;
+        { 
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
             _jsonSerializerSettings = jsonSerializerSettings;
             _httpClient = httpClient;
+            _httpClient.BaseAddress = baseUrl;
         }
 
         protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
@@ -46,7 +45,7 @@ namespace Nethereum.JsonRpc.Client
         private void HandleRpcError(RpcResponseMessage response)
         {
             if (response.HasError)
-                throw new RpcResponseException(new Nethereum.JsonRpc.Client.RpcError(response.Error.Code, response.Error.Message,
+                throw new RpcResponseException(new RpcError(response.Error.Code, response.Error.Message,
                     response.Error.Data));
         }
 
@@ -70,12 +69,10 @@ namespace Nethereum.JsonRpc.Client
         {
             try
             {
-                var httpClient = GetOrCreateHttpClient();
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
 
-
-                var httpResponseMessage = await httpClient.PostAsync(route, httpContent).ConfigureAwait(false);
+                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
@@ -93,12 +90,5 @@ namespace Nethereum.JsonRpc.Client
                 throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
             }
         }
-
-        private HttpClient GetOrCreateHttpClient()
-        {
-            _httpClient.BaseAddress = _baseUrl;
-            return _httpClient;
-        }
-
     }
 }

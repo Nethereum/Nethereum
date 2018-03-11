@@ -775,6 +775,10 @@
 				<Link>NethereumJsonRpcClient\RpcClient.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\SimpleRpcClient.cs">
+				<Link>NethereumJsonRpcClient\SimpleRpcClient.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.KeyStore\IKeyStoreService.cs">
 				<Link>KeyStore\IKeyStoreService.cs</Link>
 		</Compile>
