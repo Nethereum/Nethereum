@@ -27,6 +27,8 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             var contractAddress = transactionReceipt.ContractAddress;
             var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
 
+
+
             var transactionMessage = new TransferFunction
             {
                 FromAddress = senderAddress,
@@ -35,6 +37,12 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             };
 
             var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+
+            var estimatedGas = await transferHandler.EstimateGasAsync(transactionMessage, contractAddress);
+
+            // for demo purpouses gas estimation it is done in the background so we don't set it
+            transactionMessage.Gas = estimatedGas.Value; 
+
             var transferReceipt =
                 await transferHandler.SendRequestAndWaitForReceiptAsync(transactionMessage, contractAddress);
       
