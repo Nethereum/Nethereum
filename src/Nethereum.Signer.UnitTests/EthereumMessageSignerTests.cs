@@ -26,6 +26,19 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
         }
 
+        //[Fact]
+        //public void ShouldRecoverTrezor()
+        //{
+        //    var signature =
+        //        "0x6f7ac0bd83c951eb5730810ed0177e3d1e94fb792ba38c6765c95f53d2e2c8867891b05772b6b1c573c0aca1765d74f7fc9955c1ac449654eb75c57de7d48c121b";
+        //    var msg = "this is message sign with Trezor, 11-Mar-2018 08:58";
+        //    var signer = new EthereumMessageSigner();
+        //    var hasher = new Sha3Keccack();
+        //    var hash = hasher.CalculateHash(msg);
+        //    var addressRec = signer.EcRecover(hash.HexToByteArray(), signature);
+        //    Assert.Equal("0x0dcfcc9c06f5cf4e3f0e22eaae49b2d93bd5adf5".ToLower(), addressRec.ToLower());
+        //}
+
         [Fact]
         public void ShouldRecoverUsingShortcutHashes()
         {

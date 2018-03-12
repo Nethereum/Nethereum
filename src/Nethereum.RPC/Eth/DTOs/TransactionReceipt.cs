@@ -59,5 +59,11 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
         [JsonProperty(PropertyName = "logs")]
         public JArray Logs { get; set; }
+
+        public bool? HasErrors()
+        {
+            if (Status == null) return null;
+            return Status.Value == 0;
+        }
     }
 }

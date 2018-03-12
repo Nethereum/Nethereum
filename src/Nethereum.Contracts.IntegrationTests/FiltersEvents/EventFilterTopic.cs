@@ -1,10 +1,76 @@
+using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3.Accounts;
+using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
     public class EventFilterTopic
     {
+
+        [Fact]
+        public async Task DeployAndCallContract_WithEvents()
+        {
+                   var abi =
+                @"[{'constant':false,'inputs':[{'name':'val','type':'int256'}],'name':'multiply','outputs':[{'name':'','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[{'name':'multiplier','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'from','type':'address'},{'indexed':false,'name':'val','type':'int256'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
+
+            var smartContractByteCode =
+                "6060604052341561000f57600080fd5b604051602080610149833981016040528080516000555050610113806100366000396000f300606060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416631df4f14481146043575b600080fd5b3415604d57600080fd5b60566004356068565b60405190815260200160405180910390f35b6000805482027fd01bc414178a5d1578a8b9611adebfeda577e53e89287df879d5ab2c29dfa56a338483604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001838152602001828152602001935050505060405180910390a1929150505600a165627a7a723058201bd2fbd3fb58686ed61df3e636dc4cc7c95b864aa1654bc02b0136e6eca9e9ef0029";
+
+            var account = AccountFactory.GetAccount();
+            var web3 = Web3Factory.GetWeb3();
+
+            var multiplier = 2;
+
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
+                    abi,
+                    smartContractByteCode,
+                    account.Address,
+                    new HexBigInteger(900000),
+                    null,
+                    multiplier);
+
+            var contractAddress = receipt.ContractAddress;
+
+            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var multiplyFunction = contract.GetFunction("multiply");
+
+            var multipliedEvent = contract.GetEvent("Multiplied");
+            var filterForAll = await multipliedEvent.CreateFilterAsync();
+
+            var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
+
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 7);
+
+            Assert.Equal(1, receipt1.Status.Value);
+            Assert.Equal(1, receipt2.Status.Value);
+
+            Assert.False(receipt1.HasErrors());
+            Assert.False(receipt2.HasErrors());
+
+            var logsForAll = await multipliedEvent.GetFilterChanges<MultipliedEvent>(filterForAll);
+
+            Assert.Equal(2, logsForAll.Count());
+
+        }
+
+        public class MultipliedEvent
+        {
+            [Parameter("address", "from", 1)]
+            public string Sender { get; set; }
+
+            [Parameter("int", "val", 2)]
+            public int InputValue { get; set; }
+
+            [Parameter("int", "result", 3)]
+            public int Result { get; set; }
+        }
+
         public async Task<string> Test()
         {
             //The compiled solidity contract to be deployed
