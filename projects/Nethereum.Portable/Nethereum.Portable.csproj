@@ -710,6 +710,10 @@
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Events\DTO\TransferEvent.cs">
 				<Link>EIP20\Events\DTO\TransferEvent.cs</Link>
 		</Compile>
+
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Functions\BalanceOfFunction.cs">
+				<Link>EIP20\Functions\BalanceOfFunction.cs</Link>
+		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Functions\TransferFunction.cs">
 				<Link>EIP20\Functions\TransferFunction.cs</Link>
