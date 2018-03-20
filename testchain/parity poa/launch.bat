@@ -1,0 +1,1 @@
+parity.exe --config node0.toml --tracing=on
