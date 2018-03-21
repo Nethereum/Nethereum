@@ -1,35 +1,27 @@
 using Nethereum.Generators.Core;
+using Nethereum.Generators.CQS;
 using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOGenerator: ABIServiceBase
+    public class FunctionOutputDTOGenerator: ClassGeneratorBase<FunctionOutputDTOTemplate,FunctionOutputDTOModel>
     {
-        public FunctionOutputDTOTemplate template;
-
-        public FunctionOutputDTOGenerator()
+     
+        public FunctionOutputDTOGenerator(FunctionABI functionABI, string @namespace)
         {
-            template = new FunctionOutputDTOTemplate();
+            ClassModel = new FunctionOutputDTOModel(functionABI, @namespace);
+            ClassTemplate = new FunctionOutputDTOTemplate(ClassModel);
         }
 
-        public string GenerateFullClass(FunctionABI abi, string namespaceName)
+        public override string GenerateClass()
         {
-            return template.GenerateFullClass(abi, namespaceName);
+            return ClassModel.CanGenerateOutputDTO() ? ClassTemplate.GenerateClass() : null;
         }
 
-        public string GenerateFullClass(string abi, string namespaceName)
+        public override string GenerateFileContent()
         {
-            return template.GenerateFullClass(GetFirstFunction(abi), namespaceName);
+            return ClassModel.CanGenerateOutputDTO() ? ClassTemplate.GenerateFullClass() : null;
         }
 
-        public string GenerateClass(FunctionABI abi)
-        {
-            return template.GenerateClass(abi);
-        }
-
-        public string GenerateClass(string abi)
-        {
-            return GenerateClass(GetFirstFunction(abi));
-        }
     }
 }

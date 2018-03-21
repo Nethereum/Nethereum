@@ -33,12 +33,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-        <Compile Include="..\Nethereum.Generators\Core\ABIServiceBase.cs">
-				<Link>\Core\ABIServiceBase.cs</Link>
+        <Compile Include="..\Nethereum.Generators\ContractProjectGenerator.cs">
+				<Link>\ContractProjectGenerator.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\ABITypeToCSharpType.cs">
 				<Link>\Core\ABITypeToCSharpType.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\ClassGeneratorBase.cs">
+				<Link>\Core\ClassGeneratorBase.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\CommonGenerators.cs">
@@ -49,12 +53,36 @@
 				<Link>\Core\FunctionABIModel.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\Core\GeneratedClass.cs">
+				<Link>\Core\GeneratedClass.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\IClassModel.cs">
+				<Link>\Core\IClassModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\IClassTemplate.cs">
+				<Link>\Core\IClassTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\IFileGenerator.cs">
+				<Link>\Core\IFileGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\IGenerator.cs">
+				<Link>\Core\IGenerator.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\ParameterABIModel.cs">
 				<Link>\Core\ParameterABIModel.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\SpaceUtils.cs">
 				<Link>\Core\SpaceUtils.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\TypeMessageModel.cs">
+				<Link>\Core\TypeMessageModel.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\Utils.cs">
@@ -137,8 +165,24 @@
 				<Link>\Model\Parameter.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\Nethereum.Generators\Service\FunctionOutputDTOTemplate.cs">
-				<Link>\Service\FunctionOutputDTOTemplate.cs</Link>
+        <Compile Include="..\Nethereum.Generators\Service\ContractDeploymentServiceMethodsTemplate.cs">
+				<Link>\Service\ContractDeploymentServiceMethodsTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Service\FunctionServiceMethodTemplate.cs">
+				<Link>\Service\FunctionServiceMethodTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Service\ServiceGenerator.cs">
+				<Link>\Service\ServiceGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Service\ServiceModel.cs">
+				<Link>\Service\ServiceModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Service\ServiceTemplate.cs">
+				<Link>\Service\ServiceTemplate.cs</Link>
 		</Compile>
 		
   </ItemGroup>

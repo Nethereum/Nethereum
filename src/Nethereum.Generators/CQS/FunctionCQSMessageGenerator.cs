@@ -1,36 +1,21 @@
+using System.Runtime.CompilerServices;
 using Nethereum.Generators.Core;
+using Nethereum.Generators.DTOs;
 using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class FunctionCQSMessageGenerator : ABIServiceBase
+    public class FunctionCQSMessageGenerator : ClassGeneratorBase<FunctionCQSMessageTemplate, FunctionCQSMessageModel>
     {
-        public FunctionCQSMessageTemplate template;
+        public FunctionABI FunctionABI { get; }
 
-        public FunctionCQSMessageGenerator()
+        public FunctionCQSMessageGenerator(FunctionABI functionABI, string @namespace, string namespaceFunctionOutput)
         {
-            template = new FunctionCQSMessageTemplate();
+            FunctionABI = functionABI;
+            ClassModel = new FunctionCQSMessageModel(FunctionABI, @namespace);
+            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, namespaceFunctionOutput);
+            var functionABIModel = new FunctionABIModel(ClassModel.FunctionABI);
+            ClassTemplate = new FunctionCQSMessageTemplate(ClassModel, functionOutputDTOModel, functionABIModel);
         }
-
-        public string GenerateFullClass(FunctionABI abi, string namespaceName, string namespaceFunctionOutput)
-        {
-            return template.GenerateFullClass(abi, namespaceName, namespaceFunctionOutput);
-        }
-
-        public string GenerateFullClass(string abi, string namespaceName, string namespaceFunctionOutput)
-        {
-            return template.GenerateFullClass(GetFirstFunction(abi), namespaceName, namespaceFunctionOutput);
-        }
-
-        public string GenerateClass(FunctionABI abi)
-        {
-            return template.GenerateClass(abi);
-        }
-
-        public string GenerateClass(string abi)
-        {
-            return GenerateClass(GetFirstFunction(abi));
-        }
-
     }
 }

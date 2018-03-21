@@ -5,50 +5,52 @@ namespace Nethereum.Generators.Core
 {
     public class FunctionABIModel
     {
+        public FunctionABI FunctionABI { get; }
         private ABITypeToCSharpType abiTypeToCSharpType;
 
-        public FunctionABIModel()
+        public FunctionABIModel(FunctionABI functionABI)
         {
+            FunctionABI = functionABI;
             this.abiTypeToCSharpType = new ABITypeToCSharpType();
         }
 
-        public string GetSingleOutputGenericReturnType(FunctionABI item)
+        public string GetSingleOutputGenericReturnType()
         {
-            if (item == null) return String.Empty;
-            return $"<{GetSingleOutputReturnType(item)}>";
+            if (FunctionABI == null) return String.Empty;
+            return $"<{GetSingleOutputReturnType()}>";
         }
 
-        public string GetSingleOutputReturnType(FunctionABI functionABI)
+        public string GetSingleOutputReturnType()
         {
-            if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1)
+            if (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1)
             {
-                return abiTypeToCSharpType.GetTypeMap(functionABI.OutputParameters[0].Type, true);
+                return abiTypeToCSharpType.GetTypeMap(FunctionABI.OutputParameters[0].Type, true);
             }
             return null;
         }
 
-        public string GetSingleAbiReturnType(FunctionABI functionABI)
+        public string GetSingleAbiReturnType()
         {
-            if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1)
+            if (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1)
             {
-                return functionABI.OutputParameters[0].Type;
+                return FunctionABI.OutputParameters[0].Type;
             }
             return null;
         }
 
-        public bool IsMultipleOutput(FunctionABI functionAbi)
+        public bool IsMultipleOutput()
         {
-            return functionAbi.OutputParameters != null && functionAbi.OutputParameters.Length > 1;
+            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 1;
         }
 
-        public bool IsSingleOutput(FunctionABI functionAbi)
+        public bool IsSingleOutput()
         {
-            return functionAbi.OutputParameters != null && functionAbi.OutputParameters.Length == 1;
+            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1;
         }
 
-        public bool HasNoReturn(FunctionABI functionAbi)
+        public bool HasNoReturn()
         {
-            return functionAbi.OutputParameters == null || functionAbi.OutputParameters.Length == 0;
+            return FunctionABI.OutputParameters == null || FunctionABI.OutputParameters.Length == 0;
         }
     }
 }

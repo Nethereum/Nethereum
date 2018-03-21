@@ -3,29 +3,30 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOModel
+    public class FunctionOutputDTOModel: TypeMessageModel
     {
-        private CommonGenerators commonGenerators;
+        private const string SUFFIX_NAME = "OutputDTO";
+        public FunctionABI FunctionABI { get; }
 
-        public FunctionOutputDTOModel()
+        public FunctionOutputDTOModel(FunctionABI functionABI, string @namespace):base(@namespace)
         {
-            commonGenerators = new CommonGenerators();
+            FunctionABI = functionABI;
         }
         
-        public string GetFunctionOutputTypeName(FunctionABI functionABI)
+        public bool CanGenerateOutputDTO()
         {
-            return GetFunctionOutputTypeName(functionABI.Name);
+            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 0 &&
+                   FunctionABI.Constant;
         }
 
-        public string GetFunctionOutputTypeName(string functionName)
+        protected override string GetClassNameSuffix()
         {
-            return $"{commonGenerators.GenerateClassName(functionName)}OutputDTO";
+            return SUFFIX_NAME;
         }
 
-        public bool CanGenerateOutputDTO(FunctionABI functionABI)
+        protected override string GetBaseName()
         {
-            return functionABI.OutputParameters != null && functionABI.OutputParameters.Length > 0 &&
-                   functionABI.Constant;
+            return FunctionABI.Name;
         }
     }
 }

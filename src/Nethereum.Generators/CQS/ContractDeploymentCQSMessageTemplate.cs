@@ -4,39 +4,39 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageTemplate
+    public class ContractDeploymentCQSMessageTemplate: IClassTemplate
     {
         private ParameterABIFunctionDTOTemplate _parameterABIFunctionDTOTemplate;
-        private ContractDeploymentCQSMessageModel _contractDeploymentCQSMessageModel;
-        public ContractDeploymentCQSMessageTemplate()
+        private ContractDeploymentCQSMessageModel _model;
+        public ContractDeploymentCQSMessageTemplate(ContractDeploymentCQSMessageModel model)
         {
             _parameterABIFunctionDTOTemplate = new ParameterABIFunctionDTOTemplate();
-            _contractDeploymentCQSMessageModel = new ContractDeploymentCQSMessageModel();
+            _model = model;
         }
 
-        public string GenerateFullClass(ConstructorABI constructorABI, string namespaceName, string byteCode, string contractName)
+        public string GenerateFullClass()
         {
             return
-$@"using System;
-using System.Threading.Tasks;
-using System.Numerics;
-using Nethereum.Hex.HexTypes;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-namespace {namespaceName}
-{{
-{GenerateClass(constructorABI, byteCode, contractName)}
-}}
+$@"{SpaceUtils.NoTabs}using System;
+{SpaceUtils.NoTabs}using System.Threading.Tasks;
+{SpaceUtils.NoTabs}using System.Numerics;
+{SpaceUtils.NoTabs}using Nethereum.Hex.HexTypes;
+{SpaceUtils.NoTabs}using Nethereum.ABI.FunctionEncoding.Attributes;
+{SpaceUtils.NoTabs}namespace {_model.Namespace}
+{SpaceUtils.NoTabs}{{
+{SpaceUtils.NoTabs}{GenerateClass()}
+{SpaceUtils.NoTabs}}}
 ";
         }
 
-        public string GenerateClass(ConstructorABI constructorABI, string byteCode, string contractName)
+        public string GenerateClass()
         {
-            var typeName = _contractDeploymentCQSMessageModel.GetContractDeploymentMessageTypeName(contractName);
+            var typeName = _model.GetTypeName();
             return
 $@"{SpaceUtils.OneTab}public class {typeName}:ContractDeploymentMessage
 {SpaceUtils.OneTab}{{
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public static string BYTECODE = ""{byteCode}"";
+{SpaceUtils.TwoTabs}public static string BYTECODE = ""{_model.ByteCode}"";
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public {typeName}():base(BYTECODE)
 {SpaceUtils.TwoTabs}{{
@@ -46,7 +46,7 @@ $@"{SpaceUtils.OneTab}public class {typeName}:ContractDeploymentMessage
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.TwoTabs}}}
 {SpaceUtils.TwoTabs}
-{_parameterABIFunctionDTOTemplate.GenerateAllProperties(constructorABI.InputParameters)}
+{_parameterABIFunctionDTOTemplate.GenerateAllProperties(_model.ConstructorABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
         }
 

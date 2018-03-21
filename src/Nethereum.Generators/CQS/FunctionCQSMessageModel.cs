@@ -3,33 +3,27 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class FunctionCQSMessageModel
+    public class FunctionCQSMessageModel:TypeMessageModel
     {
-        private CommonGenerators commonGenerators;
+        public FunctionABI FunctionABI { get; }
+        public string Namespace { get; }
+        
+        public string CLASSNAME_SUFFIX = "Function";
 
-        public FunctionCQSMessageModel()
+        public FunctionCQSMessageModel(FunctionABI functionABI, string @namespace):base(@namespace)
         {
-            commonGenerators = new CommonGenerators();
+            FunctionABI = functionABI;
+         
         }
 
-        public string GetFunctionMessageTypeName(FunctionABI functionABI)
+        protected override string GetClassNameSuffix()
         {
-            return GetFunctionMessageTypeName(functionABI.Name);
+            return CLASSNAME_SUFFIX;
         }
 
-        public string GetFunctionMessageTypeName(string functionName)
+        protected override string GetBaseName()
         {
-            return $"{commonGenerators.GenerateClassName(functionName)}Function";
-        }
-
-        public string GetFunctionMessageVariableName(FunctionABI functionABI)
-        {
-            return GetFunctionMessageVariableName(functionABI.Name);
-        }
-
-        public string GetFunctionMessageVariableName(string functionName)
-        {
-            return $"{commonGenerators.GenerateVariableName(functionName)}Function";
+            return FunctionABI.Name;
         }
     }
 }

@@ -74,11 +74,11 @@ namespace Nethereum.Generators.Core
                 //uints are in 8 bits steps
                 if (length == 32)
                 {
-                    return "int";
+                    return "uint";
                 }
                 if (length == 16)
                 {
-                    return "short";
+                    return "ushort";
                 }
                 if (length == 8)
                 {

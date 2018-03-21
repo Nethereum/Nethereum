@@ -3,27 +3,29 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class EventDTOModel
+    public class EventDTOModel:TypeMessageModel
     {
-        private CommonGenerators commonGenerators;
+        public EventABI EventABI { get; }
+        public const string SUFFIX_NAME = "EventDTO";
 
-        public EventDTOModel()
+        public EventDTOModel(EventABI eventABI, string @namespace):base(@namespace)
         {
-            commonGenerators = new CommonGenerators();
+            EventABI = eventABI;
         }
-        public string GetEventABIOutputTypeName(EventABI eventABI)
+     
+        public bool CanGenerateOutputDTO()
         {
-            return GetEventABIOutputTypeName(eventABI.Name);
-        }
-
-        public string GetEventABIOutputTypeName(string eventName)
-        {
-            return $"{commonGenerators.GenerateClassName(eventName)}EventDTO";
+            return EventABI.InputParameters != null && EventABI.InputParameters.Length > 0;
         }
 
-        public bool CanGenerateOutputDTO(EventABI eventABI)
+        protected override string GetClassNameSuffix()
         {
-            return eventABI.InputParameters != null && eventABI.InputParameters.Length > 0;
+            return SUFFIX_NAME;
+        }
+
+        protected override string GetBaseName()
+        {
+            return EventABI.Name;
         }
     }
 }

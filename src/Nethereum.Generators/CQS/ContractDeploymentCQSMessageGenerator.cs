@@ -3,33 +3,13 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageGenerator : ABIServiceBase
+    public class ContractDeploymentCQSMessageGenerator: ClassGeneratorBase<ContractDeploymentCQSMessageTemplate, ContractDeploymentCQSMessageModel>
     {
-        public ContractDeploymentCQSMessageTemplate template;
-
-        public ContractDeploymentCQSMessageGenerator()
+        public ContractDeploymentCQSMessageGenerator(ConstructorABI abi, string namespaceName, string byteCode, string contractName)
         {
-            template = new ContractDeploymentCQSMessageTemplate();
+            ClassModel = new ContractDeploymentCQSMessageModel(abi, namespaceName, byteCode, contractName);
+            ClassTemplate = new ContractDeploymentCQSMessageTemplate(ClassModel);
         }
 
-        public string GenerateFullClass(ConstructorABI abi, string namespaceName, string byteCode, string contractName)
-        {
-            return template.GenerateFullClass(abi, namespaceName, byteCode, contractName);
-        }
-
-        public string GenerateFullClass(string abi, string namespaceName, string byteCode, string contractName)
-        {
-            return template.GenerateFullClass(GetConstructorABI(abi), namespaceName, byteCode, contractName);
-        }
-
-        public string GenerateClass(ConstructorABI abi, string byteCode, string contractName)
-        {
-            return template.GenerateClass(abi, byteCode, contractName);
-        }
-
-        public string GenerateClass(string abi, string byteCode, string contractName)
-        {
-            return GenerateClass(GetConstructorABI(abi), byteCode, contractName);
-        }
     }
 }

@@ -1,25 +1,30 @@
 ﻿using Nethereum.Generators.Core;
+using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageModel
+    public class ContractDeploymentCQSMessageModel:TypeMessageModel
     {
-        private CommonGenerators commonGenerators;
+        private const string CLASSNAME_SUFFIX = "Deployment";
+        public ConstructorABI ConstructorABI { get; }
+        public string ByteCode { get; }
+        public string ContractName { get; }
 
-        public ContractDeploymentCQSMessageModel()
+        public ContractDeploymentCQSMessageModel(ConstructorABI constructorABI, string @namespace, string byteCode, string contractName):base(@namespace)
         {
-            commonGenerators = new CommonGenerators();
+            ConstructorABI = constructorABI;
+            ByteCode = byteCode;
+            ContractName = contractName;
+        }
+        
+        protected override string GetClassNameSuffix()
+        {
+            return CLASSNAME_SUFFIX;
         }
 
-        public string GetContractDeploymentMessageTypeName(string contractName)
+        protected override string GetBaseName()
         {
-            return $"{commonGenerators.GenerateClassName(contractName)}Deployment";
+            return ContractName;
         }
-
-        public string GetContractDeploymentMessageVariableName(string contractName)
-        {
-            return $"{commonGenerators.GenerateVariableName(contractName)}Deployment";
-        }
-
     }
 }

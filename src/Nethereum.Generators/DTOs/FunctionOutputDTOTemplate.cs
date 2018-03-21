@@ -3,40 +3,40 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOTemplate
+    public class FunctionOutputDTOTemplate: IClassTemplate
     {
         private ParameterABIFunctionDTOTemplate _parameterABIFunctionDTOTemplate;
-        private FunctionOutputDTOModel _functionOutputDTOModel;
-        public FunctionOutputDTOTemplate()
+        private FunctionOutputDTOModel _model;
+        public FunctionOutputDTOTemplate(FunctionOutputDTOModel model)
         {
             _parameterABIFunctionDTOTemplate = new ParameterABIFunctionDTOTemplate();
-            _functionOutputDTOModel = new FunctionOutputDTOModel();
+            _model = model;
         }
 
-        public string GenerateFullClass(FunctionABI functionABI, string namespaceName)
+        public string GenerateFullClass()
         {
             return
-                $@"using System;
-using System.Threading.Tasks;
-using System.Numerics;
-using Nethereum.Hex.HexTypes;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-namespace {namespaceName}
-{{
-{GenerateClass(functionABI)}
-}}
+                $@"{SpaceUtils.NoTabs}using System;
+{SpaceUtils.NoTabs}using System.Threading.Tasks;
+{SpaceUtils.NoTabs}using System.Numerics;
+{SpaceUtils.NoTabs}using Nethereum.Hex.HexTypes;
+{SpaceUtils.NoTabs}using Nethereum.ABI.FunctionEncoding.Attributes;
+{SpaceUtils.NoTabs}namespace {_model.Namespace}
+{SpaceUtils.NoTabs}{{
+{GenerateClass()}
+{SpaceUtils.NoTabs}}}
 ";
         }
 
-        public string GenerateClass(FunctionABI functionABI)
+        public string GenerateClass()
         {
-            if (_functionOutputDTOModel.CanGenerateOutputDTO(functionABI))
+            if (_model.CanGenerateOutputDTO())
             {
                 return
                     $@"{SpaceUtils.OneTab}[FunctionOutput]
-{SpaceUtils.OneTab}public class {_functionOutputDTOModel.GetFunctionOutputTypeName(functionABI)}
+{SpaceUtils.OneTab}public class {_model.GetTypeName()}
 {SpaceUtils.OneTab}{{
-{_parameterABIFunctionDTOTemplate.GenerateAllProperties(functionABI.OutputParameters)}
+{_parameterABIFunctionDTOTemplate.GenerateAllProperties(_model.FunctionABI.OutputParameters)}
 {SpaceUtils.OneTab}}}";
             }
             return null;
