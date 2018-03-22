@@ -22,6 +22,10 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.NoTabs}using System.Numerics;
 {SpaceUtils.NoTabs}using Nethereum.Hex.HexTypes;
 {SpaceUtils.NoTabs}using Nethereum.ABI.FunctionEncoding.Attributes;
+{SpaceUtils.NoTabs}using Nethereum.Web3;
+{SpaceUtils.NoTabs}using Nethereum.RPC.Eth.DTOs;
+{SpaceUtils.NoTabs}using Nethereum.Contracts.CQS;
+{SpaceUtils.NoTabs}using System.Threading;
 {SpaceUtils.NoTabs}using {_model.CQSNamespace};
 {SpaceUtils.NoTabs}using {_model.FunctionOutputNamespace};
 {SpaceUtils.NoTabs}namespace {_model.Namespace}
@@ -40,11 +44,11 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.OneTab}
 {_deploymentServiceMethodsTemplate.GenerateMethods()}
 {SpaceUtils.OneTab}
-{SpaceUtils.TwoTabs}protected readonly Web3.Web3 Web3{{ get; }}
+{SpaceUtils.TwoTabs}protected Web3 Web3{{ get; }}
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}protected readonly ContractHandler ContractHandler {{ get; }}
+{SpaceUtils.TwoTabs}protected ContractHandler ContractHandler {{ get; }}
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {_model.GetTypeName()}(Web3.Web3 web3, string contractAddress)
+{SpaceUtils.TwoTabs}public {_model.GetTypeName()}(Web3 web3, string contractAddress)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}Web3 = web3;
 {SpaceUtils.ThreeTabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress);

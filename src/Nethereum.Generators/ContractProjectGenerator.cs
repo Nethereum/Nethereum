@@ -42,9 +42,9 @@ namespace Nethereum.Generators
             PathDelimiter = pathDelimiter;
         }
 
-        public GeneratedClass[] GenerateAll()
+        public GeneratedFile[] GenerateAll()
         {
-            var generated = new List<GeneratedClass>();
+            var generated = new List<GeneratedFile>();
             generated.AddRange(GenerateAllCQSMessages());
             generated.AddRange(GenerateAllEventDTOs());
             generated.AddRange(GenerateAllFunctionDTOs());
@@ -52,7 +52,7 @@ namespace Nethereum.Generators
             return generated.ToArray();
         }
 
-        public GeneratedClass GenerateService()
+        public GeneratedFile GenerateService()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
@@ -62,19 +62,19 @@ namespace Nethereum.Generators
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
-        public List<GeneratedClass> GenerateAllCQSMessages()
+        public List<GeneratedFile> GenerateAllCQSMessages()
         {
-            var generated = new List<GeneratedClass>();
+            var generated = new List<GeneratedFile>();
             generated.Add(GeneratCQSMessageDeployment());
             generated.AddRange(GeneratCQSFunctionMessages());
             return generated;
         }
 
-        public List<GeneratedClass> GenerateAllFunctionDTOs()
+        public List<GeneratedFile> GenerateAllFunctionDTOs()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var dtoFullPath = GetFullPath(DTONamespace);
-            var generated = new List<GeneratedClass>();
+            var generated = new List<GeneratedFile>();
             foreach (var functionABI in ContractABI.Functions)
             {
                 var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace);
@@ -83,11 +83,11 @@ namespace Nethereum.Generators
             return generated;
         }
 
-        public List<GeneratedClass> GenerateAllEventDTOs()
+        public List<GeneratedFile> GenerateAllEventDTOs()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var dtoFullPath = GetFullPath(DTONamespace);
-            var generated = new List<GeneratedClass>();
+            var generated = new List<GeneratedFile>();
             foreach (var eventABI in ContractABI.Events)
             {
                 var cqsGenerator = new EventDTOGenerator(eventABI,dtoFullNamespace);
@@ -96,12 +96,12 @@ namespace Nethereum.Generators
             return generated;
         }
 
-        public List<GeneratedClass> GeneratCQSFunctionMessages()
+        public List<GeneratedFile> GeneratCQSFunctionMessages()
         {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
             var cqsFullPath = GetFullPath(CQSNamespace);
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
-            var generated = new List<GeneratedClass>();
+            var generated = new List<GeneratedFile>();
             foreach (var functionAbi in ContractABI.Functions)
             {
                 var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace);
@@ -110,7 +110,7 @@ namespace Nethereum.Generators
             return generated;
         }
 
-        public GeneratedClass GeneratCQSMessageDeployment()
+        public GeneratedFile GeneratCQSMessageDeployment()
         {
             var cqsGenerator = new ContractDeploymentCQSMessageGenerator(ContractABI.Constructor, GetFullNamespace(CQSNamespace), ByteCode,
                 ContractName);

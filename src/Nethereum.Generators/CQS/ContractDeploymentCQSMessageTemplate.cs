@@ -21,6 +21,7 @@ $@"{SpaceUtils.NoTabs}using System;
 {SpaceUtils.NoTabs}using System.Threading.Tasks;
 {SpaceUtils.NoTabs}using System.Numerics;
 {SpaceUtils.NoTabs}using Nethereum.Hex.HexTypes;
+{SpaceUtils.NoTabs}using Nethereum.Contracts.CQS;
 {SpaceUtils.NoTabs}using Nethereum.ABI.FunctionEncoding.Attributes;
 {SpaceUtils.NoTabs}namespace {_model.Namespace}
 {SpaceUtils.NoTabs}{{
