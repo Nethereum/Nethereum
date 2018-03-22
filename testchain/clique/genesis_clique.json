@@ -1,6 +1,5 @@
 {
   "config": {
-	"byzantiumBlock": 0,
     "chainID": 444444444500,
     "homesteadBlock": 0,
     "eip150Block": 0,
