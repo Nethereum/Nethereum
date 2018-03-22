@@ -5,19 +5,20 @@ namespace Nethereum.Generators.Core
         protected CommonGenerators CommonGenerators { get; set; }
 
         public string Namespace { get; }
+        public string Name { get; }
+        public string ClassNameSuffix { get; }
 
-        protected TypeMessageModel(string @namespace)
+        protected TypeMessageModel(string @namespace, string name, string classNameSuffix)
         {
             Namespace = @namespace;
+            Name = name;
+            ClassNameSuffix = classNameSuffix;
             CommonGenerators = new CommonGenerators();
         }
 
-        protected abstract string GetClassNameSuffix();
-        protected abstract string GetBaseName();
-
         public string GetTypeName(string name)
         {
-            return $"{CommonGenerators.GenerateClassName(name)}{GetClassNameSuffix()}";
+            return $"{CommonGenerators.GenerateClassName(name)}{ClassNameSuffix}";
         }
 
         public string GetFileName(string name)
@@ -27,22 +28,22 @@ namespace Nethereum.Generators.Core
 
         public string GetVariableName(string name)
         {
-            return $"{CommonGenerators.GenerateVariableName(name)}{GetClassNameSuffix()}";
+            return $"{CommonGenerators.GenerateVariableName(name)}{ClassNameSuffix}";
         }
 
         public string GetTypeName()
         {
-            return GetTypeName(GetBaseName());
+            return GetTypeName(Name);
         }
 
         public string GetFileName()
         {
-            return GetFileName(GetBaseName());
+            return GetFileName(Name);
         }
 
         public string GetVariableName()
         {
-            return GetVariableName(GetBaseName());
+            return GetVariableName(Name);
         }
     }
 }
