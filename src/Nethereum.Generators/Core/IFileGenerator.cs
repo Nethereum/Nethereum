@@ -2,7 +2,7 @@
 {
     public interface IFileGenerator: IGenerator
     {
-        GeneratedClass GenerateFileContent(string outputPath);
+        GeneratedFile GenerateFileContent(string outputPath);
         string GenerateFileContent();
         string GetFileName();
     }

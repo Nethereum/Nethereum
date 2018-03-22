@@ -35,7 +35,7 @@ namespace Nethereum.Generators.Service
             var messageVariableName = functionCQSMessageModel.GetVariableName();
             var functionNameUpper = _commonGenerators.GenerateClassName(functionABI.Name);
 
-            if (functionABIModel.IsMultipleOutput())
+            if (functionABIModel.IsMultipleOutput() && !functionABIModel.IsTransaction())
             {
 
                 var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
@@ -46,7 +46,7 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.TwoTabs}}}";
             }
 
-            if(functionABIModel.IsSingleOutput())
+            if(functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
             if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1 &&
                 functionABI.Constant)
             {
@@ -59,7 +59,7 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.TwoTabs}}}";
             }
 
-            if(functionABIModel.HasNoReturn())
+            if(functionABIModel.IsTransaction())
             { 
                 var transactionRequest = 
                     $@"{SpaceUtils.TwoTabs}public Task<string> {functionNameUpper}RequestAsync({messageType} {messageVariableName})

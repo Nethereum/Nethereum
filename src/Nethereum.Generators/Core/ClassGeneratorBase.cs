@@ -8,9 +8,9 @@ namespace Nethereum.Generators.Core
         protected TClassTemplate ClassTemplate { get; set; }
         protected TClassModel ClassModel { get; set; }
 
-        public GeneratedClass GenerateFileContent(string outputPath)
+        public GeneratedFile GenerateFileContent(string outputPath)
         {
-            return new GeneratedClass(GenerateFileContent(), GetFileName(), outputPath);
+            return new GeneratedFile(GenerateFileContent(), GetFileName(), outputPath);
         }
 
         public virtual string GenerateFileContent()

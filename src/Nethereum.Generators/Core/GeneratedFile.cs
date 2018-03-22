@@ -4,13 +4,13 @@ using System.Text;
 
 namespace Nethereum.Generators.Core
 {
-    public class GeneratedClass
+    public class GeneratedFile
     {
         public string GeneratedCode { get; }
         public string FileName { get; }
         public string OutputFolder { get; }
 
-        public GeneratedClass(string generatedCode, string fileName, string outputFolder)
+        public GeneratedFile(string generatedCode, string fileName, string outputFolder)
         {
             GeneratedCode = generatedCode;
             FileName = fileName;

@@ -52,5 +52,10 @@ namespace Nethereum.Generators.Core
         {
             return FunctionABI.OutputParameters == null || FunctionABI.OutputParameters.Length == 0;
         }
+
+        public bool IsTransaction()
+        {
+            return FunctionABI.Constant == false;
+        }
     }
 }

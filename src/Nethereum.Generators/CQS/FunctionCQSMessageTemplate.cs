@@ -27,6 +27,7 @@ $@"{SpaceUtils.NoTabs}using System;
 {SpaceUtils.NoTabs}using System.Numerics;
 {SpaceUtils.NoTabs}using Nethereum.Hex.HexTypes;
 {SpaceUtils.NoTabs}using Nethereum.ABI.FunctionEncoding.Attributes;
+{SpaceUtils.NoTabs}using Nethereum.Contracts.CQS;
 {SpaceUtils.NoTabs}using {_functionOutputDTOModel.Namespace};
 {SpaceUtils.NoTabs}namespace {_functionCQSMessageModel.Namespace}
 {SpaceUtils.NoTabs}{{
@@ -46,7 +47,7 @@ $@"{SpaceUtils.NoTabs}using System;
 
             if (_functionABIModel.IsSingleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}""))]";
+                header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")]";
             }
 
             if (_functionABIModel.HasNoReturn())
