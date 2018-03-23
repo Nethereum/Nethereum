@@ -48,17 +48,19 @@ namespace {namespaceName}
         [Fact]
         public void ShouldGenerateCQSClass()
         {
-            var service = new ContractDeploymentCQSMessageGenerator();
-            var output = service.GenerateClass(abi, byteCode, "StandardToken");
-            Assert.Equal(expectedClassOutput, output);
+            //var service = new ContractDeploymentCQSMessageGenerator();
+            //var output = service.GenerateClass(abi, byteCode, "StandardToken");
+            //Assert.Equal(expectedClassOutput, output);
+            Assert.True(false, "TO DO");
         }
 
         [Fact]
         public void ShouldGenerateFunctionOutputDTOFullClass()
         {
-            var service = new ContractDeploymentCQSMessageGenerator();
-            var output = service.GenerateFullClass(abi, namespaceName, byteCode, "StandardToken");
-            Assert.Equal(expectedClassFullOutput, output);
+            //var service = new ContractDeploymentCQSMessageGenerator();
+            //var output = service.GenerateFullClass(abi, namespaceName, byteCode, "StandardToken");
+            //Assert.Equal(expectedClassFullOutput, output);
+            Assert.True(false, "TO DO");
         }
     }
 }

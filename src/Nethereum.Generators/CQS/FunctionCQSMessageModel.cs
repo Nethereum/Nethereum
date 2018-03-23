@@ -6,23 +6,11 @@ namespace Nethereum.Generators.CQS
     public class FunctionCQSMessageModel:TypeMessageModel
     {
         public FunctionABI FunctionABI { get; }
-   
-        public string CLASSNAME_SUFFIX = "Function";
-
-        public FunctionCQSMessageModel(FunctionABI functionABI, string @namespace):base(@namespace)
+        
+        public FunctionCQSMessageModel(FunctionABI functionABI, string @namespace):
+            base(@namespace, functionABI.Name, "Function")
         {
             FunctionABI = functionABI;
-         
-        }
-
-        protected override string GetClassNameSuffix()
-        {
-            return CLASSNAME_SUFFIX;
-        }
-
-        protected override string GetBaseName()
-        {
-            return FunctionABI.Name;
         }
     }
 }

@@ -37,17 +37,19 @@ namespace {namespaceName}
         [Fact]
         public void ShouldGenerateFunctionOutputDTOClass()
         {
-            var service = new EventDTOGenerator();
-            var output = service.GenerateClass(abi);
-            Assert.Equal(expectedClassOutput, output);
+            //var service = new EventDTOGenerator();
+            //var output = service.GenerateClass(abi);
+            //Assert.Equal(expectedClassOutput, output);
+            Assert.True(false, "TO DO");
         }
 
         [Fact]
         public void ShouldGenerateFunctionOutputDTOFullClass()
         {
-            var service = new EventDTOGenerator();
-            var output = service.GenerateFullClass(abi, namespaceName);
-            Assert.Equal(expectedClassFullOutput, output);
+            //var service = new EventDTOGenerator();
+            //var output = service.GenerateFullClass(abi, namespaceName);
+            //Assert.Equal(expectedClassFullOutput, output);
+            Assert.True(false, "TO DO");
         }
 
     }

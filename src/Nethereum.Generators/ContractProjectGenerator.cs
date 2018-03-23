@@ -38,7 +38,7 @@ namespace Nethereum.Generators
             ServiceNamespace = serviceNamespace;
             CQSNamespace = cqsNamespace;
             DTONamespace = dtoNamespace;
-            BaseOutputPath = baseOutputPath;
+            BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter);
             PathDelimiter = pathDelimiter;
         }
 
@@ -78,7 +78,7 @@ namespace Nethereum.Generators
             foreach (var functionABI in ContractABI.Functions)
             {
                 var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace);
-                generated.Add(functionOutputDTOGenerator.GenerateFileContent(dtoFullPath));
+                GenerateAndAdd(generated, () => functionOutputDTOGenerator.GenerateFileContent(dtoFullPath));
             }
             return generated;
         }
@@ -90,8 +90,8 @@ namespace Nethereum.Generators
             var generated = new List<GeneratedFile>();
             foreach (var eventABI in ContractABI.Events)
             {
-                var cqsGenerator = new EventDTOGenerator(eventABI,dtoFullNamespace);
-                generated.Add(cqsGenerator.GenerateFileContent(dtoFullPath));
+                var cqsGenerator = new EventDTOGenerator(eventABI, dtoFullNamespace);
+                GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(dtoFullPath));
             }
             return generated;
         }
@@ -105,7 +105,7 @@ namespace Nethereum.Generators
             foreach (var functionAbi in ContractABI.Functions)
             {
                 var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace);
-                generated.Add(cqsGenerator.GenerateFileContent(cqsFullPath));
+                GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(cqsFullPath));
             }
             return generated;
         }
@@ -127,6 +127,15 @@ namespace Nethereum.Generators
             return BaseOutputPath 
                 + PathDelimiter 
                 + @namespace.Replace(".", PathDelimiter);
+        }
+
+        private void GenerateAndAdd(List<GeneratedFile> generated, Func<GeneratedFile> generator)
+        {
+            var generatedFile = generator();
+            if (generatedFile != null)
+            {
+                generated.Add(generatedFile);
+            }
         }
     }
 }
