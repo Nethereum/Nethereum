@@ -4,4 +4,14 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Nethereum.ABI" Version="1.0.0-rc5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Nethereum.ABI">
+      <HintPath>..\..\packages\Nethereum.ABI.1.0.0-rc5\lib\portable45-net45+win8+wpa81\Nethereum.ABI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
