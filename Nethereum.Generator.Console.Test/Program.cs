@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Generators;
+using Nethereum.Generators.Core;
 using Nethereum.Generators.Model;
 using Newtonsoft.Json;
 
@@ -18,18 +20,30 @@ namespace Nethereum.Generator.Console.Test
             var abi =
                 "[{'constant':true,'inputs':[],'name':'name','outputs':[{'name':'','type':'string'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'_spender','type':'address'},{'name':'_value','type':'uint256'}],'name':'approve','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'totalSupply','outputs':[{'name':'','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'_from','type':'address'},{'name':'_to','type':'address'},{'name':'_value','type':'uint256'}],'name':'transferFrom','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[{'name':'','type':'address'}],'name':'balances','outputs':[{'name':'','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'decimals','outputs':[{'name':'','type':'uint8'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'','type':'address'},{'name':'','type':'address'}],'name':'allowed','outputs':[{'name':'','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'_owner','type':'address'}],'name':'balanceOf','outputs':[{'name':'balance','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'symbol','outputs':[{'name':'','type':'string'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'_to','type':'address'},{'name':'_value','type':'uint256'}],'name':'transfer','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[{'name':'_owner','type':'address'},{'name':'_spender','type':'address'}],'name':'allowance','outputs':[{'name':'remaining','type':'uint256'}],'payable':false,'stateMutability':'view','type':'function'},{'inputs':[{'name':'_initialAmount','type':'uint256'},{'name':'_tokenName','type':'string'},{'name':'_decimalUnits','type':'uint8'},{'name':'_tokenSymbol','type':'string'}],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':true,'name':'_from','type':'address'},{'indexed':true,'name':'_to','type':'address'},{'indexed':false,'name':'_value','type':'uint256'}],'name':'Transfer','type':'event'},{'anonymous':false,'inputs':[{'indexed':true,'name':'_owner','type':'address'},{'indexed':true,'name':'_spender','type':'address'},{'indexed':false,'name':'_value','type':'uint256'}],'name':'Approval','type':'event'}]";
             var contractAbi = new ABIDeserialiser().DeserialiseContract(abi);
-            var generator = new Generators.ContractProjectGenerator(contractAbi, "StandardToken", contractByteCode, "MyStandardToken", "Service", "CQS", "DTOs", @"C:\Users\juanf\Documents\source\repos\testGenerator", '\\');
+            var basePath = @"C:\Users\juanf\Documents\source\repos\superTest";
+            var projectGenerator = new CsharpLibraryGenerator("StandardToken.csproj");
+            var generatedProject = projectGenerator.GenerateFileContent(basePath);
+
+            OutputFile(generatedProject);
+
+            var generator = new Generators.ContractProjectGenerator(contractAbi, "StandardToken", contractByteCode, "MyStandardToken", "Contract2.Service", "Contract2.CQS", "Contract2.DTOs", basePath, '\\');
             var generatedClasses = generator.GenerateAll();
+     
             foreach (var generatedClass in generatedClasses)
             {
-                if(!Directory.Exists(generatedClass.OutputFolder))
-                    Directory.CreateDirectory(generatedClass.OutputFolder);
+                OutputFile(generatedClass);
+            }
+        }
 
-                using (var file = File.CreateText(Path.Combine(generatedClass.OutputFolder, generatedClass.FileName)))
-                {
-                    file.Write(generatedClass.GeneratedCode);
-                    file.Flush();
-                }
+        private static void OutputFile(GeneratedFile generatedFile)
+        {
+            if (!Directory.Exists(generatedFile.OutputFolder))
+                Directory.CreateDirectory(generatedFile.OutputFolder);
+
+            using (var file = File.CreateText(Path.Combine(generatedFile.OutputFolder, generatedFile.FileName)))
+            {
+                file.Write(generatedFile.GeneratedCode);
+                file.Flush();
             }
         }
     }

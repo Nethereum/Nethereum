@@ -19,7 +19,7 @@ namespace Nethereum.Generators
         public string CQSNamespace { get; }
         public string DTONamespace { get; }
         public string BaseOutputPath { get; }
-        public char PathDelimiter { get; }
+        public string PathDelimiter { get; }
 
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
@@ -29,7 +29,7 @@ namespace Nethereum.Generators
             string cqsNamespace,
             string dtoNamespace,
             string baseOutputPath,
-            char pathDelimiter = '/')
+            string pathDelimiter)
         {
             ContractABI = contractABI;
             ContractName = contractName;
@@ -124,7 +124,9 @@ namespace Nethereum.Generators
 
         public string GetFullPath(string @namespace)
         {
-            return BaseOutputPath + PathDelimiter + @namespace.Replace('.', PathDelimiter);
+            return BaseOutputPath 
+                + PathDelimiter 
+                + @namespace.Replace(".", PathDelimiter);
         }
     }
 }
