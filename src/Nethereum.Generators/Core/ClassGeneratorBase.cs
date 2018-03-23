@@ -10,7 +10,8 @@ namespace Nethereum.Generators.Core
 
         public GeneratedFile GenerateFileContent(string outputPath)
         {
-            return new GeneratedFile(GenerateFileContent(), GetFileName(), outputPath);
+            var fileContent = GenerateFileContent();
+            return fileContent == null ? null : new GeneratedFile(fileContent, GetFileName(), outputPath);
         }
 
         public virtual string GenerateFileContent()
