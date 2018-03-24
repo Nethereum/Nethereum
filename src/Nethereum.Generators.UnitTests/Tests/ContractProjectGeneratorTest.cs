@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Nethereum.Generators.Net;
 using Xunit;
 
 namespace Nethereum.Generators.UnitTests.Tests
@@ -12,7 +13,7 @@ namespace Nethereum.Generators.UnitTests.Tests
 
         public ContractProjectGeneratorTest()
         {
-            var contractABI = TestUtils.DeserializeABI(ABI);
+            var contractABI = new GeneratorModelABIDeserialiser().DeserialiseABI(ABI);
 
             _contractProjectGenerator = new ContractProjectGenerator(
                 contractABI, 
@@ -23,7 +24,7 @@ namespace Nethereum.Generators.UnitTests.Tests
                 "StandardContract.CQS",
                 "StandardContract.DTO", 
                 @"c:\Temp\",
-                '\\');
+                "\\");
         }
 
         [Fact]

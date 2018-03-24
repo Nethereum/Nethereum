@@ -1,12 +1,14 @@
-﻿using Nethereum.ABI.JsonDeserialisation;
+﻿using System.Collections.Generic;
 using System.Linq;
+using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Generators.Model;
+using Newtonsoft.Json;
 
-namespace Nethereum.Generators.UnitTests
+namespace Nethereum.Generators.Net
 {
-    public static class TestUtils
+    public class GeneratorModelABIDeserialiser
     {
-        public static ContractABI DeserializeABI(string abi)
+        public ContractABI DeserialiseABI(string abi)
         {
             var abiDeserialiser = new ABIDeserialiser();
 
@@ -16,7 +18,8 @@ namespace Nethereum.Generators.UnitTests
             {
                 Constructor = new ConstructorABI
                 {
-                    InputParameters = baseContractABI.Constructor.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature)).ToArray()
+                    InputParameters = baseContractABI.Constructor.InputParameters
+                        .Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature)).ToArray()
                 },
                 Functions = baseContractABI.Functions.Select(f =>
                 {
@@ -34,7 +37,9 @@ namespace Nethereum.Generators.UnitTests
                 {
                     return new EventABI(e.Name)
                     {
-                        InputParameters = e.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature)).ToArray()
+                        InputParameters =
+                            e.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature))
+                                .ToArray()
                     };
                 }).ToArray()
             };

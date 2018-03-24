@@ -53,7 +53,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Nethereum.Generators\Nethereum.Generators.csproj">
+    <ProjectReference Include="..\Netherem.Generators.Net\Nethereum.Generators.Net.csproj">
+      <Project>{16db6bcb-2313-47b6-9560-8c788b8a70af}</Project>
+      <Name>Nethereum.Generators.Net</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj">
       <Project>{c289a9f5-c810-4eb9-a04f-7cb5429a7a3b}</Project>
       <Name>Nethereum.Generators</Name>
     </ProjectReference>

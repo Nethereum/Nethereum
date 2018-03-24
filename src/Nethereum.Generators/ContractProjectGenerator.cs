@@ -38,7 +38,7 @@ namespace Nethereum.Generators
             ServiceNamespace = serviceNamespace;
             CQSNamespace = cqsNamespace;
             DTONamespace = dtoNamespace;
-            BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter);
+            BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter.ToCharArray());
             PathDelimiter = pathDelimiter;
         }
 

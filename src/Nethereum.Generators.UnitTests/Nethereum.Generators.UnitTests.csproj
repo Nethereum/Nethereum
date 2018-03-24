@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Netherem.Generators.Net\Nethereum.Generators.Net.csproj" />
     <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
   </ItemGroup>
 
