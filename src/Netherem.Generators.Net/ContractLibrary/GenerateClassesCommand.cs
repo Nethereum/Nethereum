@@ -27,7 +27,7 @@ namespace Nethereum.Generators.Net.ContractLibrary
         }
 
         public GenerateClassesCommand(string contractByteCode, string abi, string basePath, string baseNamespace, string contractName, string pathSeparator) 
-            : this(contractByteCode, abi, basePath, baseNamespace, contractName, (string) SetDefaultService(contractName), (string) SetDefaultDto(contractName), (string) SetDefaultCqs(contractName), pathSeparator)
+            : this(contractByteCode, abi, basePath, baseNamespace, contractName, (string) SetDefaultService(contractName), (string)SetDefaultCqs(contractName), (string) SetDefaultDto(contractName), pathSeparator)
         {
 
         }
