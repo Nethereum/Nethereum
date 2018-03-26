@@ -38,7 +38,7 @@ namespace Nethereum.Generators.Net
                     return new EventABI(e.Name)
                     {
                         InputParameters =
-                            e.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature))
+                            e.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order){Indexed = p.Indexed})
                                 .ToArray()
                     };
                 }).ToArray()
