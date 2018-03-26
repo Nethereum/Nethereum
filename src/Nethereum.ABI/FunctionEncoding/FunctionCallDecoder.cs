@@ -18,11 +18,11 @@ namespace Nethereum.ABI.FunctionEncoding
             var parameterObjects = new List<ParameterOutputProperty>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
+                if (property.IsDefined(typeof(ParameterAttribute), true))
                 {
 
 #if DOTNET35
-                   var parameterAttribute = (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), false)[0];
+                   var parameterAttribute = (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), true)[0];
 #else
                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
 #endif
@@ -114,7 +114,7 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var result = new List<PropertyInfo>();
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
+                if (property.IsDefined(typeof(ParameterAttribute), true))
                     result.Add(property);
             return result.ToArray();
         }
