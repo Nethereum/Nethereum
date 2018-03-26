@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
@@ -172,6 +172,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Accounts", "src\Nethereum.Accounts\Nethereum.Accounts.csproj", "{28715B81-50FA-423B-9869-F85F0FB2367E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Accounts.IntegrationTests", "src\Nethereum.Accounts.IntegrationTests\Nethereum.Accounts.IntegrationTests.csproj", "{8554AAC8-7D60-4F9A-857C-1DA92AFD97E7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generator.Console.Test", "src\Nethereum.Generator.Console.Test\Nethereum.Generator.Console.Test.csproj", "{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Net", "src\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj", "{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1129,6 +1133,38 @@ Global
 		{8554AAC8-7D60-4F9A-857C-1DA92AFD97E7}.Release|x64.Build.0 = Release|Any CPU
 		{8554AAC8-7D60-4F9A-857C-1DA92AFD97E7}.Release|x86.ActiveCfg = Release|Any CPU
 		{8554AAC8-7D60-4F9A-857C-1DA92AFD97E7}.Release|x86.Build.0 = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|ARM.Build.0 = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Debug|x86.Build.0 = Debug|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|ARM.ActiveCfg = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|ARM.Build.0 = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|x64.Build.0 = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|x86.ActiveCfg = Release|Any CPU
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E}.Release|x86.Build.0 = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|ARM.Build.0 = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|x64.Build.0 = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Debug|x86.Build.0 = Debug|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|ARM.ActiveCfg = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|ARM.Build.0 = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x64.ActiveCfg = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x64.Build.0 = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x86.ActiveCfg = Release|Any CPU
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1217,6 +1253,8 @@ Global
 		{C1B11575-2A2B-48E5-B709-B9FD68BCD426} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{28715B81-50FA-423B-9869-F85F0FB2367E} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 		{8554AAC8-7D60-4F9A-857C-1DA92AFD97E7} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
+		{C0F06964-351C-4F10-9CAC-3D2AFDAF379E} = {1573C192-3CA3-460A-BECB-842C20246F04}
+		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4} = {1573C192-3CA3-460A-BECB-842C20246F04}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}
