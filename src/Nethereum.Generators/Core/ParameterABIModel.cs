@@ -2,59 +2,52 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Core
 {
-    public class Parameter
+    public class ParameterModel<TParameter> where TParameter:Parameter
     {
-        public Parameter(string name, string type, int order)
+        public TParameter Parameter { get; }
+        protected CommonGenerators CommonGenerators { get; }
+
+        public ParameterModel(TParameter parameter)
         {
-            Name = name;
-            Type = type;
-            Order = order;
+            Parameter = parameter;
+            CommonGenerators = new CommonGenerators();
         }
 
-        public string Name { get; protected set; }
-        public string Type { get; protected set; }
-        public int Order { get; protected set; }
+        public virtual string GetVariableName()
+        {
+            return CommonGenerators.GenerateVariableName(Parameter.Name);
+        }
+
+        public virtual string GetPropertyName()
+        {
+            return CommonGenerators.GeneratePropertyName(Parameter.Name);
+        }
     }
 
-    public class ParameterABIModel
+    public class ParameterABIModel : ParameterModel<ParameterABI>
     {
-        private readonly ITypeConvertor _typeConvertor;
-        private CommonGenerators commonGenerators;
-
-        public ParameterABIModel(ITypeConvertor typeConvertor)
+        public ParameterABIModel(ParameterABI parameter) : base(parameter)
         {
-            _typeConvertor = typeConvertor;
-            commonGenerators = new CommonGenerators();
         }
 
-        public string GetParameterVariableName(string name, int order)
+        public override string GetVariableName()
         {
-            return commonGenerators.GenerateVariableName(GetParameterName(name, order));
+            return GetVariableName(Parameter.Name, Parameter.Order);
         }
 
-        public string GetParameterPropertyName(ParameterABI parameter)
+        public override string GetPropertyName()
         {
-            return GetParameterPropertyName(parameter.Name, parameter.Order);
+            return GetVariableName(Parameter.Name, Parameter.Order);
         }
 
-        public string GetParameterVariableName(ParameterABI parameter)
+        public string GetVariableName(string name, int order)
         {
-            return GetParameterVariableName(parameter.Name, parameter.Order);
+            return CommonGenerators.GenerateVariableName(GetParameterName(name, order));
         }
 
-        public string GetParameterPropertyName(string name, int order)
+        public string GetPropertyName(string name, int order)
         {
-            return commonGenerators.GeneratePropertyName(GetParameterName(name, order));
-        }
-
-        public string GetParameterDotNetOutputMapType(ParameterABI parameter)
-        {
-            return _typeConvertor.ConvertToDotNetType(parameter.Type, true);
-        }
-
-        public string GetParameterDotNetInputMapType(ParameterABI parameter)
-        {
-            return _typeConvertor.ConvertToDotNetType(parameter.Type, false);
+            return CommonGenerators.GeneratePropertyName(GetParameterName(name, order));
         }
 
         public string GetParameterName(string name, int order)
@@ -78,6 +71,28 @@ namespace Nethereum.Generators.Core
                     return "g";
             }
             return "h";
+        }
+    }
+
+    public class ParameterABIModelTypeMap
+    {
+        private readonly ITypeConvertor _typeConvertor;
+        private CommonGenerators commonGenerators;
+
+        public ParameterABIModelTypeMap(ITypeConvertor typeConvertor)
+        {
+            _typeConvertor = typeConvertor;
+            commonGenerators = new CommonGenerators();
+        }
+
+        public string GetParameterDotNetOutputMapType(ParameterABI parameter)
+        {
+            return _typeConvertor.ConvertToDotNetType(parameter.Type, true);
+        }
+
+        public string GetParameterDotNetInputMapType(ParameterABI parameter)
+        {
+            return _typeConvertor.ConvertToDotNetType(parameter.Type, false);
         }
 
     }

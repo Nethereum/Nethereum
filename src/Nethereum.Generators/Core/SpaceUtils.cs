@@ -5,6 +5,7 @@ namespace Nethereum.Generators.Core
         public static string NoTabs = "";
         public static string OneTab = "    ";
         public static string TwoTabs = OneTab + OneTab;
-        public static string ThreeTabs = OneTab + OneTab + OneTab;
+        public static string ThreeTabs = TwoTabs + OneTab;
+        public static string FourTabs = ThreeTabs + OneTab;
     }
 }

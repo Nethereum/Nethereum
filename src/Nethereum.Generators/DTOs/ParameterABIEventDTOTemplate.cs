@@ -7,13 +7,13 @@ namespace Nethereum.Generators.DTOs
 {
     public class ParameterABIEventDTOTemplate
     {
-        private ParameterABIModel parameterModel;
+        private ParameterABIModelTypeMap parameterAbiModelTypeMap;
         private Utils utils;
 
         public ParameterABIEventDTOTemplate()
         {
             var typeMapper = new ABITypeToCSharpType();
-            parameterModel = new ParameterABIModel(typeMapper);
+            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);
             utils = new Utils();
         }
 
@@ -24,9 +24,10 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateProperty(ParameterABI parameter)
         {
+            var parameterModel = new ParameterABIModel(parameter);
             return
                 $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order}, {utils.GetBooleanAsString(parameter.Indexed)} )]
-{SpaceUtils.TwoTabs}public {parameterModel.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetParameterPropertyName(parameter)} {{get; set;}}";
+{SpaceUtils.TwoTabs}public {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{get; set;}}";
         }
     }
 }
