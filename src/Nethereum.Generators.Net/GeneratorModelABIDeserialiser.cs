@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Nethereum.ABI.JsonDeserialisation;
+﻿using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Generators.Model;
-using Newtonsoft.Json;
+using System.Linq;
 
 namespace Nethereum.Generators.Net
 {
