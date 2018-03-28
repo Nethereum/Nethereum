@@ -11,10 +11,12 @@ namespace Nethereum.Generators.Service
     {
         private readonly ServiceModel _model;
         private CommonGenerators _commonGenerators;
+        private ITypeConvertor _typeConvertor;
 
         public FunctionServiceMethodTemplate(ServiceModel model)
         {
             _model = model;
+            _typeConvertor = new ABITypeToCSharpType();
             _commonGenerators = new CommonGenerators();
         }
 
@@ -29,7 +31,7 @@ namespace Nethereum.Generators.Service
 
             var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, _model.CQSNamespace);
             var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, _model.FunctionOutputNamespace);
-            var functionABIModel = new FunctionABIModel(functionABI);
+            var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor);
 
             var messageType = functionCQSMessageModel.GetTypeName();
             var messageVariableName = functionCQSMessageModel.GetVariableName();

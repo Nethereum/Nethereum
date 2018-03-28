@@ -13,8 +13,9 @@ namespace Nethereum.Generators.CQS
         {
             FunctionABI = functionABI;
             ClassModel = new FunctionCQSMessageModel(FunctionABI, @namespace);
+            var typeMapper = new ABITypeToCSharpType();
             var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, namespaceFunctionOutput);
-            var functionABIModel = new FunctionABIModel(ClassModel.FunctionABI);
+            var functionABIModel = new FunctionABIModel(ClassModel.FunctionABI, typeMapper);
             ClassTemplate = new FunctionCQSMessageTemplate(ClassModel, functionOutputDTOModel, functionABIModel);
         }
     }

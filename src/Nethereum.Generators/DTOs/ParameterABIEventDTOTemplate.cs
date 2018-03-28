@@ -12,20 +12,21 @@ namespace Nethereum.Generators.DTOs
 
         public ParameterABIEventDTOTemplate()
         {
-            parameterModel = new ParameterABIModel();
+            var typeMapper = new ABITypeToCSharpType();
+            parameterModel = new ParameterABIModel(typeMapper);
             utils = new Utils();
         }
 
-        public string GenerateAllProperties(Parameter[] parameters)
+        public string GenerateAllProperties(ParameterABI[] parameters)
         {
             return string.Join(Environment.NewLine, parameters.Select(GenerateProperty));
         }
 
-        public string GenerateProperty(Parameter parameter)
+        public string GenerateProperty(ParameterABI parameter)
         {
             return
                 $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order}, {utils.GetBooleanAsString(parameter.Indexed)} )]
-{SpaceUtils.TwoTabs}public {parameterModel.GetParameterCSharpOutputMapType(parameter)} {parameterModel.GetParameterPropertyName(parameter)} {{get; set;}}";
+{SpaceUtils.TwoTabs}public {parameterModel.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetParameterPropertyName(parameter)} {{get; set;}}";
         }
     }
 }

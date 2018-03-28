@@ -2,15 +2,29 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Core
 {
+    public class Parameter
+    {
+        public Parameter(string name, string type, int order)
+        {
+            Name = name;
+            Type = type;
+            Order = order;
+        }
+
+        public string Name { get; protected set; }
+        public string Type { get; protected set; }
+        public int Order { get; protected set; }
+    }
+
     public class ParameterABIModel
     {
+        private readonly ITypeConvertor _typeConvertor;
         private CommonGenerators commonGenerators;
-        private ABITypeToCSharpType abiTypeToCSharpType;
 
-        public ParameterABIModel()
+        public ParameterABIModel(ITypeConvertor typeConvertor)
         {
+            _typeConvertor = typeConvertor;
             commonGenerators = new CommonGenerators();
-            abiTypeToCSharpType = new ABITypeToCSharpType();
         }
 
         public string GetParameterVariableName(string name, int order)
@@ -18,12 +32,12 @@ namespace Nethereum.Generators.Core
             return commonGenerators.GenerateVariableName(GetParameterName(name, order));
         }
 
-        public string GetParameterPropertyName(Parameter parameter)
+        public string GetParameterPropertyName(ParameterABI parameter)
         {
             return GetParameterPropertyName(parameter.Name, parameter.Order);
         }
 
-        public string GetParameterVariableName(Parameter parameter)
+        public string GetParameterVariableName(ParameterABI parameter)
         {
             return GetParameterVariableName(parameter.Name, parameter.Order);
         }
@@ -33,14 +47,14 @@ namespace Nethereum.Generators.Core
             return commonGenerators.GeneratePropertyName(GetParameterName(name, order));
         }
 
-        public string GetParameterCSharpOutputMapType(Parameter parameter)
+        public string GetParameterDotNetOutputMapType(ParameterABI parameter)
         {
-            return abiTypeToCSharpType.GetTypeMap(parameter.Type, true);
+            return _typeConvertor.ConvertToDotNetType(parameter.Type, true);
         }
 
-        public string GetParameterCSharpInputMapType(Parameter parameter)
+        public string GetParameterDotNetInputMapType(ParameterABI parameter)
         {
-            return abiTypeToCSharpType.GetTypeMap(parameter.Type, false);
+            return _typeConvertor.ConvertToDotNetType(parameter.Type, false);
         }
 
         public string GetParameterName(string name, int order)

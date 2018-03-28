@@ -2,21 +2,21 @@ using System;
 
 namespace Nethereum.Generators.Core
 {
-    public class ABITypeToCSharpType
+    public class ABITypeToCSharpType:ITypeConvertor
     {
-        public string GetTypeMap(string typeName, bool outputMapType = false)
+        public string ConvertToDotNetType(string typeName, bool outputArrayAsList = false)
         {
             var indexFirstBracket = typeName.IndexOf("[");
             if (indexFirstBracket > -1)
             {
                 var elementTypeName = typeName.Substring(0, indexFirstBracket);
-                if (outputMapType)
+                if (outputArrayAsList)
                 {
-                    return "List<" + GetTypeMap(elementTypeName, true) + ">";
+                    return "List<" + ConvertToDotNetType(elementTypeName, true) + ">";
                 }
                 else
                 {
-                    return GetTypeMap(elementTypeName) + "[]";
+                    return ConvertToDotNetType(elementTypeName) + "[]";
                 }
             }
             if ("bool" == typeName)

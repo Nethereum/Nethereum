@@ -10,7 +10,7 @@ namespace Nethereum.Generators.Model
 
         public string Name { get; }
 
-        public Parameter[] InputParameters { get; set; }
+        public ParameterABI[] InputParameters { get; set; }
 
     }
 }

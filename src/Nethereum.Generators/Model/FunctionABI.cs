@@ -1,6 +1,8 @@
+using Nethereum.Generators.Core;
+
 namespace Nethereum.Generators.Model
 {
-    public class FunctionABI
+    public class FunctionABI: IMessage<ParameterABI>
     {
         public FunctionABI(string name, bool constant, bool serpent = false)
         {
@@ -13,9 +15,9 @@ namespace Nethereum.Generators.Model
 
         public bool Constant { get; private set; }
 
-        public string Name { get; }
+        public string Name { get; set; }
 
-        public Parameter[] InputParameters { get; set; }
-        public Parameter[] OutputParameters { get; set; }
+        public ParameterABI[] InputParameters { get; set; }
+        public ParameterABI[] OutputParameters { get; set; }
     }
 }
