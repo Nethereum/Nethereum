@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Nethereum.ABI.JsonDeserialisation;
+﻿using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Generators.Model;
-using Newtonsoft.Json;
+using System.Linq;
 
 namespace Nethereum.Generators.Net
 {
@@ -19,17 +17,17 @@ namespace Nethereum.Generators.Net
                 Constructor = new ConstructorABI
                 {
                     InputParameters = baseContractABI.Constructor.InputParameters
-                        .Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature)).ToArray()
+                        .Select(p => new ParameterABI(p.Type, p.Name, p.Order)).ToArray()
                 },
                 Functions = baseContractABI.Functions.Select(f =>
                 {
                     return new FunctionABI(f.Name, f.Constant, f.Serpent)
                     {
                         InputParameters =
-                            f.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature))
+                            f.InputParameters.Select(p => new ParameterABI(p.Type, p.Name, p.Order))
                                 .ToArray(),
                         OutputParameters =
-                            f.OutputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order, p.SerpentSignature))
+                            f.OutputParameters.Select(p => new ParameterABI(p.Type, p.Name, p.Order))
                                 .ToArray()
                     };
                 }).ToArray(),
@@ -38,7 +36,7 @@ namespace Nethereum.Generators.Net
                     return new EventABI(e.Name)
                     {
                         InputParameters =
-                            e.InputParameters.Select(p => new Parameter(p.Type, p.Name, p.Order){Indexed = p.Indexed})
+                            e.InputParameters.Select(p => new ParameterABI(p.Type, p.Name, p.Order){Indexed = p.Indexed})
                                 .ToArray()
                     };
                 }).ToArray()
