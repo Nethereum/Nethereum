@@ -7,6 +7,7 @@ namespace Nethereum.Generators.Core
         public string Namespace { get; }
         public string Name { get; }
         public string ClassNameSuffix { get; }
+        protected string FileExtension = ".cs";
 
         protected TypeMessageModel(string @namespace, string name, string classNameSuffix)
         {
@@ -23,7 +24,7 @@ namespace Nethereum.Generators.Core
 
         public string GetFileName(string name)
         {
-            return GetTypeName(name) + ".cs";
+            return GetTypeName(name) + FileExtension;
         }
 
         public string GetVariableName(string name)

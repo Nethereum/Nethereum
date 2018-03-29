@@ -1,0 +1,25 @@
+﻿using System;
+using System.Threading.Tasks;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
+using Nethereum.Contracts.CQS;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+namespace DefaultNamespace
+{
+    public class StandardContractDeployment:ContractDeploymentMessage
+    {
+        
+        public static string BYTECODE = "0x123456789";
+        
+        public StandardContractDeployment():base(BYTECODE)
+        {
+        }
+        
+        public StandardContractDeployment(string byteCode):base(byteCode)
+        {
+        }
+        
+        [Parameter("uint256", "totalSupply", 1)]
+        public BigInteger totalSupply {get; set;}
+    }
+}
