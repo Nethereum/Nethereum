@@ -3,7 +3,7 @@ using Nethereum.Generators.Net;
 using Nethereum.Generators.UnitTests.TestData;
 using Xunit;
 
-namespace Nethereum.Generators.UnitTests.Tests
+namespace Nethereum.Generators.UnitTests.Tests.CSharp
 {
     public class ContractProjectGeneratorTests
     {
