@@ -7,13 +7,13 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
-    public class FunctionServiceMethodTemplate
+    public class FunctionServiceMethodCSharpTemplate
     {
         private readonly ServiceModel _model;
         private CommonGenerators _commonGenerators;
         private ITypeConvertor _typeConvertor;
 
-        public FunctionServiceMethodTemplate(ServiceModel model)
+        public FunctionServiceMethodCSharpTemplate(ServiceModel model)
         {
             _model = model;
             _typeConvertor = new ABITypeToCSharpType();

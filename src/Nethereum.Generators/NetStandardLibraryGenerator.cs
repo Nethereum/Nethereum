@@ -5,18 +5,18 @@ using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators
 {
-    public class CsharpLibraryGenerator
+    public class NetStandardLibraryGenerator
     {
         public string ProjectFileName { get; }
 
-        public CsharpLibraryGenerator(string projectFileName)
+        public NetStandardLibraryGenerator(string projectFileName)
         {
             ProjectFileName = projectFileName;
         }
 
         public GeneratedFile GenerateFileContent(string outputPath)
         {
-            return  new GeneratedFile(template, ProjectFileName, outputPath);
+            return new GeneratedFile(template, ProjectFileName, outputPath);
         }
 
         private string template =

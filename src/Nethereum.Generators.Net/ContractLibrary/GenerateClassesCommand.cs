@@ -1,3 +1,5 @@
+using Nethereum.Generators.Core;
+
 namespace Nethereum.Generators.Net.ContractLibrary
 {
 
@@ -11,9 +13,10 @@ namespace Nethereum.Generators.Net.ContractLibrary
         public string CqsNamespace { get; set; }
         public string DtoNamesapce { get; set; }
         public string PathDelimiter { get; set; }
+        public CodeGenLanguage CodeGenLanguage { get; }
         public string BaseNamespace { get; set; }
 
-        public GenerateClassesCommand(string contractByteCode, string abi, string basePath,  string baseNamespace, string contractName, string serviceNamespace, string cqsNamespace, string dtoNamesapce, string pathDelimiter)
+        public GenerateClassesCommand(string contractByteCode, string abi, string basePath,  string baseNamespace, string contractName, string serviceNamespace, string cqsNamespace, string dtoNamesapce, string pathDelimiter, CodeGenLanguage codeGenLanguage)
         {
             ContractByteCode = contractByteCode;
             Abi = abi;
@@ -24,10 +27,11 @@ namespace Nethereum.Generators.Net.ContractLibrary
             CqsNamespace = cqsNamespace;
             DtoNamesapce = dtoNamesapce;
             PathDelimiter = pathDelimiter;
+            CodeGenLanguage = codeGenLanguage;
         }
 
-        public GenerateClassesCommand(string contractByteCode, string abi, string basePath, string baseNamespace, string contractName, string pathSeparator) 
-            : this(contractByteCode, abi, basePath, baseNamespace, contractName, (string) SetDefaultService(contractName), (string)SetDefaultCqs(contractName), (string) SetDefaultDto(contractName), pathSeparator)
+        public GenerateClassesCommand(string contractByteCode, string abi, string basePath, string baseNamespace, string contractName, string pathSeparator, CodeGenLanguage codeGenLanguage) 
+            : this(contractByteCode, abi, basePath, baseNamespace, contractName, (string) SetDefaultService(contractName), (string)SetDefaultCqs(contractName), (string) SetDefaultDto(contractName), pathSeparator, codeGenLanguage)
         {
 
         }

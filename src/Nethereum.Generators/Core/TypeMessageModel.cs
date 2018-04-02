@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Nethereum.Generators.Core
 {
     public abstract class TypeMessageModel: IClassModel
@@ -7,6 +9,8 @@ namespace Nethereum.Generators.Core
         public string Namespace { get; }
         public string Name { get; }
         public string ClassNameSuffix { get; }
+        public List<string> NamespaceDependencies { get; }
+        public CodeGenLanguage CodeGenLanguage { get; set; }
 
         protected TypeMessageModel(string @namespace, string name, string classNameSuffix)
         {
@@ -14,6 +18,8 @@ namespace Nethereum.Generators.Core
             Name = name;
             ClassNameSuffix = classNameSuffix;
             CommonGenerators = new CommonGenerators();
+            NamespaceDependencies = new List<string>();
+            CodeGenLanguage = CodeGenLanguage.CSharp;
         }
 
         public string GetTypeName(string name)
@@ -23,7 +29,7 @@ namespace Nethereum.Generators.Core
 
         public string GetFileName(string name)
         {
-            return GetTypeName(name) + ".cs";
+            return GetTypeName(name) + "." + CodeGenLanguage.GetCodeOutputFileExtension();
         }
 
         public string GetVariableName(string name)

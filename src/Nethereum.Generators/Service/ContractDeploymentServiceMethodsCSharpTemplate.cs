@@ -5,12 +5,12 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
-    public class ContractDeploymentServiceMethodsTemplate
+    public class ContractDeploymentServiceMethodsCSharpTemplate
     {
         private ContractDeploymentCQSMessageModel _contractDeploymentCQSMessageModel;
         private ServiceModel _serviceModel;
 
-        public ContractDeploymentServiceMethodsTemplate(ServiceModel model)
+        public ContractDeploymentServiceMethodsCSharpTemplate(ServiceModel model)
         {
             _contractDeploymentCQSMessageModel = model.ContractDeploymentCQSMessageModel;
             _serviceModel = model;

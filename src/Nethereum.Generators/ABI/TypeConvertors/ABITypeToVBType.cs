@@ -1,60 +1,60 @@
 namespace Nethereum.Generators.Core
 {
-    public class ABITypeToCSharpType: ABITypeToDotNetTypeBase
+    public class ABITypeToVBType : ABITypeToDotNetTypeBase
     {
         protected override string GetLongType()
         {
-            return "long";
+            return "Long";
         }
 
         protected override string GetULongType()
         {
-            return "ulong";
+            return "ULong";
         }
 
         protected override string GetIntType()
         {
-            return "int";
+            return "Integer";
         }
 
         protected override string GetUIntType()
         {
-            return "uint";
+            return "UInteger";
         }
 
         protected override string GetShortType()
         {
-            return "short";
+            return "Short";
         }
 
         protected override string GetUShortType()
         {
-            return "ushort";
+            return "UShort";
         }
 
         protected override string GetByteType()
         {
-            return "byte";
+            return "Byte";
         }
 
         protected override string GetSByteType()
         {
-            return "sbyte";
+            return "SByte";
         }
 
         protected override string GetByteArrayType()
         {
-            return "byte[]";
+            return "Byte()";
         }
 
         protected override string GetStringType()
         {
-            return "string";
+            return "String";
         }
 
         protected override string GetBooleanType()
         {
-            return "bool";
+            return "Boolean";
         }
 
         protected override string GetBigIntegerType()
@@ -64,12 +64,12 @@ namespace Nethereum.Generators.Core
 
         protected override string GetArrayType(string type)
         {
-            return type + "[]";
+            return type + "()";
         }
 
         protected override string GetListType(string type)
         {
-            return "List<" + type + ">";
+            return $@"List(Of {type})";
         }
     }
 }

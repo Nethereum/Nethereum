@@ -13,6 +13,12 @@ namespace Nethereum.Generators.CQS
         {
             ConstructorABI = constructorABI;
             ByteCode = byteCode;
+            InitisialiseNamespaceDependencies();
+        }
+
+        private void InitisialiseNamespaceDependencies()
+        {
+            NamespaceDependencies.AddRange(new []{"System", "System.Threading.Tasks", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", "Nethereum.ABI.FunctionEncoding.Attributes"});
         }
     }
 }

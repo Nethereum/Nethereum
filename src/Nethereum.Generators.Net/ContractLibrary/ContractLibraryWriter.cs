@@ -12,14 +12,14 @@ namespace Nethereum.Generators.Net.ContractLibrary
                 contractAbi,
                 command.ContractName, command.ContractByteCode, command.BaseNamespace,
                 command.ServiceNamespace, command.CqsNamespace, command.DtoNamesapce, command.BasePath,
-                command.PathDelimiter);
+                command.PathDelimiter, command.CodeGenLanguage);
             var generatedClasses = generator.GenerateAll();
            GeneratedFileWriter.WriteFilesToDisk(generatedClasses);
         }
 
         public void WriteProjectFile(GenerateProjectFileCommand command)
         {
-            var projectGenerator = new CsharpLibraryGenerator(command.ProjectName);
+            var projectGenerator = new NetStandardLibraryGenerator(command.ProjectName);
             var generatedFile = projectGenerator.GenerateFileContent(command.Path);
             GeneratedFileWriter.WriteFileToDisk(generatedFile);
         }

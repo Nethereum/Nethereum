@@ -11,8 +11,14 @@ namespace Nethereum.Generators.DTOs
             :base(@namespace, functionABI.Name, "OutputDTO")
         {
             FunctionABI = functionABI;
+            InitisialiseNamespaceDependencies();
         }
-        
+
+        private void InitisialiseNamespaceDependencies()
+        {
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+        }
+
         public bool CanGenerateOutputDTO()
         {
             return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 0 &&

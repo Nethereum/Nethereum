@@ -11,6 +11,14 @@ namespace Nethereum.Generators.CQS
             base(@namespace, functionABI.Name, "Function")
         {
             FunctionABI = functionABI;
+            InitisialiseNamespaceDependencies();
         }
+
+        private void InitisialiseNamespaceDependencies()
+        {
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", "Nethereum.ABI.FunctionEncoding.Attributes" });
+        }
+
+
     }
 }

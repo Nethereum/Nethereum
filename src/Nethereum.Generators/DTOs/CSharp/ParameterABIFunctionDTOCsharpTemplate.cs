@@ -5,16 +5,15 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class ParameterABIFunctionDTOTemplate
+    public class ParameterABIFunctionDTOCSharpTemplate
     {
         private ParameterABIModel parameterModel;
         private ParameterABIModelTypeMap parameterAbiModelTypeMap;
 
-        public ParameterABIFunctionDTOTemplate()
+        public ParameterABIFunctionDTOCSharpTemplate()
         {
             var typeMapper = new ABITypeToCSharpType();
-            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);
-              
+            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);    
         }
 
         public string GenerateAllProperties(ParameterABI[] parameters)
