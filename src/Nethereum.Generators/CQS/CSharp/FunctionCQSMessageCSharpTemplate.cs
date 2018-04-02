@@ -15,7 +15,7 @@ namespace Nethereum.Generators.CQS
             _parameterAbiFunctionDtocSharpTemplate = new ParameterABIFunctionDTOCSharpTemplate();
             _functionOutputDTOModel = functionOutputDTOModel;
             _functionABIModel = functionABIModel;
-            ClassFileTemplate = new CsharpClassFileTemplate(model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(model, this);
         }
 
         public override string GenerateClass()

@@ -27,6 +27,9 @@ namespace Nethereum.Generators.Service
                 case CodeGenLanguage.Vb:
                     ClassTemplate = new ServiceVbTemplate(ClassModel);
                     break;
+                case CodeGenLanguage.FSharp:
+                    ClassTemplate = new ServiceCSharpTemplate(ClassModel); //hack for visual test
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, "Code generation not implemented for this language");
             }

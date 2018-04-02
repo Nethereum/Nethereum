@@ -11,7 +11,7 @@ namespace Nethereum.Generators.Service
         {
             _functionServiceMethodCSharpTemplate = new FunctionServiceMethodCSharpTemplate(model);
             _deploymentServiceMethodsCSharpTemplate = new ContractDeploymentServiceMethodsCSharpTemplate(model);
-            ClassFileTemplate = new CsharpClassFileTemplate(Model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(Model, this);
         }
 
         public override string GenerateClass()

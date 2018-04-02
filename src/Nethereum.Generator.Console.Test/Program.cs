@@ -30,6 +30,9 @@ namespace Nethereum.Generator.Console.Test
             var projectNameVb = "StandardToken.vbproj";
             var basePathVb = @"C:\Users\juanf\Documents\source\repos\superTestVb";
 
+            var projectNameFs = "StandardToken.fsproj";
+            var basePathFs = @"C:\Users\juanf\Documents\source\repos\superTestFs";
+
             var generateClassesCommandCSharp = new GenerateClassesCommand(contractByteCode, abi, basePathCSharp, baseNamespace, contractName, pathSeparator, CodeGenLanguage.CSharp);
             var contractLibraryWriter = new ContractLibraryWriter();
             contractLibraryWriter.WriteClasses(generateClassesCommandCSharp);
@@ -49,6 +52,15 @@ namespace Nethereum.Generator.Console.Test
 
             contractLibraryWriter.WriteProjectFile(projectFileCommandVB);
 
+
+            var generateClassesCommandFs = new GenerateClassesCommand(contractByteCode, abi, basePathFs, baseNamespace, contractName, pathSeparator, CodeGenLanguage.FSharp);
+            contractLibraryWriter.WriteClasses(generateClassesCommandFs);
+
+            var projectFileCommandFs = new GenerateProjectFileCommand();
+            projectFileCommandFs.Path = basePathFs;
+            projectFileCommandFs.ProjectName = projectNameFs;
+
+            contractLibraryWriter.WriteProjectFile(projectFileCommandFs);
 
 
         }

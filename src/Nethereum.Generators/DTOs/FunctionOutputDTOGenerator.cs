@@ -24,6 +24,9 @@ namespace Nethereum.Generators.DTOs
                 case CodeGenLanguage.Vb:
                     ClassTemplate = new FunctionOutputDTOVbTemplate(ClassModel);
                     break;
+                case CodeGenLanguage.FSharp:
+                    ClassTemplate = new FunctionOutputDTOFSharpTemplate(ClassModel);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, "Code generation not implemented for this language");
             }

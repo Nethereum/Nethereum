@@ -2,10 +2,10 @@ using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.CQS
 {
-    public class CsharpClassFileTemplate:ClassFileTemplate
+    public class CSharpClassFileTemplate:ClassFileTemplate
     {
 
-        public CsharpClassFileTemplate(IClassModel classModel, IClassTemplate classTemplate):base(classModel, classTemplate)
+        public CSharpClassFileTemplate(IClassModel classModel, IClassTemplate classTemplate):base(classModel, classTemplate)
         {
          
         }

@@ -10,7 +10,7 @@ namespace Nethereum.Generators.DTOs
         public EventDTOCSharpTemplate(EventDTOModel eventDTOModel):base(eventDTOModel)
         {
             _parameterAbiEventDtocSharpTemplate = new ParameterABIEventDTOCSharpTemplate();
-            ClassFileTemplate = new CsharpClassFileTemplate(Model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(Model, this);
         }
 
         public override string GenerateClass()

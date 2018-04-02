@@ -10,7 +10,7 @@ namespace Nethereum.Generators.DTOs
         public FunctionOutputDTOCSharpTemplate(FunctionOutputDTOModel model):base(model)
         {
             _parameterAbiFunctionDtocSharpTemplate = new ParameterABIFunctionDTOCSharpTemplate();
-            ClassFileTemplate = new CsharpClassFileTemplate(Model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(Model, this);
         }
 
         public override string GenerateClass()

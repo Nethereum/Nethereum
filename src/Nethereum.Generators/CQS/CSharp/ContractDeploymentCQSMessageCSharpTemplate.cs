@@ -11,7 +11,7 @@ namespace Nethereum.Generators.CQS
         public ContractDeploymentCQSMessageCSharpTemplate(ContractDeploymentCQSMessageModel model):base(model)
         {
             _parameterAbiFunctionDtocSharpTemplate = new ParameterABIFunctionDTOCSharpTemplate();
-            ClassFileTemplate = new CsharpClassFileTemplate(model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(model, this);
         }
 
         public override string GenerateClass()

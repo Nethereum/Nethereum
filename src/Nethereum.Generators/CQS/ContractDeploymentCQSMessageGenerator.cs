@@ -23,6 +23,9 @@ namespace Nethereum.Generators.CQS
                 case CodeGenLanguage.Vb:
                     ClassTemplate = new ContractDeploymentCQSMessageVbTemplate(ClassModel);
                     break;
+                case CodeGenLanguage.FSharp:
+                    ClassTemplate = new ContractDeploymentCQSMessageFSharpTemplate(ClassModel);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, "Code generation not implemented for this language");
             }

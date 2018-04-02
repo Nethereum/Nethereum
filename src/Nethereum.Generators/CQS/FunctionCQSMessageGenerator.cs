@@ -34,6 +34,11 @@ namespace Nethereum.Generators.CQS
                     var functionVBABIModel = new FunctionABIModel(ClassModel.FunctionABI, vbMapper);
                     ClassTemplate = new FunctionCQSMessageVbTemplate(ClassModel, functionOutputDTOModel, functionVBABIModel);
                     break;
+                case CodeGenLanguage.FSharp:
+                    var fsMapper = new ABITypeToFSharpType();;
+                    var functionfsABIModel = new FunctionABIModel(ClassModel.FunctionABI, fsMapper);
+                    ClassTemplate = new FunctionCQSMessageFSharpTemplate(ClassModel, functionOutputDTOModel, functionfsABIModel);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, "Code generation not implemented for this language");
             }
