@@ -24,6 +24,7 @@ namespace Nethereum.Quorum
         {
             base.InitialiseInnerServices();
             Quorum = new QuorumChainService(Client);
+            base.TransactionManager.DefaultGasPrice = 0;
         }
 
         public QuorumChainService Quorum { get; private set; }

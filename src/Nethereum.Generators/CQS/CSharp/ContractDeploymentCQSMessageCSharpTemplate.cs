@@ -23,13 +23,9 @@ $@"{SpaceUtils.OneTab}public class {typeName}:ContractDeploymentMessage
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public static string BYTECODE = ""{Model.ByteCode}"";
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {typeName}():base(BYTECODE)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.TwoTabs}public {typeName}():base(BYTECODE) {{ }}
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {typeName}(string byteCode):base(byteCode)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.TwoTabs}public {typeName}(string byteCode):base(byteCode) {{ }}
 {SpaceUtils.TwoTabs}
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(Model.ConstructorABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
