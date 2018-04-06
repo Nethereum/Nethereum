@@ -183,6 +183,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Deskto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Desktop.XamMac", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.XamMac\Nethereum.Generators.Desktop.XamMac.csproj", "{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9}"
 EndProject
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "nethereum-codegen", "src\Nethereum.Generators.JavaScript\nethereum-codegen.njsproj", "{03DBBE19-48CF-4164-B972-E2646BFA9E9B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1219,6 +1221,22 @@ Global
 		{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9}.Release|x64.Build.0 = Release|Any CPU
 		{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9}.Release|x86.ActiveCfg = Release|Any CPU
 		{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9}.Release|x86.Build.0 = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|ARM.Build.0 = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x64.Build.0 = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x86.Build.0 = Debug|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|ARM.ActiveCfg = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|ARM.Build.0 = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x64.ActiveCfg = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x64.Build.0 = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x86.ActiveCfg = Release|Any CPU
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1312,6 +1330,7 @@ Global
 		{0874565B-E01E-44F8-B930-78E51842D7E4} = {1573C192-3CA3-460A-BECB-842C20246F04}
 		{8661B52B-036C-46D2-BE63-382E48F0AFFF} = {1573C192-3CA3-460A-BECB-842C20246F04}
 		{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9} = {1573C192-3CA3-460A-BECB-842C20246F04}
+		{03DBBE19-48CF-4164-B972-E2646BFA9E9B} = {1573C192-3CA3-460A-BECB-842C20246F04}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

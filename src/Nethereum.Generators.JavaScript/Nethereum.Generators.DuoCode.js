@@ -1741,21 +1741,18 @@ $d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Co
         this.InitialiseTemplate(codeGenLanguage);
     };
     $p.InitialiseTemplate = function ServiceGenerator_InitialiseTemplate(codeGenLanguage) {
-        switch (codeGenLanguage) {
-            case 0 /* CodeGenLanguage.CSharp */:
-                this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceCSharpTemplate.ctor(this.get_ClassModel()));
-                break;
-            case 1 /* CodeGenLanguage.Vb */:
-                this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceVbTemplate.ctor(this.get_ClassModel()));
-                break;
-            case 3 /* CodeGenLanguage.FSharp */:
-                this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceFSharpTemplate.ctor(this.get_ClassModel()));
-                break;
-            default:
-                throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
-                    codeGenLanguage), "Code generation not implemented for this language");
+        if (codeGenLanguage == 0 /* CodeGenLanguage.CSharp */)
+            this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceCSharpTemplate.ctor(this.get_ClassModel()));
+        else if (codeGenLanguage == 1 /* CodeGenLanguage.Vb */) {
+            this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceVbTemplate.ctor(this.get_ClassModel()));
         }
-
+        else if (codeGenLanguage == 3 /* CodeGenLanguage.FSharp */) {
+            this.set_ClassTemplate(new Nethereum.Generators.Service.ServiceFSharpTemplate.ctor(this.get_ClassModel()));
+        }
+        else {
+            throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+                codeGenLanguage), "Code generation not implemented for this language");
+        }
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {

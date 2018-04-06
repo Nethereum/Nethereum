@@ -114,6 +114,7 @@ namespace Nethereum.Generators
         }
 
         public GeneratedFile GeneratCQSMessageDeployment()
+
         {
             var cqsGenerator = new ContractDeploymentCQSMessageGenerator(ContractABI.Constructor, GetFullNamespace(CQSNamespace), ByteCode,
                 ContractName, CodeGenLanguage);

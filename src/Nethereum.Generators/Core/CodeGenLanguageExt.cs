@@ -6,18 +6,23 @@ namespace Nethereum.Generators.Core
     {
         public static string GetCodeOutputFileExtension(this CodeGenLanguage codeGenLanguage)
         {
-            switch (codeGenLanguage)
+            if (codeGenLanguage == CodeGenLanguage.CSharp)
+                return "cs";
+            else if (codeGenLanguage == CodeGenLanguage.Vb)
             {
-                case CodeGenLanguage.CSharp:
-                    return "cs";
-                case CodeGenLanguage.Vb:
-                    return "vb";
-                case CodeGenLanguage.Proto:
-                    return "proto";
-                case CodeGenLanguage.FSharp:
-                    return "fs";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, null);
+                return "vb";
+            }
+            else if (codeGenLanguage == CodeGenLanguage.Proto)
+            {
+                return "proto";
+            }
+            else if (codeGenLanguage == CodeGenLanguage.FSharp)
+            {
+                return "fs";
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, null);
             }
         }
     }
