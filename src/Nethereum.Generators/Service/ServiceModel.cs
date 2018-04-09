@@ -20,6 +20,23 @@ namespace Nethereum.Generators.Service
             CQSNamespace = cqsNamespace;
             FunctionOutputNamespace = functionOutputNamespace;
             ContractDeploymentCQSMessageModel = new ContractDeploymentCQSMessageModel(contractABI.Constructor, cqsNamespace, byteCode, contractName);
+            InitisialiseNamespaceDependencies();
+            NamespaceDependencies.Add(cqsNamespace);
+            NamespaceDependencies.Add(functionOutputNamespace);
+        }
+
+        private void InitisialiseNamespaceDependencies()
+        {
+            NamespaceDependencies.AddRange(new[] {
+                "System",
+                "System.Threading.Tasks",
+                "System.Numerics",
+                "Nethereum.Hex.HexTypes",
+                "Nethereum.ABI.FunctionEncoding.Attributes",
+                "Nethereum.Web3",
+                "Nethereum.RPC.Eth.DTOs",
+                "Nethereum.Contracts.CQS",
+                "System.Threading" });
         }
     }
 }

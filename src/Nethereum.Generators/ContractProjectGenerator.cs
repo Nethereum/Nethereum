@@ -20,6 +20,7 @@ namespace Nethereum.Generators
         public string DTONamespace { get; }
         public string BaseOutputPath { get; }
         public string PathDelimiter { get; }
+        public CodeGenLanguage CodeGenLanguage { get; }
 
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
@@ -29,7 +30,8 @@ namespace Nethereum.Generators
             string cqsNamespace,
             string dtoNamespace,
             string baseOutputPath,
-            string pathDelimiter)
+            string pathDelimiter,
+            CodeGenLanguage codeGenLanguage)
         {
             ContractABI = contractABI;
             ContractName = contractName;
@@ -40,6 +42,7 @@ namespace Nethereum.Generators
             DTONamespace = dtoNamespace;
             BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter.ToCharArray());
             PathDelimiter = pathDelimiter;
+            CodeGenLanguage = codeGenLanguage;
         }
 
         public GeneratedFile[] GenerateAll()
@@ -58,7 +61,7 @@ namespace Nethereum.Generators
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
-            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace);
+            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
@@ -77,7 +80,7 @@ namespace Nethereum.Generators
             var generated = new List<GeneratedFile>();
             foreach (var functionABI in ContractABI.Functions)
             {
-                var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace);
+                var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace, CodeGenLanguage);
                 GenerateAndAdd(generated, () => functionOutputDTOGenerator.GenerateFileContent(dtoFullPath));
             }
             return generated;
@@ -90,7 +93,7 @@ namespace Nethereum.Generators
             var generated = new List<GeneratedFile>();
             foreach (var eventABI in ContractABI.Events)
             {
-                var cqsGenerator = new EventDTOGenerator(eventABI, dtoFullNamespace);
+                var cqsGenerator = new EventDTOGenerator(eventABI, dtoFullNamespace, CodeGenLanguage);
                 GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(dtoFullPath));
             }
             return generated;
@@ -104,21 +107,23 @@ namespace Nethereum.Generators
             var generated = new List<GeneratedFile>();
             foreach (var functionAbi in ContractABI.Functions)
             {
-                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace);
+                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
                 GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(cqsFullPath));
             }
             return generated;
         }
 
         public GeneratedFile GeneratCQSMessageDeployment()
+
         {
             var cqsGenerator = new ContractDeploymentCQSMessageGenerator(ContractABI.Constructor, GetFullNamespace(CQSNamespace), ByteCode,
-                ContractName);
+                ContractName, CodeGenLanguage);
            return cqsGenerator.GenerateFileContent(GetFullPath(CQSNamespace));
         }
 
         public string GetFullNamespace(string @namespace)
         {
+            if (string.IsNullOrEmpty(BaseNamespace)) return @namespace;
             return BaseNamespace + "." + @namespace;
         }
 

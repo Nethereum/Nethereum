@@ -14,11 +14,7 @@ namespace Nethereum.Generators.Net
 
             var contractABI = new ContractABI
             {
-                Constructor = new ConstructorABI
-                {
-                    InputParameters = baseContractABI.Constructor.InputParameters
-                        .Select(p => new ParameterABI(p.Type, p.Name, p.Order)).ToArray()
-                },
+                Constructor = GetConstructor(baseContractABI),
                 Functions = baseContractABI.Functions.Select(f =>
                 {
                     return new FunctionABI(f.Name, f.Constant, f.Serpent)
@@ -43,6 +39,16 @@ namespace Nethereum.Generators.Net
             };
 
             return contractABI;
+        }
+
+        private static ConstructorABI GetConstructor(ABI.Model.ContractABI baseContractABI)
+        {
+            if (baseContractABI.Constructor == null) return new ConstructorABI();
+            return new ConstructorABI
+            {
+                InputParameters = baseContractABI.Constructor.InputParameters
+                    .Select(p => new ParameterABI(p.Type, p.Name, p.Order)).ToArray()
+            };
         }
     }
 }

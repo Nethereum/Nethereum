@@ -2,27 +2,6 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Core
 {
-    public class ParameterModel<TParameter> where TParameter:Parameter
-    {
-        public TParameter Parameter { get; }
-        protected CommonGenerators CommonGenerators { get; }
-
-        public ParameterModel(TParameter parameter)
-        {
-            Parameter = parameter;
-            CommonGenerators = new CommonGenerators();
-        }
-
-        public virtual string GetVariableName()
-        {
-            return CommonGenerators.GenerateVariableName(Parameter.Name);
-        }
-
-        public virtual string GetPropertyName()
-        {
-            return CommonGenerators.GeneratePropertyName(Parameter.Name);
-        }
-    }
 
     public class ParameterABIModel : ParameterModel<ParameterABI>
     {
@@ -37,7 +16,7 @@ namespace Nethereum.Generators.Core
 
         public override string GetPropertyName()
         {
-            return GetVariableName(Parameter.Name, Parameter.Order);
+            return GetPropertyName(Parameter.Name, Parameter.Order);
         }
 
         public string GetVariableName(string name, int order)
@@ -72,28 +51,5 @@ namespace Nethereum.Generators.Core
             }
             return "h";
         }
-    }
-
-    public class ParameterABIModelTypeMap
-    {
-        private readonly ITypeConvertor _typeConvertor;
-        private CommonGenerators commonGenerators;
-
-        public ParameterABIModelTypeMap(ITypeConvertor typeConvertor)
-        {
-            _typeConvertor = typeConvertor;
-            commonGenerators = new CommonGenerators();
-        }
-
-        public string GetParameterDotNetOutputMapType(ParameterABI parameter)
-        {
-            return _typeConvertor.ConvertToDotNetType(parameter.Type, true);
-        }
-
-        public string GetParameterDotNetInputMapType(ParameterABI parameter)
-        {
-            return _typeConvertor.ConvertToDotNetType(parameter.Type, false);
-        }
-
     }
 }

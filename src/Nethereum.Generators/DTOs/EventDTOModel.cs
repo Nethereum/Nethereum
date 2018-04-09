@@ -11,8 +11,14 @@ namespace Nethereum.Generators.DTOs
             :base(@namespace, eventABI.Name, "EventDTO")
         {
             EventABI = eventABI;
+            InitisialiseNamespaceDependencies();
         }
-     
+
+        private void InitisialiseNamespaceDependencies()
+        {
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+        }
+
         public bool CanGenerateOutputDTO()
         {
             return EventABI.InputParameters != null && EventABI.InputParameters.Length > 0;

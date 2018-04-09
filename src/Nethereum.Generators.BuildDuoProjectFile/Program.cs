@@ -54,6 +54,10 @@ namespace Nethereum.Generators.BuildDuoProjectFile
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=""'$(Configuration)' == 'Debug'"">
+   <DuoCodeDtsMode>es6</DuoCodeDtsMode>
+   <DuoCodeModuleKind>commonjs</DuoCodeModuleKind>
+   </PropertyGroup>
   <ItemGroup>"
             ;
 

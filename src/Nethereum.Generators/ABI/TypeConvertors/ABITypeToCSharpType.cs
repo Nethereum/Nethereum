@@ -1,107 +1,75 @@
-using System;
-
 namespace Nethereum.Generators.Core
 {
-    public class ABITypeToCSharpType:ITypeConvertor
+    public class ABITypeToCSharpType: ABITypeToDotNetTypeBase
     {
-        public string ConvertToDotNetType(string typeName, bool outputArrayAsList = false)
+        protected override string GetLongType()
         {
-            var indexFirstBracket = typeName.IndexOf("[");
-            if (indexFirstBracket > -1)
-            {
-                var elementTypeName = typeName.Substring(0, indexFirstBracket);
-                if (outputArrayAsList)
-                {
-                    return "List<" + ConvertToDotNetType(elementTypeName, true) + ">";
-                }
-                else
-                {
-                    return ConvertToDotNetType(elementTypeName) + "[]";
-                }
-            }
-            if ("bool" == typeName)
-            {
-                return typeName;
-            }
-            if (typeName.StartsWith("int"))
-            {
-                //default
-                if (typeName.Length == 3)
-                {
-                    return "BigInteger";
-                }
-                var length = Int32.Parse(typeName.Substring(3));
+            return "long";
+        }
 
-                if (length > 64)
-                {
-                    return "BigInteger";
-                }
-                if (length <= 64 && length > 32)
-                {
-                    return "long";
-                }
-                //ints are in 8 bits
-                if (length == 32)
-                {
-                    return "int";
-                }
-                if (length == 16)
-                {
-                    return "short";
-                }
-                if (length == 8)
-                {
-                    return "sbyte";
-                }
-            }
-            if (typeName.StartsWith("uint"))
-            {
+        protected override string GetULongType()
+        {
+            return "ulong";
+        }
 
-                if (typeName.Length == 4)
-                {
-                    return "BigInteger";
-                }
-                var length = Int32.Parse(typeName.Substring(4));
+        protected override string GetIntType()
+        {
+            return "int";
+        }
 
-                if (length > 64)
-                {
-                    return "BigInteger";
-                }
-                if (length <= 64 && length > 32)
-                {
-                    return "ulong";
-                }
-                //uints are in 8 bits steps
-                if (length == 32)
-                {
-                    return "uint";
-                }
-                if (length == 16)
-                {
-                    return "ushort";
-                }
-                if (length == 8)
-                {
-                    return "byte";
-                }
-            }
-            if (typeName == "address")
-            {
-                return "string";
-            }
-            if (typeName == "string")
-            {
-                return "string";
-            }
-            if (typeName == "bytes")
-            {
-                return "byte[]";
-            }
-            if (typeName.StartsWith("bytes"))
-            {
-                return "byte[]";
-            }
-            return null;
+        protected override string GetUIntType()
+        {
+            return "uint";
+        }
+
+        protected override string GetShortType()
+        {
+            return "short";
+        }
+
+        protected override string GetUShortType()
+        {
+            return "ushort";
+        }
+
+        protected override string GetByteType()
+        {
+            return "byte";
+        }
+
+        protected override string GetSByteType()
+        {
+            return "sbyte";
+        }
+
+        protected override string GetByteArrayType()
+        {
+            return "byte[]";
+        }
+
+        protected override string GetStringType()
+        {
+            return "string";
+        }
+
+        protected override string GetBooleanType()
+        {
+            return "bool";
+        }
+
+        protected override string GetBigIntegerType()
+        {
+            return "BigInteger";
+        }
+
+        protected override string GetArrayType(string type)
+        {
+            return type + "[]";
+        }
+
+        protected override string GetListType(string type)
+        {
+            return "List<" + type + ">";
         }
     }
 }

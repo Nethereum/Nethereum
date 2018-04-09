@@ -18,7 +18,7 @@ namespace Nethereum.Generators.Core
         {
             if (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1)
             {
-                return _abiTypeToDotnetTypeConvertor.ConvertToDotNetType(FunctionABI.OutputParameters[0].Type, true);
+                return _abiTypeToDotnetTypeConvertor.Convert(FunctionABI.OutputParameters[0].Type, true);
             }
             return null;
         }

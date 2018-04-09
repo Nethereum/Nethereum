@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Nethereum.Generators.Core
 {
     public interface IClassModel
@@ -6,5 +8,6 @@ namespace Nethereum.Generators.Core
         string GetFileName();
         string GetVariableName();
         string Namespace { get; }
+        List<string> NamespaceDependencies { get; }
     }
 }

@@ -24,18 +24,43 @@ namespace Nethereum.Generator.Console.Test
             var baseNamespace = "StandardToken";
             var contractName = "MyContractName";
             var pathSeparator = "\\";
-            var projectName = "StandardToken.csproj";
-            var basePath = @"C:\Users\juanf\Documents\source\repos\superTest";
+            var projectNameCSharp = "StandardToken.csproj";
+            var basePathCSharp = @"C:\Users\juanf\Documents\source\repos\superTestCSharp";
 
-            var generateClassesCommand = new GenerateClassesCommand(contractByteCode, abi, basePath, baseNamespace, contractName, pathSeparator);
+            var projectNameVb = "StandardToken.vbproj";
+            var basePathVb = @"C:\Users\juanf\Documents\source\repos\superTestVb";
+
+            var projectNameFs = "StandardToken.fsproj";
+            var basePathFs = @"C:\Users\juanf\Documents\source\repos\superTestFs";
+
+            var generateClassesCommandCSharp = new GenerateClassesCommand(contractByteCode, abi, basePathCSharp, baseNamespace, contractName, pathSeparator, CodeGenLanguage.CSharp);
             var contractLibraryWriter = new ContractLibraryWriter();
-            contractLibraryWriter.WriteClasses(generateClassesCommand);
+            contractLibraryWriter.WriteClasses(generateClassesCommandCSharp);
 
             var projectFileCommand = new GenerateProjectFileCommand();
-            projectFileCommand.Path = basePath;
-            projectFileCommand.ProjectName = projectName;
+            projectFileCommand.Path = basePathCSharp;
+            projectFileCommand.ProjectName = projectNameCSharp;
 
             contractLibraryWriter.WriteProjectFile(projectFileCommand);
+
+            var generateClassesCommandVB = new GenerateClassesCommand(contractByteCode, abi, basePathVb, baseNamespace, contractName, pathSeparator, CodeGenLanguage.Vb);
+            contractLibraryWriter.WriteClasses(generateClassesCommandVB);
+
+            var projectFileCommandVB = new GenerateProjectFileCommand();
+            projectFileCommandVB.Path = basePathVb;
+            projectFileCommandVB.ProjectName = projectNameVb;
+
+            contractLibraryWriter.WriteProjectFile(projectFileCommandVB);
+
+
+            var generateClassesCommandFs = new GenerateClassesCommand(contractByteCode, abi, basePathFs, baseNamespace, contractName, pathSeparator, CodeGenLanguage.FSharp);
+            contractLibraryWriter.WriteClasses(generateClassesCommandFs);
+
+            var projectFileCommandFs = new GenerateProjectFileCommand();
+            projectFileCommandFs.Path = basePathFs;
+            projectFileCommandFs.ProjectName = projectNameFs;
+
+            contractLibraryWriter.WriteProjectFile(projectFileCommandFs);
 
 
         }
