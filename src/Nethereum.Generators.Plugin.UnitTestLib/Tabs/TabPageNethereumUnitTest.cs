@@ -9,7 +9,6 @@ namespace Nethereum.Generators.Plugin.UnitTestLib.Tabs
         
         public TabPageNethereumUnitTest()
         {
-
             var noImplementedCommand = new Command((x, y) => this.ShowInformation("Not implemented yet"));
             var btnGenerateContractLibrary = new Button();
             btnGenerateContractLibrary.Text = "Generate Contract Classes";

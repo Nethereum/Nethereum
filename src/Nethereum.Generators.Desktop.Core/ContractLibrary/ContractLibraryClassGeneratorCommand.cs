@@ -1,5 +1,6 @@
 ﻿using System;
 using Eto.Forms;
+using Genesis.Ensure;
 using Nethereum.Generators.Desktop.Core.Contract;
 using Nethereum.Generators.Desktop.Core.Infrastructure.UI;
 using Nethereum.Generators.Net.ContractLibrary;
@@ -25,6 +26,10 @@ namespace Nethereum.Generators.Desktop.Core.ContractLibrary
 
             try
             {
+                Ensure.ArgumentNotNullOrEmpty(_contractViewModel.Abi, "Abi");
+                Ensure.ArgumentNotNullOrEmpty(_contractViewModel.ContractName, "Contract Name");
+                Ensure.ArgumentNotNullOrEmpty(_contractLibraryViewModel.ProjectPath, "Project Path");
+                
                 var generateClassesCommandCSharp =
                     new GenerateClassesCommand(_contractViewModel.ByteCode,
                         _contractViewModel.Abi,

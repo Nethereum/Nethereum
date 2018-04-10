@@ -1,5 +1,6 @@
 using System;
 using Eto.Forms;
+using Genesis.Ensure;
 using Nethereum.Generators.Desktop.Core.Infrastructure.UI;
 using Nethereum.Generators.Net.ContractLibrary;
 
@@ -22,6 +23,9 @@ namespace Nethereum.Generators.Desktop.Core.ContractLibrary
 
             try
             {
+                Ensure.ArgumentNotNullOrEmpty(_contractLibraryViewModel.ProjectName, "Project Name");
+                Ensure.ArgumentNotNullOrEmpty(_contractLibraryViewModel.ProjectPath, "Project Path");
+
                 var contractLibraryWriter = new ContractLibraryWriter();
                 contractLibraryWriter.WriteProjectFile(new GenerateProjectFileCommand()
                 {
