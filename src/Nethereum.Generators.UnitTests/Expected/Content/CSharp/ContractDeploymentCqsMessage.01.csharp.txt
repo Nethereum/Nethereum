@@ -11,15 +11,11 @@ namespace DefaultNamespace
         
         public static string BYTECODE = "0x123456789";
         
-        public StandardContractDeployment():base(BYTECODE)
-        {
-        }
+        public StandardContractDeployment():base(BYTECODE) { }
         
-        public StandardContractDeployment(string byteCode):base(byteCode)
-        {
-        }
+        public StandardContractDeployment(string byteCode):base(byteCode) { }
         
         [Parameter("uint256", "totalSupply", 1)]
-        public BigInteger totalSupply {get; set;}
+        public BigInteger TotalSupply {get; set;}
     }
 }

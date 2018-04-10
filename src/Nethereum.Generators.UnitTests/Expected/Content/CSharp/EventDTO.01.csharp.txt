@@ -1,0 +1,14 @@
+﻿using System;
+using System.Threading.Tasks;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+namespace DefaultNamespace
+{
+    [Event("ItemAdded")]
+    public class ItemAddedEventDTO
+    {
+        [Parameter("uint256", "itemId", 1, false )]
+        public BigInteger ItemId {get; set;}
+    }
+}

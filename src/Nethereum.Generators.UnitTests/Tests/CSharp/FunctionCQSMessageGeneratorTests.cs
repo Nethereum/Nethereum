@@ -1,5 +1,7 @@
-﻿using Nethereum.Generators.CQS;
+﻿using Nethereum.Generators.Core;
+using Nethereum.Generators.CQS;
 using Nethereum.Generators.Model;
+using Xunit;
 using FunctionABI = Nethereum.Generators.Model.FunctionABI;
 
 namespace Nethereum.Generators.Tests.CSharp
@@ -14,12 +16,23 @@ namespace Nethereum.Generators.Tests.CSharp
                 OutputParameters = new[] { new ParameterABI("uint256") }
             };
 
-            return new FunctionCQSMessageGenerator(functionAbi, "DefaultNamespace", "FunctionOutput");
+            return new FunctionCQSMessageGenerator(functionAbi, "DefaultNamespace", "FunctionOutput", CodeGenLanguage.CSharp);
         }
 
-        public FunctionCQSMessageGeneratorTests():
-            base(CreateGenerator(), "CSharp", "FunctionCQSMessage01.csharp.txt", "BaseStatsFunction.cs")
+        public FunctionCQSMessageGeneratorTests():base(CreateGenerator(), "CSharp")
         {
+        }
+
+        [Fact]
+        public override void GeneratesExpectedFileContent()
+        {
+            GenerateAndCheckFileContent("FunctionCQSMessage.01.csharp.txt");
+        }
+
+        [Fact]
+        public override void GeneratesExpectedFileName()
+        {
+            GenerateAndCheckFileName("BaseStatsFunction.cs");
         }
     }
 }

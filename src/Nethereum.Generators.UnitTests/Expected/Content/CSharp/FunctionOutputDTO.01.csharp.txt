@@ -1,0 +1,16 @@
+﻿using System;
+using System.Threading.Tasks;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+namespace DefaultNamespace
+{
+    [FunctionOutput]
+    public class GetCarOutputDTO
+    {
+        [Parameter("uint32", "id", 1)]
+        public uint Id {get; set;}
+        [Parameter("string", "name", 2)]
+        public string Name {get; set;}
+    }
+}

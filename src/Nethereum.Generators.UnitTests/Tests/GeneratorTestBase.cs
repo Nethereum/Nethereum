@@ -8,30 +8,28 @@ namespace Nethereum.Generators.Tests
     {
         protected TGenerator Generator { get; }
         protected string ExpectedContentFolder { get;  }
-        protected string ExpectedContentName { get; }
-        protected string ExpectedFileName { get; }
 
-        protected GeneratorTestBase(TGenerator generator, string expectedContentFolder, string expectedContentName, string expectedFileName)
+
+        protected GeneratorTestBase(TGenerator generator, string expectedContentFolder)
         {
             Generator = generator;
             ExpectedContentFolder = expectedContentFolder;
-            ExpectedContentName = expectedContentName;
-            ExpectedFileName = expectedFileName;
         }
 
-        [Fact]
-        public void GeneratesExpectedFileContent()
+        public abstract void GeneratesExpectedFileContent();
+        public abstract void GeneratesExpectedFileName();
+
+        protected virtual void GenerateAndCheckFileContent(string expectedContentResourceName)
         {
-            var expectedContent = ExpectedContentRepository.Get(ExpectedContentFolder, ExpectedContentName);
+            var expectedContent = ExpectedContentRepository.Get(ExpectedContentFolder, expectedContentResourceName);
             var actualFileContent = Generator.GenerateFileContent();
             Assert.Equal(expectedContent, actualFileContent);
         }
 
-        [Fact]
-        public void GeneratesExpectedFileName()
+        protected virtual void GenerateAndCheckFileName(string expectedFileName)
         {
             var actualFileName = Generator.GetFileName();
-            Assert.Equal(ExpectedFileName, actualFileName);
+            Assert.Equal(expectedFileName, actualFileName);
         }
     }
 }

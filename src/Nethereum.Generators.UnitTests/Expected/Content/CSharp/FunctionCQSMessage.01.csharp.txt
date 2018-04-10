@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
-using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using FunctionOutput;
 namespace DefaultNamespace
 {
@@ -11,6 +11,6 @@ namespace DefaultNamespace
     public class BaseStatsFunction:ContractMessage
     {
         [Parameter("uint256", "_number", 1)]
-        public BigInteger number {get; set;}
+        public BigInteger Number {get; set;}
     }
 }

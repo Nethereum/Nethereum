@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Nethereum.Generators.Core;
 using Nethereum.Generators.Net;
 using Nethereum.Generators.UnitTests.TestData;
 using Xunit;
@@ -24,7 +25,8 @@ namespace Nethereum.Generators.UnitTests.Tests.CSharp
                 "StandardContract.CQS",
                 "StandardContract.DTO", 
                 @"c:\Temp\",
-                "\\");
+                "\\",
+                CodeGenLanguage.CSharp);
         }
 
         [Fact]
