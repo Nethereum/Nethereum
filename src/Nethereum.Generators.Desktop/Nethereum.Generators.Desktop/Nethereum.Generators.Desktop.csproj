@@ -14,7 +14,13 @@
   </ItemGroup>
   
   <ItemGroup>
+    <ProjectReference Include="..\..\Nethereum.Generators.Desktop.Core\Nethereum.Generators.Desktop.Core.csproj" />
     <ProjectReference Include="..\..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\..\Nethereum.Generators.Plugin.UnitTestLib\Nethereum.Generators.Plugin.UnitTestLib.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   
 </Project>

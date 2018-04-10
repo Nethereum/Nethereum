@@ -11,6 +11,65 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
     public class EventFilterTopic
     {
 
+        private readonly string _privateKey = "0x00b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+
+        [Fact]
+        public async Task StoreAndRetrieveStructs()
+        {
+
+            var abi =
+                @"[{'constant':true,'inputs':[{'name':'','type':'bytes32'},{'name':'','type':'uint256'}],'name':'documents','outputs':[{'name':'name','type':'string'},{'name':'description','type':'string'},{'name':'sender','type':'address'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'key','type':'bytes32'},{'name':'name','type':'string'},{'name':'description','type':'string'}],'name':'storeDocument','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'}]";
+
+            var smartContractByteCode =
+                "6060604052341561000f57600080fd5b6105408061001e6000396000f30060606040526004361061004b5763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166379c17cc581146100505780638553139c14610189575b600080fd5b341561005b57600080fd5b610069600435602435610235565b60405173ffffffffffffffffffffffffffffffffffffffff821660408201526060808252845460026000196101006001841615020190911604908201819052819060208201906080830190879080156101035780601f106100d857610100808354040283529160200191610103565b820191906000526020600020905b8154815290600101906020018083116100e657829003601f168201915b50508381038252855460026000196101006001841615020190911604808252602090910190869080156101775780601f1061014c57610100808354040283529160200191610177565b820191906000526020600020905b81548152906001019060200180831161015a57829003601f168201915b50509550505050505060405180910390f35b341561019457600080fd5b610221600480359060446024803590810190830135806020601f8201819004810201604051908101604052818152929190602084018383808284378201915050505050509190803590602001908201803590602001908080601f01602080910402602001604051908101604052818152929190602084018383808284375094965061028795505050505050565b604051901515815260200160405180910390f35b60006020528160005260406000208181548110151561025057fe5b60009182526020909120600390910201600281015490925060018301915073ffffffffffffffffffffffffffffffffffffffff1683565b6000610291610371565b60606040519081016040908152858252602080830186905273ffffffffffffffffffffffffffffffffffffffff33168284015260008881529081905220805491925090600181016102e2838261039f565b600092835260209092208391600302018151819080516103069291602001906103d0565b506020820151816001019080516103219291602001906103d0565b506040820151600291909101805473ffffffffffffffffffffffffffffffffffffffff191673ffffffffffffffffffffffffffffffffffffffff9092169190911790555060019695505050505050565b60606040519081016040528061038561044e565b815260200161039261044e565b8152600060209091015290565b8154818355818115116103cb576003028160030283600052602060002091820191016103cb9190610460565b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f1061041157805160ff191683800117855561043e565b8280016001018555821561043e579182015b8281111561043e578251825591602001919060010190610423565b5061044a9291506104b3565b5090565b60206040519081016040526000815290565b6104b091905b8082111561044a57600061047a82826104cd565b6104886001830160006104cd565b5060028101805473ffffffffffffffffffffffffffffffffffffffff19169055600301610466565b90565b6104b091905b8082111561044a57600081556001016104b9565b50805460018160011615610100020316600290046000825580601f106104f35750610511565b601f01602090049060005260206000209081019061051191906104b3565b505600a165627a7a72305820049f1f3ad86cf097dd9c5de014d2e718b5b6b9a05b091d4daebcf60dd3e1213c0029";
+
+            var account = new Account(_privateKey);
+            var web3 = new Web3.Web3(account);
+
+            var accountBalance = await web3.Eth.GetBalance.SendRequestAsync(account.Address);
+
+            Assert.True(accountBalance.Value > 0);
+
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
+                    abi,
+                    smartContractByteCode,
+                    account.Address,
+                    new HexBigInteger(900000));
+
+            var contractAddress = receipt.ContractAddress;
+
+            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var storeDocumentFunction = contract.GetFunction("storeDocument");
+
+            var receipt1 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1");
+            Assert.Equal(1, receipt1.Status?.Value);
+            var receipt2 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2");
+            Assert.Equal(1, receipt2.Status?.Value);
+
+            var documentsFunction = contract.GetFunction("documents");
+            var document1 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k1", 0);
+            var document2 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k2", 0);
+
+            Assert.Equal("doc1", document1.Name);
+            Assert.Equal("doc2", document2.Name);
+
+        }
+
+        [FunctionOutput]
+        public class Document
+        {
+            [Parameter("string", "name", 1)]
+            public string Name { get; set; }
+
+            [Parameter("string", "description", 2)]
+            public string Description { get; set; }
+
+            [Parameter("address", "sender", 3)]
+            public string Sender { get; set; }
+
+        }
+      
         [Fact]
         public async Task DeployAndCallContract_WithEvents()
         {

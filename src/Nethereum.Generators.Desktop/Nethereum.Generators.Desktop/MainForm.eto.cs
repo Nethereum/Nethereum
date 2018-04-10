@@ -2,6 +2,10 @@ using System;
 using Eto.Forms;
 using Eto.Drawing;
 using System.Windows.Input;
+using Nethereum.Generators.Desktop.Core.Contract;
+using Nethereum.Generators.Desktop.Core.Infrastructure.UI;
+using Microsoft.Extensions.DependencyInjection;
+using Nethereum.Generators.Desktop.Core.ContractLibrary;
 
 namespace Nethereum.Generators.Desktop
 {
@@ -12,35 +16,25 @@ namespace Nethereum.Generators.Desktop
 		{
            
             Title = "Nethereum Code Generator";
-			ClientSize = new Size(400, 350);
-			Padding = 10;
+			ClientSize = new Size(400, 450);
+			Padding = SpacingPaddingDefaults.Padding1;
 
-            
-            var contractPanel = new ContractPanel();
-            var contractViewModel = new ContractViewModel();
-            contractPanel.DataContext = contractViewModel;
-            var nethereumContractLibraryPanel = new ContractLibraryPanel();
-            var nethereumContractLibraryViewModel = new ContractLibraryViewModel();
-            nethereumContractLibraryPanel.DataContext = nethereumContractLibraryViewModel;
 
-            var nethereumContractLibraryCommand = new ContractLibraryClassGeneratorCommand(contractViewModel, nethereumContractLibraryViewModel);
+            var contractPanel = Services.GetService<ContractPanel>();
 
-            var btnGenerateContractLibrary = new Button();
-            btnGenerateContractLibrary.Text = "Generate Contract Classes";
-            btnGenerateContractLibrary.Bind(c => c.Command, this, m => nethereumContractLibraryCommand);
-
-            var generateNetstandardCommand = new NetstandardLibraryGeneratorCommand(nethereumContractLibraryViewModel);
-
-            var btnGenerateProjectFile = new Button();
-            btnGenerateProjectFile.Text = "Generate Project File";
-            btnGenerateProjectFile.Bind(c => c.Command, this, m => generateNetstandardCommand);
-
+ 
+            var TabControlMain = new TabControl();
+            var tabControlPages = TabControlMain.Pages;
+            for(int i=0; i< TabPages.Length; i++)
+            {
+                tabControlPages.Add(TabPages[i]);
+            }
             
 
             Content = new TableLayout
             {
-                Spacing = new Size(5, 5), // space between each cell
-                Padding = new Padding(10, 10, 10, 10), // space around the table's sides
+                Spacing = SpacingPaddingDefaults.Spacing1,
+                Padding = SpacingPaddingDefaults.Padding1,
                 Rows = {
                     new TableRow(
                         new TableCell(new Label(){Text = "Contract details:" }, true)
@@ -49,18 +43,10 @@ namespace Nethereum.Generators.Desktop
                         new TableCell(contractPanel, true)
                     ),
                     new TableRow(
-                        new Label(){Text = "Nethereum library details" }
+                        new TableCell(TabControlMain, true)
                         
                     ),
-                    new TableRow(
-                       new TableCell(nethereumContractLibraryPanel, true)
-                    ),
-                     new TableRow(
-                       new TableCell(btnGenerateContractLibrary, true)
-                    ),
-                    new TableRow(
-                       new TableCell(btnGenerateProjectFile, true)
-                    ),
+                    
 
 		// by default, the last row & column will get scaled. This adds a row at the end to take the extra space of the form.
 		// otherwise, the above row will get scaled and stretch the TextBox/ComboBox/CheckBox to fill the remaining height.
@@ -80,25 +66,21 @@ namespace Nethereum.Generators.Desktop
 			{
 				Items =
 				{
-					// File submenu
+					
 					new ButtonMenuItem { Text = "&File" },
-					// new ButtonMenuItem { Text = "&Edit", Items = { /* commands/items */ } },
-					// new ButtonMenuItem { Text = "&View", Items = { /* commands/items */ } },
+					
 				},
 				ApplicationItems =
 				{
-					// application (OS X) or file menu (others)
-					//new ButtonMenuItem { Text = "&Preferences..." },
+					
 				},
 				QuitItem = quitCommand,
 				AboutItem = aboutCommand
 			};
 
-			// create toolbar			
-			//ToolBar = new ToolBar { Items = { clickMe } };
+			
 
-            var model = new ContractLibraryViewModel();
-            DataContext = model;
+            
         }
 	}
 }

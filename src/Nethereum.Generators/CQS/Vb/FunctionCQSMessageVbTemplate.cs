@@ -33,7 +33,7 @@ namespace Nethereum.Generators.CQS
 
             if (_functionABIModel.HasNoReturn())
             {
-                header = $@"{SpaceUtils.OneTab}<[Function](""{functionABI.Name}"">";
+                header = $@"{SpaceUtils.OneTab}<[Function](""{functionABI.Name}"")>";
             }
 
             return $@"{header}
