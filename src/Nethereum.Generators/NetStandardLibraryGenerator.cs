@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Nethereum.Generators.Core;
+﻿using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators
 {
     public class NetStandardLibraryGenerator
     {
         public string ProjectFileName { get; }
+        public CodeGenLanguage CodeGenLanguage { get; }
 
-        public NetStandardLibraryGenerator(string projectFileName)
+        public NetStandardLibraryGenerator(string projectFileName, CodeGenLanguage codeGenLanguage)
         {
-            ProjectFileName = projectFileName;
+            ProjectFileName = codeGenLanguage.AddProjectFileExtension(projectFileName);
+            CodeGenLanguage = codeGenLanguage;
         }
 
         public GeneratedFile GenerateFileContent(string outputPath)

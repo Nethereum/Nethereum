@@ -29,6 +29,7 @@ namespace Nethereum.Generators.Desktop.Core.ContractLibrary
                 var contractLibraryWriter = new ContractLibraryWriter();
                 contractLibraryWriter.WriteProjectFile(new GenerateProjectFileCommand()
                 {
+                    CodeLanguage = _contractLibraryViewModel.CodeLanguage,
                     Path = _contractLibraryViewModel.ProjectPath,
                     ProjectName = _contractLibraryViewModel.ProjectName
                 });
