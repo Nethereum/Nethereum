@@ -16,7 +16,7 @@ namespace Nethereum.Generators.DTOs
 
         private void InitisialiseNamespaceDependencies()
         {
-            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
         }
 
         public bool CanGenerateOutputDTO()

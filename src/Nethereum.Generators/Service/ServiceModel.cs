@@ -30,6 +30,7 @@ namespace Nethereum.Generators.Service
             NamespaceDependencies.AddRange(new[] {
                 "System",
                 "System.Threading.Tasks",
+                "System.Collections.Generic",
                 "System.Numerics",
                 "Nethereum.Hex.HexTypes",
                 "Nethereum.ABI.FunctionEncoding.Attributes",

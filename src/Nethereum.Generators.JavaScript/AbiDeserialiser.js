@@ -47,7 +47,7 @@ function buildContract(abiStr) {
     var abi = JSON.parse(abiStr);
     var functions = [];
     var events = [];
-    var constructor = null;
+    var constructor = new constructorAbi();
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
             functions.push(buildFunction(abi[i]));

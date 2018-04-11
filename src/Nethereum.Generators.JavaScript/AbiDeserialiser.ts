@@ -53,7 +53,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
     const abi = JSON.parse(abiStr);
     let functions = [];
     let events = [];
-    let constructor = null;
+    let constructor = new constructorAbi();
 
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
