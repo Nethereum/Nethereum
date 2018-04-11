@@ -11,6 +11,7 @@
     <None Remove="Expected\Content\CSharp\EventDTO.01.csharp.txt" />
     <None Remove="Expected\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
     <None Remove="Expected\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
+    <None Remove="Expected\Content\CSharp\ServiceGenerator.01.csharp.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+    <EmbeddedResource Include="Expected\Content\CSharp\ServiceGenerator.01.csharp.txt" />
     <EmbeddedResource Include="Expected\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
     <EmbeddedResource Include="Expected\Content\CSharp\EventDTO.01.csharp.txt" />
     <EmbeddedResource Include="Expected\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
