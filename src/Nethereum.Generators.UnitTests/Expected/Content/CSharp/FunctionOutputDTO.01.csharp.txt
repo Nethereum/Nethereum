@@ -9,9 +9,9 @@ namespace DefaultNamespace
     [FunctionOutput]
     public class GetCarOutputDTO
     {
-        [Parameter("uint32", "id", 1)]
-        public uint Id {get; set;}
-        [Parameter("string", "name", 2)]
-        public string Name {get; set;}
+        [Parameter("uint", "", 1)]
+        public BigInteger ReturnValue1 {get; set;}
+        [Parameter("string", "", 2)]
+        public string ReturnValue2 {get; set;}
     }
 }

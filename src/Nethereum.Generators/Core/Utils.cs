@@ -4,7 +4,7 @@ namespace Nethereum.Generators.Core
     {
         public string RemoveUnderscorePrefix(string value)
         {
-            return value.TrimStart('_');
+            return value?.TrimStart('_') ?? string.Empty;
         }
 
         public string LowerCaseFirstCharAndRemoveUnderscorePrefix(string value)

@@ -11,7 +11,9 @@ namespace Nethereum.Generators.Tests.CSharp
         {
             var functionAbi = new FunctionABI("GetCar", true)
             {
-                OutputParameters = new[] {new ParameterABI("uint32", "id", 1), new ParameterABI("string", "name", 2)}
+                OutputParameters = new[] {
+                    new ParameterABI("uint", order: 1),
+                    new ParameterABI("string", order: 2)}
             };
 
             return new FunctionOutputDTOGenerator(functionAbi, "DefaultNamespace", CodeGenLanguage.CSharp);
