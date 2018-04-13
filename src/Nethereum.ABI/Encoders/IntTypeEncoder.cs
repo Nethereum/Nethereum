@@ -46,7 +46,8 @@ namespace Nethereum.ABI.Encoders
                             : value.ToByteArray();
 
             if (bytes.Length > maxIntSizeInBytes)
-                throw new ArgumentOutOfRangeException(nameof(value), $"Integer value must not exeed maximum Solidity size of {maxIntSizeInBytes} bytes");
+                throw new ArgumentOutOfRangeException(nameof(value),
+                                                      $"Integer value must not exceed maximum Solidity size of {maxIntSizeInBytes} bytes. Length of passed value is {bytes.Length}");
             
             var ret = new byte[maxIntSizeInBytes];
 
