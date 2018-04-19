@@ -40,7 +40,7 @@ namespace Nethereum.Generators.Desktop.Core.ContractLibrary
                         _contractLibraryViewModel.CodeLanguage);
                 var contractLibraryWriter = new ContractLibraryWriter();
                 contractLibraryWriter.WriteClasses(generateClassesCommandCSharp);
-                control.ShowInformation("Succefully generated files");
+                control.ShowInformation("Succesfully generated files");
             }
             catch (Exception ex)
             {
