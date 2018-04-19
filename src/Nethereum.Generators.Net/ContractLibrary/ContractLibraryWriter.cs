@@ -19,7 +19,7 @@ namespace Nethereum.Generators.Net.ContractLibrary
 
         public void WriteProjectFile(GenerateProjectFileCommand command)
         {
-            var projectGenerator = new NetStandardLibraryGenerator(command.ProjectName);
+            var projectGenerator = new NetStandardLibraryGenerator(command.ProjectName, command.CodeLanguage);
             var generatedFile = projectGenerator.GenerateFileContent(command.Path);
             GeneratedFileWriter.WriteFileToDisk(generatedFile);
         }
