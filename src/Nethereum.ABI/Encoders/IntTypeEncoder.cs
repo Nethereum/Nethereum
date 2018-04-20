@@ -35,30 +35,32 @@ namespace Nethereum.ABI.Encoders
             return EncodeInt(bigInt);
         }
 
-        public byte[] EncodeInt(int i)
+        public byte[] EncodeInt(int value)
         {
-            return EncodeInt(new BigInteger(i));
+            return EncodeInt(new BigInteger(value));
         }
 
-        public byte[] EncodeInt(BigInteger bigInt)
+        public byte[] EncodeInt(BigInteger value)
         {
-            var ret = new byte[32];
+            const int maxIntSizeInBytes = 32;
+            //It should always be Big Endian.
+            var bytes = BitConverter.IsLittleEndian
+                            ? value.ToByteArray().Reverse().ToArray()
+                            : value.ToByteArray();
+
+            if (bytes.Length > maxIntSizeInBytes)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                                                      $"Integer value must not exceed maximum Solidity size of {maxIntSizeInBytes} bytes. Length of passed value is {bytes.Length}");
+            
+            var ret = new byte[maxIntSizeInBytes];
 
             for (var i = 0; i < ret.Length; i++)
-                if (bigInt.Sign < 0)
+                if (value.Sign < 0)
                     ret[i] = 0xFF;
                 else
                     ret[i] = 0;
 
-            byte[] bytes;
-
-            //It should always be Big Endian.
-            if (BitConverter.IsLittleEndian)
-                bytes = bigInt.ToByteArray().Reverse().ToArray();
-            else
-                bytes = bigInt.ToByteArray().ToArray();
-
-            Array.Copy(bytes, 0, ret, 32 - bytes.Length, bytes.Length);
+            Array.Copy(bytes, 0, ret, maxIntSizeInBytes - bytes.Length, bytes.Length);
 
             return ret;
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -216,6 +217,15 @@ namespace Nethereum.ABI.UnitTests
             uint? given = null;
             var result = intType.Encode(given).ToHex();
             Assert.Equal("", result);
+        }
+
+        public virtual void ShouldThrowErrorWhileEncodeLargeInt()
+        {
+            const int maxIntSizeInBytes = 32;
+            var intType = new IntType("uint");
+            var given = new BigInteger(Enumerable.Range(1, maxIntSizeInBytes + 1).Select(x => (byte) x).ToArray());
+            var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
+            Assert.StartsWith($"Integer value must not exceed maximum Solidity size of {maxIntSizeInBytes} bytes", ex.Message);
         }
 
         [Fact]

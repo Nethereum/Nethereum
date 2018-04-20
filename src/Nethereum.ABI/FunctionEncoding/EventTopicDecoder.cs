@@ -49,8 +49,6 @@ namespace Nethereum.ABI.FunctionEncoding
                 }
                 topicNumber = topicNumber + 1;
             }
-
-           // var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Order >= topicNumber);
             result = DecodeAttributes(data, result, dataProperties.ToArray());
             return result;
         }

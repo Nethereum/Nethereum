@@ -33,7 +33,7 @@ namespace Nethereum.Generators.Desktop.Core.ContractLibrary
                     Path = _contractLibraryViewModel.ProjectPath,
                     ProjectName = _contractLibraryViewModel.ProjectName
                 });
-
+                control.ShowInformation("Succesfully generated files");
             }
             catch (Exception ex)
             {
