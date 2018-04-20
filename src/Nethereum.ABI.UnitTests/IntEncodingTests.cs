@@ -201,6 +201,24 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldEncodeNullableUInt()
+        {
+            var intType = new IntType("uint");
+            uint? given = 1234567;
+            var result = intType.Encode(given).ToHex();
+            Assert.Equal("000000000000000000000000000000000000000000000000000000000012d687", result);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeNullableUIntNull()
+        {
+            var intType = new IntType("uint");
+            uint? given = null;
+            var result = intType.Encode(given).ToHex();
+            Assert.Equal("", result);
+        }
+
+        [Fact]
         public void Test()
         {
             Debug.WriteLine(ToTwosComplement(-37797598375987353).ToByteArray().Reverse().ToArray().ToHex());
