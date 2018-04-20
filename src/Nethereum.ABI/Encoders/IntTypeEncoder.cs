@@ -17,6 +17,9 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value)
         {
+            if (value == null)
+                return new byte[0];
+            
             BigInteger bigInt;
 
             var stringValue = value as string;
@@ -27,7 +30,7 @@ namespace Nethereum.ABI.Encoders
                 bigInt = (BigInteger) value;
             else if (value.IsNumber())
                 bigInt = BigInteger.Parse(value.ToString());
-            else
+            else 
                 throw new Exception("Invalid value for type '" + this + "': " + value + " (" + value.GetType() + ")");
             return EncodeInt(bigInt);
         }
