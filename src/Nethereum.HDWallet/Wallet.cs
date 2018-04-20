@@ -43,6 +43,9 @@ namespace Nethereum.HdWallet
 
         public string Seed { get; private set; }
         public string[] Words { get; private set; }
+
+        public bool IsMneumonicValidChecksum { get; private set; }
+
         public string Path { get; }
 
         private void InitialiseSeed(Wordlist wordlist, WordCount wordCount, string seedPassword = null)
@@ -50,6 +53,7 @@ namespace Nethereum.HdWallet
             var mneumonic = new Mnemonic(wordlist, wordCount);
             Seed = mneumonic.DeriveSeed(seedPassword).ToHex();
             Words = mneumonic.Words;
+            IsMneumonicValidChecksum = mneumonic.IsValidChecksum;
         }
 
         private void InitialiseSeed(string words, string seedPassword = null)
@@ -57,6 +61,7 @@ namespace Nethereum.HdWallet
             var mneumonic = new Mnemonic(words);
             Seed = mneumonic.DeriveSeed(seedPassword).ToHex();
             Words = mneumonic.Words;
+            IsMneumonicValidChecksum = mneumonic.IsValidChecksum;
         }
 
         private string GetIndexPath(int index)
