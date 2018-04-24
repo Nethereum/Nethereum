@@ -8,10 +8,10 @@ var abi =
 var contractName = "MyContractName";
 var baseNamespace = "StandardToken";
 var basePath = "codeGenNodeTestsVb";
-var projectName = "StandardToken.vbproj";
+var projectName = "StandardToken";
 
 //Csharp 0, Vb 1, Fsharp 3
-codegen.generateNetStandardClassLibrary(projectName, basePath);
+codegen.generateNetStandardClassLibrary(projectName, basePath, 1);
 
 codegen.generateAllClasses(abi,
     contractByteCode,

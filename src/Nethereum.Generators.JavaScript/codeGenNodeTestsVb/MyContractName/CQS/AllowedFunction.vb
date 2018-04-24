@@ -1,5 +1,6 @@
 Imports System
 Imports System.Threading.Tasks
+Imports System.Collections.Generic
 Imports System.Numerics
 Imports Nethereum.Hex.HexTypes
 Imports Nethereum.Contracts.CQS
@@ -12,9 +13,9 @@ Namespace StandardToken.MyContractName.CQS
         Inherits ContractMessage
     
         <[Parameter]("address", "", 1)>
-        Public Property B As String
+        Public Property ReturnValue1 As String
         <[Parameter]("address", "", 2)>
-        Public Property C As String
+        Public Property ReturnValue2 As String
     
     End Class
 

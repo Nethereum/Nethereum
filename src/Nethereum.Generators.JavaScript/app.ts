@@ -47,8 +47,8 @@ function outputFile(generatedFile: Nethereum.Generators.Core.GeneratedFile) {
     fs.writeFileSync(fullPath, generatedFile.get_GeneratedCode());
 }
 
-export function  generateNetStandardClassLibrary(projectName: string, basePath: string) {
-    var projectGenerator = new Nethereum.Generators.NetStandardLibraryGenerator(projectName);
+export function  generateNetStandardClassLibrary(projectName: string, basePath: string, codeLang: int) {
+    var projectGenerator = new Nethereum.Generators.NetStandardLibraryGenerator(projectName, codeLang);
     var generatedProject = projectGenerator.GenerateFileContent(basePath);
     outputFile(generatedProject);
 }

@@ -18,9 +18,11 @@ namespace Nethereum.Generators.Core
         {
             if (string.IsNullOrEmpty(projectFileName))
                 throw new ArgumentNullException(nameof(projectFileName));
+            
 
-            if (ProjectFileExtensions.TryGetValue(language, out string extension))
+            if (ProjectFileExtensions.ContainsKey(language))
             {
+                var extension = ProjectFileExtensions[language];
                 var requestedExtension = Path.GetExtension(projectFileName);
                 if (string.IsNullOrEmpty(requestedExtension))
                     return $"{projectFileName.TrimEnd('.')}{extension}";
@@ -28,7 +30,7 @@ namespace Nethereum.Generators.Core
                 return Path.ChangeExtension(projectFileName, extension);
             }
 
-            throw new Exception($"Project file generation is not supported for {language}");
+            return null;
         }
 
         public static string GetCodeOutputFileExtension(this CodeGenLanguage codeGenLanguage)

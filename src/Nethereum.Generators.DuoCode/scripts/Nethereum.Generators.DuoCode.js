@@ -290,11 +290,15 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
                 Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().NoTabs]);
         this.ProjectFileName = null;
+        this.CodeGenLanguage = 0 /* CodeGenLanguage */;
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
-    $t.ctor = function NetStandardLibraryGenerator(projectFileName) {
+    $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
+    $t.ctor = function NetStandardLibraryGenerator(projectFileName, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
-        this.ProjectFileName = projectFileName;
+        this.ProjectFileName = Nethereum.Generators.Core.CodeGenLanguageExt.AddProjectFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+            codeGenLanguage), projectFileName);
+        this.CodeGenLanguage = codeGenLanguage;
     };
     $p.GenerateFileContent = function NetStandardLibraryGenerator_GenerateFileContent(outputPath) {
         return new Nethereum.Generators.Core.GeneratedFile.ctor(this.template, this.get_ProjectFileName(), 
@@ -394,25 +398,7 @@ $d.define(Nethereum.Generators.Core.ParameterABIModel, Nethereum.Generators.Core
         return this.get_CommonGenerators().GeneratePropertyName(this.GetParameterName(name, order));
     };
     $p.GetParameterName = function ParameterABIModel_GetParameterName(name, order) {
-        if (name != "")
-            return name;
-        switch (order) {
-            case 0:
-                return "a";
-            case 1:
-                return "b";
-            case 2:
-                return "c";
-            case 3:
-                return "d";
-            case 4:
-                return "e";
-            case 5:
-                return "f";
-            case 6:
-                return "g";
-        }
-        return "h";
+        return String.IsNullOrEmpty(name) ? "ReturnValue" + $d.toString(order) : name;
     };
 });
 $d.define(Nethereum.Generators.Core.ParameterABIModelTypeMap, null, function($t, $p) {
@@ -876,6 +862,33 @@ $d.define(Nethereum.Generators.CQS.ClassTemplateBase$1, null, function($t, $p, T
 }, [$d.typeParam("TModel")]);
 Nethereum.Generators.Core.CodeGenLanguage = $d.typeEnum("Nethereum.Generators.Core.CodeGenLanguage", 45, $asm, 257, ["CSharp", "Vb", "Proto", "FSharp"], [0, 1, 2, 3]);
 $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
+    $t.cctor = function() {
+        $t.ProjectFileExtensions = (function() {
+            var $obj = new (System.Collections.Generic.Dictionary$2(Nethereum.Generators.Core.CodeGenLanguage, 
+                String, 25884).ctor)();
+            $obj.Add$1(0 /* CodeGenLanguage.CSharp */, ".csproj");
+            $obj.Add$1(3 /* CodeGenLanguage.FSharp */, ".fsproj");
+            $obj.Add$1(1 /* CodeGenLanguage.Vb */, ".vbproj");
+            return $obj;
+        }).call(this);
+    };
+    $t.AddProjectFileExtension = function CodeGenLanguageExt_AddProjectFileExtension(language, projectFileName) {
+        if (String.IsNullOrEmpty(projectFileName))
+            throw new System.ArgumentNullException.ctor$1("projectFileName");
+
+
+        if ($t().ProjectFileExtensions.ContainsKey(language)) {
+            var extension = $t().ProjectFileExtensions.get_Item(language);
+            var requestedExtension = System.IO.Path.GetExtension(projectFileName);
+            if (String.IsNullOrEmpty(requestedExtension))
+                return String.Format("{0}{1}", [projectFileName.TrimEnd($d.array(System.Char, [46 /*'.'*/])), 
+                    extension]);
+
+            return System.IO.Path.ChangeExtension(projectFileName, extension);
+        }
+
+        return null;
+    };
     $t.GetCodeOutputFileExtension = function CodeGenLanguageExt_GetCodeOutputFileExtension(codeGenLanguage) {
         if (codeGenLanguage == 0 /* CodeGenLanguage.CSharp */)
             return "cs";
@@ -1008,7 +1021,7 @@ $d.define(Nethereum.Generators.Core.Utils, null, function($t, $p) {
         $t.$baseType.ctor.call(this);
     };
     $p.RemoveUnderscorePrefix = function Utils_RemoveUnderscorePrefix(value) {
-        return value.TrimStart($d.array(System.Char, [95 /*'_'*/]));
+        return (value != null ? value.TrimStart($d.array(System.Char, [95 /*'_'*/])) : null) || String.Empty;
     };
     $p.LowerCaseFirstCharAndRemoveUnderscorePrefix = function Utils_LowerCaseFirstCharAndRemoveUnderscorePrefix(value) {
         value = this.RemoveUnderscorePrefix(value);
@@ -1089,7 +1102,8 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.
     };
     $p.InitisialiseNamespaceDependencies = function ContractDeploymentCQSMessageModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", 
+            "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
 $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
@@ -1155,7 +1169,8 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageModel, Nethereum.Generators
     };
     $p.InitisialiseNamespaceDependencies = function FunctionCQSMessageModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", 
+            "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
@@ -1388,7 +1403,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOModel, Nethereum.Generators.Core.Typ
     };
     $p.InitisialiseNamespaceDependencies = function EventDTOModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
     $p.CanGenerateOutputDTO = function EventDTOModel_CanGenerateOutputDTO() {
         return this.get_EventABI().get_InputParameters() != null && this.get_EventABI().get_InputParameters().length > 0;
@@ -1444,7 +1459,7 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOModel, Nethereum.Generators
     };
     $p.InitisialiseNamespaceDependencies = function FunctionOutputDTOModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
     $p.CanGenerateOutputDTO = function FunctionOutputDTOModel_CanGenerateOutputDTO() {
         return this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length > 0 && this.get_FunctionABI().get_Constant();
@@ -1783,7 +1798,7 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
     };
     $p.InitisialiseNamespaceDependencies = function ServiceModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", 
             "Nethereum.Web3", "Nethereum.RPC.Eth.DTOs", "Nethereum.Contracts.CQS", "System.Threading"]));
     };
 });

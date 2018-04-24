@@ -41,13 +41,14 @@ declare module Nethereum {
         // Nethereum.Generators.NetStandardLibraryGenerator
         export interface NetStandardLibraryGenerator extends System.Object {
             get_ProjectFileName(): string;
+            get_CodeGenLanguage(): Core.CodeGenLanguage;
             GenerateFileContent(outputPath: string): Core.GeneratedFile;
         }
         export interface NetStandardLibraryGeneratorTypeFunc extends TypeFunction {
             (): NetStandardLibraryGeneratorTypeFunc;
             prototype: NetStandardLibraryGenerator;
-            new (projectFileName: string): NetStandardLibraryGenerator;
-            ctor: { new (projectFileName: string): NetStandardLibraryGenerator; };
+            new (projectFileName: string, codeGenLanguage: Core.CodeGenLanguage): NetStandardLibraryGenerator;
+            ctor: { new (projectFileName: string, codeGenLanguage: Core.CodeGenLanguage): NetStandardLibraryGenerator; };
         }
         const NetStandardLibraryGenerator: NetStandardLibraryGeneratorTypeFunc;
         module Core {
@@ -165,6 +166,7 @@ declare module Nethereum {
             // Nethereum.Generators.Core.CodeGenLanguageExt
             export interface CodeGenLanguageExtTypeFunc extends TypeFunction {
                 (): CodeGenLanguageExtTypeFunc;
+                AddProjectFileExtension(language: CodeGenLanguage, projectFileName: string): string;
                 GetCodeOutputFileExtension(codeGenLanguage: CodeGenLanguage): string;
             }
             const CodeGenLanguageExt: CodeGenLanguageExtTypeFunc;

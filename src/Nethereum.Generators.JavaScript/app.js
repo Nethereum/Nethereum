@@ -24,8 +24,8 @@ function outputFile(generatedFile) {
     }
     fs.writeFileSync(fullPath, generatedFile.get_GeneratedCode());
 }
-function generateNetStandardClassLibrary(projectName, basePath) {
-    var projectGenerator = new Nethereum.Generators.NetStandardLibraryGenerator(projectName);
+function generateNetStandardClassLibrary(projectName, basePath, codeLang) {
+    var projectGenerator = new Nethereum.Generators.NetStandardLibraryGenerator(projectName, codeLang);
     var generatedProject = projectGenerator.GenerateFileContent(basePath);
     outputFile(generatedProject);
 }
