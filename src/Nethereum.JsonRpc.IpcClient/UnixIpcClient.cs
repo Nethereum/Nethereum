@@ -28,7 +28,11 @@ namespace Nethereum.JsonRpc.IpcClient
                 {
                     var endPoint = new UnixDomainSocketEndPoint(IpcPath);
                     _socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                    _socket.Connect(endPoint);
+                    if (!Task.Run(() =>
+                        _socket.Connect(endPoint)).Wait(ConnectionTimeout))
+                    {
+                        throw new TimeoutException();
+                    }
                 }
             }
             catch
@@ -46,7 +50,7 @@ namespace Nethereum.JsonRpc.IpcClient
             int bytesRead = 0;
             if (Task.Run(() => 
                     bytesRead = client.Receive(buffer, SocketFlags.None)
-                ).Wait(2000))
+                ).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }
@@ -58,7 +62,7 @@ namespace Nethereum.JsonRpc.IpcClient
              int bytesRead = 0;
             if (Task.Run(async () => 
                     bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
-                ).Wait(2000))
+                ).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }
