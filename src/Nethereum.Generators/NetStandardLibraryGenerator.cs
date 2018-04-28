@@ -9,7 +9,8 @@ namespace Nethereum.Generators
 
         public NetStandardLibraryGenerator(string projectFileName, CodeGenLanguage codeGenLanguage)
         {
-            ProjectFileName = codeGenLanguage.AddProjectFileExtension(projectFileName);
+            // NOTE: This breaks javascript don't use the extension
+            ProjectFileName = CodeGenLanguageExt.AddProjectFileExtension(codeGenLanguage, projectFileName);
             CodeGenLanguage = codeGenLanguage;
         }
 

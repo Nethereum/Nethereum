@@ -10,6 +10,10 @@ namespace Nethereum.Generators.Core
         {
         }
 
+        public ParameterABIModel() : base()
+        {
+        }
+
         public override string GetVariableName()
         {
             return GetVariableName(Parameter.Name, Parameter.Order);

@@ -2,13 +2,17 @@
 {
     public class ParameterModel<TParameter> where TParameter:Parameter
     {
-        public TParameter Parameter { get; }
+        public TParameter Parameter { get; set; }
         protected CommonGenerators CommonGenerators { get; }
 
-        public ParameterModel(TParameter parameter)
+        public ParameterModel()
+        {
+            CommonGenerators = new CommonGenerators();
+        }
+
+        public ParameterModel(TParameter parameter):this()
         {
             Parameter = parameter;
-            CommonGenerators = new CommonGenerators();
         }
 
         public virtual string GetVariableName()

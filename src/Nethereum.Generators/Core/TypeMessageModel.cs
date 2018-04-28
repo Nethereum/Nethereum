@@ -8,7 +8,7 @@ namespace Nethereum.Generators.Core
 
         public string Namespace { get; }
         public string Name { get; }
-        public string ClassNameSuffix { get; }
+        public string ClassNameSuffix { get; protected set; }
         public List<string> NamespaceDependencies { get; }
         public CodeGenLanguage CodeGenLanguage { get; set; }
 

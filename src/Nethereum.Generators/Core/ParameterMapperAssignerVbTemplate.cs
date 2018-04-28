@@ -1,8 +1,6 @@
-﻿using Nethereum.Generators.Core;
-
-namespace Nethereum.Generators.Core
+﻿namespace Nethereum.Generators.Core
 {
-    public class ParameterMapperAssignerCSharpTemplate<TParameterModelFrom, TParameterModelTo,
+    public class ParameterMapperAssignerVbTemplate<TParameterModelFrom, TParameterModelTo,
         TParameterFrom, TParameterTo> : ParameterMapperAssignerTemplate<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>
         where TParameterFrom : Parameter
         where TParameterModelFrom : ParameterModel<TParameterFrom>, new()
