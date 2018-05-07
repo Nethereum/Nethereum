@@ -13,16 +13,16 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Event("Pushed")]
         public class PushedEventDTO
         {
-            [Parameter("address", "publisher", 1, true)]
-            public string Publisher { get; set; }
-            [Parameter("address", "thing", 2, true)]
-            public string Thing { get; set; }
-            [Parameter("bytes", "content", 3, false)]
-            public byte[] Content { get; set; }
-            [Parameter("bytes", "key", 4, false)]
-            public byte[] Key { get; set; }
-            [Parameter("bytes32", "nonce", 5, true)]
-            public byte[] Nonce { get; set; }
+            [Parameter("address", "first", 1, true)]
+            public string First { get; set; }
+            [Parameter("address", "second", 2, true)]
+            public string Second { get; set; }
+            [Parameter("bytes", "third", 3, false)]
+            public byte[] Third { get; set; }
+            [Parameter("bytes", "fourth", 4, false)]
+            public byte[] Fourth { get; set; }
+            [Parameter("bytes32", "fifth", 5, true)]
+            public byte[] Fifth { get; set; }
         }
 
 
@@ -49,16 +49,16 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Event("Pushed2")]
         public class Pushed2EventDTO
         {
-            [Parameter("address", "publisher", 1, true)]
-            public string Publisher { get; set; }
-            [Parameter("address", "thing", 2, true)]
-            public string Thing { get; set; }
-            [Parameter("bytes32", "nonce", 3, true)]
-            public byte[] Nonce { get; set; }
-            [Parameter("bytes", "content", 4, false)]
-            public byte[] Content { get; set; }
-            [Parameter("bytes", "key", 5, false)]
-            public byte[] Key { get; set; }
+            [Parameter("address", "first", 1, true)]
+            public string First { get; set; }
+            [Parameter("address", "second", 2, true)]
+            public string Second { get; set; }
+            [Parameter("bytes32", "third", 3, true)]
+            public byte[] Third { get; set; }
+            [Parameter("bytes", "fourth", 4, false)]
+            public byte[] Fourth { get; set; }
+            [Parameter("bytes", "fifth", 5, false)]
+            public byte[] Fifth { get; set; }
         }
 
         [Function("PushEvent")]
@@ -91,21 +91,21 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
     
             //This fails to create a filter
             event Pushed(
-                address indexed publisher,
-                address indexed thing,
-                bytes content,            
-                bytes key,
-                bytes32 indexed nonce 
+                address indexed first,
+                address indexed second,
+                bytes third,            
+                bytes fourth,
+                bytes32 indexed fifth 
             );
 
 
             //This is ok creating a filter
             event Pushed2(
-                address indexed publisher,
-                address indexed thing,
-                bytes32 indexed nonce,
-                bytes content,            
-                bytes key
+                address indexed first,
+                address indexed second,
+                bytes32 indexed third,
+                bytes fourth,            
+                bytes fifth
             );
 
             function PushEvent() public
@@ -168,7 +168,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             Assert.NotEmpty(eventsPushed);
 
-            Assert.Equal(addressFrom.ToLower(), eventsPushed[0].Event.Publisher.ToLower());
+            Assert.Equal(addressFrom.ToLower(), eventsPushed[0].Event.First.ToLower());
 
 
             // Getting changes from the event with indexed at the front
