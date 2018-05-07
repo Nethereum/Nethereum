@@ -14,10 +14,12 @@ namespace Nethereum.ABI.FunctionEncoding
     public class ParametersEncoder
     {
         private readonly IntTypeEncoder intTypeEncoder;
+        private readonly AttributesToABIExtractor attributesToABIExtractor;
 
         public ParametersEncoder()
         {
             intTypeEncoder = new IntTypeEncoder();
+            attributesToABIExtractor = new AttributesToABIExtractor();
         }
 
         public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
@@ -79,14 +81,21 @@ namespace Nethereum.ABI.FunctionEncoding
             var parameterObjects = new List<ParameterAttributeValue>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
+                if (property.IsDefined(typeof(ParameterAttribute), true))
                 {
                     var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
 #if DOTNET35
                     var propertyValue = property.GetValue(instanceValue, null);
 #else
-                     var propertyValue = property.GetValue(instanceValue);
+                    var propertyValue = property.GetValue(instanceValue);
 #endif
+
+                    if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
+                    {
+                        attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
+                        propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
+                    }
+
                     parameterObjects.Add(new ParameterAttributeValue
                     {
                         ParameterAttribute = parameterAttribute,
@@ -101,5 +110,42 @@ namespace Nethereum.ABI.FunctionEncoding
             var objectValues = parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
             return EncodeParameters(abiParameters, objectValues);
         }
+
+        public object[] GetTupleComponentValuesFromTypeAttributes(Type type, object instanceValue)
+        {
+#if DOTNET35
+            var properties = type.GetTypeInfo().DeclaredProperties();
+#else
+            var properties = type.GetTypeInfo().DeclaredProperties;
+#endif
+            var propertiesInOrder = properties.Where(x => x.IsDefined(typeof(ParameterAttribute), true))
+                .OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order);
+
+            var parameterObjects = new List<object>();
+
+            foreach (var property in propertiesInOrder)
+            {
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+
+#if DOTNET35
+                var propertyValue = property.GetValue(instanceValue, null);
+#else
+                var propertyValue = property.GetValue(instanceValue);
+#endif
+
+                if (parameterAttribute.Parameter.ABIType is TupleType)
+                {
+                    propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
+                }
+
+                parameterObjects.Add(propertyValue);
+            }
+
+            return parameterObjects.ToArray();
+        }
+ 
+
     }
-}
+ }
+
+   
