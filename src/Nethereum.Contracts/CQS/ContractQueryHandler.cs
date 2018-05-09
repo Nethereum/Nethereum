@@ -16,7 +16,7 @@ namespace Nethereum.Contracts.CQS
             var function = contract.GetFunction<TContractMessage>();
             ValidateContractMessage(contractFunctionMessage);
             return await function.CallDeserializingToObjectAsync<TFunctionOutput>(contractFunctionMessage,
-                contractFunctionMessage.FromAddress,
+                GetDefaultAddressFrom(contractFunctionMessage),
                 GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
         }
 
@@ -29,7 +29,7 @@ namespace Nethereum.Contracts.CQS
             var function = contract.GetFunction<TContractMessage>();
             ValidateContractMessage(contractFunctionMessage);
             return await function.CallAsync<TFunctionOutput>(contractFunctionMessage,
-                contractFunctionMessage.FromAddress,
+                GetDefaultAddressFrom(contractFunctionMessage),
                 GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
         }
     }

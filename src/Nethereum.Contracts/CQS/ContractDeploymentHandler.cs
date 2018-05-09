@@ -31,7 +31,7 @@ namespace Nethereum.Contracts.CQS
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
             var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
             return deployContractTransactionBuilder.BuildTransaction(contractDeploymentMessage.ByteCode,
-                contractDeploymentMessage.FromAddress,
+                GetDefaultAddressFrom(contractDeploymentMessage),
                 gasEstimate, GetGasPrice(contractDeploymentMessage), GetValue(contractDeploymentMessage),
                 contractDeploymentMessage);
         }
@@ -51,7 +51,7 @@ namespace Nethereum.Contracts.CQS
             HexBigInteger gasEstimate)
         {
             return Eth.DeployContract.SendRequestAsync(contractDeploymentMessage.ByteCode,
-                contractDeploymentMessage.FromAddress,
+                GetDefaultAddressFrom(contractDeploymentMessage),
                 gasEstimate,
                 GetGasPrice(contractDeploymentMessage),
                 GetValue(contractDeploymentMessage),
@@ -63,7 +63,7 @@ namespace Nethereum.Contracts.CQS
             CancellationTokenSource tokenSource = null)
         {
             return Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractDeploymentMessage.ByteCode,
-                contractDeploymentMessage.FromAddress,
+                GetDefaultAddressFrom(contractDeploymentMessage),
                 gasEstimate,
                 GetGasPrice(contractDeploymentMessage),
                 GetValue(contractDeploymentMessage),
@@ -75,7 +75,7 @@ namespace Nethereum.Contracts.CQS
         {
             ValidateContractMessage(contractDeploymentMessage);
             return Eth.DeployContract.EstimateGasAsync(contractDeploymentMessage.ByteCode,
-                contractDeploymentMessage.FromAddress, null, GetValue(contractDeploymentMessage),
+                GetDefaultAddressFrom(contractDeploymentMessage), null, GetValue(contractDeploymentMessage),
                 contractDeploymentMessage);
         }
     }

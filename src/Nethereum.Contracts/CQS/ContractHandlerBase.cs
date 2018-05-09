@@ -19,6 +19,18 @@ namespace Nethereum.Contracts.CQS
             Eth = ethApiContractService;
         }
 
+        protected virtual string GetDefaultAddressFrom(TContractMessage contractMessage)
+        {
+            if (string.IsNullOrEmpty(contractMessage.FromAddress))
+            {
+                if (Eth.TransactionManager?.Account != null)
+                {
+                   return Eth.TransactionManager.Account.Address;
+                }
+            }
+            return contractMessage.FromAddress;
+        }
+
         protected virtual HexBigInteger GetMaximumGas(TContractMessage contractMessage)
         {
             return GetDefaultValue(contractMessage.Gas);
