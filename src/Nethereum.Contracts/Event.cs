@@ -183,4 +183,48 @@ namespace Nethereum.Contracts
             return EventBuilder.DecodeAllEventsForEvent<T>(logs);
         }
     }
+
+
+    public class Event<T> : Event where T: new()
+    {
+        public Event(Contract contract, EventBuilder @event) : base(contract, @event)
+        {
+        }
+
+        public List<EventLog<T>> DecodeAllEventsForEvent(JArray logs)
+        {
+            return DecodeAllEventsForEvent<T>(logs);
+        }
+
+        public List<EventLog<T>> DecodeAllEventsForEvent(FilterLog[] logs)
+        {
+            return DecodeAllEventsForEvent<T>(logs);
+        }
+
+
+        public static List<EventLog<T>> DecodeAllEvents(FilterLog[] logs) 
+        {
+            return DecodeAllEvents<T>(logs);
+        }
+
+#if !DOTNET35
+        public Task<List<EventLog<T>>> GetAllChanges(NewFilterInput filterInput)
+        {
+            return GetAllChanges<T>(filterInput);
+        }
+
+        public Task<List<EventLog<T>>> GetAllChanges(HexBigInteger filterId)
+        {
+            return GetAllChanges<T>(filterId);
+        }
+
+        public Task<List<EventLog<T>>> GetFilterChanges(HexBigInteger filterId)
+        {
+            return GetFilterChanges<T>(filterId);
+        }
+#else
+
+#endif
+    }
+
 }

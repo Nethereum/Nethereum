@@ -23,12 +23,27 @@ namespace Nethereum.Contracts.CQS
         public EthApiContractService EthApiContractService { get; }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
+             CancellationTokenSource tokenSource = null)
+            where TEthereumContractFunctionMessage : ContractMessage, new()
+        {
+            var message = new TEthereumContractFunctionMessage();
+            return SendRequestAndWaitForReceiptAsync(message, tokenSource);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
             TEthereumContractFunctionMessage transactionMesssage, CancellationTokenSource tokenSource = null)
             where TEthereumContractFunctionMessage : ContractMessage
         {
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAndWaitForReceiptAsync(transactionMesssage, ContractAddress, tokenSource);
+        }
+
+        public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>()
+            where TEthereumContractFunctionMessage : ContractMessage, new()
+        {
+            var message = new TEthereumContractFunctionMessage();
+            return SendRequestAsync(message);
         }
 
         public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>(
@@ -52,7 +67,7 @@ namespace Nethereum.Contracts.CQS
 
         public Task<TransactionReceipt> SendDeploymentRequestAndWaitForReceiptAsync<TEthereumContractDeploymentMessage>(
             TEthereumContractDeploymentMessage ethereumDeploymentMessage, CancellationTokenSource tokenSource = null)
-            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage, new()
         {
             SetAddressFrom(ethereumDeploymentMessage);
             var deploymentHandler =
@@ -62,7 +77,7 @@ namespace Nethereum.Contracts.CQS
 
         public Task<string> SendDeploymentRequestAsync<TEthereumContractDeploymentMessage>(
             TEthereumContractDeploymentMessage ethereumDeploymentMessage)
-            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage, new()
         {
             SetAddressFrom(ethereumDeploymentMessage);
             var deploymentHandler =
@@ -72,7 +87,7 @@ namespace Nethereum.Contracts.CQS
 
         public Task<HexBigInteger> EstimateDeploymentGasAsync<TEthereumContractDeploymentMessage>(
             TEthereumContractDeploymentMessage ethereumDeploymentMessage)
-            where TEthereumContractDeploymentMessage : ContractDeploymentMessage
+            where TEthereumContractDeploymentMessage : ContractDeploymentMessage, new()
         {
             var command = EthApiContractService.GetContractDeploymentHandler<TEthereumContractDeploymentMessage>();
             SetAddressFrom(ethereumDeploymentMessage);
@@ -92,6 +107,17 @@ namespace Nethereum.Contracts.CQS
                 ContractAddress, blockParameter);
         }
 
+        public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
+            TEthereumFunctionReturn>(
+            BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : ContractMessage, new()
+            where TEthereumFunctionReturn : new()
+        {
+            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
+            return QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage, TEthereumFunctionReturn>(
+                ethereumContractFunctionMessage, blockParameter);
+        }
+
         public Task<TReturn> QueryAsync<TEthereumContractFunctionMessage, TReturn>(
             TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
             where TEthereumContractFunctionMessage : ContractMessage
@@ -106,20 +132,19 @@ namespace Nethereum.Contracts.CQS
             where TEthereumContractFunctionMessage : ContractMessage, new()
         {
             var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
-            SetAddressFrom(ethereumContractFunctionMessage);
-            var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
-            return queryHandler.QueryAsync<TReturn>(ethereumContractFunctionMessage,
-                ContractAddress, blockParameter);
+            return QueryAsync<TEthereumContractFunctionMessage, TReturn>(ethereumContractFunctionMessage,
+                blockParameter);
         }
 
-        public Event GetEvent<TEventType>()
+        public Event<TEventType> GetEvent<TEventType>() where TEventType: new()
         {
             if (!EventAttribute.IsEventType(typeof(TEventType))) return null;
             var attribute = EventAttribute.GetAttribute<TEventType>();
             var contract = new Contract(EthApiContractService, typeof(TEventType), ContractAddress);
-            return contract.GetEvent(attribute.Name);
+            return contract.GetEvent<TEventType>(attribute.Name);
         }
 
+       
         protected void SetAddressFrom(ContractMessage contractMessage)
         {
             contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;

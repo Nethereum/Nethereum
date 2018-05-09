@@ -7,14 +7,27 @@ namespace Nethereum.Contracts.CQS
 {
 #if !DOTNET35
     public class ContractDeploymentHandler<TContractDeploymentMessage> : ContractHandlerBase<TContractDeploymentMessage>
-        where TContractDeploymentMessage : ContractDeploymentMessage
+        where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(CancellationTokenSource tokenSource = null)
+        {
+            var contractDeploymentMessage = new TContractDeploymentMessage();
+            return SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, tokenSource);
+        }
+
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
             TContractDeploymentMessage contractDeploymentMessage, CancellationTokenSource tokenSource = null)
         {
             ValidateContractMessage(contractDeploymentMessage);
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
             return await SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, gasEstimate, tokenSource);
+        }
+
+        public Task<string> SendRequestAsync()
+        {
+            var contractDeploymentMessage = new TContractDeploymentMessage();
+            return SendRequestAsync(contractDeploymentMessage);
         }
 
         public async Task<string> SendRequestAsync(TContractDeploymentMessage contractDeploymentMessage)
