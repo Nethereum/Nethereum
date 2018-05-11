@@ -23,11 +23,11 @@ namespace Nethereum.Generators.Core
             if (ProjectFileExtensions.ContainsKey(language))
             {
                 var extension = ProjectFileExtensions[language];
-                var requestedExtension = Path.GetExtension(projectFileName);
-                if (string.IsNullOrEmpty(requestedExtension))
-                    return $"{projectFileName.TrimEnd('.')}{extension}";
 
-                return Path.ChangeExtension(projectFileName, extension);
+                if (projectFileName.EndsWith(extension, StringComparison.InvariantCultureIgnoreCase))
+                    return projectFileName;
+
+                return projectFileName + extension;
             }
 
             return null;
