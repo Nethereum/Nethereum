@@ -112,7 +112,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             //filter on the first indexed parameter
             var filter69 = await multipliedEvent.CreateFilterAsync(69);
             //filter on the second indexed parameter
-            //var filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
+            var filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
             //filter OR on the first indexed parameter
             var filter69And18 = await multipliedEvent.CreateFilterAsync(new[] {69, 18});
 
@@ -143,7 +143,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);
             var eventLogs69 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69);
             //parity check
-            // var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
+            var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
             var eventLogsFor69and18 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69And18);
 
 

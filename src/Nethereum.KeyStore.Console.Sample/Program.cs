@@ -41,7 +41,7 @@ namespace Nethereum.KeyStore.Console.Sample
 
             //Compare the keys
             System.Console.WriteLine("Original key: " + key.ToHex());
-            System.Console.WriteLine("New key: " + key.ToHex());
+            System.Console.WriteLine("New key: " + newkey.ToHex());
             System.Console.ReadLine();
 
             //Creating a new key and file

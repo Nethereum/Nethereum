@@ -29,12 +29,34 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var signature = new StringBuilder();
             signature.Append(name);
+            signature.Append(GenerateParametersSignature(parameters));
+            return signature.ToString();
+        }
+
+        public virtual string GenerateParametersSignature(Parameter[] parameters)
+        {
+            var signature = new StringBuilder();
             signature.Append("(");
-            var paramslist = parameters.OrderBy(x => x.Order).Select(x => x.Type).ToArray();
-            var paramNames = string.Join(",", paramslist);
-            signature.Append(paramNames);
+            if (parameters != null)
+            {
+                var paramslist = parameters.OrderBy(x => x.Order).Select(GenerateParameteSignature).ToArray();
+                var paramNames = string.Join(",", paramslist);
+                signature.Append(paramNames);
+            }
             signature.Append(")");
             return signature.ToString();
+        }
+
+        public virtual string GenerateParameteSignature(Parameter parameter)
+        {
+            if(parameter.ABIType is TupleType tupleType)
+            {
+                return GenerateParametersSignature(tupleType.Components);
+            }
+            else
+            {
+                return parameter.ABIType.CanonicalName;
+            }
         }
     }
 }

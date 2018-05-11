@@ -42,7 +42,7 @@ namespace Nethereum.Contracts.CQS
 
             return function.CreateTransactionInput(
                 functionMessage,
-                functionMessage.FromAddress,
+                GetDefaultAddressFrom(functionMessage),
                 gasEstimate,
                 GetGasPrice(functionMessage),
                 GetValue(functionMessage));
@@ -61,7 +61,7 @@ namespace Nethereum.Contracts.CQS
         {
             return function.SendTransactionAsync(
                 functionMessage,
-                functionMessage.FromAddress,
+                GetDefaultAddressFrom(functionMessage),
                 gasEstimate,
                 GetGasPrice(functionMessage),
                 GetValue(functionMessage));
@@ -72,7 +72,7 @@ namespace Nethereum.Contracts.CQS
         {
             return function.SendTransactionAndWaitForReceiptAsync(
                 functionMessage,
-                functionMessage.FromAddress,
+                GetDefaultAddressFrom(functionMessage),
                 gasEstimate,
                 GetGasPrice(functionMessage),
                 GetValue(functionMessage),
@@ -90,7 +90,7 @@ namespace Nethereum.Contracts.CQS
         protected Task<HexBigInteger> EstimateGasAsync(TContractMessage functionMessage,
             Function<TContractMessage> function)
         {
-            return function.EstimateGasAsync(functionMessage, functionMessage.FromAddress, null,
+            return function.EstimateGasAsync(functionMessage, GetDefaultAddressFrom(functionMessage), null,
                 GetValue(functionMessage));
         }
     }

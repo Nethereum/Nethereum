@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.KeyStore.Crypto;
 using Xunit;
@@ -86,6 +87,7 @@ namespace Nethereum.KeyStore.UnitTests
             Assert.Equal(result, derived.ToHex());
         }
 
+       
         [Fact]
         public void ShouldGenerateMac()
         {

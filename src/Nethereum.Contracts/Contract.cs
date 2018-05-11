@@ -69,6 +69,11 @@ namespace Nethereum.Contracts
             return new Event(this, GetEventBuilder(name));
         }
 
+        public Event<T> GetEvent<T>(string name) where T: new()
+        {
+            return new Event<T>(this, GetEventBuilder(name));
+        }
+
         public Function<TFunction> GetFunction<TFunction>()
         {
             return new Function<TFunction>(this, GetFunctionBuilder<TFunction>());

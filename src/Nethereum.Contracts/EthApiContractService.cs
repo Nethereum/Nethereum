@@ -49,7 +49,7 @@ namespace Nethereum.Contracts
 
         public ContractDeploymentHandler<TContractDeploymentMessage> GetContractDeploymentHandler<
             TContractDeploymentMessage>()
-            where TContractDeploymentMessage : ContractDeploymentMessage
+            where TContractDeploymentMessage : ContractDeploymentMessage, new()
         {
             var contractDeploymentHandler = new ContractDeploymentHandler<TContractDeploymentMessage>();
             contractDeploymentHandler.Initialise(this);
