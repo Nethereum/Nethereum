@@ -4,4 +4,14 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Nethereum.Generators.Nuget.Console" Version="1.0.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="C:\Users\info\.nuget\packages\nethereum.generators.nuget.console\1.0.0.1\contentFiles\any\any\Nethereum.Generator.config">
+      <SubType>Designer</SubType>
+    </Compile>
+  </ItemGroup>
+
 </Project>

@@ -5,10 +5,16 @@ namespace Nethereum.Generators.Nuget.Console.Configuration
 {
     public class GeneratorConfigurationFactory
     {
+        public const string ConfigFileName = "Nethereum.Generator.config";
+
         public GeneratorConfiguration ReadFromProjectPath(string destinationProjectFileName)
         {
             var projectFolder = Path.GetDirectoryName(destinationProjectFileName);
-            var configFile = Path.Combine(projectFolder, "Nethereum.Generator.config");
+            var configFile = Path.Combine(projectFolder, ConfigFileName);
+
+            if (!File.Exists(configFile))
+                return null;
+
             return CreateFromXmlConfig(Path.GetFileName(destinationProjectFileName), projectFolder, configFile);
         }
 

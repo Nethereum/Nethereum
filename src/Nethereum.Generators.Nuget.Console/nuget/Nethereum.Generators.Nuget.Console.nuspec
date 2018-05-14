@@ -6,21 +6,21 @@
     <authors>Dave Whiffin, Juan Blanco</authors>
     <owners>Dave Whiffin, Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Generates dot net code for Ethereum (solidity) contracts</description>
+    <summary>Nethereum: Solidity to DotNet code generator</summary>
+    <description>Generates dot net code for Ethereum (solidity) contracts.  Just add a Nethereum.Generator.config file to the root of the project.</description>
     <dependencies>
       <group targetFramework=".NETCoreApp2.0">
-        <!-- TO DO - ADD RELATED NETHEREUM  -->
-        <!-- <dependency id="Nethereum.Generators" version="3.5.1" exclude="Build,Analyzers" /> -->
         <dependency id="Microsoft.Extensions.CommandLineUtils" version="1.1.1" exclude="Build,Analyzers" />
         <dependency id="Microsoft.Extensions.DependencyModel" version="2.0.4" exclude="Build,Analyzers" />
+        <dependency id="Nethereum.Web3" version="2.4.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
 
   <files>
     <file src="..\bin\debug\netcoreapp2.0\*.dll" target="lib\netcoreapp2.0\" />
+    <file src="..\bin\debug\netcoreapp2.0\*.json" target="lib\netcoreapp2.0\" />
     <file src="Nethereum.Generators.Nuget.Console.targets" target="build" />
-    <file src="Nethereum.Generator.config" target="content" />
   </files>
 
 </package>

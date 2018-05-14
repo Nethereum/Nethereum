@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Generators.Nuget.Console.Configuration;
 
 namespace Nethereum.Generators.Nuget.Console
 {
@@ -22,7 +23,7 @@ namespace Nethereum.Generators.Nuget.Console
         private static void GenerateTestConfigFile()
         {
             var configFilePath =
-                @"C:\dev\repos\nethereum\src\Nethereum.Generators.Nuget.Test\Nethereum.Generator.config";
+                $@"C:\dev\repos\nethereum\src\Nethereum.Generators.Nuget.Test\{GeneratorConfigurationFactory.ConfigFileName}";
 
             sample.EIP20GeneratorConfig.CreateTestGeneratorConfigFile(configFilePath);
         }

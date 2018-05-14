@@ -8,33 +8,33 @@ using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using System.Threading;
-using Nethereum.Generators.Nuget.Test.EIP20.CQS;
-using Nethereum.Generators.Nuget.Test.EIP20.DTO;
-namespace Nethereum.Generators.Nuget.Test.EIP20.Service
+using Nethereum.Generators.Nuget.Test.EIP20v2.CQS;
+using Nethereum.Generators.Nuget.Test.EIP20v2.DTO;
+namespace Nethereum.Generators.Nuget.Test.EIP20v2.Service
 {
 
-    public class EIP20Service
+    public class EIP20v2Service
     {
     
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3, EIP20v2Deployment eIP20v2Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAndWaitForReceiptAsync(eIP20Deployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<EIP20v2Deployment>().SendRequestAndWaitForReceiptAsync(eIP20v2Deployment, cancellationTokenSource);
         }
-        public static Task<string> DeployContractAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment)
+        public static Task<string> DeployContractAsync(Web3.Web3 web3, EIP20v2Deployment eIP20v2Deployment)
         {
-            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAsync(eIP20Deployment);
+            return web3.Eth.GetContractDeploymentHandler<EIP20v2Deployment>().SendRequestAsync(eIP20v2Deployment);
         }
-        public static async Task<EIP20Service> DeployContractAndGetServiceAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<EIP20v2Service> DeployContractAndGetServiceAsync(Web3.Web3 web3, EIP20v2Deployment eIP20v2Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource);
-            return new EIP20Service(web3, receipt.ContractAddress);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20v2Deployment, cancellationTokenSource);
+            return new EIP20v2Service(web3, receipt.ContractAddress);
         }
     
         protected Web3.Web3 Web3{ get; }
         
         protected ContractHandler ContractHandler { get; }
         
-        public EIP20Service(Web3.Web3 web3, string contractAddress)
+        public EIP20v2Service(Web3.Web3 web3, string contractAddress)
         {
             Web3 = web3;
             ContractHandler = web3.Eth.GetContractHandler(contractAddress);
