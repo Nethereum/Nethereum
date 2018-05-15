@@ -26,7 +26,7 @@ namespace Nethereum.ABI.Autogen.Configuration
 
         private CodeGenLanguage DeriveCodeGenLanguage(string destinationProjectFileName)
         {
-            var extension = Path.GetExtension(destinationProjectFileName);
+            var extension = Path.GetExtension(destinationProjectFileName).ToLower();
             switch (extension)
             {
                 case ".csproj":
