@@ -1,8 +1,6 @@
 <!--
-To enable Nethereum to generate dotnet code from Solidity contracts
- - Create a Nethereum.ABI.Autogen.config file in the root of your project
- - add your solidity contract and code generation configuration
- - use the xml below as a reference
+Example Nethereum.ABI.Autogen config file below (with only mandatory values)
+This file would need to go in the root of the target project
 -->
 
 <GeneratorConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -15,3 +13,17 @@ To enable Nethereum to generate dotnet code from Solidity contracts
     </ABIConfiguration>
   </ABIConfigurations>
 </GeneratorConfiguration>
+
+<!--
+All available ABIConfiguration fields
+
+ContractName
+ABI
+ByteCode
+BaseNamespace
+CQSNamespace
+DTONamespace
+ServiceNamespace
+CodeGenLanguage
+BaseOutputPath
+-->

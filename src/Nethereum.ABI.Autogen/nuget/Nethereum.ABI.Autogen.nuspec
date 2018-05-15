@@ -6,8 +6,11 @@
     <authors>Dave Whiffin, Juan Blanco</authors>
     <owners>Dave Whiffin, Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <summary>Nethereum: Solidity to DotNet code generator</summary>
-    <description>Generates dot net code for Ethereum (solidity) contracts.  Just add a Nethereum.Generator.config file to the root of the project.</description>
+    <summary>Ethereum (Solidity) to DotNet code generator</summary>
+    <description>Generates dot net code for Ethereum (Solidity) contracts.  
+      Will automatically create dot net files based on .abi files within the target project during pre build.  
+      More control can be gained by adding a Nethereum.Generator.config file to the root of the project.
+      This describes the abi contracts and the code generation options for each (output folders, namespaces etc).</description>
     <dependencies>
       <group targetFramework=".NETCoreApp2.0">
         <dependency id="Nethereum.Web3" version="2.4.0" exclude="Build,Analyzers" />
