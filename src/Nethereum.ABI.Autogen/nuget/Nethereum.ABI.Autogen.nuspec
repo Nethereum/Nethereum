@@ -10,16 +10,14 @@
     <description>Generates dot net code for Ethereum (solidity) contracts.  Just add a Nethereum.Generator.config file to the root of the project.</description>
     <dependencies>
       <group targetFramework=".NETCoreApp2.0">
-        <dependency id="Microsoft.Extensions.CommandLineUtils" version="1.1.1" exclude="Build,Analyzers" />
-        <dependency id="Microsoft.Extensions.DependencyModel" version="2.0.4" exclude="Build,Analyzers" />
         <dependency id="Nethereum.Web3" version="2.4.0" exclude="Build,Analyzers" />
       </group>
     </dependencies>
   </metadata>
 
   <files>
-    <file src="..\bin\debug\netcoreapp2.0\*.dll" target="lib\netcoreapp2.0\" />
-    <file src="..\bin\debug\netcoreapp2.0\*.json" target="lib\netcoreapp2.0\" />
+    <file src="..\bin\debug\netcoreapp2.0\publish\*.dll" target="tools" />
+    <file src="..\bin\debug\netcoreapp2.0\publish\*.json" target="tools" />
     <file src="Nethereum.ABI.Autogen.targets" target="build" />
   </files>
 
