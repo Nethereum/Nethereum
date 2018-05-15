@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Nethereum.Generators.Nuget.Console": {
+      "commandName": "Project",
+      "commandLineArgs": "generate -p \"C:\\dev\\repos\\nethereum\\src\\Nethereum.Generators.Nuget.Test\\Nethereum.Generators.Nuget.Test.csproj\" -a Nethereum.Generators.Nuget.Test.dll"
+    }
+  }
+}

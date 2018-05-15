@@ -1,0 +1,13 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+  </PropertyGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Code generating dotnet files based on abi files in project and/or Nethereum.ABI.Autogen.config" />
+    <Exec Condition = "$(IsWindows) == 'true' and $(NethereumGenerateCode) != 'false'" Command="dotnet %USERPROFILE%\.nuget\packages\Nethereum.ABI.Autogen\1.0.0.1\lib\netcoreapp2.0\Nethereum.ABI.Autogen.dll generate -p $(ProjectPath) -a $(TargetFileName)" />
+    <Exec Condition = "$(IsWindows) == ''  and $(NethereumGenerateCode) != 'false'" Command="dotnet ~/.nuget/packages/Nethereum.ABI.Autogen/1.0.0.1/lib/netcoreapp2.0/Nethereum.ABI.Autogen.dll generate -p $(ProjectPath) -a $(TargetFileName)" />
+  </Target>
+
+</Project>
