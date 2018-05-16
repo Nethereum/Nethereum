@@ -2,13 +2,17 @@
 using Nethereum.Generators.Model;
 using Nethereum.Generators.Net;
 
-namespace Nethereum.ABI.Autogen.Configuration
+namespace Nethereum.Generator.Console
 {
     public class ABIConfiguration
     {
         public string ContractName { get; set; }
+
         public string ABI { get; set; }
+        public string ABIFile { get; set; }
+
         public string ByteCode { get; set; }
+        public string ByteCodeFile { get; set; }
 
         public string BaseNamespace { get; set; }
         public string CQSNamespace { get; set; }

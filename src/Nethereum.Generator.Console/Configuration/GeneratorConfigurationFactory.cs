@@ -2,14 +2,37 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Serialization;
+using System.Text;
 using Nethereum.Generators.Core;
+using Newtonsoft.Json;
 
-namespace Nethereum.ABI.Autogen.Configuration
+namespace Nethereum.Generator.Console
 {
     public class GeneratorConfigurationFactory
     {
-        public const string ConfigFileName = "Nethereum.ABI.Autogen.config";
+        public const string ConfigFileName = "Nethereum.Generator.json";
+
+        public GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
+        {
+            var config = new GeneratorConfiguration();
+
+            var fullBinPath = Path.GetFullPath(binFilePath);
+
+            var byteCode = File.Exists(fullBinPath) ? File.ReadAllText(fullBinPath) : string.Empty;
+
+            var abiConfig = new ABIConfiguration
+            {
+                ABI = File.ReadAllText(Path.GetFullPath(abiFilePath)),
+                ByteCode = byteCode,
+                ContractName = contractName
+            };
+
+            SetDefaults(abiConfig, baseNamespace, outputFolder);
+
+            config.ABIConfigurations = new List<ABIConfiguration>();
+            config.ABIConfigurations.Add(abiConfig);
+            return config;
+        }
 
         public GeneratorConfiguration FromProject(string destinationProjectFileName, string assemblyName)
         {
@@ -93,7 +116,9 @@ namespace Nethereum.ABI.Autogen.Configuration
                 ContractName = contractName
             };
 
-            SetDefaults(projectFolder, projectName, assemblyName, abiConfig);
+            var defaultNamespace = CreateNamespaceFromAssemblyName(assemblyName);
+
+            SetDefaults(abiConfig, defaultNamespace, projectFolder);
             return abiConfig;
         }
 
@@ -105,28 +130,34 @@ namespace Nethereum.ABI.Autogen.Configuration
             if (!File.Exists(configFilePath))
                 return null;
 
-            GeneratorConfiguration configuration = null;
-
-            var serializer = new XmlSerializer(typeof(GeneratorConfiguration));
-            using (var fileReader = File.OpenRead(configFilePath))
-            {
-                configuration = (GeneratorConfiguration)serializer.Deserialize(fileReader);
-            }
+            var content = File.ReadAllText(configFilePath, Encoding.UTF8);
+            var configuration = JsonConvert.DeserializeObject<GeneratorConfiguration>(content);
 
             if (configuration == null)
                 return null;
 
+            var defaultNamespace = CreateNamespaceFromAssemblyName(assemblyName);
+
             foreach (var abiConfiguration in configuration.ABIConfigurations)
             {
-                SetDefaults(projectFolder, destinationProjectFileName, assemblyName, abiConfiguration);
+                SetDefaults(abiConfiguration, defaultNamespace, projectFolder);
             }
 
             return configuration;
         }
 
-        private static void SetDefaults(string destinationProjectFolder, string projectName, string assemblyName, ABIConfiguration abiConfiguration)
+        private static string CreateNamespaceFromAssemblyName(string assemblyName)
         {
-            var defaultNamespace = Path.GetFileNameWithoutExtension(assemblyName);
+            return Path.GetFileNameWithoutExtension(assemblyName);
+        }
+
+        private static void SetDefaults(ABIConfiguration abiConfiguration, string defaultNamespace, string destinationProjectFolder)
+        {
+            if (string.IsNullOrEmpty(abiConfiguration.ABI))
+                abiConfiguration.ABI = GetFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
+
+            if (string.IsNullOrEmpty(abiConfiguration.ByteCode))
+                abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.ByteCode);
 
             if (string.IsNullOrEmpty(abiConfiguration.BaseOutputPath))
                 abiConfiguration.BaseOutputPath = destinationProjectFolder;
@@ -142,6 +173,22 @@ namespace Nethereum.ABI.Autogen.Configuration
 
             if (string.IsNullOrEmpty(abiConfiguration.ServiceNamespace))
                 abiConfiguration.ServiceNamespace = abiConfiguration.ContractName + ".Service";
+        }
+
+        private static string GetFileContent(string destinationProjectFolder, string pathToFile)
+        {
+            if(Path.IsPathRooted(pathToFile) && File.Exists(pathToFile))
+                return File.ReadAllText(pathToFile);
+
+            var projectPath = Path.Combine(destinationProjectFolder, pathToFile);
+            if(File.Exists(projectPath))
+                return File.ReadAllText(pathToFile);
+
+            var matchingFiles = Directory.GetFiles(destinationProjectFolder, pathToFile, SearchOption.AllDirectories);
+            if(matchingFiles.Length > 0)
+                return File.ReadAllText(matchingFiles.First());
+
+            return null;
         }
     }
 }

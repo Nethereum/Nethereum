@@ -2,10 +2,9 @@
 using Nethereum.Generators.Net;
 using System;
 using System.IO;
-using Nethereum.ABI.Autogen.Configuration;
 using Nethereum.Generators;
 
-namespace Nethereum.ABI.Autogen
+namespace Nethereum.Generator.Console
 {
     public class GenerateCommand : CommandLineApplication
     {
@@ -27,20 +26,20 @@ namespace Nethereum.ABI.Autogen
             var projectPath = _projectPath.Value();
             if (string.IsNullOrWhiteSpace(projectPath))
             {
-                Console.WriteLine("A project file needs was not specified");
+                System.Console.WriteLine("A project file needs was not specified");
                 return 1;
             }
 
             var assemblyName = _assemblyName.Value();
             if (string.IsNullOrWhiteSpace(assemblyName))
             {
-                Console.WriteLine("An assembly name was not specified");
+                System.Console.WriteLine("An assembly name was not specified");
                 return 1;
             }
 
             if (!File.Exists(projectPath))
             {
-                Console.WriteLine("The project file does not exist");
+                System.Console.WriteLine("The project file does not exist");
                 return 1;
             }
 
