@@ -104,13 +104,28 @@ namespace Nethereum.JsonRpc.IpcClient
                     using (var memoryData = ReceiveFullResponse(GetPipeClient()))
                     {
                         memoryData.Position = 0;
-                        using (StreamReader streamReader = new StreamReader(memoryData))
-                        using (JsonTextReader reader = new JsonTextReader(streamReader))
+
+                        using (var reader = new StreamReader(memoryData))
                         {
-                            var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            var message = serializer.Deserialize<TResponse>(reader);
-                            logger.LogResponse(message);
-                            return message;
+                            string value = reader.ReadToEnd();
+                            try
+                            {
+                                var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                                var message = serializer.Deserialize<TResponse>(new JsonTextReader(new StringReader(value)));
+                                return message;
+                            }
+                            catch (Exception e)
+                            {
+                                JObject err = JObject.Parse(value);
+                                if (err["error"] != null && err["error"]["message"] != null)
+                                {
+                                    throw new RpcClientUnknownException(err["error"]["message"].Value<string>());
+                                }
+                                else
+                                {
+                                    throw new RpcClientUnknownException("unknown error", e);
+                                }
+                            }
                         }
                     }
                 }
