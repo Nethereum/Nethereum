@@ -248,9 +248,9 @@ SOFTWARE.
         {
         }
         /// <summary>
-        /// Rpc error code (Required)
+        /// Rpc error code
         /// </summary>
-        [JsonProperty("code", Required = Required.Always)]
+        [JsonProperty("code")]
         public int Code { get; private set; }
 
         /// <summary>
