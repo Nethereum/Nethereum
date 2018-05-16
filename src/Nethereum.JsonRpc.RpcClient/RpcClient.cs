@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Common.Logging;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.JsonRpc.Client
 {
@@ -94,16 +95,30 @@ namespace Nethereum.JsonRpc.Client
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                using (var streamReader = new StreamReader(stream))
-                using (var reader = new JsonTextReader(streamReader))
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
-                    var message =  serializer.Deserialize<RpcResponseMessage>(reader);
-
-                    logger.LogResponse(message);
-                    
-                    return message;
+                    string value = reader.ReadToEnd();
+                    try
+                    {
+                        var serializer = JsonSerializer.Create(_jsonSerializerSettings);
+                        var message = serializer.Deserialize<RpcResponseMessage>(new JsonTextReader(new StringReader(value)));
+                        logger.LogResponse(message);
+                        return message;
+                    }
+                    catch (Exception e)
+                    {
+                        JObject err = JObject.Parse(value);
+                        if (err["error"] != null && err["error"]["message"] != null)
+                        {
+                            throw new RpcClientUnknownException(err["error"]["message"].Value<string>());
+                        }
+                        else
+                        {
+                            throw new RpcClientUnknownException("unknown error", e);
+                        }
+                    }
                 }
+     
             }
             catch (Exception ex)
             {

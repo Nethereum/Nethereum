@@ -1,6 +1,7 @@
+using System;
 using Nethereum.Generators.Core;
 using Nethereum.Generators.CQS;
-using System;
+using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
