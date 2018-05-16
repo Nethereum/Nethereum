@@ -38,7 +38,7 @@ namespace Nethereum.Generator.Console
         {
             CodeGenLanguage language = DeriveCodeGenLanguage(destinationProjectFileName);
 
-            var fromAbiFiles = FromAbiFiles(destinationProjectFileName, assemblyName, language);
+            var fromAbiFiles = FromAbiFilesInProject(destinationProjectFileName, assemblyName, language);
             var fromConfigFile = FromConfigFile(destinationProjectFileName, assemblyName);
 
             if (fromConfigFile == null)
@@ -83,7 +83,7 @@ namespace Nethereum.Generator.Console
             return abiFileDrivenConfig;
         }
 
-        public GeneratorConfiguration FromAbiFiles(string projectFileName, string assemblyName, CodeGenLanguage language)
+        public GeneratorConfiguration FromAbiFilesInProject(string projectFileName, string assemblyName, CodeGenLanguage language)
         {
             var config = new GeneratorConfiguration();
             var projectFolder = Path.GetDirectoryName(projectFileName);
