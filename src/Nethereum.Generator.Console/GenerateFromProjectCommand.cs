@@ -6,14 +6,14 @@ using Nethereum.Generators;
 
 namespace Nethereum.Generator.Console
 {
-    public class GenerateCommand : CommandLineApplication
+    public class GenerateFromProjectCommand : CommandLineApplication
     {
         private readonly CommandOption _projectPath;
         private readonly CommandOption _assemblyName;
 
-        public GenerateCommand()
+        public GenerateFromProjectCommand()
         {
-            Name = "generate";
+            Name = "gen-fromproject";
             Description = "Generates a Nethereum (c#) code based based on the abi";
             _projectPath = Option("-p | --projectPath", "The project file name and path", CommandOptionType.SingleValue);
             _assemblyName = Option("-a | --assemblyName", "The output assembly name for the project", CommandOptionType.SingleValue);

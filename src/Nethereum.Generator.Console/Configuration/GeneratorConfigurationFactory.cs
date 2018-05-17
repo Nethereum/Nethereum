@@ -12,17 +12,36 @@ namespace Nethereum.Generator.Console
     {
         public const string ConfigFileName = "Nethereum.Generator.json";
 
+        private string ResolvePath(string filePath, string outputFolder)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return string.Empty;
+
+            if (Path.IsPathRooted(filePath))
+                return filePath;
+
+            return Path.Combine(outputFolder, filePath);
+        }
+
         public GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
         {
             var config = new GeneratorConfiguration();
 
-            var fullBinPath = Path.GetFullPath(binFilePath);
+            binFilePath = ResolvePath(binFilePath, outputFolder);
+            var byteCode = File.Exists(binFilePath) ? File.ReadAllText(binFilePath) : string.Empty;
 
-            var byteCode = File.Exists(fullBinPath) ? File.ReadAllText(fullBinPath) : string.Empty;
+            abiFilePath = ResolvePath(abiFilePath, outputFolder);
+            var abi = File.Exists(abiFilePath) ? File.ReadAllText(abiFilePath) : string.Empty;
+
+            if (string.IsNullOrEmpty(abi))
+                throw new ArgumentException("Could not find abi file");
+
+            if (string.IsNullOrEmpty(contractName))
+                contractName = Path.GetFileNameWithoutExtension(abiFilePath);
 
             var abiConfig = new ABIConfiguration
             {
-                ABI = File.ReadAllText(Path.GetFullPath(abiFilePath)),
+                ABI = abi,
                 ByteCode = byteCode,
                 ContractName = contractName
             };
@@ -156,8 +175,8 @@ namespace Nethereum.Generator.Console
             if (string.IsNullOrEmpty(abiConfiguration.ABI))
                 abiConfiguration.ABI = GetFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
 
-            if (string.IsNullOrEmpty(abiConfiguration.ByteCode))
-                abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.ByteCode);
+            if (string.IsNullOrEmpty(abiConfiguration.ByteCode)  && !string.IsNullOrEmpty(abiConfiguration.BinFile))
+                abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.BinFile);
 
             if (string.IsNullOrEmpty(abiConfiguration.BaseOutputPath))
                 abiConfiguration.BaseOutputPath = destinationProjectFolder;
@@ -177,16 +196,21 @@ namespace Nethereum.Generator.Console
 
         private static string GetFileContent(string destinationProjectFolder, string pathToFile)
         {
-            if(Path.IsPathRooted(pathToFile) && File.Exists(pathToFile))
-                return File.ReadAllText(pathToFile);
+            if(Path.IsPathRooted(pathToFile))
+                return File.Exists(pathToFile) ? File.ReadAllText(pathToFile) : null;
 
             var projectPath = Path.Combine(destinationProjectFolder, pathToFile);
             if(File.Exists(projectPath))
-                return File.ReadAllText(pathToFile);
+                return File.ReadAllText(projectPath);
 
             var matchingFiles = Directory.GetFiles(destinationProjectFolder, pathToFile, SearchOption.AllDirectories);
             if(matchingFiles.Length > 0)
                 return File.ReadAllText(matchingFiles.First());
+
+            var fullPath = Path.GetFullPath(pathToFile);
+
+            if(File.Exists(fullPath))
+                return File.ReadAllText(fullPath);
 
             return null;
         }

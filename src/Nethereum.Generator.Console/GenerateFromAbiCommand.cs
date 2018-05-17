@@ -16,7 +16,7 @@ namespace Nethereum.Generator.Console
 
         public GenerateFromAbiCommand()
         {
-            Name = "generate-fromabi";
+            Name = "gen-fromabi";
             Description = "Generates a Nethereum (c#) code based based on the abi";
             _contractName = Option("-cn | --contractName", "The contract name", CommandOptionType.SingleValue);
             _abiFilePath = Option("-abi | --abiPath", "The abi file and path", CommandOptionType.SingleValue);
@@ -29,13 +29,6 @@ namespace Nethereum.Generator.Console
 
         private int RunCommand()
         {
-            var contractName = _contractName.Value();
-            if (string.IsNullOrWhiteSpace(contractName))
-            {
-                System.Console.WriteLine("An contract name must be specified");
-                return 1;
-            }
-
             var abiFilePath = _abiFilePath.Value();
             if (string.IsNullOrWhiteSpace(abiFilePath))
             {
@@ -57,6 +50,7 @@ namespace Nethereum.Generator.Console
                 return 1;
             }
 
+            var contractName = _contractName.Value();
 
             GenerateCode(contractName, abiFilePath, _binCodeFilePath.Value(), baseNamespace, outputFolder);
 

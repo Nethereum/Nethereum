@@ -12,7 +12,7 @@ namespace Nethereum.Generator.Console
         public string ABIFile { get; set; }
 
         public string ByteCode { get; set; }
-        public string ByteCodeFile { get; set; }
+        public string BinFile { get; set; }
 
         public string BaseNamespace { get; set; }
         public string CQSNamespace { get; set; }
