@@ -135,6 +135,18 @@
 				<Link>ABI\StringType.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\TupleType.cs">
+				<Link>ABI\TupleType.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\TupleTypeDecoder.cs">
+				<Link>ABI\TupleTypeDecoder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\TupleTypeEncoder.cs">
+				<Link>ABI\TupleTypeEncoder.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\Decoders\AddressTypeDecoder.cs">
 				<Link>ABI\Decoders\AddressTypeDecoder.cs</Link>
 		</Compile>
@@ -239,6 +251,10 @@
 				<Link>ABI\FunctionEncoding\FunctionCallEnconder.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ParameterDecoder.cs">
+				<Link>ABI\FunctionEncoding\ParameterDecoder.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ParameterOutput.cs">
 				<Link>ABI\FunctionEncoding\ParameterOutput.cs</Link>
 		</Compile>
@@ -261,6 +277,10 @@
 		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\AttributeEncoding\ParameterOutputProperty.cs">
 				<Link>ABI\FunctionEncoding\AttributeEncoding\ParameterOutputProperty.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\AttributesToABIExtractor.cs">
+				<Link>ABI\FunctionEncoding\Attributes\AttributesToABIExtractor.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\EventAttribute.cs">
@@ -821,6 +841,10 @@
 		
         <Compile Include="..\..\src\Nethereum.KeyStore\Crypto\RandomBytesGenerator.cs">
 				<Link>KeyStore\Crypto\RandomBytesGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\Crypto\SCrypt.cs">
+				<Link>KeyStore\Crypto\SCrypt.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.KeyStore\Model\CipherParams.cs">

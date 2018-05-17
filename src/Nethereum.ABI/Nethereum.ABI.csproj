@@ -15,15 +15,5 @@
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.1'">
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.1.1" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-    <PackageReference Include="BouncyCastle" Version="1.8.1" />
-  </ItemGroup>
   
 </Project>
