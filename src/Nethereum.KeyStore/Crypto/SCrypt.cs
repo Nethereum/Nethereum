@@ -18,6 +18,13 @@ namespace Nethereum.KeyStore.Crypto
 
                 //avoiding the: throw new ArgumentException("Cost parameter N must be > 1 and < 65536.");
      
+    More info on memory costs:
+	 32MB = 33554432   = 2^25 to compute n up to = 2^14 = 16384
+	 64MB = 67108864   = 2^26 to compute n up to = 2^15 = 32768
+	128MB = 134217728  = 2^27 to compute n up to = 2^16 = 65536
+	256MB = 268435456  = 2^28 to compute n up to = 2^17 = 131072
+	512MB = 536870912  = 2^29 to compute n up to = 2^18 = 262144
+
      License:
      Please note this should be read in the same way as the MIT license.
 
