@@ -39,6 +39,10 @@ namespace Nethereum.JsonRpc.IpcClient
                     _pipeClient.Connect(ConnectionTimeout);
                 }
             }
+            catch (TimeoutException ex)
+            {
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
+            }
             catch
             {
                 //Connection error we want to allow to retry.
