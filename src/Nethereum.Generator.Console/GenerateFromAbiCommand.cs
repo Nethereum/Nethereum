@@ -3,6 +3,7 @@ using Nethereum.Generators.Net;
 using System;
 using System.IO;
 using Nethereum.Generators;
+using Nethereum.Generator.Console.Configuration;
 
 namespace Nethereum.Generator.Console
 {

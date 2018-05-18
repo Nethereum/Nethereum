@@ -6,35 +6,25 @@ using System.Text;
 using Nethereum.Generators.Core;
 using Newtonsoft.Json;
 
-namespace Nethereum.Generator.Console
+namespace Nethereum.Generator.Console.Configuration
 {
     public class GeneratorConfigurationFactory
     {
-        public const string ConfigFileName = "Nethereum.Generator.json";
-
-        private string ResolvePath(string filePath, string outputFolder)
-        {
-            if (string.IsNullOrEmpty(filePath))
-                return string.Empty;
-
-            if (Path.IsPathRooted(filePath))
-                return filePath;
-
-            return Path.Combine(outputFolder, filePath);
-        }
+        public static string ConfigFileName = GeneratorConfigurationConstants.ConfigFileName;
 
         public GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
         {
             var config = new GeneratorConfiguration();
 
-            binFilePath = ResolvePath(binFilePath, outputFolder);
-            var byteCode = File.Exists(binFilePath) ? File.ReadAllText(binFilePath) : string.Empty;
-
-            abiFilePath = ResolvePath(abiFilePath, outputFolder);
-            var abi = File.Exists(abiFilePath) ? File.ReadAllText(abiFilePath) : string.Empty;
+            var abi = GetFileContent(outputFolder, abiFilePath);
 
             if (string.IsNullOrEmpty(abi))
-                throw new ArgumentException("Could not find abi file");
+                throw new ArgumentException("Could not find abi file or abi content is empty");
+
+            if (string.IsNullOrEmpty(binFilePath))
+                binFilePath = abiFilePath.Replace(".abi", ".bin");
+
+            var byteCode = GetFileContent(outputFolder, binFilePath);
 
             if (string.IsNullOrEmpty(contractName))
                 contractName = Path.GetFileNameWithoutExtension(abiFilePath);
@@ -53,53 +43,67 @@ namespace Nethereum.Generator.Console
             return config;
         }
 
-        public GeneratorConfiguration FromProject(string destinationProjectFileName, string assemblyName)
+        string FindFirstMatchingProjectFile(string folder)
         {
-            CodeGenLanguage language = DeriveCodeGenLanguage(destinationProjectFileName);
+            foreach (var extension in CodeGenLanguageExt.ProjectFileExtensions.Values)
+            {
+                var files = Directory.GetFiles(folder, $"*{extension}");
+                if (files.Length > 0)
+                    return files[0];
+            }
 
-            var fromAbiFiles = FromAbiFilesInProject(destinationProjectFileName, assemblyName, language);
-            var fromConfigFile = FromConfigFile(destinationProjectFileName, assemblyName);
-
-            if (fromConfigFile == null)
-                return fromAbiFiles;
-
-            return Merge(fromConfigFile, fromAbiFiles);
+            return null;
         }
+
+        private (string folder, string file) ResolveProjectFileAndFolder(string destinationProjectFolderOrFileName)
+        {
+            FileAttributes attr = File.GetAttributes(destinationProjectFolderOrFileName);
+
+            if (attr.HasFlag(FileAttributes.Directory))
+            {
+                var file = FindFirstMatchingProjectFile(destinationProjectFolderOrFileName);
+                return (destinationProjectFolderOrFileName, file);
+            }
+
+            var folder = Path.GetDirectoryName(destinationProjectFolderOrFileName);
+            return (folder, destinationProjectFolderOrFileName);
+        }
+
+        public GeneratorConfiguration FromProject(string destinationProjectFolderOrFileName, string assemblyName)
+        {
+            (string projectFolder, string projectFilePath) =
+                ResolveProjectFileAndFolder(destinationProjectFolderOrFileName);
+
+            if (string.IsNullOrEmpty(projectFolder) ||
+                !Directory.Exists(projectFolder))
+                return null;
+
+            var codeGenConfig = FromConfigFile(projectFolder, assemblyName);
+            if (codeGenConfig != null)
+                return codeGenConfig;
+
+            if (string.IsNullOrEmpty(projectFilePath) ||
+                !File.Exists(projectFilePath))
+                return null;
+
+            var language = DeriveCodeGenLanguage(projectFilePath);
+
+            return FromAbiFilesInProject(projectFilePath, assemblyName, language);
+        }
+
 
         private CodeGenLanguage DeriveCodeGenLanguage(string destinationProjectFileName)
         {
             var extension = Path.GetExtension(destinationProjectFileName).ToLower();
-            switch (extension)
-            {
-                case ".csproj":
-                    return CodeGenLanguage.CSharp;
-                case ".vbproj":
-                    return CodeGenLanguage.Vb;
-                case ".fsproj":
-                    return CodeGenLanguage.FSharp;
-                default:
-                    throw new ArgumentException($"Could not derive code gen language. Unrecognised project file type ({extension}).");
-            }
-        }
 
-        private static GeneratorConfiguration Merge(GeneratorConfiguration configFileGeneratorConfig, GeneratorConfiguration abiFileDrivenConfig)
-        {
-            //config file wins over abi based config
-            foreach (var configFileDrivenAbi in configFileGeneratorConfig.ABIConfigurations)
+            foreach (var codeGenLanguage in CodeGenLanguageExt.ProjectFileExtensions.Keys)
             {
-                var duplicateConfigEntries =
-                    abiFileDrivenConfig.ABIConfigurations.Where(c =>
-                        c.ContractName == configFileDrivenAbi.ContractName).ToArray();
-
-                foreach (var duplicate in duplicateConfigEntries)
-                {
-                    abiFileDrivenConfig.ABIConfigurations.Remove(duplicate);
-                }
+                var projectExtension = CodeGenLanguageExt.ProjectFileExtensions[codeGenLanguage];
+                if (projectExtension == extension)
+                    return codeGenLanguage;
             }
 
-            abiFileDrivenConfig.ABIConfigurations.AddRange(configFileGeneratorConfig.ABIConfigurations);
-
-            return abiFileDrivenConfig;
+            throw new ArgumentException($"Could not derive code gen language. Unrecognised project file type ({extension}).");
         }
 
         public GeneratorConfiguration FromAbiFilesInProject(string projectFileName, string assemblyName, CodeGenLanguage language)
@@ -141,10 +145,14 @@ namespace Nethereum.Generator.Console
             return abiConfig;
         }
 
-        public GeneratorConfiguration FromConfigFile(string destinationProjectFileName, string assemblyName)
+        public string DeriveConfigFilePath(string projectFolder)
         {
-            var projectFolder = Path.GetDirectoryName(destinationProjectFileName);
-            var configFilePath = Path.Combine(projectFolder, ConfigFileName);
+            return Path.Combine(projectFolder, ConfigFileName);
+        }
+
+        public GeneratorConfiguration FromConfigFile(string destinationProjectFolder, string assemblyName)
+        {
+            var configFilePath = DeriveConfigFilePath(destinationProjectFolder);
 
             if (!File.Exists(configFilePath))
                 return null;
@@ -159,7 +167,7 @@ namespace Nethereum.Generator.Console
 
             foreach (var abiConfiguration in configuration.ABIConfigurations)
             {
-                SetDefaults(abiConfiguration, defaultNamespace, projectFolder);
+                SetDefaults(abiConfiguration, defaultNamespace, destinationProjectFolder);
             }
 
             return configuration;
@@ -172,11 +180,24 @@ namespace Nethereum.Generator.Console
 
         private static void SetDefaults(ABIConfiguration abiConfiguration, string defaultNamespace, string destinationProjectFolder)
         {
+            if (string.IsNullOrEmpty(abiConfiguration.ContractName) && !string.IsNullOrEmpty(abiConfiguration.ABIFile))
+                abiConfiguration.ContractName = Path.GetFileNameWithoutExtension(abiConfiguration.ABIFile);
+
             if (string.IsNullOrEmpty(abiConfiguration.ABI))
                 abiConfiguration.ABI = GetFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
 
+            //by convention - look for bin folder in the same place as the abi
+            if (string.IsNullOrEmpty(abiConfiguration.BinFile) && !string.IsNullOrEmpty(abiConfiguration.ABIFile))
+            {
+                abiConfiguration.BinFile = abiConfiguration.ABIFile.Replace(".abi", ".bin");
+            }
+
             if (string.IsNullOrEmpty(abiConfiguration.ByteCode)  && !string.IsNullOrEmpty(abiConfiguration.BinFile))
                 abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.BinFile);
+
+            //no bytecode so clear bin file
+            if (string.IsNullOrEmpty(abiConfiguration.ByteCode))
+                abiConfiguration.BinFile = null;
 
             if (string.IsNullOrEmpty(abiConfiguration.BaseOutputPath))
                 abiConfiguration.BaseOutputPath = destinationProjectFolder;
@@ -196,14 +217,24 @@ namespace Nethereum.Generator.Console
 
         private static string GetFileContent(string destinationProjectFolder, string pathToFile)
         {
+            if(string.IsNullOrEmpty(pathToFile))
+                return null;
+
             if(Path.IsPathRooted(pathToFile))
                 return File.Exists(pathToFile) ? File.ReadAllText(pathToFile) : null;
+
+            if (pathToFile.Contains(".."))
+            {
+                var absolutePath = Path.GetFullPath(destinationProjectFolder + pathToFile);
+                if (File.Exists(absolutePath))
+                    return absolutePath;
+            }
 
             var projectPath = Path.Combine(destinationProjectFolder, pathToFile);
             if(File.Exists(projectPath))
                 return File.ReadAllText(projectPath);
 
-            var matchingFiles = Directory.GetFiles(destinationProjectFolder, pathToFile, SearchOption.AllDirectories);
+            var matchingFiles = Directory.GetFiles(destinationProjectFolder, Path.GetFileName(pathToFile), SearchOption.AllDirectories);
             if(matchingFiles.Length > 0)
                 return File.ReadAllText(matchingFiles.First());
 
@@ -214,5 +245,6 @@ namespace Nethereum.Generator.Console
 
             return null;
         }
+
     }
 }

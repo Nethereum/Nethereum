@@ -2,7 +2,7 @@
 using Nethereum.Generators.Model;
 using Nethereum.Generators.Net;
 
-namespace Nethereum.Generator.Console
+namespace Nethereum.Generator.Console.Configuration
 {
     public class ABIConfiguration
     {

@@ -3,6 +3,7 @@ using Nethereum.Generators.Net;
 using System;
 using System.IO;
 using Nethereum.Generators;
+using Nethereum.Generator.Console.Configuration;
 
 namespace Nethereum.Generator.Console
 {
@@ -34,12 +35,6 @@ namespace Nethereum.Generator.Console
             if (string.IsNullOrWhiteSpace(assemblyName))
             {
                 System.Console.WriteLine("An assembly name was not specified");
-                return 1;
-            }
-
-            if (!File.Exists(projectPath))
-            {
-                System.Console.WriteLine("The project file does not exist");
                 return 1;
             }
 

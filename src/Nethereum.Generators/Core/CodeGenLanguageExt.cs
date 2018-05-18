@@ -6,8 +6,7 @@ namespace Nethereum.Generators.Core
 {
     public static class CodeGenLanguageExt
     {
-
-        private static readonly Dictionary<CodeGenLanguage, string> ProjectFileExtensions = new Dictionary<CodeGenLanguage, string>
+        public static readonly Dictionary<CodeGenLanguage, string> ProjectFileExtensions = new Dictionary<CodeGenLanguage, string>
         {
             {CodeGenLanguage.CSharp, ".csproj"},
             {CodeGenLanguage.FSharp, ".fsproj"},

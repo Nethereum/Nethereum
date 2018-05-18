@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Generator.Console.Configuration;
+using System.Collections.Generic;
 
 namespace Nethereum.Generator.Console.sample
 {
