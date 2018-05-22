@@ -49,7 +49,7 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
         }
 
         [Fact]
-        public void FromAbiFilesInProjectFolder()
+        public void FromAbiFilesInProjectSubFolders()
         {
             //given
             var context = new EndToEndTestContext(
@@ -178,7 +178,7 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
         }
 
         [Fact]
-        public void FromConfigWithExternalAbiPath()
+        public void FromConfigWithAbsoluteAbiPath()
         {
             //given
             var context = new EndToEndTestContext(

@@ -46,7 +46,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
         }
 
         [Fact]
-        public void WhenBinFileIsNotSpecifiedFindsByConvention()
+        public void WhenBinFileIsNotSpecifiedItIsFoundByConvention()
         {
             //given
             var factory = new GeneratorConfigurationFactory();
@@ -60,7 +60,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
             var config = factory.FromAbi(
                 "StandardContract",  
                 "StandardContract.abi", 
-                null, 
+                null, // bin file
                 Path.GetFileNameWithoutExtension(context.OutputAssemblyName), 
                 context.TargetProjectFolder);
 
@@ -83,7 +83,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
 
             //when
             var config = factory.FromAbi(
-                null,  
+                null,  //contract name
                 "StandardContract.abi", 
                 "StandardContract.bin", 
                 Path.GetFileNameWithoutExtension(context.OutputAssemblyName), 

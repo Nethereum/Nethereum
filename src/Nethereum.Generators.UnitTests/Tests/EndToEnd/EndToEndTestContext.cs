@@ -1,50 +1,44 @@
-﻿using System;
+﻿using Nethereum.Generators.UnitTests.TestData;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using Nethereum.Generators.Core;
 
-namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
+namespace Nethereum.Generators.UnitTests.Tests.EndToEndTests
 {
     public class EndToEndTestContext
     {
         public string TargetProjectFolder { get; }
-        public string GeneratorConsolePath { get; }
         public string OutputAssemblyName { get; }
         public string ProjectName { get; set; }
         public string ProjectFilePath { get; set; }
 
-        public const string GeneratorConsoleName = "Nethereum.Generator.Console.dll";
-
-        public const string GeneratorConsoleRelativePath =
-            "../../../../Nethereum.Generator.Console/bin/debug/netcoreapp2.0";
 
         public EndToEndTestContext(string testClass, string testName)
         {
             TargetProjectFolder = Path.Combine(
-                TestData.TempPath, 
+                TestEnvironment.TempPath, 
                 testClass, 
                 testName);
 
             ProjectName = TargetProjectFolder.Split(Path.DirectorySeparatorChar).Last();
             OutputAssemblyName = $"{ProjectName}.dll";
             ProjectFilePath = Path.Combine(TargetProjectFolder, ProjectName) + ".csproj";
-            GeneratorConsolePath = Path.GetFullPath(GeneratorConsoleRelativePath); 
         }
 
         public string WriteFileToProject(string fileName, string fileContent)
         {
-            return TestData.WriteFileToFolder(TargetProjectFolder, fileName, fileContent);
+            return TestEnvironment.WriteFileToFolder(TargetProjectFolder, fileName, fileContent);
         }
 
-        public void CreateProject(IEnumerable<Tuple<string, string>> nugetPackages = null)
+        public void CreateProject(CodeGenLanguage language = CodeGenLanguage.CSharp, IEnumerable<Tuple<string, string>> nugetPackages = null)
         {
             EmptyTargetFolder();
 
             Directory.CreateDirectory(TargetProjectFolder);
-            CreateProjectFile();
+            CreateProjectFile(language);
             if (nugetPackages != null)
             {
                 foreach (var nuget in nugetPackages)
@@ -62,14 +56,6 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
         public bool FileExists(string relativeFilePath)
         {
             return File.Exists(Path.Combine(TargetProjectFolder, relativeFilePath));
-        }
-
-        public void GenerateCode(string commandName, string commandArgs)
-        {
-            var args =
-                $"{GeneratorConsoleName} {commandName} {commandArgs}";
-
-            DotNet(args, workingFolderOverride: GeneratorConsolePath);
         }
 
         public void BuildProject()
@@ -121,9 +107,9 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
             DotNet(args);
         }
 
-        private void CreateProjectFile()
+        private void CreateProjectFile(CodeGenLanguage language)
         {
-            DotNet("new classLib");
+            DotNet($"new classLib -lang {language.ToDotNetCli()}");
         }
 
         private void DotNet(string args, string workingFolderOverride = null)

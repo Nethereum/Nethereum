@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Nethereum.Generator.Console.Configuration
+﻿namespace Nethereum.Generator.Console.Configuration
 {
     public static class GeneratorConfigurationConstants
     {
