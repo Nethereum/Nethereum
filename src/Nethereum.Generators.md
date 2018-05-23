@@ -1,1 +1,0 @@
-# nethereum-js-code-gen
