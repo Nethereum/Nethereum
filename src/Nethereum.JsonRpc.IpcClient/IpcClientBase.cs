@@ -14,7 +14,6 @@ namespace Nethereum.JsonRpc.IpcClient
     {
         protected readonly string IpcPath;
         public static int ForceCompleteReadTotalMiliseconds { get; set; } = 2000;
-        public static int ConnectionTimeout { get; set; } = 5000;
 
         public IpcClientBase(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null)
         {

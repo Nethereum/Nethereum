@@ -72,19 +72,41 @@ namespace Nethereum.KeyStore.UnitTests
             Assert.Equal("5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46", result.ToHex());
         }
 
-        [Fact]
-        public void ShouldGenerateDerivedScryptKey()
+        [Theory]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(256)]
+        [InlineData(512)]
+        [InlineData(1024)]
+        [InlineData(2048)]
+        [InlineData(4096)]
+        [InlineData(8192)]
+        [InlineData(16384)]
+        [InlineData(32768)]
+        [InlineData(65536)]
+        [InlineData(131072)]
+        [InlineData(262144)]
+        public void ShouldGenerateDerivedScryptKey(int N)
         {
-            var N = 262144;
+            //Test vector Ethereum
+            //var N = 262144;
             var R = 1;
             var P = 8;
             var DKLEN = 32;
             var salt = "ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19".HexToByteArray();
             var password = "testpassword";
             var derived =
-                keyStoreCrypto.GenerateDerivedScryptKey(Encoding.UTF8.GetBytes(password), salt, N, R, P, DKLEN);
+                keyStoreCrypto.GenerateDerivedScryptKey(Encoding.UTF8.GetBytes(password), salt, N, R, P, DKLEN, false);
             var result = "fac192ceb5fd772906bea3e118a69e8bbb5cc24229e20d8766fd298291bba6bd";
+            if(N == 262144)
             Assert.Equal(result, derived.ToHex());
+            else
+            Assert.NotEqual(result, derived.ToHex());
         }
 
        

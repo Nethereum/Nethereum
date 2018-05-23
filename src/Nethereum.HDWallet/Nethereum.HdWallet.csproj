@@ -15,21 +15,11 @@
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NBitcoin" Version="4.0.0.38" />
+    <PackageReference Include="NBitcoin" Version="4.1.1.7" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
-  </ItemGroup>
-  
- <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.1'">
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.1.1" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-    <PackageReference Include="BouncyCastle" Version="1.8.1" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
@@ -72,7 +73,11 @@ namespace Nethereum.JsonRpc.Client
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
 
-                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent).ConfigureAwait(false);
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(TimeSpan.FromMilliseconds(ConnectionTimeout));
+
+                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token)
+                    .ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
@@ -84,6 +89,10 @@ namespace Nethereum.JsonRpc.Client
 
                     return message;
                 }
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
             }
             catch (Exception ex)
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
@@ -7,14 +8,25 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Macs;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Utilities;
 
 namespace Nethereum.KeyStore.Crypto
 {
     //https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
     public class KeyStoreCrypto
     {
-        public byte[] GenerateDerivedScryptKey(byte[] password, byte[] salt, int n, int r, int p, int dkLen)
+        public byte[] GenerateDerivedScryptKey(byte[] password, byte[] salt, int n, int r, int p, int dkLen, bool checkRandN = false)
         {
+            if (checkRandN)
+            {
+                //The test vectors of Ethereum provides a cost bigger than the Scrypt spec of "N = less than 2 ^ (128 * r / 8)"
+                //so we allow to do validation in general for encryption but not for decryption.
+                if (r == 1 && n >= 65536)
+                {
+                    throw new ArgumentException("Cost parameter N must be > 1 and < 65536.");
+                }
+            }
             return SCrypt.Generate(password, salt, n, r, p, dkLen);
         }
 
@@ -104,7 +116,7 @@ namespace Nethereum.KeyStore.Crypto
         public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r,
             byte[] salt, int dklen)
         {
-            var derivedKey = GenerateDerivedScryptKey(GetPasswordAsBytes(password), salt, n, r, p, dklen);
+            var derivedKey = GenerateDerivedScryptKey(GetPasswordAsBytes(password), salt, n, r, p, dklen, false);
             return Decrypt(mac, iv, cipherText, derivedKey);
         }
 

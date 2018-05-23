@@ -165,6 +165,18 @@
 				<Link>\Core\ParameterMap.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerCSharpTemplate.cs">
+				<Link>\Core\ParameterMapperAssignerCSharpTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerTemplate.cs">
+				<Link>\Core\ParameterMapperAssignerTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerVbTemplate.cs">
+				<Link>\Core\ParameterMapperAssignerVbTemplate.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\ParameterModel.cs">
 				<Link>\Core\ParameterModel.cs</Link>
 		</Compile>
@@ -331,6 +343,18 @@
 		
         <Compile Include="..\Nethereum.Generators\Service\Vb\ServiceVbTemplate.cs">
 				<Link>\Service\Vb\ServiceVbTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestGenerator.cs">
+				<Link>\XUnit\SimpleTestGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestModel.cs">
+				<Link>\XUnit\SimpleTestModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\XUnit\CSharp\SimpleTestCSharpTemplate.cs">
+				<Link>\XUnit\CSharp\SimpleTestCSharpTemplate.cs</Link>
 		</Compile>
 		
   </ItemGroup>
