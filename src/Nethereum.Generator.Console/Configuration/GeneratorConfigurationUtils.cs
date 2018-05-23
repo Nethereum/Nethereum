@@ -15,7 +15,7 @@ namespace Nethereum.Generator.Console.Configuration
                 abiConfiguration.ContractName = Path.GetFileNameWithoutExtension(abiConfiguration.ABIFile);
 
             if (string.IsNullOrEmpty(abiConfiguration.ABI))
-                abiConfiguration.ABI = FindFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
+                abiConfiguration.ABI = GetFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
 
             //by convention - look for bin folder in the same place as the abi
             if (string.IsNullOrEmpty(abiConfiguration.BinFile) && !string.IsNullOrEmpty(abiConfiguration.ABIFile))
@@ -27,7 +27,7 @@ namespace Nethereum.Generator.Console.Configuration
             }
 
             if (string.IsNullOrEmpty(abiConfiguration.ByteCode)  && !string.IsNullOrEmpty(abiConfiguration.BinFile))
-                abiConfiguration.ByteCode = FindFileContent(destinationProjectFolder, abiConfiguration.BinFile);
+                abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.BinFile);
 
             //no bytecode so clear bin file
             if (string.IsNullOrEmpty(abiConfiguration.ByteCode))
@@ -49,7 +49,7 @@ namespace Nethereum.Generator.Console.Configuration
                 abiConfiguration.ServiceNamespace = $"{abiConfiguration.ContractName}.Service";
         }
 
-        public static string FindFileContent(string projectFolder, string relativeOrAbsolutePath)
+        public static string GetFileContent(string projectFolder, string relativeOrAbsolutePath)
         {
             if(string.IsNullOrEmpty(relativeOrAbsolutePath))
                 return null;
@@ -80,14 +80,14 @@ namespace Nethereum.Generator.Console.Configuration
             return null;
         }
 
-        public static (string folder, string file) SplitPathIntoFileAndFolder(string destinationProjectFolderOrFileName)
+        public static (string folder, string file) GetFullFileAndFolderPaths(string destinationProjectFolderOrFileName)
         {
             FileAttributes attr = File.GetAttributes(destinationProjectFolderOrFileName);
 
             if (attr.HasFlag(FileAttributes.Directory))
             {
                 var file = FindFirstProjectFile(destinationProjectFolderOrFileName);
-                return (destinationProjectFolderOrFileName, file);
+                return (destinationProjectFolderOrFileName, null);
             }
 
             var folder = Path.GetDirectoryName(destinationProjectFolderOrFileName);

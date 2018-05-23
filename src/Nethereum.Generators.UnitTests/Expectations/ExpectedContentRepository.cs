@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Nethereum.Generators.UnitTests.Expected
+namespace Nethereum.Generators.UnitTests.Expectations
 {
     public static class ExpectedContentRepository
     {

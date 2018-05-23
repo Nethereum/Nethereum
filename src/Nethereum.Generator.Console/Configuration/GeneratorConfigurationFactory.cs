@@ -8,13 +8,13 @@ namespace Nethereum.Generator.Console.Configuration
     /// <summary>
     /// Responsible from retrieving code generator configuration and setting default values
     /// </summary>
-    public class GeneratorConfigurationFactory
+    public class GeneratorConfigurationFactory : IGeneratorConfigurationFactory
     {
         public GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
         {
             var config = new GeneratorConfiguration();
 
-            var abi = GeneratorConfigurationUtils.FindFileContent(outputFolder, abiFilePath);
+            var abi = GeneratorConfigurationUtils.GetFileContent(outputFolder, abiFilePath);
 
             if (string.IsNullOrEmpty(abi))
                 throw new ArgumentException("Could not find abi file or abi content is empty");
@@ -22,7 +22,7 @@ namespace Nethereum.Generator.Console.Configuration
             if (string.IsNullOrEmpty(binFilePath))
                 binFilePath = abiFilePath.Replace(".abi", ".bin");
 
-            var byteCode = GeneratorConfigurationUtils.FindFileContent(outputFolder, binFilePath);
+            var byteCode = GeneratorConfigurationUtils.GetFileContent(outputFolder, binFilePath);
 
             if (string.IsNullOrEmpty(contractName))
                 contractName = Path.GetFileNameWithoutExtension(abiFilePath);
@@ -45,7 +45,7 @@ namespace Nethereum.Generator.Console.Configuration
         public GeneratorConfiguration FromProject(string destinationProjectFolderOrFileName, string assemblyName)
         {
             (string projectFolder, string projectFilePath) =
-                GeneratorConfigurationUtils.SplitPathIntoFileAndFolder(destinationProjectFolderOrFileName);
+                GeneratorConfigurationUtils.GetFullFileAndFolderPaths(destinationProjectFolderOrFileName);
 
             if (string.IsNullOrEmpty(projectFolder) ||
                 !Directory.Exists(projectFolder))

@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
-using Nethereum.Generators.Net;
 using System;
-using System.IO;
-using Nethereum.Generators;
-using Nethereum.Generator.Console.Configuration;
+using Nethereum.Generator.Console.Generation;
 
-namespace Nethereum.Generator.Console
+namespace Nethereum.Generator.Console.Commands
 {
     public class GenerateFromAbiCommand : CommandLineApplication
     {
@@ -14,6 +11,7 @@ namespace Nethereum.Generator.Console
         private readonly CommandOption _binCodeFilePath;
         private readonly CommandOption _outputFolder;
         private readonly CommandOption _baseNamespace;
+        public ICodeGenerationWrapper CodeGenerationWrapper {get; set; }
 
         public GenerateFromAbiCommand()
         {
@@ -22,10 +20,11 @@ namespace Nethereum.Generator.Console
             _contractName = Option("-cn | --contractName", "The contract name", CommandOptionType.SingleValue);
             _abiFilePath = Option("-abi | --abiPath", "The abi file and path", CommandOptionType.SingleValue);
             _binCodeFilePath = Option("-bin | --binPath", "The bin file and path", CommandOptionType.SingleValue);
-            _outputFolder = Option("-o | --outputPath", "Theoutput path for the generated code", CommandOptionType.SingleValue);
+            _outputFolder = Option("-o | --outputPath", "The output path for the generated code", CommandOptionType.SingleValue);
             _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code", CommandOptionType.SingleValue);
             HelpOption("-? | -h | --help");
             OnExecute((Func<int>)RunCommand);
+            CodeGenerationWrapper = new CodeGenerationWrapper();
         }
 
         private int RunCommand()
@@ -53,42 +52,9 @@ namespace Nethereum.Generator.Console
 
             var contractName = _contractName.Value();
 
-            GenerateCode(contractName, abiFilePath, _binCodeFilePath.Value(), baseNamespace, outputFolder);
+            CodeGenerationWrapper.FromAbi(contractName, abiFilePath, _binCodeFilePath.Value(), baseNamespace, outputFolder);
 
             return 0;
-        }
-
-        private static void GenerateCode(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
-        {
-            var codeGenConfigurationFactory = new GeneratorConfigurationFactory();
-            var config = codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
-
-            if (config?.ABIConfigurations == null)
-                return;
-
-            foreach (var item in config.ABIConfigurations)
-            {
-                GenerateFilesForItem(item);
-            }
-        }
-
-        private static void GenerateFilesForItem(ABIConfiguration item)
-        {
-            var generator = new ContractProjectGenerator(
-                item.CreateContractABI(),
-                item.ContractName,
-                item.ByteCode,
-                item.BaseNamespace,
-                item.ServiceNamespace,
-                item.CQSNamespace,
-                item.DTONamespace,
-                item.BaseOutputPath,
-                Path.DirectorySeparatorChar.ToString(),
-                item.CodeGenLanguage
-            );
-
-            var generatedFiles = generator.GenerateAll();
-            GeneratedFileWriter.WriteFilesToDisk(generatedFiles);
         }
     }
 }

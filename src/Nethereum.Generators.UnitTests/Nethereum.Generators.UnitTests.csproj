@@ -7,20 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Expected\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
-    <None Remove="Expected\Content\CSharp\EventDTO.01.csharp.txt" />
-    <None Remove="Expected\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
-    <None Remove="Expected\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
-    <None Remove="Expected\Content\CSharp\ServiceGenerator.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\EventDTO.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\ServiceGenerator.01.csharp.txt" />
   </ItemGroup>
 
   <ItemGroup>
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
-    <EmbeddedResource Include="Expected\Content\CSharp\ServiceGenerator.01.csharp.txt" />
-    <EmbeddedResource Include="Expected\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
-    <EmbeddedResource Include="Expected\Content\CSharp\EventDTO.01.csharp.txt" />
-    <EmbeddedResource Include="Expected\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
-    <EmbeddedResource Include="Expected\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\ServiceGenerator.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\EventDTO.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj" />
     <!-- <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" /> -->
     <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
   </ItemGroup>

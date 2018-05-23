@@ -1,72 +1,59 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Generator.Console.Configuration;
+using Nethereum.Generators.Core;
+using Nethereum.Generators.Tests.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Nethereum.Generator.Console.Configuration;
-using Nethereum.Generator.Console.UnitTests.EndToEndTests;
-using Nethereum.Generators.Core;
+using Nethereum.Generators.UnitTests.TestData;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromProject
 {
     public class WithoutConfigFileTests
     {
-        [Fact]
-        public void GivenProjectFilePathScansForAbiFilesInProjectFolder()
+        public enum PathType
         {
-            //given
-            var factory = new GeneratorConfigurationFactory();
-            var context = new EndToEndTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
-            context.CreateProject();
-
-            context.WriteFileToProject("StandardContract.abi", TestData.StandardContract.ABI);
-            context.WriteFileToProject("StandardContract.bin", TestData.StandardContract.ByteCode);
-
-            //when
-            var config = factory.FromProject(context.ProjectFilePath, context.OutputAssemblyName);
-
-            //then
-            Assert.Equal(1, config?.ABIConfigurations?.Count);
-            var abiConfig = config.ABIConfigurations.First();
-            Assert.NotNull(abiConfig);
-            Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
-            Assert.Equal("StandardContract", abiConfig.ContractName);
-            Assert.Equal(TestData.StandardContract.ABI, abiConfig.ABI);
-            Assert.Equal(TestData.StandardContract.ByteCode, abiConfig.ByteCode);
-            Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
-            Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-            Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
-            Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
-            Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+            FolderAndFile,
+            FolderOnly
         }
 
-        [Fact]
-        public void GivenProjectFolderPathScansForAbiFilesInProjectFolder()
+        [Theory]
+        [InlineData(PathType.FolderAndFile)]
+        [InlineData(PathType.FolderOnly)]
+        public void GivenProjectFileOrFolderPath_ItFindsAllAbiFilesInProjectFolder(PathType pathType)
         {
             //given
             var factory = new GeneratorConfigurationFactory();
-            var context = new EndToEndTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
-            context.CreateProject();
+            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
+            try
+            {
+                context.CreateProject();
 
-            context.WriteFileToProject("StandardContract.abi", TestData.StandardContract.ABI);
-            context.WriteFileToProject("StandardContract.bin", TestData.StandardContract.ByteCode);
+                context.WriteFileToProject("StandardContract.abi", TestContracts.StandardContract.ABI);
+                context.WriteFileToProject("StandardContract.bin", TestContracts.StandardContract.ByteCode);
 
-            //when
-            var config = factory.FromProject(context.TargetProjectFolder, context.OutputAssemblyName);
+                //when
+                var path = pathType == PathType.FolderAndFile ? context.ProjectFilePath : context.TargetProjectFolder;
+                var config = factory.FromProject(path, context.OutputAssemblyName);
 
-            //then
-            Assert.Equal(1, config?.ABIConfigurations?.Count);
-            var abiConfig = config.ABIConfigurations.First();
-            Assert.NotNull(abiConfig);
-            Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
-            Assert.Equal("StandardContract", abiConfig.ContractName);
-            Assert.Equal(TestData.StandardContract.ABI, abiConfig.ABI);
-            Assert.Equal(TestData.StandardContract.ByteCode, abiConfig.ByteCode);
-            Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
-            Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-            Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
-            Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
-            Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+                //then
+                Assert.Equal(1, config?.ABIConfigurations?.Count);
+                var abiConfig = config.ABIConfigurations.First();
+                Assert.NotNull(abiConfig);
+                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
+                Assert.Equal("StandardContract", abiConfig.ContractName);
+                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
+                Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
+                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
+                Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
+                Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
+                Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+            }
+            finally
+            {
+                context.CleanUp();
+            }
         }
     }
 }

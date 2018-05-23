@@ -3,48 +3,43 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using System.Threading;
+using Nethereum.Generators.Core;
+using Nethereum.Generators.Tests.Common.TestData;
 
-namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
+namespace Nethereum.Generators.Tests.Common
 {
-    public class EndToEndTestContext
+    public class ProjectTestContext
     {
         public string TargetProjectFolder { get; }
-        public string GeneratorConsolePath { get; }
         public string OutputAssemblyName { get; }
         public string ProjectName { get; set; }
         public string ProjectFilePath { get; set; }
 
-        public const string GeneratorConsoleName = "Nethereum.Generator.Console.dll";
 
-        public const string GeneratorConsoleRelativePath =
-            "../../../../Nethereum.Generator.Console/bin/debug/netcoreapp2.0";
-
-        public EndToEndTestContext(string testClass, string testName)
+        public ProjectTestContext(string testClass, string testName)
         {
             TargetProjectFolder = Path.Combine(
-                TestData.TempPath, 
+                TestEnvironment.TempPath, 
                 testClass, 
                 testName);
 
             ProjectName = TargetProjectFolder.Split(Path.DirectorySeparatorChar).Last();
             OutputAssemblyName = $"{ProjectName}.dll";
             ProjectFilePath = Path.Combine(TargetProjectFolder, ProjectName) + ".csproj";
-            GeneratorConsolePath = Path.GetFullPath(GeneratorConsoleRelativePath); 
         }
 
         public string WriteFileToProject(string fileName, string fileContent)
         {
-            return TestData.WriteFileToFolder(TargetProjectFolder, fileName, fileContent);
+            return TestEnvironment.WriteFileToFolder(TargetProjectFolder, fileName, fileContent);
         }
 
-        public void CreateProject(IEnumerable<Tuple<string, string>> nugetPackages = null)
+        public void CreateProject(CodeGenLanguage language = CodeGenLanguage.CSharp, IEnumerable<Tuple<string, string>> nugetPackages = null)
         {
             EmptyTargetFolder();
 
             Directory.CreateDirectory(TargetProjectFolder);
-            CreateProjectFile();
+            CreateProjectFile(language);
             if (nugetPackages != null)
             {
                 foreach (var nuget in nugetPackages)
@@ -62,14 +57,6 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
         public bool FileExists(string relativeFilePath)
         {
             return File.Exists(Path.Combine(TargetProjectFolder, relativeFilePath));
-        }
-
-        public void GenerateCode(string commandName, string commandArgs)
-        {
-            var args =
-                $"{GeneratorConsoleName} {commandName} {commandArgs}";
-
-            DotNet(args, workingFolderOverride: GeneratorConsolePath);
         }
 
         public void BuildProject()
@@ -101,29 +88,36 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
                 DeleteDirectory(directory);
             }
 
+            DeleteDirectoryWithRetry(path);
+        }
+
+        private static void DeleteDirectoryWithRetry(string path, int attemptNumber = 0)
+        {
             try
             {
-                Directory.Delete(path, true);
+                attemptNumber++;
+                if(attemptNumber < 4)
+                    Directory.Delete(path, true);
+                else
+                    Debug.WriteLine($"Failed to delete directory '{attemptNumber}'.  Attempt count exceeded.");
             }
-            catch (IOException) 
+            catch (Exception x)
             {
-                Directory.Delete(path, true);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Directory.Delete(path, true);
+                Debug.WriteLine($"Failed to delete directory '{attemptNumber}', attemptNumber: {attemptNumber}. {x.Message}");
+                Thread.Sleep(1000 * attemptNumber);
+                DeleteDirectoryWithRetry(path, attemptNumber);
             }
         }
 
-        private void AddNugetPackage(string packageName, string version)
+        public void AddNugetPackage(string packageName, string version)
         {
             var args = $"add package {packageName} -v {version}";
             DotNet(args);
         }
 
-        private void CreateProjectFile()
+        private void CreateProjectFile(CodeGenLanguage language)
         {
-            DotNet("new classLib");
+            DotNet($"new classLib -lang {language.ToDotNetCli()}");
         }
 
         private void DotNet(string args, string workingFolderOverride = null)
@@ -140,7 +134,7 @@ namespace Nethereum.Generator.Console.UnitTests.EndToEndTests
                 process.StartInfo.RedirectStandardError = true;
 
                 process.Start();
-                process.WaitForExit();
+                process.WaitForExit((int)TimeSpan.FromMinutes(1).TotalMilliseconds);
                 var output = process.StandardOutput?.ReadToEnd();
                 var error = process.StandardError?.ReadToEnd();
 

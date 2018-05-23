@@ -64,11 +64,8 @@ namespace Nethereum.Generators
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
 
-            if (CodeGenLanguage == CodeGenLanguage.Vb)
-            {
-                dtoFullNamespace = $"{ProjectName}.{dtoFullNamespace}";
-                cqsFullNamespace = $"{ProjectName}.{cqsFullNamespace}";
-            }
+            dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
 
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
@@ -116,8 +113,7 @@ namespace Nethereum.Generators
             var cqsFullPath = GetFullPath(CQSNamespace);
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
 
-            if (CodeGenLanguage == CodeGenLanguage.Vb)
-                dtoFullNamespace = $"{ProjectName}.{dtoFullNamespace}";
+            dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
 
             var generated = new List<GeneratedFile>();
             foreach (var functionAbi in ContractABI.Functions)
@@ -126,6 +122,15 @@ namespace Nethereum.Generators
                 GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(cqsFullPath));
             }
             return generated;
+        }
+
+        public bool AddRootNamespaceOnVbProjectsToImportStatements { get; set; } = true;
+
+        private string FullyQualifyNamespaceFromImport(string @namespace)
+        {
+            if (CodeGenLanguage == CodeGenLanguage.Vb && AddRootNamespaceOnVbProjectsToImportStatements)
+                @namespace = $"{ProjectName}.{@namespace}";
+            return @namespace;
         }
 
         public GeneratedFile GeneratCQSMessageDeployment()

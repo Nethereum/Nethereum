@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Generators.UnitTests.TestData
+﻿using Nethereum.Generators.Tests.Common.TestData;
+
+namespace Nethereum.Generators.UnitTests.TestData
 {
     public static class TestContracts
     {

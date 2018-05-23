@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Generator.Console.Configuration;
+using Nethereum.Generators.Core;
+using Nethereum.Generators.Tests.Common;
+using Nethereum.Generators.UnitTests.TestData;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Nethereum.Generator.Console.Configuration;
-using Nethereum.Generator.Console.UnitTests.EndToEndTests;
-using Nethereum.Generators.Core;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromAbi
@@ -16,33 +16,40 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
         {
             //given
             var factory = new GeneratorConfigurationFactory();
-            var context = new EndToEndTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
-            context.CreateProject();
+            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
+            try
+            {
+                context.CreateProject();
 
-            context.WriteFileToProject("StandardContract.abi", TestData.StandardContract.ABI);
-            context.WriteFileToProject("StandardContract.bin", TestData.StandardContract.ByteCode);
+                context.WriteFileToProject("StandardContract.abi", TestContracts.StandardContract.ABI);
+                context.WriteFileToProject("StandardContract.bin", TestContracts.StandardContract.ByteCode);
 
-            //when
-            var config = factory.FromAbi(
-                "StandardContract",  
-                "StandardContract.abi", 
-                "StandardContract.bin", 
-                Path.GetFileNameWithoutExtension(context.OutputAssemblyName), 
-                context.TargetProjectFolder);
+                //when
+                var config = factory.FromAbi(
+                    "StandardContract",
+                    "StandardContract.abi",
+                    "StandardContract.bin",
+                    Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
+                    context.TargetProjectFolder);
 
-            //then
-            Assert.Equal(1, config?.ABIConfigurations?.Count);
-            var abiConfig = config.ABIConfigurations.First();
-            Assert.NotNull(abiConfig);
-            Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
-            Assert.Equal("StandardContract", abiConfig.ContractName);
-            Assert.Equal(TestData.StandardContract.ABI, abiConfig.ABI);
-            Assert.Equal(TestData.StandardContract.ByteCode, abiConfig.ByteCode);
-            Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
-            Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-            Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
-            Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
-            Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+                //then
+                Assert.Equal(1, config?.ABIConfigurations?.Count);
+                var abiConfig = config.ABIConfigurations.First();
+                Assert.NotNull(abiConfig);
+                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
+                Assert.Equal("StandardContract", abiConfig.ContractName);
+                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
+                Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
+                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
+                Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
+                Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
+                Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+            }
+            finally
+            {
+                context.CleanUp();
+            }
         }
 
         [Fact]
@@ -50,24 +57,31 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
         {
             //given
             var factory = new GeneratorConfigurationFactory();
-            var context = new EndToEndTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
-            context.CreateProject();
+            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
+            try
+            {
+                context.CreateProject();
 
-            context.WriteFileToProject("StandardContract.abi", TestData.StandardContract.ABI);
-            context.WriteFileToProject("StandardContract.bin", TestData.StandardContract.ByteCode);
+                context.WriteFileToProject("StandardContract.abi", TestContracts.StandardContract.ABI);
+                context.WriteFileToProject("StandardContract.bin", TestContracts.StandardContract.ByteCode);
 
-            //when
-            var config = factory.FromAbi(
-                "StandardContract",  
-                "StandardContract.abi", 
-                null, // bin file
-                Path.GetFileNameWithoutExtension(context.OutputAssemblyName), 
-                context.TargetProjectFolder);
+                //when
+                var config = factory.FromAbi(
+                    "StandardContract",
+                    "StandardContract.abi",
+                    null, // bin file
+                    Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
+                    context.TargetProjectFolder);
 
-            //then
-            Assert.Equal(1, config?.ABIConfigurations?.Count);
-            var abiConfig = config.ABIConfigurations.First();
-            Assert.Equal(TestData.StandardContract.ByteCode, abiConfig.ByteCode);
+                //then
+                Assert.Equal(1, config?.ABIConfigurations?.Count);
+                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
+            }
+            finally
+            {
+                context.CleanUp();
+            }
         }
 
         [Fact]
@@ -75,24 +89,31 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
         {
             //given
             var factory = new GeneratorConfigurationFactory();
-            var context = new EndToEndTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
-            context.CreateProject();
+            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
+            try
+            {
+                context.CreateProject();
 
-            context.WriteFileToProject("StandardContract.abi", TestData.StandardContract.ABI);
-            context.WriteFileToProject("StandardContract.bin", TestData.StandardContract.ByteCode);
+                context.WriteFileToProject("StandardContract.abi", TestContracts.StandardContract.ABI);
+                context.WriteFileToProject("StandardContract.bin", TestContracts.StandardContract.ByteCode);
 
-            //when
-            var config = factory.FromAbi(
-                null,  //contract name
-                "StandardContract.abi", 
-                "StandardContract.bin", 
-                Path.GetFileNameWithoutExtension(context.OutputAssemblyName), 
-                context.TargetProjectFolder);
+                //when
+                var config = factory.FromAbi(
+                    null, //contract name
+                    "StandardContract.abi",
+                    "StandardContract.bin",
+                    Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
+                    context.TargetProjectFolder);
 
-            //then
-            Assert.Equal(1, config?.ABIConfigurations?.Count);
-            var abiConfig = config.ABIConfigurations.First();
-            Assert.Equal("StandardContract", abiConfig.ContractName);
+                //then
+                Assert.Equal(1, config?.ABIConfigurations?.Count);
+                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal("StandardContract", abiConfig.ContractName);
+            }
+            finally
+            {
+                context.CleanUp();
+            }
         }
     }
 }

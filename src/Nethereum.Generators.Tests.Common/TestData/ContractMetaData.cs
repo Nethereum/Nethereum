@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Generators.UnitTests.TestData
+﻿using System;
+
+namespace Nethereum.Generators.Tests.Common.TestData
 {
     public class ContractMetaData
     {

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 
-namespace Nethereum.Generators.UnitTests.TestData
+namespace Nethereum.Generators.Tests.Common.TestData
 {
     public static class TestEnvironment
     {
