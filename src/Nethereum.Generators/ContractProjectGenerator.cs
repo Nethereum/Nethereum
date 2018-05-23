@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Nethereum.Generators.Core;
+﻿using Nethereum.Generators.Core;
 using Nethereum.Generators.CQS;
 using Nethereum.Generators.DTOs;
 using Nethereum.Generators.Model;
 using Nethereum.Generators.Service;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Nethereum.Generators
 {
@@ -21,6 +22,8 @@ namespace Nethereum.Generators
         public string BaseOutputPath { get; }
         public string PathDelimiter { get; }
         public CodeGenLanguage CodeGenLanguage { get; }
+
+        private string ProjectName { get; }
 
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
@@ -43,6 +46,7 @@ namespace Nethereum.Generators
             BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter.ToCharArray());
             PathDelimiter = pathDelimiter;
             CodeGenLanguage = codeGenLanguage;
+            ProjectName = BaseOutputPath?.Split(Path.DirectorySeparatorChar).Last();
         }
 
         public GeneratedFile[] GenerateAll()
@@ -59,6 +63,10 @@ namespace Nethereum.Generators
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+
+            dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
+
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
             var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
@@ -104,6 +112,9 @@ namespace Nethereum.Generators
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
             var cqsFullPath = GetFullPath(CQSNamespace);
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
+
+            dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
+
             var generated = new List<GeneratedFile>();
             foreach (var functionAbi in ContractABI.Functions)
             {
@@ -113,11 +124,26 @@ namespace Nethereum.Generators
             return generated;
         }
 
-        public GeneratedFile GeneratCQSMessageDeployment()
+        public bool AddRootNamespaceOnVbProjectsToImportStatements { get; set; } = true;
 
+        private string FullyQualifyNamespaceFromImport(string @namespace)
         {
-            var cqsGenerator = new ContractDeploymentCQSMessageGenerator(ContractABI.Constructor, GetFullNamespace(CQSNamespace), ByteCode,
-                ContractName, CodeGenLanguage);
+            if (CodeGenLanguage == CodeGenLanguage.Vb && AddRootNamespaceOnVbProjectsToImportStatements)
+                @namespace = $"{ProjectName}.{@namespace}";
+            return @namespace;
+        }
+
+        public GeneratedFile GeneratCQSMessageDeployment()
+        {
+            var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+
+            var cqsGenerator = new ContractDeploymentCQSMessageGenerator(
+                ContractABI.Constructor, 
+                cqsFullNamespace,
+                ByteCode,
+                ContractName, 
+                CodeGenLanguage);
+
            return cqsGenerator.GenerateFileContent(GetFullPath(CQSNamespace));
         }
 

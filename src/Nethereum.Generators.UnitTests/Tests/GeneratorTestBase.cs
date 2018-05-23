@@ -1,5 +1,5 @@
 ﻿using Nethereum.Generators.Core;
-using Nethereum.Generators.UnitTests.Expected;
+using Nethereum.Generators.UnitTests.Expectations;
 using Xunit;
 
 namespace Nethereum.Generators.Tests

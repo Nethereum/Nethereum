@@ -11,16 +11,11 @@
       Will automatically create dot net files based on .abi files within the target project during pre build.  
       More control can be gained by adding a Nethereum.Generator.config file to the root of the project.
       This describes the abi contracts and the code generation options for each (output folders, namespaces etc).</description>
-    <dependencies>
-      <group targetFramework=".NETCoreApp2.0">
-        <dependency id="Nethereum.Web3" version="2.4.0" exclude="Build,Analyzers" />
-      </group>
-    </dependencies>
   </metadata>
 
   <files>
-    <file src="..\bin\debug\netcoreapp2.0\publish\*.dll" target="tools" />
-    <file src="..\bin\debug\netcoreapp2.0\publish\*.json" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.0\publish\*.dll" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.0\publish\*.json" target="tools" />
     <file src="Nethereum.ABI.Autogen.targets" target="build" />
   </files>
 </package>

@@ -2,7 +2,7 @@
   "profiles": {
     "Nethereum.Generator.Console": {
       "commandName": "Project",
-      "commandLineArgs": "gen-service -af \"sample/UportRegistry.abi\" -bf \"sample/UportRegistry.bin\" -c UportRegistry -n Uport"
+      "commandLineArgs": "gen-fromabi -cn StandardContract -abi ..\\..\\..\\sample\\StandardContract.abi -bin ..\\..\\..\\sample\\StandardContract.bin -o c:\\Temp\\ -ns Sample.Ethereum"
     }
   }
 }

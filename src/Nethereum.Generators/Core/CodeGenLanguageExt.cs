@@ -1,18 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Nethereum.Generators.Core
 {
     public static class CodeGenLanguageExt
     {
-
-        private static readonly Dictionary<CodeGenLanguage, string> ProjectFileExtensions = new Dictionary<CodeGenLanguage, string>
+        public static readonly Dictionary<CodeGenLanguage, string> ProjectFileExtensions = new Dictionary<CodeGenLanguage, string>
         {
             {CodeGenLanguage.CSharp, ".csproj"},
             {CodeGenLanguage.FSharp, ".fsproj"},
             {CodeGenLanguage.Vb, ".vbproj"}
         };
+
+        public static readonly Dictionary<CodeGenLanguage, string> DotNetCliLanguage = new Dictionary<CodeGenLanguage, string>
+        {
+            {CodeGenLanguage.CSharp, "C#"},
+            {CodeGenLanguage.FSharp, "F#"},
+            {CodeGenLanguage.Vb, "VB"}
+        };
+
+        public static string ToDotNetCli(this CodeGenLanguage language)
+        {
+            return DotNetCliLanguage.ContainsKey(language)
+                ? DotNetCliLanguage[language] : throw new ArgumentException($"Language isn't supported by dot net cli '{language}'");
+        }
 
         public static string AddProjectFileExtension(this CodeGenLanguage language, string projectFileName)
         {

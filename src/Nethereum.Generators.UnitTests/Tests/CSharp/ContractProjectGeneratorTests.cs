@@ -12,7 +12,7 @@ namespace Nethereum.Generators.UnitTests.Tests.CSharp
 
         public ContractProjectGeneratorTests()
         {
-            var contractMetaData = TestContractsUtils.StandardContract;
+            var contractMetaData = TestContracts.StandardContract;
 
             var contractABI = new GeneratorModelABIDeserialiser().DeserialiseABI(contractMetaData.ABI);
 

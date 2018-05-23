@@ -20,10 +20,10 @@ namespace Nethereum.Generators.CQS
                 $@"{SpaceUtils.OneTab}Public Class {typeName} 
 {SpaceUtils.ThreeTabs}Inherits ContractDeploymentMessage
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Shared BYTECODE As String = ""{Model.ByteCode}""
+{SpaceUtils.TwoTabs}Public Shared DEFAULT_BYTECODE As String = ""{Model.ByteCode}""
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}Public Sub New()
-{SpaceUtils.ThreeTabs}MyBase.New(BYTECODE)
+{SpaceUtils.ThreeTabs}MyBase.New(DEFAULT_BYTECODE)
 {SpaceUtils.TwoTabs}End Sub
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}Public Sub New(ByVal byteCode As String)

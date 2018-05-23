@@ -1,1 +1,0 @@
-dotnet Nethereum.Generator.Console.dll gen-service -af UportRegistry.abi -bf UportRegistry.bin -c UportRegistry -n Uport

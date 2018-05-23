@@ -4,8 +4,18 @@ using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.Net
 {
-    public class GeneratedFileWriter
+    public class GeneratedFileWriter : IGeneratedFileWriter
     {
+        public void WriteFiles(IEnumerable<GeneratedFile> generatedFiles)
+        {
+            WriteFilesToDisk(generatedFiles);
+        }
+
+        public void WriteFile(GeneratedFile generatedFile)
+        {
+            WriteFileToDisk(generatedFile);
+        }
+
         public static void WriteFileToDisk(GeneratedFile generatedFile)
         {
             //soft handling empty code
