@@ -6,7 +6,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.CQS
 {
-#if !DOTNET35
+
     public class ContractHandler
     {
         public ContractHandler(string contractAddress, EthApiContractService ethApiContractService,
@@ -22,6 +22,20 @@ namespace Nethereum.Contracts.CQS
         public string ContractAddress { get; }
         public EthApiContractService EthApiContractService { get; }
 
+        public Event<TEventType> GetEvent<TEventType>() where TEventType : new()
+        {
+            if (!EventAttribute.IsEventType(typeof(TEventType))) return null;
+            var attribute = EventAttribute.GetAttribute<TEventType>();
+            var contract = new Contract(EthApiContractService, typeof(TEventType), ContractAddress);
+            return contract.GetEvent<TEventType>(attribute.Name);
+        }
+
+        protected void SetAddressFrom(ContractMessage contractMessage)
+        {
+            contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;
+        }
+
+#if !DOTNET35
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
              CancellationTokenSource tokenSource = null)
             where TEthereumContractFunctionMessage : ContractMessage, new()
@@ -63,7 +77,6 @@ namespace Nethereum.Contracts.CQS
             SetAddressFrom(transactionMesssage);
             return command.EstimateGasAsync(transactionMesssage, ContractAddress);
         }
-
 
         public Task<TransactionReceipt> SendDeploymentRequestAndWaitForReceiptAsync<TEthereumContractDeploymentMessage>(
             TEthereumContractDeploymentMessage ethereumDeploymentMessage, CancellationTokenSource tokenSource = null)
@@ -135,20 +148,8 @@ namespace Nethereum.Contracts.CQS
             return QueryAsync<TEthereumContractFunctionMessage, TReturn>(ethereumContractFunctionMessage,
                 blockParameter);
         }
-
-        public Event<TEventType> GetEvent<TEventType>() where TEventType: new()
-        {
-            if (!EventAttribute.IsEventType(typeof(TEventType))) return null;
-            var attribute = EventAttribute.GetAttribute<TEventType>();
-            var contract = new Contract(EthApiContractService, typeof(TEventType), ContractAddress);
-            return contract.GetEvent<TEventType>(attribute.Name);
-        }
-
-       
-        protected void SetAddressFrom(ContractMessage contractMessage)
-        {
-            contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;
-        }
-    }
 #endif
+        
+    }
+
 }

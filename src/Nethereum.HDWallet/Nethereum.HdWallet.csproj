@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.HdWallet uses BIP32 and BIP39 to generate an HD tree of Ethereum compatible addreses from a randomly generated word seeds. 
+    <Description>Nethereum.HdWallet uses BIP32 and BIP39 to generate an HD tree of Ethereum compatible addreses from a randomly generated word seeds. 
     This is compatible with keys generated using the standard (m/44'/60'/0'/0/x) usded in  BIP44, MetaMask, Jaxx, MyEtherWallet (default), TREZOR App, Exodus
     or (m/44'/60'/0'/x) used in Electrum, MyEtherWallet (ledger), Ledger Chrome App, imToken </Description>
     <Copyright>Juan Blanco</Copyright>
@@ -11,7 +11,7 @@
     <TargetFrameworks>netstandard1.1;net452</TargetFrameworks>
     <AssemblyName>Nethereum.HdWallet</AssemblyName>
     <PackageId>Nethereum.HdWallet</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;HdWallet</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;HdWallet</PackageTags>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
   <ItemGroup>

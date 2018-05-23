@@ -6,7 +6,7 @@ namespace Nethereum.JsonRpc.Client
     public abstract class ClientBase : IClient
     {
 
-        public static int ConnectionTimeout { get; set; } = 5000;
+        public static int ConnectionTimeout { get; set; } = 10000;
 
         public RequestInterceptor OverridingRequestInterceptor { get; set; }
 

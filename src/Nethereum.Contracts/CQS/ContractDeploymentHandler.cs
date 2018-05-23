@@ -5,11 +5,29 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.CQS
 {
-#if !DOTNET35
+
     public class ContractDeploymentHandler<TContractDeploymentMessage> : ContractHandlerBase<TContractDeploymentMessage>
         where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
+        public string GetData(TContractDeploymentMessage contractDeploymentMessage)
+        {
+            ValidateContractMessage(contractDeploymentMessage);
+            var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
+            return deployContractTransactionBuilder.GetData(contractDeploymentMessage.ByteCode, contractDeploymentMessage);
+        }
 
+        public TransactionInput CreateTransactionInput(
+            TContractDeploymentMessage contractDeploymentMessage)
+        {
+            ValidateContractMessage(contractDeploymentMessage);
+            var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
+            return deployContractTransactionBuilder.BuildTransaction(contractDeploymentMessage.ByteCode,
+                GetDefaultAddressFrom(contractDeploymentMessage),
+                GetMaximumGas(contractDeploymentMessage), GetGasPrice(contractDeploymentMessage), GetValue(contractDeploymentMessage),
+                contractDeploymentMessage);
+        }
+
+#if !DOTNET35
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(CancellationTokenSource tokenSource = null)
         {
             var contractDeploymentMessage = new TContractDeploymentMessage();
@@ -37,7 +55,7 @@ namespace Nethereum.Contracts.CQS
             return await SendRequestAsync(contractDeploymentMessage, gasEstimate).ConfigureAwait(false);
         }
 
-        public async Task<TransactionInput> CreateTransactionInputAsync(
+        public async Task<TransactionInput> CreateTransactionInputEstimatingGasAsync(
             TContractDeploymentMessage contractDeploymentMessage)
         {
             ValidateContractMessage(contractDeploymentMessage);
@@ -91,6 +109,6 @@ namespace Nethereum.Contracts.CQS
                 GetDefaultAddressFrom(contractDeploymentMessage), null, GetValue(contractDeploymentMessage),
                 contractDeploymentMessage);
         }
-    }
 #endif
+    }
 }
