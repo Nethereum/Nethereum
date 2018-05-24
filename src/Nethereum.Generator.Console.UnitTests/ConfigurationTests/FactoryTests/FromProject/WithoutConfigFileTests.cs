@@ -24,7 +24,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
         {
             //given
             var factory = new GeneratorConfigurationFactory();
-            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name);
+            var context = new ProjectTestContext(this.GetType().Name, MethodBase.GetCurrentMethod().Name + "_" + pathType.ToString());
             try
             {
                 context.CreateProject();
