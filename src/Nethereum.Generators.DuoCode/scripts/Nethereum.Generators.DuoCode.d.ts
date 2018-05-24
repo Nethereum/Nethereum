@@ -26,6 +26,8 @@ declare module Nethereum {
             GenerateAllFunctionDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllEventDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GeneratCQSFunctionMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
+            get_AddRootNamespaceOnVbProjectsToImportStatements(): boolean;
+            set_AddRootNamespaceOnVbProjectsToImportStatements(value: boolean): void;
             GeneratCQSMessageDeployment(): Core.GeneratedFile;
             GetFullNamespace(namespace: string): string;
             GetFullPath(namespace: string): string;
@@ -79,8 +81,9 @@ declare module Nethereum {
             export interface ParameterABIModelTypeFunc extends TypeFunction {
                 (): ParameterABIModelTypeFunc;
                 prototype: ParameterABIModel;
-                new (parameter: Model.ParameterABI): ParameterABIModel;
-                ctor: { new (parameter: Model.ParameterABI): ParameterABIModel; };
+                ctor$1: { new (parameter: Model.ParameterABI): ParameterABIModel; };
+                new (): ParameterABIModel;
+                ctor: { new (): ParameterABIModel; };
             }
             const ParameterABIModel: ParameterABIModelTypeFunc;
 
@@ -166,6 +169,9 @@ declare module Nethereum {
             // Nethereum.Generators.Core.CodeGenLanguageExt
             export interface CodeGenLanguageExtTypeFunc extends TypeFunction {
                 (): CodeGenLanguageExtTypeFunc;
+                ProjectFileExtensions: System.Collections.Generic.Dictionary$2<CodeGenLanguage, string>;
+                DotNetCliLanguage: System.Collections.Generic.Dictionary$2<CodeGenLanguage, string>;
+                ToDotNetCli(language: CodeGenLanguage): string;
                 AddProjectFileExtension(language: CodeGenLanguage, projectFileName: string): string;
                 GetCodeOutputFileExtension(codeGenLanguage: CodeGenLanguage): string;
             }
@@ -290,17 +296,56 @@ declare module Nethereum {
             }
             export function ParameterMap$2<T1, T2>(T1: TypeArg<T1>, T2: TypeArg<T2>): ParameterMap$2TypeFunc<T1, T2>;
 
+            // Nethereum.Generators.Core.ParameterMapperAssignerCSharpTemplate<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>
+            export interface ParameterMapperAssignerCSharpTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> {
+            }
+            export interface ParameterMapperAssignerCSharpTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends TypeFunction {
+                (): ParameterMapperAssignerCSharpTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                prototype: ParameterMapperAssignerCSharpTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                new (): ParameterMapperAssignerCSharpTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                ctor: { new (): ParameterMapperAssignerCSharpTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>; };
+            }
+            export function ParameterMapperAssignerCSharpTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>(TParameterModelFrom: TypeArg<TParameterModelFrom>, TParameterModelTo: TypeArg<TParameterModelTo>, TParameterFrom: TypeArg<TParameterFrom>, TParameterTo: TypeArg<TParameterTo>): ParameterMapperAssignerCSharpTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+
+            // Nethereum.Generators.Core.ParameterMapperAssignerTemplate<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>
+            export interface ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends System.Object {
+                GenerateMappingAssigment$1(map: ParameterMap$2<TParameterFrom, TParameterTo>, variableSourceName: string, destinationVariableName: string): string;
+                GenerateMappingAssigment(map: ParameterMap$2<TParameterFrom, TParameterTo>, variableSourceName: string): string;
+                GenerateMappingsReturn$1(map: ParameterMap$2<TParameterFrom, TParameterTo>, variableSourceName: string, destinationVariableName: string): string;
+                GenerateMappingsReturn(map: ParameterMap$2<TParameterFrom, TParameterTo>, variableSourceName: string): string;
+            }
+            export interface ParameterMapperAssignerTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends TypeFunction {
+                (): ParameterMapperAssignerTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                prototype: ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                new (): ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                ctor: { new (): ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>; };
+            }
+            export function ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>(TParameterModelFrom: TypeArg<TParameterModelFrom>, TParameterModelTo: TypeArg<TParameterModelTo>, TParameterFrom: TypeArg<TParameterFrom>, TParameterTo: TypeArg<TParameterTo>): ParameterMapperAssignerTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+
+            // Nethereum.Generators.Core.ParameterMapperAssignerVbTemplate<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>
+            export interface ParameterMapperAssignerVbTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends ParameterMapperAssignerTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> {
+            }
+            export interface ParameterMapperAssignerVbTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo> extends TypeFunction {
+                (): ParameterMapperAssignerVbTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                prototype: ParameterMapperAssignerVbTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                new (): ParameterMapperAssignerVbTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+                ctor: { new (): ParameterMapperAssignerVbTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>; };
+            }
+            export function ParameterMapperAssignerVbTemplate$4<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>(TParameterModelFrom: TypeArg<TParameterModelFrom>, TParameterModelTo: TypeArg<TParameterModelTo>, TParameterFrom: TypeArg<TParameterFrom>, TParameterTo: TypeArg<TParameterTo>): ParameterMapperAssignerVbTemplate$4TypeFunc<TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo>;
+
             // Nethereum.Generators.Core.ParameterModel<TParameter>
             export interface ParameterModel$1<TParameter> extends System.Object {
                 get_Parameter(): TParameter;
+                set_Parameter(value: TParameter): void;
                 GetVariableName(): string;
                 GetPropertyName(): string;
             }
             export interface ParameterModel$1TypeFunc<TParameter> extends TypeFunction {
                 (): ParameterModel$1TypeFunc<TParameter>;
                 prototype: ParameterModel$1<TParameter>;
-                new (parameter: TParameter): ParameterModel$1<TParameter>;
-                ctor: { new (parameter: TParameter): ParameterModel$1<TParameter>; };
+                new (): ParameterModel$1<TParameter>;
+                ctor: { new (): ParameterModel$1<TParameter>; };
+                ctor$1: { new (parameter: TParameter): ParameterModel$1<TParameter>; };
             }
             export function ParameterModel$1<TParameter>(TParameter: TypeArg<TParameter>): ParameterModel$1TypeFunc<TParameter>;
 
@@ -315,6 +360,7 @@ declare module Nethereum {
                 TwoTabs: string;
                 ThreeTabs: string;
                 FourTabs: string;
+                FiveTabs: string;
                 new (): SpaceUtils;
                 ctor: { new (): SpaceUtils; };
             }
@@ -360,7 +406,9 @@ declare module Nethereum {
         }
         module Model {
             // Nethereum.Generators.Model.ConstructorABI
-            export interface ConstructorABI extends System.Object {
+            export interface ConstructorABI extends System.Object, Core.IMessage$1<ParameterABI> {
+                get_Name(): string;
+                set_Name(value: string): void;
                 get_InputParameters(): ParameterABI[];
                 set_InputParameters(value: ParameterABI[]): void;
             }
@@ -941,6 +989,45 @@ declare module Nethereum {
                 ctor: { new (model: ServiceModel): ServiceVbTemplate; };
             }
             const ServiceVbTemplate: ServiceVbTemplateTypeFunc;
+        }
+        module XUnit {
+            // Nethereum.Generators.XUnit.SimpleTestGenerator
+            export interface SimpleTestGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<SimpleTestModel>, SimpleTestModel>, Core.IFileGenerator, Core.IGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface SimpleTestGeneratorTypeFunc extends TypeFunction {
+                (): SimpleTestGeneratorTypeFunc;
+                prototype: SimpleTestGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): SimpleTestGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): SimpleTestGenerator; };
+            }
+            const SimpleTestGenerator: SimpleTestGeneratorTypeFunc;
+
+            // Nethereum.Generators.XUnit.SimpleTestModel
+            export interface SimpleTestModel extends Core.TypeMessageModel, Core.IClassModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+            }
+            export interface SimpleTestModelTypeFunc extends TypeFunction {
+                (): SimpleTestModelTypeFunc;
+                prototype: SimpleTestModel;
+                new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): SimpleTestModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): SimpleTestModel; };
+            }
+            const SimpleTestModel: SimpleTestModelTypeFunc;
+
+            // Nethereum.Generators.XUnit.SimpleTestCSharpTemplate
+            export interface SimpleTestCSharpTemplate extends CQS.ClassTemplateBase$1<SimpleTestModel>, Core.IClassTemplate {
+            }
+            export interface SimpleTestCSharpTemplateTypeFunc extends TypeFunction {
+                (): SimpleTestCSharpTemplateTypeFunc;
+                prototype: SimpleTestCSharpTemplate;
+                new (model: SimpleTestModel): SimpleTestCSharpTemplate;
+                ctor: { new (model: SimpleTestModel): SimpleTestCSharpTemplate; };
+            }
+            const SimpleTestCSharpTemplate: SimpleTestCSharpTemplateTypeFunc;
         }
     }
 }

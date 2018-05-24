@@ -21,8 +21,10 @@ namespace Nethereum.Generators.Core
 
         public static string ToDotNetCli(this CodeGenLanguage language)
         {
-            return DotNetCliLanguage.ContainsKey(language)
-                ? DotNetCliLanguage[language] : throw new ArgumentException($"Language isn't supported by dot net cli '{language}'");
+            if(DotNetCliLanguage.ContainsKey(language))
+                return DotNetCliLanguage[language];
+
+             throw new ArgumentException($"Language isn't supported by dot net cli '{language}'");
         }
 
         public static string AddProjectFileExtension(this CodeGenLanguage language, string projectFileName)
