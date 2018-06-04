@@ -1,6 +1,7 @@
 ﻿using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.TestRPCRunner;
+using Nethereum.Web3.Accounts;
 using Xunit;
 
 namespace Nethereum.Uport.IntegrationTests
@@ -10,15 +11,9 @@ namespace Nethereum.Uport.IntegrationTests
         [Fact]
         public async void ShouldDeployAContractWithConstructor()
         {
-            using (var testrpcRunner = new TestRPCEmbeddedRunner())
-            {
-                try
-                {
-                    testrpcRunner.RedirectOuputToDebugWindow = true;
-                    testrpcRunner.StartTestRPC();
 
-                    var web3 = new Web3.Web3();
-                    var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
+            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
                     var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
                     var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
@@ -29,25 +24,16 @@ namespace Nethereum.Uport.IntegrationTests
                         new HexBigInteger(4712388));
 
                     Assert.Equal(previousVersionAddress, await registrySevice.PreviousPublishedVersionAsyncCall());
-                }
-                finally
-                {
-                    testrpcRunner.StopTestRPC();
-                }
-            }
+                
+            
         }
 
         [Fact]
         public async void ShouldRegisterVerification()
         {
-            using (var testrpcRunner = new TestRPCEmbeddedRunner())
-            {
-                try
-                {
-                    testrpcRunner.RedirectOuputToDebugWindow = true;
-                    testrpcRunner.StartTestRPC();
+        
 
-                    var web3 = new Web3.Web3();
+                    var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
                     var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
                     var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
@@ -63,16 +49,11 @@ namespace Nethereum.Uport.IntegrationTests
                     var value = "true";
 
                     var txnReceipt = await registrySevice.SetAsyncAndGetReceipt(addressFrom, attestationId, subject,
-                        value, transactionService);
+                        value, transactionService, new HexBigInteger(4712388));
 
                     var storedValue = await registrySevice.GetAsyncCall(attestationId, addressFrom, subject);
                     Assert.Equal(value, storedValue);
-                }
-                finally
-                {
-                    testrpcRunner.StopTestRPC();
-                }
-            }
+                
         }
     }
 }

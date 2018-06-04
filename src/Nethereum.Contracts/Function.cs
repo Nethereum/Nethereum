@@ -197,6 +197,16 @@ namespace Nethereum.Contracts
             return FunctionBuilder.GetData(functionInput);
         }
 
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, TransactionInput transactionInput)
+        {
+            return FunctionBuilder.DecodeFunctionInput(functionInput, transactionInput);
+        }
+
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, string data)
+        {
+            return FunctionBuilder.DecodeFunctionInput(functionInput, data);
+        }
+
         public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from)
         {
             return FunctionBuilder.CreateTransactionInput(functionInput, from);

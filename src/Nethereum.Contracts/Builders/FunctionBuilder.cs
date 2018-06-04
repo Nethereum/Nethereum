@@ -1,4 +1,5 @@
-﻿using Nethereum.ABI.Model;
+﻿using Nethereum.ABI.Decoders;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -86,6 +87,16 @@ namespace Nethereum.Contracts
         public string GetData(TFunctionInput functionInput)
         {
             return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
+        }
+
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, TransactionInput transactionInput)
+        {
+            return FunctionCallDecoder.DecodeFunctionInput<TFunctionInput>(functionInput, FunctionABI.Sha3Signature, transactionInput.Data);
+        }
+
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, string data)
+        {
+            return FunctionCallDecoder.DecodeFunctionInput<TFunctionInput>(functionInput, FunctionABI.Sha3Signature, data);
         }
 
         public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from)
