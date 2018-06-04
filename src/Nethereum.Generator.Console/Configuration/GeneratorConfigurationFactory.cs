@@ -55,6 +55,9 @@ namespace Nethereum.Generator.Console.Configuration
             if (codeGenConfig != null)
                 return codeGenConfig;
 
+            if (string.IsNullOrEmpty(projectFilePath))
+                projectFilePath = GeneratorConfigurationUtils.FindFirstProjectFile(projectFolder);
+
             if (string.IsNullOrEmpty(projectFilePath) ||
                 !File.Exists(projectFilePath))
                 return null;

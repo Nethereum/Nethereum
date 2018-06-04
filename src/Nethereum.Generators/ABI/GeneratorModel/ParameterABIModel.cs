@@ -6,6 +6,9 @@ namespace Nethereum.Generators.Core
 
     public class ParameterABIModel : ParameterModel<ParameterABI>
     {
+        public const string AnonymousInputParameterPrefix = "ParamValue";
+        public const string AnonymousOutputParameterPrefix = "ReturnValue";
+
         public ParameterABIModel(ParameterABI parameter) : base(parameter)
         {
         }
@@ -24,19 +27,36 @@ namespace Nethereum.Generators.Core
             return GetPropertyName(Parameter.Name, Parameter.Order);
         }
 
+        public string GetPropertyName(ParameterDirection parameterDirection)
+        {
+            return GetPropertyName(Parameter.Name, Parameter.Order, parameterDirection);
+        }
+
         public string GetVariableName(string name, int order)
         {
-            return CommonGenerators.GenerateVariableName(GetParameterName(name, order));
+            return CommonGenerators.GenerateVariableName(NameOrDefault(name, order));
         }
 
-        public string GetPropertyName(string name, int order)
+        public string GetPropertyName(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
         {
-            return CommonGenerators.GeneratePropertyName(GetParameterName(name, order));
+            if (string.IsNullOrEmpty(name))
+            {
+                name = NameOrDefault(name, order, parameterDirection);
+            }
+
+            return CommonGenerators.GeneratePropertyName(name);
         }
 
-        public string GetParameterName(string name, int order)
+        private string NameOrDefault(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
         {
-            return string.IsNullOrEmpty(name) ? "ReturnValue" + order : name;
+            if (!string.IsNullOrEmpty(name))
+                return name;
+
+            var prefix = parameterDirection == ParameterDirection.Input
+                ? AnonymousInputParameterPrefix
+                : AnonymousOutputParameterPrefix;
+
+            return $"{prefix}{order}";
         }
     }
 }
