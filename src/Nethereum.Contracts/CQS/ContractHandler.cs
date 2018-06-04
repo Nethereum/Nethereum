@@ -30,6 +30,12 @@ namespace Nethereum.Contracts.CQS
             return contract.GetEvent<TEventType>(attribute.Name);
         }
 
+        public Function<TEthereumContractFunctionMessage> GetFunction<TEthereumContractFunctionMessage>() where TEthereumContractFunctionMessage : new()
+        {
+            var contract = EthApiContractService.GetContract<TEthereumContractFunctionMessage>(ContractAddress);
+            return contract.GetFunction<TEthereumContractFunctionMessage>();
+        }
+
         protected void SetAddressFrom(ContractMessage contractMessage)
         {
             contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;

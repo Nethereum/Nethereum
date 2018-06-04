@@ -759,6 +759,10 @@
 				<Link>NethereumJsonRpc\RequestInterceptor.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClientTimeoutException.cs">
+				<Link>NethereumJsonRpc\RpcClientTimeoutException.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClientUnknownException.cs">
 				<Link>NethereumJsonRpc\RpcClientUnknownException.cs</Link>
 		</Compile>

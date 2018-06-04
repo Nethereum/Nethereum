@@ -9,13 +9,6 @@ namespace Nethereum.Contracts.CQS
     public class ContractTransactionHandler<TContractMessage> : ContractHandlerBase<TContractMessage>
         where TContractMessage : ContractMessage
     {
-        private Function<TContractMessage> GetFunction(string contractAddress)
-        {
-            var contract = Eth.GetContract<TContractMessage>(contractAddress);
-            var function = contract.GetFunction<TContractMessage>();
-            return function;
-        }
-
         public TransactionInput CreateTransactionInput(TContractMessage functionMessage,
             string contractAddress)
         {
@@ -36,6 +29,13 @@ namespace Nethereum.Contracts.CQS
             ValidateContractMessage(functionMessage);
             var function = GetFunction(contractAddress);
             return function.GetData(functionMessage);
+        }
+
+        public TContractMessage DecodeInput(TContractMessage functionMessage, TransactionInput transactionInput, string contractAddress)
+        {
+            ValidateContractMessage(functionMessage);
+            var function = GetFunction(contractAddress);
+            return function.DecodeFunctionInput(functionMessage, transactionInput);
         }
 
 #if !DOTNET35
