@@ -69,6 +69,24 @@ namespace Nethereum.Contracts.CQS
             return command.SendRequestAsync(transactionMesssage, ContractAddress);
         }
 
+        public Task<string> SignTransactionAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMesssage, bool estimateGas = true)
+            where TEthereumContractFunctionMessage : ContractMessage
+        {
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.SignTransactionAsync(transactionMesssage, ContractAddress, estimateGas);
+        }
+
+        public Task<string> SignTransactionRetrievingNextNonceAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMesssage, bool estimateGas = true)
+            where TEthereumContractFunctionMessage : ContractMessage
+        {
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.SignTransactionRetrievingNextNonceAsync(transactionMesssage, ContractAddress, estimateGas);
+        }
+
         public Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(
             TEthereumContractFunctionMessage transactionMesssage)
             where TEthereumContractFunctionMessage : ContractMessage

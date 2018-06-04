@@ -8,5 +8,6 @@ namespace Nethereum.Contracts.CQS
         public BigInteger? Gas { get; set; }
         public BigInteger? GasPrice { get; set; }
         public string FromAddress { get; set; }
+        public BigInteger? Nonce { get; set; }
     }
 }

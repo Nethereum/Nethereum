@@ -46,6 +46,11 @@ namespace Nethereum.Contracts.CQS
             return GetDefaultValue(contractMessage.GasPrice);
         }
 
+        protected virtual HexBigInteger GetNonce(TContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.Nonce);
+        }
+
         protected HexBigInteger GetDefaultValue(BigInteger? bigInteger)
         {
             return bigInteger == null ? null : new HexBigInteger(bigInteger.Value);

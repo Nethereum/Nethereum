@@ -52,12 +52,10 @@ namespace Nethereum.Web3.Accounts
             return SignAndSendTransactionAsync(transactionInput);
         }
 
-        public async Task<string> SignTransactionAsync(TransactionInput transaction)
+        public override async Task<string> SignTransactionAsync(TransactionInput transaction)
         {
             return SignTransaction(transaction);
         }
-
-        
 
         public string SignTransaction(TransactionInput transaction)
         {
@@ -96,7 +94,7 @@ namespace Nethereum.Web3.Accounts
             return signedTransaction;
         }
 
-        public async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
+        public override async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower())
