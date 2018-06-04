@@ -161,6 +161,10 @@
 				<Link>\Core\Parameter.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\Core\ParameterDirection.cs">
+				<Link>\Core\ParameterDirection.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\ParameterMap.cs">
 				<Link>\Core\ParameterMap.cs</Link>
 		</Compile>

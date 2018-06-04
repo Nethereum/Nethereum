@@ -300,7 +300,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GetFullNamespace = function ContractProjectGenerator_GetFullNamespace(namespace) {
         if (String.IsNullOrEmpty(this.get_BaseNamespace()))
             return namespace;
-        return this.get_BaseNamespace() + "." + namespace;
+        return this.get_BaseNamespace() + "." + namespace.TrimStart($d.array(System.Char, [46 /*'.'*/]));
     };
     $p.GetFullPath = function ContractProjectGenerator_GetFullPath(namespace) {
         return this.get_BaseOutputPath() + this.get_PathDelimiter() + namespace.Replace$1(".", this.get_PathDelimiter());
@@ -424,6 +424,10 @@ $d.define(Nethereum.Generators.Core.ParameterModel$1, null, function($t, $p, TPa
 }, [$d.typeParam("TParameter", Nethereum.Generators.Core.Parameter)]);
 $d.define(Nethereum.Generators.Core.ParameterABIModel, Nethereum.Generators.Core.ParameterModel$1(Nethereum.Generators.Model.ParameterABI, 
     38994), function($t, $p) {
+    $t.cctor = function() {
+        $t.AnonymousInputParameterPrefix = "ParamValue";
+        $t.AnonymousOutputParameterPrefix = "ReturnValue";
+    };
     $t.ctor$1 = function ParameterABIModel(parameter) {
         $t.$baseType.ctor$1.call(this, parameter);
     };
@@ -434,16 +438,30 @@ $d.define(Nethereum.Generators.Core.ParameterABIModel, Nethereum.Generators.Core
         return this.GetVariableName$1(this.get_Parameter().get_Name(), this.get_Parameter().get_Order());
     };
     $p.GetPropertyName = function ParameterABIModel_GetPropertyName() {
-        return this.GetPropertyName$1(this.get_Parameter().get_Name(), this.get_Parameter().get_Order());
+        return this.GetPropertyName$2(this.get_Parameter().get_Name(), this.get_Parameter().get_Order(), 
+            1);
+    };
+    $p.GetPropertyName$1 = function ParameterABIModel_GetPropertyName(parameterDirection) {
+        return this.GetPropertyName$2(this.get_Parameter().get_Name(), this.get_Parameter().get_Order(), 
+            parameterDirection);
     };
     $p.GetVariableName$1 = function ParameterABIModel_GetVariableName(name, order) {
-        return this.get_CommonGenerators().GenerateVariableName(this.GetParameterName(name, order));
+        return this.get_CommonGenerators().GenerateVariableName(this.NameOrDefault(name, order, 1));
     };
-    $p.GetPropertyName$1 = function ParameterABIModel_GetPropertyName(name, order) {
-        return this.get_CommonGenerators().GeneratePropertyName(this.GetParameterName(name, order));
+    $p.GetPropertyName$2 = function ParameterABIModel_GetPropertyName(name, order, parameterDirection) {
+        if (String.IsNullOrEmpty(name)) {
+            name = this.NameOrDefault(name, order, parameterDirection);
+        }
+
+        return this.get_CommonGenerators().GeneratePropertyName(name);
     };
-    $p.GetParameterName = function ParameterABIModel_GetParameterName(name, order) {
-        return String.IsNullOrEmpty(name) ? "ReturnValue" + $d.toString(order) : name;
+    $p.NameOrDefault = function ParameterABIModel_NameOrDefault(name, order, parameterDirection) {
+        if (!String.IsNullOrEmpty(name))
+            return name;
+
+        var prefix = parameterDirection == 0 /* ParameterDirection.Input */ ? $t.AnonymousInputParameterPrefix : $t.AnonymousOutputParameterPrefix;
+
+        return String.Format("{0}{1}", [prefix, order]);
     };
 });
 $d.define(Nethereum.Generators.Core.ParameterABIModelTypeMap, null, function($t, $p) {
@@ -1056,6 +1074,7 @@ $d.define(Nethereum.Generators.Core.MessageMap$4, null, function($t, $p, MFrom, 
     $p.set_ParameterMaps = function MessageMap$4_set_ParameterMaps(value) { this.ParameterMaps = value;return value; };
 }, [$d.typeParam("MFrom"), $d.typeParam("MTo"), $d.typeParam("PFrom", Nethereum.Generators.Core.Parameter), 
     $d.typeParam("PTo", Nethereum.Generators.Core.Parameter)]);
+Nethereum.Generators.Core.ParameterDirection = $d.typeEnum("Nethereum.Generators.Core.ParameterDirection", 45, $asm, 257, ["Input", "Output"], [0, 1]);
 $d.define(Nethereum.Generators.Core.ParameterMap$2, null, function($t, $p, T1, T2) {
     $t.$ator = function() {
         this.From = $d.defaultOf(T1);
@@ -1072,6 +1091,10 @@ $d.define(Nethereum.Generators.Core.ParameterMap$2, null, function($t, $p, T1, T
     $p.set_To = function ParameterMap$2_set_To(value) { this.To = value;return value; };
 }, [$d.typeParam("T1", Nethereum.Generators.Core.Parameter), $d.typeParam("T2", Nethereum.Generators.Core.Parameter)]);
 $d.define(Nethereum.Generators.Core.ParameterMapperAssignerTemplate$4, null, function($t, $p, TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo) {
+    $t.$ator = function() {
+        this.ConversionFormatStrings = new (System.Collections.Generic.Dictionary$2(String, System.Collections.Generic.Dictionary$2(String, 
+            String, 27758), 9907).ctor)();
+    };
     $t.ctor = function ParameterMapperAssignerTemplate$4() {
         $t.$baseType.ctor.call(this);
     };
@@ -1086,6 +1109,14 @@ $d.define(Nethereum.Generators.Core.ParameterMapperAssignerTemplate$4, null, fun
         modelSource.set_Parameter(map.get_From());
         var modelTo = new TParameterModelTo.ctor();
         modelTo.set_Parameter(map.get_To());
+
+        var converterFormatString = this.GetConversionFormatString(map.get_From().get_Type(), map.get_To().get_Type());
+        if (converterFormatString != null) {
+            var qualifiedName = String.Format("{0}.{1}", [variableSourceName, modelSource.GetPropertyName()]);
+            var conversion = String.Format(converterFormatString, $d.array(System.Object, [qualifiedName]));
+            return String.Format("{0} = {1}", [modelTo.GetPropertyName(), conversion]);
+        }
+
         return String.Format("{0} = {1}.{2}", [modelTo.GetPropertyName(), variableSourceName, modelSource.GetPropertyName()]);
     };
     $p.GenerateMappingsReturn$1 = function ParameterMapperAssignerTemplate$4_GenerateMappingsReturn(map, variableSourceName, destinationVariableName) {
@@ -1099,7 +1130,29 @@ $d.define(Nethereum.Generators.Core.ParameterMapperAssignerTemplate$4, null, fun
         modelSource.set_Parameter(map.get_From());
         var modelTo = new TParameterModelTo.ctor();
         modelTo.set_Parameter(map.get_To());
+
+        var converterFormatString = this.GetConversionFormatString(map.get_To().get_Type(), map.get_From().get_Type());
+        if (converterFormatString != null) {
+            var qualifiedName = String.Format("{0}.{1}", [variableSourceName, modelTo.GetPropertyName()]);
+            var conversion = String.Format(converterFormatString, $d.array(System.Object, [qualifiedName]));
+            return String.Format("{0} = {1}", [modelSource.GetPropertyName(), conversion]);
+        }
+
         return String.Format("{0} = {1}.{2}", [modelSource.GetPropertyName(), variableSourceName, modelTo.GetPropertyName()]);
+    };
+    $p.GetConversionFormatString = function ParameterMapperAssignerTemplate$4_GetConversionFormatString(typeFrom, typeTo) {
+        if (this.ConversionFormatStrings.ContainsKey(typeFrom) && this.ConversionFormatStrings.get_Item(typeFrom).ContainsKey(typeTo)) {
+            return this.ConversionFormatStrings.get_Item(typeFrom).get_Item(typeTo);
+        }
+
+        return null;
+    };
+    $p.AddConversionFormatString = function ParameterMapperAssignerTemplate$4_AddConversionFormatString(fromType, toType, conversionTemplate) {
+        this.ConversionFormatStrings.Add$1(toType, (function() {
+            var $obj = new (System.Collections.Generic.Dictionary$2(String, String, 27758).ctor)();
+            $obj.Add$1(fromType, conversionTemplate);
+            return $obj;
+        }).call(this));
     };
 }, [$d.typeParam("TParameterModelFrom", Nethereum.Generators.Core.ParameterModel$1), $d.typeParam("TParameterModelTo", 
     Nethereum.Generators.Core.ParameterModel$1), $d.typeParam("TParameterFrom", Nethereum.Generators.Core.Parameter), 

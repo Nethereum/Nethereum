@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Xml;
 using Nethereum.Generators.Core;
 using Nethereum.Generators.Tests.Common.TestData;
 
@@ -66,7 +67,7 @@ namespace Nethereum.Generators.Tests.Common
 
         public bool BuildHasSucceeded()
         {
-            var outputDir = Path.Combine(TargetProjectFolder, @"bin\Debug\netstandard2.0\");
+            var outputDir = Path.Combine(TargetProjectFolder, "bin", "Debug", TargetFramework);
             return Directory.Exists(outputDir) && Directory.GetFiles(outputDir, "*.dll").Length > 0;
         }
 
@@ -83,6 +84,9 @@ namespace Nethereum.Generators.Tests.Common
 
         private static void DeleteDirectory(string path)
         {
+            if (!Directory.Exists(path))
+                return;
+
             foreach (string directory in Directory.GetDirectories(path))
             {
                 DeleteDirectory(directory);
@@ -95,6 +99,9 @@ namespace Nethereum.Generators.Tests.Common
         {
             try
             {
+                if (!Directory.Exists(path))
+                    return;
+
                 attemptNumber++;
                 if(attemptNumber < 4)
                     Directory.Delete(path, true);
@@ -115,9 +122,11 @@ namespace Nethereum.Generators.Tests.Common
             DotNet(args);
         }
 
+        public string TargetFramework { get; set; } = "netcoreapp2.1";
+
         private void CreateProjectFile(CodeGenLanguage language)
         {
-            DotNet($"new classLib -lang {language.ToDotNetCli()}");
+            DotNet($"new classLib -f {TargetFramework} -lang {language.ToDotNetCli()}");
         }
 
         private void DotNet(string args, string workingFolderOverride = null)
@@ -157,6 +166,35 @@ namespace Nethereum.Generators.Tests.Common
             }
         }
 
+        public void AddAssemblyReferences(IEnumerable<string> assemblyPaths)
+        {
+                /*
+    <ItemGroup>
+    <Reference Include="Cryptlet.Messages">
+    <HintPath>..\..\..\Epiphyte\dotnet\Epiphyte\CryptletMessages\bin\Debug\netcoreapp2.0\Cryptlet.Messages.dll</HintPath>
+    </Reference>
+    </ItemGroup>
+     */
+
+                var projectDoc = new XmlDocument();
+                projectDoc.Load(ProjectFilePath);
+                var projectElement = projectDoc.DocumentElement;
+                var itemGroupElement = projectDoc.CreateElement("ItemGroup");
+                projectElement.AppendChild(itemGroupElement);
+                foreach (var dll in assemblyPaths)
+                {
+                    var referenceElement = projectDoc.CreateElement("Reference");
+                    itemGroupElement.AppendChild(referenceElement);
+                    var includeAttribute = projectDoc.CreateAttribute("Include");
+                    includeAttribute.Value = Path.GetFileNameWithoutExtension(dll);
+                    referenceElement.Attributes.Append(includeAttribute);
+                    var hintPathElement = projectDoc.CreateElement("HintPath");
+                    hintPathElement.InnerText = dll;
+                    referenceElement.AppendChild(hintPathElement);
+                }
+
+                projectDoc.Save(ProjectFilePath);
+        }
 
     }
 }

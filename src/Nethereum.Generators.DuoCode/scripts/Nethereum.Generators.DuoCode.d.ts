@@ -74,13 +74,15 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ParameterABIModel
             export interface ParameterABIModel extends ParameterModel$1<Model.ParameterABI> {
+                GetPropertyName$1(parameterDirection: ParameterDirection): string;
                 GetVariableName$1(name: string, order: int): string;
-                GetPropertyName$1(name: string, order: int): string;
-                GetParameterName(name: string, order: int): string;
+                GetPropertyName$2(name: string, order: int, parameterDirection?: ParameterDirection): string;
             }
             export interface ParameterABIModelTypeFunc extends TypeFunction {
                 (): ParameterABIModelTypeFunc;
                 prototype: ParameterABIModel;
+                AnonymousInputParameterPrefix: string;
+                AnonymousOutputParameterPrefix: string;
                 ctor$1: { new (parameter: Model.ParameterABI): ParameterABIModel; };
                 new (): ParameterABIModel;
                 ctor: { new (): ParameterABIModel; };
@@ -280,6 +282,12 @@ declare module Nethereum {
                 ctor: { new (name: string, type: string, order: int): Parameter; };
             }
             const Parameter: ParameterTypeFunc;
+
+            // Nethereum.Generators.Core.ParameterDirection
+            export enum ParameterDirection {
+                Input = 0,
+                Output = 1
+            }
 
             // Nethereum.Generators.Core.ParameterMap<T1, T2>
             export interface ParameterMap$2<T1, T2> extends System.Object {

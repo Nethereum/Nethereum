@@ -150,7 +150,7 @@ namespace Nethereum.Generators
         public string GetFullNamespace(string @namespace)
         {
             if (string.IsNullOrEmpty(BaseNamespace)) return @namespace;
-            return BaseNamespace + "." + @namespace;
+            return BaseNamespace + "." + @namespace.TrimStart('.');
         }
 
         public string GetFullPath(string @namespace)
