@@ -4,7 +4,7 @@
     <Description>Nethereum.Quorum.Tests </Description>
     <VersionPrefix>0.0.1</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net461;netcoreapp2.1</TargetFrameworks>
     <AssemblyName>Nethereum.Quorum.Tests</AssemblyName>
     <PackageId>Nethereum.Quorum.Tests</PackageId>
   </PropertyGroup>
