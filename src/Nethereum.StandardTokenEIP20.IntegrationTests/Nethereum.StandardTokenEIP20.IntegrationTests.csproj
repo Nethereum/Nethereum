@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.StandardTokenEIP20.IntegrationTests</Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net461;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

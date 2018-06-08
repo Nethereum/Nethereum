@@ -1,15 +1,32 @@
-﻿using System.Threading.Tasks;
+﻿using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.StandardTokenEIP20.Functions;
+using Nethereum.StandardTokenEIP20.CQS;
 using Nethereum.Web3;
 
 namespace Nethereum.StandardTokenEIP20
 {
     public class StandardTokenService
     {
+
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        {
+            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAndWaitForReceiptAsync(eIP20Deployment, cancellationTokenSource);
+        }
+        public static Task<string> DeployContractAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment)
+        {
+            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAsync(eIP20Deployment);
+        }
+        public static async Task<StandardTokenService> DeployContractAndGetServiceAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        {
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource);
+            return new StandardTokenService(web3, receipt.ContractAddress);
+        }
+
         protected Web3.Web3 Web3 { get; set; }
 
         private string abi =
@@ -111,6 +128,56 @@ namespace Nethereum.StandardTokenEIP20
         public Event GetTransferEvent()
         {
             return Contract.GetEvent("Transfer");
+        }
+
+        public Task<string> NameQueryAsync(NameFunction nameFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<NameFunction, string>(nameFunction, blockParameter);
+        }
+        public Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
+        {
+            return ContractHandler.SendRequestAsync(approveFunction);
+        }
+        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction, CancellationTokenSource cancellationToken = null)
+        {
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
+        }
+        public Task<BigInteger> TotalSupplyQueryAsync(TotalSupplyFunction totalSupplyFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<TotalSupplyFunction, BigInteger>(totalSupplyFunction, blockParameter);
+        }
+        public Task<string> TransferFromRequestAsync(TransferFromFunction transferFromFunction)
+        {
+            return ContractHandler.SendRequestAsync(transferFromFunction);
+        }
+        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
+        {
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFromFunction, cancellationToken);
+        }
+        public Task<BigInteger> BalancesQueryAsync(BalancesFunction balancesFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
+        }
+        public Task<byte> DecimalsQueryAsync(DecimalsFunction decimalsFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<DecimalsFunction, byte>(decimalsFunction, blockParameter);
+        }
+        public Task<BigInteger> AllowedQueryAsync(AllowedFunction allowedFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
+        }
+        public Task<BigInteger> BalanceOfQueryAsync(BalanceOfFunction balanceOfFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
+        }
+        public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<SymbolFunction, string>(symbolFunction, blockParameter);
+        }
+       
+        public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);
         }
 
     }

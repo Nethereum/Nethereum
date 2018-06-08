@@ -16,6 +16,8 @@ namespace Nethereum.RPC.TransactionManagers
         public abstract BigInteger DefaultGasPrice { get; set; }
         public abstract BigInteger DefaultGas { get; set; }
         public IAccount Account { get; protected set; }
+        public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
+        public abstract Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction);
 
 #if !DOTNET35
         private ITransactionReceiptService _transactionReceiptService;

@@ -71,5 +71,15 @@ namespace Nethereum.Web3.Accounts.Managed
             var transactionInput = new TransactionInput(null, to, from, null, null, amount);
             return await SendTransactionAsync(transactionInput);
         }
+
+        public override Task<string> SignTransactionAsync(TransactionInput transaction)
+        {
+            throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
+        }
+
+        public override Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
+        {
+            throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
+        }
     }
 }

@@ -30,6 +30,12 @@ namespace Nethereum.Contracts.CQS
             return contract.GetEvent<TEventType>(attribute.Name);
         }
 
+        public Function<TEthereumContractFunctionMessage> GetFunction<TEthereumContractFunctionMessage>() where TEthereumContractFunctionMessage : new()
+        {
+            var contract = EthApiContractService.GetContract<TEthereumContractFunctionMessage>(ContractAddress);
+            return contract.GetFunction<TEthereumContractFunctionMessage>();
+        }
+
         protected void SetAddressFrom(ContractMessage contractMessage)
         {
             contractMessage.FromAddress = contractMessage.FromAddress ?? AddressFrom;
@@ -67,6 +73,24 @@ namespace Nethereum.Contracts.CQS
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAsync(transactionMesssage, ContractAddress);
+        }
+
+        public Task<string> SignTransactionAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMesssage, bool estimateGas = true)
+            where TEthereumContractFunctionMessage : ContractMessage
+        {
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.SignTransactionAsync(transactionMesssage, ContractAddress, estimateGas);
+        }
+
+        public Task<string> SignTransactionRetrievingNextNonceAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMesssage, bool estimateGas = true)
+            where TEthereumContractFunctionMessage : ContractMessage
+        {
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMesssage);
+            return command.SignTransactionRetrievingNextNonceAsync(transactionMesssage, ContractAddress, estimateGas);
         }
 
         public Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(

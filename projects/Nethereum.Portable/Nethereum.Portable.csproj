@@ -723,16 +723,100 @@
 				<Link>EIP20\StandardTokenService.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\AllowanceFunction.cs">
+				<Link>EIP20\CQS\AllowanceFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\AllowedFunction.cs">
+				<Link>EIP20\CQS\AllowedFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\ApproveFunction.cs">
+				<Link>EIP20\CQS\ApproveFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\BalanceOfFunction.cs">
+				<Link>EIP20\CQS\BalanceOfFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\BalancesFunction.cs">
+				<Link>EIP20\CQS\BalancesFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\DecimalsFunction.cs">
+				<Link>EIP20\CQS\DecimalsFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\EIP20Deployment.cs">
+				<Link>EIP20\CQS\EIP20Deployment.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\NameFunction.cs">
+				<Link>EIP20\CQS\NameFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\SymbolFunction.cs">
+				<Link>EIP20\CQS\SymbolFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TotalSupplyFunction.cs">
+				<Link>EIP20\CQS\TotalSupplyFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TransferFromFunction.cs">
+				<Link>EIP20\CQS\TransferFromFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TransferFunction.cs">
+				<Link>EIP20\CQS\TransferFunction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\AllowanceOutputDTO.cs">
+				<Link>EIP20\DTOs\AllowanceOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\AllowedOutputDTO.cs">
+				<Link>EIP20\DTOs\AllowedOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\ApprovalEventDTO.cs">
+				<Link>EIP20\DTOs\ApprovalEventDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\BalanceOfOutputDTO.cs">
+				<Link>EIP20\DTOs\BalanceOfOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\BalancesOutputDTO.cs">
+				<Link>EIP20\DTOs\BalancesOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\DecimalsOutputDTO.cs">
+				<Link>EIP20\DTOs\DecimalsOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\NameOutputDTO.cs">
+				<Link>EIP20\DTOs\NameOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\SymbolOutputDTO.cs">
+				<Link>EIP20\DTOs\SymbolOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\TotalSupplyOutputDTO.cs">
+				<Link>EIP20\DTOs\TotalSupplyOutputDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\TransferEventDTO.cs">
+				<Link>EIP20\DTOs\TransferEventDTO.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Events\DTO\ApprovalEvent.cs">
 				<Link>EIP20\Events\DTO\ApprovalEvent.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Events\DTO\TransferEvent.cs">
 				<Link>EIP20\Events\DTO\TransferEvent.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Functions\TransferFunction.cs">
-				<Link>EIP20\Functions\TransferFunction.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\ClientBase.cs">
@@ -757,6 +841,10 @@
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RequestInterceptor.cs">
 				<Link>NethereumJsonRpc\RequestInterceptor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClientTimeoutException.cs">
+				<Link>NethereumJsonRpc\RpcClientTimeoutException.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcClientUnknownException.cs">

@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <Description>Nethereum.ABI.UnitTests Class Library</Description>
-    <Authors>JuanFran</Authors>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
     <AssemblyName>Nethereum.ABI.UnitTests</AssemblyName>
     <PackageId>Nethereum.ABI.UnitTests</PackageId>
   </PropertyGroup>

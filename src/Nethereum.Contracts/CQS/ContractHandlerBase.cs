@@ -19,6 +19,13 @@ namespace Nethereum.Contracts.CQS
             Eth = ethApiContractService;
         }
 
+        public Function<TContractMessage> GetFunction(string contractAddress)
+        {
+            var contract = Eth.GetContract<TContractMessage>(contractAddress);
+            var function = contract.GetFunction<TContractMessage>();
+            return function;
+        }
+
         protected virtual string GetDefaultAddressFrom(TContractMessage contractMessage)
         {
             if (string.IsNullOrEmpty(contractMessage.FromAddress))
@@ -44,6 +51,11 @@ namespace Nethereum.Contracts.CQS
         protected virtual HexBigInteger GetGasPrice(TContractMessage contractMessage)
         {
             return GetDefaultValue(contractMessage.GasPrice);
+        }
+
+        protected virtual HexBigInteger GetNonce(TContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.Nonce);
         }
 
         protected HexBigInteger GetDefaultValue(BigInteger? bigInteger)

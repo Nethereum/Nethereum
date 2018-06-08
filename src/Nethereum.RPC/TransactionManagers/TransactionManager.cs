@@ -11,6 +11,15 @@ namespace Nethereum.RPC.TransactionManagers
     {
         public override BigInteger DefaultGasPrice { get; set; }
         public override BigInteger DefaultGas { get; set; }
+        public override Task<string> SignTransactionAsync(TransactionInput transaction)
+        {
+            throw new InvalidOperationException("Default transaction manager cannot sign offline transactions");
+        }
+
+        public override Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
+        {
+            throw new InvalidOperationException("Default transaction manager sign offline transactions");
+        }
 
         public TransactionManager(IClient client)
         {
