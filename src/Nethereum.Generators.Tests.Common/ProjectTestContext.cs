@@ -27,7 +27,6 @@ namespace Nethereum.Generators.Tests.Common
 
             ProjectName = TargetProjectFolder.Split(Path.DirectorySeparatorChar).Last();
             OutputAssemblyName = $"{ProjectName}.dll";
-            ProjectFilePath = Path.Combine(TargetProjectFolder, ProjectName) + ".csproj";
         }
 
         public string WriteFileToProject(string fileName, string fileContent)
@@ -153,6 +152,7 @@ $@"<?xml version=""1.0"" encoding=""utf-8""?>
         private void CreateProjectFile(CodeGenLanguage language)
         {
             DotNet($"new classLib -f {TargetFramework} -lang {language.ToDotNetCli()}");
+            ProjectFilePath = Path.Combine(TargetProjectFolder, ProjectName) + CodeGenLanguageExt.ProjectFileExtensions[language];
         }
 
         private void DotNet(string args, string workingFolderOverride = null)
