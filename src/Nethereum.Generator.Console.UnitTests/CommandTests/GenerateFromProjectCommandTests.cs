@@ -1,7 +1,9 @@
-﻿using Moq;
+﻿using System;
+using Moq;
 using Nethereum.Generator.Console.Commands;
 using Nethereum.Generator.Console.Generation;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -57,19 +59,16 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
         }
 
         [Fact]
-        public void ProjectPathIsMandatory()
+        public void ProjectPathDefaultsToWorkingDirectory()
         {
-            Assert.Equal(1, _command.Execute(
-                "-p", string.Empty, 
-                "-a", "MyProject.dll"));
-        }
+            Assert.Equal(0, _command.Execute());
 
-        [Fact]
-        public void AssemblyNameIsMandatory()
-        {
-            Assert.Equal(1, _command.Execute(
-                "-p", "c:/Temp/MyProject/MyProject.csproj", 
-                "-a", string.Empty));
+            var expectedPath = Environment.CurrentDirectory;
+            var expectedAssemblyName =
+                expectedPath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Last();
+
+            _mockCodeGenerationWrapper
+                .Verify(w => w.FromProject(expectedPath, expectedAssemblyName));
         }
     }
 }

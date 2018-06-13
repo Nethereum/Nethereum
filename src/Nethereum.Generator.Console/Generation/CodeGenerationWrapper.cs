@@ -1,4 +1,5 @@
-﻿using Nethereum.Generator.Console.Configuration;
+﻿using System;
+using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators;
 using Nethereum.Generators.Net;
 using System.IO;

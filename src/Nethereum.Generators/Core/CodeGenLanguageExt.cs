@@ -18,8 +18,27 @@ namespace Nethereum.Generators.Core
             return ProjectFileExtensions.Values;
         }
 
+        /// <summary>
+        /// Only necessary for DuoCode as it doesnt support StringComparer
+        /// </summary>
+        public class StringComparerIgnoreCase : IEqualityComparer<string>
+        {
+            public bool Equals(string x, string y)
+            {
+                return GetHashCode(x) == GetHashCode(y);
+            }
+
+            public int GetHashCode(string obj)
+            {
+                if(obj == null)
+                    throw new ArgumentNullException("obj");
+
+                return obj.ToLowerInvariant().GetHashCode();
+            }
+        }
+
         public static readonly Dictionary<string, CodeGenLanguage> LanguageMappings = 
-            new Dictionary<string, CodeGenLanguage>(StringComparer.InvariantCultureIgnoreCase)
+            new Dictionary<string, CodeGenLanguage>(new StringComparerIgnoreCase())
         {
             {"C#", CodeGenLanguage.CSharp},
             {"CSharp", CodeGenLanguage.CSharp},
@@ -28,7 +47,8 @@ namespace Nethereum.Generators.Core
             {"VB", CodeGenLanguage.Vb}
         };
 
-        public static readonly Dictionary<CodeGenLanguage, string> DotNetCliLanguage = new Dictionary<CodeGenLanguage, string>
+        public static readonly Dictionary<CodeGenLanguage, string> DotNetCliLanguage = 
+            new Dictionary<CodeGenLanguage, string>
         {
             {CodeGenLanguage.CSharp, "C#"},
             {CodeGenLanguage.FSharp, "F#"},
@@ -41,7 +61,7 @@ namespace Nethereum.Generators.Core
                 return LanguageMappings[languageTag];
 
 
-            throw new ArgumentException($"Unknown or unsupported languaget '{languageTag}'");
+            throw new ArgumentException($"Unknown or unsupported language '{languageTag}'");
         }
 
         public static string ToDotNetCli(this CodeGenLanguage language)
@@ -83,7 +103,7 @@ namespace Nethereum.Generators.Core
                 }
             }
 
-            throw new Exception($"Unsupported or unrecognised file extension for project file path '{projectFilePath}'");
+            throw new ArgumentException($"Unsupported or unrecognised file extension for project file path '{projectFilePath}'");
         }
 
         public static string GetCodeOutputFileExtension(this CodeGenLanguage codeGenLanguage)
