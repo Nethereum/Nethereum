@@ -172,10 +172,15 @@ declare module Nethereum {
             export interface CodeGenLanguageExtTypeFunc extends TypeFunction {
                 (): CodeGenLanguageExtTypeFunc;
                 ProjectFileExtensions: System.Collections.Generic.Dictionary$2<CodeGenLanguage, string>;
+                LanguageMappings: System.Collections.Generic.Dictionary$2<string, CodeGenLanguage>;
                 DotNetCliLanguage: System.Collections.Generic.Dictionary$2<CodeGenLanguage, string>;
+                GetValidProjectFileExtensions(): System.Collections.Generic.IEnumerable$1<string>;
+                ParseLanguage(languageTag: string): CodeGenLanguage;
                 ToDotNetCli(language: CodeGenLanguage): string;
                 AddProjectFileExtension(language: CodeGenLanguage, projectFileName: string): string;
+                GetCodeGenLanguageFromProjectFile(projectFilePath: string): CodeGenLanguage;
                 GetCodeOutputFileExtension(codeGenLanguage: CodeGenLanguage): string;
+                StringComparerIgnoreCase: CodeGenLanguageExt.StringComparerIgnoreCaseTypeFunc;
             }
             const CodeGenLanguageExt: CodeGenLanguageExtTypeFunc;
 
@@ -411,6 +416,19 @@ declare module Nethereum {
                 ctor: { new (): Utils; };
             }
             const Utils: UtilsTypeFunc;
+            module CodeGenLanguageExt {
+                // Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase
+                export interface StringComparerIgnoreCase extends System.Object, System.Collections.Generic.IEqualityComparer$1<String> {
+                    Equals$1(x: string, y: string): boolean;
+                    GetHashCode$1(obj: string): int;
+                }
+                export interface StringComparerIgnoreCaseTypeFunc extends TypeFunction {
+                    (): StringComparerIgnoreCaseTypeFunc;
+                    prototype: StringComparerIgnoreCase;
+                    new (): StringComparerIgnoreCase;
+                    ctor: { new (): StringComparerIgnoreCase; };
+                }
+            }
         }
         module Model {
             // Nethereum.Generators.Model.ConstructorABI

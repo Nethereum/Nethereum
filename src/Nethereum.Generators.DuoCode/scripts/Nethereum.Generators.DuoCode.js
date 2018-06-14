@@ -55,6 +55,8 @@ Nethereum.Generators.CQS.ClassTemplateBase$1 = $d.declare("Nethereum.Generators.
     256, $asm);
 Nethereum.Generators.Core.CodeGenLanguageExt = $d.declare("Nethereum.Generators.Core.CodeGenLanguageExt", 
     0, $asm);
+Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase = $d.declare("StringComparerIgnoreCase", 
+    0, Nethereum.Generators.Core.CodeGenLanguageExt);
 Nethereum.Generators.Core.CommonGenerators = $d.declare("Nethereum.Generators.Core.CommonGenerators", 
     0, $asm);
 Nethereum.Generators.CQS.CSharpClassFileTemplate = $d.declare("Nethereum.Generators.CQS.CSharpClassFileTemplate", 
@@ -942,6 +944,16 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
             $obj.Add$1(1 /* CodeGenLanguage.Vb */, ".vbproj");
             return $obj;
         }).call(this);
+        $t.LanguageMappings = (function() {
+            var $obj = new (System.Collections.Generic.Dictionary$2(String, Nethereum.Generators.Core.CodeGenLanguage, 
+                11045).ctor$2)(new Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase.ctor());
+            $obj.Add$1("C#", 0 /* CodeGenLanguage.CSharp */);
+            $obj.Add$1("CSharp", 0 /* CodeGenLanguage.CSharp */);
+            $obj.Add$1("F#", 3 /* CodeGenLanguage.FSharp */);
+            $obj.Add$1("FSharp", 3 /* CodeGenLanguage.FSharp */);
+            $obj.Add$1("VB", 1 /* CodeGenLanguage.Vb */);
+            return $obj;
+        }).call(this);
         $t.DotNetCliLanguage = (function() {
             var $obj = new (System.Collections.Generic.Dictionary$2(Nethereum.Generators.Core.CodeGenLanguage, 
                 String, 25884).ctor)();
@@ -950,6 +962,17 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
             $obj.Add$1(1 /* CodeGenLanguage.Vb */, "VB");
             return $obj;
         }).call(this);
+    };
+    $t.GetValidProjectFileExtensions = function CodeGenLanguageExt_GetValidProjectFileExtensions() {
+        return $t().ProjectFileExtensions.get_Values();
+    };
+    $t.ParseLanguage = function CodeGenLanguageExt_ParseLanguage(languageTag) {
+        if ($t().LanguageMappings.ContainsKey(languageTag))
+            return $t().LanguageMappings.get_Item(languageTag);
+
+
+        throw new System.ArgumentException.ctor$1(String.Format("Unknown or unsupported language '{0}'", 
+            [languageTag]));
     };
     $t.ToDotNetCli = function CodeGenLanguageExt_ToDotNetCli(language) {
         if ($t().DotNetCliLanguage.ContainsKey(language))
@@ -974,6 +997,21 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
 
         return null;
     };
+    $t.GetCodeGenLanguageFromProjectFile = function CodeGenLanguageExt_GetCodeGenLanguageFromProjectFile(projectFilePath) {
+        var projectFileExtension = System.IO.Path.GetExtension(projectFilePath);
+        var $iter = $t().ProjectFileExtensions.get_Keys();
+        var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
+        while ($enumerator.System$Collections$IEnumerator$MoveNext()) {
+            var language = $enumerator.System$Collections$IEnumerator$get_Current();
+            var extension = $t().ProjectFileExtensions.get_Item(language);
+            if (extension.Equals$2(projectFileExtension, 3 /* StringComparison.InvariantCultureIgnoreCase */)) {
+                return language;
+            }
+        }
+
+        throw new System.ArgumentException.ctor$1(String.Format("Unsupported or unrecognised file extension for project file path '{0}'", 
+            [projectFilePath]));
+    };
     $t.GetCodeOutputFileExtension = function CodeGenLanguageExt_GetCodeOutputFileExtension(codeGenLanguage) {
         if (codeGenLanguage == 0 /* CodeGenLanguage.CSharp */)
             return "cs";
@@ -991,6 +1029,23 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
                 codeGenLanguage), null);
         }
     };
+});
+$d.define(Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase, null, function($t, $p) {
+    $t.$intfs = function() { return [System.Collections.Generic.IEqualityComparer$1(String, 40320)]; };
+    $t.ctor = function StringComparerIgnoreCase() {
+        $t.$baseType.ctor.call(this);
+    };
+    $p.Equals$1 = function StringComparerIgnoreCase_Equals(x, y) {
+        return this.GetHashCode$1(x) == this.GetHashCode$1(y);
+    };
+    $p.GetHashCode$1 = function StringComparerIgnoreCase_GetHashCode(obj) {
+        if (obj == null)
+            throw new System.ArgumentNullException.ctor$1("obj");
+
+        return obj.toLowerCase().GetHashCode();
+    };
+    $p.System$Collections$Generic$IEqualityComparer$1$Equals = $p.Equals$1;
+    $p.System$Collections$Generic$IEqualityComparer$1$GetHashCode = $p.GetHashCode$1;
 });
 $d.define(Nethereum.Generators.Core.CommonGenerators, null, function($t, $p) {
     $t.$ator = function() {

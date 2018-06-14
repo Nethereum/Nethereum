@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
+using System.IO;
+using System.Linq;
 using Nethereum.Generator.Console.Generation;
 
 namespace Nethereum.Generator.Console.Commands
@@ -26,15 +28,13 @@ namespace Nethereum.Generator.Console.Commands
             var projectPath = _projectPath.Value();
             if (string.IsNullOrWhiteSpace(projectPath))
             {
-                System.Console.WriteLine("A project file needs was not specified");
-                return 1;
+                projectPath = Environment.CurrentDirectory;
             }
 
             var assemblyName = _assemblyName.Value();
             if (string.IsNullOrWhiteSpace(assemblyName))
             {
-                System.Console.WriteLine("An assembly name was not specified");
-                return 1;
+                assemblyName = projectPath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Last();
             }
 
             CodeGenerationWrapper.FromProject(projectPath, assemblyName);
