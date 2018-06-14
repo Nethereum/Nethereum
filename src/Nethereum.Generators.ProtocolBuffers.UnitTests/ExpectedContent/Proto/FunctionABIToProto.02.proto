@@ -1,0 +1,6 @@
+
+message RecordHousePurchaseRequest {
+    bytes property_id = 1;
+}
+
+
