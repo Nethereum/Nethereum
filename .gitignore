@@ -28,7 +28,6 @@ bld/
 devChainRPCTests/
 testchain/clique/devChain/geth
 testchain/devChain/geth
-geth.exe
 
 
 # Visual Studio 2015 cache/options directory

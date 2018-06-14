@@ -1,0 +1,17 @@
+src/Nethereum.ABI.UnitTests/**/*.csproj
+src/Nethereum.Accounts.IntegrationTests/**/*.csproj
+src/Nethereum.Contracts.IntegrationTests/**/*.csproj
+src/Nethereum.DevP2P.UnitTests/**/*.csproj
+src/Nethereum.ENS.IntegrationTests/**/*.csproj
+src/Nethereum.ENS.UnitTests/**/*.csproj
+src/Nethereum.EVM.UnitTests/**/*.csproj
+src/Nethereum.HdWallet.IntegrationTests/**/*.csproj
+src/Nethereum.HdWallet.UnitTests/**/*.csproj
+src/Nethereum.KeyStore.UnitTests/**/*.csproj
+src/Nethereum.RLP.UnitTests/**/*.csproj
+src/Nethereum.RPC.UnitTests/**/*.csproj
+src/Nethereum.Signer.IntegrationTests/**/*.csproj
+src/Nethereum.Signer.UnitTests/**/*.csproj
+src/Nethereum.StandardTokenEIP20.IntegrationTests/**/*.csproj
+src/Nethereum.Uport.IntegrationTests/**/*.csproj
+src/Nethereum.Util.Tests/**/*.csproj
