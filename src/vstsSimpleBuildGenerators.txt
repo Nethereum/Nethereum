@@ -1,0 +1,13 @@
+src/Nethereum.Generators/**/*.csproj
+src/Nethereum.Generator.Console/**/*.csproj
+src/Nethereum.Generator.Console.UnitTests/**/*.csproj
+src/Nethereum.Generators.Desktop.Core/**/*.csproj
+src/Nethereum.Generators.IntegrationTests/**/*.csproj
+src/Nethereum.Generators.Net/**/*.csproj
+src/Nethereum.Generators.Plugin.UnitTestLib/**/*.csproj
+src/Nethereum.Generators.ProtocolBuffers/**/*.csproj
+src/Nethereum.Generators.ProtocolBuffers.Net/**/*.csproj
+src/Nethereum.Generators.ProtocolBuffers.UnitTests/**/*.csproj
+src/Nethereum.Generators.Tests/**/*.csproj
+src/Nethereum.Generators.Tests.Common/**/*.csproj
+src/Nethereum.Generators.UnitTests/**/*.csproj

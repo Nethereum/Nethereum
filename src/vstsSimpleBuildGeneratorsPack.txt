@@ -1,0 +1,1 @@
+src/Nethereum.Generators/**/*.csproj;src/Nethereum.Generator.Console/**/*.csproj;src/Nethereum.Generators.Desktop.Core/**/*.csproj;src/Nethereum.Generators.Net/**/*.csproj;src/Nethereum.Generators.Plugin.UnitTestLib/**/*.csproj;src/Nethereum.Generators.ProtocolBuffers/**/*.csproj;src/Nethereum.Generators.ProtocolBuffers.Net/**/*.csproj;
