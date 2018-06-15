@@ -28,12 +28,25 @@ namespace Nethereum.Accounts.IntegrationTests
             //The file can be at the Solution level.
             //1, Path
             //2, Executable
-            //3, Arguments.
+            //3 Arguments setup
+            //4 Arguments.
             // So the tests can run for both Geth and Parity, Windows, Mac and Linux.
 
             var location = typeof(EthereumClientIntegrationFixture).GetTypeInfo().Assembly.Location;
             var dirPath = Path.GetDirectoryName(location);
             var path = Path.GetFullPath(Path.Combine(dirPath, @"..\..\..\..\..\testchain\clique"));
+
+
+            ProcessStartInfo psiSetup = new ProcessStartInfo(Path.Combine(path, "geth.exe"), @"--datadir=devChain init genesis_clique.json ")
+            {
+                CreateNoWindow = false,
+                WindowStyle = ProcessWindowStyle.Normal,
+                UseShellExecute = true,
+                WorkingDirectory = path
+
+            };
+
+            Process.Start(psiSetup);
 
             ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(path, "geth.exe"), @" --nodiscover --rpc --datadir=devChain  --rpccorsdomain "" * "" --mine --rpcapi ""eth, web3, personal, net, miner, admin, debug"" --rpcaddr ""0.0.0.0"" --unlock 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console  ")
             {
