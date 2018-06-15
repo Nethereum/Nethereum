@@ -9,7 +9,7 @@ namespace Nethereum.Web3.Accounts
 {
     public class Account : IAccount
     {
-        public BigInteger? ChainId { get; private set; }
+        public BigInteger? ChainId { get; }
 
 #if !PCL
         public static Account LoadFromKeyStoreFile(string filePath, string password)
@@ -46,19 +46,16 @@ namespace Nethereum.Web3.Accounts
             Initialise(new EthECKey(privateKey, true));
         }
 
-        public Account(EthECKey key, Chain chain) : this(key, (int)chain)
+        public Account(EthECKey key, Chain chain) : this(key, (int) chain)
         {
-            
         }
 
-        public Account(string privateKey, Chain chain) : this(privateKey, (int)chain)
+        public Account(string privateKey, Chain chain) : this(privateKey, (int) chain)
         {
-            
         }
 
-        public Account(byte[] privateKey, Chain chain) : this(privateKey, (int)chain)
+        public Account(byte[] privateKey, Chain chain) : this(privateKey, (int) chain)
         {
-
         }
 
         private void Initialise(EthECKey key)

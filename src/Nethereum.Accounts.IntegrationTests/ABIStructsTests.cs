@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
@@ -9,6 +12,7 @@ using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ABIStructsTests
     {
         /*
@@ -208,6 +212,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
         public static async Task SuperFunSampleStringAsync()
         {
+
             var address = "0x12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var web3 = new Web3.Web3(new Account(privateKey));

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class AccountTests
     {
         [Fact]
