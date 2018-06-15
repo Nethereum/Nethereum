@@ -1,8 +1,10 @@
 ﻿using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
+using Nethereum.StandardTokenEIP20.CQS;
 using Nethereum.StandardTokenEIP20.Events.DTO;
 using Xunit;
 
@@ -21,6 +23,27 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
                 receipt = await transactionService.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
             return receipt;
+        }
+
+        [Fact]
+        public async void ShoulReturnData()
+        {
+            var web3 = Web3Factory.GetWeb3();
+            var deploymentHandler =  web3.Eth.GetContractDeploymentHandler<EIP20Deployment>();
+            var receipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(new EIP20Deployment()
+            {
+                DecimalUnits = 18,
+                InitialAmount = BigInteger.Parse("10000000000000000000000000"),
+                TokenSymbol = "XST",
+                TokenName = "XomeStandardToken"
+            });
+
+            var contractHandler = web3.Eth.GetContractHandler(receipt.ContractAddress);
+            var symbol = await contractHandler.QueryAsync<SymbolFunction, string>();
+            var tokenName = await contractHandler.QueryAsync<NameFunction, string>();
+
+            Assert.Equal("XST", symbol);
+            Assert.Equal("XomeStandardToken", tokenName);
         }
 
         [Fact]
