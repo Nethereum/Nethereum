@@ -13,6 +13,7 @@ namespace Nethereum.ABI.Encoders
 
         public IntTypeEncoder(bool signed)
         {
+            intTypeDecoder = new IntTypeDecoder();
             _signed = signed;
         }
 
