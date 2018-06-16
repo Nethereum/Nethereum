@@ -79,7 +79,6 @@ namespace Nethereum.ABI.Decoders
                 return new BigInteger(encoded) -
                        new BigInteger(
                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".HexToByteArray()) - 1;
-           
 
             return new BigInteger(encoded);
         }

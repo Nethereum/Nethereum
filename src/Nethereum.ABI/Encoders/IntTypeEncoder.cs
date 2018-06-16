@@ -9,10 +9,16 @@ namespace Nethereum.ABI.Encoders
     public class IntTypeEncoder : ITypeEncoder
     {
         private readonly IntTypeDecoder intTypeDecoder;
+        private readonly bool _signed;
 
-        public IntTypeEncoder()
+        public IntTypeEncoder(bool signed)
         {
-            intTypeDecoder = new IntTypeDecoder();
+            _signed = signed;
+        }
+
+        public IntTypeEncoder() : this(false)
+        {
+
         }
 
         public byte[] Encode(object value)
@@ -39,6 +45,14 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] EncodeInt(BigInteger value)
         {
+            //TODO VALIDATE MAX MIN VALUES waiting for the great pull of @Enigmatic :)
+            //int
+            //57896044618658097711785492504343953926634992332820282019728792003956564819967
+            //-57896044618658097711785492504343953926634992332820282019728792003956564819968
+            //uint
+            //115792089237316195423570985008687907853269984665640564039457584007913129639935
+
+
             const int maxIntSizeInBytes = 32;
             //It should always be Big Endian.
             var bytes = BitConverter.IsLittleEndian

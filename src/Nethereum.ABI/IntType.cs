@@ -8,7 +8,7 @@ namespace Nethereum.ABI
         public IntType(string name) : base(name)
         {
             Decoder = new IntTypeDecoder(IsSigned(name));
-            Encoder = new IntTypeEncoder();
+            Encoder = new IntTypeEncoder(IsSigned(name));
         }
 
         private static bool IsSigned(string name)
