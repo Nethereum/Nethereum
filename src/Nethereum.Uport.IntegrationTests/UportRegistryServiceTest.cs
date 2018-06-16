@@ -10,11 +10,18 @@ namespace Nethereum.Uport.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class UportRegistryServiceTest
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public UportRegistryServiceTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void ShouldDeployAContractWithConstructor()
         {
 
-            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
                     var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
@@ -31,7 +38,7 @@ namespace Nethereum.Uport.IntegrationTests
         [Fact]
         public async void ShouldRegisterVerification()
         {
-            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
             var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
