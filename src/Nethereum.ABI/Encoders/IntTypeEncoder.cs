@@ -46,19 +46,34 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] EncodeInt(BigInteger value)
         {
-            //TODO VALIDATE MAX MIN VALUES waiting for the great pull of @Enigmatic :)
-            //int
-            //57896044618658097711785492504343953926634992332820282019728792003956564819967
-            //-57896044618658097711785492504343953926634992332820282019728792003956564819968
-            //uint
-            //115792089237316195423570985008687907853269984665640564039457584007913129639935
-
-
             const int maxIntSizeInBytes = 32;
+            var bytes = value.ToByteArray();
+
+            if (value > (BigInteger.Pow(new BigInteger(2), 256) - 1))
+            {
+                //if value > 2^256 -1 - overflow
+                throw new ArgumentOutOfRangeException(nameof(value),
+                                                        $"Unsigned integer value must not exceed maximum Solidity value of 115792089237316195423570985008687907853269984665640564039457584007913129639935. Passed value is {value}");
+            }
+            else if (bytes.Length == 33 && value.Sign == 1 && value <= (BigInteger.Pow(new BigInteger(2), 256) - 1))
+            {
+                //if 33 bytes, biginteger is positive, and not larger than 2^256 - 1, remove first byte
+                bytes = bytes.Take(bytes.Length - 1).ToArray();
+            }
+            else if (bytes.Length > 32 && value.Sign == -1)
+            {
+                //beyond 32 bytes - overflow
+                throw new ArgumentOutOfRangeException(nameof(value),
+                                                        $"Integer value must not exceed minimum Solidity value of -57896044618658097711785492504343953926634992332820282019728792003956564819968. Length of passed value is {value}");
+            }
+
             //It should always be Big Endian.
-            var bytes = BitConverter.IsLittleEndian
-                            ? value.ToByteArray().Reverse().ToArray()
-                            : value.ToByteArray();
+            if (BitConverter.IsLittleEndian)
+                bytes = bytes.Reverse().ToArray();
+
+            if (bytes.Length > maxIntSizeInBytes)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                                                      $"Integer value must not exceed maximum Solidity size of {maxIntSizeInBytes} bytes. Length of passed value is {bytes.Length}");
 
             var ret = new byte[maxIntSizeInBytes];
 
@@ -69,7 +84,6 @@ namespace Nethereum.ABI.Encoders
                     ret[i] = 0;
 
             Array.Copy(bytes, 0, ret, maxIntSizeInBytes - bytes.Length, bytes.Length);
-
             return ret;
         }
     }
