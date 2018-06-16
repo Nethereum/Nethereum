@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>1.0.2</VersionPrefix>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net461;netcoreapp2.1</TargetFrameworks>
     <AssemblyName>Nethereum.RPC.UnitTests</AssemblyName>
     <PackageId>Nethereum.RPC.UnitTests</PackageId>
   </PropertyGroup>
