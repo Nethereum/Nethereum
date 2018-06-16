@@ -3,12 +3,21 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EventFilterWith3Topics
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public EventFilterWith3Topics(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
 
         [Event("Pushed")]
         public class PushedEventDTO
@@ -125,7 +134,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Fact]
         public async Task Test()
         {
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var addressFrom = AccountFactory.Address;
             var receipt = await web3.Eth.GetContractDeploymentHandler<TestEventDeployment>()
                 .SendRequestAndWaitForReceiptAsync(new TestEventDeployment(){FromAddress = addressFrom});

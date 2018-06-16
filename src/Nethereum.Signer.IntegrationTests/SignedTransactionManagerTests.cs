@@ -2,12 +2,22 @@
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Signer.IntegrationTests;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Signer.IntegrationTests
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class SignedTransactionManagerTests
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public SignedTransactionManagerTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+     
         [Fact]
         public async Task ShouldSendSignTransaction()
         {
@@ -17,11 +27,9 @@ namespace Nethereum.Signer.IntegrationTests
             var abi =
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
-
-            var privateKey = AccountFactory.PrivateKey;
             var senderAddress = AccountFactory.Address;
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,

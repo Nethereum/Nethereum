@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
    </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">

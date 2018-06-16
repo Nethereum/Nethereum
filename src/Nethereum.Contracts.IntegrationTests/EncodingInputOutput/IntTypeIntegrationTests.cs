@@ -2,12 +2,23 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class IntTypeIntegrationTests
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public IntTypeIntegrationTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+
         public async Task<string> Test()
         {
             //The compiled solidity contract to be deployed
@@ -58,7 +69,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test5"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test3"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test2"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[],""name"":""test1"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test4"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test6"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test8"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test7"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""}]";
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var senderAddress = AccountFactory.Address;
 
             //deploy the contract, including abi and a paramter of 7. 

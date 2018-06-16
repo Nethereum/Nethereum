@@ -6,6 +6,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests

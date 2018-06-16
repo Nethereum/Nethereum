@@ -3,6 +3,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
@@ -10,6 +11,13 @@ namespace Nethereum.Accounts.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class AccountTests
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public AccountTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async Task ShouldBeAbleToDeployAContractLoadingEncryptedPrivateKey()
         {
@@ -35,7 +43,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var acccount = Account.LoadFromKeyStore(keyStoreEncryptedJson, password);
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
@@ -93,7 +101,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplier = 7;
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
@@ -10,13 +11,20 @@ namespace Nethereum.Accounts.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class TransactionInterceptorTests
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public TransactionInterceptorTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async Task ShouldIntereceptAndSendRawTransaction()
         {
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, web3.Client);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
@@ -45,7 +53,7 @@ namespace Nethereum.Accounts.IntegrationTests
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, web3.Client);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 

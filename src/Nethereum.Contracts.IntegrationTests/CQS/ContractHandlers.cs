@@ -2,17 +2,26 @@
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.CQS
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ContractHandlers
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public ContractHandlers(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void Test()
         {
             var senderAddress = AccountFactory.Address;
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new StandardTokenDeployment
             {

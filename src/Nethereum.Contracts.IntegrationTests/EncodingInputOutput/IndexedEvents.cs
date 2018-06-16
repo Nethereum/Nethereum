@@ -1,10 +1,12 @@
 ﻿using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class IndexedEvents
     {
         /*
@@ -15,6 +17,13 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
            }
         }
         */
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public IndexedEvents(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
 
         public static string ABI =
                 @"[{'constant':false,'inputs':[],'name':'sendEvent','outputs':[],'payable':false,'type':'function'},{'anonymous':false,'inputs':[{'indexed':false,'name':'first','type':'uint256'},{'indexed':true,'name':'second','type':'uint256'},{'indexed':false,'name':'third','type':'uint256'},{'indexed':true,'name':'fourth','type':'uint256'}],'name':'Event','type':'event'}]"
@@ -42,7 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         [Fact]
         public async void ShouldBeParsedInAnyOrder()
         {
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var senderAddress = AccountFactory.Address;
 
             var receipt =

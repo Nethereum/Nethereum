@@ -2,18 +2,27 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EventFilterTest
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public EventFilterTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
 
         [Fact]
         public async Task TestEvent()
         {
             var senderAddress = AccountFactory.Address;
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new TestContract3Deployment() { FromAddress = senderAddress };
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestContract3Deployment>();

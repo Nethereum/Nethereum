@@ -2,12 +2,21 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Issues
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class Issue24
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public Issue24(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         //Issue on the original Event speficifing a string instead of an address type
         /*
           
@@ -53,7 +62,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
                 @"[{""constant"":false,""inputs"":[{""name"":""multihash"",""type"":""bytes""}],""name"":""uploadBatch"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""_blockHeight"",""type"":""uint256""},{""name"":""_contentBy"",""type"":""address""},{""name"":""_changeCount"",""type"":""uint256""},{""name"":""_totalRexRewarded"",""type"":""uint256""}],""name"":""issueContentReward"",""outputs"":[],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""_address"",""type"":""address""}],""name"":""updateCoordinator"",""outputs"":[],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""uploadCount"",""outputs"":[{""name"":"""",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""_dataFeedCoordinatorAddress"",""type"":""address""},{""name"":""feedCode"",""type"":""bytes4""}],""type"":""constructor""},{""anonymous"":false,""inputs"":[{""indexed"":false,""name"":"""",""type"":""address""},{""indexed"":false,""name"":"""",""type"":""bytes""}],""name"":""BatchUploaded"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":false,""name"":""blockHeight"",""type"":""uint256""},{""indexed"":false,""name"":""contentBy"",""type"":""address""},{""indexed"":false,""name"":""changeCount"",""type"":""uint256""},{""indexed"":false,""name"":""totalRewards"",""type"":""uint256""}],""name"":""ContentRewarded"",""type"":""event""}]";
             var contractAddress = "0xe8d75008917c6a460473e62d5d4cefd3bbe4d85b";
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var dataFeedContract = web3.Eth.GetContract(abi, contractAddress);
 
             var e = dataFeedContract.GetEvent("BatchUploaded");

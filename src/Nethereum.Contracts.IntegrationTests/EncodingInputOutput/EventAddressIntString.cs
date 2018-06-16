@@ -4,12 +4,22 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EventAddressIntString
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public EventAddressIntString(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         /*
          pragma solidity ^0.4.14;
 
@@ -199,7 +209,7 @@ contract Coin {
         [Fact]
         public async void Test()
         {
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var account = AccountFactory.GetAccount();
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
@@ -228,7 +238,7 @@ contract Coin {
         [Fact]
         public async void TestChinese()
         {
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var account = AccountFactory.GetAccount();
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>

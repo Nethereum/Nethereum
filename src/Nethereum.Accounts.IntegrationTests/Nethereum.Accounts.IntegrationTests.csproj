@@ -4,12 +4,7 @@
     <Description>Nethereum.Web3.IntegrationTests </Description>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>net461;netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
-    </ItemGroup>
-
+  </PropertyGroup> 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <Reference Include="System.Numerics" />
     <Reference Include="System" />
@@ -27,6 +22,10 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
   </ItemGroup>
 
 </Project>

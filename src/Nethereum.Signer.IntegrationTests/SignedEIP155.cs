@@ -2,12 +2,22 @@
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Signer.IntegrationTests
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class SignedEIP155
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public SignedEIP155(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+
         [Fact]
         public async Task ShouldSendSignTransaction()
         {

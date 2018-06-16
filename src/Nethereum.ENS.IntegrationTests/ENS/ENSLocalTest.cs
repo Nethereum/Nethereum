@@ -3,12 +3,23 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts.Managed;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.ENS.IntegrationTests.ENS
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ENSLocalTest
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public ENSLocalTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+
         [Fact]
         public async void ShouldCreateEnsRegistarResolverAndRegiterandResolveANewAddress()
         {
@@ -20,8 +31,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
-            var web3 = new Web3.Web3(new ManagedAccount(addressFrom, pass), ClientFactory.GetClient());
-            var web3Geth = new Web3Geth(ClientFactory.GetClient());
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var txService = new TransactionReceiptPollingService(web3.TransactionManager);
 

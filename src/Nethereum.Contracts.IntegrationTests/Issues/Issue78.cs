@@ -1,11 +1,20 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Issues
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class Issue78
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public Issue78(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async Task ProdContract()
         {
@@ -14,7 +23,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""nextOwner"",""type"":""address""}],""name"":""setNextOwner"",""outputs"":[{""name"":""set"",""type"":""bool""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getProduct"",""outputs"":[{""name"":""product"",""type"":""string""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getOwner"",""outputs"":[{""name"":""owner"",""type"":""address""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getOwners"",""outputs"":[{""name"":""owners"",""type"":""address[]""}],""payable"":false,""type"":""function""},{""constant"":false,""inputs"":[],""name"":""confirmOwnership"",""outputs"":[{""name"":""confirmed"",""type"":""bool""}],""payable"":false,""type"":""function""},{""inputs"":[{""name"":""productDigest"",""type"":""string""}],""type"":""constructor""}]";
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var account = AccountFactory.Address;
 
             var contractHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, account,

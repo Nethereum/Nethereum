@@ -8,6 +8,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests

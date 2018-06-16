@@ -1,16 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using Common.Logging;
 using Common.Logging.Simple;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Logging
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class LoggingTest
     {
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public LoggingTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void TestLogging()
         {
@@ -24,17 +34,19 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
             var senderAddress = AccountFactory.Address;
-            var web3 = new Web3.Web3(AccountFactory.GetAccount(), 
+            var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account, 
                 new RpcClient(new Uri("http://localhost:8545"), null, null, null, LogManager.GetLogger<ILog>()));
-
-            //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
-                new HexBigInteger(900000), 7);
             
-            Assert.Contains("eth_getTransactionCount", capturingLoggerAdapter.LoggerEvents[0].MessageObject.ToString());
-            Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[1].MessageObject.ToString());
-            Assert.Contains("eth_sendRawTransaction", capturingLoggerAdapter.LoggerEvents[2].MessageObject.ToString());
-            Assert.Contains("RPC Response: " + transactionHash, capturingLoggerAdapter.LoggerEvents[3].MessageObject.ToString());
+            ////deploy the contract, including abi and a paramter of 7. 
+            //var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
+            //    new HexBigInteger(900000), 7);
+            
+            //Assert.Contains("eth_getTransactionCount", capturingLoggerAdapter.LoggerEvents[0].MessageObject.ToString());
+            //Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[1].MessageObject.ToString());
+            //Assert.Contains("eth_sendRawTransaction", capturingLoggerAdapter.LoggerEvents[2].MessageObject.ToString());
+            //Assert.Contains("RPC Response: " + transactionHash, capturingLoggerAdapter.LoggerEvents[3].MessageObject.ToString());
+
+            BigInteger nonce = 0;
 
             try
             {
@@ -47,7 +59,18 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 
             }
 
-            Assert.Contains("RPC Response Error: intrinsic gas too low", capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
+            Assert.Contains("RPC Response Error: intrinsic gas too low", capturingLoggerAdapter.LoggerEvents[4].MessageObject.ToString());
+
+            await web3.TransactionManager.Account.NonceService.ResetNonce();
+
+            var transactionHash3 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
+                new HexBigInteger(900000), 7);
+
+            Assert.Contains("eth_getTransactionCount", capturingLoggerAdapter.LoggerEvents[5].MessageObject.ToString());
+            Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[6].MessageObject.ToString());
+            Assert.Contains("eth_sendRawTransaction", capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());
+            Assert.Contains("RPC Response: " + transactionHash3, capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
+
         }
     }
 }

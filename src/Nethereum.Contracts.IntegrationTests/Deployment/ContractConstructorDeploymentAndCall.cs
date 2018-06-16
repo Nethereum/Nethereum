@@ -1,12 +1,22 @@
 using System.Threading;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Deployment
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ContractConstructorDeploymentAndCall
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public ContractConstructorDeploymentAndCall(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void ShouldDeployAContractWithConstructor()
         {
@@ -37,7 +47,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
             var senderAddress = AccountFactory.Address;
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
@@ -110,7 +120,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
 
 
             var senderAddress = AccountFactory.Address;
-            var web3 = Web3Factory.GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
                 new HexBigInteger(900000), new HexBigInteger(1000), new HexBigInteger(0), 7);
@@ -160,7 +170,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
             var senderAddress = AccountFactory.Address;
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var estimate = await web3.Eth.DeployContract.EstimateGasAsync(abi, contractByteCode, senderAddress, 7);
 
             Assert.NotNull(estimate);

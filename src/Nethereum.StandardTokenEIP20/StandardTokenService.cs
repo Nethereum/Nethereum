@@ -130,10 +130,16 @@ namespace Nethereum.StandardTokenEIP20
             return Contract.GetEvent("Transfer");
         }
 
+        public Task<string> NameQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<NameFunction, string>(blockParameter);
+        }
+
         public Task<string> NameQueryAsync(NameFunction nameFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<NameFunction, string>(nameFunction, blockParameter);
         }
+
         public Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
         {
             return ContractHandler.SendRequestAsync(approveFunction);
@@ -142,6 +148,12 @@ namespace Nethereum.StandardTokenEIP20
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
         }
+
+        public Task<BigInteger> TotalSupplyQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<TotalSupplyFunction, BigInteger>(blockParameter);
+        }
+
         public Task<BigInteger> TotalSupplyQueryAsync(TotalSupplyFunction totalSupplyFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<TotalSupplyFunction, BigInteger>(totalSupplyFunction, blockParameter);
@@ -158,10 +170,17 @@ namespace Nethereum.StandardTokenEIP20
         {
             return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
         }
+
         public Task<byte> DecimalsQueryAsync(DecimalsFunction decimalsFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<DecimalsFunction, byte>(decimalsFunction, blockParameter);
         }
+
+        public Task<byte> DecimalsQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<DecimalsFunction, byte>(blockParameter);
+        }
+
         public Task<BigInteger> AllowedQueryAsync(AllowedFunction allowedFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
@@ -170,11 +189,17 @@ namespace Nethereum.StandardTokenEIP20
         {
             return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
         }
+
         public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<SymbolFunction, string>(symbolFunction, blockParameter);
         }
-       
+
+        public Task<string> SymbolQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<SymbolFunction, string>(blockParameter);
+        }
+
         public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);

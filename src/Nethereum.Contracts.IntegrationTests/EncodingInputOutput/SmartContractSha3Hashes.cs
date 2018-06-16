@@ -1,11 +1,21 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class SmartContractSha3Hashes
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public SmartContractSha3Hashes(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void Test()
         {
@@ -27,7 +37,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var text = "code monkeys are great";
             var hash = "0x1c21348936d43dc62d853ff6238cff94e361f8dcee9fde6fd5fbfed9ff663150";
 
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var senderAddress = AccountFactory.Address;
 
             var sha3Hello = Web3.Web3.Sha3(text);

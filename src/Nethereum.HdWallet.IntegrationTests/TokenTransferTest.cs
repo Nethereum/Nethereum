@@ -1,10 +1,12 @@
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.StandardTokenEIP20;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.HdWallet.IntegrationTests
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class TokenTransferTest
     {
         public const string Words =
@@ -12,12 +14,20 @@ namespace Nethereum.HdWallet.IntegrationTests
 
         public const string Password = "TREZOR";
 
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public TokenTransferTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void ShouldBeAbleTransferTokensUsingTheHdWallet()
         {
             var wallet = new Wallet(Words, Password);
             var account = wallet.GetAccount(0);
-            var web3 = new Web3.Web3(account);
+            
+            var web3 = new Web3.Web3(account, _ethereumClientIntegrationFixture.GetWeb3().Client);
 
             ulong totalSupply = 1000000;
             var contractByteCode =

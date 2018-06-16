@@ -49,6 +49,19 @@ namespace Nethereum.RPC.NonceServices
                 _semaphoreSlim.Release();
             }
         }
+
+        public async Task ResetNonce()
+        {
+            await _semaphoreSlim.WaitAsync();
+            try
+            {
+                CurrentNonce = -1;
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
+        }
     }
 #endif
 }

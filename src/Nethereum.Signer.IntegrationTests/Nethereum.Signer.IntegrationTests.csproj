@@ -3,11 +3,12 @@
   <PropertyGroup>
     <Description>Nethereum.Signer.IntegrationTests</Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net461;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">

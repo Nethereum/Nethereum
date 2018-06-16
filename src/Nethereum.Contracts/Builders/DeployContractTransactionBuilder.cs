@@ -59,7 +59,16 @@ namespace Nethereum.Contracts
             return transaction;
         }
 
-       
+        public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
+            HexBigInteger gasPrice,
+            HexBigInteger value, HexBigInteger nonce, object[] values)
+        {
+            var encodedData = BuildEncodedData(abi, contractByteCode, values);
+            var transaction = new TransactionInput(encodedData, null, from, gas, gasPrice, value);
+            transaction.Nonce = nonce;
+            return transaction;
+        }
+
 
         public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
             HexBigInteger value, object[] values)

@@ -1,12 +1,23 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class FunctionOutputDTOTests
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public FunctionOutputDTOTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+
         public class TestOutputService
         {
             public static string ABI =
@@ -87,7 +98,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         [Fact]
         public async void ShouldReturnFunctionOutputDTO()
         {
-            var web3 = Web3Factory.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var senderAddress = AccountFactory.Address;
 
             var contractReceipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(TestOutputService.ABI,
