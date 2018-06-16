@@ -7,8 +7,13 @@ namespace Nethereum.ABI
     {
         public IntType(string name) : base(name)
         {
-            Decoder = new IntTypeDecoder();
+            Decoder = new IntTypeDecoder(IsSigned(name));
             Encoder = new IntTypeEncoder();
+        }
+
+        private static bool IsSigned(string name)
+        {
+            return !name.ToLower().StartsWith("u");
         }
 
         public override string CanonicalName

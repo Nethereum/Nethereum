@@ -98,8 +98,8 @@ namespace Nethereum.Accounts.IntegrationTests
             
             Assert.Equal("RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 capturingLoggerAdapter.LastEvent.MessageObject.ToString());
-            //This will fail now as there is no check for uints
-            //Assert.Equal(result, BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935"));
+            
+            Assert.Equal(result, BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935"));
         }
 
         public Web3.Web3 GetWeb3()
