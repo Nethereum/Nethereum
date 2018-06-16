@@ -166,6 +166,13 @@ namespace Nethereum.ABI.FunctionEncoding
                 else
                 {
                     var bytes = outputBytes.Skip(currentIndex).Take(param.ABIType.FixedSize).ToArray();
+                    if (outputParam.Parameter.ABIType.Name.Contains("uint"))
+                    {
+                        // will always be positive, append 0 byte at the front to reflect unsigned integer
+                        byte[] newArray = new byte[bytes.Length + 1];
+                        bytes.CopyTo(newArray, 1);
+                        bytes = newArray;
+                    }
                     outputParam.Result = param.ABIType.Decode(bytes, outputParam.Parameter.DecodedType);
 
                     currentIndex = currentIndex + param.ABIType.FixedSize;
