@@ -10,6 +10,7 @@ namespace Nethereum.ABI.Encoders
     {
         private readonly IntTypeDecoder intTypeDecoder;
         private readonly bool _signed;
+        
 
         public IntTypeEncoder(bool signed)
         {
@@ -46,19 +47,38 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] EncodeInt(BigInteger value)
         {
-            //TODO VALIDATE MAX MIN VALUES waiting for the great pull of @Enigmatic :)
-            //int
-            //57896044618658097711785492504343953926634992332820282019728792003956564819967
-            //-57896044618658097711785492504343953926634992332820282019728792003956564819968
-            //uint
-            //115792089237316195423570985008687907853269984665640564039457584007913129639935
 
+            if(_signed && value > IntType.MAX_INT256_VALUE) throw new  ArgumentOutOfRangeException(nameof(value),
+                $"Signed SmartContract integer must not exceed maximum value for int256: {IntType.MAX_INT256_VALUE.ToString()}. Current value is: {value}");
 
-            const int maxIntSizeInBytes = 32;
+            if (_signed && value < IntType.MIN_INT256_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Signed SmartContract integer must not be less than the minimum value for int256: {IntType.MIN_INT256_VALUE.ToString()}. Current value is: {value}");
+
+            if (!_signed && value > IntType.MAX_UINT256_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Unsigned SmartContract integer must not exceed maximum value for uint256: {IntType.MAX_UINT256_VALUE.ToString()}. Current value is: {value}");
+
+            if (!_signed && value < IntType.MIN_UINT_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Unsigned SmartContract integer must not be less than the minimum value of uint: {IntType.MIN_UINT_VALUE.ToString()}. Current value is: {value}");
+
             //It should always be Big Endian.
             var bytes = BitConverter.IsLittleEndian
                             ? value.ToByteArray().Reverse().ToArray()
                             : value.ToByteArray();
+
+            if (bytes.Length == 33 && !_signed)
+            {
+                if (bytes[0] == 0x00)
+                {
+                    bytes = bytes.Skip(1).ToArray();
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value),
+                        $"Unsigned SmartContract integer must not exceed maximum value for uint256: {IntType.MAX_UINT256_VALUE.ToString()}. Current value is: {value}");
+                }
+            }
+
+            const int maxIntSizeInBytes = 32;
 
             var ret = new byte[maxIntSizeInBytes];
 
