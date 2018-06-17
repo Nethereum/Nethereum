@@ -1,6 +1,9 @@
 # Nethereum
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
+
+
 VSTS CI: [![CI Build/Test/Deploy](https://juanfranblanco.visualstudio.com/_apis/public/build/definitions/f8775b72-769d-4ef6-817c-13750df7a4b3/2/badge)]() VSTS CI Code Gen: [![CI Code gen Build/Test/Deploy](https://juanfranblanco.visualstudio.com/_apis/public/build/definitions/f8775b72-769d-4ef6-817c-13750df7a4b3/3/badge)]()
+CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vpre/nethereum.web3.svg?style=plastic)](https://www.myget.org/feed/nethereum/package/nuget/Nethereum.Web3)
 
 
 # What is Nethereum ?
