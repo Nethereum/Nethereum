@@ -84,7 +84,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
         }
 
-        [Function("Max", "uint256")]
+        [Function("MaxUint", "uint256")]
         public class MaxFunction : ContractMessage
         {
 
