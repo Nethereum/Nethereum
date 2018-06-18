@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net.Http.Headers;
+using Common.Logging;
 using Nethereum.Contracts;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
@@ -27,14 +29,14 @@ namespace Nethereum.Web3
             TransactionManager.Client = Client;
         }
 
-        public Web3(string url = @"http://localhost:8545/")
+        public Web3(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null)
         {
-            IntialiseDefaultRpcClient(url);
+            IntialiseDefaultRpcClient(url, log, authenticationHeader);
             InitialiseInnerServices();
             IntialiseDefaultGasAndGasPrice();
         }
 
-        public Web3(IAccount account, string url = @"http://localhost:8545/") : this(url)
+        public Web3(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : this(url, log, authenticationHeader)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
@@ -98,9 +100,9 @@ namespace Nethereum.Web3
             Personal = new PersonalApiService(Client);
         }
 
-        private void IntialiseDefaultRpcClient(string url)
+        private void IntialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)
         {
-            Client = new RpcClient(new Uri(url));
+            Client = new RpcClient(new Uri(url), authenticationHeader, null, null, log);
         }
     }
 }

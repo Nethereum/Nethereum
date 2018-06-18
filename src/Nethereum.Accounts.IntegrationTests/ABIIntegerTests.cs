@@ -301,7 +301,7 @@ namespace Nethereum.Accounts.IntegrationTests
         public Web3.Web3 GetWeb3()
         {
             var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
-                new RpcClient(new Uri("http://localhost:8545"), null, null, null, LogManager.GetLogger<ILog>()));
+                "http://localhost:8545", LogManager.GetLogger<ILog>());
             return web3;
         }
        
