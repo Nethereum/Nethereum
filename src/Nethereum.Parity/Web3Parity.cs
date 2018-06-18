@@ -1,4 +1,6 @@
-﻿using Nethereum.JsonRpc.Client;
+﻿using System.Net.Http.Headers;
+using Common.Logging;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Parity
@@ -9,15 +11,16 @@ namespace Nethereum.Parity
         {
         }
 
-        public Web3Parity(string url = @"http://localhost:8545/") : base(url)
+        public Web3Parity(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
         }
+
 
         public Web3Parity(IAccount account, IClient client) : base(account, client)
         {
         }
 
-        public Web3Parity(IAccount account, string url = @"http://localhost:8545/") : base(account, url)
+        public Web3Parity(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
         {
         }
 

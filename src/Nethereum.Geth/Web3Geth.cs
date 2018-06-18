@@ -1,4 +1,6 @@
-﻿using Nethereum.JsonRpc.Client;
+﻿using System.Net.Http.Headers;
+using Common.Logging;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Geth
@@ -9,7 +11,7 @@ namespace Nethereum.Geth
         {
         }
 
-        public Web3Geth(string url = @"http://localhost:8545/") : base(url)
+        public Web3Geth(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
         }
 
@@ -17,7 +19,7 @@ namespace Nethereum.Geth
         {
         }
 
-        public Web3Geth(IAccount account, string url = @"http://localhost:8545/") : base(account, url)
+        public Web3Geth(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
         {
         }
 

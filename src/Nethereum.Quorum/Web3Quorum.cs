@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Common.Logging;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Quorum.RPC.Interceptors;
 using Nethereum.Quorum.RPC.Services;
@@ -15,9 +17,9 @@ namespace Nethereum.Quorum
            
         }
 
-        public Web3Quorum(string url = @"http://localhost:8545/"):base(url)
+        public Web3Quorum(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
-            
+
         }
 
         protected override void InitialiseInnerServices()
