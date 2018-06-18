@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
@@ -13,13 +14,55 @@ namespace Nethereum.ABI
 
         public IntType(string name) : base(name)
         {
-            Decoder = new IntTypeDecoder(IsSigned(name));
-            Encoder = new IntTypeEncoder(IsSigned(name));
+            Decoder = new IntTypeDecoder(IsSigned(CanonicalName));
+            Encoder = new IntTypeEncoder(IsSigned(CanonicalName), GetSize(CanonicalName));
         }
 
         private static bool IsSigned(string name)
         {
             return !name.ToLower().StartsWith("u");
+        }
+
+        public static BigInteger GetMaxSignedValue(uint size)
+        {
+            CheckIsValidAndThrow(size);
+            return BigInteger.Pow(2, (int)size - 1) - 1;
+        }
+
+        public static BigInteger GetMinSignedValue(uint size)
+        {
+            CheckIsValidAndThrow(size);
+            return BigInteger.Pow(-2, (int)size - 1);
+        }
+
+        public static BigInteger GetMaxUnSignedValue(uint size)
+        {
+            CheckIsValidAndThrow(size);
+            return BigInteger.Pow(2, (int)size) -1;
+        }
+
+        private static void CheckIsValidAndThrow(uint size)
+        {
+            if (!IsValidSize(size)) throw new ArgumentException("Invalid size for type int :" + size);
+        }
+
+        public static bool IsValidSize(uint size)
+        {
+            var divisible = (size % 8 == 0);
+            return divisible && size <= 256 && size >= 8;
+        }
+
+        private static uint GetSize(string name)
+        {
+            if (IsSigned(name))
+            {
+                return uint.Parse(name.Substring(3));
+            }
+            else
+            {
+                return uint.Parse(name.Substring(4));
+            }
+
         }
 
         public override string CanonicalName

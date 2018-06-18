@@ -10,15 +10,17 @@ namespace Nethereum.ABI.Encoders
     {
         private readonly IntTypeDecoder intTypeDecoder;
         private readonly bool _signed;
-        
+        private readonly uint _size;
 
-        public IntTypeEncoder(bool signed)
+
+        public IntTypeEncoder(bool signed, uint size)
         {
             intTypeDecoder = new IntTypeDecoder();
             _signed = signed;
+            _size = size;
         }
 
-        public IntTypeEncoder() : this(false)
+        public IntTypeEncoder() : this(false, 256)
         {
 
         }
@@ -47,19 +49,7 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] EncodeInt(BigInteger value)
         {
-
-            if(_signed && value > IntType.MAX_INT256_VALUE) throw new  ArgumentOutOfRangeException(nameof(value),
-                $"Signed SmartContract integer must not exceed maximum value for int256: {IntType.MAX_INT256_VALUE.ToString()}. Current value is: {value}");
-
-            if (_signed && value < IntType.MIN_INT256_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
-                $"Signed SmartContract integer must not be less than the minimum value for int256: {IntType.MIN_INT256_VALUE.ToString()}. Current value is: {value}");
-
-            if (!_signed && value > IntType.MAX_UINT256_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
-                $"Unsigned SmartContract integer must not exceed maximum value for uint256: {IntType.MAX_UINT256_VALUE.ToString()}. Current value is: {value}");
-
-            if (!_signed && value < IntType.MIN_UINT_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
-                $"Unsigned SmartContract integer must not be less than the minimum value of uint: {IntType.MIN_UINT_VALUE.ToString()}. Current value is: {value}");
-
+            ValidateValue(value);
             //It should always be Big Endian.
             var bytes = BitConverter.IsLittleEndian
                             ? value.ToByteArray().Reverse().ToArray()
@@ -92,5 +82,24 @@ namespace Nethereum.ABI.Encoders
 
             return ret;
         }
+
+
+        public void ValidateValue(BigInteger value)
+        {
+            if (_signed && value > IntType.GetMaxSignedValue(_size)) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Signed SmartContract integer must not exceed maximum value for int{_size}: {IntType.GetMaxSignedValue(_size).ToString()}. Current value is: {value}");
+
+            if (_signed && value < IntType.GetMinSignedValue(_size)) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Signed SmartContract integer must not be less than the minimum value for int{_size}: {IntType.GetMinSignedValue(_size)}. Current value is: {value}");
+
+            if (!_signed && value > IntType.GetMaxUnSignedValue(_size)) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Unsigned SmartContract integer must not exceed maximum value for uint{_size}: {IntType.GetMaxUnSignedValue(_size)}. Current value is: {value}");
+
+            if (!_signed && value < IntType.MIN_UINT_VALUE) throw new ArgumentOutOfRangeException(nameof(value),
+                $"Unsigned SmartContract integer must not be less than the minimum value of uint: {IntType.MIN_UINT_VALUE.ToString()}. Current value is: {value}");
+
+        }
+
+        
     }
 }
