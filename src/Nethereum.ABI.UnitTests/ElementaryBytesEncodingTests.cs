@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -133,6 +134,26 @@ namespace Nethereum.ABI.UnitTests
             var bytesType = ABIType.CreateABIType(typeName);
             var result = bytesType.Encode(hex.HexToByteArray());
             Assert.Equal(expected, result.ToHex(true));
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeGuid()
+        {
+            var bytesType = ABIType.CreateABIType("bytes16");
+            var guid = Guid.NewGuid();
+            var result = bytesType.Encode(guid);
+            Assert.Equal("0x"+guid.ToByteArray().ToHex() + "00000000000000000000000000000000", result.ToHex(true));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeGuid()
+        {
+            var bytesType = ABIType.CreateABIType("bytes16");
+            var guid = Guid.NewGuid();
+            var encoded = bytesType.Encode(guid);
+
+            var result = bytesType.Decode<Guid>(encoded);
+            Assert.Equal(guid, result);
         }
     }
 }

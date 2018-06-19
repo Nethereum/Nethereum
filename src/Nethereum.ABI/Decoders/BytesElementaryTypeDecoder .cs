@@ -23,6 +23,11 @@ namespace Nethereum.ABI.Decoders
                 return returnArray[0];
             }
 
+            if (_size == 16 && type == typeof(Guid))
+            {
+                return new Guid(returnArray);
+            }
+
             return returnArray;
         }
 
@@ -34,6 +39,7 @@ namespace Nethereum.ABI.Decoders
         public override bool IsSupportedType(Type type)
         {
             if (_size == 1) return (type == typeof(byte[]) || type == typeof(byte));
+            if (_size == 16) return (type == typeof(byte[]) || type == typeof(Guid));
             return (type == typeof(byte[]));
         }
     }

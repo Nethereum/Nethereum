@@ -26,6 +26,11 @@ namespace Nethereum.ABI.Encoders
                 value = new byte[1] { (byte)value };
             }
 
+            if (_size == 16 && value is Guid)
+            {
+                value = ((Guid) value).ToByteArray();
+            }
+
             if (!(value is byte[]))
                 throw new Exception("byte[] value expected for type 'bytes'");
             var byteArray = (byte[])value;

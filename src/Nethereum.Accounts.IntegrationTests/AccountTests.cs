@@ -1,13 +1,18 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
+
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class AccountTests
     {
@@ -63,6 +68,7 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task ShouldBeAbleToDeployAContractUsingPersonalUnlock()
         {
+            
             var senderAddress = AccountFactory.Address;
             var password = AccountFactory.Password;
             var abi =
