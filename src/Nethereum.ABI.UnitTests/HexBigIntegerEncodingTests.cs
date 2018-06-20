@@ -1,10 +1,12 @@
 using System;
+using System.CodeDom;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
 {
+    //TODO: Move to separate project
     public class HexBigIntegerEncodingTests
     {
         [Fact]
@@ -99,6 +101,17 @@ namespace Nethereum.ABI.UnitTests
 
             TestValue.HexValue = "0x200";            
             Assert.Equal(TestValue.HexValue, "0x200");
+        }
+
+        [Fact]
+        public void ShouldEqualBasedOnBigIntegerValue()
+        {
+            var bigInteger1 = new BigInteger(0);
+            var hexBigInteger1 = new HexBigInteger(bigInteger1);
+            var bigInteger2 = new BigInteger(0);
+            var hexBigInteger2 = new HexBigInteger(bigInteger2);
+            Assert.Equal(bigInteger1, bigInteger2);
+            Assert.Equal(hexBigInteger1, hexBigInteger2);
         }
     }
 }

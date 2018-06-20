@@ -76,5 +76,10 @@ namespace Nethereum.Hex.HexTypes
         {
             return hexRpcType.Value;
         }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
     }
 }

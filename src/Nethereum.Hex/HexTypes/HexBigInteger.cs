@@ -14,5 +14,15 @@ namespace Nethereum.Hex.HexTypes
         public HexBigInteger(BigInteger value) : base(value, new HexBigIntegerBigEndianConvertor())
         {
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is HexBigInteger val)
+            {
+                return val.Value == Value;
+            }
+
+            return false;
+        }
     }
 }
