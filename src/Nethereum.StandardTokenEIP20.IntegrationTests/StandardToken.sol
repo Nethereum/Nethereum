@@ -37,7 +37,7 @@
 
 contract Standard_Token is Token {
     
-    uint256 constant private MAX_UINT256 = 2**256 - 1;
+     uint256 constant private MAX_UINT256 = 2**256 - 1;
     mapping (address => uint256) public balances;
     mapping (address => mapping (address => uint256)) public allowed;
     uint256 public totalSupply;
@@ -49,11 +49,11 @@ contract Standard_Token is Token {
     They allow one to customise the token contract & in no way influences the core functionality.
     Some wallets/interfaces might not even bother to look at this information.
     */
-    bytes32 public name;                   //fancy name: eg Simon Bucks
+    string public name;                   //fancy name: eg Simon Bucks
     uint8 public decimals;                //How many decimals to show.
-    bytes32 public symbol;                 //An identifier: eg SBX
+    string public symbol;                 //An identifier: eg SBX
 
-    constructor(uint256 _initialAmount, bytes32 _tokenName, uint8 _decimalUnits, bytes32 _tokenSymbol) public {
+    constructor(uint256 _initialAmount, string _tokenName, uint8 _decimalUnits, string _tokenSymbol) public {
         balances[msg.sender] = _initialAmount;               // Give the creator all initial tokens
         totalSupply = _initialAmount;                        // Update total supply
         name = _tokenName;                                   // Set the name for display purposes

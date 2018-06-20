@@ -32,6 +32,20 @@ namespace Nethereum.Contracts.CQS
                 GetDefaultAddressFrom(contractFunctionMessage),
                 GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
         }
+
+
+        public async Task<byte[]> QueryRawAsync(TContractMessage contractFunctionMessage,
+            string contractAddress,
+            BlockParameter block = null)
+
+        {
+            var contract = Eth.GetContract<TContractMessage>(contractAddress);
+            var function = contract.GetFunction<TContractMessage>();
+            ValidateContractMessage(contractFunctionMessage);
+            return await function.CallRawAsync(contractFunctionMessage,
+                GetDefaultAddressFrom(contractFunctionMessage),
+                GetMaximumGas(contractFunctionMessage), GetValue(contractFunctionMessage), block).ConfigureAwait(false);
+        }
     }
 
 

@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.ABI.Decoders;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -172,8 +173,36 @@ namespace Nethereum.Contracts.CQS
             return QueryAsync<TEthereumContractFunctionMessage, TReturn>(ethereumContractFunctionMessage,
                 blockParameter);
         }
+
+        public Task<byte[]> QueryRawAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : ContractMessage, new()
+        {
+            SetAddressFrom(ethereumContractFunctionMessage);
+            var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
+            return queryHandler.QueryRawAsync(ethereumContractFunctionMessage,
+                ContractAddress, blockParameter);
+        }
+
+        public Task<byte[]> QueryRawAsync<TEthereumContractFunctionMessage>(BlockParameter blockParameter = null)
+           where TEthereumContractFunctionMessage : ContractMessage, new()
+        {
+            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
+            return QueryRawAsync<TEthereumContractFunctionMessage>(ethereumContractFunctionMessage,
+                blockParameter);
+        }
+
+        public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(BlockParameter blockParameter = null)
+           where TEthereumContractFunctionMessage : ContractMessage, new()
+           where TCustomDecoder : ICustomRawDecoder<TReturn>, new()
+        {
+            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
+            var result = await QueryRawAsync<TEthereumContractFunctionMessage>(ethereumContractFunctionMessage,
+                blockParameter);
+            var decoder = new TCustomDecoder();
+            return decoder.Decode(result);
+        }
 #endif
-        
+
     }
 
 }
