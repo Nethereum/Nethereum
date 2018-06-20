@@ -5,7 +5,7 @@ namespace Nethereum.StandardTokenEIP20.DTOs
     [FunctionOutput]
     public class NameOutputDTO
     {
-        [Parameter("string", "", 1)]
+        [Parameter("bytes32", "", 1)]
         public string B {get; set;}
     }
 }

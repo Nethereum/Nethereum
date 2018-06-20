@@ -30,6 +30,7 @@ namespace Nethereum.XUnitEthereumClients
     {
         public static IClient GetClient()
         {
+            //return new WebSocketClient("ws://localhost:8546");
             return new RpcClient(new Uri("http://localhost:8545"));
         }
     }

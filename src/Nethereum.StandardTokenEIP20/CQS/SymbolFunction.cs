@@ -3,7 +3,7 @@ using Nethereum.Contracts.CQS;
 
 namespace Nethereum.StandardTokenEIP20.CQS
 {
-    [Function("symbol", "string")]
+    [Function("symbol", "bytes32")]
     public class SymbolFunction:ContractMessage
     {
 

@@ -37,6 +37,15 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
         }
 
         [Fact]
+        public async void ShouldGetTheDaiFromMainnet()
+        {
+            var web3 = new Web3.Web3("https://mainnet.infura.io");
+            var contractHandler = web3.Eth.GetContractHandler("0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359");
+            var symbol = await contractHandler.QueryAsync<SymbolFunction, string>();
+            var tokenName = await contractHandler.QueryAsync<NameFunction, string>();
+        }
+
+        [Fact]
         public async void ShoulReturnData()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
