@@ -141,10 +141,37 @@ contract TheOther
             };
 
             var returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<Byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
-            //var inHex = returnValue.ToHex();
+         
+
+            var expected = "Hello Hi From the other contract";
+
             var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
             var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
             var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+
+            Assert.Equal(expected, firstVar);
+            Assert.Equal(expected, secondVar);
+            Assert.Equal(expected, thirdVar);
+
+            callMeFunction1.Name = "";
+            callMeFunction1.Greeting = "";
+
+            var expectedShort = "Hello  ";
+            callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()
+            {
+                Destination = new string[] { deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress }.ToList(),
+                Data = callMeFunction1.GetCallData()
+            };
+
+            returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<Byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
+
+            firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
+            secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
+            thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+
+            Assert.Equal(expectedShort, firstVar);
+            Assert.Equal(expectedShort, secondVar);
+            Assert.Equal(expectedShort, thirdVar);
 
         }
 
@@ -176,13 +203,18 @@ contract TheOther
             var returnValue = await contracthandler.QueryRawAsync(callManyOthersFunctionMessage);
             var inHex = returnValue.ToHex();
 
-           var returnByteArray = await contracthandler.QueryAsync<CallManyOtherContractsFixedArrayReturnFunction, List<Byte[]>>(callManyOthersFunctionMessage);
+            var expected = "Hello Solidity Welcome something much much biggger jlkjfslkfjslkdfjsldfjasdflkjsafdlkjasdfljsadfljasdfkljasdkfljsadfljasdfldsfaj booh!";
+
+            var returnByteArray = await contracthandler.QueryAsync<CallManyOtherContractsFixedArrayReturnFunction, List<Byte[]>>(callManyOthersFunctionMessage);
             //var inHex = returnValue.ToHex();
            var first = new StringTypeDecoder().Decode(returnByteArray[0]);
            var second = new StringTypeDecoder().Decode(returnByteArray[1]);
            var third = new StringTypeDecoder().Decode(returnByteArray[2]);
+           Assert.Equal(expected, first);
+           Assert.Equal(expected, second);
+           Assert.Equal(expected, third);
 
-           var callManyOthersVariableFunctionMessage = new CallManyOtherContractsVariableArrayReturnFunction()
+            var callManyOthersVariableFunctionMessage = new CallManyOtherContractsVariableArrayReturnFunction()
            {
                TheOther = deploymentReceipt.ContractAddress
            };
@@ -193,12 +225,14 @@ contract TheOther
            var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
            var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
 
-           var returnValue1Call = await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage);
-           var inHex1Call = returnValue1Call.ToHex();
+           Assert.Equal(expected, firstVar);
+           Assert.Equal(expected, secondVar);
+           Assert.Equal(expected, thirdVar);
 
-            //var returnStartingAtData = returnValue.Skip(32).ToArray();
+            var returnValue1Call = await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage);
+         
             var return1ValueString = new StringTypeDecoder().Decode(returnValue1Call);
-
+           Assert.Equal(expected, return1ValueString);
         }
     }
 
