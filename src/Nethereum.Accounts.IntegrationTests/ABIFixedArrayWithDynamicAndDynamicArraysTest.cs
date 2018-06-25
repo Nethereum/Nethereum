@@ -109,15 +109,21 @@ contract TheOther
         }
 
         [Fact]
-        public async void ShouldDoFunStuff()
+        public async void ShouldDoSimpleMultipleQueries()
+        {
+
+        }
+
+        [Fact]
+        public async void ShouldCallDifferentContractsUsingDataBytesArraysFixedAndVariable()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
             var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
 
-            var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<SolidityCallAnotherContract.Contracts.Test.CQS.TestDeployment>();
-            var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync(); ;
+            var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<TestDeployment>();
+            var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
 
             var callMeFunction1 = new CallMeFunction()
             {
@@ -133,7 +139,7 @@ contract TheOther
                 Data = callMeFunction1.GetCallData()
             };
 
-            var returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<Byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
+            var returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
          
 
             var expected = "Hello Hi From the other contract";
@@ -156,7 +162,7 @@ contract TheOther
                 Data = callMeFunction1.GetCallData()
             };
 
-            returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<Byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
+            returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
 
             firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
             secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
