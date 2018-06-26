@@ -12,9 +12,9 @@ namespace SolidityCallAnotherContract.Contracts.Test.CQS
     public class CallManyContractsSameQueryFunctionBase:ContractMessage
     {
         [Parameter("address[]", "destination", 1)]
-        public List<BigInteger> Destination {get; set;}
+        public virtual List<BigInteger> Destination {get; set;}
         [Parameter("bytes", "data", 2)]
-        public byte[] Data {get; set;}
+        public virtual byte[] Data {get; set;}
     }
 
     public partial class CallManyContractsSameQueryFunction : CallManyContractsSameQueryFunctionBase
