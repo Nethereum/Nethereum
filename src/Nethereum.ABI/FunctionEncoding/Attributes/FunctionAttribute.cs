@@ -38,7 +38,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
 
         public static FunctionAttribute GetAttribute(Type type)
         {
-            return type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>();
+            return type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>(true);
         }
 
         public static FunctionAttribute GetAttribute(object instance)

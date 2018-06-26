@@ -21,7 +21,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
 
         public static EventAttribute GetAttribute(Type type)
         {
-            return type.GetTypeInfo().GetCustomAttribute<EventAttribute>();
+            return type.GetTypeInfo().GetCustomAttribute<EventAttribute>(true);
         }
 
         public static EventAttribute GetAttribute(object instance)

@@ -97,7 +97,7 @@ namespace Nethereum.ABI.FunctionEncoding
                     var parameterAttribute =
                         (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), true)[0];
 #else
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
 #endif
                     var parameterOutputProperty = new ParameterOutputProperty
                     {
@@ -126,11 +126,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public List<ParameterOutputProperty> GetParameterOutputsFromAttributes(Type type)
         {
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             return GetParameterOutputsFromAttributes(properties.ToArray());
         }
 
@@ -198,15 +194,6 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var outputBytes = output.HexToByteArray();
             return DecodeOutput(outputBytes, outputParameters);
-        }
-
-        public PropertyInfo[] GetPropertiesWithParameterAttributes(params PropertyInfo[] properties)
-        {
-            var result = new List<PropertyInfo>();
-            foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), true))
-                    result.Add(property);
-            return result.ToArray();
         }
     }
 }

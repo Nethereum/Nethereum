@@ -11,6 +11,55 @@ using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
+
+    public static class PropertyInfoExtensions
+    {
+#if DOTNET35
+        public static bool IsHidingMember(this PropertyInfo self)
+        {
+            Type baseType = self.DeclaringType.GetTypeInfo().BaseType;
+            PropertyInfo baseProperty = baseType.GetProperty(self.Name);
+
+            if (baseProperty == null)
+            {
+                return false;
+            }
+
+            if (baseProperty.DeclaringType == self.DeclaringType)
+            {
+                return false;
+            }
+
+            var baseMethodDefinition = baseProperty.GetGetMethod().GetBaseDefinition();
+            var thisMethodDefinition = self.GetGetMethod().GetBaseDefinition();
+
+
+            return baseMethodDefinition.DeclaringType != thisMethodDefinition.DeclaringType;
+        }
+#else
+        public static bool IsHidingMember(this PropertyInfo self)
+        {
+            Type baseType = self.DeclaringType.GetTypeInfo().BaseType;
+            PropertyInfo baseProperty = baseType.GetRuntimeProperty(self.Name);
+
+            if (baseProperty == null)
+            {
+                return false;
+            }
+
+            if (baseProperty.DeclaringType == self.DeclaringType)
+            {
+                return false;
+            }
+
+            var baseMethodDefinition = baseProperty.GetMethod.GetRuntimeBaseDefinition();
+            var thisMethodDefinition = self.GetMethod.GetRuntimeBaseDefinition();
+
+            return baseMethodDefinition.DeclaringType != thisMethodDefinition.DeclaringType;
+        }
+#endif
+    }
+
     public class ParametersEncoder
     {
         private readonly IntTypeEncoder intTypeEncoder;
@@ -70,20 +119,17 @@ namespace Nethereum.ABI.FunctionEncoding
             return ByteUtil.Merge(encodedBytes);
         }
 
+        
+
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
 
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             var parameterObjects = new List<ParameterAttributeValue>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), true))
-                {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+            {
+                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
 #if DOTNET35
                     var propertyValue = property.GetValue(instanceValue, null);
 #else
@@ -101,7 +147,7 @@ namespace Nethereum.ABI.FunctionEncoding
                         ParameterAttribute = parameterAttribute,
                         Value = propertyValue
                     });
-                }
+            }
 
             var abiParameters =
                 parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
@@ -113,19 +159,16 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public object[] GetTupleComponentValuesFromTypeAttributes(Type type, object instanceValue)
         {
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+
             var propertiesInOrder = properties.Where(x => x.IsDefined(typeof(ParameterAttribute), true))
-                .OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order);
+                .OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order);
 
             var parameterObjects = new List<object>();
 
             foreach (var property in propertiesInOrder)
             {
-                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
 
 #if DOTNET35
                 var propertyValue = property.GetValue(instanceValue, null);

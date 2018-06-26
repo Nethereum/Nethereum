@@ -1,10 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.FunctionEncoding.Attributes
 {
+    public static class PropertiesExtractor
+    {
+        public static IEnumerable<PropertyInfo> GetProperties(Type type)
+        {
+#if DOTNET35
+            var hidingProperties = type.GetProperties().Where(x => x.IsHidingMember());
+            var nonHidingProperties = type.GetProperties().Where(x => hidingProperties.All(y => y.Name != x.Name));
+            return nonHidingProperties.Concat(hidingProperties);
+#else
+            var hidingProperties = type.GetRuntimeProperties().Where(x => x.IsHidingMember());
+            var nonHidingProperties = type.GetRuntimeProperties().Where(x => hidingProperties.All(y => y.Name != x.Name));
+            return nonHidingProperties.Concat(hidingProperties);
+#endif
+        }
+
+        public static IEnumerable<PropertyInfo> GetPropertiesWithParameterAttribute(Type type)
+        {
+            return GetProperties(type).Where(x => x.IsDefined(typeof(ParameterAttribute), true));
+        }
+    }
+
     public class AttributesToABIExtractor
     {
         public ContractABI ExtractContractABI(params Type[] contractMessagesTypes)
@@ -67,43 +89,31 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
 
         public Parameter[] ExtractParametersFromAttributes(Type contractMessageType)
         {
-#if DOTNET35
-            var properties = contractMessageType.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = contractMessageType.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(contractMessageType);
             var parameters = new List<Parameter>();
 
             foreach (var property in properties)
             {
-                if (property.IsDefined(typeof(ParameterAttribute), true))
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
+                if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
                 {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-                    if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
-                    {
-                        InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
-                    }
-                    parameters.Add(parameterAttribute.Parameter);
+                    InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
                 }
+                parameters.Add(parameterAttribute.Parameter);   
             }
-
             return parameters.ToArray();
         }
 
 
         public void InitTupleComponentsFromTypeAttributes(Type type, TupleType parameter)
         {
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
-            var parameterObjects = new List<Parameter>();
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+            var parameters = new List<Parameter>();
+                var parameterObjects = new List<Parameter>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), true))
-                {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+             {
+                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
                     parameterAttribute.Parameter.DecodedType = property.PropertyType;
                     if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
                     {
@@ -111,7 +121,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
                     }
                    
                     parameterObjects.Add(parameterAttribute.Parameter);
-                }
+            }
             parameter.SetComponents(parameterObjects.ToArray());
         }
     }

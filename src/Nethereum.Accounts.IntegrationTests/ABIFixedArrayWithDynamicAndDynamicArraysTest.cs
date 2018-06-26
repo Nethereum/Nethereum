@@ -60,32 +60,33 @@ contract Test {
        return callContract(theOther, callData);
    }
 
-   function callContract(address contractAddress, bytes memory data) view internal  returns(bytes memory answer) {
+   //thanks to gonzalo and alex 
+    function  callContract(address contractAddress, bytes memory data)  internal view returns(bytes memory answer) {
 
-       uint256 length = data.length;
-       // uint256 size = 0;
-       assembly {
+        uint256 length = data.length;
+        uint256 size = 0;
+        
+        assembly {
+            answer := mload(0x40)
 
-           let result := call(gas(), 
-               contractAddress, 
-               0, 
-               add(data, 0x20), 
-               length, 
-               //mload(data), 
-               0, 
-               0)
+            let result := staticcall(gas(),
+                contractAddress, 
+                add(data, 0x20), 
+                length, 
+                0, 
+                0)
+                
+            //todo return some error if result is 0
 
-           let size := returndatasize
+            size := returndatasize
+            returndatacopy(answer, 0, size)
+            mstore(answer, size)
+            mstore(0x40, add(answer,size))
+        }
 
-           answer := mload(0x40)
-
-           returndatacopy(answer, 0, size)
-           mstore(answer, size)
-           mstore(0x40, add(answer, size))
-       }
-
-       return answer;
-   }
+        return answer;
+     
+    }
 }
 
 contract TheOther

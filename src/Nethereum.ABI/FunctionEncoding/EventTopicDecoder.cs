@@ -12,13 +12,10 @@ namespace Nethereum.ABI.FunctionEncoding
             var type = typeof(T);
             var result = new T();
 
-#if DOTNET35
-            var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties().ToArray());
-#else
-            var properties = GetPropertiesWithParameterAttributes(type.GetTypeInfo().DeclaredProperties.ToArray());
-#endif
-            var indexedProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Parameter.Indexed == true).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order).ToArray();
-            var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>().Parameter.Indexed == false).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>().Order).ToArray();
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+
+            var indexedProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>(true).Parameter.Indexed == true).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order).ToArray();
+            var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>(true).Parameter.Indexed == false).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order).ToArray();
 
             var topicNumber = 0;
             foreach (var topic in topics)
@@ -28,7 +25,7 @@ namespace Nethereum.ABI.FunctionEncoding
                 {
                     var property = indexedProperties[topicNumber - 1];
                         
-                    var attribute = property.GetCustomAttribute<ParameterAttribute>();
+                    var attribute = property.GetCustomAttribute<ParameterAttribute>(true);
                     //skip dynamic types as the topic value is the sha3 keccak
                     if (!attribute.Parameter.ABIType.IsDynamic())
                     {

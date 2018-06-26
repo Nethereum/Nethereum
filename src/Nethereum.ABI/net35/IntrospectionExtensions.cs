@@ -16,7 +16,19 @@ namespace System.Reflection
 
         public static T GetCustomAttribute<T>(this Type type)
         {
-            var attributes = type.GetCustomAttributes(typeof(T), false);
+            return GetCustomAttribute<T>(type, false);
+        }
+
+        public static T GetCustomAttribute<T>(this Type type, bool inherited)
+        {
+            var attributes = type.GetCustomAttributes(typeof(T), inherited);
+            if (attributes.Length > 0) return (T)attributes[0];
+            return default(T);
+        }
+
+        public static T GetCustomAttribute<T>(this PropertyInfo propertyInfo, bool inherited)
+        {
+            var attributes = propertyInfo.GetCustomAttributes(typeof(T), inherited);
             if (attributes.Length > 0) return (T)attributes[0];
             return default(T);
         }
@@ -24,9 +36,7 @@ namespace System.Reflection
 
         public static T GetCustomAttribute<T>(this PropertyInfo propertyInfo)
         {
-            var attributes = propertyInfo.GetCustomAttributes(typeof(T), false);
-            if (attributes.Length > 0) return (T)attributes[0];
-            return default(T);
+            return GetCustomAttribute<T>(propertyInfo, false);
         }
 
         public static IEnumerable<PropertyInfo> DeclaredProperties(this Type type)

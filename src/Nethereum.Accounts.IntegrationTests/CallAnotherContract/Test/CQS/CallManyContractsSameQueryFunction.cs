@@ -9,11 +9,23 @@ using SolidityCallAnotherContract.Contracts.Test.DTOs;
 namespace SolidityCallAnotherContract.Contracts.Test.CQS
 {
     [Function("callManyContractsSameQuery", "bytes[]")]
-    public class CallManyContractsSameQueryFunction:ContractMessage
+    public class CallManyContractsSameQueryFunctionBase:ContractMessage
     {
         [Parameter("address[]", "destination", 1)]
-        public List<string> Destination {get; set;}
+        public List<BigInteger> Destination {get; set;}
         [Parameter("bytes", "data", 2)]
         public byte[] Data {get; set;}
     }
+
+    public partial class CallManyContractsSameQueryFunction : CallManyContractsSameQueryFunctionBase
+    {
+        
+    }
+
+    public partial class CallManyContractsSameQueryFunction : CallManyContractsSameQueryFunctionBase
+    {
+        [Parameter("address[]", "destination", 1)]
+        public new List<string> Destination { get; set; }
+    }
+
 }
