@@ -5,6 +5,36 @@ using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts.CQS
 {
+
+    public static class ContractMessageHexBigIntegerExtensions
+    {
+        public static HexBigInteger GetHexMaximumGas(this ContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.Gas);
+        }
+
+        public static HexBigInteger GetHexValue(this ContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.AmountToSend);
+        }
+
+        public static HexBigInteger GetHexGasPrice(this ContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.GasPrice);
+        }
+
+        public static HexBigInteger GetHexNonce(this ContractMessage contractMessage)
+        {
+            return GetDefaultValue(contractMessage.Nonce);
+        }
+
+        public static HexBigInteger GetDefaultValue(BigInteger? bigInteger)
+        {
+            return bigInteger == null ? null : new HexBigInteger(bigInteger.Value);
+        }
+    }
+
+
     public abstract class ContractHandlerBase<TContractMessage> where TContractMessage : ContractMessage
     {
         public EthApiContractService Eth { get; protected set; }
@@ -40,27 +70,22 @@ namespace Nethereum.Contracts.CQS
 
         protected virtual HexBigInteger GetMaximumGas(TContractMessage contractMessage)
         {
-            return GetDefaultValue(contractMessage.Gas);
+            return contractMessage.GetHexMaximumGas();
         }
 
         protected virtual HexBigInteger GetValue(TContractMessage contractMessage)
         {
-            return GetDefaultValue(contractMessage.AmountToSend);
+            return contractMessage.GetHexValue();
         }
 
         protected virtual HexBigInteger GetGasPrice(TContractMessage contractMessage)
         {
-            return GetDefaultValue(contractMessage.GasPrice);
+            return contractMessage.GetHexGasPrice();
         }
 
         protected virtual HexBigInteger GetNonce(TContractMessage contractMessage)
         {
-            return GetDefaultValue(contractMessage.Nonce);
-        }
-
-        protected HexBigInteger GetDefaultValue(BigInteger? bigInteger)
-        {
-            return bigInteger == null ? null : new HexBigInteger(bigInteger.Value);
+            return contractMessage.GetHexNonce();
         }
 
         protected virtual void ValidateContractMessage(TContractMessage contractMessage)

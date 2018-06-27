@@ -13,14 +13,8 @@ namespace Nethereum.Contracts.CQS
             string contractAddress)
         {
             ValidateContractMessage(functionMessage);
-            var function = GetFunction(contractAddress);
-            var transactionInput = function.CreateTransactionInput(
-                functionMessage,
-                GetDefaultAddressFrom(functionMessage),
-                GetMaximumGas(functionMessage),
-                GetGasPrice(functionMessage),
-                GetValue(functionMessage));
-            transactionInput.Nonce = GetNonce(functionMessage);
+            var transactionInput = functionMessage.CreateTransactionInput(contractAddress);
+            transactionInput.From = GetDefaultAddressFrom(functionMessage);
             return transactionInput;
         }
 
