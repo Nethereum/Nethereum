@@ -14,6 +14,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
 {
     public class WebSocketClient : ClientBase, IDisposable
     {
+        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         protected readonly string Path;
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 2000;
 
@@ -155,33 +156,38 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var logger = new RpcLogger(_log);
             try
             {
-                //lock (_lockingObject)
-               // {
-                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                    var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
-                    logger.LogRequest(rpcRequestJson);
-                    //add timeout;
-                    var webSocket = GetClientWebSocket();
-                    await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                       
-                    using (var memoryData = await ReceiveFullResponseAsync(webSocket))
+                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
+                logger.LogRequest(rpcRequestJson);
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(TimeSpan.FromMilliseconds(ConnectionTimeout));
+
+                var webSocket = GetClientWebSocket();
+                await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationTokenSource.Token)
+                    .ConfigureAwait(false);
+
+                using (var memoryData = await ReceiveFullResponseAsync(webSocket).ConfigureAwait(false))
+                {
+                    memoryData.Position = 0;
+                    using (var streamReader = new StreamReader(memoryData))
+                    using (var reader = new JsonTextReader(streamReader))
                     {
-                        memoryData.Position = 0;
-                        using (StreamReader streamReader = new StreamReader(memoryData))
-                        using (JsonTextReader reader = new JsonTextReader(streamReader))
-                        {
-                            var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            var message = serializer.Deserialize<TResponse>(reader);
-                            logger.LogResponse(message);
-                            return message;
-                        }
+                        var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                        var message = serializer.Deserialize<TResponse>(reader);
+                        logger.LogResponse(message);
+                        return message;
                     }
-                //}
+                }
             }
             catch (Exception ex)
             {
                 logger.LogException(ex);
                 throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+            }
+            finally
+            {
+                semaphoreSlim.Release();
             }
         }
 
