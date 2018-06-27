@@ -34,8 +34,8 @@ namespace Nethereum.Tutorials
         var web3 = new Geth.Web3Geth(account);
 
 
-          var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(byteCode, senderAddress, new HexBigInteger(900000));
-          var receipt = await MineAndGetReceiptAsync(web3, transactionHash);
+          var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(byteCode, senderAddress, new HexBigInteger(900000));
+          
           
           var contractAddress = receipt.ContractAddress;
 
@@ -45,10 +45,10 @@ namespace Nethereum.Tutorials
           var documentsFunction = contract.GetFunction("documents");
 
         
-          transactionHash = await storeFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null, "key1", "hello", "solidity is great");
-          transactionHash = await storeFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null,  "key1", "hello again", "ethereum is great");
+          var transactionHash = await storeFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null, "key1", "hello", "solidity is great");
+          receipt = await storeFunction.SendTransactionAndWaitForReceiptAsync(@from: senderAddress, gas: new HexBigInteger(900000),
+              gasPrice:null, receiptRequestCancellationToken:null, value:null, functionInput:new object[]{ "key1", "hello again", "ethereum is great"}).ConfigureAwait(false);
           
-          receipt = await MineAndGetReceiptAsync(web3, transactionHash);
           
           var result = await documentsFunction.CallDeserializingToObjectAsync<Document>("key1", 0);
           var result2 = await documentsFunction.CallDeserializingToObjectAsync<Document>("key1", 1);
@@ -82,24 +82,6 @@ namespace Nethereum.Tutorials
 
             [Parameter("address", "sender", 3)]
             public string Sender {get; set;}
-        }
-
-
-        public async Task<TransactionReceipt> MineAndGetReceiptAsync(Geth.Web3Geth web3, string transactionHash){
-
-          var miningResult = await web3.Miner.Start.SendRequestAsync(6);
-         
-          
-          var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-
-          while(receipt == null){
-              Thread.Sleep(1000);
-              receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
-          }
-          
-          miningResult = await web3.Miner.Stop.SendRequestAsync();
-          Assert.True(miningResult);
-          return receipt;
         }
 
     }

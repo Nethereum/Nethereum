@@ -27,8 +27,9 @@ namespace Nethereum.Tutorials
             //using the specific geth web3 library to allow us manage the mining.
           var web3 = new Geth.Web3Geth(account);
 
+            //assumed we are mining already, no need to manage it using Nethereum
             // start mining
-           await web3.Miner.Start.SendRequestAsync(6);
+            // await web3.Miner.Start.SendRequestAsync(6);
 
 
           var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null, multiplier);
@@ -48,7 +49,7 @@ namespace Nethereum.Tutorials
           var transactionHash = await multiplyFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000), null,  7);
           receipt =  await multiplyFunction.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000), null, null, 8);
 
-          var miningResult = await web3.Miner.Stop.SendRequestAsync();
+          //var miningResult = await web3.Miner.Stop.SendRequestAsync();
 
           var log = await multiplyEvent.GetFilterChanges<MultipliedEvent>(filterAll);
           var log7 = await multiplyEvent.GetFilterChanges<MultipliedEvent>(filter7);

@@ -29,10 +29,12 @@ namespace Nethereum.Tutorials
 
           var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(3000000), null, multiplier);
 
-          var miningResult = await web3.Miner.Start.SendRequestAsync(6);
-    
-          
-          var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+            //assumed we are mining already, no need to manage it using Nethereum
+            // start mining
+            // await web3.Miner.Start.SendRequestAsync(6);
+
+
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 
           while(receipt == null){
               Thread.Sleep(1000);
