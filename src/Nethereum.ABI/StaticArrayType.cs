@@ -11,7 +11,7 @@ namespace Nethereum.ABI
         public StaticArrayType(string name) : base(name)
         {
             IntialiseSize(name);
-            Decoder = new ArrayTypeDecoder(ElementType);
+            Decoder = new ArrayTypeDecoder(ElementType, Size);
             Encoder = new StaticArrayTypeEncoder(ElementType, Size);
         }
 
@@ -23,8 +23,8 @@ namespace Nethereum.ABI
         {
             var indexFirstBracket = name.IndexOf("[", StringComparison.Ordinal);
             var indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);
-            var dim = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
-            Size = int.Parse(dim);
+            var arraySize = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
+            Size = int.Parse(arraySize);
         }
     }
 }

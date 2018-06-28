@@ -12,7 +12,7 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var type = typeof(T);
 
-            var function = type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>();
+            var function = type.GetTypeInfo().GetCustomAttribute<FunctionAttribute>(true);
             if (function == null)
                 throw new ArgumentException("Function Attribute is required", nameof(functionInput));
 

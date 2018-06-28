@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
@@ -37,6 +38,8 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transactionInput);
         }
 
+   
+
 #if !DOTNET35
         protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput,
             CancellationTokenSource receiptRequestCancellationToken = null)
@@ -47,6 +50,28 @@ namespace Nethereum.Contracts
 #endif
 
 #if !DOTNET35
+
+        protected async Task<byte[]> CallRawAsync(CallInput callInput)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(callInput, DefaultBlock)
+                        .ConfigureAwait(false);
+
+
+            return result.HexToByteArray();
+        }
+
+        protected async Task<byte[]> CallRawAsync(CallInput callInput, BlockParameter block)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(callInput, block)
+                        .ConfigureAwait(false);
+
+            return result.HexToByteArray();
+        }
+
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput)
         {
             var result =

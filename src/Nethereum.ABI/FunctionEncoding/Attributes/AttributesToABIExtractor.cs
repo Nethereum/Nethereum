@@ -67,43 +67,31 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
 
         public Parameter[] ExtractParametersFromAttributes(Type contractMessageType)
         {
-#if DOTNET35
-            var properties = contractMessageType.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = contractMessageType.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(contractMessageType);
             var parameters = new List<Parameter>();
 
             foreach (var property in properties)
             {
-                if (property.IsDefined(typeof(ParameterAttribute), true))
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
+                if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
                 {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-                    if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
-                    {
-                        InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
-                    }
-                    parameters.Add(parameterAttribute.Parameter);
+                    InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
                 }
+                parameters.Add(parameterAttribute.Parameter);   
             }
-
             return parameters.ToArray();
         }
 
 
         public void InitTupleComponentsFromTypeAttributes(Type type, TupleType parameter)
         {
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
-            var parameterObjects = new List<Parameter>();
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+            var parameters = new List<Parameter>();
+                var parameterObjects = new List<Parameter>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), true))
-                {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+             {
+                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
                     parameterAttribute.Parameter.DecodedType = property.PropertyType;
                     if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
                     {
@@ -111,7 +99,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
                     }
                    
                     parameterObjects.Add(parameterAttribute.Parameter);
-                }
+            }
             parameter.SetComponents(parameterObjects.ToArray());
         }
     }

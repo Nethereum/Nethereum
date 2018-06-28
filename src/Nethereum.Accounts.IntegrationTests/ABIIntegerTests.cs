@@ -1,5 +1,4 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Threading.Tasks;
 using Common.Logging;
 using Common.Logging.Simple;
@@ -9,6 +8,7 @@ using Nethereum.Contracts.CQS;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+using static Nethereum.Accounts.IntegrationTests.ABIIntegerTests;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -65,7 +65,7 @@ namespace Nethereum.Accounts.IntegrationTests
 */
 
 
-        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+    private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public ABIIntegerTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {

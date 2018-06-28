@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.ABI.Decoders;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
@@ -37,6 +38,17 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
         }
 
         [Fact]
+        public async void ShouldGetTheDaiFromMainnet()
+        {
+            var web3 = new Web3.Web3("https://mainnet.infura.io");
+            var contractHandler = web3.Eth.GetContractHandler("0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359");
+            var stringBytes32Decoder = new StringBytes32Decoder();
+            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>();
+            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>();
+            
+        }
+
+        [Fact]
         public async void ShoulReturnData()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -50,11 +62,11 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
             });
 
             var contractHandler = web3.Eth.GetContractHandler(receipt.ContractAddress);
-            var symbol = await contractHandler.QueryAsync<SymbolFunction, string>();
-            var tokenName = await contractHandler.QueryAsync<NameFunction, string>();
+            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>();
+            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>();
 
             Assert.Equal("XST", symbol);
-            Assert.Equal("XomeStandardToken", tokenName);
+            Assert.Equal("XomeStandardToken", token);
         }
 
         [Fact]

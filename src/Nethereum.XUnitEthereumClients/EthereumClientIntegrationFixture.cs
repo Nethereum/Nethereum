@@ -30,6 +30,7 @@ namespace Nethereum.XUnitEthereumClients
     {
         public static IClient GetClient()
         {
+            //return new WebSocketClient("ws://localhost:8546");
             return new RpcClient(new Uri("http://localhost:8545"));
         }
     }
@@ -107,6 +108,7 @@ namespace Nethereum.XUnitEthereumClients
 
         public void Dispose()
         {
+            if(!_process.HasExited)
             _process.Kill();
             Thread.Sleep(2000);
             DeleteData();

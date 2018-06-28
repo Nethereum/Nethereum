@@ -27,7 +27,10 @@ namespace Nethereum.KeyStore.Crypto
                     throw new ArgumentException("Cost parameter N must be > 1 and < 65536.");
                 }
             }
-            return SCrypt.Generate(password, salt, n, r, p, dkLen);
+
+            //return SCrypt.Generate(password, salt, n, r, p, dkLen);
+            //Using Scrypt.Net instead of BC
+            return ScryptNet.CryptoScrypt(password, salt, n, r, p, dkLen);
         }
 
         public byte[] GenerateCipherKey(byte[] derivedKey)

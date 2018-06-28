@@ -31,14 +31,15 @@ namespace Nethereum.Tutorials
             //using the specific geth web3 library to allow us manage the mining.
             var web3 = new Geth.Web3Geth(account);
 
+            //assumed we are mining already, no need to manage it using Nethereum
             // start mining
-            await web3.Miner.Start.SendRequestAsync(6);
+            // await web3.Miner.Start.SendRequestAsync(6);
 
             var receipt =
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress, new Hex.HexTypes.HexBigInteger(900000), null, multiplier);
 
-            var mineResult = await web3.Miner.Stop.SendRequestAsync();
-            Assert.IsTrue(mineResult);
+            //var mineResult = await web3.Miner.Stop.SendRequestAsync();
+            //Assert.IsTrue(mineResult);
 
             var contractAddress = receipt.ContractAddress;
 

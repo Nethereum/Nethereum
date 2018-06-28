@@ -113,6 +113,31 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(byte.MaxValue, intresult);
         }
 
+        public enum TestEnum
+        {
+            Monkey,
+            Elephant,
+            Lion
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeEnum()
+        {
+            var intType = new IntType("int");
+            var result1 = intType.Encode(TestEnum.Monkey).ToHex();
+            var decresult1 = intType.Decode<TestEnum>(result1);
+            Assert.Equal(TestEnum.Monkey, decresult1);
+
+            var result2 = intType.Encode(TestEnum.Elephant).ToHex();
+            var decresult2 = intType.Decode<TestEnum>(result2);
+            Assert.Equal(TestEnum.Elephant, decresult2);
+
+            var result3 = intType.Encode(TestEnum.Lion).ToHex();
+            var decresult3 = intType.Decode<TestEnum>(result3);
+            Assert.Equal(TestEnum.Lion, decresult3);
+
+        }
+
 
         [Fact]
         public virtual void ShouldEncodeDecodeInt()

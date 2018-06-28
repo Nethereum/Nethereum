@@ -1,10 +1,38 @@
 ﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
 {
+
+    public static class AddressExtensions
+    {
+        public static string ConvertToEthereumChecksumAddress(this string address)
+        {
+           return AddressUtil.Current.ConvertToChecksumAddress(address);
+        }
+
+        public static bool IsEthereumChecksumAddress(this string address)
+        {
+            return AddressUtil.Current.IsChecksumAddress(address);
+        }
+    }
+
+
     public class AddressUtil
     {
+
+        private static AddressUtil _current;
+
+        public static AddressUtil Current
+        {
+            get
+            {
+                if (_current == null) _current = new AddressUtil();
+                return _current;
+            }
+        }
+
         public string ConvertToChecksumAddress(string address)
         {
             address = address.ToLower().RemoveHexPrefix();
@@ -30,6 +58,22 @@ namespace Nethereum.Util
             address = address.RemoveHexPrefix();
             return address.Length == 40;
         }
+
+        //public bool IsValidEthereumAddress(string address)
+        //{
+        //    Regex r = new Regex("^(0x){1}[0-9a-fA-F]{40}$");
+        //    // Doesn't match length, prefix and hex
+        //    if (!r.IsMatch(address))
+        //        return false;
+        //    // It's all lowercase, so no checksum needed
+        //    else if (address == address.ToLower())
+        //        return true;
+        //    // Do checksum
+        //    else
+        //    {
+        //        return new AddressUtil().IsChecksumAddress(address);
+        //    }
+        //}
 
         public bool IsChecksumAddress(string address)
         {
