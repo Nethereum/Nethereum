@@ -134,7 +134,7 @@ namespace Nethereum.Accounts.IntegrationTests
         {
             var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
             LogManager.Adapter = capturingLoggerAdapter;
-
+            
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync();
@@ -151,10 +151,12 @@ namespace Nethereum.Accounts.IntegrationTests
             var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
             LogManager.Adapter = capturingLoggerAdapter;
 
+            
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync();
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
+
             var result = await contractHandler.QueryAsync<MaxInt256Function, BigInteger>();
             Assert.Equal(result, BigInteger.Parse("57896044618658097711785492504343953926634992332820282019728792003956564819967"));
             Assert.Equal("RPC Response: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",

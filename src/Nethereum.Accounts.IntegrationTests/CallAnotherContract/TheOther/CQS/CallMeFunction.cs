@@ -8,7 +8,7 @@ using SolidityCallAnotherContract.Contracts.TheOther.DTOs;
 namespace SolidityCallAnotherContract.Contracts.TheOther.CQS
 {
     [Function("CallMe", "bytes")]
-    public class CallMeFunction:ContractMessage
+    public class CallMeFunction:FunctionMessage
     {
         [Parameter("string", "name", 1)]
         public string Name {get; set;}

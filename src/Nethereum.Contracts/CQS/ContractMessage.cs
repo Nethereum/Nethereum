@@ -10,4 +10,9 @@ namespace Nethereum.Contracts.CQS
         public string FromAddress { get; set; }
         public BigInteger? Nonce { get; set; }
     }
+
+    public class FunctionMessage : ContractMessage
+    {
+
+    }
 }

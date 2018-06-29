@@ -3,6 +3,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using System.Numerics;
+using System.Threading;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionReceipts;
 
@@ -22,6 +23,8 @@ namespace Nethereum.RPC.TransactionManagers
 
 #if !DOTNET35
         ITransactionReceiptService TransactionReceiptService { get; set; }
+        Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource);
 #endif
+
     }
 }

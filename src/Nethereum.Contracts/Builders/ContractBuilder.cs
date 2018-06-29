@@ -37,30 +37,24 @@ namespace Nethereum.Contracts
 
         public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = new NewFilterInput
-            {
-                FromBlock = fromBlock,
-                ToBlock = toBlock ?? BlockParameter.CreateLatest(),
-                Address = new[] {Address}
-            };
-            return ethFilterInput;
+            return FilterInputBuilder.GetDefaultFilterInput(Address, fromBlock, toBlock);
         }
 
         public EventBuilder GetEventBuilder(string name)
         {
-            return new EventBuilder(this, GetEventAbi(name));
+            return new EventBuilder(Address, GetEventAbi(name));
         }
 
         public FunctionBuilder<TFunction> GetFunctionBuilder<TFunction>()
         {
             var function = FunctionAttribute.GetAttribute<TFunction>();
             if (function == null) throw new Exception("Invalid TFunction required a Function Attribute");
-            return new FunctionBuilder<TFunction>(this, GetFunctionAbi(function.Name));
+            return new FunctionBuilder<TFunction>(Address, GetFunctionAbi(function.Name));
         }
 
         public FunctionBuilder GetFunctionBuilder(string name)
         {
-            return new FunctionBuilder(this, GetFunctionAbi(name));
+            return new FunctionBuilder(Address, GetFunctionAbi(name));
         }
 
         private EventABI GetEventAbi(string name)

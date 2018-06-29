@@ -179,7 +179,7 @@ namespace Nethereum.Contracts.CQS
         {
             SetAddressFrom(ethereumContractFunctionMessage);
             var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
-            return queryHandler.QueryRawAsync(ethereumContractFunctionMessage,
+            return queryHandler.QueryRawAsBytesAsync(ethereumContractFunctionMessage,
                 ContractAddress, blockParameter);
         }
 

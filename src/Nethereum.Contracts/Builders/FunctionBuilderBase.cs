@@ -8,19 +8,20 @@ namespace Nethereum.Contracts
 {
     public abstract class FunctionBuilderBase
     {
-        private readonly ContractBuilder _contract;
-
-        protected FunctionBuilderBase(ContractBuilder contract, FunctionABI functionAbi)
+        protected FunctionBuilderBase(string contractAddress, FunctionABI functionAbi):this(contractAddress)
         {
-            FunctionABI = functionAbi;
-            _contract = contract;
+            FunctionABI = functionAbi;   
+        }
+
+        protected FunctionBuilderBase(string contractAddress)
+        {
+            ContractAddress = contractAddress;
             FunctionCallDecoder = new FunctionCallDecoder();
             FunctionCallEncoder = new FunctionCallEncoder();
         }
+    
 
-        // public BlockParameter DefaultBlock => _contract.DefaultBlock;
-
-        public string ContractAddress => _contract.Address;
+        public string ContractAddress { get; set; }
 
         protected FunctionCallDecoder FunctionCallDecoder { get; set; }
 

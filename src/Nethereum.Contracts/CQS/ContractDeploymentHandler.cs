@@ -9,49 +9,34 @@ namespace Nethereum.Contracts.CQS
     public class ContractDeploymentHandler<TContractDeploymentMessage> : ContractHandlerBase<TContractDeploymentMessage>
         where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
-        public string GetData(TContractDeploymentMessage contractDeploymentMessage)
-        {
-            ValidateContractMessage(contractDeploymentMessage);
-            var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
-            return deployContractTransactionBuilder.GetData(contractDeploymentMessage.ByteCode, contractDeploymentMessage);
-        }
 
-        public TransactionInput CreateTransactionInput(
-            TContractDeploymentMessage contractDeploymentMessage)
-        {
-            ValidateContractMessage(contractDeploymentMessage);
-            var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
-            var transactionInput =  deployContractTransactionBuilder.BuildTransaction(contractDeploymentMessage.ByteCode,
-                GetDefaultAddressFrom(contractDeploymentMessage),
-                GetMaximumGas(contractDeploymentMessage), GetGasPrice(contractDeploymentMessage), GetValue(contractDeploymentMessage),
-                contractDeploymentMessage);
-            transactionInput.Nonce = GetNonce(contractDeploymentMessage);
-            return transactionInput;
-        }
-
+        private DeploymentMessageEncodingService<TContractDeploymentMessage> _deploymentMessageEncodingService = new DeploymentMessageEncodingService<TContractDeploymentMessage>();
 #if !DOTNET35
 
         public async Task<string> SignTransactionAsync(TContractDeploymentMessage contractDeploymentMessage,
             string contractAddress, bool estimateGas = true)
         {
+            EnsureInitEncodingService();
             TransactionInput transactionInput = null;
             if (estimateGas)
                 transactionInput = await CreateTransactionInputEstimatingGasAsync(contractDeploymentMessage).ConfigureAwait(false);
             else
-                transactionInput = CreateTransactionInput(contractDeploymentMessage);
+                transactionInput = _deploymentMessageEncodingService.CreateTransactionInput(contractDeploymentMessage);
             return await this.Eth.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
         public async Task<string> SignTransactionRetrievingNextNonceAsync(TContractDeploymentMessage contractDeploymentMessage,
             string contractAddress, bool estimateGas = true)
         {
+            EnsureInitEncodingService();
             TransactionInput transactionInput = null;
             if (estimateGas)
                 transactionInput = await CreateTransactionInputEstimatingGasAsync(contractDeploymentMessage).ConfigureAwait(false);
             else
-                transactionInput = CreateTransactionInput(contractDeploymentMessage);
+                transactionInput = _deploymentMessageEncodingService.CreateTransactionInput(contractDeploymentMessage);
             return await this.Eth.TransactionManager.SignTransactionRetrievingNextNonceAsync(transactionInput).ConfigureAwait(false);
         }
+
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(CancellationTokenSource tokenSource = null)
         {
             var contractDeploymentMessage = new TContractDeploymentMessage();
@@ -61,9 +46,11 @@ namespace Nethereum.Contracts.CQS
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
             TContractDeploymentMessage contractDeploymentMessage, CancellationTokenSource tokenSource = null)
         {
-            ValidateContractMessage(contractDeploymentMessage);
+            EnsureInitEncodingService();
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
-            return await SendRequestAndWaitForReceiptAsync(contractDeploymentMessage, gasEstimate, tokenSource);
+            contractDeploymentMessage.Gas = gasEstimate;
+            var transactionInput = _deploymentMessageEncodingService.CreateTransactionInput(contractDeploymentMessage);
+            return await Eth.TransactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput,  tokenSource).ConfigureAwait(false);
         }
 
         public Task<string> SendRequestAsync()
@@ -74,69 +61,42 @@ namespace Nethereum.Contracts.CQS
 
         public async Task<string> SendRequestAsync(TContractDeploymentMessage contractDeploymentMessage)
         {
-            ValidateContractMessage(contractDeploymentMessage);
+            EnsureInitEncodingService();
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
-            return await SendRequestAsync(contractDeploymentMessage, gasEstimate).ConfigureAwait(false);
+            contractDeploymentMessage.Gas = gasEstimate;
+            var transactionInput = _deploymentMessageEncodingService.CreateTransactionInput(contractDeploymentMessage);
+            return await Eth.TransactionManager.SendTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
-        public async Task<TransactionInput> CreateTransactionInputEstimatingGasAsync(
-            TContractDeploymentMessage contractDeploymentMessage)
+        public async Task<TransactionInput> CreateTransactionInputEstimatingGasAsync(TContractDeploymentMessage contractDeploymentMessage)
         {
-            ValidateContractMessage(contractDeploymentMessage);
+            EnsureInitEncodingService();
             var gasEstimate = await GetOrEstimateMaximumGas(contractDeploymentMessage).ConfigureAwait(false);
-            var deployContractTransactionBuilder = new DeployContractTransactionBuilder();
-            var transactionInput = deployContractTransactionBuilder.BuildTransaction(contractDeploymentMessage.ByteCode,
-                GetDefaultAddressFrom(contractDeploymentMessage),
-                gasEstimate, GetGasPrice(contractDeploymentMessage), GetValue(contractDeploymentMessage),
-                contractDeploymentMessage);
-            transactionInput.Nonce = GetNonce(contractDeploymentMessage);
-            return transactionInput;
+            contractDeploymentMessage.Gas = gasEstimate;
+            return _deploymentMessageEncodingService.CreateTransactionInput(contractDeploymentMessage);
+        }
+
+        public Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage functionMessage)
+        {
+            EnsureInitEncodingService();
+            var callInput = _deploymentMessageEncodingService.CreateCallInput(functionMessage);
+            return Eth.TransactionManager.EstimateGasAsync(callInput);
         }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(
             TContractDeploymentMessage contractDeploymentMessage)
         {
-            var maxGas = GetMaximumGas(contractDeploymentMessage);
-
+            var maxGas = contractDeploymentMessage.GetHexMaximumGas();
             if (maxGas == null)
                 maxGas = await EstimateGasAsync(contractDeploymentMessage).ConfigureAwait(false);
-
             return maxGas;
         }
 
-        protected Task<string> SendRequestAsync(TContractDeploymentMessage contractDeploymentMessage,
-            HexBigInteger gasEstimate)
+        private void EnsureInitEncodingService()
         {
-            return Eth.DeployContract.SendRequestAsync(contractDeploymentMessage.ByteCode,
-                GetDefaultAddressFrom(contractDeploymentMessage),
-                gasEstimate,
-                GetGasPrice(contractDeploymentMessage),
-                GetValue(contractDeploymentMessage),
-                GetNonce(contractDeploymentMessage),
-                contractDeploymentMessage);
+            _deploymentMessageEncodingService.DefaultAddressFrom = GetAccountAddressFrom();
         }
 
-        protected Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
-            TContractDeploymentMessage contractDeploymentMessage, HexBigInteger gasEstimate,
-            CancellationTokenSource tokenSource = null)
-        {
-            return Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractDeploymentMessage.ByteCode,
-                GetDefaultAddressFrom(contractDeploymentMessage),
-                gasEstimate,
-                GetGasPrice(contractDeploymentMessage),
-                GetValue(contractDeploymentMessage),
-                GetNonce(contractDeploymentMessage),
-                contractDeploymentMessage,
-                tokenSource);
-        }
-       
-        public Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage contractDeploymentMessage)
-        {
-            ValidateContractMessage(contractDeploymentMessage);
-            return Eth.DeployContract.EstimateGasAsync(contractDeploymentMessage.ByteCode,
-                GetDefaultAddressFrom(contractDeploymentMessage), null, GetValue(contractDeploymentMessage),
-                contractDeploymentMessage);
-        }
 #endif
     }
 }

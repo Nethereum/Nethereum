@@ -201,7 +201,6 @@ namespace Nethereum.Contracts
             return DecodeAllEventsForEvent<T>(logs);
         }
 
-
         public static List<EventLog<T>> DecodeAllEvents(FilterLog[] logs) 
         {
             return DecodeAllEvents<T>(logs);

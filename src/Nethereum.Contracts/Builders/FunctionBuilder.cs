@@ -8,8 +8,9 @@ namespace Nethereum.Contracts
 {
     public class FunctionBuilder : FunctionBuilderBase
     {
-        public FunctionBuilder(ContractBuilder contract, FunctionABI function)
-            : base(contract, function)
+
+        public FunctionBuilder(string contractAddress, FunctionABI function)
+            : base(contractAddress, function)
         {
         }
 
@@ -60,10 +61,17 @@ namespace Nethereum.Contracts
         }
     }
 
+
     public class FunctionBuilder<TFunctionInput> : FunctionBuilderBase
     {
-        public FunctionBuilder(ContractBuilder contract, FunctionABI function)
-            : base(contract, function)
+        public FunctionBuilder(string contractAddres):base(contractAddres)
+        {
+
+            FunctionABI = ABITypedRegistry.GetFunctionABI<TFunctionInput>();
+        }
+
+        public FunctionBuilder(string contractAddress, FunctionABI function)
+            : base(contractAddress, function)
         {
         }
 

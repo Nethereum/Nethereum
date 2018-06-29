@@ -11,7 +11,7 @@ namespace Nethereum.Contracts.CQS
     {
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGas(TFunctionDTO functionMessage)
         {
-            var maxGas = GetMaximumGas(functionMessage);
+            var maxGas = functionMessage.GetHexMaximumGas();
 
             if (maxGas == null)
                 maxGas = await EstimateGasAsync(functionMessage).ConfigureAwait(false);
