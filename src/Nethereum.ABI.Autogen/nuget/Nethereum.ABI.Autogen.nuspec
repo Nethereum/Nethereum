@@ -14,8 +14,8 @@
   </metadata>
 
   <files>
-    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.0\publish\*.dll" target="tools" />
-    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.0\publish\*.json" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.dll" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.json" target="tools" />
     <file src="Nethereum.ABI.Autogen.targets" target="build" />
   </files>
 </package>
