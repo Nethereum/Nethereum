@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Generators.Core;
+using System.Collections.Generic;
 using System.IO;
-using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.Net
 {
@@ -19,16 +19,19 @@ namespace Nethereum.Generators.Net
         public static void WriteFileToDisk(GeneratedFile generatedFile)
         {
             //soft handling empty code
-            if (!string.IsNullOrEmpty(generatedFile.GeneratedCode))
-            {
-                if (!Directory.Exists(generatedFile.OutputFolder))
-                    Directory.CreateDirectory(generatedFile.OutputFolder);
+            if (string.IsNullOrWhiteSpace(generatedFile.GeneratedCode))
+                return;
 
-                using (var file = File.CreateText(Path.Combine(generatedFile.OutputFolder, generatedFile.FileName)))
-                {
-                    file.Write(generatedFile.GeneratedCode);
-                    file.Flush();
-                }
+            if (!Directory.Exists(generatedFile.OutputFolder))
+                Directory.CreateDirectory(generatedFile.OutputFolder);
+
+            if (generatedFile.ExistsOnDiskWithSameContent())
+                return;
+
+            using (var file = File.CreateText(generatedFile.GetFullPath()))
+            {
+                file.Write(generatedFile.GeneratedCode);
+                file.Flush();
             }
         }
 
