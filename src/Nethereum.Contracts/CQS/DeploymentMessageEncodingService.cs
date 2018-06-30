@@ -7,6 +7,12 @@ namespace Nethereum.Contracts.CQS
         protected DeployContractTransactionBuilder DeployContractTransactionBuilder { get; set; }
         public string DefaultAddressFrom { get; set; }
 
+        public DeploymentMessageEncodingService(string defaultAddressFrom = null)
+        {
+            DeployContractTransactionBuilder = new DeployContractTransactionBuilder();
+            DefaultAddressFrom = defaultAddressFrom;
+        }
+
         public TransactionInput CreateTransactionInput(TContractDeployment contractMessage)
         {
             var transactionInput = DeployContractTransactionBuilder.BuildTransaction<TContractDeployment>(

@@ -50,7 +50,7 @@ namespace Nethereum.JsonRpc.UnityClient
 
             unityRequest.downloadHandler = new DownloadHandlerBuffer();
                 
-            yield return unityRequest.Send();
+            yield return unityRequest.SendWebRequest();
             
             if(unityRequest.error != null) 
             {

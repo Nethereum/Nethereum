@@ -15,7 +15,8 @@ namespace Nethereum.Contracts.CQS
 
         private string _defaultAddressFrom;
 
-        public List<IQueryHandlerPreRequestHandler<TContractMessage>> QueryHandlerPreRequestHandlers { get; set; }
+        public List<IQueryHandlerPreRequestHandler<TContractMessage>> QueryHandlerPreRequestHandlers { get; set; } =
+            new List<IQueryHandlerPreRequestHandler<TContractMessage>>();
 
         public ContractQueryHandler()
         {
