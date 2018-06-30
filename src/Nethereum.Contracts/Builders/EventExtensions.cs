@@ -277,15 +277,16 @@ namespace Nethereum.Contracts
             return eventABI.DecodeAllEvents<TEventDTO>(logs);
         }
 
-        public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this EventABI eventABI, JArray logs) where TEventDTO : new()
-        {
-            return DecodeAllEvents<TEventDTO>(GetLogsForEvent(eventABI, logs));
-        }
 
         public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(FilterLog[] logs) where TEventDTO : new()
         {
             var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
             return DecodeAllEvents<TEventDTO>(eventABI, logs);
+        }
+
+        public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this EventABI eventABI, JArray logs) where TEventDTO : new()
+        {
+            return DecodeAllEvents<TEventDTO>(eventABI, GetLogsForEvent(eventABI, logs));
         }
 
         public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this EventABI eventABI, FilterLog[] logs) where TEventDTO : new()
@@ -304,18 +305,24 @@ namespace Nethereum.Contracts
             return result;
         }
 
-        public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(FilterLog log) where TEventDTO : new()
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.DecodeEvent<TEventDTO>(log);
-        }
-
         public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(this EventABI eventABI, FilterLog log) where TEventDTO : new()
         {
             if (!IsLogForEvent(eventABI, log)) return null;
             var eventDecoder = new EventTopicDecoder();
             var eventObject = eventDecoder.DecodeTopics<TEventDTO>(log.Topics, log.Data);
             return new EventLog<TEventDTO>(eventObject, log);
+        }
+
+        public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(FilterLog log) where TEventDTO : new()
+        {
+            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
+            return eventABI.DecodeEvent<TEventDTO>(log);
+        }
+
+        public static TEventDTO DecodeEvent<TEventDTO>(this TEventDTO eventDTO, JToken log) where TEventDTO : IEventDTO
+        {
+            var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
+            return DecodeEvent<TEventDTO>(eventDTO, filterLog);
         }
 
         public static TEventDTO DecodeEvent<TEventDTO>(this TEventDTO eventDTO, FilterLog log) where TEventDTO : IEventDTO

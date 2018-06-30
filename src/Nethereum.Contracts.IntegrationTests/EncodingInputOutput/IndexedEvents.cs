@@ -33,7 +33,8 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
                 "0x6060604052341561000f57600080fd5b5b60bd8061001e6000396000f300606060405263ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166332b7a7618114603c575b600080fd5b3415604657600080fd5b604c604e565b005b600460027f07392b89121f4d481601a3db92f2daf8c73cc086a942b4522c58abcbdeac4d016001600360405191825260208201526040908101905180910390a35b5600a165627a7a723058202af7567cbbe622cac1fcce7d7f4aa0be6c879974474c7f7580a9fea9d4dfa5850029"
             ;
 
-        public class EventEventDTO
+        [Event("Event")]
+        public class EventEventDTO: IEventDTO
         {
             [Parameter("uint256", "first", 1, false)]
             public BigInteger First { get; set; }
@@ -66,6 +67,29 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 
             var eventLog = contract.GetEvent("Event");
             var events = eventLog.DecodeAllEventsForEvent<EventEventDTO>(receipt.Logs);
+
+            Assert.Equal(1, events[0].Event.First);
+            Assert.Equal(2, events[0].Event.Second);
+            Assert.Equal(3, events[0].Event.Third);
+            Assert.Equal(4, events[0].Event.Fourth);
+        }
+
+        [Fact]
+        public async void ShouldBeParsedInAnyOrderUsingExtensions()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var senderAddress = AccountFactory.Address;
+
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(BYTE_CODE, senderAddress,
+                    new HexBigInteger(900000), null);
+            var contract = web3.Eth.GetContract(ABI, receipt.ContractAddress);
+
+            var function = contract.GetFunction("sendEvent");
+            receipt = await function.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000),
+                null, null);
+
+            var events = EventExtensions.DecodeAllEvents<EventEventDTO>(receipt.Logs);
 
             Assert.Equal(1, events[0].Event.First);
             Assert.Equal(2, events[0].Event.Second);
