@@ -6,7 +6,6 @@ using Nethereum.Hex.HexTypes;
 using System.Collections;
 using System;
 using Nethereum.Contracts.CQS;
-using UnityEngine;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
@@ -57,14 +56,14 @@ namespace Nethereum.JsonRpc.UnityClient
             {
                 yield return _ethEstimateGasUnityRequest.SendRequest(transactionInput);
 
-                if (_transactionCountRequest.Exception == null)
+                if (_ethEstimateGasUnityRequest.Exception == null)
                 {
-                    var gas = _transactionCountRequest.Result;
+                    var gas = _ethEstimateGasUnityRequest.Result;
                     transactionInput.Gas = gas;
                 }
                 else
                 {
-                    this.Exception = _transactionCountRequest.Exception;
+                    this.Exception = _ethEstimateGasUnityRequest.Exception;
                     yield break;
                 }
             }
@@ -105,7 +104,7 @@ namespace Nethereum.JsonRpc.UnityClient
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(_privateKey, _account, value.Value, nonce,
+            var signedTransaction = _transactionSigner.SignTransaction(_privateKey, transactionInput.To, value.Value, nonce,
                 gasPrice.Value, gasLimit.Value, transactionInput.Data);
             
             

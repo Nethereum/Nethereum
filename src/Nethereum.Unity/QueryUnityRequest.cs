@@ -12,16 +12,21 @@ namespace Nethereum.JsonRpc.UnityClient
     {
         private string _url;
         private readonly EthCallUnityRequest _ethCallUnityRequest;
+        public string DefaultAccount { get; set; }
 
-        public QueryUnityRequest(string url)
+        public QueryUnityRequest(string url, string defaultAccount)
         {
             _url = url;
+            DefaultAccount = defaultAccount;
             _ethCallUnityRequest = new EthCallUnityRequest(_url);
         }
 
         public IEnumerator Query(TFunctionMessage functionMessage, string contractAddress,
             BlockParameter blockParameter = null)
         {
+            if(blockParameter == null) blockParameter = BlockParameter.CreateLatest();
+
+            functionMessage.SetDefaultFromAddressIfNotSet(DefaultAccount);
             var callInput = functionMessage.CreateCallInput(contractAddress);
 
             yield return _ethCallUnityRequest.SendRequest(callInput, blockParameter);
