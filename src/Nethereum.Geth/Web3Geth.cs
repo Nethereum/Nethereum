@@ -29,12 +29,15 @@ namespace Nethereum.Geth
 
         public MinerApiService Miner { get; private set; }
 
+        public GethEthApiService GethEth { get; private set; }
+
         protected override void InitialiseInnerServices()
         {
             base.InitialiseInnerServices();
             Miner = new MinerApiService(Client);
             Debug = new DebugApiService(Client);
             Admin = new AdminApiService(Client);
+            GethEth = new GethEthApiService(Client);
         }
     }
 }
