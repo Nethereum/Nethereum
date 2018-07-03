@@ -17,6 +17,7 @@ namespace Nethereum.RPC.Eth.Services
             GetTransactionReceipt = new EthGetTransactionReceipt(client);
             SendRawTransaction = new EthSendRawTransaction(client);
             SendTransaction = new EthSendTransaction(client);
+            PendingTransactions = new EthPendingTransactions(client);
         }
 
         public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; private set; }
@@ -28,6 +29,7 @@ namespace Nethereum.RPC.Eth.Services
         public EthSendTransaction SendTransaction { get; private set; }
         public EthCall Call { get; }
         public EthEstimateGas EstimateGas { get; private set; }
+        public EthPendingTransactions PendingTransactions { get; }
 
         public void SetDefaultBlock(BlockParameter blockParameter)
         {
