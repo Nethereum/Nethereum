@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Unity</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>net35</TargetFrameworks>
+    <TargetFrameworks>net35;net461</TargetFrameworks>
     <AssemblyName>Nethereum.Unity</AssemblyName>
     <PackageId>Nethereum.Unity</PackageId>
     <PackageTags>Netherum;Unity3d;Unity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
@@ -21,10 +21,12 @@
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
+  <!--<ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">-->
+  <ItemGroup>
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <!--</ItemGroup>-->
 
 </Project>
