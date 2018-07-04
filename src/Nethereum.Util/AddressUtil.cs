@@ -4,24 +4,8 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
 {
-
-    public static class AddressExtensions
-    {
-        public static string ConvertToEthereumChecksumAddress(this string address)
-        {
-           return AddressUtil.Current.ConvertToChecksumAddress(address);
-        }
-
-        public static bool IsEthereumChecksumAddress(this string address)
-        {
-            return AddressUtil.Current.IsChecksumAddress(address);
-        }
-    }
-
-
     public class AddressUtil
     {
-
         private static AddressUtil _current;
 
         public static AddressUtil Current
@@ -59,21 +43,14 @@ namespace Nethereum.Util
             return address.Length == 40;
         }
 
-        //public bool IsValidEthereumAddress(string address)
-        //{
-        //    Regex r = new Regex("^(0x){1}[0-9a-fA-F]{40}$");
-        //    // Doesn't match length, prefix and hex
-        //    if (!r.IsMatch(address))
-        //        return false;
-        //    // It's all lowercase, so no checksum needed
-        //    else if (address == address.ToLower())
-        //        return true;
-        //    // Do checksum
-        //    else
-        //    {
-        //        return new AddressUtil().IsChecksumAddress(address);
-        //    }
-        //}
+        /// <summary>
+        /// Validates if the hex string is 40 alphanumeric characters
+        /// </summary>
+        public bool IsValidEthereumAdressHexFormat(string address)
+        {
+            var r = new Regex("^(0x){1}[0-9a-fA-F]{40}$");
+            return r.IsMatch(address);
+        }
 
         public bool IsChecksumAddress(string address)
         {

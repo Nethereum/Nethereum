@@ -10,6 +10,25 @@ namespace Nethereum.Util.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldValidateAddressHexFormat()
+        {
+            var address1 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+            var address2 = "0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+            Assert.True(address1.IsValidEthereumAddressHexFormat());
+            Assert.True(address2.IsValidEthereumAddressHexFormat());
+
+            var address3 = "5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+            Assert.False(address3.IsValidEthereumAddressHexFormat());
+            //length
+            var address4 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1Be";
+            Assert.False(address4.IsValidEthereumAddressHexFormat());
+            //non alpha
+            //length
+            var address5 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA'#";
+            Assert.False(address5.IsValidEthereumAddressHexFormat());
+        }
+
+        [Fact]
         public virtual void ShouldCheckIsCheckSumAddress()
         {
             var address1 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
