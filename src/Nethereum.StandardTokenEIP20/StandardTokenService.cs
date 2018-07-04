@@ -82,6 +82,12 @@ namespace Nethereum.StandardTokenEIP20
            return await function.SendTransactionAsync(addressFrom, gas, null, addressTo, value);
         }
 
+        public async Task<string> TransferAsync<T>(string addressFrom, string addressTo, T value, HexBigInteger gas, HexBigInteger gasPrice)
+        {
+            var function = GetTransferFunction();                        
+            return await function.SendTransactionAsync(addressFrom, gas, gasPrice, null, addressTo, value);
+        }
+
         public async Task<string> TransferAsync(TransferFunction transferMessage)
         {
             return await ContractHandler.SendRequestAsync(transferMessage).ConfigureAwait(false);
