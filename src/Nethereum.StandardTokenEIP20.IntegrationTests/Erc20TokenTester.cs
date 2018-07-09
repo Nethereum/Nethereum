@@ -5,7 +5,7 @@ using Nethereum.ABI.Decoders;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
-using Nethereum.StandardTokenEIP20.CQS;
+using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.StandardTokenEIP20.Events.DTO;
 using Nethereum.XUnitEthereumClients;
 using Xunit;

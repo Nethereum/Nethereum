@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractHandler">
+    <Position X="2.75" Y="0.5" Width="6" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryHandler&lt;TFunctionMessage&gt;">
+    <Position X="1" Y="8.25" Width="3.75" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryHandlerBase&lt;TFunctionMessage&gt;">
+    <Position X="3.75" Y="5.25" Width="3.25" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryEthApiHandler&lt;TFunctionMessage&gt;">
+    <Position X="5.5" Y="8.25" Width="4.5" />
+    <TypeIdentifier />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

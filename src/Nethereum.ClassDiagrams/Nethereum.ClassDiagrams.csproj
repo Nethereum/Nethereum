@@ -122,6 +122,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AccountTransactionManagerNonceService.cd" />
+    <None Include="ContractHandlers.cd" />
     <None Include="Web3.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

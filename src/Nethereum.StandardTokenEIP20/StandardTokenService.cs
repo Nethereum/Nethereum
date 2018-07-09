@@ -6,7 +6,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.StandardTokenEIP20.CQS;
+using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
 
 namespace Nethereum.StandardTokenEIP20

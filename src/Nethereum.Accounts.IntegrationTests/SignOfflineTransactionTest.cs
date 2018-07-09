@@ -2,6 +2,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.Extensions;
 using Nethereum.Web3.Accounts;
 using Xunit;
 
@@ -33,6 +34,8 @@ namespace Nethereum.Accounts.IntegrationTests
                 Gas = 100, //we set the gas so it does not try to estimate it
                 GasPrice=100 // we set the gas price so it does not retrieve the latest averate
             };
+
+            
 
             var signedMessage = await web3.Eth.GetContractHandler("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe")
                 .SignTransactionAsync(transfer);
