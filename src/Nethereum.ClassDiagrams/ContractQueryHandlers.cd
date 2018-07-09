@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryHandler&lt;TFunctionMessage&gt;">
+    <Position X="0.75" Y="3.75" Width="3.75" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryHandlerBase&lt;TFunctionMessage&gt;">
+    <Position X="3.5" Y="0.5" Width="3.25" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryEthCallHandler&lt;TFunctionMessage&gt;">
+    <Position X="6.25" Y="3.75" Width="3" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.QueryHandlers.QueryRawHandler&lt;TFunctionMessage&gt;">
+    <Position X="0.5" Y="6.75" Width="3.75" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.QueryHandlers.QueryToDTOHandler&lt;TFunctionMessage, TFunctionOutput&gt;">
+    <Position X="6.75" Y="11.25" Width="2.75" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.QueryHandlers.QueryToSimpleTypeHandler&lt;TFunctionMessage, TFunctionOutput&gt;">
+    <Position X="1.5" Y="11.25" Width="3.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.QueryHandlers.QueryDecoderBaseHandler&lt;TFunctionMessage, TFunctionOutput&gt;">
+    <Position X="4.5" Y="8.25" Width="3" />
+    <TypeIdentifier />
+    <ShowAsAssociation>
+      <Property Name="QueryRawHandler" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

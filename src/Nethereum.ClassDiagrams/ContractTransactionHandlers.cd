@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractTransactionHandler&lt;TContractMessage&gt;">
+    <Position X="1" Y="3.75" Width="4.5" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.ContractHandlers.ContractTransactionHandlerBase">
+    <Position X="4.25" Y="0.5" Width="3" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="Nethereum.Contracts.CQS.TransactionEstimatorHandler&lt;TFunctionMessage&gt;">
+    <Position X="0.5" Y="8.75" Width="2.25" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.CQS.TransactionHandlerBase&lt;TFunctionMessage&gt;">
+    <Position X="6" Y="3.75" Width="3" />
+    <TypeIdentifier />
+    <ShowAsAssociation>
+      <Property Name="FunctionMessageEncodingService" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="Nethereum.Contracts.CQS.TransactionReceiptPollHandler&lt;TFunctionMessage&gt;">
+    <Position X="9.25" Y="8.75" Width="2.25" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.CQS.TransactionSenderHandler&lt;TFunctionMessage&gt;">
+    <Position X="3.75" Y="8.75" Width="1.75" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.CQS.TransactionSigner&lt;TFunctionMessage&gt;">
+    <Position X="6.75" Y="8.75" Width="1.75" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Nethereum.Contracts.MessageEncodingServices.FunctionMessageEncodingService&lt;TContractFunction&gt;">
+    <Position X="11" Y="3.75" Width="3.25" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
