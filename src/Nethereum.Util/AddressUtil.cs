@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Nethereum.Hex.HexConvertors.Extensions;
 
@@ -48,8 +50,8 @@ namespace Nethereum.Util
         /// </summary>
         public bool IsValidEthereumAdressHexFormat(string address)
         {
-            var r = new Regex("^(0x){1}[0-9a-fA-F]{40}$");
-            return r.IsMatch(address);
+            return address.HasHexPrefix() && IsValidAddressLength(address) &&
+                   address.ToCharArray().All(char.IsLetterOrDigit);
         }
 
         public bool IsChecksumAddress(string address)

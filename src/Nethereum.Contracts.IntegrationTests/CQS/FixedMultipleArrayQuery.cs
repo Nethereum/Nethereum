@@ -32,7 +32,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
         [Function("returnArray", "int256[2][2]")]
-        public class ReturnArrayFunction : ContractMessage {}
+        public class ReturnArrayFunction : FunctionMessage {}
 
         public class TestContractDeployment : ContractDeploymentMessage
         {

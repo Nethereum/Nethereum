@@ -2,6 +2,7 @@
 using Nethereum.KeyStore.Crypto;
 using Nethereum.KeyStore.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Utilities;
 
@@ -44,7 +45,8 @@ namespace Nethereum.KeyStore
 
         public KeyStore<T> DeserializeKeyStoreFromJson(string json)
         {
-            return JsonConvert.DeserializeObject<KeyStore<T>>(json);
+            return JObject.Parse(json).ToObject<KeyStore<T>>();
+            //return JsonConvert.DeserializeObject<KeyStore<T>>(json);
         }
 
         public abstract byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);

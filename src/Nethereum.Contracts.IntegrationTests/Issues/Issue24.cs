@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
@@ -31,8 +32,8 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
         
         */
 
-
-        public class EventBatchUploaded
+        [Event(("BatchUploaded"))]
+        public class EventBatchUploaded:IEventDTO
         {
             [Parameter("address", 1)]
             public string address { get; set; }
@@ -58,6 +59,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
         [Fact]
         public void MordenTest()
         {
+
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""multihash"",""type"":""bytes""}],""name"":""uploadBatch"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""_blockHeight"",""type"":""uint256""},{""name"":""_contentBy"",""type"":""address""},{""name"":""_changeCount"",""type"":""uint256""},{""name"":""_totalRexRewarded"",""type"":""uint256""}],""name"":""issueContentReward"",""outputs"":[],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""_address"",""type"":""address""}],""name"":""updateCoordinator"",""outputs"":[],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""uploadCount"",""outputs"":[{""name"":"""",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""_dataFeedCoordinatorAddress"",""type"":""address""},{""name"":""feedCode"",""type"":""bytes4""}],""type"":""constructor""},{""anonymous"":false,""inputs"":[{""indexed"":false,""name"":"""",""type"":""address""},{""indexed"":false,""name"":"""",""type"":""bytes""}],""name"":""BatchUploaded"",""type"":""event""},{""anonymous"":false,""inputs"":[{""indexed"":false,""name"":""blockHeight"",""type"":""uint256""},{""indexed"":false,""name"":""contentBy"",""type"":""address""},{""indexed"":false,""name"":""changeCount"",""type"":""uint256""},{""indexed"":false,""name"":""totalRewards"",""type"":""uint256""}],""name"":""ContentRewarded"",""type"":""event""}]";
             var contractAddress = "0xe8d75008917c6a460473e62d5d4cefd3bbe4d85b";

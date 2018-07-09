@@ -4,6 +4,7 @@ using Common.Logging;
 using Common.Logging.Simple;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
@@ -85,25 +86,25 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Function("MaxUint", "uint256")]
-        public class MaxFunction : ContractMessage
+        public class MaxFunction : FunctionMessage
         {
 
         }
 
         [Function("MaxInt256", "int256")]
-        public class MaxInt256Function : ContractMessage
+        public class MaxInt256Function : FunctionMessage
         {
 
         }
 
         [Function("MinInt256", "int256")]
-        public class MinInt256Function : ContractMessage
+        public class MinInt256Function : FunctionMessage
         {
 
         }
 
         [Function("UnderflowInt256ByQuantity", "int256")]
-        public class UnderflowInt256ByQuantityFunction : ContractMessage
+        public class UnderflowInt256ByQuantityFunction : FunctionMessage
         {
             [Parameter("int256", "value", 1)]
             public BigInteger Value { get; set; }
@@ -112,7 +113,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Function("OverflowInt256ByQuantity", "int256")]
-        public class OverflowInt256ByQuantityFunction : ContractMessage
+        public class OverflowInt256ByQuantityFunction : FunctionMessage
         {
             [Parameter("int256", "value", 1)]
             public BigInteger Value { get; set; }
@@ -121,7 +122,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Function("OverflowUInt256ByQuantity", "uint256")]
-        public class OverflowUInt256ByQuantityFunction : ContractMessage
+        public class OverflowUInt256ByQuantityFunction : FunctionMessage
         {
             [Parameter("uint256", "value", 1)]
             public BigInteger Value { get; set; }

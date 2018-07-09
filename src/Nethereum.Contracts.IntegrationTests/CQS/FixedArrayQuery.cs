@@ -39,7 +39,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
         [Function("returnArray", "address[10]")]
-        public class ReturnArrayFunction : ContractMessage {}
+        public class ReturnArrayFunction : FunctionMessage {}
 
         //*Smart contract
         /*

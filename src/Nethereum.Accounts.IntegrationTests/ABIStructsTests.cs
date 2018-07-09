@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
@@ -91,37 +92,37 @@ namespace Nethereum.Accounts.IntegrationTests
 
 
         [Function("id1", "uint256")]
-        public class Id1Function : ContractMessage
+        public class Id1Function : FunctionMessage
         {
 
         }
 
         [Function("id2", "uint256")]
-        public class Id2Function : ContractMessage
+        public class Id2Function : FunctionMessage
         {
 
         }
 
         [Function("id3", "uint256")]
-        public class Id3Function : ContractMessage
+        public class Id3Function : FunctionMessage
         {
 
         }
 
         [Function("id4", "string")]
-        public class Id4Function : ContractMessage
+        public class Id4Function : FunctionMessage
         {
 
         }
 
         [Function("GetTest")]
-        public class GetTestFunction : ContractMessage
+        public class GetTestFunction : FunctionMessage
         {
             
         }
 
         [Function("testStructStorage")]
-        public class GetTestStructStorageFunction : ContractMessage
+        public class GetTestStructStorageFunction : FunctionMessage
         {
 
         }
@@ -129,7 +130,7 @@ namespace Nethereum.Accounts.IntegrationTests
        
 
         [FunctionOutput]
-        public class GetTestFunctionOuptputDTO
+        public class GetTestFunctionOuptputDTO:IFunctionOutputDTO
         {
             [Parameter("tuple")]
             public TestStructStrings TestStruct { get; set; }
@@ -144,21 +145,21 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Function("Test")]
-        public class TestFunction : ContractMessage
+        public class TestFunction : FunctionMessage
         {
             [Parameter("tuple", "testStruct")]
             public TestStructStrings TestStruct { get; set; }
         }
 
         [Function("SetStorageStruct")]
-        public class SetStorageStructFunction : ContractMessage
+        public class SetStorageStructFunction : FunctionMessage
         {
             [Parameter("tuple", "testStruct")]
             public TestStructStrings TestStruct { get; set; }
         }
 
         [Event("TestStructStorageChanged")]
-        public class TestStructStorageChangedEvent
+        public class TestStructStorageChangedEvent: IEventDTO
         {
             [Parameter("address", "sender", 1)]
             public string Address { get; set; }
@@ -169,7 +170,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
 
         [FunctionOutput]
-        public class TestStructStrings
+        public class TestStructStrings: IFunctionOutputDTO
         {
             [Parameter("uint256", "id", 1)]
             public BigInteger Id { get; set; }

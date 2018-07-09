@@ -17,19 +17,18 @@ namespace Nethereum.RPC.Eth.Services
             GetTransactionReceipt = new EthGetTransactionReceipt(client);
             SendRawTransaction = new EthSendRawTransaction(client);
             SendTransaction = new EthSendTransaction(client);
-            PendingTransactions = new EthPendingTransactions(client);
+           
         }
 
-        public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; private set; }
-        public EthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; private set; }
-        public EthGetTransactionByHash GetTransactionByHash { get; private set; }
+        public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; }
+        public EthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; }
+        public EthGetTransactionByHash GetTransactionByHash { get; }
         public EthGetTransactionCount GetTransactionCount { get; }
-        public EthGetTransactionReceipt GetTransactionReceipt { get; private set; }
-        public EthSendRawTransaction SendRawTransaction { get; private set; }
-        public EthSendTransaction SendTransaction { get; private set; }
+        public EthGetTransactionReceipt GetTransactionReceipt { get; }
+        public EthSendRawTransaction SendRawTransaction { get; }
+        public EthSendTransaction SendTransaction { get; }
         public EthCall Call { get; }
-        public EthEstimateGas EstimateGas { get; private set; }
-        public EthPendingTransactions PendingTransactions { get; }
+        public EthEstimateGas EstimateGas { get; }
 
         public void SetDefaultBlock(BlockParameter blockParameter)
         {

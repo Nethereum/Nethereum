@@ -9,45 +9,27 @@ namespace Nethereum.Contracts
 {
     public class Contract
     {
-        private BlockParameter defaultBlock;
-
         public Contract(EthApiService eth, string abi, string contractAddress)
         {
             Eth = eth;
             ContractBuilder = new ContractBuilder(abi, contractAddress);
-            if (eth != null)
-                DefaultBlock = eth.DefaultBlock;
         }
 
         public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
         {
             Eth = eth;
             ContractBuilder = new ContractBuilder(contractMessageType, contractAddress);
-            if (eth != null)
-                DefaultBlock = eth.DefaultBlock;
         }
 
         public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
         {
             Eth = eth;
             ContractBuilder = new ContractBuilder(contractMessagesTypes, contractAddress);
-            if (eth != null)
-                DefaultBlock = eth.DefaultBlock;
         }
 
         private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
 
         public ContractBuilder ContractBuilder { get; set; }
-
-        public BlockParameter DefaultBlock
-        {
-            get => defaultBlock;
-            set
-            {
-                defaultBlock = value;
-                SetDefaultBlock();
-            }
-        }
 
         public string Address => ContractBuilder.Address;
 
@@ -66,12 +48,12 @@ namespace Nethereum.Contracts
 
         public Event GetEvent(string name)
         {
-            return new Event(this, GetEventBuilder(name));
+            return new Event(this, ContractBuilder.GetEventAbi(name));
         }
 
         public Event<T> GetEvent<T>(string name) where T: new()
         {
-            return new Event<T>(this, GetEventBuilder(name));
+            return new Event<T>(this);
         }
 
         public Function<TFunction> GetFunction<TFunction>()
@@ -97,12 +79,6 @@ namespace Nethereum.Contracts
         private FunctionBuilder<TFunctionInput> GetFunctionBuilder<TFunctionInput>()
         {
             return ContractBuilder.GetFunctionBuilder<TFunctionInput>();
-        }
-
-        private void SetDefaultBlock()
-        {
-            if (ContractBuilder != null)
-                ContractBuilder.DefaultBlock = DefaultBlock;
         }
     }
 }

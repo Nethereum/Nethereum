@@ -39,13 +39,13 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                 Price = 100
             });
 
-            var result = await eventFilter.GetFilterChanges<ItemCreatedEventDTO>(filterId);
+            var result = await eventFilter.GetFilterChanges(filterId);
 
             Assert.Single(result);
         }
 
         [Event("ItemCreated")]
-        public class ItemCreatedEventDTO
+        public class ItemCreatedEventDTO:IEventDTO
         {
             [Parameter("uint256", "itemId", 1, true)]
             public BigInteger ItemId { get; set; }
@@ -88,7 +88,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 */
 
         [Function("newItem")]
-        public class NewItemFunction : ContractMessage
+        public class NewItemFunction : FunctionMessage
         {
             [Parameter("uint256", "id", 1)]
             public BigInteger Id { get; set; }

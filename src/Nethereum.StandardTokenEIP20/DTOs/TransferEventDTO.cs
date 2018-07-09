@@ -1,10 +1,11 @@
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 
 namespace Nethereum.StandardTokenEIP20.DTOs
 {
     [Event("Transfer")]
-    public class TransferEventDTO
+    public class TransferEventDTO: IEventDTO
     {
         [Parameter("address", "_from", 1, true )]
         public string From {get; set;}

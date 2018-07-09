@@ -12,16 +12,18 @@ namespace Nethereum.RPC.TransactionManagers
     public interface ITransactionManager
     {
         IClient Client { get; set; }
-        Task<string> SendTransactionAsync(TransactionInput transactionInput);
-        Task<HexBigInteger> EstimateGasAsync(CallInput callInput);
-        Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);
         BigInteger DefaultGasPrice { get; set; }
         BigInteger DefaultGas { get; set; }
         IAccount Account { get; }
-        Task<string> SignTransactionAsync(TransactionInput transaction);
-        Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction);
 
 #if !DOTNET35
+        
+        Task<string> SendTransactionAsync(TransactionInput transactionInput);
+        Task<HexBigInteger> EstimateGasAsync(CallInput callInput);
+        Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);
+        Task<string> SignTransactionAsync(TransactionInput transaction);
+        Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction);
+        Task<string> SendRawTransactionAsync(string signedTransaction);
         ITransactionReceiptService TransactionReceiptService { get; set; }
         Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource);
 #endif

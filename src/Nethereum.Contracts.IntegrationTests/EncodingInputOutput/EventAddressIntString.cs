@@ -178,7 +178,7 @@ contract Coin {
             public string Metadata { get; set; }
         }
 
-
+        [Event("Sent")]
         public class SentEventDTO
         {
             [Parameter("address", "from", 1, false)]
@@ -191,6 +191,7 @@ contract Coin {
             public string To { get; set; }
         }
 
+        [Event("MetadataEvent")]
         public class MetadataEventEventDTO
         {
             [Parameter("address", "creator", 1, false)]

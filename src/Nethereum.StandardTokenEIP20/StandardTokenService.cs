@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts;
+using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;

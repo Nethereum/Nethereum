@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Nethereum.Contracts.Services;
 using Xunit;
 
 namespace Nethereum.Contracts.UnitTests

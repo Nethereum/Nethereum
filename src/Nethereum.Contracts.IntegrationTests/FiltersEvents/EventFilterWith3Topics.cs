@@ -20,7 +20,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
 
         [Event("Pushed")]
-        public class PushedEventDTO
+        public class PushedEventDTO:IEventDTO
         {
             [Parameter("address", "first", 1, true)]
             public string First { get; set; }
@@ -36,7 +36,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
 
         [Event("PushedResult")]
-        public class PushedResultEventDTO
+        public class PushedResultEventDTO : IEventDTO
         {
             [Parameter("address", "first", 1, true)]
             public string First { get; set; }
@@ -56,7 +56,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
 
         [Event("Pushed2")]
-        public class Pushed2EventDTO
+        public class Pushed2EventDTO : IEventDTO
         {
             [Parameter("address", "first", 1, true)]
             public string First { get; set; }
@@ -71,7 +71,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Function("PushEvent")]
-        public class PushEventFunction : ContractMessage
+        public class PushEventFunction : FunctionMessage
         {
 
         }
@@ -166,14 +166,14 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var pushReceipt = await contractHandler.SendRequestAndWaitForReceiptAsync(new PushEventFunction(){FromAddress =  addressFrom});
 
             // Getting changes from the event with all bytes32
-            var filterChangesAllBytes32 = await eventAllBytes32.GetFilterChanges<PushedResultEventDTO>(filterAllBytes32);
+            var filterChangesAllBytes32 = await eventAllBytes32.GetFilterChanges(filterAllBytes32);
 
             Assert.NotEmpty(filterChangesAllBytes32);
 
             Assert.Equal(addressFrom.ToLower(), filterChangesAllBytes32[0].Event.First.ToLower());
 
             //Decoding the event (that we cannot create a filter) from the transaction receipt
-            var eventsPushed = eventPushed.DecodeAllEventsForEvent<PushedEventDTO>(pushReceipt.Logs);
+            var eventsPushed = eventPushed.DecodeAllEventsForEvent(pushReceipt.Logs);
 
             Assert.NotEmpty(eventsPushed);
 
@@ -181,7 +181,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
 
             // Getting changes from the event with indexed at the front
-            var filterChangesIndexedAtTheFront = await eventIndexedAtTheFront.GetFilterChanges<PushedResultEventDTO>(filterIndexedAtTheFront);
+            var filterChangesIndexedAtTheFront = await eventIndexedAtTheFront.GetFilterChanges(filterIndexedAtTheFront);
 
             Assert.NotEmpty(filterChangesIndexedAtTheFront);
 

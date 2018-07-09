@@ -7,6 +7,7 @@ using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using System.Threading;
+using Nethereum.Contracts.ContractHandlers;
 using SolidityCallAnotherContract.Contracts.TheOther.CQS;
 using SolidityCallAnotherContract.Contracts.TheOther.DTOs;
 namespace SolidityCallAnotherContract.Contracts.TheOther.Service

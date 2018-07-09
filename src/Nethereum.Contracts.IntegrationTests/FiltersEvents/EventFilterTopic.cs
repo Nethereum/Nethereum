@@ -126,6 +126,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
         }
 
+        [Event("Multiplied")]
         public class MultipliedEvent
         {
             [Parameter("address", "from", 1)]

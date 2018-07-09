@@ -11,7 +11,8 @@ namespace Nethereum.RPC
         private BlockParameter defaultBlock;
         private ITransactionManager _transactionManager;
 
-        public EthApiService(IClient client) : this(client, new TransactionManager(client))
+        public EthApiService(IClient client) : this(client, 
+            new TransactionManager(client))
         {
            
         }

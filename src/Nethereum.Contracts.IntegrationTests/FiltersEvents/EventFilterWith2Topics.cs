@@ -20,6 +20,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Event("Multiplied")]
         public class EventMultiplied
         {
             [Parameter("uint", "a", 1, true)]
@@ -29,6 +30,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             public int Result { get; set; }
         }
 
+        [Event("MultipliedLog")]
         public class EventMultipliedSenderLog
         {
             [Parameter("uint", "a", 1, true)]

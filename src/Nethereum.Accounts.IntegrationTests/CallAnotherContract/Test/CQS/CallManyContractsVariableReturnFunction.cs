@@ -5,11 +5,12 @@ using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Contracts.CQS;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using SolidityCallAnotherContract.Contracts.Test.DTOs;
 namespace SolidityCallAnotherContract.Contracts.Test.CQS
 {
     [Function("callManyContractsVariableReturn", "bytes[]")]
-    public class CallManyContractsVariableReturnFunction:ContractMessage
+    public class CallManyContractsVariableReturnFunction:FunctionMessage
     {
         [Parameter("address[]", "destination", 1)]
         public List<string> Destination {get; set;}

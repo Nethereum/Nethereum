@@ -143,7 +143,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{AF1D64E0-8
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.XUnitEthereumClients", "src\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj", "{A73012C6-D409-437D-8302-BE2D3BE150B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.JsonRpc.WebSocketClient", "src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj", "{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.JsonRpc.WebSocketClient", "src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj", "{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ClassDiagrams", "ClassDiagrams", "{EFC55CCF-06EE-42B1-B2B3-04E94586F8DD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.ClassDiagrams", "src\Nethereum.ClassDiagrams\Nethereum.ClassDiagrams.csproj", "{5BBEAE99-333E-4B98-8453-C5667FB22184}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -941,6 +945,22 @@ Global
 		{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}.Release|x64.Build.0 = Release|Any CPU
 		{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}.Release|x86.ActiveCfg = Release|Any CPU
 		{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}.Release|x86.Build.0 = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|ARM.Build.0 = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|x64.Build.0 = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Debug|x86.Build.0 = Debug|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|ARM.ActiveCfg = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|ARM.Build.0 = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|x64.ActiveCfg = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|x64.Build.0 = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|x86.ActiveCfg = Release|Any CPU
+		{5BBEAE99-333E-4B98-8453-C5667FB22184}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1016,6 +1036,8 @@ Global
 		{AF1D64E0-8D83-4C70-AEE1-3DD57738BBBA} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{A73012C6-D409-437D-8302-BE2D3BE150B1} = {AF1D64E0-8D83-4C70-AEE1-3DD57738BBBA}
 		{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1} = {F7E94706-FF67-4766-BBBD-27E7CED957A3}
+		{EFC55CCF-06EE-42B1-B2B3-04E94586F8DD} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{5BBEAE99-333E-4B98-8453-C5667FB22184} = {EFC55CCF-06EE-42B1-B2B3-04E94586F8DD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

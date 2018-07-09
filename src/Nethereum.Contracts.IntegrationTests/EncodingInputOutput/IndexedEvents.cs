@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
@@ -89,8 +90,8 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             receipt = await function.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000),
                 null, null);
 
-            var events = EventExtensions.DecodeAllEvents<EventEventDTO>(receipt.Logs);
-
+            var events = receipt.Logs.DecodeAllEvents<EventEventDTO>();
+                
             Assert.Equal(1, events[0].Event.First);
             Assert.Equal(2, events[0].Event.Second);
             Assert.Equal(3, events[0].Event.Third);

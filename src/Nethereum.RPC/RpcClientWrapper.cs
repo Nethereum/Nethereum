@@ -9,6 +9,6 @@ namespace Nethereum.RPC
             Client = client;
         }
 
-        protected IClient Client { get; set; }
+        public IClient Client { get; protected set; }
     }
 }

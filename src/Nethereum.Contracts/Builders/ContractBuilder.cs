@@ -31,8 +31,6 @@ namespace Nethereum.Contracts
 
         public ContractABI ContractABI { get; set; }
 
-        public BlockParameter DefaultBlock { get; set; }
-
         public string Address { get; set; }
 
         public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
@@ -57,7 +55,7 @@ namespace Nethereum.Contracts
             return new FunctionBuilder(Address, GetFunctionAbi(name));
         }
 
-        private EventABI GetEventAbi(string name)
+        public EventABI GetEventAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Name == name);
@@ -65,7 +63,7 @@ namespace Nethereum.Contracts
             return eventAbi;
         }
 
-        private FunctionABI GetFunctionAbi(string name)
+        public FunctionABI GetFunctionAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);

@@ -5,7 +5,9 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Hex.HexTypes;
 using System.Collections;
 using System;
+using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.Extensions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {

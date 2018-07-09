@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.Decoders;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.XUnitEthereumClients;
 using SolidityCallAnotherContract.Contracts.Test.CQS;
@@ -131,7 +132,7 @@ contract TheOther
                 Name = "Hi",
                 Greeting = "From the other contract"
             };
-            
+           
             var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
 
             var callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()

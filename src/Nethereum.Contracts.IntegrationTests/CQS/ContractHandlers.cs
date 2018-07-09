@@ -47,13 +47,13 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
 
-            var estimatedGas = await transferHandler.EstimateGasAsync(transactionMessage, contractAddress);
+            var estimatedGas = await transferHandler.EstimateGasAsync(contractAddress, transactionMessage);
 
             // for demo purpouses gas estimation it is done in the background so we don't set it
             transactionMessage.Gas = estimatedGas.Value; 
 
             var transferReceipt =
-                await transferHandler.SendRequestAndWaitForReceiptAsync(transactionMessage, contractAddress);
+                await transferHandler.SendRequestAndWaitForReceiptAsync(contractAddress, transactionMessage);
       
             var balanceOfFunctionMessage = new BalanceOfFunction
             {
@@ -63,13 +63,13 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var balanceHandler = web3.Eth.GetContractQueryHandler<BalanceOfFunction>();
             var balanceFirstTransaction =
-                await balanceHandler.QueryAsync<int>(balanceOfFunctionMessage, contractAddress);
+                await balanceHandler.QueryAsync<int>(contractAddress, balanceOfFunctionMessage);
 
 
             Assert.Equal(1000, balanceFirstTransaction);
 
             var transferReceipt2 =
-                await transferHandler.SendRequestAndWaitForReceiptAsync(transactionMessage, contractAddress);
+                await transferHandler.SendRequestAndWaitForReceiptAsync(contractAddress, transactionMessage);
             var balanceSecondTransaction =
                 await balanceHandler.QueryDeserializingToObjectAsync<BalanceOfFunctionOutput>(balanceOfFunctionMessage,
                     contractAddress);
@@ -85,7 +85,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
     }
 
     [Function("transfer", "bool")]
-    public class TransferFunction : ContractMessage
+    public class TransferFunction : FunctionMessage
     {
         [Parameter("address", "_to", 1)]
         public string To { get; set; }
@@ -95,14 +95,14 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
     }
 
     [Function("balanceOf", "uint256")]
-    public class BalanceOfFunction : ContractMessage
+    public class BalanceOfFunction : FunctionMessage
     {
         [Parameter("address", "_owner", 1)]
         public string Owner { get; set; }
     }
 
     [FunctionOutput]
-    public class BalanceOfFunctionOutput
+    public class BalanceOfFunctionOutput:IFunctionOutputDTO
     {
         [Parameter("uint256", 1)]
         public int Balance { get; set; }

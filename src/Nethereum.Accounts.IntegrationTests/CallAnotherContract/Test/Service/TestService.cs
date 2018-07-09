@@ -8,6 +8,7 @@ using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using System.Threading;
+using Nethereum.Contracts.ContractHandlers;
 using SolidityCallAnotherContract.Contracts.Test.CQS;
 using SolidityCallAnotherContract.Contracts.Test.DTOs;
 namespace SolidityCallAnotherContract.Contracts.Test.Service

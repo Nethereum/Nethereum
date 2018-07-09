@@ -59,17 +59,19 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 
             }
 
-            Assert.Contains("RPC Response Error: intrinsic gas too low", capturingLoggerAdapter.LoggerEvents[4].MessageObject.ToString());
+            Assert.Contains("RPC Response Error: intrinsic gas too low", capturingLoggerAdapter.LoggerEvents[6].MessageObject.ToString());
 
             await web3.TransactionManager.Account.NonceService.ResetNonce();
 
             var transactionHash3 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
                 new HexBigInteger(900000), 7);
 
-            Assert.Contains("eth_getTransactionCount", capturingLoggerAdapter.LoggerEvents[5].MessageObject.ToString());
-            Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[6].MessageObject.ToString());
-            Assert.Contains("eth_sendRawTransaction", capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());
-            Assert.Contains("RPC Response: " + transactionHash3, capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
+            Assert.Contains("eth_getTransactionCount", capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());
+            Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
+            Assert.Contains("eth_gasPrice", capturingLoggerAdapter.LoggerEvents[9].MessageObject.ToString());
+            Assert.Contains("RPC Response:", capturingLoggerAdapter.LoggerEvents[10].MessageObject.ToString());
+            Assert.Contains("eth_sendRawTransaction", capturingLoggerAdapter.LoggerEvents[11].MessageObject.ToString());
+            Assert.Contains("RPC Response: " + transactionHash3, capturingLoggerAdapter.LoggerEvents[12].MessageObject.ToString());
 
         }
     }

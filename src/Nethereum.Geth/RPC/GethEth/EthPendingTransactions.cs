@@ -1,11 +1,8 @@
-﻿using Nethereum.JsonRpc.Client;
+﻿using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Nethereum.RPC.Eth.Transactions
+namespace Nethereum.Geth.RPC.GethEth
 {
     /// <Summary>
     ///     eth_pendingTransactions

@@ -2,6 +2,7 @@
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
+using Nethereum.Contracts.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json.Linq;
 
@@ -9,11 +10,6 @@ namespace Nethereum.Contracts
 {
     public class EventBuilder
     {
-        public static EventBuilder CreateNewBuilder<TEventDTOType>(string contractAddress)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTOType>();
-            return new EventBuilder(contractAddress, eventABI);
-        }
 
         public string ContractAddress { get; set; }
 

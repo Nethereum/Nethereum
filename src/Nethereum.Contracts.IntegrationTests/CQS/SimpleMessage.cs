@@ -70,7 +70,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
         [Function("returnSender", "address")]
-        public class ReturnSenderFunction : ContractMessage
+        public class ReturnSenderFunction : FunctionMessage
         {
 
         }

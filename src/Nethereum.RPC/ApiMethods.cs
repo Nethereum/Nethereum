@@ -39,7 +39,6 @@
         eth_newFilter,
         eth_newBlockFilter,
         eth_newPendingTransactionFilter,
-        eth_pendingTransactions,
         eth_uninstallFilter,
         eth_getFilterChanges,
         eth_getFilterLogs,

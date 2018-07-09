@@ -7,6 +7,7 @@ using Nethereum.RPC.Eth.Transactions;
 using System.Numerics;
 using System.Threading;
 using Nethereum.RPC.Accounts;
+using Nethereum.RPC.Eth;
 using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -14,13 +15,23 @@ namespace Nethereum.RPC.TransactionManagers
     public abstract class TransactionManagerBase : ITransactionManager
     {
         public virtual IClient Client { get; set; }
-        public abstract BigInteger DefaultGasPrice { get; set; }
+        public BigInteger DefaultGasPrice { get; set; } = -1; // Setting the default gas price to -1 as a flag
         public abstract BigInteger DefaultGas { get; set; }
         public IAccount Account { get; protected set; }
+
+#if !DOTNET35
         public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
         public abstract Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction);
 
-#if !DOTNET35
+
+        public Task<string> SendRawTransactionAsync(string signedTransaction)
+        {
+            if (Client == null) throw new NullReferenceException("Client not configured");
+            if (string.IsNullOrEmpty(signedTransaction)) throw new ArgumentNullException(nameof(signedTransaction));
+            var ethSendRawTransaction = new EthSendRawTransaction(Client);
+            return ethSendRawTransaction.SendRequestAsync(signedTransaction);
+        }
+
         private ITransactionReceiptService _transactionReceiptService;
         public ITransactionReceiptService TransactionReceiptService {
             get
@@ -38,7 +49,7 @@ namespace Nethereum.RPC.TransactionManagers
         {
             return TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput, tokenSource);
         }
-#endif               
+               
         public virtual Task<HexBigInteger> EstimateGasAsync(CallInput callInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
@@ -54,6 +65,14 @@ namespace Nethereum.RPC.TransactionManagers
             return SendTransactionAsync(new TransactionInput() { From = from, To = to, Value = amount});
         }
 
+        public async Task<HexBigInteger> GetGasPriceAsync(TransactionInput transactionInput)
+        {
+            if (transactionInput.GasPrice != null) return transactionInput.GasPrice;
+            if (DefaultGasPrice >= 0) return new HexBigInteger(DefaultGasPrice);
+            var ethGetGasPrice = new EthGasPrice(Client);
+            return await ethGetGasPrice.SendRequestAsync().ConfigureAwait(false);
+        }
+
         protected void SetDefaultGasPriceAndCostIfNotSet(TransactionInput transactionInput)
         {
             if (DefaultGasPrice != null)
@@ -66,5 +85,6 @@ namespace Nethereum.RPC.TransactionManagers
                 if (transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(DefaultGas);
             }
         }
+#endif
     }
 }

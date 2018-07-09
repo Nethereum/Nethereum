@@ -4,6 +4,7 @@ using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Contracts.CQS;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using SolidityCallAnotherContract.Contracts.TheOther.DTOs;
 namespace SolidityCallAnotherContract.Contracts.TheOther.CQS
 {
