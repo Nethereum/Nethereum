@@ -39,6 +39,7 @@ namespace Nethereum.RPC
 
             DefaultBlock = BlockParameter.CreateLatest();
             TransactionManager = transactionManager;
+            TransactionManager.Client = client; //Ensure is the same
         }
 
         public BlockParameter DefaultBlock

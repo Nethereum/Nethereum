@@ -16,7 +16,6 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class Erc20TokenTester
     {
-
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public Erc20TokenTester(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)

@@ -2,6 +2,7 @@
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Contracts.QueryHandlers
 {
@@ -18,14 +19,14 @@ namespace Nethereum.Contracts.QueryHandlers
             set => QueryRawHandler.DefaultAddressFrom = value;
         }
 
-        protected QueryDecoderBaseHandler(IClient client, string defaultAddressFrom)
+        public QueryDecoderBaseHandler(IClient client, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null) 
         {
-            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(client, defaultAddressFrom);
+            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(client, defaultAddressFrom, defaultBlockParameter);
         }
 
-        protected QueryDecoderBaseHandler(EthApiContractService eth)
+        public QueryDecoderBaseHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
-            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(eth);
+            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(ethCall, defaultAddressFrom, defaultBlockParameter);
         }
 
         public async Task<TFunctionOutput> QueryAsync(string contractAddress, TFunctionMessage functionMessage = null,  BlockParameter block = null)

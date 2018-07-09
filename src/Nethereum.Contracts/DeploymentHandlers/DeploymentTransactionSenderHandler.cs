@@ -18,11 +18,6 @@ namespace Nethereum.Contracts.DeploymentHandlers
             _deploymentEstimatorHandler = new DeploymentEstimatorHandler<TContractDeploymentMessage>(transactionManager);
         }
 
-        public DeploymentTransactionSenderHandler(IClient client, IAccount account) : base(client, account)
-        {
-            _deploymentEstimatorHandler = new DeploymentEstimatorHandler<TContractDeploymentMessage>(client, account);
-        }
-
         public async Task<string> SendTransactionAsync(TContractDeploymentMessage deploymentMessage = null)
         {
             if(deploymentMessage == null) deploymentMessage = new TContractDeploymentMessage();

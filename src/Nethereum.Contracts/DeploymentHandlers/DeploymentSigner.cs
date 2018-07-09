@@ -30,24 +30,12 @@ namespace Nethereum.Contracts.DeploymentHandlers
             _deploymentEstimatorHandler = deploymentEstimatorHandler;
         }
 
-        public DeploymentSigner(IClient client, IAccount account):this(client, account, 
-            new DeploymentEstimatorHandler<TContractDeploymentMessage>(client, account))
-        {
-            
-        }
-
-        public DeploymentSigner(IClient client, IAccount account, 
-            IDeploymentEstimatorHandler<TContractDeploymentMessage> deploymentEstimatorHandler):base(client, account)
-        {
-            _deploymentEstimatorHandler = deploymentEstimatorHandler;
-        }
-
         public async Task<string> SignTransactionAsync(TContractDeploymentMessage deploymentMessage = null)
         {
             if (deploymentMessage == null) deploymentMessage = new TContractDeploymentMessage();
             deploymentMessage.Gas = await GetOrEstimateMaximumGasAsync(deploymentMessage).ConfigureAwait(false);
             var transactionInput = DeploymentMessageEncodingService.CreateTransactionInput(deploymentMessage);
-            return await TransactionManager.SignTransactionRetrievingNextNonceAsync(transactionInput).ConfigureAwait(false);
+            return await TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGasAsync(

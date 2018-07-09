@@ -13,12 +13,6 @@ namespace Nethereum.Contracts.CQS
     {
         private ITransactionSenderHandler<TFunctionMessage> _contractTransactionSender;
 
-        public TransactionReceiptPollHandler(IClient client, IAccount account) : this(client, account,
-            new TransactionSenderHandler<TFunctionMessage>(client, account))
-        {
-
-        }
-
         public TransactionReceiptPollHandler(ITransactionManager transactionManager) : this(transactionManager,
             new TransactionSenderHandler<TFunctionMessage>(transactionManager))
         {
@@ -31,11 +25,6 @@ namespace Nethereum.Contracts.CQS
             _contractTransactionSender = contractTransactionSender;
         }
 
-        public TransactionReceiptPollHandler(IClient client, IAccount account,
-            ITransactionSenderHandler<TFunctionMessage> contractTransactionSender) : base(client, account)
-        {
-            _contractTransactionSender = contractTransactionSender;
-        }
 
         public async Task<TransactionReceipt> SendTransactionAsync(string contractAddress, TFunctionMessage functionMessage = null, CancellationTokenSource cancellationTokenSource = null)
         {

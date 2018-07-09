@@ -19,13 +19,6 @@ namespace Nethereum.Contracts.ContractHandlers
         private ITransactionSenderHandler<TContractMessage> _transactionSenderHandler;
         private ITransactionSigner<TContractMessage> _transactionSigner;
 
-        public ContractTransactionHandler(IClient client, IAccount account) : base(client, account)
-        {
-            _estimatorHandler = new TransactionEstimatorHandler<TContractMessage>(client, account);
-            _receiptPollHandler = new TransactionReceiptPollHandler<TContractMessage>(client, account);
-            _transactionSenderHandler = new TransactionSenderHandler<TContractMessage>(client, account);
-            _transactionSigner = new TransactionSigner<TContractMessage>(client, account);
-        }
 
         public ContractTransactionHandler(ITransactionManager transactionManager) : base(transactionManager)
         {

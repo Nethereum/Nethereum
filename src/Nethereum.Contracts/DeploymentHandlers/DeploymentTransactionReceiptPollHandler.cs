@@ -30,19 +30,6 @@ namespace Nethereum.Contracts.DeploymentHandlers
 
         }
 
-        public DeploymentTransactionReceiptPollHandler(IClient client, IAccount account) : this(client, account,
-            new DeploymentTransactionSenderHandler<TContractDeploymentMessage>(client, account))
-        {
-
-        }
-
-        public DeploymentTransactionReceiptPollHandler(IClient client, IAccount account,
-            IDeploymentTransactionSenderHandler<TContractDeploymentMessage>
-                deploymentTransactionHandler) : base(client, account)
-        {
-            _deploymentTransactionHandler = deploymentTransactionHandler;
-        }
-
         public async Task<TransactionReceipt> SendTransactionAsync(TContractDeploymentMessage deploymentMessage = null,
             CancellationTokenSource cancellationTokenSource = null)
         {

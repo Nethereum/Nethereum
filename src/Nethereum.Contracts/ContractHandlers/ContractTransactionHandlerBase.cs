@@ -13,16 +13,6 @@ namespace Nethereum.Contracts.ContractHandlers
         protected IAccount Account { get; }
         protected ITransactionManager TransactionManager { get; }
 
-        protected ContractTransactionHandlerBase(IClient client, IAccount account)
-        {
-            Client = client;
-            Account = account;
-            if(account.TransactionManager == null) throw new ArgumentException("Transaction manager not initialised", nameof(account));
-            //link client to transaction manager
-            Account.TransactionManager.Client = client;
-            TransactionManager = Account.TransactionManager;
-        }
-
         protected ContractTransactionHandlerBase(ITransactionManager transactionManager)
         {
             Client = transactionManager.Client;

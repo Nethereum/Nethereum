@@ -2,6 +2,7 @@
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Contracts.QueryHandlers
 {
@@ -11,14 +12,16 @@ namespace Nethereum.Contracts.QueryHandlers
         where TFunctionMessage : FunctionMessage, new()
     {
         
-        public QueryRawHandler(IClient client, string defaultAddressFrom):base(client, defaultAddressFrom)
+        public QueryRawHandler(IClient client, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null):base(client, defaultAddressFrom, defaultBlockParameter)
         {
+
         }
 
-        public QueryRawHandler(EthApiContractService eth):base(eth)
+        public QueryRawHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null) : base(ethCall, defaultAddressFrom, defaultBlockParameter)
         {
-            
+
         }
+
 
         public Task<string> QueryAsync(
             string contractAddress,
@@ -26,11 +29,11 @@ namespace Nethereum.Contracts.QueryHandlers
             BlockParameter block = null)
         {
             if (contractFunctionMessage == null) contractFunctionMessage = new TFunctionMessage();
-            if (block == null) block = Eth.DefaultBlock;
+            if (block == null) block = DefaultBlockParameter;
             FunctionMessageEncodingService.SetContractAddress(contractAddress);
             EnsureInitialiseAddress();
             var callInput = FunctionMessageEncodingService.CreateCallInput(contractFunctionMessage);
-            return Eth.Transactions.Call.SendRequestAsync(callInput, block);
+            return EthCall.SendRequestAsync(callInput, block);
         }
     }
 #endif

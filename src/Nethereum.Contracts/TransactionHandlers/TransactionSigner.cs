@@ -18,17 +18,6 @@ namespace Nethereum.Contracts.CQS
     {
         private ITransactionEstimatorHandler<TFunctionMessage> _contractTransactionEstimatorHandler;
 
-        public TransactionSigner(IClient client, IAccount account) : this(client, account,
-            new TransactionEstimatorHandler<TFunctionMessage>(client, account))
-        {
-
-        }
-
-        public TransactionSigner(IClient client, IAccount account,
-            ITransactionEstimatorHandler<TFunctionMessage> contractTransactionEstimatorHandler) : base(client, account)
-        {
-            _contractTransactionEstimatorHandler = contractTransactionEstimatorHandler;
-        }
 
         public TransactionSigner(ITransactionManager transactionManager) : this(transactionManager,
             new TransactionEstimatorHandler<TFunctionMessage>(transactionManager))
@@ -50,7 +39,7 @@ namespace Nethereum.Contracts.CQS
             SetEncoderContractAddress(contractAddress);
             functionMessage.Gas = await GetOrEstimateMaximumGasAsync(functionMessage, contractAddress).ConfigureAwait(false);
             var transactionInput = FunctionMessageEncodingService.CreateTransactionInput(functionMessage);
-            return await TransactionManager.SignTransactionRetrievingNextNonceAsync(transactionInput).ConfigureAwait(false);
+            return await TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
         protected virtual async Task<HexBigInteger> GetOrEstimateMaximumGasAsync(

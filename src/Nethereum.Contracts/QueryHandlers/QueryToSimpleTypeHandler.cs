@@ -1,5 +1,7 @@
 ﻿using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Contracts.QueryHandlers
 {
@@ -8,15 +10,18 @@ namespace Nethereum.Contracts.QueryHandlers
     public class QueryToSimpleTypeHandler<TFunctionMessage, TFunctionOutput> :
         QueryDecoderBaseHandler<TFunctionMessage, TFunctionOutput> where TFunctionMessage : FunctionMessage, new()
     {
-        public QueryToSimpleTypeHandler(IClient client, string defaultAddressFrom) : base(client, defaultAddressFrom)
+
+
+        public QueryToSimpleTypeHandler(IClient client, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null):base(client, defaultAddressFrom, defaultBlockParameter)
         {
-            
+            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(client, defaultAddressFrom, defaultBlockParameter);
         }
 
-        public QueryToSimpleTypeHandler(EthApiContractService eth) : base(eth)
+        public QueryToSimpleTypeHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null) : base(ethCall, defaultAddressFrom, defaultBlockParameter)
         {
-
+            QueryRawHandler = new QueryRawHandler<TFunctionMessage>(ethCall, defaultAddressFrom, defaultBlockParameter);
         }
+
 
         protected override TFunctionOutput DecodeOutput(string output)
         {

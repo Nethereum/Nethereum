@@ -57,7 +57,8 @@ namespace Nethereum.Contracts.Services
         public IContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>()
             where TContractFunctionMessage : FunctionMessage, new()
         {
-            return new ContractQueryEthApiHandler<TContractFunctionMessage>(this);
+            return new ContractQueryEthCallHandler<TContractFunctionMessage>(Transactions.Call, 
+                TransactionManager?.Account?.Address, DefaultBlock);
         }
 #endif
     }

@@ -18,15 +18,7 @@ namespace Nethereum.Contracts.ContractHandlers
         private IDeploymentTransactionReceiptPollHandler<TContractDeploymentMessage> _receiptPollHandler;
         private IDeploymentTransactionSenderHandler<TContractDeploymentMessage> _transactionSenderHandler;
         private IDeploymentSigner<TContractDeploymentMessage> _transactionSigner;
-
-        public ContractDeploymentTransactionHandler(IClient client, IAccount account) : base(client, account)
-        {
-            _estimatorHandler = new DeploymentEstimatorHandler<TContractDeploymentMessage>(client, account);
-            _receiptPollHandler = new DeploymentTransactionReceiptPollHandler<TContractDeploymentMessage>(client, account);
-            _transactionSenderHandler = new DeploymentTransactionSenderHandler<TContractDeploymentMessage>(client, account);
-            _transactionSigner = new DeploymentSigner<TContractDeploymentMessage>(client, account);
-        }
-
+  
         public ContractDeploymentTransactionHandler(ITransactionManager transactionManager) : base(transactionManager)
         {
             _estimatorHandler = new DeploymentEstimatorHandler<TContractDeploymentMessage>(transactionManager);

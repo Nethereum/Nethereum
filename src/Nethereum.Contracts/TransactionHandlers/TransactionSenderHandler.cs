@@ -15,12 +15,6 @@ namespace Nethereum.Contracts.CQS
     {
         private ITransactionEstimatorHandler<TFunctionMessage> _contractTransactionEstimatorHandler;
 
-        public TransactionSenderHandler(IClient client, IAccount account) : this(client, account,
-            new TransactionEstimatorHandler<TFunctionMessage>(client, account))
-        {
-
-        }
-
         public TransactionSenderHandler(ITransactionManager transactionManager) : this(transactionManager,
             new TransactionEstimatorHandler<TFunctionMessage>(transactionManager))
         {
@@ -29,12 +23,6 @@ namespace Nethereum.Contracts.CQS
 
         public TransactionSenderHandler(ITransactionManager transactionManager,
             ITransactionEstimatorHandler<TFunctionMessage> contractTransactionEstimatorHandler) : base(transactionManager)
-        {
-            _contractTransactionEstimatorHandler = contractTransactionEstimatorHandler;
-        }
-
-        public TransactionSenderHandler(IClient client, IAccount account,
-            ITransactionEstimatorHandler<TFunctionMessage> contractTransactionEstimatorHandler) : base(client, account)
         {
             _contractTransactionEstimatorHandler = contractTransactionEstimatorHandler;
         }

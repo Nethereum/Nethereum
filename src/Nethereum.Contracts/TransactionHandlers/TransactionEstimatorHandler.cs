@@ -11,11 +11,6 @@ namespace Nethereum.Contracts.CQS
         TransactionHandlerBase<TFunctionMessage>, 
         ITransactionEstimatorHandler<TFunctionMessage> where TFunctionMessage : FunctionMessage, new()
     {
-        public TransactionEstimatorHandler(IClient client, IAccount account) : base(client, account)
-        {
-
-        }
-
 
         public TransactionEstimatorHandler(ITransactionManager transactionManager) : base(transactionManager)
         {

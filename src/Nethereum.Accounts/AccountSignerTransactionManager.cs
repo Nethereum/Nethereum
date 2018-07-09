@@ -51,11 +51,9 @@ namespace Nethereum.Web3.Accounts
             return SignAndSendTransactionAsync(transactionInput);
         }
 
-        public override async Task<string> SignTransactionAsync(TransactionInput transaction)
+        public override Task<string> SignTransactionAsync(TransactionInput transaction)
         {
-            var gasPrice = await GetGasPriceAsync(transaction).ConfigureAwait(false);
-            transaction.GasPrice = gasPrice;
-            return SignTransaction(transaction);
+            return SignTransactionRetrievingNextNonceAsync(transaction);
         }
 
         public string SignTransaction(TransactionInput transaction)
@@ -93,7 +91,7 @@ namespace Nethereum.Web3.Accounts
             return signedTransaction;
         }
 
-        public override async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
+        protected async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower())

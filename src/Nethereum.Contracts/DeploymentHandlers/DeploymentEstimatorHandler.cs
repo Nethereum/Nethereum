@@ -15,10 +15,6 @@ namespace Nethereum.Contracts.DeploymentHandlers
         { 
         }
 
-        public DeploymentEstimatorHandler(IClient client, IAccount account):base(client, account)
-        {
-            
-        }
 
         public Task<HexBigInteger> EstimateGasAsync(TContractDeploymentMessage deploymentMessage = null)
         {

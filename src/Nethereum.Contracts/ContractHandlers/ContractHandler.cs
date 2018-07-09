@@ -42,63 +42,54 @@ namespace Nethereum.Contracts.ContractHandlers
         }
 
 #if !DOTNET35
-        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
-             CancellationTokenSource tokenSource = null)
-            where TEthereumContractFunctionMessage : FunctionMessage, new()
-        {
-            var message = new TEthereumContractFunctionMessage();
-            return SendRequestAndWaitForReceiptAsync(message, tokenSource);
-        }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage, CancellationTokenSource tokenSource = null)
+            TEthereumContractFunctionMessage transactionMesssage = null, CancellationTokenSource tokenSource = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
+            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAndWaitForReceiptAsync(ContractAddress, transactionMesssage, tokenSource);
         }
-
-        public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>()
-            where TEthereumContractFunctionMessage : FunctionMessage, new()
-        {
-            var message = new TEthereumContractFunctionMessage();
-            return SendRequestAsync(message);
-        }
-
+  
         public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage)
+            TEthereumContractFunctionMessage transactionMesssage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
+            if(transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SendRequestAsync(ContractAddress, transactionMesssage);
         }
 
         public Task<string> SignTransactionAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage)
+            TEthereumContractFunctionMessage transactionMesssage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
+            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.SignTransactionAsync(ContractAddress, transactionMesssage);
         }
 
         public Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage)
+            TEthereumContractFunctionMessage transactionMesssage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
+            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
             SetAddressFrom(transactionMesssage);
             return command.EstimateGasAsync(ContractAddress, transactionMesssage);
         }
 
         public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
-            TEthereumFunctionReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage,
+            TEthereumFunctionReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage = null,
             BlockParameter blockParameter = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
             where TEthereumFunctionReturn : IFunctionOutputDTO, new()
         {
+            if (ethereumContractFunctionMessage == null) ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
             SetAddressFrom(ethereumContractFunctionMessage);
             var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
             return queryHandler.QueryDeserializingToObjectAsync<TEthereumFunctionReturn>(
@@ -106,52 +97,27 @@ namespace Nethereum.Contracts.ContractHandlers
                 ContractAddress, blockParameter);
         }
 
-        public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
-            TEthereumFunctionReturn>(
-            BlockParameter blockParameter = null)
-            where TEthereumContractFunctionMessage : FunctionMessage, new()
-            where TEthereumFunctionReturn : IFunctionOutputDTO, new()
-        {
-            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
-            return QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage, TEthereumFunctionReturn>(
-                ethereumContractFunctionMessage, blockParameter);
-        }
-
         public Task<TReturn> QueryAsync<TEthereumContractFunctionMessage, TReturn>(
-            TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
+            TEthereumContractFunctionMessage ethereumContractFunctionMessage = null, BlockParameter blockParameter = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
+            if(ethereumContractFunctionMessage == null) ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
             SetAddressFrom(ethereumContractFunctionMessage);
             var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
             return queryHandler.QueryAsync<TReturn>(
                 ContractAddress, ethereumContractFunctionMessage, blockParameter);
         }
 
-        public Task<TReturn> QueryAsync<TEthereumContractFunctionMessage, TReturn>(BlockParameter blockParameter = null)
+        public Task<byte[]> QueryRawAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage ethereumContractFunctionMessage = null, BlockParameter blockParameter = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
-            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
-            return QueryAsync<TEthereumContractFunctionMessage, TReturn>(ethereumContractFunctionMessage,
-                blockParameter);
-        }
-
-        public Task<byte[]> QueryRawAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
-            where TEthereumContractFunctionMessage : FunctionMessage, new()
-        {
+            if (ethereumContractFunctionMessage == null) ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
             SetAddressFrom(ethereumContractFunctionMessage);
             var queryHandler = EthApiContractService.GetContractQueryHandler<TEthereumContractFunctionMessage>();
             return queryHandler.QueryRawAsBytesAsync(
                 ContractAddress, ethereumContractFunctionMessage, blockParameter);
         }
-
-        public Task<byte[]> QueryRawAsync<TEthereumContractFunctionMessage>(BlockParameter blockParameter = null)
-           where TEthereumContractFunctionMessage : FunctionMessage, new()
-        {
-            var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
-            return QueryRawAsync<TEthereumContractFunctionMessage>(ethereumContractFunctionMessage,
-                blockParameter);
-        }
-
+        
         public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(BlockParameter blockParameter = null)
            where TEthereumContractFunctionMessage : FunctionMessage, new()
            where TCustomDecoder : ICustomRawDecoder<TReturn>, new()

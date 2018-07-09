@@ -21,8 +21,6 @@ namespace Nethereum.RPC.TransactionManagers
 
 #if !DOTNET35
         public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
-        public abstract Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction);
-
 
         public Task<string> SendRawTransactionAsync(string signedTransaction)
         {

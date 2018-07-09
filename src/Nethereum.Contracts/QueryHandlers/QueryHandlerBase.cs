@@ -1,35 +1,34 @@
 ﻿using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Contracts.QueryHandlers
 {
     public abstract class QueryHandlerBase<TFunctionMessage> 
         where TFunctionMessage : FunctionMessage, new()
     {
-        public EthApiContractService Eth { get; protected set; }
+        protected EthCall EthCall { get; set; }
         public string DefaultAddressFrom { get; set; }
+        protected BlockParameter DefaultBlockParameter { get; set; }
         public FunctionMessageEncodingService<TFunctionMessage> FunctionMessageEncodingService { get; } = new FunctionMessageEncodingService<TFunctionMessage>();
 
-        public QueryHandlerBase(IClient client, string defaultAddressFrom)
+        protected QueryHandlerBase(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
+            EthCall = ethCall;
             DefaultAddressFrom = defaultAddressFrom;
-            Eth = new EthApiContractService(client);
+            DefaultBlockParameter = defaultBlockParameter ?? BlockParameter.CreateLatest();
         }
 
-        public QueryHandlerBase(EthApiContractService eth)
+        protected QueryHandlerBase(IClient client, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null):this(new EthCall(client), defaultAddressFrom, defaultBlockParameter)
         {
-            Eth = eth;
+            
         }
 
         public virtual string GetAccountAddressFrom()
         {
-           var address = Eth.TransactionManager?.Account?.Address;
-           if (address == null)
-           {
-               return DefaultAddressFrom;
-           }
-           return address;
+            return DefaultAddressFrom;
         }
 
         protected void EnsureInitialiseAddress()

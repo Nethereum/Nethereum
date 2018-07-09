@@ -23,11 +23,6 @@ namespace Nethereum.RPC.TransactionManagers
             throw new InvalidOperationException("Default transaction manager cannot sign offline transactions");
         }
 
-        public override Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
-        {
-            throw new InvalidOperationException("Default transaction manager cannot sign offline transactions");
-        }
-
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");

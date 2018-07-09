@@ -13,11 +13,6 @@ namespace Nethereum.Contracts.DeploymentHandlers
     {
         protected DeploymentMessageEncodingService<TContractDeploymentMessage> DeploymentMessageEncodingService { get; set;}
 
-        protected DeploymentHandlerBase(IClient client, IAccount account):base(client, account)
-        {
-            InitialiseEncodingService();
-        }
-
         private void InitialiseEncodingService()
         {
             DeploymentMessageEncodingService = new DeploymentMessageEncodingService<TContractDeploymentMessage>();

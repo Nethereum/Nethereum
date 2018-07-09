@@ -45,7 +45,7 @@ namespace Nethereum.Web3.Accounts.Managed
                 if (Account.NonceService != null)
                 {
                     Account.NonceService.Client = Client;
-                    nonce = await Account.NonceService.GetNextNonceAsync();
+                    nonce = await Account.NonceService.GetNextNonceAsync().ConfigureAwait(false);
                 }
             return nonce;
         }
@@ -67,11 +67,11 @@ namespace Nethereum.Web3.Accounts.Managed
                 .ConfigureAwait(false);
         }
 
-        public override async Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
+        public override Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
         {
             if (from != Account.Address) throw new Exception("Invalid account used");
             var transactionInput = new TransactionInput(null, to, from, null, null, amount);
-            return await SendTransactionAsync(transactionInput);
+            return SendTransactionAsync(transactionInput);
         }
 
         public override Task<string> SignTransactionAsync(TransactionInput transaction)
@@ -79,9 +79,5 @@ namespace Nethereum.Web3.Accounts.Managed
             throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
         }
 
-        public override Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
-        {
-            throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
-        }
     }
 }

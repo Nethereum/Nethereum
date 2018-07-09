@@ -13,9 +13,5 @@
     <TypeIdentifier />
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="Nethereum.Contracts.ContractHandlers.ContractQueryEthApiHandler&lt;TFunctionMessage&gt;">
-    <Position X="5.5" Y="8.25" Width="4.5" />
-    <TypeIdentifier />
-  </Class>
   <Font Name="Segoe UI" Size="9" />
 </ClassDiagram>

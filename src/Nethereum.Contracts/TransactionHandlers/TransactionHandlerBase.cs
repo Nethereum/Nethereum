@@ -12,11 +12,6 @@ namespace Nethereum.Contracts.CQS
     {
         protected FunctionMessageEncodingService<TFunctionMessage> FunctionMessageEncodingService { get; set; }
 
-        protected TransactionHandlerBase(IClient client, IAccount account) : base(client, account)
-        {
-            InitialiseEncodingService();
-        }
-
         private void InitialiseEncodingService()
         {
             FunctionMessageEncodingService = new FunctionMessageEncodingService<TFunctionMessage>();
