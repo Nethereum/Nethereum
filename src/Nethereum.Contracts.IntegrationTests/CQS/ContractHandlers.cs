@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
@@ -15,6 +16,33 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         public ContractHandlers(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+        [Fact]
+
+        public async void ShouldDecodeTransactionDeployment()
+        {
+            var senderAddress = AccountFactory.Address;
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+
+            var deploymentMessage = new StandardTokenDeployment
+            {
+                TotalSupply = 10000,
+                FromAddress = senderAddress,
+                Gas = new HexBigInteger(900000)
+            };
+
+            var deploymentHandler = web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>();
+            var transactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+
+            var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transactionReceipt.TransactionHash);
+
+            var deploymentMessageDecoded = new StandardTokenDeployment().DecodeTransaction(transaction);
+
+            Assert.Equal(deploymentMessage.TotalSupply, deploymentMessageDecoded.TotalSupply);
+            Assert.Equal(deploymentMessage.FromAddress, deploymentMessageDecoded.FromAddress);
+            Assert.Equal(deploymentMessage.Gas, deploymentMessageDecoded.Gas);
+
         }
 
         [Fact]

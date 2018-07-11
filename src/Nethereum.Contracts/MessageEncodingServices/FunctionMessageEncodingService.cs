@@ -48,6 +48,17 @@ namespace Nethereum.Contracts.MessageEncodingServices
             return transactionInput;
         }
 
+        public TContractFunction DecodeTransactionInput(TContractFunction contractMessageOuput, Transaction transactionInput)
+        {
+            contractMessageOuput = DecodeInput(contractMessageOuput, transactionInput.Input);
+            contractMessageOuput.Nonce = transactionInput.Nonce?.Value;
+            contractMessageOuput.GasPrice = transactionInput.GasPrice?.Value;
+            contractMessageOuput.AmountToSend = transactionInput.Value == null ? 0 : transactionInput.Value.Value;
+            contractMessageOuput.Gas = transactionInput.Gas?.Value;
+            contractMessageOuput.FromAddress = transactionInput.From;
+            return contractMessageOuput;
+        }
+
         public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
         {
             return FunctionBuilder.DecodeSimpleTypeOutput<TReturn>(output);

@@ -11,8 +11,8 @@
     <Position X="12" Y="0.75" Width="1.5" />
     <TypeIdentifier />
     <ShowAsAssociation>
-      <Property Name="NonceService" />
       <Property Name="TransactionManager" />
+      <Property Name="NonceService" />
     </ShowAsAssociation>
   </Interface>
   <Interface Name="Nethereum.RPC.NonceServices.INonceService">

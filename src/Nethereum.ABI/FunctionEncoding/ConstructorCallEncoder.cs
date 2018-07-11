@@ -1,3 +1,4 @@
+using System.Reflection;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 

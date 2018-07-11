@@ -57,11 +57,7 @@ namespace Nethereum.ABI.FunctionEncoding
             if (function == null)
                 throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
 
-#if DOTNET35
-            var properties = type.GetTypeInfo().GetProperties();
-#else
-            var properties = type.GetRuntimeProperties();
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             DecodeAttributes(output, functionOutputResult, properties.ToArray());
 
             return functionOutputResult;

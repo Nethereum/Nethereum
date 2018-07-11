@@ -124,6 +124,7 @@
     <None Include="AccountTransactionManagerNonceService.cd" />
     <None Include="ContractQueryHandlers.cd" />
     <None Include="ContractTransactionHandlers.cd" />
+    <None Include="EventExtensions.cd" />
     <None Include="Web3.cd" />
   </ItemGroup>
   <ItemGroup>
