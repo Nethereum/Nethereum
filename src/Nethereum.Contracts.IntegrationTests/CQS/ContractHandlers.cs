@@ -45,6 +45,50 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
         }
 
+
+        [Fact]
+
+        public async void ShouldDecodeTransactionInput()
+        {
+            var senderAddress = AccountFactory.Address;
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+
+            var deploymentMessage = new StandardTokenDeployment
+            {
+                TotalSupply = 10000,
+                FromAddress = senderAddress,
+                Gas = new HexBigInteger(900000)
+            };
+
+            var deploymentHandler = web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>();
+            var transactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+
+            var contractAddress = transactionReceipt.ContractAddress;
+            var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
+
+
+
+            var transactionMessage = new TransferFunction
+            {
+                FromAddress = senderAddress,
+                To = newAddress,
+                TokenAmount = 1000
+            };
+
+            var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+            var transferReceipt =
+                await transferHandler.SendRequestAndWaitForReceiptAsync(contractAddress, transactionMessage);
+
+            var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transferReceipt.TransactionHash);
+
+            var transferDecoded = new TransferFunction().DecodeTransactionInput(transaction);
+
+            Assert.Equal(transactionMessage.To, transferDecoded.To);
+            Assert.Equal(transactionMessage.FromAddress, transferDecoded.FromAddress);
+            Assert.Equal(transactionMessage.TokenAmount, transferDecoded.TokenAmount);
+
+        }
+
         [Fact]
         public async void Test()
         {

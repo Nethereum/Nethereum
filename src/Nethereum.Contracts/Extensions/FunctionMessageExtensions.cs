@@ -25,7 +25,13 @@ namespace Nethereum.Contracts.Extensions
         public static TContractMessage DecodeInput<TContractMessage>(this TContractMessage contractMessage,
             string data) where TContractMessage : FunctionMessage
         {     
-            return GetEncodingService<TContractMessage>(contractMessage, data).DecodeInput(contractMessage, data);
+            return GetEncodingService<TContractMessage>(contractMessage).DecodeInput(contractMessage, data);
+        }
+
+        public static TContractMessage DecodeTransactionInput<TContractMessage>(this TContractMessage contractMessage,
+            Transaction transaction) where TContractMessage : FunctionMessage
+        {
+            return GetEncodingService<TContractMessage>(contractMessage).DecodeTransactionInput(contractMessage, transaction);
         }
 
         public static byte[] GetCallData<TContractMessage>(this TContractMessage contractMessage
