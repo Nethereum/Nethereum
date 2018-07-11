@@ -34,7 +34,9 @@ namespace Nethereum.ABI.FunctionEncoding
             if ((data == "0x") || (data == sha3Signature)) return default(T);
             if (data.StartsWith(sha3Signature))
                 data = data.Substring(sha3Signature.Length);
-            DecodeFunctionOutput(functionInput, data);
+            var type = typeof(T);
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+            DecodeAttributes(data, functionInput, properties.ToArray());
             return functionInput;
         }
 

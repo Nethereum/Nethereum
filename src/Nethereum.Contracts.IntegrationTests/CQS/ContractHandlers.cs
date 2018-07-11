@@ -40,7 +40,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             var deploymentMessageDecoded = new StandardTokenDeployment().DecodeTransaction(transaction);
 
             Assert.Equal(deploymentMessage.TotalSupply, deploymentMessageDecoded.TotalSupply);
-            Assert.Equal(deploymentMessage.FromAddress, deploymentMessageDecoded.FromAddress);
+            Assert.Equal(deploymentMessage.FromAddress.ToLower(), deploymentMessageDecoded.FromAddress.ToLower());
             Assert.Equal(deploymentMessage.Gas, deploymentMessageDecoded.Gas);
 
         }
@@ -83,8 +83,8 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var transferDecoded = new TransferFunction().DecodeTransactionInput(transaction);
 
-            Assert.Equal(transactionMessage.To, transferDecoded.To);
-            Assert.Equal(transactionMessage.FromAddress, transferDecoded.FromAddress);
+            Assert.Equal(transactionMessage.To.ToLower(), transferDecoded.To.ToLower());
+            Assert.Equal(transactionMessage.FromAddress.ToLower(), transferDecoded.FromAddress.ToLower());
             Assert.Equal(transactionMessage.TokenAmount, transferDecoded.TokenAmount);
 
         }
