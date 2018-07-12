@@ -4,18 +4,31 @@ using System.Linq;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionCallDecoder : ParameterDecoder
     {
+        public bool IsDataForFunction(string sha3Signature, string data)
+        {
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
+            
+            if (data == "0x") return false;
+            
+            if(string.Equals(data.ToLower(), sha3Signature.ToLower(), StringComparison.Ordinal)) return true;
+
+            if (data.ToLower().StartsWith(sha3Signature.ToLower())) return true;
+
+            return false;
+        }
+
         public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
             params Parameter[] parameters)
         {
-            if (!sha3Signature.StartsWith("0x")) sha3Signature = "0x" + sha3Signature;
-            if (!data.StartsWith("0x")) data = "0x" + data;
+            if(!IsDataForFunction(sha3Signature, data)) return null;
 
-            if ((data == "0x") || (data == sha3Signature)) return null;
             if (data.StartsWith(sha3Signature))
                 data = data.Substring(sha3Signature.Length); //4 bytes?
             return DecodeDefaultData(data, parameters);

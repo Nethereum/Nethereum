@@ -18,7 +18,7 @@ namespace Nethereum.Generators.CQS
 
         private void InitisialiseNamespaceDependencies()
         {
-            NamespaceDependencies.AddRange(new []{"System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", "Nethereum.ABI.FunctionEncoding.Attributes"});
+            NamespaceDependencies.AddRange(new []{"System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts", "Nethereum.ABI.FunctionEncoding.Attributes"});
         }
     }
 }

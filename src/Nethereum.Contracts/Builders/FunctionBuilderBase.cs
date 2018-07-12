@@ -29,6 +29,11 @@ namespace Nethereum.Contracts
 
         public FunctionABI FunctionABI { get; protected set; }
 
+        public bool IsTransactionInputDataForFunction(string data)
+        {
+            return FunctionCallDecoder.IsDataForFunction(FunctionABI.Sha3Signature, data);
+        }
+
         public List<ParameterOutput> DecodeInput(string data)
         {
             return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data,

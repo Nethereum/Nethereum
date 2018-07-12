@@ -37,12 +37,19 @@ namespace Nethereum.Generators.CQS
                 header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"")]";
             }
 
-            return $@"{header}
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}:ContractMessage
+            return $@"{GetPartialMainClass()}
+
+{header}
+{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base:FunctionMessage
 {SpaceUtils.OneTab}{{
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(functionABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
         }
-            
+
+        public string GetPartialMainClass()
+        {
+            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}:{Model.GetTypeName()}Base{{}}";
+
+        }           
     }
 }

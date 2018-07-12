@@ -25,6 +25,12 @@ namespace Nethereum.Contracts.Extensions
             return GetEncodingService<TContractMessage>(contractMessage).DecodeTransaction(contractMessage, transaction);
         }
 
+        public static TContractMessage DecodeTransactionToDeploymentMessage<TContractMessage>(this Transaction transaction) where TContractMessage : ContractDeploymentMessage, new()
+        {
+            var contractMessage = new TContractMessage();
+            return GetEncodingService<TContractMessage>(contractMessage).DecodeTransaction(contractMessage, transaction);
+        }
+
         public static string GetSwarmAddressFromByteCode<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
         {
             return GetEncodingService<TContractMessage>(contractMessage).GetSwarmAddressFromByteCode(contractMessage);
@@ -34,5 +40,7 @@ namespace Nethereum.Contracts.Extensions
         {
             return GetEncodingService<TContractMessage>(contractMessage).HasASwarmAddressTheByteCode(contractMessage);
         }
+
+       
     }
 }

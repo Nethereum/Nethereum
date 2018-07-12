@@ -1325,7 +1325,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.
     };
     $p.InitisialiseNamespaceDependencies = function ContractDeploymentCQSMessageModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts", 
             "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
@@ -1392,7 +1392,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageModel, Nethereum.Generators
     };
     $p.InitisialiseNamespaceDependencies = function FunctionCQSMessageModel_InitisialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
-            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts.CQS", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.Contracts", 
             "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
@@ -1409,13 +1409,21 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, N
     };
     $p.GenerateClass = function ContractDeploymentCQSMessageCSharpTemplate_GenerateClass() {
         var typeName = this.get_Model().GetTypeName();
-        return String.Format("{0}public class {1}:ContractDeploymentMessage\r\n{2}{{\r\n{3}\r\n{4}public static string BYTECODE = \"{5}\";\r\n{6}\r\n{7}public {8}():base(BYTECODE) {{ }}\r\n{9}\r\n{10}public {11}(string byteCode):base(byteCode) {{ }}\r\n{12}\r\n{13}\r\n{14}}}", 
-            [Nethereum.Generators.Core.SpaceUtils().OneTab, typeName, Nethereum.Generators.Core.SpaceUtils().OneTab, 
+        return String.Format("{0}\r\n\r\n{1}public class {2}Base:ContractDeploymentMessage\r\n{3}{{\r\n{4}\r\n{5}public static string BYTECODE = \"{6}\";\r\n{7}\r\n{8}public {9}Base():base(BYTECODE) {{ }}\r\n{10}\r\n{11}public {12}Base(string byteCode):base(byteCode) {{ }}\r\n{13}\r\n{14}\r\n{15}}}", 
+            [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, typeName, Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 this.get_Model().get_ByteCode(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 typeName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 typeName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_ConstructorABI().get_InputParameters()), 
                 Nethereum.Generators.Core.SpaceUtils().OneTab]);
+    };
+    $p.GetPartialMainClass = function ContractDeploymentCQSMessageCSharpTemplate_GetPartialMainClass() {
+        var typeName = this.get_Model().GetTypeName();
+
+        return String.Format("{0}public partial class {1}:{2}Base\r\n{3}{{\r\n{4}public {5}():base(BYTECODE) {{ }}\r\n{6}\r\n{7}public {8}(string byteCode):base(byteCode) {{ }}\r\n{9}}}", 
+            [Nethereum.Generators.Core.SpaceUtils().OneTab, typeName, typeName, Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                Nethereum.Generators.Core.SpaceUtils().TwoTabs, typeName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                Nethereum.Generators.Core.SpaceUtils().TwoTabs, typeName, Nethereum.Generators.Core.SpaceUtils().OneTab]);
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -1452,10 +1460,15 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.G
                 functionABI.get_Name()]);
         }
 
-        return String.Format("{0}\r\n{1}public class {2}:ContractMessage\r\n{3}{{\r\n{4}\r\n{5}}}", [header, 
-            Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
-            this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(functionABI.get_InputParameters()), 
-            Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        return String.Format("{0}\r\n\r\n{1}\r\n{2}public class {3}Base:FunctionMessage\r\n{4}{{\r\n{5}\r\n{6}}}", 
+            [this.GetPartialMainClass(), header, Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().OneTab, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(functionABI.get_InputParameters()), 
+                Nethereum.Generators.Core.SpaceUtils().OneTab]);
+    };
+    $p.GetPartialMainClass = function FunctionCQSMessageCSharpTemplate_GetPartialMainClass() {
+        return String.Format("{0}public partial class {1}:{2}Base{{}}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), this.get_Model().GetTypeName()]);
+
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -1702,13 +1715,17 @@ $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function EventDTOCSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[Event(\"{1}\")]\r\n{2}public class {3}\r\n{4}{{\r\n{5}\r\n{6}}}", 
-                [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
+            return String.Format("{0}\r\n\r\n{1}[Event(\"{2}\")]\r\n{3}public class {4}Base: IEventDTO\r\n{5}{{\r\n{6}\r\n{7}}}", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this._parameterAbiEventDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_EventABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;
+    };
+    $p.GetPartialMainClass = function EventDTOCSharpTemplate_GetPartialMainClass() {
+        return String.Format("{0}public partial class {1}:{2}Base{{}}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), this.get_Model().GetTypeName()]);
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -1726,12 +1743,16 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate, Nethereum.G
     };
     $p.GenerateClass = function FunctionOutputDTOCSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[FunctionOutput]\r\n{1}public class {2}\r\n{3}{{\r\n{4}\r\n{5}}}", 
-                [Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            return String.Format("{0}\r\n\r\n{1}[FunctionOutput]\r\n{2}public class {3}Base :IFunctionOutputDTO \r\n{4}{{\r\n{5}\r\n{6}}}", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_FunctionABI().get_OutputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;
+    };
+    $p.GetPartialMainClass = function FunctionOutputDTOCSharpTemplate_GetPartialMainClass() {
+        return String.Format("{0}public partial class {1}:{2}Base{{}}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), this.get_Model().GetTypeName()]);
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });

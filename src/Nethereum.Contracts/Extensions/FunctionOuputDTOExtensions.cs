@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 
 namespace Nethereum.Contracts.Extensions
 {

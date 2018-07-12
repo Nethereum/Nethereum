@@ -48,14 +48,23 @@ namespace Nethereum.Contracts.MessageEncodingServices
             return transactionInput;
         }
 
-        public TContractFunction DecodeTransactionInput(TContractFunction contractMessageOuput, Transaction transactionInput)
+        public bool IsTransactionForFunction(Transaction transaction)
         {
-            contractMessageOuput = DecodeInput(contractMessageOuput, transactionInput.Input);
-            contractMessageOuput.Nonce = transactionInput.Nonce?.Value;
-            contractMessageOuput.GasPrice = transactionInput.GasPrice?.Value;
-            contractMessageOuput.AmountToSend = transactionInput.Value == null ? 0 : transactionInput.Value.Value;
-            contractMessageOuput.Gas = transactionInput.Gas?.Value;
-            contractMessageOuput.FromAddress = transactionInput.From;
+            return FunctionBuilder.IsTransactionInputDataForFunction(transaction.Input);
+        }
+
+        public TContractFunction DecodeTransactionInput(TContractFunction contractMessageOuput, Transaction transaction)
+        {
+            if (!IsTransactionForFunction(transaction))
+                throw new ArgumentException("The transaction given is not for the current function",
+                    nameof(transaction));
+
+            contractMessageOuput = DecodeInput(contractMessageOuput, transaction.Input);
+            contractMessageOuput.Nonce = transaction.Nonce?.Value;
+            contractMessageOuput.GasPrice = transaction.GasPrice?.Value;
+            contractMessageOuput.AmountToSend = transaction.Value == null ? 0 : transaction.Value.Value;
+            contractMessageOuput.Gas = transaction.Gas?.Value;
+            contractMessageOuput.FromAddress = transaction.From;
             return contractMessageOuput;
         }
 
@@ -71,6 +80,7 @@ namespace Nethereum.Contracts.MessageEncodingServices
 
         public TContractFunction DecodeInput(TContractFunction function, string data)
         {
+            
             return FunctionBuilder.DecodeFunctionInput(function, data);
         }
 

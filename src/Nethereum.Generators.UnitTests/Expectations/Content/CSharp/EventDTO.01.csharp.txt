@@ -6,8 +6,10 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 namespace DefaultNamespace
 {
+    public partial class ItemAddedEventDTO:ItemAddedEventDTOBase{}
+
     [Event("ItemAdded")]
-    public class ItemAddedEventDTO
+    public class ItemAddedEventDTOBase: IEventDTO
     {
         [Parameter("uint256", "itemId", 1, false )]
         public BigInteger ItemId {get; set;}

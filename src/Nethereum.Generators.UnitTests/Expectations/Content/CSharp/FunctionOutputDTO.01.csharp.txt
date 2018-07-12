@@ -6,8 +6,10 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 namespace DefaultNamespace
 {
+    public partial class GetCarOutputDTO:GetCarOutputDTOBase{}
+
     [FunctionOutput]
-    public class GetCarOutputDTO
+    public class GetCarOutputDTOBase :IFunctionOutputDTO 
     {
         [Parameter("uint", "", 1)]
         public BigInteger ReturnValue1 {get; set;}

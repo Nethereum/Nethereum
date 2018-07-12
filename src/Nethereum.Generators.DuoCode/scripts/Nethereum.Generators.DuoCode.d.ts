@@ -620,6 +620,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate
             export interface ContractDeploymentCQSMessageCSharpTemplate extends ClassTemplateBase$1<ContractDeploymentCQSMessageModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface ContractDeploymentCQSMessageCSharpTemplateTypeFunc extends TypeFunction {
                 (): ContractDeploymentCQSMessageCSharpTemplateTypeFunc;
@@ -631,6 +632,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate
             export interface FunctionCQSMessageCSharpTemplate extends ClassTemplateBase$1<FunctionCQSMessageModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface FunctionCQSMessageCSharpTemplateTypeFunc extends TypeFunction {
                 (): FunctionCQSMessageCSharpTemplateTypeFunc;
@@ -737,6 +739,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.DTOs.EventDTOCSharpTemplate
             export interface EventDTOCSharpTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface EventDTOCSharpTemplateTypeFunc extends TypeFunction {
                 (): EventDTOCSharpTemplateTypeFunc;
@@ -748,6 +751,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate
             export interface FunctionOutputDTOCSharpTemplate extends CQS.ClassTemplateBase$1<FunctionOutputDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface FunctionOutputDTOCSharpTemplateTypeFunc extends TypeFunction {
                 (): FunctionOutputDTOCSharpTemplateTypeFunc;

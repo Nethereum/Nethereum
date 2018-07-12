@@ -37,8 +37,8 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transactionReceipt.TransactionHash);
 
-            var deploymentMessageDecoded = new StandardTokenDeployment().DecodeTransaction(transaction);
-
+            var deploymentMessageDecoded = transaction.DecodeTransactionToDeploymentMessage<StandardTokenDeployment>();
+                
             Assert.Equal(deploymentMessage.TotalSupply, deploymentMessageDecoded.TotalSupply);
             Assert.Equal(deploymentMessage.FromAddress.ToLower(), deploymentMessageDecoded.FromAddress.ToLower());
             Assert.Equal(deploymentMessage.Gas, deploymentMessageDecoded.Gas);
@@ -67,7 +67,6 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
 
 
-
             var transactionMessage = new TransferFunction
             {
                 FromAddress = senderAddress,
@@ -81,7 +80,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transferReceipt.TransactionHash);
 
-            var transferDecoded = new TransferFunction().DecodeTransactionInput(transaction);
+            var transferDecoded = transaction.DecodeTransactionToFunctionMessage<TransferFunction>();
 
             Assert.Equal(transactionMessage.To.ToLower(), transferDecoded.To.ToLower());
             Assert.Equal(transactionMessage.FromAddress.ToLower(), transferDecoded.FromAddress.ToLower());

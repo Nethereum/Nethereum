@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.ContractHandlers
