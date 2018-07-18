@@ -80,6 +80,7 @@ namespace Nethereum.XUnitEthereumClients
             var location = typeof(EthereumClientIntegrationFixture).GetTypeInfo().Assembly.Location;
             var dirPath = Path.GetDirectoryName(location);
             _exePath = Path.GetFullPath(Path.Combine(dirPath, @"..\..\..\..\..\testchain\clique"));
+            
             DeleteData();
 
             ProcessStartInfo psiSetup = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"), @"--datadir=devChain init genesis_clique.json ")
@@ -116,11 +117,32 @@ namespace Nethereum.XUnitEthereumClients
 
         private void DeleteData()
         {
+            var attempts = 0;
+            var success = false;
+
+            while (!success && attempts < 5)
+            {
+                try
+                {
+                    InnerDeleteData();
+                    success = true;
+                }
+                catch
+                {
+                    Thread.Sleep(2000);
+                    attempts = attempts + 1;
+                }
+            }
+        }
+
+        private void InnerDeleteData()
+        {
             var pathData = Path.Combine(_exePath, @"devChain\geth");
             if (Directory.Exists(pathData))
             {
                 Directory.Delete(pathData, true);
             }
+
         }
     }
 }
