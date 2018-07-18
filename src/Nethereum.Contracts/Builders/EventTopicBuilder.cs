@@ -14,9 +14,14 @@ namespace Nethereum.Contracts
             this.eventABI = eventABI;
         }
 
-        public object[] GetSignatureTopic()
+        public object[] GetSignatureTopicAsTheOnlyTopic()
         {
-            return new[] {EnsureHexPrefix(eventABI.Sha33Signature)};
+            return new object[] {GetSignatureTopic()};
+        }
+
+        public object GetSignatureTopic()
+        {
+            return eventABI.Sha33Signature.EnsureHexPrefix();
         }
 
         public object[] GetTopics(object[] firstTopic)
@@ -36,6 +41,52 @@ namespace Nethereum.Contracts
                 GetSignatureTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2),
                 GetValueTopic(thirdTopic, 3)
             };
+        }
+
+        public object[] GetTopics(object firstTopic)
+        {
+            return GetTopics(new []{firstTopic});
+        }
+
+        public object[] GetTopics(object firstTopic, object secondTopic)
+        {
+            return GetTopics(new[] { firstTopic }, new[] {secondTopic});
+        }
+
+        public object[] GetTopics(object firstTopic, object secondTopic, object thirdTopic)
+        {
+            return GetTopics(new[] { firstTopic }, new[] { secondTopic }, new[] {thirdTopic});
+        }
+
+        public object[] GetTopics<T1>(T1 firstTopic)
+        {
+            return GetTopics(new object[] { firstTopic });
+        }
+
+        public object[] GetTopics<T1, T2>(T1 firstTopic, T2 secondTopic)
+        {
+            return GetTopics(new object[] { firstTopic }, new object[] { secondTopic });
+        }
+
+        public object[] GetTopics<T1, T2, T3>(T1 firstTopic, T2 secondTopic, T3 thirdTopic)
+        {
+            return GetTopics(new object[] { firstTopic }, new object[] { secondTopic }, new object[] { thirdTopic });
+        }
+
+
+        public object[] GetTopics<T1>(T1[] firstOrTopics)
+        {
+            return GetTopics(firstOrTopics.Cast<object>().ToArray());
+        }
+
+        public object[] GetTopics<T1, T2>(T1[] firstOrTopics, T2[] secondOrTopics)
+        {
+            return GetTopics(firstOrTopics.Cast<object>().ToArray(),  secondOrTopics.Cast<object>().ToArray());
+        }
+
+        public object[] GetTopics<T1, T2, T3>(T1[] firstOrTopics, T2[] secondOrTopics, T3[] thirdOrTopics)
+        {
+            return GetTopics(firstOrTopics.Cast<object>().ToArray(), secondOrTopics.Cast<object>().ToArray(), thirdOrTopics.Cast<object>().ToArray());
         }
 
         public object[] GetValueTopic(object[] values, int paramNumber)

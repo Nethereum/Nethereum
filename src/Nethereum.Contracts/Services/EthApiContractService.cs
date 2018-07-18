@@ -1,3 +1,5 @@
+using System;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.JsonRpc.Client;
@@ -27,6 +29,18 @@ namespace Nethereum.Contracts.Services
         public Contract GetContract<TContractMessage>(string contractAddress)
         {
            return new Contract(this, typeof(TContractMessage), contractAddress);
+        }
+
+        public Event<TEventType> GetEvent<TEventType>() where TEventType : new()
+        {
+            if (!EventAttribute.IsEventType(typeof(TEventType))) throw new ArgumentException("The type given is not a valid Event"); ;
+            return new Event<TEventType>(Client);
+        }
+
+        public Event<TEventType> GetEvent<TEventType>(string contractAddress) where TEventType : new()
+        {
+            if (!EventAttribute.IsEventType(typeof(TEventType))) throw new ArgumentException("The type given is not a valid Event");
+            return new Event<TEventType>(Client, contractAddress);
         }
 
 #if !DOTNET35

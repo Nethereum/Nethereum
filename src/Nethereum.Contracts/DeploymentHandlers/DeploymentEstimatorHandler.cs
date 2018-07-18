@@ -1,7 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts.DeploymentHandlers

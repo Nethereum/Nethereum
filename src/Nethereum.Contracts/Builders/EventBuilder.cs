@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding;
-using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Extensions;
 using Nethereum.RPC.Eth.DTOs;

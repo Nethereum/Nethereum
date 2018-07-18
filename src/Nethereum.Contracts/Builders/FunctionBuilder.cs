@@ -1,5 +1,4 @@
-﻿using Nethereum.ABI.Decoders;
-using Nethereum.ABI.Model;
+﻿using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;

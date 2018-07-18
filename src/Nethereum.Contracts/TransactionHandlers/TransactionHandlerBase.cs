@@ -1,10 +1,8 @@
 ﻿using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.MessageEncodingServices;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
 #if !DOTNET35
     public abstract class TransactionHandlerBase<TFunctionMessage> : ContractTransactionHandlerBase

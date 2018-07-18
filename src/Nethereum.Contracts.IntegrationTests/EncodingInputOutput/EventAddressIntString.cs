@@ -228,7 +228,7 @@ contract Coin {
             var metadataEvent = coinService.GetEventMetadataEvent();
             var metadata =
                 await metadataEvent.GetAllChanges<MetadataEventEventDTO>(
-                    metadataEvent.CreateFilterInput(new BlockParameter(receipt.BlockNumber)));
+                    metadataEvent.CreateFilterInput(new BlockParameter(receipt.BlockNumber), null));
             var result = metadata[0].Event;
             Assert.Equal(result.Creator.ToLower(), account.Address.ToLower());
             Assert.Equal(100, result.Id);

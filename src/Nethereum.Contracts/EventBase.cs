@@ -18,7 +18,7 @@ namespace Nethereum.Contracts
         protected EthGetLogs EthGetLogs { get; }
         protected EthNewFilter EthNewFilter { get; }
         public string ContractAddress { get; }
-        protected EventABI EventABI { get; }
+        public EventABI EventABI { get; }
         protected EthGetFilterLogsForEthNewFilter EthFilterLogs { get; set; }
 
         public EventBase(IClient client, string contractAddress, EventABI eventABI)
@@ -43,7 +43,7 @@ namespace Nethereum.Contracts
 
         public Task<HexBigInteger> CreateFilterAsync(BlockParameter fromBlock = null)
         {
-            var newFilterInput = CreateFilterInput(fromBlock);
+            var newFilterInput = CreateFilterInput(fromBlock, (BlockParameter)null);
             return EthNewFilter.SendRequestAsync(newFilterInput);
         }
 
@@ -99,7 +99,7 @@ namespace Nethereum.Contracts
             return CreateFilterAsync(ethFilterInput);
         }
 
-        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
+        public Task<HexBigInteger> CreateFilterInputCreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, fromBlock, toBlock);
@@ -117,6 +117,51 @@ namespace Nethereum.Contracts
         public Task<HexBigInteger> CreateFilterAsync(NewFilterInput newfilterInput)
         {
             return EthNewFilter.SendRequestAsync(newfilterInput);
+        }
+
+        public NewFilterInput CreateFilterInput<T>(T firstIndexedParameterValue, BlockParameter fromBlock = null,
+            BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValue,
+                fromBlock, toBlock);
+        }
+
+        public NewFilterInput CreateFilterInput<T1, T2>(T1 firstIndexedParameterValue,
+            T2 secondIndexedParameterValue, BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValue, secondIndexedParameterValue,
+                 fromBlock, toBlock);
+        }
+
+        public NewFilterInput CreateFilterInput<T1, T2, T3>(T1 firstIndexedParameterValue,
+            T2 secondIndexedParameterValue, T3 thirdIndexedParameterValue, BlockParameter fromBlock = null,
+            BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValue, secondIndexedParameterValue,
+                thirdIndexedParameterValue, fromBlock, toBlock);
+        }
+
+        public NewFilterInput CreateFilterInput<T>(T[] firstIndexedParameterValues,
+            BlockParameter fromBlock = null,
+            BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValues,
+                 fromBlock, toBlock);
+        }
+
+        public NewFilterInput CreateFilterInput<T1, T2>(T1[] firstIndexedParameterValues,
+            T2[] secondIndexedParameterValues, BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValues, secondIndexedParameterValues,
+                 fromBlock, toBlock);
+        }
+
+        public NewFilterInput CreateFilterInput<T1, T2, T3>(T1[] firstIndexedParameterValues,
+            T2[] secondIndexedParameterValues, T3[] thirdIndexedParameterValues, BlockParameter fromBlock = null,
+            BlockParameter toBlock = null)
+        {
+            return EventABI.CreateFilterInput(ContractAddress, firstIndexedParameterValues, secondIndexedParameterValues,
+                thirdIndexedParameterValues, fromBlock, toBlock);
         }
 
         public Task<HexBigInteger> CreateFilterBlockRangeAsync(BlockParameter fromBlock, BlockParameter toBlock)

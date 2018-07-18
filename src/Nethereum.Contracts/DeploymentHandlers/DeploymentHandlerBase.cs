@@ -1,8 +1,5 @@
 ﻿using Nethereum.Contracts.ContractHandlers;
-using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.MessageEncodingServices;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts.DeploymentHandlers

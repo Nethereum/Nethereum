@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
     public interface ITransactionEstimatorHandler<TFunctionMessage> where TFunctionMessage : FunctionMessage, new()
     {

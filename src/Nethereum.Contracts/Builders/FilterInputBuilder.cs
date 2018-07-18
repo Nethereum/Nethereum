@@ -20,7 +20,7 @@ namespace Nethereum.Contracts
         {
             var ethFilterInput = new NewFilterInput
             {
-                FromBlock = fromBlock,
+                FromBlock = fromBlock ?? BlockParameter.CreateEarliest(),
                 ToBlock = toBlock ?? BlockParameter.CreateLatest(),
                 Address = addresses
             };

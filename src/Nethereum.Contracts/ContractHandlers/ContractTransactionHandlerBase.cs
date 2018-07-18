@@ -1,6 +1,4 @@
-﻿using System;
-using Nethereum.Contracts.Services;
-using Nethereum.JsonRpc.Client;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 

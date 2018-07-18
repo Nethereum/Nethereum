@@ -25,7 +25,7 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.OneTab}
 {SpaceUtils.TwoTabs}protected Web3 Web3{{ get; }}
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}protected ContractHandler ContractHandler {{ get; }}
+{SpaceUtils.TwoTabs}public ContractHandler ContractHandler {{ get; }}
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public {Model.GetTypeName()}(Web3 web3, string contractAddress)
 {SpaceUtils.TwoTabs}{{

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
     public interface ITransactionSigner<TFunctionMessage> where TFunctionMessage : FunctionMessage, new()
     {

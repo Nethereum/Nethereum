@@ -1,5 +1,4 @@
 ﻿using Nethereum.Contracts.QueryHandlers;
-using Nethereum.Contracts.Services;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 

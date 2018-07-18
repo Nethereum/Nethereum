@@ -22,7 +22,7 @@ namespace Nethereum.Contracts
 #if !DOTNET35
         public async Task<List<EventLog<T>>> GetAllChanges<T>(NewFilterInput filterInput) where T : new()
         {
-            if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, use CreateFilterInput");
+            if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, the filter input does not belong to this contract");
             var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }

@@ -26,7 +26,7 @@ namespace Nethereum.Generators.DTOs
             var parameterModel = new ParameterABIModel(parameter);
             return 
                 $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})]
-{SpaceUtils.TwoTabs}public {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{get; set;}}";
+{SpaceUtils.TwoTabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{get; set;}}";
         }
     }
 }

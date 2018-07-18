@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
@@ -11,7 +12,6 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts.Extensions
 {
-
     public static class EventExtensions
     {
         public static bool IsLogForEvent<TEventDTO>(this JToken log)
@@ -54,62 +54,6 @@ namespace Nethereum.Contracts.Extensions
             return false;
         }
 
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
-            BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string contractAddress, object[] filterTopic1, object[] filterTopic2,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, filterTopic3, fromBlock,
-                toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string[] contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string[] contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
-            BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string[] contractAddress, object[] filterTopic1, object[] filterTopic2,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(this TEventDTO eventDTO, string[] contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null) where TEventDTO : IEventDTO
-        {
-            var eventABI = GetEventABI<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, filterTopic3, fromBlock,
-                toBlock);
-        }
-
         public static EventABI GetEventABI<TEventDTO>() where TEventDTO : IEventDTO
         {
             var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
@@ -122,130 +66,218 @@ namespace Nethereum.Contracts.Extensions
             return eventABI;
         }
 
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        public static EventTopicBuilder GetTopicBuilder(this EventABI eventABI)
         {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
-            BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string contractAddress, object[] filterTopic1, object[] filterTopic2,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, filterTopic3, fromBlock,
-                toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string[] contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string[] contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
-            BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string[] contractAddress, object[] filterTopic1, object[] filterTopic2,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, fromBlock, toBlock);
-        }
-
-        public static NewFilterInput CreateFilterInput<TEventDTO>(string[] contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
-            BlockParameter fromBlock = null, BlockParameter toBlock = null)
-        {
-            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
-            return eventABI.CreateFilterInput(contractAddress, filterTopic1, filterTopic2, filterTopic3, fromBlock,
-                toBlock);
+            return new EventTopicBuilder(eventABI);
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetSignatureTopic();
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetSignatureTopicAsTheOnlyTopic();
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string[] contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetSignatureTopic();
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetSignatureTopicAsTheOnlyTopic();
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1);
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string[] contractAddress, object[] filterTopic1, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1);
             return ethFilterInput;
         }
 
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, string contractAddress, T1 filterTopic1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics( filterTopic1);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, string[] contractAddress, T1 filterTopic1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, T1 filterTopic1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput((string)null, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1);
+            return ethFilterInput;
+        }
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string contractAddress, object[] filterTopic1, object[] filterTopic2,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2);
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string[] contractAddress, object[] filterTopic1, object[] filterTopic2,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, string contractAddress, T1 filterTopic1, T2 filterTopic2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, string[] contractAddress, T1 filterTopic1, T2 filterTopic2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics( filterTopic1,  filterTopic2);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, T1 filterTopic1, T2 filterTopic2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput((string)null, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2);
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2, filterTopic3);
             return ethFilterInput;
         }
 
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string[] contractAddress, object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventTopicBuilder = new EventTopicBuilder(eventABI);
+            
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
-            ethFilterInput.Topics = eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2, filterTopic3);
             return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2, T3>(this EventABI eventABI, string contractAddress, T1 filterTopic1, T2 filterTopic2, T3 filterTopic3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2, filterTopic3);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1,T2,T3>(this EventABI eventABI, string[] contractAddress, T1 filterTopic1, T2 filterTopic2, T3 filterTopic3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2, filterTopic3);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1,T2,T3>(this EventABI eventABI, T1 filterTopic1, T2 filterTopic2, T3 filterTopic3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput((string)null, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetTopics(filterTopic1, filterTopic2, filterTopic3);
+            return ethFilterInput;
+        }
+
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, T1[] filterOrTopics1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(filterOrTopics1.Cast<object>().ToArray()
+                , fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, string contractAddress, T1[] filterOrTopics1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddress, filterOrTopics1.Cast<object>().ToArray(), 
+                 fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1>(this EventABI eventABI, string[] contractAddresses, T1[] filterOrTopics1,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddresses, filterOrTopics1.Cast<object>().ToArray(),
+                fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, T1[] filterOrTopics1, T2[] filterOrTopics2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray()
+                , fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, string contractAddress, T1[] filterOrTopics1, T2[] filterOrTopics2,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddress, filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray()
+                , fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2>(this EventABI eventABI, string[] contractAddresses, T1[] filterOrTopics1, T2[] filterOrTopics2, 
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddresses, filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray(),
+                fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2, T3>(this EventABI eventABI, T1[] filterOrTopics1, T2[] filterOrTopics2, T3[] filterOrTopics3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray(),
+                filterOrTopics3.Cast<object>().ToArray(), fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2, T3>(this EventABI eventABI, string contractAddress, T1[] filterOrTopics1, T2[] filterOrTopics2, T3[] filterOrTopics3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddress, filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray(),
+                filterOrTopics3.Cast<object>().ToArray(), fromBlock, toBlock);
+        }
+
+        public static NewFilterInput CreateFilterInput<T1, T2, T3>(this EventABI eventABI, string[] contractAddresses, T1[] filterOrTopics1, T2[] filterOrTopics2, T3[] filterOrTopics3,
+            BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            return eventABI.CreateFilterInput(contractAddresses, filterOrTopics1.Cast<object>().ToArray(), filterOrTopics2.Cast<object>().ToArray(),
+                filterOrTopics3.Cast<object>().ToArray(), fromBlock, toBlock);
         }
 
         public static bool IsFilterInputForEvent(this EventABI eventABI, string contractAddress, NewFilterInput filterInput)
@@ -256,8 +288,7 @@ namespace Nethereum.Contracts.Extensions
                 {
                     return false;
                 }
-                var eventtopic = filterInput.Topics[0].ToString();
-                if (eventABI.Sha33Signature.IsTheSameHex(eventtopic))
+                if(eventABI.IsTopicSignatureForEvent(filterInput.Topics[0]))
                     return true;
             }
             return false;
@@ -265,10 +296,27 @@ namespace Nethereum.Contracts.Extensions
 
         public static bool IsFilterInputForContractAddress(string contractAdress, NewFilterInput filterInput)
         {
+            if (contractAdress == null) return true;
             if (filterInput.Address != null && filterInput.Address.Length > 0)
             {
                 return filterInput.Address.Count(x =>
                            string.Equals(x, contractAdress, StringComparison.CurrentCultureIgnoreCase)) > 0;
+            }
+            return false;
+        }
+
+        public static bool IsTopicSignatureForEvent(this EventABI eventABI, object topic)
+        {
+            if (topic is IEnumerable<object> topicArray)
+            {
+                return topicArray.Any(x => eventABI.Sha33Signature.IsTheSameHex(x.ToString()));
+            }
+            else
+            {
+                if (topic is string topicString)
+                {
+                    return eventABI.Sha33Signature.IsTheSameHex(topicString);
+                }
             }
             return false;
         }
@@ -296,6 +344,11 @@ namespace Nethereum.Contracts.Extensions
         {
             var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
             return DecodeAllEvents<TEventDTO>(eventABI, logs);
+        }
+
+        public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this TransactionReceipt transactionReceipt) where TEventDTO : new()
+        {
+            return transactionReceipt.Logs.DecodeAllEvents<TEventDTO>();
         }
 
         public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this EventABI eventABI, JArray logs) where TEventDTO : new()

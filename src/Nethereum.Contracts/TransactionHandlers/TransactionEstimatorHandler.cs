@@ -1,10 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
 #if !DOTNET35
     public class TransactionEstimatorHandler<TFunctionMessage> :

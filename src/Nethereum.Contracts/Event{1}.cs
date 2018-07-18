@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -22,6 +21,11 @@ namespace Nethereum.Contracts
 
         public Event(IClient client, string contractAddress) : base(client, contractAddress, typeof(TEventMessage))
         {
+        }
+
+        public Event(IClient client) : this(client, null)
+        {
+
         }
 
         public List<EventLog<TEventMessage>> DecodeAllEventsForEvent(JArray logs)

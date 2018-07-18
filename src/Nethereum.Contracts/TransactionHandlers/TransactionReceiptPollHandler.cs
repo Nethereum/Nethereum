@@ -1,11 +1,9 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionManagers;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
 #if !DOTNET35
     public class TransactionReceiptPollHandler<TFunctionMessage> :

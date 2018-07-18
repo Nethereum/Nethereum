@@ -1,17 +1,15 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
-using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
 
-namespace Nethereum.Contracts.CQS
+namespace Nethereum.Contracts.TransactionHandlers
 {
 #if !DOTNET35
     /// <summary>
     /// Signs a transaction estimating the gas if not set and retrieving the next nonce if not set
     /// </summary>
-    public class TransactionSigner<TFunctionMessage> :
+    public class TransactionSignerHandler<TFunctionMessage> :
         TransactionHandlerBase<TFunctionMessage>,
         ITransactionSigner<TFunctionMessage>
         where TFunctionMessage : FunctionMessage, new()
@@ -19,13 +17,13 @@ namespace Nethereum.Contracts.CQS
         private ITransactionEstimatorHandler<TFunctionMessage> _contractTransactionEstimatorHandler;
 
 
-        public TransactionSigner(ITransactionManager transactionManager) : this(transactionManager,
+        public TransactionSignerHandler(ITransactionManager transactionManager) : this(transactionManager,
             new TransactionEstimatorHandler<TFunctionMessage>(transactionManager))
         {
 
         }
 
-        public TransactionSigner(ITransactionManager transactionManager,
+        public TransactionSignerHandler(ITransactionManager transactionManager,
             ITransactionEstimatorHandler<TFunctionMessage> contractTransactionEstimatorHandler) : base(transactionManager)
         {
             _contractTransactionEstimatorHandler = contractTransactionEstimatorHandler;
