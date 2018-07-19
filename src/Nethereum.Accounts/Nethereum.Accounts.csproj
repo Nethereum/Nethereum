@@ -7,7 +7,7 @@
     <AssemblyTitle>Nethereum.Accounts</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Accounts</AssemblyName>
     <PackageId>Nethereum.Accounts</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>

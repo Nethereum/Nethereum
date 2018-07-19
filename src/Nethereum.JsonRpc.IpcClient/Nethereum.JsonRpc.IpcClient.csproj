@@ -5,7 +5,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.IpcClient</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFrameworks>net461;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>$(IpcWebSocketsFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.IpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.IpcClient</PackageId>
     <PackageTags>Json;RPC</PackageTags>
@@ -16,13 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="System.IO.Pipes" Version="4.3.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">

@@ -1,8 +1,46 @@
 <Project>
   <PropertyGroup>
     <TargetNet35>true</TargetNet35>
+    <TargetNet461>false</TargetNet461>
+    <TargetUnityNet461AOT>false</TargetUnityNet461AOT>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;net35;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
     <DefaultFrameworks>netstandard1.1;net451;netcoreapp2.1</DefaultFrameworks>
+    <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
+    <HdWalletFrameworks>netstandard1.1;net452;netcoreapp2.1</HdWalletFrameworks>
+    <HdWalletFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</HdWalletFrameworks>
+    <UnityFrameworks>net461;net35</UnityFrameworks>
+    <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard1.3;netcoreapp2.1</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
+    <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
+
+   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461'">
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Condition="'$(TargetUnityNet461AOT)' == 'true' " Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' ">
+    <DefineConstants>$(DefineConstants);PCL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+    <Reference Include="System" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="BouncyCastle" Version="1.8.2" />
+  </ItemGroup>
+
 </Project>

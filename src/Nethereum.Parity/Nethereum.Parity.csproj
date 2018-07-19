@@ -6,7 +6,7 @@
     <AssemblyTitle>Nethereum.Parity</AssemblyTitle>
     <VersionPrefix>$(ParityVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Parity</AssemblyName>
     <PackageId>Nethereum.Parity</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Parity</PackageTags>
@@ -18,10 +18,7 @@
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
+   <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
     <Reference Include="System.Net.Http" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-
 </Project>

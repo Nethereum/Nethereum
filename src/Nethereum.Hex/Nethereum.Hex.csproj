@@ -11,7 +11,7 @@
     <PackageId>Nethereum.Hex</PackageId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard1.1|AnyCPU'">
+  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -29,16 +29,7 @@
     <Compile Include="..\Nethereum.BigInteger.N351\FormatProvider.NumberBuffer.cs" Link="BigInteger\FormatProvider.NumberBuffer.cs" />
     <Compile Include="..\Nethereum.BigInteger.N351\NumericHelpers.cs" Link="BigInteger\NumericHelpers.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Condition=" '$(TargetFramework)' != 'net35'" Include="Newtonsoft.Json" Version="11.0.2" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System.Numerics" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+  
   <ItemGroup>
     <Folder Include="BigInteger\" />
   </ItemGroup>
