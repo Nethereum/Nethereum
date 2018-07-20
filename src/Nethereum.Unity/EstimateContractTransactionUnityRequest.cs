@@ -1,8 +1,10 @@
 using System.Collections;
+using System.Numerics;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
