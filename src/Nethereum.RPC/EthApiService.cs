@@ -77,7 +77,12 @@ namespace Nethereum.RPC
         public EthApiFilterService Filters { get; private set; }
 
         public EthApiCompilerService Compile { get; private set; }
-
+#if !DOTNET35
+        public virtual IEtherTransferService  GetEtherTransferService()
+        {
+            return new EtherTransferService(TransactionManager);
+        }
+#endif
         public virtual ITransactionManager TransactionManager
         {
             get { return _transactionManager; }
