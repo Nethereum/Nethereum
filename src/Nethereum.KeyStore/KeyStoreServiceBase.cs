@@ -1,8 +1,6 @@
 ﻿using System;
 using Nethereum.KeyStore.Crypto;
 using Nethereum.KeyStore.Model;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Utilities;
 
@@ -40,15 +38,12 @@ namespace Nethereum.KeyStore
         public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss)
         {
             var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss);
-            return JsonConvert.SerializeObject(keyStore);
+            return SerializeKeyStoreToJson(keyStore);
         }
-
-        public KeyStore<T> DeserializeKeyStoreFromJson(string json)
-        {
-            return JObject.Parse(json).ToObject<KeyStore<T>>();
-            //return JsonConvert.DeserializeObject<KeyStore<T>>(json);
-        }
-
+        
+        public abstract KeyStore<T> DeserializeKeyStoreFromJson(string json);
+        public abstract string SerializeKeyStoreToJson(KeyStore<T> keyStore);
+        
         public abstract byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);
 
         public abstract string GetKdfType();
@@ -103,7 +98,7 @@ namespace Nethereum.KeyStore
         public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss, T kdfParams)
         {
             var keyStore = EncryptAndGenerateKeyStore(password, privateKey, addresss, kdfParams);
-            return JsonConvert.SerializeObject(keyStore);
+            return SerializeKeyStoreToJson(keyStore);
         }
 
         public byte[] DecryptKeyStoreFromJson(string password, string json)

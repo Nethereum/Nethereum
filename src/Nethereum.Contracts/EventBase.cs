@@ -99,7 +99,7 @@ namespace Nethereum.Contracts
             return CreateFilterAsync(ethFilterInput);
         }
 
-        public Task<HexBigInteger> CreateFilterInputCreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
+        public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, object[] filterTopic2,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = CreateFilterInput(filterTopic1, filterTopic2, fromBlock, toBlock);

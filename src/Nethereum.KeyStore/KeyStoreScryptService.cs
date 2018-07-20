@@ -1,6 +1,7 @@
 ﻿using System;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.KeyStore.Crypto;
+using Nethereum.KeyStore.JsonDeserialisation;
 using Nethereum.KeyStore.Model;
 
 namespace Nethereum.KeyStore
@@ -32,6 +33,16 @@ namespace Nethereum.KeyStore
         protected override ScryptParams GetDefaultParams()
         {
             return new ScryptParams {Dklen = 32, N = 262144, R = 1, P = 8};
+        }
+
+        public override KeyStore<ScryptParams> DeserializeKeyStoreFromJson(string json)
+        {
+            return JsonKeyStoreScryptSerialiser.DeserialiseScrypt(json);
+        }
+
+        public override string SerializeKeyStoreToJson(KeyStore<ScryptParams> keyStore)
+        {
+            return JsonKeyStoreScryptSerialiser.SerialiseScrypt(keyStore);
         }
 
         public override byte[] DecryptKeyStore(string password, KeyStore<ScryptParams> keyStore)

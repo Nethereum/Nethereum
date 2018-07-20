@@ -120,7 +120,7 @@ namespace Nethereum.XUnitEthereumClients
             var attempts = 0;
             var success = false;
 
-            while (!success && attempts < 5)
+            while (!success && attempts < 2)
             {
                 try
                 {
@@ -129,7 +129,7 @@ namespace Nethereum.XUnitEthereumClients
                 }
                 catch
                 {
-                    Thread.Sleep(2000);
+                    Thread.Sleep(1000);
                     attempts = attempts + 1;
                 }
             }
