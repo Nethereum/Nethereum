@@ -19,6 +19,7 @@ namespace Nethereum.JsonRpc.UnityClient
         public IEnumerator PollForReceipt(string transactionHash, float secondsToWait)
         {
             TransactionReceipt receipt = null;
+            Result = null;
             while (receipt == null)
             {
                 if (!CancelPolling)

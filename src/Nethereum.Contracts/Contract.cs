@@ -66,11 +66,6 @@ namespace Nethereum.Contracts
             return new Function(this, GetFunctionBuilder(name));
         }
 
-        private EventBuilder GetEventBuilder(string name)
-        {
-            return ContractBuilder.GetEventBuilder(name);
-        }
-
         private FunctionBuilder GetFunctionBuilder(string name)
         {
             return ContractBuilder.GetFunctionBuilder(name);
