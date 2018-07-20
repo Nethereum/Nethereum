@@ -50,46 +50,46 @@ namespace Nethereum.Contracts
         public Task<HexBigInteger> CreateFilterAsync<T>(T firstIndexedParameterValue, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(new object[] { firstIndexedParameterValue }, fromBlock, toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValue, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1 firstIndexedParameterValue,
             T2 secondIndexedParameterValue, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(new object[] { firstIndexedParameterValue },
-                new object[] { secondIndexedParameterValue }, fromBlock, toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValue, secondIndexedParameterValue, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1 firstIndexedParameterValue,
             T2 secondIndexedParameterValue, T3 thirdIndexedParameterValue, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(new object[] { firstIndexedParameterValue },
-                new object[] { secondIndexedParameterValue }, new object[] { thirdIndexedParameterValue }, fromBlock,
-                toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValue, secondIndexedParameterValue, thirdIndexedParameterValue, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync<T>(T[] firstIndexedParameterValues,
             BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(), fromBlock, toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValues, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync<T1, T2>(T1[] firstIndexedParameterValues,
             T2[] secondIndexedParameterValues, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(),
-                secondIndexedParameterValues.Cast<object>().ToArray(), fromBlock, toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValues, secondIndexedParameterValues, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync<T1, T2, T3>(T1[] firstIndexedParameterValues,
             T2[] secondIndexedParameterValues, T3[] thirdIndexedParameterValues, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            return CreateFilterAsync(firstIndexedParameterValues.Cast<object>().ToArray(),
-                secondIndexedParameterValues.Cast<object>().ToArray(),
-                thirdIndexedParameterValues.Cast<object>().ToArray(), fromBlock, toBlock);
+            var filterInput = CreateFilterInput(firstIndexedParameterValues, secondIndexedParameterValues, thirdIndexedParameterValues, fromBlock, toBlock);
+            return CreateFilterAsync(filterInput);
         }
 
         public Task<HexBigInteger> CreateFilterAsync(object[] filterTopic1, BlockParameter fromBlock = null,
@@ -165,7 +165,7 @@ namespace Nethereum.Contracts
         }
 
         public Task<HexBigInteger> CreateFilterBlockRangeAsync(BlockParameter fromBlock, BlockParameter toBlock)
-        {
+        { 
             var newFilterInput = CreateFilterInput(fromBlock, toBlock);
             return CreateFilterAsync(newFilterInput);
         }

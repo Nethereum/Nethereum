@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Extensions;
@@ -7,9 +8,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
+    [Obsolete("Use the EventABI extensions instead")]
     public class EventBuilder
     {
-
         public string ContractAddress { get; set; }
 
         public EventBuilder(string contractAddress, EventABI eventAbi)

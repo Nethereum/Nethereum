@@ -38,11 +38,6 @@ namespace Nethereum.Contracts
             return FilterInputBuilder.GetDefaultFilterInput(Address, fromBlock, toBlock);
         }
 
-        public EventBuilder GetEventBuilder(string name)
-        {
-            return new EventBuilder(Address, GetEventAbi(name));
-        }
-
         public FunctionBuilder<TFunction> GetFunctionBuilder<TFunction>()
         {
             var function = FunctionAttribute.GetAttribute<TFunction>();
