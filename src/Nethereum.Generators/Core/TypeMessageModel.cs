@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 namespace Nethereum.Generators.Core
 {
+
     public abstract class TypeMessageModel: IClassModel
     {
         protected CommonGenerators CommonGenerators { get; set; }

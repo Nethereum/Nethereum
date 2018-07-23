@@ -3,6 +3,7 @@ using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators;
 using Nethereum.Generators.Net;
 using System.IO;
+using Nethereum.Generators.Core;
 
 namespace Nethereum.Generator.Console.Generation
 {
@@ -23,10 +24,10 @@ namespace Nethereum.Generator.Console.Generation
             _generatedFileWriter = generatedFileWriter;
         }
 
-        public void FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
+        public void FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder, bool singleFile)
         {
             var config = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
-            Generate(config);
+            Generate(config, singleFile);
         }
 
         public void FromProject(string projectPath, string assemblyName)
@@ -35,7 +36,7 @@ namespace Nethereum.Generator.Console.Generation
             Generate(config);
         }
 
-        private void Generate(GeneratorConfiguration config)
+        private void Generate(GeneratorConfiguration config, bool singleFile = true)
         {
             if (config?.ABIConfigurations == null)
                 return;
@@ -46,7 +47,7 @@ namespace Nethereum.Generator.Console.Generation
             }
         }
 
-        private void GenerateFilesForItem(ABIConfiguration item)
+        private void GenerateFilesForItem(ABIConfiguration item, bool singleFile = true)
         {
             var generator = new ContractProjectGenerator(
                 item.CreateContractABI(),
@@ -61,7 +62,7 @@ namespace Nethereum.Generator.Console.Generation
                 item.CodeGenLanguage
             );
 
-            var generatedFiles = generator.GenerateAll();
+            var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
             _generatedFileWriter.WriteFiles(generatedFiles);
         }
     }

@@ -11,6 +11,7 @@ namespace Nethereum.Generator.Console.Commands
         private readonly CommandOption _binCodeFilePath;
         private readonly CommandOption _outputFolder;
         private readonly CommandOption _baseNamespace;
+        private readonly CommandOption _singleFile;
         public ICodeGenerationWrapper CodeGenerationWrapper {get; set; }
 
         public GenerateFromAbiCommand()
@@ -22,7 +23,7 @@ namespace Nethereum.Generator.Console.Commands
             _binCodeFilePath = Option("-bin | --binPath", "The bin file and path", CommandOptionType.SingleValue);
             _outputFolder = Option("-o | --outputPath", "The output path for the generated code", CommandOptionType.SingleValue);
             _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code", CommandOptionType.SingleValue);
-            HelpOption("-? | -h | --help");
+            _singleFile = Option("-sf | --SingleFile", "Generate the message definition in a single file (default true)", CommandOptionType.SingleValue);
             OnExecute((Func<int>)RunCommand);
             CodeGenerationWrapper = new CodeGenerationWrapper();
         }
@@ -51,6 +52,11 @@ namespace Nethereum.Generator.Console.Commands
             }
 
             var contractName = _contractName.Value();
+
+            bool singleFile = false;
+
+            if(!bool.TryParse(_singleFile.Value(), out singleFile)) singleFile = true;
+
 
             CodeGenerationWrapper.FromAbi(contractName, abiFilePath, _binCodeFilePath.Value(), baseNamespace, outputFolder);
 

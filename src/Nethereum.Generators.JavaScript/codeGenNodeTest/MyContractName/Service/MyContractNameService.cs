@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -7,8 +8,7 @@ using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using System.Threading;
-using StandardToken.MyContractName.CQS;
-using StandardToken.MyContractName.DTOs;
+using StandardToken.MyContractName.ContractDefinition;
 namespace StandardToken.MyContractName.Service
 {
 
@@ -31,7 +31,7 @@ namespace StandardToken.MyContractName.Service
     
         protected Web3 Web3{ get; }
         
-        protected ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; }
         
         public MyContractNameService(Web3 web3, string contractAddress)
         {

@@ -46,7 +46,37 @@ namespace Nethereum.Generators
             BaseOutputPath = baseOutputPath?.TrimEnd(pathDelimiter.ToCharArray());
             PathDelimiter = pathDelimiter;
             CodeGenLanguage = codeGenLanguage;
-            ProjectName = BaseOutputPath?.Split(Path.DirectorySeparatorChar).Last();
+            if (BaseOutputPath != null)
+            {
+                if (BaseOutputPath.LastIndexOf(PathDelimiter) > 0)
+                {
+                     ProjectName = BaseOutputPath.Substring(
+                        BaseOutputPath.LastIndexOf(PathDelimiter) + PathDelimiter.Length);
+                }
+            }
+        }
+
+        public GeneratedFile[] GenerateAllMessagesFileAndService()
+        {
+            var generated = new List<GeneratedFile>();
+            generated.Add(GenerateAllMessages());
+            generated.Add(GenerateService());
+            return generated.ToArray();
+        }
+
+        public GeneratedFile GenerateAllMessages()
+        {
+            var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+            var cqsFullPath = GetFullPath(CQSNamespace); ;
+
+            var generators = new List<IClassGenerator>();
+            generators.Add(GetCQSMessageDeploymentGenerator());
+            generators.AddRange(GetAllCQSFunctionMessageGenerators());
+            generators.AddRange(GetllEventDTOGenerators());
+            generators.AddRange(GetAllFunctionDTOsGenerators());
+            //using the same namespace..
+            var mainGenerator = new AllMessagesGenerator(generators, ContractName, cqsFullNamespace, CodeGenLanguage);
+            return mainGenerator.GenerateFileContent(cqsFullPath);
         }
 
         public GeneratedFile[] GenerateAll()
@@ -83,46 +113,81 @@ namespace Nethereum.Generators
 
         public List<GeneratedFile> GenerateAllFunctionDTOs()
         {
-            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var generators = GetAllFunctionDTOsGenerators();
             var dtoFullPath = GetFullPath(DTONamespace);
             var generated = new List<GeneratedFile>();
+            foreach (var generator in generators)
+            {
+                GenerateAndAdd(generated, () => generator.GenerateFileContent(dtoFullPath));
+            }
+            return generated;
+        }
+
+        public List<FunctionOutputDTOGenerator> GetAllFunctionDTOsGenerators()
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var generators = new List<FunctionOutputDTOGenerator>();
             foreach (var functionABI in ContractABI.Functions)
             {
                 var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace, CodeGenLanguage);
-                GenerateAndAdd(generated, () => functionOutputDTOGenerator.GenerateFileContent(dtoFullPath));
+                generators.Add(functionOutputDTOGenerator);
             }
-            return generated;
+            return generators;
         }
 
         public List<GeneratedFile> GenerateAllEventDTOs()
         {
-            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var generators = GetllEventDTOGenerators();
             var dtoFullPath = GetFullPath(DTONamespace);
             var generated = new List<GeneratedFile>();
-            foreach (var eventABI in ContractABI.Events)
+            foreach (var generator in generators)
             {
-                var cqsGenerator = new EventDTOGenerator(eventABI, dtoFullNamespace, CodeGenLanguage);
-                GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(dtoFullPath));
+                GenerateAndAdd(generated, () => generator.GenerateFileContent(dtoFullPath));
             }
             return generated;
+        }
+
+        public List<EventDTOGenerator> GetllEventDTOGenerators()
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var generators = new List<EventDTOGenerator>();
+            foreach (var eventABI in ContractABI.Events)
+            {
+                var generator = new EventDTOGenerator(eventABI, dtoFullNamespace, CodeGenLanguage);
+                generators.Add(generator);
+            }
+            return generators;
         }
 
         public List<GeneratedFile> GeneratCQSFunctionMessages()
         {
+            var generators = GetAllCQSFunctionMessageGenerators();
+            var cqsFullPath = GetFullPath(CQSNamespace);;
+            var generated = new List<GeneratedFile>();
+            foreach (var generator in generators)
+            {
+                   GenerateAndAdd(generated, () => generator.GenerateFileContent(cqsFullPath));
+            }
+            return generated;
+        }
+
+        public List<FunctionCQSMessageGenerator> GetAllCQSFunctionMessageGenerators()
+        {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
-            var cqsFullPath = GetFullPath(CQSNamespace);
+
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
 
             dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
 
-            var generated = new List<GeneratedFile>();
+            var generators = new List<FunctionCQSMessageGenerator>();
             foreach (var functionAbi in ContractABI.Functions)
             {
                 var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
-                GenerateAndAdd(generated, () => cqsGenerator.GenerateFileContent(cqsFullPath));
+                generators.Add(cqsGenerator);
             }
-            return generated;
+            return generators;
         }
+
 
         public bool AddRootNamespaceOnVbProjectsToImportStatements { get; set; } = true;
 
@@ -133,16 +198,21 @@ namespace Nethereum.Generators
             return @namespace;
         }
 
-        public GeneratedFile GeneratCQSMessageDeployment()
+        public ContractDeploymentCQSMessageGenerator GetCQSMessageDeploymentGenerator()
         {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
 
-            var cqsGenerator = new ContractDeploymentCQSMessageGenerator(
-                ContractABI.Constructor, 
+            return new ContractDeploymentCQSMessageGenerator(
+                ContractABI.Constructor,
                 cqsFullNamespace,
                 ByteCode,
-                ContractName, 
+                ContractName,
                 CodeGenLanguage);
+        }
+
+        public GeneratedFile GeneratCQSMessageDeployment()
+        {
+            var cqsGenerator = GetCQSMessageDeploymentGenerator();
 
            return cqsGenerator.GenerateFileContent(GetFullPath(CQSNamespace));
         }

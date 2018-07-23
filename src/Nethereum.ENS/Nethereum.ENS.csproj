@@ -5,7 +5,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
     <VersionPrefix>$(ENSVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;net451</TargetFrameworks>
     <AssemblyName>Nethereum.ENS</AssemblyName>
     <PackageId>Nethereum.ENS</PackageId>
   </PropertyGroup>
@@ -14,9 +14,10 @@
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <PackageReference Include="System.Globalization.Extensions">
+      <Version>4.3.0</Version>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -18,18 +19,17 @@ namespace Nethereum.RPC.TransactionManagers
         public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null)
         {
             var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(toAddress, fromAddress, etherAmount, gasPriceGwei, gas);
+            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
             return _transactionManager.SendTransactionAsync(transactionInput);
         }
 
         public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, CancellationTokenSource tokenSource = null)
         {
             var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(toAddress, fromAddress, etherAmount, gasPriceGwei, gas);
+            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
             return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
         }
 
-        
     }
 #endif
 }

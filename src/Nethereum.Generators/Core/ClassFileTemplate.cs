@@ -1,26 +1,18 @@
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.CQS
 {
-    public abstract class ClassFileTemplate
+    public abstract class ClassFileTemplate:FileTemplate
     {
         public IClassModel ClassModel { get; }
         public IClassTemplate ClassTemplate { get; }
 
-        protected ClassFileTemplate(IClassModel classModel, IClassTemplate classTemplate)
+        protected ClassFileTemplate(IClassModel classModel, IClassTemplate classTemplate):base(classModel)
         {
             ClassModel = classModel;
             ClassTemplate = classTemplate;
-        }
-        public string GenerateNamespaceDependencies()
-        {
-            return string.Join(Environment.NewLine,
-                ClassModel.NamespaceDependencies.Distinct().Select(GenerateNamespaceDependency));
-        }
-
-        public abstract string GenerateNamespaceDependency(string namespaceName);
+        }  
 
         public abstract string GenerateFullClass();
        

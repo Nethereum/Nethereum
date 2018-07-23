@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
 using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.CQS
@@ -26,4 +29,5 @@ namespace Nethereum.Generators.CQS
 ";
         }
     }
+
 }

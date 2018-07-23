@@ -1,4 +1,5 @@
-﻿using Nethereum.XUnitEthereumClients;
+﻿using Nethereum.Util;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests
@@ -16,7 +17,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldTransferEtherWithGasPrice()
         {
+            
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            
             var toAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
             var receipt = await web3.Eth.GetEtherTransferService()
                 .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, 2);

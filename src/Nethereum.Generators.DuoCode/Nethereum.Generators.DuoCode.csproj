@@ -93,6 +93,14 @@
 				<Link>\ABI\TypeConvertors\ABITypeToVBType.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesGenerator.cs">
+				<Link>\AllMessages\AllMessagesGenerator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesModel.cs">
+				<Link>\AllMessages\AllMessagesModel.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\ClassFileTemplate.cs">
 				<Link>\Core\ClassFileTemplate.cs</Link>
 		</Compile>
@@ -121,12 +129,28 @@
 				<Link>\Core\CsharpClassFileTemplate.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\Core\CSharpMultipleClassFileTemplate.cs">
+				<Link>\Core\CSharpMultipleClassFileTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\FileModel.cs">
+				<Link>\Core\FileModel.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\FileTemplate.cs">
+				<Link>\Core\FileTemplate.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\FSharpClassFileTemplate.cs">
 				<Link>\Core\FSharpClassFileTemplate.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\GeneratedFile.cs">
 				<Link>\Core\GeneratedFile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\IClassGenerator.cs">
+				<Link>\Core\IClassGenerator.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\IClassModel.cs">
@@ -155,6 +179,14 @@
 		
         <Compile Include="..\Nethereum.Generators\Core\MessageMap.cs">
 				<Link>\Core\MessageMap.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\MultipleClassFileTemplate.cs">
+				<Link>\Core\MultipleClassFileTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\MultipleClassGeneratorBase.cs">
+				<Link>\Core\MultipleClassGeneratorBase.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\Core\Parameter.cs">
