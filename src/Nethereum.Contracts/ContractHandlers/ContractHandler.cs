@@ -118,11 +118,19 @@ namespace Nethereum.Contracts.ContractHandlers
                 ContractAddress, ethereumContractFunctionMessage, blockParameter);
         }
         
-        public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(BlockParameter blockParameter = null)
+        public Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(BlockParameter blockParameter = null)
            where TEthereumContractFunctionMessage : FunctionMessage, new()
            where TCustomDecoder : ICustomRawDecoder<TReturn>, new()
         {
             var ethereumContractFunctionMessage = new TEthereumContractFunctionMessage();
+            return QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(ethereumContractFunctionMessage, blockParameter);
+        }
+
+        public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage = null, BlockParameter blockParameter = null)
+            where TEthereumContractFunctionMessage : FunctionMessage, new()
+            where TCustomDecoder : ICustomRawDecoder<TReturn>, new()
+        {
+          
             var result = await QueryRawAsync<TEthereumContractFunctionMessage>(ethereumContractFunctionMessage,
                 blockParameter).ConfigureAwait(false);
             var decoder = new TCustomDecoder();

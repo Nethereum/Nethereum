@@ -17,14 +17,25 @@ namespace Nethereum.Generators.DTOs
             if (Model.CanGenerateOutputDTO())
             {
                 return
-                    $@"{SpaceUtils.OneTab}<[Event](""{Model.EventABI.Name}"")>
-{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}
-{SpaceUtils.OneTab}
+                    $@"{GetPartialMainClass()}
+
+{SpaceUtils.OneTab}<[Event](""{Model.EventABI.Name}"")>
+{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
+{SpaceUtils.TwoTabs}Inherits IEventDTO
+{SpaceUtils.TwoTabs}
 {_parameterAbiEventDtoVbTemplate.GenerateAllProperties(Model.EventABI.InputParameters)}
 {SpaceUtils.OneTab}
 {SpaceUtils.OneTab}End Class";
             }
             return null;
+        }
+
+        public string GetPartialMainClass()
+        {
+            return $@"{SpaceUtils.OneTab}Public Partial Class {Model.GetTypeName()}
+{SpaceUtils.TwoTabs}Inherits {Model.GetTypeName()}Base
+{SpaceUtils.OneTab}End Class";
+
         }
     }
 }

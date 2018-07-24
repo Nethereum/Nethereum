@@ -29,7 +29,7 @@ namespace Nethereum.Generators.Service
                 "Nethereum.ABI.FunctionEncoding.Attributes",
                 "Nethereum.Web3",
                 "Nethereum.RPC.Eth.DTOs",
-                "Nethereum.Contracts.CQS" +
+                "Nethereum.Contracts.CQS",
                 "Nethereum.Contracts",
                 "System.Threading" });
         }

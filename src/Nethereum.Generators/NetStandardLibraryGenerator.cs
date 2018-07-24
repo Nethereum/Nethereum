@@ -37,7 +37,7 @@ namespace Nethereum.Generators
 {SpaceUtils.OneTab}</PropertyGroup>
 {SpaceUtils.NoTabs}
 {SpaceUtils.OneTab}<ItemGroup>
-{SpaceUtils.TwoTabs}<PackageReference Include = ""Nethereum.Web3"" Version=""2.4.0"" />
+{SpaceUtils.TwoTabs}<PackageReference Include = ""Nethereum.Web3"" Version=""3.*"" />
 {SpaceUtils.OneTab}</ItemGroup>
 {SpaceUtils.OneTab}
 {SpaceUtils.NoTabs}</Project>";

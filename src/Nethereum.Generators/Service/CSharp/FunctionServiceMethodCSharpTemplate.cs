@@ -41,11 +41,25 @@ namespace Nethereum.Generators.Service
             {
 
                 var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
-                return
+                var returnWithInputParam =
 $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>({messageVariableName}, blockParameter);
 {SpaceUtils.TwoTabs}}}";
+
+                var returnWithoutInputParam =
+                    $@"{SpaceUtils.TwoTabs}
+{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync(BlockParameter blockParameter = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}return ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>(null, blockParameter);
+{SpaceUtils.TwoTabs}}}";
+
+                if (functionABIModel.HasNoInputParameters())
+                {
+                    return returnWithInputParam + returnWithoutInputParam;
+                }
+
+                return returnWithInputParam;
             }
 
             if(functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
@@ -54,28 +68,64 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
             {
                 var type = functionABIModel.GetSingleOutputReturnType();
 
-                return
+                var returnWithInputParam = 
                     $@"{SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameter);
 {SpaceUtils.TwoTabs}}}";
+
+
+                var returnWithoutInputParam =
+                    $@"{SpaceUtils.TwoTabs}
+{SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync(BlockParameter blockParameter = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>(null, blockParameter);
+{SpaceUtils.TwoTabs}}}";
+
+                if (functionABIModel.HasNoInputParameters())
+                {
+                    return returnWithInputParam + returnWithoutInputParam;
+                }
+
+                return returnWithInputParam;
             }
 
             if(functionABIModel.IsTransaction())
             { 
-                var transactionRequest = 
+                var transactionRequestWithInput = 
                     $@"{SpaceUtils.TwoTabs}public Task<string> {functionNameUpper}RequestAsync({messageType} {messageVariableName})
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAsync({messageVariableName});
 {SpaceUtils.TwoTabs}}}";
 
-                var transactionRequestAndReceipt =
+                var transactionRequestWithoutInput =
+                    $@"{SpaceUtils.TwoTabs}public Task<string> {functionNameUpper}RequestAsync()
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAsync<{messageType}>();
+{SpaceUtils.TwoTabs}}}";
+
+                var transactionRequestAndReceiptWithInput =
                     $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({messageType} {messageVariableName}, CancellationTokenSource cancellationToken = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationToken);
 {SpaceUtils.TwoTabs}}}";
 
-                return transactionRequest + Environment.NewLine + transactionRequestAndReceipt;
+                var transactionRequestAndReceiptWithoutInput =
+                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync<{messageType}>(null, cancellationToken);
+{SpaceUtils.TwoTabs}}}";
+
+                if (functionABIModel.HasNoInputParameters())
+                {
+                    return transactionRequestWithInput + Environment.NewLine + transactionRequestWithoutInput +
+                           Environment.NewLine +
+                           transactionRequestAndReceiptWithInput +
+                           Environment.NewLine +
+                           transactionRequestAndReceiptWithoutInput;
+                }
+
+                return transactionRequestWithInput + Environment.NewLine + transactionRequestAndReceiptWithInput;
             }
 
             return null;

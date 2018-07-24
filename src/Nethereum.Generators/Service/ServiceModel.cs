@@ -37,6 +37,8 @@ namespace Nethereum.Generators.Service
                 "Nethereum.Web3",
                 "Nethereum.RPC.Eth.DTOs",
                 "Nethereum.Contracts.CQS",
+                "Nethereum.Contracts.ContractHandlers",
+                "Nethereum.Contracts",
                 "System.Threading" });
         }
     }

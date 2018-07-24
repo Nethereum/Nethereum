@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.ABI.Decoders;
 using Nethereum.Contracts;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
@@ -133,12 +134,12 @@ namespace Nethereum.StandardTokenEIP20
 
         public Task<string> NameQueryAsync(BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<NameFunction, string>(null, blockParameter);
+            return ContractHandler.QueryRawAsync<NameFunction,StringBytes32Decoder, string>(blockParameter);
         }
 
         public Task<string> NameQueryAsync(NameFunction nameFunction = null, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<NameFunction, string>(nameFunction, blockParameter);
+            return ContractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>(nameFunction, blockParameter);
         }
 
         public Task<string> ApproveRequestAsync(ApproveFunction approveFunction = null)
@@ -181,9 +182,14 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
         }
 
+        public Task<string> SymbolQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>(blockParameter);
+        }
+
         public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction = null, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<SymbolFunction, string>(symbolFunction, blockParameter);
+            return ContractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>(symbolFunction, blockParameter);
         }
 
         public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction = null, BlockParameter blockParameter = null)

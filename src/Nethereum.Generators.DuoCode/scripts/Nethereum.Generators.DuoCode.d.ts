@@ -67,6 +67,7 @@ declare module Nethereum {
                 GetSingleAbiReturnType(): string;
                 IsMultipleOutput(): boolean;
                 IsSingleOutput(): boolean;
+                HasNoInputParameters(): boolean;
                 HasNoReturn(): boolean;
                 IsTransaction(): boolean;
             }

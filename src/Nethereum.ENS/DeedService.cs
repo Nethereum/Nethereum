@@ -1,136 +1,132 @@
-using System.Numerics;
+using System;
 using System.Threading.Tasks;
-using Nethereum.Contracts;
+using System.Collections.Generic;
+using System.Numerics;
 using Nethereum.Hex.HexTypes;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Web3;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts;
+using System.Threading;
+using Nethereum.ENS.Deed.ContractDefinition;
 
 namespace Nethereum.ENS
 {
     public class DeedService
     {
-        public static string ABI =
-            @"[{'constant':true,'inputs':[],'name':'creationDate','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'destroyDeed','outputs':[],'payable':false,'type':'function'},{'constant':false,'inputs':[{'name':'newOwner','type':'address'}],'name':'setOwner','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'registrar','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'owner','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[{'name':'refundRatio','type':'uint256'}],'name':'closeDeed','outputs':[],'payable':false,'type':'function'},{'constant':false,'inputs':[{'name':'newRegistrar','type':'address'}],'name':'setRegistrar','outputs':[],'payable':false,'type':'function'},{'constant':false,'inputs':[{'name':'newValue','type':'uint256'}],'name':'setBalance','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'payable':true,'type':'fallback'},{'anonymous':false,'inputs':[{'indexed':false,'name':'newOwner','type':'address'}],'name':'OwnerChanged','type':'event'},{'anonymous':false,'inputs':[],'name':'DeedClosed','type':'event'}]";
-
-        public static string BYTE_CODE =
-            "0x6060604052600080546c0100000000000000000000000033810204600160a060020a0319909116179055426001556002805460a060020a60ff02191674010000000000000000000000000000000000000000179055610372806100626000396000f36060604052361561006c5760e060020a600035046305b34410811461006e5780630b5ab3d51461007c57806313af4035146100895780632b20e397146100af5780638da5cb5b146100c6578063bbe42771146100dd578063faab9d3914610103578063fb1669ca14610129575b005b346100025761014a60015481565b346100025761006c610189565b346100025761006c60043560005433600160a060020a039081169116146101f557610002565b34610002576101a0600054600160a060020a031681565b34610002576101a0600254600160a060020a031681565b346100025761006c60043560005433600160a060020a0390811691161461026657610002565b346100025761006c60043560005433600160a060020a039081169116146102d657610002565b61006c60043560005433600160a060020a0390811691161461030b57610002565b60408051918252519081900360200190f35b6040517fbb2ce2f51803bba16bc85282b47deeea9a5c6223eabea1077be696b3f265cf1390600090a16102635b60025460a060020a900460ff16156101bc57610002565b60408051600160a060020a039092168252519081900360200190f35b600254604051600160a060020a039182169130163180156108fc02916000818181858888f19350505050156101f05761deadff5b610002565b6002805473ffffffffffffffffffffffffffffffffffffffff19166c010000000000000000000000008381020417905560408051600160a060020a038316815290517fa2ea9883a321a3e97b8266c2b078bfeec6d50c711ed71f874a90d500ae2eaf36916020908290030190a15b50565b60025460a060020a900460ff16151561027e57610002565b6002805474ff00000000000000000000000000000000000000001916905560405161dead906103e8600160a060020a03301631848203020480156108fc02916000818181858888f19350505050151561015c57610002565b600080546c010000000000000000000000008084020473ffffffffffffffffffffffffffffffffffffffff1990911617905550565b60025460a060020a900460ff16151561032357610002565b8030600160a060020a031631101561033a57610002565b600254604051600160a060020a039182169130163183900380156108fc02916000818181858888f1935050505015156102635761000256";
-
-        private readonly Web3.Web3 web3;
-
-        private readonly Contract contract;
-
-        public DeedService(Web3.Web3 web3, string address)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3, DeedDeployment deedDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            this.web3 = web3;
-            contract = web3.Eth.GetContract(ABI, address);
+            return web3.Eth.GetContractDeploymentHandler<DeedDeployment>().SendRequestAndWaitForReceiptAsync(deedDeployment, cancellationTokenSource);
         }
-
-        public Task<string> CloseDeedAsync(string addressFrom, BigInteger refundRatio, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+        public static Task<string> DeployContractAsync(Web3.Web3 web3, DeedDeployment deedDeployment)
         {
-            var function = GetFunctionCloseDeed();
-            return function.SendTransactionAsync(addressFrom, gas, valueAmount, refundRatio);
+            return web3.Eth.GetContractDeploymentHandler<DeedDeployment>().SendRequestAsync(deedDeployment);
         }
-
-        public Task<BigInteger> CreationDateAsyncCall()
+        public static async Task<DeedService> DeployContractAndGetServiceAsync(Web3.Web3 web3, DeedDeployment deedDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var function = GetFunctionCreationDate();
-            return function.CallAsync<BigInteger>();
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, deedDeployment, cancellationTokenSource);
+            return new DeedService(web3, receipt.ContractAddress);
         }
-
-        public static Task<string> DeployContractAsync(Web3.Web3 web3, string addressFrom, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+    
+        protected Web3.Web3 Web3{ get; }
+        
+        public ContractHandler ContractHandler { get; }
+        
+        public DeedService(Web3.Web3 web3, string contractAddress)
         {
-            return web3.Eth.DeployContract.SendRequestAsync(ABI, BYTE_CODE, addressFrom, gas, valueAmount);
+            Web3 = web3;
+            ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
-
-        public Task<string> DestroyDeedAsync(string addressFrom, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+    
+        public Task<BigInteger> CreationDateQueryAsync(CreationDateFunction creationDateFunction, BlockParameter blockParameter = null)
         {
-            var function = GetFunctionDestroyDeed();
-            return function.SendTransactionAsync(addressFrom, gas, valueAmount);
+            return ContractHandler.QueryAsync<CreationDateFunction, BigInteger>(creationDateFunction, blockParameter);
+        }        
+        public Task<BigInteger> CreationDateQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<CreationDateFunction, BigInteger>(null, blockParameter);
         }
-
-        public Event GetEventDeedClosed()
+        public Task<string> DestroyDeedRequestAsync(DestroyDeedFunction destroyDeedFunction)
         {
-            return contract.GetEvent("DeedClosed");
+             return ContractHandler.SendRequestAsync(destroyDeedFunction);
         }
-
-        public Event GetEventOwnerChanged()
+        public Task<string> DestroyDeedRequestAsync()
         {
-            return contract.GetEvent("OwnerChanged");
+             return ContractHandler.SendRequestAsync<DestroyDeedFunction>();
         }
-
-        public Function GetFunctionCloseDeed()
+        public Task<TransactionReceipt> DestroyDeedRequestAndWaitForReceiptAsync(DestroyDeedFunction destroyDeedFunction, CancellationTokenSource cancellationToken = null)
         {
-            return contract.GetFunction("closeDeed");
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(destroyDeedFunction, cancellationToken);
         }
-
-        public Function GetFunctionCreationDate()
+        public Task<TransactionReceipt> DestroyDeedRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
         {
-            return contract.GetFunction("creationDate");
+             return ContractHandler.SendRequestAndWaitForReceiptAsync<DestroyDeedFunction>(null, cancellationToken);
         }
-
-        public Function GetFunctionDestroyDeed()
+        public Task<string> SetOwnerRequestAsync(SetOwnerFunction setOwnerFunction)
         {
-            return contract.GetFunction("destroyDeed");
+             return ContractHandler.SendRequestAsync(setOwnerFunction);
         }
-
-        public Function GetFunctionOwner()
+        public Task<TransactionReceipt> SetOwnerRequestAndWaitForReceiptAsync(SetOwnerFunction setOwnerFunction, CancellationTokenSource cancellationToken = null)
         {
-            return contract.GetFunction("owner");
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setOwnerFunction, cancellationToken);
         }
-
-        public Function GetFunctionRegistrar()
+        public Task<string> RegistrarQueryAsync(RegistrarFunction registrarFunction, BlockParameter blockParameter = null)
         {
-            return contract.GetFunction("registrar");
+            return ContractHandler.QueryAsync<RegistrarFunction, string>(registrarFunction, blockParameter);
+        }        
+        public Task<string> RegistrarQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<RegistrarFunction, string>(null, blockParameter);
         }
-
-        public Function GetFunctionSetBalance()
+        public Task<BigInteger> ValueQueryAsync(ValueFunction valueFunction, BlockParameter blockParameter = null)
         {
-            return contract.GetFunction("setBalance");
+            return ContractHandler.QueryAsync<ValueFunction, BigInteger>(valueFunction, blockParameter);
+        }        
+        public Task<BigInteger> ValueQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<ValueFunction, BigInteger>(null, blockParameter);
         }
-
-        public Function GetFunctionSetOwner()
+        public Task<string> PreviousOwnerQueryAsync(PreviousOwnerFunction previousOwnerFunction, BlockParameter blockParameter = null)
         {
-            return contract.GetFunction("setOwner");
+            return ContractHandler.QueryAsync<PreviousOwnerFunction, string>(previousOwnerFunction, blockParameter);
+        }        
+        public Task<string> PreviousOwnerQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<PreviousOwnerFunction, string>(null, blockParameter);
         }
-
-        public Function GetFunctionSetRegistrar()
+        public Task<string> OwnerQueryAsync(OwnerFunction ownerFunction, BlockParameter blockParameter = null)
         {
-            return contract.GetFunction("setRegistrar");
+            return ContractHandler.QueryAsync<OwnerFunction, string>(ownerFunction, blockParameter);
+        }        
+        public Task<string> OwnerQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<OwnerFunction, string>(null, blockParameter);
         }
-
-        public Task<string> OwnerAsyncCall()
+        public Task<string> SetBalanceRequestAsync(SetBalanceFunction setBalanceFunction)
         {
-            var function = GetFunctionOwner();
-            return function.CallAsync<string>();
+             return ContractHandler.SendRequestAsync(setBalanceFunction);
         }
-
-        public Task<string> RegistrarAsyncCall()
+        public Task<TransactionReceipt> SetBalanceRequestAndWaitForReceiptAsync(SetBalanceFunction setBalanceFunction, CancellationTokenSource cancellationToken = null)
         {
-            var function = GetFunctionRegistrar();
-            return function.CallAsync<string>();
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setBalanceFunction, cancellationToken);
         }
-
-        public Task<string> SetBalanceAsync(string addressFrom, BigInteger newValue, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+        public Task<string> CloseDeedRequestAsync(CloseDeedFunction closeDeedFunction)
         {
-            var function = GetFunctionSetBalance();
-            return function.SendTransactionAsync(addressFrom, gas, valueAmount, newValue);
+             return ContractHandler.SendRequestAsync(closeDeedFunction);
         }
-
-        public Task<string> SetOwnerAsync(string addressFrom, string newOwner, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+        public Task<TransactionReceipt> CloseDeedRequestAndWaitForReceiptAsync(CloseDeedFunction closeDeedFunction, CancellationTokenSource cancellationToken = null)
         {
-            var function = GetFunctionSetOwner();
-            return function.SendTransactionAsync(addressFrom, gas, valueAmount, newOwner);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(closeDeedFunction, cancellationToken);
         }
-
-        public Task<string> SetRegistrarAsync(string addressFrom, string newRegistrar, HexBigInteger gas = null,
-            HexBigInteger valueAmount = null)
+        public Task<string> SetRegistrarRequestAsync(SetRegistrarFunction setRegistrarFunction)
         {
-            var function = GetFunctionSetRegistrar();
-            return function.SendTransactionAsync(addressFrom, gas, valueAmount, newRegistrar);
+             return ContractHandler.SendRequestAsync(setRegistrarFunction);
+        }
+        public Task<TransactionReceipt> SetRegistrarRequestAndWaitForReceiptAsync(SetRegistrarFunction setRegistrarFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setRegistrarFunction, cancellationToken);
         }
     }
 }

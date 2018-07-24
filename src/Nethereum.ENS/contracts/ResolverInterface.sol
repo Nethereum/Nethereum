@@ -1,10 +1,10 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.18;
 
-contract AbstractPublicResolver {
-    function PublicResolver(address ensAddr);
-    function supportsInterface(bytes4 interfaceID) constant returns (bool);
-    function addr(bytes32 node) constant returns (address ret);
-    function setAddr(bytes32 node, address addr);
-    function hash(bytes32 node) constant returns (bytes32 ret);
-    function setHash(bytes32 node, bytes32 hash);
+contract ResolverInterface {
+    function PublicResolver(address ensAddr) public;
+    function setAddr(bytes32 node, address addr) public;
+    function setHash(bytes32 node, bytes32 hash) public;
+    function addr(bytes32 node) public view returns (address);
+    function hash(bytes32 node) public view returns (bytes32);
+    function supportsInterface(bytes4 interfaceID) public pure returns (bool);
 }

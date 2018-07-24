@@ -145,6 +145,10 @@
 				<Link>\Core\FSharpClassFileTemplate.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\Nethereum.Generators\Core\FSharpMultipleClassFileTemplate.cs">
+				<Link>\Core\FSharpMultipleClassFileTemplate.cs</Link>
+		</Compile>
+		
         <Compile Include="..\Nethereum.Generators\Core\GeneratedFile.cs">
 				<Link>\Core\GeneratedFile.cs</Link>
 		</Compile>
@@ -231,6 +235,10 @@
 		
         <Compile Include="..\Nethereum.Generators\Core\VbClassFileTemplate.cs">
 				<Link>\Core\VbClassFileTemplate.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\Nethereum.Generators\Core\VbMultipleClassFileTemplate.cs">
+				<Link>\Core\VbMultipleClassFileTemplate.cs</Link>
 		</Compile>
 		
         <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageGenerator.cs">

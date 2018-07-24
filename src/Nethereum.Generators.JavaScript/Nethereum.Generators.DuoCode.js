@@ -452,6 +452,9 @@ $d.define(Nethereum.Generators.Core.FunctionABIModel, null, function($t, $p) {
     $p.IsSingleOutput = function FunctionABIModel_IsSingleOutput() {
         return this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length == 1;
     };
+    $p.HasNoInputParameters = function FunctionABIModel_HasNoInputParameters() {
+        return this.get_FunctionABI().get_InputParameters() == null || this.get_FunctionABI().get_InputParameters().length == 0;
+    };
     $p.HasNoReturn = function FunctionABIModel_HasNoReturn() {
         return this.get_FunctionABI().get_OutputParameters() == null || this.get_FunctionABI().get_OutputParameters().length == 0;
     };
@@ -1022,7 +1025,7 @@ $d.define(Nethereum.Generators.Service.AllMessagesModel, Nethereum.Generators.Co
     $p.InitialiseNamespaceDependencies = function AllMessagesModel_InitialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", 
-            "Nethereum.Web3", "Nethereum.RPC.Eth.DTOs", "Nethereum.Contracts.CQSNethereum.Contracts", 
+            "Nethereum.Web3", "Nethereum.RPC.Eth.DTOs", "Nethereum.Contracts.CQS", "Nethereum.Contracts", 
             "System.Threading"]));
     };
 });
@@ -2286,7 +2289,8 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
     $p.InitialiseNamespaceDependencies = function ServiceModel_InitialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", 
-            "Nethereum.Web3", "Nethereum.RPC.Eth.DTOs", "Nethereum.Contracts.CQS", "System.Threading"]));
+            "Nethereum.Web3", "Nethereum.RPC.Eth.DTOs", "Nethereum.Contracts.CQS", "Nethereum.Contracts.ContractHandlers", 
+            "Nethereum.Contracts", "System.Threading"]));
     };
 });
 $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTemplate, null, function($t, $p) {
@@ -2353,35 +2357,71 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
         if (functionABIModel.IsMultipleOutput() && !functionABIModel.IsTransaction()) {
 
             var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
-            return String.Format("{0}public Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryDeserializingToObjectAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
+            var returnWithInputParam = String.Format("{0}public Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryDeserializingToObjectAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionOutputDTOType, functionNameUpper, 
                     messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, functionOutputDTOType, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            var returnWithoutInputParam = String.Format("{0}\r\n{1}public Task<{2}> {3}QueryAsync(BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}return ContractHandler.QueryDeserializingToObjectAsync<{6}, {7}>(null, blockParameter);\r\n{8}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionOutputDTOType, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, functionOutputDTOType, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            if (functionABIModel.HasNoInputParameters()) {
+                return returnWithInputParam + returnWithoutInputParam;
+            }
+
+            return returnWithInputParam;
         }
 
         if (functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
             if (functionABI.get_OutputParameters() != null && functionABI.get_OutputParameters().length == 1 && functionABI.get_Constant()) {
                 var type = functionABIModel.GetSingleOutputReturnType();
 
-                return String.Format("{0}public Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
+                var returnWithInputParam = String.Format("{0}public Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
                     [Nethereum.Generators.Core.SpaceUtils().TwoTabs, type, functionNameUpper, messageType, 
                         messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                         messageType, type, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+
+                var returnWithoutInputParam = String.Format("{0}\r\n{1}public Task<{2}> {3}QueryAsync(BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}return ContractHandler.QueryAsync<{6}, {7}>(null, blockParameter);\r\n{8}}}", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                        type, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageType, type, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+                if (functionABIModel.HasNoInputParameters()) {
+                    return returnWithInputParam + returnWithoutInputParam;
+                }
+
+                return returnWithInputParam;
             }
 
         if (functionABIModel.IsTransaction()) {
-            var transactionRequest = String.Format("{0}public Task<string> {1}RequestAsync({2} {3})\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAsync({6});\r\n{7}}}", 
+            var transactionRequestWithInput = String.Format("{0}public Task<string> {1}RequestAsync({2} {3})\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAsync({6});\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceipt = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationTokenSource cancellationToken = null)\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken);\r\n{7}}}", 
+            var transactionRequestWithoutInput = String.Format("{0}public Task<string> {1}RequestAsync()\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAsync<{4}>();\r\n{5}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            var transactionRequestAndReceiptWithInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationTokenSource cancellationToken = null)\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken);\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            return transactionRequest + System.Environment().NewLine + transactionRequestAndReceipt;
+            var transactionRequestAndReceiptWithoutInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAndWaitForReceiptAsync<{4}>(null, cancellationToken);\r\n{5}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            if (functionABIModel.HasNoInputParameters()) {
+                return transactionRequestWithInput + System.Environment().NewLine + transactionRequestWithoutInput + System.Environment().NewLine + transactionRequestAndReceiptWithInput + System.Environment().NewLine + transactionRequestAndReceiptWithoutInput;
+            }
+
+            return transactionRequestWithInput + System.Environment().NewLine + transactionRequestAndReceiptWithInput;
         }
 
         return null;

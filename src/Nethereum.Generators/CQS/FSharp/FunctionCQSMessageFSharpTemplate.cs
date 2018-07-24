@@ -38,7 +38,7 @@ namespace Nethereum.Generators.CQS
 
             return $@"{header}
 {SpaceUtils.OneTab}type {Model.GetTypeName()}() = 
-{SpaceUtils.TwoTabs}inherit ContractMessage()
+{SpaceUtils.TwoTabs}inherit FunctionMessage()
 {SpaceUtils.OneTab}
 {_parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(functionABI.InputParameters)}
 {SpaceUtils.OneTab}";

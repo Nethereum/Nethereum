@@ -41,6 +41,11 @@ namespace Nethereum.Generators.Core
         {
             return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1;
         }
+  
+        public bool HasNoInputParameters()
+        {
+            return FunctionABI.InputParameters == null || FunctionABI.InputParameters.Length == 0;
+        }
 
         public bool HasNoReturn()
         {

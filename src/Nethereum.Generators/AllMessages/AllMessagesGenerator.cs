@@ -24,11 +24,11 @@ namespace Nethereum.Generators.Service
                 case CodeGenLanguage.CSharp:
                     Template = new CSharpMultipleClassFileTemplate(_classGenerators, Model);
                     break;
-                //case CodeGenLanguage.Vb:
-                   // ClassTemplate = new ServiceVbTemplate(ClassModel);
+                case CodeGenLanguage.Vb:
+                     Template = new VbMultipleClassFileTemplate(_classGenerators, Model);
                     break;
-                //case CodeGenLanguage.FSharp:
-                   // ClassTemplate = new ServiceFSharpTemplate(ClassModel);
+                 case CodeGenLanguage.FSharp:
+                   Template = new FSharpMultipleClassFileTemplate(_classGenerators, Model);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, "Code generation not implemented for this language");
