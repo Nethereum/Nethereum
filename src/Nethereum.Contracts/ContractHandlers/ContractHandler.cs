@@ -126,7 +126,7 @@ namespace Nethereum.Contracts.ContractHandlers
             return QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(ethereumContractFunctionMessage, blockParameter);
         }
 
-        public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage = null, BlockParameter blockParameter = null)
+        public async Task<TReturn> QueryRawAsync<TEthereumContractFunctionMessage, TCustomDecoder, TReturn>(TEthereumContractFunctionMessage ethereumContractFunctionMessage, BlockParameter blockParameter = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
             where TCustomDecoder : ICustomRawDecoder<TReturn>, new()
         {
