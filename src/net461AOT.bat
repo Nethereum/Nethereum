@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S compiledlibraries\net461dllsAOT\*.dll
-SET releaseSuffix=
+SET releaseSuffix=rc1
 SET targetNet35=false
 
 cd Nethereum.Hex

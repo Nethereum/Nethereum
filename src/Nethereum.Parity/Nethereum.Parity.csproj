@@ -4,7 +4,7 @@
     <Description>Netherum.Parity is the extended Web3 library for Parity, including the non-generic RPC API client methods.</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Parity</AssemblyTitle>
-    <VersionPrefix>$(ParityVersion)</VersionPrefix>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Parity</AssemblyName>

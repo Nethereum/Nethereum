@@ -24,6 +24,7 @@
     <DefineConstants>DEBUG;TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,6 +33,7 @@
     <DefineConstants>TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
@@ -179,8 +181,16 @@
 				<Link>ABI\Decoders\IntTypeDecoder.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\Decoders\IRawDecoder.cs">
+				<Link>ABI\Decoders\IRawDecoder.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\Decoders\ITypeDecoder.cs">
 				<Link>ABI\Decoders\ITypeDecoder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\Decoders\StringBytes32Decoder.cs">
+				<Link>ABI\Decoders\StringBytes32Decoder.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\Decoders\StringTypeDecoder.cs">
@@ -233,6 +243,14 @@
 		
         <Compile Include="..\..\src\Nethereum.ABI\Encoders\StringTypeEncoder.cs">
 				<Link>ABI\Encoders\StringTypeEncoder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ByteCodeSwarmExtractor.cs">
+				<Link>ABI\FunctionEncoding\ByteCodeSwarmExtractor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ConstructorCallDecoder.cs">
+				<Link>ABI\FunctionEncoding\ConstructorCallDecoder.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ConstructorCallEncoder.cs">
@@ -295,8 +313,20 @@
 				<Link>ABI\FunctionEncoding\Attributes\FunctionOutputAttribute.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\IEventDTO.cs">
+				<Link>ABI\FunctionEncoding\Attributes\IEventDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\IFunctionOutputDTO.cs">
+				<Link>ABI\FunctionEncoding\Attributes\IFunctionOutputDTO.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\ParameterAttribute.cs">
 				<Link>ABI\FunctionEncoding\Attributes\ParameterAttribute.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\PropertiesExtractor.cs">
+				<Link>ABI\FunctionEncoding\Attributes\PropertiesExtractor.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\JsonDeserialisation\ABIDeserialiser.cs">
@@ -687,6 +717,18 @@
 				<Link>RPC\Shh\ShhVersion.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\EtherTransferService.cs">
+				<Link>RPC\TransactionManagers\EtherTransferService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\EtherTransferTransactionInputBuilder.cs">
+				<Link>RPC\TransactionManagers\EtherTransferTransactionInputBuilder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\IEtherTransferService.cs">
+				<Link>RPC\TransactionManagers\IEtherTransferService.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\ITransactionManager.cs">
 				<Link>RPC\TransactionManagers\ITransactionManager.cs</Link>
 		</Compile>
@@ -723,92 +765,12 @@
 				<Link>EIP20\StandardTokenService.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\AllowanceFunction.cs">
-				<Link>EIP20\CQS\AllowanceFunction.cs</Link>
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\ContractDefinition\Generated.cs">
+				<Link>EIP20\ContractDefinition\Generated.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\AllowedFunction.cs">
-				<Link>EIP20\CQS\AllowedFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\ApproveFunction.cs">
-				<Link>EIP20\CQS\ApproveFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\BalanceOfFunction.cs">
-				<Link>EIP20\CQS\BalanceOfFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\BalancesFunction.cs">
-				<Link>EIP20\CQS\BalancesFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\DecimalsFunction.cs">
-				<Link>EIP20\CQS\DecimalsFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\EIP20Deployment.cs">
-				<Link>EIP20\CQS\EIP20Deployment.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\NameFunction.cs">
-				<Link>EIP20\CQS\NameFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\SymbolFunction.cs">
-				<Link>EIP20\CQS\SymbolFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TotalSupplyFunction.cs">
-				<Link>EIP20\CQS\TotalSupplyFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TransferFromFunction.cs">
-				<Link>EIP20\CQS\TransferFromFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\CQS\TransferFunction.cs">
-				<Link>EIP20\CQS\TransferFunction.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\AllowanceOutputDTO.cs">
-				<Link>EIP20\DTOs\AllowanceOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\AllowedOutputDTO.cs">
-				<Link>EIP20\DTOs\AllowedOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\ApprovalEventDTO.cs">
-				<Link>EIP20\DTOs\ApprovalEventDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\BalanceOfOutputDTO.cs">
-				<Link>EIP20\DTOs\BalanceOfOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\BalancesOutputDTO.cs">
-				<Link>EIP20\DTOs\BalancesOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\DecimalsOutputDTO.cs">
-				<Link>EIP20\DTOs\DecimalsOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\NameOutputDTO.cs">
-				<Link>EIP20\DTOs\NameOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\SymbolOutputDTO.cs">
-				<Link>EIP20\DTOs\SymbolOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\TotalSupplyOutputDTO.cs">
-				<Link>EIP20\DTOs\TotalSupplyOutputDTO.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\DTOs\TransferEventDTO.cs">
-				<Link>EIP20\DTOs\TransferEventDTO.cs</Link>
+        <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\ContractDefinition\GeneratedDTO.cs">
+				<Link>EIP20\ContractDefinition\GeneratedDTO.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\Events\DTO\ApprovalEvent.cs">
@@ -935,6 +897,54 @@
 				<Link>KeyStore\Crypto\SCrypt.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\CipherParamsDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\CipherParamsDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\CryptoInfoDTOBase.cs">
+				<Link>KeyStore\JsonDeserialisation\CryptoInfoDTOBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\CryptoInfoPbkdf2DTO.cs">
+				<Link>KeyStore\JsonDeserialisation\CryptoInfoPbkdf2DTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\CryptoInfoScryptDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\CryptoInfoScryptDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\JsonKeyStorePbkdf2Serialiser.cs">
+				<Link>KeyStore\JsonDeserialisation\JsonKeyStorePbkdf2Serialiser.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\JsonKeyStoreScryptSerialiser.cs">
+				<Link>KeyStore\JsonDeserialisation\JsonKeyStoreScryptSerialiser.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\KdfParamsDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\KdfParamsDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\KeyStoreDTOBase.cs">
+				<Link>KeyStore\JsonDeserialisation\KeyStoreDTOBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\KeyStorePbkdf2DTO.cs">
+				<Link>KeyStore\JsonDeserialisation\KeyStorePbkdf2DTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\KeyStoreScryptDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\KeyStoreScryptDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\Pbkdf2ParamsDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\Pbkdf2ParamsDTO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.KeyStore\JsonDeserialisation\ScryptParamsDTO.cs">
+				<Link>KeyStore\JsonDeserialisation\ScryptParamsDTO.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.KeyStore\Model\CipherParams.cs">
 				<Link>KeyStore\Model\CipherParams.cs</Link>
 		</Compile>
@@ -1019,36 +1029,16 @@
 				<Link>Quorum\RPC\Services\QuorumChainService.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.ENS\DeedService.cs">
-				<Link>ENS\DeedService.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.ENS\EnsService.cs">
-				<Link>ENS\EnsService.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.ENS\EnsUtil.cs">
-				<Link>ENS\EnsUtil.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.ENS\FIFSRegistrar.cs">
-				<Link>ENS\FIFSRegistrar.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.ENS\PublicResolver.cs">
-				<Link>ENS\PublicResolver.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.ENS\RegistrarService.cs">
-				<Link>ENS\RegistrarService.cs</Link>
-		</Compile>
-		
         <Compile Include="..\..\src\Nethereum.Geth\AdminApiService.cs">
 				<Link>Geth\AdminApiService.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Geth\DebugApiService.cs">
 				<Link>Geth\DebugApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Geth\GethEthApiService.cs">
+				<Link>Geth\GethEthApiService.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Geth\MinerApiService.cs">
@@ -1195,6 +1185,10 @@
 				<Link>Geth\RPC\GethDebug\DTOs\TraceTransactionOptions.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Geth\RPC\GethEth\EthPendingTransactions.cs">
+				<Link>Geth\RPC\GethEth\EthPendingTransactions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\MinerSetGasPrice.cs">
 				<Link>Geth\RPC\Miner\MinerSetGasPrice.cs</Link>
 		</Compile>
@@ -1211,20 +1205,28 @@
 				<Link>Contracts\Contract.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\DeployContractService.cs">
-				<Link>Contracts\DeployContractService.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractDeploymentMessage.cs">
+				<Link>Contracts\ContractDeploymentMessage.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\EthApiContractService.cs">
-				<Link>Contracts\EthApiContractService.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\DeployContract.cs">
+				<Link>Contracts\DeployContract.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\Event.cs">
 				<Link>Contracts\Event.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\EventBase.cs">
+				<Link>Contracts\EventBase.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\EventLog.cs">
 				<Link>Contracts\EventLog.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Event{1}.cs">
+				<Link>Contracts\Event{1}.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\Function.cs">
@@ -1235,8 +1237,20 @@
 				<Link>Contracts\FunctionBase.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\FunctionMessage.cs">
+				<Link>Contracts\FunctionMessage.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Function{1}.cs">
+				<Link>Contracts\Function{1}.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\IEventLog.cs">
 				<Link>Contracts\IEventLog.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\ABITypedRegistry.cs">
+				<Link>Contracts\Builders\ABITypedRegistry.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\Builders\ContractBuilder.cs">
@@ -1255,6 +1269,10 @@
 				<Link>Contracts\Builders\EventTopicBuilder.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInputBuilder.cs">
+				<Link>Contracts\Builders\FilterInputBuilder.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\Builders\FunctionBuilder.cs">
 				<Link>Contracts\Builders\FunctionBuilder.cs</Link>
 		</Compile>
@@ -1271,40 +1289,188 @@
 				<Link>Contracts\Comparers\FilterLogBlockNumberTransactionIndexComparer.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractDefinition.cs">
-				<Link>Contracts\CQS\ContractDefinition.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractDeploymentHandler.cs">
+				<Link>Contracts\ContractHandlers\ContractDeploymentHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractDeployment.cs">
-				<Link>Contracts\CQS\ContractDeployment.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractHandler.cs">
+				<Link>Contracts\ContractHandlers\ContractHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractDeploymentHandler.cs">
-				<Link>Contracts\CQS\ContractDeploymentHandler.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractQueryEthCallHandler.cs">
+				<Link>Contracts\ContractHandlers\ContractQueryEthCallHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractHandler.cs">
-				<Link>Contracts\CQS\ContractHandler.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractQueryHandler.cs">
+				<Link>Contracts\ContractHandlers\ContractQueryHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractHandlerBase.cs">
-				<Link>Contracts\CQS\ContractHandlerBase.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractQueryHandlerBase.cs">
+				<Link>Contracts\ContractHandlers\ContractQueryHandlerBase.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractMessage.cs">
-				<Link>Contracts\CQS\ContractMessage.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractTransactionHandler.cs">
+				<Link>Contracts\ContractHandlers\ContractTransactionHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractQueryHandler.cs">
-				<Link>Contracts\CQS\ContractQueryHandler.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\ContractTransactionHandlerBase.cs">
+				<Link>Contracts\ContractHandlers\ContractTransactionHandlerBase.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractTransactionHandler.cs">
-				<Link>Contracts\CQS\ContractTransactionHandler.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\IContractDeploymentTransactionHandler.cs">
+				<Link>Contracts\ContractHandlers\IContractDeploymentTransactionHandler.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractTransactionHandlerBase.cs">
-				<Link>Contracts\CQS\ContractTransactionHandlerBase.cs</Link>
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\IContractQueryHandler.cs">
+				<Link>Contracts\ContractHandlers\IContractQueryHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\ContractHandlers\IContractTransactionHandler.cs">
+				<Link>Contracts\ContractHandlers\IContractTransactionHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\CQS\ContractMessageBase.cs">
+				<Link>Contracts\CQS\ContractMessageBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\DeploymentEstimatorHandler.cs">
+				<Link>Contracts\DeploymentHandlers\DeploymentEstimatorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\DeploymentHandlerBase.cs">
+				<Link>Contracts\DeploymentHandlers\DeploymentHandlerBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\DeploymentSigner.cs">
+				<Link>Contracts\DeploymentHandlers\DeploymentSigner.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\DeploymentTransactionReceiptPollHandler.cs">
+				<Link>Contracts\DeploymentHandlers\DeploymentTransactionReceiptPollHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\DeploymentTransactionSenderHandler.cs">
+				<Link>Contracts\DeploymentHandlers\DeploymentTransactionSenderHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\IDeploymentEstimatorHandler.cs">
+				<Link>Contracts\DeploymentHandlers\IDeploymentEstimatorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\IDeploymentSigner.cs">
+				<Link>Contracts\DeploymentHandlers\IDeploymentSigner.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\IDeploymentTransactionReceiptPollHandler.cs">
+				<Link>Contracts\DeploymentHandlers\IDeploymentTransactionReceiptPollHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\IDeploymentTransactionSenderHandler.cs">
+				<Link>Contracts\DeploymentHandlers\IDeploymentTransactionSenderHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Extensions\ContractMessageHexBigIntegerExtensions.cs">
+				<Link>Contracts\Extensions\ContractMessageHexBigIntegerExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Extensions\DeploymentMessageExtensions.cs">
+				<Link>Contracts\Extensions\DeploymentMessageExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Extensions\EventExtensions.cs">
+				<Link>Contracts\Extensions\EventExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Extensions\FunctionMessageExtensions.cs">
+				<Link>Contracts\Extensions\FunctionMessageExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Extensions\FunctionOuputDTOExtensions.cs">
+				<Link>Contracts\Extensions\FunctionOuputDTOExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\MessageEncodingServices\DeploymentMessageEncodingService.cs">
+				<Link>Contracts\MessageEncodingServices\DeploymentMessageEncodingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\MessageEncodingServices\FunctionMessageEncodingService.cs">
+				<Link>Contracts\MessageEncodingServices\FunctionMessageEncodingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\MessageEncodingServices\IContractMessageTransactionInputCreator.cs">
+				<Link>Contracts\MessageEncodingServices\IContractMessageTransactionInputCreator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\MessageEncodingServices\IFunctionMessageEncodingService.cs">
+				<Link>Contracts\MessageEncodingServices\IFunctionMessageEncodingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\IQueryHandler.cs">
+				<Link>Contracts\QueryHandlers\IQueryHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\QueryDecoderBaseHandler.cs">
+				<Link>Contracts\QueryHandlers\QueryDecoderBaseHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\QueryHandlerBase.cs">
+				<Link>Contracts\QueryHandlers\QueryHandlerBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\QueryRawHandler.cs">
+				<Link>Contracts\QueryHandlers\QueryRawHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\QueryToDTOHandler.cs">
+				<Link>Contracts\QueryHandlers\QueryToDTOHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\QueryHandlers\QueryToSimpleTypeHandler.cs">
+				<Link>Contracts\QueryHandlers\QueryToSimpleTypeHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Services\EthApiContractService.cs">
+				<Link>Contracts\Services\EthApiContractService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionEstimatorHandler.cs">
+				<Link>Contracts\TransactionHandlers\ITransactionEstimatorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionReceiptPollHandler.cs">
+				<Link>Contracts\TransactionHandlers\ITransactionReceiptPollHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionSenderHandler.cs">
+				<Link>Contracts\TransactionHandlers\ITransactionSenderHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionSigner.cs">
+				<Link>Contracts\TransactionHandlers\ITransactionSigner.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\TransactionEstimatorHandler.cs">
+				<Link>Contracts\TransactionHandlers\TransactionEstimatorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\TransactionHandlerBase.cs">
+				<Link>Contracts\TransactionHandlers\TransactionHandlerBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\TransactionReceiptPollHandler.cs">
+				<Link>Contracts\TransactionHandlers\TransactionReceiptPollHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\TransactionSenderHandler.cs">
+				<Link>Contracts\TransactionHandlers\TransactionSenderHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\TransactionSignerHandler.cs">
+				<Link>Contracts\TransactionHandlers\TransactionSignerHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\AddressExtensions.cs">
+				<Link>Util\AddressExtensions.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Util\AddressUtil.cs">

@@ -19,7 +19,6 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.JsonRpc.RpcClient", "NethereumJsonRpcClient"));
             stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.KeyStore", "KeyStore"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Quorum", "Quorum"));
-            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.ENS", "ENS"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Geth", "Geth"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Contracts", "Contracts"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Util", "Util"));
@@ -106,6 +105,7 @@ namespace BuildProjectFile
     <DefineConstants>DEBUG;TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">
     <DebugType>pdbonly</DebugType>
@@ -114,6 +114,7 @@ namespace BuildProjectFile
     <DefineConstants>TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
