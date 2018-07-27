@@ -41,7 +41,7 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
                 .Callback<IEnumerable<GeneratedFile>>((files) => actualFilesSentToWriter = files);
 
             //when
-            _codeGenerationWrapper.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/temp");
+            _codeGenerationWrapper.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/temp", false);
 
             //then
             Assert.NotNull(actualFilesSentToWriter);

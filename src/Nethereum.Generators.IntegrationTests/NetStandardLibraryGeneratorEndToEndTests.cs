@@ -27,7 +27,10 @@ namespace Nethereum.Generators.IntegrationTests
                 var fullProjectFilePath = Path.Combine(context.TargetProjectFolder,
                     context.ProjectName + CodeGenLanguageExt.ProjectFileExtensions[codeGenLanguage]);
 
-                var generator = new NetStandardLibraryGenerator(fullProjectFilePath, codeGenLanguage);
+                var generator = new NetStandardLibraryGenerator(fullProjectFilePath, codeGenLanguage)
+                {
+                    NethereumWeb3Version = Constants.NethereumWeb3Version
+                };
 
                 //when
                 //code gen proj file
