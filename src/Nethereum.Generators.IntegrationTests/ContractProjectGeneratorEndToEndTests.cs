@@ -24,7 +24,7 @@ namespace Nethereum.Generators.IntegrationTests
             {
                 context.CreateProject(codeGenLanguage, new[]
                 {
-                    new Tuple<string, string>("Nethereum.Web3", "2.4.0")
+                    new Tuple<string, string>("Nethereum.Web3", "3.0.0-rc1")
                 });
 
                 var contractMetaData = TestContracts.StandardContract;

@@ -21,7 +21,7 @@ namespace Nethereum.Generators.DTOs
 
 {SpaceUtils.OneTab}<[FunctionOutput]>
 {SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
-{SpaceUtils.TwoTabs}Inherits IFunctionOutputDTO
+{SpaceUtils.TwoTabs}Implements IFunctionOutputDTO
 {SpaceUtils.TwoTabs}
 {_parameterAbiFunctionDtoVbTemplate.GenerateAllProperties(Model.FunctionABI.OutputParameters)}
 {SpaceUtils.OneTab}

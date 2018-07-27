@@ -87,7 +87,7 @@ namespace Nethereum.Generator.Console.Configuration
             if (attr.HasFlag(FileAttributes.Directory))
             {
                 var file = FindFirstProjectFile(destinationProjectFolderOrFileName);
-                return (destinationProjectFolderOrFileName, null);
+                return (destinationProjectFolderOrFileName, file);
             }
 
             var folder = Path.GetDirectoryName(destinationProjectFolderOrFileName);
