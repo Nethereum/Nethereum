@@ -29,8 +29,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                 new ResolverFunction() {Node = fullNameNode.HexToByteArray()});
 
             Assert.Equal("0x1da022710df5002339274aadee8d58218e9d6ab5", resolverAddress);
-            //using the resolver address we can create our service (should be an abstract / interface based on abi as we can have many)
-            var resolverService = new PublicResolverService(web3, resolverAddress);
+             var resolverService = new PublicResolverService(web3, resolverAddress);
 
 
             //and get the address from the resolver
