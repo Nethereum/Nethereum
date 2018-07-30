@@ -41,7 +41,7 @@ namespace Nethereum.Generators.CQS
         {
             var typeName = Model.GetTypeName();
 
-            return $@"{SpaceUtils.OneTab}Public Partial Class 
+            return $@"{SpaceUtils.OneTab}Public Partial Class {typeName}
 {SpaceUtils.OneTab} Inherits {typeName}Base
 {SpaceUtils.OneTab}
 {SpaceUtils.TwoTabs}Public Sub New()

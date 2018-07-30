@@ -25,6 +25,7 @@ namespace Nethereum.Generators
             return new GeneratedFile(template, ProjectFileName, outputPath);
         }
 
+        public string NethereumWeb3Version { get; set; } = "3.*";
 
         private string CreateTemplate(string languageDependentProperty)
         {
@@ -37,7 +38,7 @@ namespace Nethereum.Generators
 {SpaceUtils.OneTab}</PropertyGroup>
 {SpaceUtils.NoTabs}
 {SpaceUtils.OneTab}<ItemGroup>
-{SpaceUtils.TwoTabs}<PackageReference Include = ""Nethereum.Web3"" Version=""3.*"" />
+{SpaceUtils.TwoTabs}<PackageReference Include = ""Nethereum.Web3"" Version=""{NethereumWeb3Version}"" />
 {SpaceUtils.OneTab}</ItemGroup>
 {SpaceUtils.OneTab}
 {SpaceUtils.NoTabs}</Project>";

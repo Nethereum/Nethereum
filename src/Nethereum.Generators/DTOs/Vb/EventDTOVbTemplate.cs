@@ -21,7 +21,7 @@ namespace Nethereum.Generators.DTOs
 
 {SpaceUtils.OneTab}<[Event](""{Model.EventABI.Name}"")>
 {SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
-{SpaceUtils.TwoTabs}Inherits IEventDTO
+{SpaceUtils.TwoTabs}Implements IEventDTO
 {SpaceUtils.TwoTabs}
 {_parameterAbiEventDtoVbTemplate.GenerateAllProperties(Model.EventABI.InputParameters)}
 {SpaceUtils.OneTab}

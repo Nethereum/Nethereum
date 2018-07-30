@@ -59,7 +59,7 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 "-ns", "DefaultNamespace"));
 
             _mockCodeGenerationWrapper
-                .Verify(w => w.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/Temp"));
+                .Verify(w => w.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/Temp", true));
         }
 
         [Fact]

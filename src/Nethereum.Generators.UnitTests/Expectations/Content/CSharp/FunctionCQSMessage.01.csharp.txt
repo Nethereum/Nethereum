@@ -14,6 +14,6 @@ namespace DefaultNamespace
     public class BaseStatsFunctionBase:FunctionMessage
     {
         [Parameter("uint256", "_number", 1)]
-        public BigInteger Number {get; set;}
+        public virtual BigInteger Number {get; set;}
     }
 }
