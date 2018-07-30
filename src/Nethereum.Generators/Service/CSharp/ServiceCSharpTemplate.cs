@@ -18,7 +18,7 @@ namespace Nethereum.Generators.Service
         {
             return
                 $@"
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}
+{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}
 {SpaceUtils.OneTab}{{
 {SpaceUtils.OneTab}
 {_deploymentServiceMethodsCSharpTemplate.GenerateMethods()}

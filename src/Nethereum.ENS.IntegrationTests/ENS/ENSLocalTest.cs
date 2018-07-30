@@ -34,7 +34,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
             //and get the address from the resolver
             var theAddress =
-                await resolverService.AddrQueryAsync(new AddrFunction() {Node = fullNameNode.HexToByteArray()});
+                await resolverService.AddrQueryAsync(fullNameNode.HexToByteArray());
 
             //Owner address
             var expectedAddress = "0xfdb33f8ac7ce72d7d4795dd8610e323b4c122fbb";

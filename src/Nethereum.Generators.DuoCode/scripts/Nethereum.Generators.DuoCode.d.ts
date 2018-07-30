@@ -51,6 +51,8 @@ declare module Nethereum {
             get_ProjectFileName(): string;
             get_CodeGenLanguage(): Core.CodeGenLanguage;
             GenerateFileContent(outputPath: string): Core.GeneratedFile;
+            get_NethereumWeb3Version(): string;
+            set_NethereumWeb3Version(value: string): void;
         }
         export interface NetStandardLibraryGeneratorTypeFunc extends TypeFunction {
             (): NetStandardLibraryGeneratorTypeFunc;
@@ -1046,6 +1048,10 @@ declare module Nethereum {
             export interface ParameterABIFunctionDTOCSharpTemplate extends System.Object {
                 GenerateAllProperties(parameters: Model.ParameterABI[]): string;
                 GenerateProperty(parameter: Model.ParameterABI): string;
+                GenerateAllFunctionParameters(parameters: Model.ParameterABI[]): string;
+                GenerateFunctionParameter(parameter: Model.ParameterABI): string;
+                GenerateAssigmentFunctionParametersToProperties(parameters: Model.ParameterABI[], objectName: string, spacing: string): string;
+                GenerateAssigmentFunctionParameterToProperty(parameter: Model.ParameterABI, objectName: string, spacing: string): string;
             }
             export interface ParameterABIFunctionDTOCSharpTemplateTypeFunc extends TypeFunction {
                 (): ParameterABIFunctionDTOCSharpTemplateTypeFunc;

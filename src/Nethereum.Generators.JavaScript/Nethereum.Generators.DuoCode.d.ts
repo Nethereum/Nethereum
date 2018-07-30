@@ -51,6 +51,8 @@ declare module Nethereum {
             get_ProjectFileName(): string;
             get_CodeGenLanguage(): Core.CodeGenLanguage;
             GenerateFileContent(outputPath: string): Core.GeneratedFile;
+            get_NethereumWeb3Version(): string;
+            set_NethereumWeb3Version(value: string): void;
         }
         export interface NetStandardLibraryGeneratorTypeFunc extends TypeFunction {
             (): NetStandardLibraryGeneratorTypeFunc;
@@ -790,6 +792,17 @@ declare module Nethereum {
             }
             const FSharpClassFileTemplate: FSharpClassFileTemplateTypeFunc;
 
+            // Nethereum.Generators.CQS.FSharpMultipleClassFileTemplate
+            export interface FSharpMultipleClassFileTemplate extends MultipleClassFileTemplate {
+            }
+            export interface FSharpMultipleClassFileTemplateTypeFunc extends TypeFunction {
+                (): FSharpMultipleClassFileTemplateTypeFunc;
+                prototype: FSharpMultipleClassFileTemplate;
+                new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, fileModel: Core.IFileModel): FSharpMultipleClassFileTemplate;
+                ctor: { new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, fileModel: Core.IFileModel): FSharpMultipleClassFileTemplate; };
+            }
+            const FSharpMultipleClassFileTemplate: FSharpMultipleClassFileTemplateTypeFunc;
+
             // Nethereum.Generators.CQS.MultipleClassFileTemplate
             export interface MultipleClassFileTemplate extends FileTemplate {
                 GenerateFile(): string;
@@ -812,6 +825,17 @@ declare module Nethereum {
                 ctor: { new (classModel: Core.IClassModel, classTemplate: Core.IClassTemplate): VbClassFileTemplate; };
             }
             const VbClassFileTemplate: VbClassFileTemplateTypeFunc;
+
+            // Nethereum.Generators.CQS.VbMultipleClassFileTemplate
+            export interface VbMultipleClassFileTemplate extends MultipleClassFileTemplate {
+            }
+            export interface VbMultipleClassFileTemplateTypeFunc extends TypeFunction {
+                (): VbMultipleClassFileTemplateTypeFunc;
+                prototype: VbMultipleClassFileTemplate;
+                new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, fileModel: Core.IFileModel): VbMultipleClassFileTemplate;
+                ctor: { new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, fileModel: Core.IFileModel): VbMultipleClassFileTemplate; };
+            }
+            const VbMultipleClassFileTemplate: VbMultipleClassFileTemplateTypeFunc;
 
             // Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator
             export interface ContractDeploymentCQSMessageGenerator extends Core.ClassGeneratorBase$2<ClassTemplateBase$1<ContractDeploymentCQSMessageModel>, ContractDeploymentCQSMessageModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
@@ -910,6 +934,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate
             export interface ContractDeploymentCQSMessageVbTemplate extends ClassTemplateBase$1<ContractDeploymentCQSMessageModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface ContractDeploymentCQSMessageVbTemplateTypeFunc extends TypeFunction {
                 (): ContractDeploymentCQSMessageVbTemplateTypeFunc;
@@ -921,6 +946,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate
             export interface FunctionCQSMessageVbTemplate extends ClassTemplateBase$1<FunctionCQSMessageModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface FunctionCQSMessageVbTemplateTypeFunc extends TypeFunction {
                 (): FunctionCQSMessageVbTemplateTypeFunc;
@@ -1022,6 +1048,10 @@ declare module Nethereum {
             export interface ParameterABIFunctionDTOCSharpTemplate extends System.Object {
                 GenerateAllProperties(parameters: Model.ParameterABI[]): string;
                 GenerateProperty(parameter: Model.ParameterABI): string;
+                GenerateAllFunctionParameters(parameters: Model.ParameterABI[]): string;
+                GenerateFunctionParameter(parameter: Model.ParameterABI): string;
+                GenerateAssigmentFunctionParametersToProperties(parameters: Model.ParameterABI[], objectName: string, spacing: string): string;
+                GenerateAssigmentFunctionParameterToProperty(parameter: Model.ParameterABI, objectName: string, spacing: string): string;
             }
             export interface ParameterABIFunctionDTOCSharpTemplateTypeFunc extends TypeFunction {
                 (): ParameterABIFunctionDTOCSharpTemplateTypeFunc;
@@ -1081,6 +1111,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.DTOs.EventDTOVbTemplate
             export interface EventDTOVbTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface EventDTOVbTemplateTypeFunc extends TypeFunction {
                 (): EventDTOVbTemplateTypeFunc;
@@ -1092,6 +1123,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.DTOs.FunctionOutputDTOVbTemplate
             export interface FunctionOutputDTOVbTemplate extends CQS.ClassTemplateBase$1<FunctionOutputDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
             }
             export interface FunctionOutputDTOVbTemplateTypeFunc extends TypeFunction {
                 (): FunctionOutputDTOVbTemplateTypeFunc;

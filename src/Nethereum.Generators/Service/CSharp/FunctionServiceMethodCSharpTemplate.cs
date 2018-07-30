@@ -12,18 +12,20 @@ namespace Nethereum.Generators.Service
         private readonly ServiceModel _model;
         private CommonGenerators _commonGenerators;
         private ITypeConvertor _typeConvertor;
+        private ParameterABIFunctionDTOCSharpTemplate _parameterAbiFunctionDtocSharpTemplate;
 
         public FunctionServiceMethodCSharpTemplate(ServiceModel model)
         {
             _model = model;
             _typeConvertor = new ABITypeToCSharpType();
             _commonGenerators = new CommonGenerators();
+            _parameterAbiFunctionDtocSharpTemplate = new ParameterABIFunctionDTOCSharpTemplate();
         }
 
         public string GenerateMethods()
         {
             var functions = _model.ContractABI.Functions;
-            return string.Join(Environment.NewLine, functions.Select(GenerateMethod));
+            return string.Join(GenerateLineBreak(), functions.Select(GenerateMethod));
         }
 
         public string GenerateMethod(FunctionABI functionABI)
@@ -41,6 +43,7 @@ namespace Nethereum.Generators.Service
             {
 
                 var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
+            
                 var returnWithInputParam =
 $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
@@ -54,12 +57,24 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>(null, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
+                var returnWithSimpleParams =
+                    $@"{SpaceUtils.TwoTabs}
+{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
+{SpaceUtils.ThreeTabs}
+{SpaceUtils.ThreeTabs}return ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>({messageVariableName}, blockParameter);
+{SpaceUtils.TwoTabs}}}";
+
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return returnWithInputParam + returnWithoutInputParam;
+                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam + GenerateLineBreak();
                 }
-
-                return returnWithInputParam;
+                else
+                {
+                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams + GenerateLineBreak();
+                }
             }
 
             if(functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
@@ -82,12 +97,24 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>(null, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
+                var returnWithSimpleParams =
+                    $@"{SpaceUtils.TwoTabs}
+{SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
+{SpaceUtils.ThreeTabs}
+{SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameter);
+{SpaceUtils.TwoTabs}}}";
+
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return returnWithInputParam + returnWithoutInputParam;
+                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam + GenerateLineBreak();
                 }
-
-                return returnWithInputParam;
+                else
+                {
+                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams + GenerateLineBreak();
+                }
             }
 
             if(functionABIModel.IsTransaction())
@@ -104,6 +131,17 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAsync<{messageType}>();
 {SpaceUtils.TwoTabs}}}";
 
+
+                var transactionRequestWithSimpleParams =
+                    $@"{SpaceUtils.TwoTabs}public Task<string> {functionNameUpper}RequestAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)})
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
+{SpaceUtils.ThreeTabs}
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAsync({messageVariableName});
+{SpaceUtils.TwoTabs}}}";
+
+
                 var transactionRequestAndReceiptWithInput =
                     $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({messageType} {messageVariableName}, CancellationTokenSource cancellationToken = null)
 {SpaceUtils.TwoTabs}{{
@@ -116,19 +154,38 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync<{messageType}>(null, cancellationToken);
 {SpaceUtils.TwoTabs}}}";
 
+                var transactionRequestAndReceiptWithSimpleParams =
+                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, CancellationTokenSource cancellationToken = null)
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
+{SpaceUtils.ThreeTabs}
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationToken);
+{SpaceUtils.TwoTabs}}}";
+
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return transactionRequestWithInput + Environment.NewLine + transactionRequestWithoutInput +
-                           Environment.NewLine +
+                    return transactionRequestWithInput + GenerateLineBreak() 
+                           + transactionRequestWithoutInput +
+                           GenerateLineBreak() +
                            transactionRequestAndReceiptWithInput +
-                           Environment.NewLine +
+                           GenerateLineBreak() +
                            transactionRequestAndReceiptWithoutInput;
                 }
 
-                return transactionRequestWithInput + Environment.NewLine + transactionRequestAndReceiptWithInput;
+                return transactionRequestWithInput + GenerateLineBreak() + transactionRequestAndReceiptWithInput +
+                       GenerateLineBreak() +
+                       transactionRequestWithSimpleParams +
+                       GenerateLineBreak() +
+                       transactionRequestAndReceiptWithSimpleParams;
             }
 
             return null;
+        }
+
+        private string GenerateLineBreak()
+        {
+            return Environment.NewLine + Environment.NewLine;
         }
     }
 }
