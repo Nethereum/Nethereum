@@ -15,7 +15,7 @@ using Functions;
 namespace DefaultNamespace
 {
 
-    public class StandardContractService
+    public partial class StandardContractService
     {
     
         public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3 web3, StandardContractDeployment standardContractDeployment, CancellationTokenSource cancellationTokenSource = null)
@@ -46,8 +46,25 @@ namespace DefaultNamespace
         {
              return ContractHandler.SendRequestAsync(addAdministratorFunction);
         }
+
         public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(AddAdministratorFunction addAdministratorFunction, CancellationTokenSource cancellationToken = null)
         {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
+        }
+
+        public Task<string> AddAdministratorRequestAsync(byte[] administratorId)
+        {
+            var addAdministratorFunction = new AddAdministratorFunction();
+                addAdministratorFunction.AdministratorId = administratorId;
+            
+             return ContractHandler.SendRequestAsync(addAdministratorFunction);
+        }
+
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] administratorId, CancellationTokenSource cancellationToken = null)
+        {
+            var addAdministratorFunction = new AddAdministratorFunction();
+                addAdministratorFunction.AdministratorId = administratorId;
+            
              return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
         }
     }
