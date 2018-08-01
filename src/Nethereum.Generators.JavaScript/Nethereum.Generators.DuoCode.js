@@ -2236,6 +2236,25 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate, null,
                 parameter.get_Order(), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, parameterModel.GetPropertyName(), 
                 this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
     };
+    $p.GenerateAllFunctionParameters = function ParameterABIFunctionDTOFSharpTemplate_GenerateAllFunctionParameters(parameters) {
+        return String.Join$1(String, ", ", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(this.GenerateFunctionParameter, this)));
+    };
+    $p.GenerateFunctionParameter = function ParameterABIFunctionDTOFSharpTemplate_GenerateFunctionParameter(parameter) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
+        return String.Format("{0}: {1}", [parameterModel.GetVariableName(), this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
+    };
+    $p.GenerateAssigmentFunctionParametersToProperties = function ParameterABIFunctionDTOFSharpTemplate_GenerateAssigmentFunctionParametersToProperties(parameters, objectName, spacing) {
+        return String.Join$1(String, System.Environment().NewLine, System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(function(x) {
+                return this.GenerateAssigmentFunctionParameterToProperty(x, objectName, spacing);
+            }, this)));
+    };
+    $p.GenerateAssigmentFunctionParameterToProperty = function ParameterABIFunctionDTOFSharpTemplate_GenerateAssigmentFunctionParameterToProperty(parameter, objectName, spacing) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
+        return String.Format("{0}{1}.{2} <- {3}", [spacing, objectName, parameterModel.GetPropertyName(), 
+            parameterModel.GetVariableName()]);
+    };
 });
 $d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
     44939), function($t, $p) {
@@ -2314,7 +2333,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIEventDTOVbTemplate, null, functi
     };
     $p.GenerateProperty = function ParameterABIEventDTOVbTemplate_GenerateProperty(parameter) {
         var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
-        return String.Format("{0}<[Parameter](\"{1}\", \"{2}\", {3}, {4})>\r\n{5}Public Property [{6}] As {7}", 
+        return String.Format("{0}<[Parameter](\"{1}\", \"{2}\", {3}, {4})>\r\n{5}Public Overridable Property [{6}] As {7}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, parameter.get_Type(), parameter.get_Name(), 
                 parameter.get_Order(), this.utils.GetBooleanAsString(parameter.get_Indexed()), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 parameterModel.GetPropertyName(), this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
@@ -2336,7 +2355,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
     };
     $p.GenerateProperty = function ParameterABIFunctionDTOVbTemplate_GenerateProperty(parameter) {
         var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
-        return String.Format("{0}<[Parameter](\"{1}\", \"{2}\", {3})>\r\n{4}Public Property [{5}] As {6}", 
+        return String.Format("{0}<[Parameter](\"{1}\", \"{2}\", {3})>\r\n{4}Public Overridable Property [{5}] As {6}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, parameter.get_Type(), parameter.get_Name(), 
                 parameter.get_Order(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, parameterModel.GetPropertyName(), 
                 this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
@@ -2438,15 +2457,15 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTem
         var messageType = this._contractDeploymentCQSMessageModel.GetTypeName();
         var messageVariableName = this._contractDeploymentCQSMessageModel.GetVariableName();
 
-        var sendRequestReceipt = String.Format("{0}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3 web3, {1} {2}, CancellationTokenSource cancellationTokenSource = null)\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource);\r\n{7}}}", 
+        var sendRequestReceipt = String.Format("{0}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, {1} {2}, CancellationTokenSource cancellationTokenSource = null)\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource);\r\n{7}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequest = String.Format("{0}public static Task<string> DeployContractAsync(Web3 web3, {1} {2})\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAsync({6});\r\n{7}}}", 
+        var sendRequest = String.Format("{0}public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, {1} {2})\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAsync({6});\r\n{7}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequestContract = String.Format("{0}public static async Task<{1}> DeployContractAndGetServiceAsync(Web3 web3, {2} {3}, CancellationTokenSource cancellationTokenSource = null)\r\n{4}{{\r\n{5}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource);\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
+        var sendRequestContract = String.Format("{0}public static async Task<{1}> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, {2} {3}, CancellationTokenSource cancellationTokenSource = null)\r\n{4}{{\r\n{5}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource);\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._serviceModel.GetTypeName(), messageType, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), 
@@ -2615,7 +2634,7 @@ $d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generato
             this));
     };
     $p.GenerateClass = function ServiceCSharpTemplate_GenerateClass() {
-        return String.Format("\r\n{0}public partial class {1}\r\n{2}{{\r\n{3}\r\n{4}\r\n{5}\r\n{6}protected Web3 Web3{{ get; }}\r\n{7}\r\n{8}public ContractHandler ContractHandler {{ get; }}\r\n{9}\r\n{10}public {11}(Web3 web3, string contractAddress)\r\n{12}{{\r\n{13}Web3 = web3;\r\n{14}ContractHandler = web3.Eth.GetContractHandler(contractAddress);\r\n{15}}}\r\n{16}\r\n{17}\r\n{18}}}", 
+        return String.Format("\r\n{0}public partial class {1}\r\n{2}{{\r\n{3}\r\n{4}\r\n{5}\r\n{6}protected Nethereum.Web3.Web3 Web3{{ get; }}\r\n{7}\r\n{8}public ContractHandler ContractHandler {{ get; }}\r\n{9}\r\n{10}public {11}(Nethereum.Web3.Web3 web3, string contractAddress)\r\n{12}{{\r\n{13}Web3 = web3;\r\n{14}ContractHandler = web3.Eth.GetContractHandler(contractAddress);\r\n{15}}}\r\n{16}\r\n{17}\r\n{18}}}", 
             [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
@@ -2767,17 +2786,17 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsVbTemplat
         var messageType = this._contractDeploymentCQSMessageModel.GetTypeName();
         var messageVariableName = this._contractDeploymentCQSMessageModel.GetVariableName();
 
-        var sendRequestReceipt = String.Format("{0}Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource)\r\n{7}\r\n{8}End Function", 
+        var sendRequestReceipt = String.Format("{0}Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource)\r\n{7}\r\n{8}End Function", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequest = String.Format("{0} Public Shared Function DeployContractAsync(ByVal web3 As Web3, ByVal {1} As {2}) As Task(Of String)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAsync({6})\r\n{7}\r\n{8}End Function", 
+        var sendRequest = String.Format("{0} Public Shared Function DeployContractAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}) As Task(Of String)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAsync({6})\r\n{7}\r\n{8}End Function", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequestContract = String.Format("{0}Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of {3})\r\n{4}\r\n{5}Dim receipt = Await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource)\r\n{7}Return New {8}(web3, receipt.ContractAddress)\r\n{9}\r\n{10}End Function", 
+        var sendRequestContract = String.Format("{0}Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of {3})\r\n{4}\r\n{5}Dim receipt = Await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource)\r\n{7}Return New {8}(web3, receipt.ContractAddress)\r\n{9}\r\n{10}End Function", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, this._serviceModel.GetTypeName(), 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), 
@@ -2955,7 +2974,7 @@ $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.C
             this));
     };
     $p.GenerateClass = function ServiceVbTemplate_GenerateClass() {
-        return String.Format("\r\n{0}Public Partial Class {1}\r\n{2}\r\n{3}\r\n{4}\r\n{5}\r\n{6}Protected Property Web3 As Web3\r\n{7}\r\n{8}Public Property ContractHandler As ContractHandler\r\n{9}\r\n{10}Public Sub New(ByVal web3 As Web3, ByVal contractAddress As String)\r\n{11}Web3 = web3\r\n{12}ContractHandler = web3.Eth.GetContractHandler(contractAddress)\r\n{13}End Sub\r\n{14}\r\n{15}\r\n{16}\r\n{17}End Class", 
+        return String.Format("\r\n{0}Public Partial Class {1}\r\n{2}\r\n{3}\r\n{4}\r\n{5}\r\n{6}Protected Property Web3 As Nethereum.Web3.Web3\r\n{7}\r\n{8}Public Property ContractHandler As ContractHandler\r\n{9}\r\n{10}Public Sub New(ByVal web3 As Nethereum.Web3.Web3, ByVal contractAddress As String)\r\n{11}Web3 = web3\r\n{12}ContractHandler = web3.Eth.GetContractHandler(contractAddress)\r\n{13}End Sub\r\n{14}\r\n{15}\r\n{16}\r\n{17}End Class", 
             [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, this._deploymentServiceMethodsVbTemplate.GenerateMethods(), 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 

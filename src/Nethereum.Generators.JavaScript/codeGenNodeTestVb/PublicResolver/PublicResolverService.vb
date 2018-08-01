@@ -10,35 +10,35 @@ Imports Nethereum.Contracts.CQS
 Imports Nethereum.Contracts.ContractHandlers
 Imports Nethereum.Contracts
 Imports System.Threading
-Imports Nethereumx.ENS.PublicResolver.ContractDefinition
-Namespace Nethereumx.ENS.PublicResolver
+Imports Nethereum.ENS.PublicResolver.ContractDefinition
+Namespace Nethereum.ENS.PublicResolver
 
 
     Public Partial Class PublicResolverService
     
     
-        Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Web3, ByVal publicResolverDeployment As PublicResolverDeployment, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)
+        Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal publicResolverDeployment As PublicResolverDeployment, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)
         
             Return web3.Eth.GetContractDeploymentHandler(Of PublicResolverDeployment)().SendRequestAndWaitForReceiptAsync(publicResolverDeployment, cancellationTokenSource)
         
         End Function
-         Public Shared Function DeployContractAsync(ByVal web3 As Web3, ByVal publicResolverDeployment As PublicResolverDeployment) As Task(Of String)
+         Public Shared Function DeployContractAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal publicResolverDeployment As PublicResolverDeployment) As Task(Of String)
         
             Return web3.Eth.GetContractDeploymentHandler(Of PublicResolverDeployment)().SendRequestAsync(publicResolverDeployment)
         
         End Function
-        Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Web3, ByVal publicResolverDeployment As PublicResolverDeployment, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of PublicResolverService)
+        Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal publicResolverDeployment As PublicResolverDeployment, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of PublicResolverService)
         
             Dim receipt = Await DeployContractAndWaitForReceiptAsync(web3, publicResolverDeployment, cancellationTokenSource)
             Return New PublicResolverService(web3, receipt.ContractAddress)
         
         End Function
     
-        Protected Property Web3 As Web3
+        Protected Property Web3 As Nethereum.Web3.Web3
         
         Public Property ContractHandler As ContractHandler
         
-        Public Sub New(ByVal web3 As Web3, ByVal contractAddress As String)
+        Public Sub New(ByVal web3 As Nethereum.Web3.Web3, ByVal contractAddress As String)
             Web3 = web3
             ContractHandler = web3.Eth.GetContractHandler(contractAddress)
         End Sub

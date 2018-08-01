@@ -9,7 +9,7 @@ Imports Nethereum.RPC.Eth.DTOs
 Imports Nethereum.Contracts.CQS
 Imports Nethereum.Contracts
 Imports System.Threading
-Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
+Namespace Nethereum.ENS.PublicResolver.ContractDefinition
 
     
     
@@ -40,7 +40,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         End Sub
         
         <[Parameter]("address", "ensAddr", 1)>
-        Public Property [EnsAddr] As String
+        Public Overridable Property [EnsAddr] As String
     
     End Class    
     
@@ -53,7 +53,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes4", "interfaceID", 1)>
-        Public Property [InterfaceID] As Byte()
+        Public Overridable Property [InterfaceID] As Byte()
     
     End Class
     
@@ -67,11 +67,11 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("string", "key", 2)>
-        Public Property [Key] As String
+        Public Overridable Property [Key] As String
         <[Parameter]("string", "value", 3)>
-        Public Property [Value] As String
+        Public Overridable Property [Value] As String
     
     End Class
     
@@ -85,9 +85,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("uint256", "contentTypes", 2)>
-        Public Property [ContentTypes] As BigInteger
+        Public Overridable Property [ContentTypes] As BigInteger
     
     End Class
     
@@ -101,11 +101,11 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes32", "x", 2)>
-        Public Property [X] As Byte()
+        Public Overridable Property [X] As Byte()
         <[Parameter]("bytes32", "y", 3)>
-        Public Property [Y] As Byte()
+        Public Overridable Property [Y] As Byte()
     
     End Class
     
@@ -119,7 +119,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
     
     End Class
     
@@ -133,7 +133,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
     
     End Class
     
@@ -147,9 +147,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("string", "key", 2)>
-        Public Property [Key] As String
+        Public Overridable Property [Key] As String
     
     End Class
     
@@ -163,11 +163,11 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("uint256", "contentType", 2)>
-        Public Property [ContentType] As BigInteger
+        Public Overridable Property [ContentType] As BigInteger
         <[Parameter]("bytes", "data", 3)>
-        Public Property [Data] As Byte()
+        Public Overridable Property [Data] As Byte()
     
     End Class
     
@@ -181,7 +181,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
     
     End Class
     
@@ -195,9 +195,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("string", "name", 2)>
-        Public Property [Name] As String
+        Public Overridable Property [Name] As String
     
     End Class
     
@@ -211,9 +211,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes", "hash", 2)>
-        Public Property [Hash] As Byte()
+        Public Overridable Property [Hash] As Byte()
     
     End Class
     
@@ -227,9 +227,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes32", "hash", 2)>
-        Public Property [Hash] As Byte()
+        Public Overridable Property [Hash] As Byte()
     
     End Class
     
@@ -243,7 +243,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
     
     End Class
     
@@ -257,9 +257,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("address", "addr", 2)>
-        Public Property [Addr] As String
+        Public Overridable Property [Addr] As String
     
     End Class
     
@@ -273,7 +273,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Inherits FunctionMessage
     
         <[Parameter]("bytes32", "node", 1)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
     
     End Class
     
@@ -287,9 +287,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("address", "a", 2, false)>
-        Public Property [A] As String
+        Public Overridable Property [A] As String
     
     End Class    
     
@@ -302,9 +302,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes32", "hash", 2, false)>
-        Public Property [Hash] As Byte()
+        Public Overridable Property [Hash] As Byte()
     
     End Class    
     
@@ -317,9 +317,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("string", "name", 2, false)>
-        Public Property [Name] As String
+        Public Overridable Property [Name] As String
     
     End Class    
     
@@ -332,9 +332,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("uint256", "contentType", 2, true)>
-        Public Property [ContentType] As BigInteger
+        Public Overridable Property [ContentType] As BigInteger
     
     End Class    
     
@@ -347,11 +347,11 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes32", "x", 2, false)>
-        Public Property [X] As Byte()
+        Public Overridable Property [X] As Byte()
         <[Parameter]("bytes32", "y", 3, false)>
-        Public Property [Y] As Byte()
+        Public Overridable Property [Y] As Byte()
     
     End Class    
     
@@ -364,11 +364,11 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("string", "indexedKey", 2, false)>
-        Public Property [IndexedKey] As String
+        Public Overridable Property [IndexedKey] As String
         <[Parameter]("string", "key", 3, false)>
-        Public Property [Key] As String
+        Public Overridable Property [Key] As String
     
     End Class    
     
@@ -381,9 +381,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IEventDTO
         
         <[Parameter]("bytes32", "node", 1, true)>
-        Public Property [Node] As Byte()
+        Public Overridable Property [Node] As Byte()
         <[Parameter]("bytes", "hash", 2, false)>
-        Public Property [Hash] As Byte()
+        Public Overridable Property [Hash] As Byte()
     
     End Class    
     
@@ -396,7 +396,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("bool", "", 1)>
-        Public Property [ReturnValue1] As Boolean
+        Public Overridable Property [ReturnValue1] As Boolean
     
     End Class    
     
@@ -411,9 +411,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("uint256", "contentType", 1)>
-        Public Property [ContentType] As BigInteger
+        Public Overridable Property [ContentType] As BigInteger
         <[Parameter]("bytes", "data", 2)>
-        Public Property [Data] As Byte()
+        Public Overridable Property [Data] As Byte()
     
     End Class    
     
@@ -428,7 +428,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("bytes32", "", 1)>
-        Public Property [ReturnValue1] As Byte()
+        Public Overridable Property [ReturnValue1] As Byte()
     
     End Class    
     
@@ -441,7 +441,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("address", "", 1)>
-        Public Property [ReturnValue1] As String
+        Public Overridable Property [ReturnValue1] As String
     
     End Class    
     
@@ -454,7 +454,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("string", "", 1)>
-        Public Property [ReturnValue1] As String
+        Public Overridable Property [ReturnValue1] As String
     
     End Class    
     
@@ -469,7 +469,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("string", "", 1)>
-        Public Property [ReturnValue1] As String
+        Public Overridable Property [ReturnValue1] As String
     
     End Class    
     
@@ -488,9 +488,9 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("bytes32", "x", 1)>
-        Public Property [X] As Byte()
+        Public Overridable Property [X] As Byte()
         <[Parameter]("bytes32", "y", 2)>
-        Public Property [Y] As Byte()
+        Public Overridable Property [Y] As Byte()
     
     End Class    
     
@@ -505,7 +505,7 @@ Namespace Nethereumx.ENS.PublicResolver.ContractDefinition
         Implements IFunctionOutputDTO
         
         <[Parameter]("bytes", "", 1)>
-        Public Property [ReturnValue1] As Byte()
+        Public Overridable Property [ReturnValue1] As Byte()
     
     End Class
 End Namespace

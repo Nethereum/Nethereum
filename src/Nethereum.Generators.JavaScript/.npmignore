@@ -1,0 +1,7 @@
+\bin
+\codeGenNodeTest
+\codeGenNodeTestVb
+\examples
+\obj
+*.njsproj
+*.user
