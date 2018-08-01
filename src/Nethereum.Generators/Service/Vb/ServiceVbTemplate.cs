@@ -18,14 +18,14 @@ namespace Nethereum.Generators.Service
         {
             return
                 $@"
-{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}
+{SpaceUtils.OneTab}Public Partial Class {Model.GetTypeName()}
 {SpaceUtils.OneTab}
 {SpaceUtils.OneTab}
 {_deploymentServiceMethodsVbTemplate.GenerateMethods()}
 {SpaceUtils.OneTab}
 {SpaceUtils.TwoTabs}Protected Property Web3 As Web3
 {SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Protected Property ContractHandler As ContractHandler
+{SpaceUtils.TwoTabs}Public Property ContractHandler As ContractHandler
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}Public Sub New(ByVal web3 As Web3, ByVal contractAddress As String)
 {SpaceUtils.ThreeTabs}Web3 = web3

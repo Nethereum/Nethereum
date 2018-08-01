@@ -31,7 +31,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateAllFunctionParameters(ParameterABI[] parameters)
         {
-            return string.Join(",", parameters.Select(GenerateFunctionParameter));
+            return string.Join(", ", parameters.Select(GenerateFunctionParameter));
         }
 
         public string GenerateFunctionParameter(ParameterABI parameter)

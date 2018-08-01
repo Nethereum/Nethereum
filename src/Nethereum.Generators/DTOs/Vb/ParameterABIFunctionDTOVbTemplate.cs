@@ -29,5 +29,27 @@ namespace Nethereum.Generators.DTOs
                 $@"{SpaceUtils.TwoTabs}<[Parameter](""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})>
 {SpaceUtils.TwoTabs}Public Property [{parameterModel.GetPropertyName()}] As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
         }
+
+        public string GenerateAllFunctionParameters(ParameterABI[] parameters)
+        {
+            return string.Join(", ", parameters.Select(GenerateFunctionParameter));
+        }
+
+        public string GenerateFunctionParameter(ParameterABI parameter)
+        {
+            var parameterModel = new ParameterABIModel(parameter);
+            return $@"ByVal {parameterModel.GetVariableName()} As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
+        }
+
+        public string GenerateAssigmentFunctionParametersToProperties(ParameterABI[] parameters, string objectName, string spacing)
+        {
+            return string.Join(Environment.NewLine, parameters.Select(x => GenerateAssigmentFunctionParameterToProperty(x, objectName, spacing)));
+        }
+
+        public string GenerateAssigmentFunctionParameterToProperty(ParameterABI parameter, string objectName, string spacing)
+        {
+            var parameterModel = new ParameterABIModel(parameter);
+            return $@"{spacing}{objectName}.{parameterModel.GetPropertyName()} = {parameterModel.GetVariableName()}";
+        }
     }
 }

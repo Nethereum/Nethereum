@@ -1150,10 +1150,6 @@ declare module Nethereum {
             export interface ParameterABIFunctionDTOVbTemplate extends System.Object {
                 GenerateAllProperties(parameters: Model.ParameterABI[]): string;
                 GenerateProperty(parameter: Model.ParameterABI): string;
-                GenerateAllFunctionParameters(parameters: Model.ParameterABI[]): string;
-                GenerateFunctionParameter(parameter: Model.ParameterABI): string;
-                GenerateAssigmentFunctionParametersToProperties(parameters: Model.ParameterABI[], objectName: string, spacing: string): string;
-                GenerateAssigmentFunctionParameterToProperty(parameter: Model.ParameterABI, objectName: string, spacing: string): string;
             }
             export interface ParameterABIFunctionDTOVbTemplateTypeFunc extends TypeFunction {
                 (): ParameterABIFunctionDTOVbTemplateTypeFunc;

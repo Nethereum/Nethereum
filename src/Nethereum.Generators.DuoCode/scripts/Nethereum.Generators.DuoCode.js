@@ -400,7 +400,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "3.*";
+        this.NethereumWeb3Version = "3.0.0-rc1";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
@@ -2125,7 +2125,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate, null,
                 parameterModel.GetPropertyName()]);
     };
     $p.GenerateAllFunctionParameters = function ParameterABIFunctionDTOCSharpTemplate_GenerateAllFunctionParameters(parameters) {
-        return String.Join$1(String, ",", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+        return String.Join$1(String, ", ", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
             String, parameters, $d.delegate(this.GenerateFunctionParameter, this)));
     };
     $p.GenerateFunctionParameter = function ParameterABIFunctionDTOCSharpTemplate_GenerateFunctionParameter(parameter) {
@@ -2340,6 +2340,25 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, parameter.get_Type(), parameter.get_Name(), 
                 parameter.get_Order(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, parameterModel.GetPropertyName(), 
                 this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
+    };
+    $p.GenerateAllFunctionParameters = function ParameterABIFunctionDTOVbTemplate_GenerateAllFunctionParameters(parameters) {
+        return String.Join$1(String, ", ", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(this.GenerateFunctionParameter, this)));
+    };
+    $p.GenerateFunctionParameter = function ParameterABIFunctionDTOVbTemplate_GenerateFunctionParameter(parameter) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
+        return String.Format("ByVal {0} As {1}", [parameterModel.GetVariableName(), this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
+    };
+    $p.GenerateAssigmentFunctionParametersToProperties = function ParameterABIFunctionDTOVbTemplate_GenerateAssigmentFunctionParametersToProperties(parameters, objectName, spacing) {
+        return String.Join$1(String, System.Environment().NewLine, System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(function(x) {
+                return this.GenerateAssigmentFunctionParameterToProperty(x, objectName, spacing);
+            }, this)));
+    };
+    $p.GenerateAssigmentFunctionParameterToProperty = function ParameterABIFunctionDTOVbTemplate_GenerateAssigmentFunctionParameterToProperty(parameter, objectName, spacing) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
+        return String.Format("{0}{1}.{2} = {3}", [spacing, objectName, parameterModel.GetPropertyName(), 
+            parameterModel.GetVariableName()]);
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
@@ -2773,12 +2792,14 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodVbTemplate, null, fu
         this._model = null;
         this._commonGenerators = null;
         this._typeConvertor = null;
+        this._parameterAbiFunctionDtoVbTemplate = null;
     };
     $t.ctor = function FunctionServiceMethodVbTemplate(model) {
         $t.$baseType.ctor.call(this);
         this._model = model;
         this._typeConvertor = new Nethereum.Generators.Core.ABITypeToVBType.ctor();
         this._commonGenerators = new Nethereum.Generators.Core.CommonGenerators.ctor();
+        this._parameterAbiFunctionDtoVbTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate.ctor();
     };
     $p.GenerateMethods = function FunctionServiceMethodVbTemplate_GenerateMethods() {
         var functions = this._model.get_ContractABI().get_Functions();
@@ -2800,39 +2821,123 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodVbTemplate, null, fu
         if (functionABIModel.IsMultipleOutput() && !functionABIModel.IsTransaction()) {
 
             var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
-            return String.Format("{0}Public Function {1}QueryAsync(ByVal {2} As {3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Return ContractHandler.QueryDeserializingToObjectAsync(Of {7}, {8})({9}, blockParameter)\r\n{10}\r\n{11}End Function", 
+            var returnWithInputParam = String.Format("{0}Public Function {1}QueryAsync(ByVal {2} As {3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Return ContractHandler.QueryDeserializingToObjectAsync(Of {7}, {8})({9}, blockParameter)\r\n{10}\r\n{11}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                     messageType, functionOutputDTOType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, functionOutputDTOType, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+
+            var returnWithoutInputParam = String.Format("{0}\r\n{1}Public Function {2}QueryAsync(ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {3})\r\n{4}\r\n{5}return ContractHandler.QueryDeserializingToObjectAsync(Of {6}, {7})(Nothing, blockParameter)\r\n{8}\r\n{9}End Function\r\n", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, functionOutputDTOType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, functionOutputDTOType, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            var returnWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}QueryAsync({3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Dim {7} = New {8}()\r\n{9}\r\n{10}\r\n{11}Return ContractHandler.QueryDeserializingToObjectAsync(Of {12}, {13})({14}, blockParameter)\r\n{15}\r\n{16}End Function", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, this._parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                    functionOutputDTOType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    messageVariableName, messageType, this._parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                        messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, functionOutputDTOType, 
+                    messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            if (functionABIModel.HasNoInputParameters()) {
+                return returnWithInputParam + this.GenerateLineBreak() + returnWithoutInputParam + this.GenerateLineBreak();
+            }
+            else {
+                return returnWithInputParam + this.GenerateLineBreak() + returnWithSimpleParams + this.GenerateLineBreak();
+            }
+
         }
 
         if (functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
             if (functionABI.get_OutputParameters() != null && functionABI.get_OutputParameters().length == 1 && functionABI.get_Constant()) {
                 var type = functionABIModel.GetSingleOutputReturnType();
 
-                return String.Format("{0}Public Function {1}QueryAsync(ByVal {2} As {3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Return ContractHandler.QueryAsync(Of {7}, {8})({9}, blockParameter)\r\n{10}\r\n{11}End Function", 
+                var returnWithInputParam = String.Format("{0}Public Function {1}QueryAsync(ByVal {2} As {3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Return ContractHandler.QueryAsync(Of {7}, {8})({9}, blockParameter)\r\n{10}\r\n{11}End Function", 
                     [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                         messageType, type, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                         messageType, type, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                         Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+                var returnWithoutInputParam = String.Format("{0}\r\n{1}Public Function {2}QueryAsync(ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {3})\r\n{4}\r\n{5}return ContractHandler.QueryAsync(Of {6}, {7})(Nothing, blockParameter)\r\n{8}\r\n{9}End Function\r\n", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                        functionNameUpper, type, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageType, type, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+                var returnWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}QueryAsync({3}, ByVal Optional blockParameter As BlockParameter = Nothing) As Task(Of {4})\r\n{5}\r\n{6}Dim {7} = New {8}()\r\n{9}\r\n{10}\r\n{11}Return ContractHandler.QueryAsync(Of {12}, {13})({14}, blockParameter)\r\n{15}\r\n{16}End Function", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                        functionNameUpper, this._parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                        type, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageVariableName, messageType, this._parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                            messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, type, messageVariableName, 
+                        Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+                if (functionABIModel.HasNoInputParameters()) {
+                    return returnWithInputParam + this.GenerateLineBreak() + returnWithoutInputParam + this.GenerateLineBreak();
+                }
+                else {
+                    return returnWithInputParam + this.GenerateLineBreak() + returnWithSimpleParams + this.GenerateLineBreak();
+                }
             }
 
         if (functionABIModel.IsTransaction()) {
-            var transactionRequest = String.Format("{0}Public Function {1}RequestAsync(ByVal {2} As {3}) As Task(Of String)\r\n{4}            \r\n{5}Return ContractHandler.SendRequestAsync({6})\r\n{7}\r\n{8}End Function", 
+            var transactionRequestWithInput = String.Format("{0}Public Function {1}RequestAsync(ByVal {2} As {3}) As Task(Of String)\r\n{4}            \r\n{5}Return ContractHandler.SendRequestAsync(Of {6})({7})\r\n{8}\r\n{9}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                     messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
-                    messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+                    messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceipt = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal {2} As {3}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken)\r\n{7}\r\n{8}End Function", 
+            var transactionRequestWithoutInput = String.Format("{0}Public Function {1}RequestAsync() As Task(Of String)\r\n{2}            \r\n{3}Return ContractHandler.SendRequestAsync(Of {4})\r\n{5}\r\n{6}End Function", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            var transactionRequestWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}RequestAsync({3}) As Task(Of String)\r\n{4}\r\n{5}Dim {6} = New {7}()\r\n{8}\r\n{9}\r\n{10}Return ContractHandler.SendRequestAsync(Of {11})({12})\r\n{13}\r\n{14}End Function", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, this._parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    messageVariableName, messageType, this._parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                        messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+            var transactionRequestAndReceiptWithInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal {2} As {3}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {6})({7}, cancellationToken)\r\n{8}\r\n{9}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                     messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
-                    messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+                    messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            return transactionRequest + System.Environment().NewLine + transactionRequestAndReceipt;
+            var transactionRequestAndReceiptWithoutInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{2}\r\n{3}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {4})(Nothing, cancellationToken)\r\n{5}\r\n{6}End Function", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+
+            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}RequestAndWaitForReceiptAsync({3}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Dim {6} = New {7}()\r\n{8}\r\n{9}\r\n{10}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {11})({12}, cancellationToken)\r\n{13}\r\n{14}End Function", 
+                [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, this._parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    messageVariableName, messageType, this._parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                        messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+
+
+            if (functionABIModel.HasNoInputParameters()) {
+                return transactionRequestWithInput + this.GenerateLineBreak() + transactionRequestWithoutInput + this.GenerateLineBreak() + transactionRequestAndReceiptWithInput + this.GenerateLineBreak() + transactionRequestAndReceiptWithoutInput;
+            }
+
+            return transactionRequestWithInput + this.GenerateLineBreak() + transactionRequestAndReceiptWithInput + this.GenerateLineBreak() + transactionRequestWithSimpleParams + this.GenerateLineBreak() + transactionRequestAndReceiptWithSimpleParams;
         }
 
         return null;
+    };
+    $p.GenerateLineBreak = function FunctionServiceMethodVbTemplate_GenerateLineBreak() {
+        return System.Environment().NewLine + System.Environment().NewLine;
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
@@ -2850,7 +2955,7 @@ $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.C
             this));
     };
     $p.GenerateClass = function ServiceVbTemplate_GenerateClass() {
-        return String.Format("\r\n{0}Public Class {1}\r\n{2}\r\n{3}\r\n{4}\r\n{5}\r\n{6}Protected Property Web3 As Web3\r\n{7}\r\n{8}Protected Property ContractHandler As ContractHandler\r\n{9}\r\n{10}Public Sub New(ByVal web3 As Web3, ByVal contractAddress As String)\r\n{11}Web3 = web3\r\n{12}ContractHandler = web3.Eth.GetContractHandler(contractAddress)\r\n{13}End Sub\r\n{14}\r\n{15}\r\n{16}\r\n{17}End Class", 
+        return String.Format("\r\n{0}Public Partial Class {1}\r\n{2}\r\n{3}\r\n{4}\r\n{5}\r\n{6}Protected Property Web3 As Web3\r\n{7}\r\n{8}Public Property ContractHandler As ContractHandler\r\n{9}\r\n{10}Public Sub New(ByVal web3 As Web3, ByVal contractAddress As String)\r\n{11}Web3 = web3\r\n{12}ContractHandler = web3.Eth.GetContractHandler(contractAddress)\r\n{13}End Sub\r\n{14}\r\n{15}\r\n{16}\r\n{17}End Class", 
             [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, this._deploymentServiceMethodsVbTemplate.GenerateMethods(), 
                 Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 

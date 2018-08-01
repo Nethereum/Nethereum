@@ -25,7 +25,9 @@ var n = require('./Nethereum.Generators.DuoCode.js');
         dtoNamespace,
         basePath,
         pathSeparator,
-        codeGenLang);
+         codeGenLang);
+
+    classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
     var generatedClases = classGenerator.GenerateAllMessagesFileAndService();
     outputFiles(generatedClases);
 }
@@ -60,7 +62,8 @@ export function generateAllClasses(abi: string, byteCode: string,
     codeGenLang: int
 ) {
 
-    var serviceNamespace = contractName + ".Service";
+    var serviceNamespace = contractName;
+    //Same, we are generating single file
     var cqsNamespace = contractName + ".ContractDefinition";
     var dtoNamespace = contractName + ".ContractDefinition";
     var pathSeparator = path.sep;

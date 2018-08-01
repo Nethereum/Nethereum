@@ -11,7 +11,8 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
 using Nethereum.ENS.PublicResolver.ContractDefinition;
-namespace Nethereum.ENS.PublicResolver.Service
+
+namespace Nethereum.ENS.PublicResolver
 {
 
     public partial class PublicResolverService
