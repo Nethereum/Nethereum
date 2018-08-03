@@ -1,14 +1,7 @@
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Numerics;
-using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Web3;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
-using System.Threading;
+
 namespace Nethereum.ENS.TestRegistrar.ContractDefinition
 {
     

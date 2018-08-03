@@ -97,18 +97,15 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var ethLabel = ensUtil.GetLabelHash("eth");
 
             var receipt = await ensRegistryService.SetSubnodeOwnerRequestAndWaitForReceiptAsync(
-                new SetSubnodeOwnerFunction()
-                {
-                    Node = ensUtil.GetNameHash("").HexToByteArray(),
-                    Label = ethLabel.HexToByteArray(),
-                    Owner = fifsDeploymentReceipt.ContractAddress
-                }
+                ensUtil.GetNameHash("").HexToByteArray(),
+                ethLabel.HexToByteArray(),
+                fifsDeploymentReceipt.ContractAddress
             );
 
 
             //Now the owner of Eth is the FIFS
             var ownerOfEth =
-                await ensRegistryService.OwnerQueryAsync(new OwnerFunction() {Node = ethNode.HexToByteArray()});
+                await ensRegistryService.OwnerQueryAsync(ethNode.HexToByteArray());
             Assert.Equal(fifsDeploymentReceipt.ContractAddress.ToLower(), ownerOfEth.ToLower());
             /**** setup done **/
 
@@ -143,26 +140,23 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             // set the address in the resolver which we want to resolve, ownership is validated using ENS in the background
 
 
-            await publicResolverService.SetAddrRequestAndWaitForReceiptAsync(
-                new SetAddrFunction()
-                {
-                    Addr = addressToResolve,
-                    Node = fullNameNode.HexToByteArray()
-                });
+            await publicResolverService.SetAddrRequestAndWaitForReceiptAsync(fullNameNode.HexToByteArray(),
+             addressToResolve
+                );
 
 
             //Now as "end user" we can start resolving... 
 
             //get the resolver address from ENS
             var resolverAddress = await ensRegistryService.ResolverQueryAsync(
-                new ResolverFunction() {Node = fullNameNode.HexToByteArray()});
+                 fullNameNode.HexToByteArray());
 
             //using the resolver address we can create our service (should be an abstract / interface based on abi as we can have many)
             var resolverService = new PublicResolverService(web3, resolverAddress);
 
             //and get the address from the resolver
             var theAddress =
-                await resolverService.AddrQueryAsync(new AddrFunction() {Node = fullNameNode.HexToByteArray()});
+                await resolverService.AddrQueryAsync(fullNameNode.HexToByteArray());
 
             Assert.Equal(addressToResolve.ToLower(), theAddress.ToLower());
 

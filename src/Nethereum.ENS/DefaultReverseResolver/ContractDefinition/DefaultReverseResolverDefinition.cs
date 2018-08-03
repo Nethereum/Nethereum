@@ -1,16 +1,9 @@
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Numerics;
-using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Web3;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
-using System.Threading;
+
 namespace Nethereum.ENS.DefaultReverseResolver.ContractDefinition
 {
+    
     
     public partial class DefaultReverseResolverDeployment:DefaultReverseResolverDeploymentBase
     {
@@ -29,7 +22,7 @@ namespace Nethereum.ENS.DefaultReverseResolver.ContractDefinition
         public DefaultReverseResolverDeploymentBase(string byteCode):base(byteCode) { }
         
         [Parameter("address", "ensAddr", 1)]
-        public virtual string EnsAddress {get; set;}
+        public virtual string EnsAddr {get; set;}
     }    
     
     public partial class EnsFunction:EnsFunctionBase{}
