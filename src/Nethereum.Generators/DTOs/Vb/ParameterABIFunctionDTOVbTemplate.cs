@@ -38,7 +38,7 @@ namespace Nethereum.Generators.DTOs
         public string GenerateFunctionParameter(ParameterABI parameter)
         {
             var parameterModel = new ParameterABIModel(parameter);
-            return $@"ByVal {parameterModel.GetVariableName()} As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
+            return $@"ByVal [{parameterModel.GetVariableName()}] As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
         }
 
         public string GenerateAssigmentFunctionParametersToProperties(ParameterABI[] parameters, string objectName, string spacing)
@@ -49,7 +49,7 @@ namespace Nethereum.Generators.DTOs
         public string GenerateAssigmentFunctionParameterToProperty(ParameterABI parameter, string objectName, string spacing)
         {
             var parameterModel = new ParameterABIModel(parameter);
-            return $@"{spacing}{objectName}.{parameterModel.GetPropertyName()} = {parameterModel.GetVariableName()}";
+            return $@"{spacing}{objectName}.{parameterModel.GetPropertyName()} = [{parameterModel.GetVariableName()}]";
         }
     }
 }
