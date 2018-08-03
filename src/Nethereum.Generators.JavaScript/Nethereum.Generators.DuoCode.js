@@ -2366,7 +2366,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
     };
     $p.GenerateFunctionParameter = function ParameterABIFunctionDTOVbTemplate_GenerateFunctionParameter(parameter) {
         var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
-        return String.Format("ByVal {0} As {1}", [parameterModel.GetVariableName(), this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
+        return String.Format("ByVal [{0}] As {1}", [parameterModel.GetVariableName(), this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);
     };
     $p.GenerateAssigmentFunctionParametersToProperties = function ParameterABIFunctionDTOVbTemplate_GenerateAssigmentFunctionParametersToProperties(parameters, objectName, spacing) {
         return String.Join$1(String, System.Environment().NewLine, System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
@@ -2376,7 +2376,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
     };
     $p.GenerateAssigmentFunctionParameterToProperty = function ParameterABIFunctionDTOVbTemplate_GenerateAssigmentFunctionParameterToProperty(parameter, objectName, spacing) {
         var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
-        return String.Format("{0}{1}.{2} = {3}", [spacing, objectName, parameterModel.GetPropertyName(), 
+        return String.Format("{0}{1}.{2} = [{3}]", [spacing, objectName, parameterModel.GetPropertyName(), 
             parameterModel.GetVariableName()]);
     };
 });
