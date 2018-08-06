@@ -21,7 +21,7 @@ namespace Nethereum.Contracts
 
         public object GetSignatureTopic()
         {
-            return eventABI.Sha33Signature.EnsureHexPrefix();
+            return eventABI.Sha3Signature.EnsureHexPrefix();
         }
 
         public object[] GetTopics(object[] firstTopic)

@@ -40,7 +40,7 @@ namespace Nethereum.Contracts.Extensions
 
         public static bool IsLogForEvent(this EventABI eventABI, FilterLog log)
         {
-            return IsLogForEvent(log, eventABI.Sha33Signature);
+            return IsLogForEvent(log, eventABI.Sha3Signature);
         }
 
         public static bool IsLogForEvent(this FilterLog log, string signature)
@@ -309,13 +309,13 @@ namespace Nethereum.Contracts.Extensions
         {
             if (topic is IEnumerable<object> topicArray)
             {
-                return topicArray.Any(x => eventABI.Sha33Signature.IsTheSameHex(x.ToString()));
+                return topicArray.Any(x => eventABI.Sha3Signature.IsTheSameHex(x.ToString()));
             }
             else
             {
                 if (topic is string topicString)
                 {
-                    return eventABI.Sha33Signature.IsTheSameHex(topicString);
+                    return eventABI.Sha3Signature.IsTheSameHex(topicString);
                 }
             }
             return false;
