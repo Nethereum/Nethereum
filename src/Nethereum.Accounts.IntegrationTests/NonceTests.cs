@@ -23,7 +23,7 @@ namespace Nethereum.Accounts.IntegrationTests
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
                 "0x60606040526040516020806052833950608060405251600081905550602b8060276000396000f3606060405260e060020a60003504631df4f1448114601a575b005b600054600435026060908152602090f3";
-            JsonRpc.Client.RpcClient.ConnectionTimeout = 30000;
+            JsonRpc.Client.RpcClient.ConnectionTimeout = TimeSpan.FromSeconds(30.0);
             var multiplier = 7;
 
             var client = ClientFactory.GetClient();

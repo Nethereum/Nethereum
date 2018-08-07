@@ -31,7 +31,7 @@ namespace Nethereum.JsonRpc.IpcClient
                     if (!Task.Run(() =>
                         _socket.Connect(endPoint)).Wait(ConnectionTimeout))
                     {
-                        throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds");
+                        throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds");
                     }
                 }
             }

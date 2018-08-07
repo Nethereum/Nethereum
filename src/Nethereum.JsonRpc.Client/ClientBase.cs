@@ -1,4 +1,5 @@
 #if !DOTNET35
+using System;
 using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.Client
@@ -6,7 +7,7 @@ namespace Nethereum.JsonRpc.Client
     public abstract class ClientBase : IClient
     {
 
-        public static int ConnectionTimeout { get; set; } = 20000;
+        public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
         public RequestInterceptor OverridingRequestInterceptor { get; set; }
 

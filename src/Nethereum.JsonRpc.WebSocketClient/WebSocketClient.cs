@@ -98,7 +98,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
             catch
             {
@@ -122,7 +122,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
         }
 
@@ -161,7 +161,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                 var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
                 logger.LogRequest(rpcRequestJson);
                 var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(TimeSpan.FromMilliseconds(ConnectionTimeout));
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
 
                 var webSocket = GetClientWebSocket();
                 await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationTokenSource.Token)
