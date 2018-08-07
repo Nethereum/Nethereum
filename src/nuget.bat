@@ -35,8 +35,8 @@ cd Nethereum.JsonRpc.RpcClient*
 CALL :restorepack
 cd ..
 
-cd Nethereum.JsonRpc.WebSocket*
-CALL :build
+cd Nethereum.JsonRpc.WebSocketClient*
+CALL :restorepack
 cd ..
 
 cd Nethereum.KeyStore*
