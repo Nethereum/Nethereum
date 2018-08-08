@@ -74,7 +74,7 @@ namespace Nethereum.JsonRpc.Client
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
 
                 var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(TimeSpan.FromMilliseconds(ConnectionTimeout));
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
 
                 var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token)
                     .ConfigureAwait(false);
@@ -92,7 +92,7 @@ namespace Nethereum.JsonRpc.Client
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
             catch (Exception ex)
             {

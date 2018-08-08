@@ -41,7 +41,7 @@ namespace Nethereum.JsonRpc.IpcClient
             }
             catch (TimeoutException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout} milliseconds", ex);
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
             catch
             {
