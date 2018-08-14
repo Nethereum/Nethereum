@@ -36,7 +36,7 @@ namespace Nethereum.JsonRpc.IpcClient
                 if (_pipeClient == null || !_pipeClient.IsConnected)
                 {
                     _pipeClient = new NamedPipeClientStream(IpcPath);
-                    _pipeClient.Connect(ConnectionTimeout);
+                    _pipeClient.Connect((int)ConnectionTimeout.TotalMilliseconds);
                 }
             }
             catch (TimeoutException ex)
