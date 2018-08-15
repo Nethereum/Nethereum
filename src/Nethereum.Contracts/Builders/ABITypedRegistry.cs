@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
@@ -7,8 +8,8 @@ namespace Nethereum.Contracts
 {
     public static class ABITypedRegistry
     {
-        private static Dictionary<Type, FunctionABI> _functionAbiRegistry = new Dictionary<Type, FunctionABI>();
-        private static Dictionary<Type, EventABI> _eventAbiRegistry = new Dictionary<Type, EventABI>();
+        private static ConcurrentDictionary<Type, FunctionABI> _functionAbiRegistry = new ConcurrentDictionary<Type, FunctionABI>();
+        private static ConcurrentDictionary<Type, EventABI> _eventAbiRegistry = new ConcurrentDictionary<Type, EventABI>();
         private static AttributesToABIExtractor _abiExtractor = new AttributesToABIExtractor();
 
         public static FunctionABI GetFunctionABI<TFunctionMessage>()
