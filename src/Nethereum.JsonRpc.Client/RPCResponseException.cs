@@ -11,4 +11,12 @@ namespace Nethereum.JsonRpc.Client
 
         public RpcError RpcError { get; }
     }
+
+    public class RpcResponseFormatException : Exception
+    {
+        public RpcResponseFormatException(string message, FormatException innerException)
+            : base(message, innerException)
+        {
+        }
+    }
 }

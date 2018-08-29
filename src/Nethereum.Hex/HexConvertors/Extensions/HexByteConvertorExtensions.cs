@@ -100,8 +100,9 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             try {
                 return HexToByteArrayInternal(value);
             }
-            catch (Exception ex) {
-                throw new InvalidOperationException(string.Format(
+            catch (FormatException ex)
+            {
+                throw new FormatException(string.Format(
                     "String '{0}' could not be converted to byte array (not hex?).", value), ex);
             }
         }
@@ -123,7 +124,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             }
             else
             {
-                throw new InvalidOperationException(string.Format(
+                throw new FormatException(string.Format(
                     "Character '{0}' at index '{1}' is not valid alphanumeric character.", character, index));
             }
 

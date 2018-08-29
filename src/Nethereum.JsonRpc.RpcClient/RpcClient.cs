@@ -43,7 +43,14 @@ namespace Nethereum.JsonRpc.Client
         {
             var response = await SendAsync(reqMsg, route).ConfigureAwait(false);
             HandleRpcError(response);
-            return response.GetResult<T>();
+            try
+            {
+                return response.GetResult<T>();
+            }
+            catch(FormatException formatException)
+            {
+                throw new RpcResponseFormatException("Invalid format found in RPC response", formatException);
+            }
         }
 
         protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
