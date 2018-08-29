@@ -38,23 +38,27 @@ namespace Nethereum.JsonRpc.Client
             CreateNewHttpClient();
         }
 
-        protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
+        private async Task<T> SendInnerRequestAsync<T>(RpcRequestMessage reqMsg,
+                                                       string route = null)
         {
-            var response =
-                await SendAsync(
-                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters), route)
-                    .ConfigureAwait(false);
+            var response = await SendAsync(reqMsg, route).ConfigureAwait(false);
             HandleRpcError(response);
             return response.GetResult<T>();
+        }
+
+        protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
+        {
+            var reqMsg = new RpcRequestMessage(request.Id,
+                                               request.Method,
+                                               request.RawParameters);
+            return await SendInnerRequestAsync<T>(reqMsg, route);
         }
 
         protected override async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
             params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            var response = await SendAsync(request, route).ConfigureAwait(false);
-            HandleRpcError(response);
-            return response.GetResult<T>();
+            return await SendInnerRequestAsync<T>(request, route);
         }
 
         private void HandleRpcError(RpcResponseMessage response)
