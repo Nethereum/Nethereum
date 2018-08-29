@@ -24,7 +24,7 @@ namespace Nethereum.JsonRpc.Client
             _httpClient.BaseAddress = baseUrl;
         }
 
-        protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
+        protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
         {
             var response =
                 await SendAsync(
@@ -34,7 +34,7 @@ namespace Nethereum.JsonRpc.Client
             return response.GetResult<T>();
         }
 
-        protected override async Task<T> SendInnerRequestAync<T>(string method, string route = null,
+        protected override async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
             params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);

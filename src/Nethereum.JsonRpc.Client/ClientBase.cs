@@ -16,9 +16,9 @@ namespace Nethereum.JsonRpc.Client
             if (OverridingRequestInterceptor != null)
                 return
                     (T)
-                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAync<T>, request, route)
+                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>, request, route)
                         .ConfigureAwait(false);
-            return await SendInnerRequestAync<T>(request, route).ConfigureAwait(false);
+            return await SendInnerRequestAsync<T>(request, route).ConfigureAwait(false);
         }
 
         public async Task<T> SendRequestAsync<T>(string method, string route = null, params object[] paramList)
@@ -26,17 +26,17 @@ namespace Nethereum.JsonRpc.Client
             if (OverridingRequestInterceptor != null)
                 return
                     (T)
-                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAync<T>, method, route,
+                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>, method, route,
                         paramList).ConfigureAwait(false);
-            return await SendInnerRequestAync<T>(method, route, paramList).ConfigureAwait(false);
+            return await SendInnerRequestAsync<T>(method, route, paramList).ConfigureAwait(false);
         }
 
         public abstract Task SendRequestAsync(RpcRequest request, string route = null);
         public abstract Task SendRequestAsync(string method, string route = null, params object[] paramList);
 
-        protected abstract Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null);
+        protected abstract Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null);
 
-        protected abstract Task<T> SendInnerRequestAync<T>(string method, string route = null,
+        protected abstract Task<T> SendInnerRequestAsync<T>(string method, string route = null,
             params object[] paramList);
     }
 }

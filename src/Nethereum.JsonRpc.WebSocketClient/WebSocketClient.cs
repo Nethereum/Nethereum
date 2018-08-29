@@ -28,7 +28,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
-        protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
+        protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
         {
             var response =
                 await SendAsync<RpcRequestMessage, RpcResponseMessage>(
@@ -38,7 +38,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             return response.GetResult<T>();
         }
 
-        protected override async Task<T> SendInnerRequestAync<T>(string method, string route = null,
+        protected override async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
             params object[] paramList)
         {
             var response =
