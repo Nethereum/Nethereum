@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Net.Sockets;
 using Common.Logging;
 using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
@@ -98,7 +99,7 @@ namespace Nethereum.JsonRpc.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             var logger = new RpcLogger(_log);
             try
@@ -122,7 +123,7 @@ namespace Nethereum.JsonRpc.IpcClient
                         using (var reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            var message = serializer.Deserialize<TResponse>(reader);
+                            var message = serializer.Deserialize<RpcResponseMessage>(reader);
                             logger.LogResponse(message);
                             return message;
                         }

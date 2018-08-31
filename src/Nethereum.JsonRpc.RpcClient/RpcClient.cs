@@ -38,60 +38,7 @@ namespace Nethereum.JsonRpc.Client
             CreateNewHttpClient();
         }
 
-        private async Task<T> SendInnerRequestAsync<T>(RpcRequestMessage reqMsg,
-                                                       string route = null)
-        {
-            var response = await SendAsync(reqMsg, route).ConfigureAwait(false);
-            HandleRpcError(response);
-            try
-            {
-                return response.GetResult<T>();
-            }
-            catch(FormatException formatException)
-            {
-                throw new RpcResponseFormatException("Invalid format found in RPC response", formatException);
-            }
-        }
-
-        protected override async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
-        {
-            var reqMsg = new RpcRequestMessage(request.Id,
-                                               request.Method,
-                                               request.RawParameters);
-            return await SendInnerRequestAsync<T>(reqMsg, route);
-        }
-
-        protected override async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
-            params object[] paramList)
-        {
-            var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            return await SendInnerRequestAsync<T>(request, route);
-        }
-
-        private void HandleRpcError(RpcResponseMessage response)
-        {
-            if (response.HasError)
-                throw new RpcResponseException(new RpcError(response.Error.Code, response.Error.Message,
-                    response.Error.Data));
-        }
-
-        public override async Task SendRequestAsync(RpcRequest request, string route = null)
-        {
-            var response =
-                await SendAsync(
-                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters), route)
-                    .ConfigureAwait(false);
-            HandleRpcError(response);
-        }
-
-        public override async Task SendRequestAsync(string method, string route = null, params object[] paramList)
-        {
-            var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            var response = await SendAsync(request, route).ConfigureAwait(false);
-            HandleRpcError(response);
-        }
-
-        private async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             var logger = new RpcLogger(_log);
             try
@@ -121,7 +68,7 @@ namespace Nethereum.JsonRpc.Client
             }
             catch(TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                throw new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
             catch (Exception ex)
             {
