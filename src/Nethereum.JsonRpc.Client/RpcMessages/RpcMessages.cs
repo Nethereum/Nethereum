@@ -64,6 +64,10 @@ SOFTWARE.
                     return response.Result.ToObject<T>(jsonSerializer);
                 }
             }
+            catch (FormatException ex)
+            {
+                throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
+            }
             catch (Exception ex)
             {
                 throw new Exception("Unable to convert the result to type " + typeof(T), ex);
