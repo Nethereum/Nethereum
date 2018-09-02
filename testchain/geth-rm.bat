@@ -1,0 +1,1 @@
+geth --identity "MyTestNetNode" --datadir=devChain --nodiscover --networkid 1999 console

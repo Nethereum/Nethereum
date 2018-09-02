@@ -1,0 +1,1 @@
+geth.exe --mine --rpc --ws --networkid=1999 --cache=2048 --maxpeers=0 --datadir=devChain  --ipcpath "geth.ipc"  --rpccorsdomain "*" --rpcapi "eth,web3,personal,net,miner,admin,debug" --verbosity 0 console  
