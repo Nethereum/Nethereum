@@ -101,5 +101,11 @@ namespace Nethereum.RPC.Eth.Blocks
             if (number == null) throw new ArgumentNullException(nameof(number));
             return base.BuildRequest(id, number, true);
         }
+
+        public RpcRequest BuildRequest(BlockParameter blockParameter, object id = null)
+        {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            return base.BuildRequest(id, blockParameter, true);
+        }
     }
 }

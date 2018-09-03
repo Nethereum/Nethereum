@@ -90,10 +90,22 @@ namespace Nethereum.RPC.Eth.Blocks
             return base.SendRequestAsync(id, number, false);
         }
 
+        public Task<BlockWithTransactionHashes> SendRequestAsync(BlockParameter blockParameter, object id = null)
+        {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            return base.SendRequestAsync(id, blockParameter, false);
+        }
+
         public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
             if (number == null) throw new ArgumentNullException(nameof(number));
             return base.BuildRequest(id, number, false);
+        }
+
+        public RpcRequest BuildRequest(BlockParameter blockParameter, object id = null)
+        {
+            if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
+            return base.BuildRequest(id, blockParameter, false);
         }
     }
 }
