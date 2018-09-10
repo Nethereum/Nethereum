@@ -54,8 +54,30 @@ namespace Nethereum.Signer
         //Note: Y coordinates can only be forced, so it is assumed 0 and 1 will be the recId (even if implementation allows for 2 and 3)
         internal int CalculateRecId(ECDSASignature signature, byte[] hash)
         {
-            var recId = -1;
+            //var recId = -1;
             var thisKey = _ecKey.GetPubKey(false); // compressed
+            return CalculateRecId(signature, hash, thisKey);
+            //for (var i = 0; i < 4; i++)
+            //{
+            //    var rec = ECKey.RecoverFromSignature(i, signature, hash, false);
+            //    if (rec != null)
+            //    {
+            //        var k = rec.GetPubKey(false);
+            //        if (k != null && k.SequenceEqual(thisKey))
+            //        {
+            //            recId = i;
+            //            break;
+            //        }
+            //    }
+            //}
+            //if (recId == -1)
+            //    throw new Exception("Could not construct a recoverable key. This should never happen.");
+            //return recId;
+        }
+
+        internal static int CalculateRecId(ECDSASignature signature, byte[] hash, byte[] uncompressedPublicKey)
+        {
+            var recId = -1;
 
             for (var i = 0; i < 4; i++)
             {
@@ -63,7 +85,7 @@ namespace Nethereum.Signer
                 if (rec != null)
                 {
                     var k = rec.GetPubKey(false);
-                    if (k != null && k.SequenceEqual(thisKey))
+                    if (k != null && k.SequenceEqual(uncompressedPublicKey))
                     {
                         recId = i;
                         break;
@@ -187,7 +209,7 @@ namespace Nethereum.Signer
             return new EthECDSASignature(signature);
         }
 
-        private static BigInteger CalculateV(BigInteger chainId, int recId)
+        internal static BigInteger CalculateV(BigInteger chainId, int recId)
         {
             return chainId * 2 + recId + 35;
         }

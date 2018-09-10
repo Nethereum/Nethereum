@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -110,6 +111,9 @@ namespace Nethereum.Signer
 
         public byte[] SHash => SimpleRlpSigner.Data[8];
 
+        /// <summary>
+        /// Recovered Key from Signature
+        /// </summary>
         public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature,
             SimpleRlpSigner.RawHash,
             ChainId.ToBigIntegerFromRLPDecoded());
@@ -129,6 +133,13 @@ namespace Nethereum.Signer
             SimpleRlpSigner.Sign(key, GetChainIdAsBigInteger());
         }
 
+#if !DOTNET35
+        public override async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
+        {
+            await SimpleRlpSigner.SignExternallyAsync(externalSigner, GetChainIdAsBigInteger()).ConfigureAwait(false);
+        }
+#endif
+
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,
             byte[] value,
             byte[] data, byte[] chainId)
@@ -142,5 +153,7 @@ namespace Nethereum.Signer
                 SHASH_DEFAULT
             };
         }
+
     }
+
 }

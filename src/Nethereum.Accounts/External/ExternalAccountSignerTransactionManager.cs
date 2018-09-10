@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.KeyStore;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.NonceServices;
@@ -15,14 +13,12 @@ using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
-
-
-    public class AccountSignerTransactionManager : TransactionManagerBase
+    public class ExternalAccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly TransactionSigner _transactionSigner;
         public BigInteger? ChainId { get; private set; }
 
-        public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
+        public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account, BigInteger? chainId = null)
         {
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
@@ -30,21 +26,6 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new TransactionSigner();
         }
 
-
-        public AccountSignerTransactionManager(IClient rpcClient, string privateKey, BigInteger? chainId = null)
-        {
-            ChainId = chainId;
-            if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
-            Client = rpcClient;
-            Account = new Account(privateKey);
-            Account.NonceService = new InMemoryNonceService(Account.Address, rpcClient);
-            _transactionSigner = new TransactionSigner();
-        }
-
-        public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey, chainId)
-        {
-
-        }
 
         public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
 
@@ -60,7 +41,7 @@ namespace Nethereum.Web3.Accounts
             return SignTransactionRetrievingNextNonceAsync(transaction);
         }
 
-        public string SignTransaction(TransactionInput transaction)
+        public async Task<string> SignTransactionExternallyAsync(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (!string.Equals(transaction.From.EnsureHexPrefix(), Account.Address.EnsureHexPrefix(), StringComparison.CurrentCultureIgnoreCase))
@@ -68,7 +49,7 @@ namespace Nethereum.Web3.Accounts
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
             var nonce = transaction.Nonce;
-            if(nonce == null) throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
+            if (nonce == null) throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
 
             var gasPrice = transaction.GasPrice;
             var gasLimit = transaction.Gas;
@@ -77,22 +58,29 @@ namespace Nethereum.Web3.Accounts
 
             string signedTransaction;
 
+            var externalSigner = ((ExternalAccount) Account).ExternalSigner;
             if (ChainId == null)
             {
-                signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey,
+                signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner,
                     transaction.To,
                     value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
+                    gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
             }
             else
             {
-                signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, ChainId.Value,
+                signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
                     transaction.To,
                     value.Value, nonce,
                     gasPrice.Value, gasLimit.Value, transaction.Data);
             }
 
             return signedTransaction;
+        }
+
+
+        public string SignTransaction(TransactionInput transaction)
+        {
+            return SignTransactionRetrievingNextNonceAsync(transaction).Result;
         }
 
         protected async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
@@ -104,7 +92,7 @@ namespace Nethereum.Web3.Accounts
             transaction.Nonce = nonce;
             var gasPrice = await GetGasPriceAsync(transaction).ConfigureAwait(false);
             transaction.GasPrice = gasPrice;
-            return SignTransaction(transaction);
+            return await SignTransactionExternallyAsync(transaction).ConfigureAwait(false);
         }
 
         public async Task<HexBigInteger> GetNonceAsync(TransactionInput transaction)

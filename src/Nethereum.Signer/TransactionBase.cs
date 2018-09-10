@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Signer
@@ -62,5 +63,11 @@ namespace Nethereum.Signer
             if (x == null) return "0x";
             return x.ToHex();
         }
+#if !DOTNET35
+        public virtual async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
+        {
+            await SimpleRlpSigner.SignExternallyAsync(externalSigner).ConfigureAwait(false);
+        }
+#endif
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Util;
 
 namespace Nethereum.Signer
@@ -104,10 +105,24 @@ namespace Nethereum.Signer
             Signature = key.SignAndCalculateV(RawHash, chainId);
             rlpSignedEncoded = null;
         }
+#if !DOTNET35
+        public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner, BigInteger chainId)
+        {
+            //Hack not passing hash
+            Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw(), chainId);
+            rlpSignedEncoded = null;
+        }
 
+        public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
+        {
+            //Hack not passing hash
+            Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw());
+            rlpSignedEncoded = null;
+        }
+#endif
         public bool IsVSignatureForChain()
         {
-            if(Signature == null) throw new Exception("Signature not initiated or calculatated");
+            if(Signature == null) throw new Exception("Signature not initiated or calculated");
             return Signature.IsVSignedForChain();
         }
 
