@@ -14,7 +14,7 @@ using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Ledger.IntegrationTests
 {
-    public class Test
+    public class AccountSigningTest
     {
         [Function("transfer", "bool")]
         public class TransferFunctionBase : FunctionMessage
@@ -29,6 +29,42 @@ namespace Nethereum.Ledger.IntegrationTests
         {
 
         }
+
+        /* margin
+        multiply
+        license
+        alien
+        close
+        rain
+        master
+        violin
+        cheese
+        bonus
+        soccer
+        museum
+        eight
+        roof
+        defy
+        ghost
+        venue
+        obey
+        twelve
+        another
+        tattoo
+        inflict
+        sting
+        glue 
+
+        //legacy
+        m/44'/60'/0'/0
+        0x1996a57077877D38e18A1BE44A55100D77b8fA1D
+        0x128c6818917d98a3b933de1d400e777963424ce71f0a58755b092d1b670394eb 
+
+        //standard
+        m/44'/60'/0'/0/0
+        0x76579b7aD091747F9aF144C207e640136c47A6b8	
+        0x105023ddd0e214d9e79bd94639a896e5ef19d24e9cb9fe59baf12969ffe0101e
+        */
 
         [Fact]
         public async Task TestSignature()
@@ -52,7 +88,13 @@ namespace Nethereum.Ledger.IntegrationTests
             var externalAccount = new ExternalAccount(new EthECKeyExternalSigner(new LedgerExternalSigner()), 1);
             await externalAccount.InitialiseAsync();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
-            var signature2 = await externalAccount.TransactionManager.SignTransactionAsync(new TransactionInput()
+            //Ensure contract data is enable in the settings of ledger nano
+            var signature2 =await externalAccount.TransactionManager.SignTransactionAsync(transactionInput);
+
+            Assert.Equal(signature, signature2);
+
+            //Signing just transfer
+            var signature3 = await externalAccount.TransactionManager.SignTransactionAsync(new TransactionInput()
             {
                 From = "0x1996a57077877D38e18A1BE44A55100D77b8fA1D",
                 GasPrice
@@ -63,7 +105,6 @@ namespace Nethereum.Ledger.IntegrationTests
                 Value = new HexBigInteger(100)
 
             });
-             var signature3 =await externalAccount.TransactionManager.SignTransactionAsync(transactionInput);
 
         }
     }
