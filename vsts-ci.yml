@@ -1,0 +1,163 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+resources:
+- repo: self
+queue:
+  name: Hosted VS2017
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+
+    projects: |
+     src/Nethereum.Hex/**/*.csproj
+     src/Nethereum.ABI/**/*.csproj
+     src/Nethereum.JsonRpc.Client/**/*.csproj
+     src/Nethereum.RPC/**/*.csproj
+     src/Nethereum.Web3/**/*.csproj
+     src/Nethereum.StandardToken*/**/*.csproj
+     src/Nethereum.JsonRpc.IpcClient*/**/*.csproj
+     src/Nethereum.JsonRpc.RpcClient*/**/*.csproj
+     src/Nethereum.JsonRpc.WebSocketClient*/**/*.csproj
+     src/Nethereum.KeyStore*/**/*.csproj
+     src/Nethereum.ENS*/**/*.csproj
+     src/Nethereum.Quorum*/**/*.csproj
+     src/Nethereum.Geth*/**/*.csproj
+     src/Nethereum.Contracts*/**/*.csproj
+     src/Nethereum.RLP*/**/*.csproj
+     src/Nethereum.Signer*/**/*.csproj
+     src/Nethereum.Util*/**/*.csproj
+     src/Nethereum.Uport*/**/*.csproj
+     src/Nethereum.HdWallet*/**/*.csproj
+     src/Nethereum.Parity*/**/*.csproj
+     src/Nethereum.Accounts*/**/*.csproj
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore Tests'
+  inputs:
+    command: restore
+
+    projects: |
+     src/Nethereum.ABI.UnitTests/**/*.csproj
+     src/Nethereum.Accounts.IntegrationTests/**/*.csproj
+     src/Nethereum.Contracts.IntegrationTests/**/*.csproj
+     src/Nethereum.DevP2P.UnitTests/**/*.csproj
+     src/Nethereum.ENS.IntegrationTests/**/*.csproj
+     src/Nethereum.ENS.UnitTests/**/*.csproj
+     src/Nethereum.EVM.UnitTests/**/*.csproj
+     src/Nethereum.HdWallet.IntegrationTests/**/*.csproj
+     src/Nethereum.HdWallet.UnitTests/**/*.csproj
+     src/Nethereum.KeyStore.UnitTests/**/*.csproj
+     src/Nethereum.RLP.UnitTests/**/*.csproj
+     src/Nethereum.RPC.UnitTests/**/*.csproj
+     src/Nethereum.Signer.IntegrationTests/**/*.csproj
+     src/Nethereum.Signer.UnitTests/**/*.csproj
+     src/Nethereum.StandardTokenEIP20.IntegrationTests/**/*.csproj
+     src/Nethereum.Uport.IntegrationTests/**/*.csproj
+     src/Nethereum.Util.Tests/**/*.csproj
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    projects: |
+     src/Nethereum.Hex/**/*.csproj
+     src/Nethereum.ABI/**/*.csproj
+     src/Nethereum.JsonRpc.Client/**/*.csproj
+     src/Nethereum.RPC/**/*.csproj
+     src/Nethereum.Web3/**/*.csproj
+     src/Nethereum.StandardToken*/**/*.csproj
+     src/Nethereum.JsonRpc.IpcClient*/**/*.csproj
+     src/Nethereum.JsonRpc.RpcClient*/**/*.csproj
+     src/Nethereum.JsonRpc.WebSocketClient*/**/*.csproj
+     src/Nethereum.KeyStore*/**/*.csproj
+     src/Nethereum.ENS*/**/*.csproj
+     src/Nethereum.Quorum*/**/*.csproj
+     src/Nethereum.Geth*/**/*.csproj
+     src/Nethereum.Contracts*/**/*.csproj
+     src/Nethereum.RLP*/**/*.csproj
+     src/Nethereum.Signer*/**/*.csproj
+     src/Nethereum.Util*/**/*.csproj
+     src/Nethereum.Uport*/**/*.csproj
+     src/Nethereum.HdWallet/**/*.csproj
+     src/Nethereum.Parity*/**/*.csproj
+     src/Nethereum.Accounts*/**/*.csproj
+
+    arguments: '/property:TargetNet35=false'
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build Tests'
+  inputs:
+    projects: |
+     src/Nethereum.ABI.UnitTests/**/*.csproj
+     src/Nethereum.Accounts.IntegrationTests/**/*.csproj
+     src/Nethereum.Contracts.IntegrationTests/**/*.csproj
+     src/Nethereum.DevP2P.UnitTests/**/*.csproj
+     src/Nethereum.ENS.IntegrationTests/**/*.csproj
+     src/Nethereum.ENS.UnitTests/**/*.csproj
+     src/Nethereum.EVM.UnitTests/**/*.csproj
+     src/Nethereum.HdWallet.IntegrationTests/**/*.csproj
+     src/Nethereum.HdWallet.UnitTests/**/*.csproj
+     src/Nethereum.KeyStore.UnitTests/**/*.csproj
+     src/Nethereum.RLP.UnitTests/**/*.csproj
+     src/Nethereum.RPC.UnitTests/**/*.csproj
+     src/Nethereum.Signer.IntegrationTests/**/*.csproj
+     src/Nethereum.Signer.UnitTests/**/*.csproj
+     src/Nethereum.StandardTokenEIP20.IntegrationTests/**/*.csproj
+     src/Nethereum.Uport.IntegrationTests/**/*.csproj
+     src/Nethereum.Util.Tests/**/*.csproj
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test netcoreapp2.1'
+  inputs:
+    command: test
+
+    projects: |
+     src/Nethereum.ABI.UnitTests/**/*.csproj
+     src/Nethereum.Accounts.IntegrationTests/**/*.csproj
+     src/Nethereum.Contracts.IntegrationTests/**/*.csproj
+     src/Nethereum.ENS.IntegrationTests/**/*.csproj
+     src/Nethereum.ENS.UnitTests/**/*.csproj
+     src/Nethereum.HdWallet.IntegrationTests/**/*.csproj
+     src/Nethereum.HdWallet.UnitTests/**/*.csproj
+     src/Nethereum.KeyStore.UnitTests/**/*.csproj
+     src/Nethereum.RLP.UnitTests/**/*.csproj
+     src/Nethereum.RPC.UnitTests/**/*.csproj
+     src/Nethereum.Signer.IntegrationTests/**/*.csproj
+     src/Nethereum.Signer.UnitTests/**/*.csproj
+     src/Nethereum.StandardTokenEIP20.IntegrationTests/**/*.csproj
+     src/Nethereum.Uport.IntegrationTests/**/*.csproj
+     src/Nethereum.Util.Tests/**/*.csproj
+
+    arguments: '-f netcoreapp2.1'
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
+  inputs:
+    command: pack
+
+    packagesToPack: 'src/Nethereum.Hex/**/*.csproj;src/Nethereum.ABI/**/*.csproj;src/Nethereum.JsonRpc.Client/**/*.csproj;src/Nethereum.RPC/**/*.csproj;src/Nethereum.Web3/**/*.csproj;src/Nethereum.StandardToken*/**/*.csproj;src/Nethereum.JsonRpc.IpcClient*/**/*.csproj;src/Nethereum.JsonRpc.RpcClient*/**/*.csproj;src/Nethereum.KeyStore/**/*.csproj;src/Nethereum.ENS*/**/*.csproj;src/Nethereum.Quorum*/**/*.csproj;src/Nethereum.Geth*/**/*.csproj;src/Nethereum.Contracts*/**/*.csproj;src/Nethereum.RLP*/**/*.csproj;src/Nethereum.Signer*/**/*.csproj;src/Nethereum.Util*/**/*.csproj;src/Nethereum.Uport*/**/*.csproj;src/Nethereum.HdWallet/**/*.csproj;src/Nethereum.Parity*/**/*.csproj;src/Nethereum.Accounts*/**/*.csproj;src/Nethereum.JsonRpc.WebSocketClient*/**/*.csproj;'
+
+    versioningScheme: byPrereleaseNumber
+
+    majorVersion: 3
+
+
+- task: NuGetCommand@2
+  displayName: 'NuGet push'
+  inputs:
+    command: push
+
+    nuGetFeedType: external
+
+    publishFeedCredentials: 'Nethereum my get'
+
+
