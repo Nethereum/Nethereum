@@ -115,11 +115,17 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var event2 = await eventForAnyContract.GetAllChanges(filterInputForFromAddress);
 
             Assert.True(event2.Any());
-            var filterInputForToAddress = eventForAnyContract.CreateFilterInput((string) null, newAddress);
 
-            var event3 = await eventForAnyContract.GetAllChanges(filterInputForToAddress);
+            //Parity does not accept null values for filter
+            if (_ethereumClientIntegrationFixture.Geth)
+            {
+                var filterInputForToAddress = eventForAnyContract.CreateFilterInput((string) null, newAddress);
 
-            Assert.True(event3.Any());
+                var event3 = await eventForAnyContract.GetAllChanges(filterInputForToAddress);
+
+                Assert.True(event3.Any());
+            }
+
             var filterInputForToAndFromAddress = eventForAnyContract.CreateFilterInput(senderAddress, newAddress);
 
             var event4 = await eventForAnyContract.GetAllChanges(filterInputForToAndFromAddress);
@@ -132,11 +138,15 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             Assert.True(event5.Any());
 
-            var filterInputForToAddressArray = eventForAnyContract.CreateFilterInput(new string[]{}, new[]{newAddress});
+            // Parity does not accept null values for filter
+            if (_ethereumClientIntegrationFixture.Geth) {
 
-            var event6 = await eventForAnyContract.GetAllChanges(filterInputForToAddressArray);
+                var filterInputForToAddressArray = eventForAnyContract.CreateFilterInput(new string[]{}, new[]{newAddress});
 
-            Assert.True(event6.Any());
+                var event6 = await eventForAnyContract.GetAllChanges(filterInputForToAddressArray);
+
+                Assert.True(event6.Any());
+            }
 
             var filterInputForToAndFromAddressArray = eventForAnyContract.CreateFilterInput(new []{senderAddress}, new []{newAddress});
 

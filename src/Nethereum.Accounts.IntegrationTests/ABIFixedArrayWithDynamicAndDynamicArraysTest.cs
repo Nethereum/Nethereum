@@ -119,60 +119,75 @@ contract TheOther
         [Fact]
         public async void ShouldCallDifferentContractsUsingDataBytesArraysFixedAndVariable()
         {
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-
-            var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
-            var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
-
-            var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<TestDeployment>();
-            var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
-
-            var callMeFunction1 = new CallMeFunction()
+            if (_ethereumClientIntegrationFixture.Geth)
             {
-                Name = "Hi",
-                Greeting = "From the other contract"
-            };
-           
-            var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
-            var callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()
-            {
-                Destination = new string[]{deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress , deploymentReceipt.ContractAddress }.ToList(),
-                Data = callMeFunction1.GetCallData()
-            };
+                var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
+                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
 
-            var returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
-         
+                var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<TestDeployment>();
+                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
 
-            var expected = "Hello Hi From the other contract";
+                var callMeFunction1 = new CallMeFunction()
+                {
+                    Name = "Hi",
+                    Greeting = "From the other contract"
+                };
 
-            var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
-            var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
-            var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+                var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
 
-            Assert.Equal(expected, firstVar);
-            Assert.Equal(expected, secondVar);
-            Assert.Equal(expected, thirdVar);
+                var callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()
+                {
+                    Destination = new string[]
+                    {
+                        deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress,
+                        deploymentReceipt.ContractAddress
+                    }.ToList(),
+                    Data = callMeFunction1.GetCallData()
+                };
 
-            callMeFunction1.Name = "";
-            callMeFunction1.Greeting = "";
+                var returnVarByteArray = await contracthandler
+                    .QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage)
+                    .ConfigureAwait(false);
 
-            var expectedShort = "Hello  ";
-            callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()
-            {
-                Destination = new string[] { deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress }.ToList(),
-                Data = callMeFunction1.GetCallData()
-            };
 
-            returnVarByteArray = await contracthandler.QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage).ConfigureAwait(false);
+                var expected = "Hello Hi From the other contract";
 
-            firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
-            secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
-            thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+                var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
+                var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
+                var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
 
-            Assert.Equal(expectedShort, firstVar);
-            Assert.Equal(expectedShort, secondVar);
-            Assert.Equal(expectedShort, thirdVar);
+                Assert.Equal(expected, firstVar);
+                Assert.Equal(expected, secondVar);
+                Assert.Equal(expected, thirdVar);
+
+                callMeFunction1.Name = "";
+                callMeFunction1.Greeting = "";
+
+                var expectedShort = "Hello  ";
+                callManyOthersFunctionMessage = new CallManyContractsSameQueryFunction()
+                {
+                    Destination = new string[]
+                    {
+                        deploymentReceipt.ContractAddress, deploymentReceipt.ContractAddress,
+                        deploymentReceipt.ContractAddress
+                    }.ToList(),
+                    Data = callMeFunction1.GetCallData()
+                };
+
+                returnVarByteArray = await contracthandler
+                    .QueryAsync<CallManyContractsSameQueryFunction, List<byte[]>>(callManyOthersFunctionMessage)
+                    .ConfigureAwait(false);
+
+                firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
+                secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
+                thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+
+                Assert.Equal(expectedShort, firstVar);
+                Assert.Equal(expectedShort, secondVar);
+                Assert.Equal(expectedShort, thirdVar);
+            }
 
         }
 
@@ -180,60 +195,72 @@ contract TheOther
         [Fact]
         public async void ShouldDecodeFixedWithVariableElementsAndVariableElements()
         {
-            //also should be able to call another contract and get the output as bytes and bytes arrays
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            
-            var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
-            var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
-
-            var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<SolidityCallAnotherContract.Contracts.Test.CQS.TestDeployment>();
-            var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync(); ;
-
-            var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
-
-            var callManyOthersFunctionMessage = new CallManyOtherContractsFixedArrayReturnFunction()
+            if (_ethereumClientIntegrationFixture.Geth)
             {
-                TheOther = deploymentReceipt.ContractAddress
-            };
+                //also should be able to call another contract and get the output as bytes and bytes arrays
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
-            var callOtherFunctionMessage = new CallAnotherContractFunction()
-            {
-                TheOther = deploymentReceipt.ContractAddress
-            };
+                var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
+                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
 
-            var returnValue = await contracthandler.QueryRawAsync(callManyOthersFunctionMessage);
-            var inHex = returnValue.ToHex();
+                var deploymentCallerHandler =
+                    web3.Eth
+                        .GetContractDeploymentHandler<SolidityCallAnotherContract.Contracts.Test.CQS.TestDeployment>();
+                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
+                ;
 
-            var expected = "Hello Solidity Welcome something much much biggger jlkjfslkfjslkdfjsldfjasdflkjsafdlkjasdfljsadfljasdfkljasdkfljsadfljasdfldsfaj booh!";
+                var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
 
-            var returnByteArray = await contracthandler.QueryAsync<CallManyOtherContractsFixedArrayReturnFunction, List<Byte[]>>(callManyOthersFunctionMessage);
-            //var inHex = returnValue.ToHex();
-            var first = new StringTypeDecoder().Decode(returnByteArray[0]);
-            var second = new StringTypeDecoder().Decode(returnByteArray[1]);
-            var third = new StringTypeDecoder().Decode(returnByteArray[2]);
-            Assert.Equal(expected, first);
-            Assert.Equal(expected, second);
-            Assert.Equal(expected, third);
+                var callManyOthersFunctionMessage = new CallManyOtherContractsFixedArrayReturnFunction()
+                {
+                    TheOther = deploymentReceipt.ContractAddress
+                };
 
-            var callManyOthersVariableFunctionMessage = new CallManyOtherContractsVariableArrayReturnFunction()
-            {
-                TheOther = deploymentReceipt.ContractAddress
-            };
+                var callOtherFunctionMessage = new CallAnotherContractFunction()
+                {
+                    TheOther = deploymentReceipt.ContractAddress
+                };
 
-            var returnVarByteArray = await contracthandler.QueryAsync<CallManyOtherContractsVariableArrayReturnFunction, List<Byte[]>>(callManyOthersVariableFunctionMessage);
-            //var inHex = returnValue.ToHex();
-            var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
-            var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
-            var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+                var returnValue = await contracthandler.QueryRawAsync(callManyOthersFunctionMessage);
+                var inHex = returnValue.ToHex();
 
-            Assert.Equal(expected, firstVar);
-            Assert.Equal(expected, secondVar);
-            Assert.Equal(expected, thirdVar);
+                var expected =
+                    "Hello Solidity Welcome something much much biggger jlkjfslkfjslkdfjsldfjasdflkjsafdlkjasdfljsadfljasdfkljasdkfljsadfljasdfldsfaj booh!";
 
-            var returnValue1Call = await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage);
-         
-            var return1ValueString = new StringTypeDecoder().Decode(returnValue1Call);
-            Assert.Equal(expected, return1ValueString);
+                var returnByteArray =
+                    await contracthandler.QueryAsync<CallManyOtherContractsFixedArrayReturnFunction, List<Byte[]>>(
+                        callManyOthersFunctionMessage);
+                //var inHex = returnValue.ToHex();
+                var first = new StringTypeDecoder().Decode(returnByteArray[0]);
+                var second = new StringTypeDecoder().Decode(returnByteArray[1]);
+                var third = new StringTypeDecoder().Decode(returnByteArray[2]);
+                Assert.Equal(expected, first);
+                Assert.Equal(expected, second);
+                Assert.Equal(expected, third);
+
+                var callManyOthersVariableFunctionMessage = new CallManyOtherContractsVariableArrayReturnFunction()
+                {
+                    TheOther = deploymentReceipt.ContractAddress
+                };
+
+                var returnVarByteArray =
+                    await contracthandler.QueryAsync<CallManyOtherContractsVariableArrayReturnFunction, List<Byte[]>>(
+                        callManyOthersVariableFunctionMessage);
+                //var inHex = returnValue.ToHex();
+                var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
+                var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
+                var thirdVar = new StringTypeDecoder().Decode(returnVarByteArray[2]);
+
+                Assert.Equal(expected, firstVar);
+                Assert.Equal(expected, secondVar);
+                Assert.Equal(expected, thirdVar);
+
+                var returnValue1Call =
+                    await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage);
+
+                var return1ValueString = new StringTypeDecoder().Decode(returnValue1Call);
+                Assert.Equal(expected, return1ValueString);
+            }
         }
     }
 }
