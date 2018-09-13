@@ -79,17 +79,23 @@ namespace Nethereum.XUnitEthereumClients
             // So the tests can run for both Geth and Parity, Windows, Mac and Linux.
 
             var client = Environment.GetEnvironmentVariable("ETHEREUM_CLIENT");
-            if(client == null) Console.WriteLine("**************CLIENT:" + "NULL CLIENT");
-            Console.WriteLine("**************CLIENT" + client.ToString());
-            if (string.IsNullOrEmpty(client) || client == "geth")
+            
+            if(client == null) Console.WriteLine("**************CLIENT NOT CONFIGURED");
+            else Console.WriteLine("**************CLIENT " + client.ToString());
+
+            if (string.IsNullOrEmpty(client))
             {
                 Geth = true;
-                Console.WriteLine("*****GETH****************");
+            }
+            else if (client == "geth")
+            {
+                Geth = true;
+                Console.WriteLine("***** GETH ****************");
             }
             else
             {
                 Geth = false;
-                Console.WriteLine("*****PARITY****************");
+                Console.WriteLine("***** PARITY ****************");
             }
 
             //Geth = false;
