@@ -90,7 +90,7 @@ namespace Nethereum.XUnitEthereumClients
                 Console.WriteLine("*****PARITY****************");
             }
 
-
+            //Geth = false;
             if (Geth)
             {
 
@@ -143,6 +143,7 @@ namespace Nethereum.XUnitEthereumClients
 
                 };
                 _process = Process.Start(psi);
+                Thread.Sleep(3000);
             }
 
          

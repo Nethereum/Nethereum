@@ -1,0 +1,79 @@
+2018/09/13-17:00:32.289238 6a8fc RocksDB version: 5.8.8
+2018/09/13-17:00:32.289375 6a8fc Git sha rocksdb_build_git_sha:6f35cb93c4d4cea0e18c0730ca0031c23bbfc874
+2018/09/13-17:00:32.289411 6a8fc Compile date Sep 10 2018
+2018/09/13-17:00:32.289440 6a8fc DB SUMMARY
+2018/09/13-17:00:32.303394 6a8fc CURRENT file:  CURRENT
+2018/09/13-17:00:32.303457 6a8fc IDENTITY file:  IDENTITY
+2018/09/13-17:00:32.312046 6a8fc MANIFEST file:  MANIFEST-000024 size: 1059 Bytes
+2018/09/13-17:00:32.312122 6a8fc SST files in parity0\chains\DemoPoA\db\955c4dfcb19b0ee6\overlayrecent\db dir, Total Num: 6, files: 000025.sst 000026.sst 000027.sst 000028.sst 000029.sst 000030.sst 
+2018/09/13-17:00:32.312148 6a8fc Write Ahead Log file in parity0\chains\DemoPoA\db\955c4dfcb19b0ee6\overlayrecent\db: 000031.log size: 31234 ; 
+2018/09/13-17:00:32.312375 6a8fc                         Options.error_if_exists: 0
+2018/09/13-17:00:32.312396 6a8fc                       Options.create_if_missing: 1
+2018/09/13-17:00:32.312405 6a8fc                         Options.paranoid_checks: 1
+2018/09/13-17:00:32.312411 6a8fc                                     Options.env: 000002006165D6F0
+2018/09/13-17:00:32.312419 6a8fc                                Options.info_log: 0000020061606990
+2018/09/13-17:00:32.312432 6a8fc                Options.max_file_opening_threads: 16
+2018/09/13-17:00:32.312440 6a8fc                               Options.use_fsync: 0
+2018/09/13-17:00:32.312447 6a8fc                       Options.max_log_file_size: 0
+2018/09/13-17:00:32.312454 6a8fc                  Options.max_manifest_file_size: 18446744073709551615
+2018/09/13-17:00:32.312461 6a8fc                   Options.log_file_time_to_roll: 0
+2018/09/13-17:00:32.312468 6a8fc                       Options.keep_log_file_num: 1
+2018/09/13-17:00:32.312475 6a8fc                    Options.recycle_log_file_num: 0
+2018/09/13-17:00:32.312482 6a8fc                         Options.allow_fallocate: 1
+2018/09/13-17:00:32.312489 6a8fc                        Options.allow_mmap_reads: 0
+2018/09/13-17:00:32.312496 6a8fc                       Options.allow_mmap_writes: 0
+2018/09/13-17:00:32.312503 6a8fc                        Options.use_direct_reads: 0
+2018/09/13-17:00:32.312510 6a8fc                        Options.use_direct_io_for_flush_and_compaction: 0
+2018/09/13-17:00:32.312517 6a8fc          Options.create_missing_column_families: 0
+2018/09/13-17:00:32.312524 6a8fc                              Options.db_log_dir: 
+2018/09/13-17:00:32.312531 6a8fc                                 Options.wal_dir: parity0\chains\DemoPoA\db\955c4dfcb19b0ee6\overlayrecent\db
+2018/09/13-17:00:32.312538 6a8fc                Options.table_cache_numshardbits: 6
+2018/09/13-17:00:32.312544 6a8fc                      Options.max_subcompactions: 1
+2018/09/13-17:00:32.312552 6a8fc                  Options.max_background_flushes: 1
+2018/09/13-17:00:32.312560 6a8fc                         Options.WAL_ttl_seconds: 0
+2018/09/13-17:00:32.312567 6a8fc                       Options.WAL_size_limit_MB: 0
+2018/09/13-17:00:32.312574 6a8fc             Options.manifest_preallocation_size: 4194304
+2018/09/13-17:00:32.312580 6a8fc                     Options.is_fd_close_on_exec: 1
+2018/09/13-17:00:32.312587 6a8fc                   Options.advise_random_on_open: 1
+2018/09/13-17:00:32.312594 6a8fc                    Options.db_write_buffer_size: 8388608
+2018/09/13-17:00:32.312601 6a8fc                    Options.write_buffer_manager: 0000020061E88580
+2018/09/13-17:00:32.312608 6a8fc         Options.access_hint_on_compaction_start: 1
+2018/09/13-17:00:32.312615 6a8fc  Options.new_table_reader_for_compaction_inputs: 0
+2018/09/13-17:00:32.312621 6a8fc               Options.compaction_readahead_size: 0
+2018/09/13-17:00:32.312629 6a8fc           Options.random_access_max_buffer_size: 1048576
+2018/09/13-17:00:32.312635 6a8fc           Options.writable_file_max_buffer_size: 1048576
+2018/09/13-17:00:32.312642 6a8fc                      Options.use_adaptive_mutex: 0
+2018/09/13-17:00:32.312649 6a8fc                            Options.rate_limiter: 0000000000000000
+2018/09/13-17:00:32.312656 6a8fc     Options.sst_file_manager.rate_bytes_per_sec: 0
+2018/09/13-17:00:32.312706 6a8fc                          Options.bytes_per_sync: 1048576
+2018/09/13-17:00:32.312718 6a8fc                      Options.wal_bytes_per_sync: 0
+2018/09/13-17:00:32.312726 6a8fc                       Options.wal_recovery_mode: 2
+2018/09/13-17:00:32.312732 6a8fc                  Options.enable_thread_tracking: 0
+2018/09/13-17:00:32.312739 6a8fc                  Options.enable_pipelined_write: 0
+2018/09/13-17:00:32.312746 6a8fc         Options.allow_concurrent_memtable_write: 1
+2018/09/13-17:00:32.312752 6a8fc      Options.enable_write_thread_adaptive_yield: 1
+2018/09/13-17:00:32.312759 6a8fc             Options.write_thread_max_yield_usec: 100
+2018/09/13-17:00:32.312766 6a8fc            Options.write_thread_slow_yield_usec: 3
+2018/09/13-17:00:32.312773 6a8fc                               Options.row_cache: None
+2018/09/13-17:00:32.312780 6a8fc                              Options.wal_filter: None
+2018/09/13-17:00:32.312787 6a8fc             Options.avoid_flush_during_recovery: 0
+2018/09/13-17:00:32.312793 6a8fc             Options.allow_ingest_behind: 0
+2018/09/13-17:00:32.312800 6a8fc             Options.concurrent_prepare: 0
+2018/09/13-17:00:32.312807 6a8fc             Options.manual_wal_flush: 0
+2018/09/13-17:00:32.312814 6a8fc             Options.max_background_jobs: 2
+2018/09/13-17:00:32.312821 6a8fc             Options.max_background_compactions: 1
+2018/09/13-17:00:32.312828 6a8fc             Options.avoid_flush_during_shutdown: 0
+2018/09/13-17:00:32.312834 6a8fc             Options.delayed_write_rate : 16777216
+2018/09/13-17:00:32.312841 6a8fc             Options.max_total_wal_size: 0
+2018/09/13-17:00:32.312848 6a8fc             Options.delete_obsolete_files_period_micros: 21600000000
+2018/09/13-17:00:32.312855 6a8fc                   Options.stats_dump_period_sec: 600
+2018/09/13-17:00:32.312862 6a8fc                          Options.max_open_files: 512
+2018/09/13-17:00:32.312869 6a8fc Compression algorithms supported:
+2018/09/13-17:00:32.312876 6a8fc 	Snappy supported: 1
+2018/09/13-17:00:32.312883 6a8fc 	Zlib supported: 0
+2018/09/13-17:00:32.312889 6a8fc 	Bzip supported: 0
+2018/09/13-17:00:32.312896 6a8fc 	LZ4 supported: 0
+2018/09/13-17:00:32.312902 6a8fc 	ZSTD supported: 0
+2018/09/13-17:00:32.312908 6a8fc Fast CRC32 supported: 0
+2018/09/13-17:00:32.313918 6a8fc [rocksdb/db/db_impl.cc:225] Shutdown: canceling all background work
+2018/09/13-17:00:32.313980 6a8fc [rocksdb/db/db_impl.cc:355] Shutdown complete
