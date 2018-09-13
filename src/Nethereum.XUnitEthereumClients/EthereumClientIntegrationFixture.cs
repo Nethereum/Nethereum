@@ -139,10 +139,10 @@ namespace Nethereum.XUnitEthereumClients
                 var dirPath = Path.GetDirectoryName(location);
                 _exePath = Path.GetFullPath(Path.Combine(dirPath, @"..\..\..\..\..\testchain\parity poa"));
 
-                DeleteData();
+                //DeleteData();
 
                 ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(_exePath, "parity.exe"),
-                    @"--config node0.toml --tracing=on")
+                    @" --config node0.toml")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
@@ -151,7 +151,7 @@ namespace Nethereum.XUnitEthereumClients
 
                 };
                 _process = Process.Start(psi);
-                Thread.Sleep(3000);
+                Thread.Sleep(10000);
             }
 
          
