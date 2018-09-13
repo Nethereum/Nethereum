@@ -22,7 +22,7 @@ Please join the chat at:  [![Join the chat at https://gitter.im/juanfranblanco/E
 We should be able to answer there any simple queries, general comments or requests, everyone is welcome. In a similar feel free to raise any issue or pull request.
 
 ## Documentation
-The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). For live examples you can check the workbooks project [Nethereum.Workbooks](https://github.com/Nethereum/Nethereum.Workbooks) 
+The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). For live examples you can check the workbooks project [Nethereum.Workbooks](https://github.com/Nethereum/Nethereum.Workbooks/blob/master/docs/index.md) 
 
 ## Features
 
