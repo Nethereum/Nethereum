@@ -82,10 +82,12 @@ namespace Nethereum.XUnitEthereumClients
             if (string.IsNullOrEmpty(client) || client == "geth")
             {
                 Geth = true;
+                Console.WriteLine("*****GETH****************");
             }
             else
             {
                 Geth = false;
+                Console.WriteLine("*****PARITY****************");
             }
 
 
