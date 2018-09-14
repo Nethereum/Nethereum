@@ -27,7 +27,7 @@
             }
         },
         "difficulty": "0x20000",
-        "gasLimit": "0x5B8D80"
+        "gasLimit": "0xed4e0f0"
     },
     "accounts": {
         "0x0000000000000000000000000000000000000001": { "balance": "1", "builtin": { "name": "ecrecover", "pricing": { "linear": { "base": 3000, "word": 0 } } } },

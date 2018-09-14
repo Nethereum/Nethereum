@@ -98,7 +98,7 @@ namespace Nethereum.XUnitEthereumClients
                 Console.WriteLine("***** PARITY ****************");
             }
 
-            //Geth = false;
+           // Geth = false;
             if (Geth)
             {
 
@@ -142,7 +142,7 @@ namespace Nethereum.XUnitEthereumClients
                 //DeleteData();
 
                 ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(_exePath, "parity.exe"),
-                    @" --config node0.toml")
+                    @" --config node0.toml" ) // --logging debug")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
