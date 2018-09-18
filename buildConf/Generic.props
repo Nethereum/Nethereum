@@ -3,7 +3,7 @@
    <Authors>Juan Blanco</Authors>
    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
    <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
-   <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
+   <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>
    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
    <RepositoryType>git</RepositoryType>
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
