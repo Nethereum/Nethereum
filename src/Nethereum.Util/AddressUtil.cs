@@ -48,7 +48,7 @@ namespace Nethereum.Util
         /// <summary>
         /// Validates if the hex string is 40 alphanumeric characters
         /// </summary>
-        public bool IsValidEthereumAdressHexFormat(string address)
+        public bool IsValidEthereumAddressHexFormat(string address)
         {
             return address.HasHexPrefix() && IsValidAddressLength(address) &&
                    address.ToCharArray().All(char.IsLetterOrDigit);
