@@ -48,7 +48,7 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
         }
 
         [Fact]
-        public async void ShoulReturnData()
+        public async void ShouldReturnData()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentHandler =  web3.Eth.GetContractDeploymentHandler<EIP20Deployment>();
@@ -90,6 +90,12 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
 
             var totalSupplyDeployed = await tokenService.TotalSupplyQueryAsync();
             Assert.Equal(totalSupply, totalSupplyDeployed);
+
+            var tokenName = await tokenService.NameQueryAsync();
+            Assert.Equal("TestToken", tokenName);
+
+            var tokenSymbol = await tokenService.SymbolQueryAsync();
+            Assert.Equal("TST", tokenSymbol);
 
             var ownerBalance = await tokenService.BalanceOfQueryAsync(addressOwner);
             Assert.Equal(totalSupply, ownerBalance);

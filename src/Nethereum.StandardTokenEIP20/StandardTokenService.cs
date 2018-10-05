@@ -49,19 +49,9 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.GetEvent<TransferEventDTO>();
         }
 
-        public Task<string> NameQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryRawAsync<NameFunction,StringBytes32Decoder, string>(blockParameter);
-        }
-
         public Task<string> NameQueryAsync(NameFunction nameFunction = null, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>(nameFunction, blockParameter);
-        }
-
-        public Task<string> SymbolQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>(blockParameter);
         }
 
         public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction = null, BlockParameter blockParameter = null)

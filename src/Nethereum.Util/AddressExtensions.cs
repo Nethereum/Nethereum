@@ -17,7 +17,7 @@
         /// </summary>
         public static bool IsValidEthereumAddressHexFormat(this string address)
         {
-            return AddressUtil.Current.IsValidEthereumAdressHexFormat(address);
+            return AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
         }
 
         public static bool IsValidEthereumAddressLength(this string address)
