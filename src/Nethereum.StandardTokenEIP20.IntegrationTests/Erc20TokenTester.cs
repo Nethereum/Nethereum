@@ -118,6 +118,10 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
             Assert.Equal(transferLog.Log.BlockNumber.HexValue, transferReceipt.BlockNumber.HexValue);
             Assert.Equal(transferLog.Event.To.ToLower(), newAddress.ToLower());
             Assert.Equal(transferLog.Event.Value, (ulong) 1000);
+
+            var approveTransactionReceipt = await tokenService.ApproveRequestAndWaitForReceiptAsync(newAddress, 1000);
+            var allowanceAmount =  await tokenService.AllowanceQueryAsync(addressOwner, newAddress);
+            Assert.Equal(1000, allowanceAmount);
         }
     }
 }
