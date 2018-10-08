@@ -7,6 +7,7 @@ namespace Nethereum.Signer
     public interface IEthECKeyExternalSigner
     {
         Task<string> GetPublicKeyAsync();
+        ExternalSignerFormat ExternalSignerFormat { get; }
         Task<EthECDSASignature> SignAndCalculateVAsync(byte[] hash, BigInteger chainId);
         Task<EthECDSASignature> SignAndCalculateVAsync(byte[] hash);
         Task<string> GetAddressAsync();

@@ -18,7 +18,7 @@ namespace Nethereum.Ledger
     public class LedgerExternalSigner:IEthExternalSigner
     {
         public bool CalculatesV { get; } = true;
-
+        public ExternalSignerFormat ExternalSignerFormat { get; } = ExternalSignerFormat.RLP;
         public async Task<byte[]> GetPublicKeyAsync()
         {
             var ledgerManager = await GetLedger();

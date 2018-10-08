@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
@@ -21,12 +22,12 @@ namespace Nethereum.Signer
             return publicKey.ToHex(true);
         }
 
+        public ExternalSignerFormat ExternalSignerFormat => _ethExternalSigner.ExternalSignerFormat;
+
         public async Task<string> GetAddressAsync()
         {
-            var publicKey = await _ethExternalSigner.GetPublicKeyAsync();
-            return publicKey.ToHex();
-            //HACK.. we want from the external signers the public key not the address
-            // return new EthECKey(publicKey, true).GetPublicAddress();
+             var publicKey = await _ethExternalSigner.GetPublicKeyAsync();
+             return new EthECKey(publicKey, false).GetPublicAddress();
         }
 
         public async Task<EthECDSASignature> SignAndCalculateVAsync(byte[] hash, BigInteger chainId)

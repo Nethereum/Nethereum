@@ -108,15 +108,29 @@ namespace Nethereum.Signer
 #if !DOTNET35
         public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner, BigInteger chainId)
         {
-            //Hack not passing hash
-            Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw(), chainId);
+            if (externalSigner.ExternalSignerFormat == ExternalSignerFormat.RLP)
+            {
+                Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw(), chainId);
+            }
+            else
+            {
+                Signature = await externalSigner.SignAndCalculateVAsync(RawHash, chainId);
+            }
+
             rlpSignedEncoded = null;
         }
 
         public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
         {
-            //Hack not passing hash
-            Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw());
+            if (externalSigner.ExternalSignerFormat == ExternalSignerFormat.RLP)
+            {
+                Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw());
+            }
+            else
+            {
+                Signature = await externalSigner.SignAndCalculateVAsync(RawHash);
+            }
+
             rlpSignedEncoded = null;
         }
 #endif

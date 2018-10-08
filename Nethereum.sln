@@ -146,12 +146,19 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.JsonRpc.WebSocketClient", "src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj", "{9097C44C-1CA0-4C89-8BAA-1054EAAA8FF1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ClassDiagrams", "ClassDiagrams", "{EFC55CCF-06EE-42B1-B2B3-04E94586F8DD}"
+	ProjectSection(SolutionItems) = preProject
+		src\Nethereum.Signer.AzureKeyVault\AzureKeyVaultExternalSigner.cs = src\Nethereum.Signer.AzureKeyVault\AzureKeyVaultExternalSigner.cs
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.ClassDiagrams", "src\Nethereum.ClassDiagrams\Nethereum.ClassDiagrams.csproj", "{5BBEAE99-333E-4B98-8453-C5667FB22184}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Ledger", "src\Nethereum.Ledger\Nethereum.Ledger.csproj", "{3CA3EFB7-6438-4429-8CDB-C6FE8180607C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Ledger", "src\Nethereum.Ledger\Nethereum.Ledger.csproj", "{3CA3EFB7-6438-4429-8CDB-C6FE8180607C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Ledger.IntegrationTests", "src\Nethereum.Ledger.IntegrationTests\Nethereum.Ledger.IntegrationTests.csproj", "{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Ledger.IntegrationTests", "src\Nethereum.Ledger.IntegrationTests\Nethereum.Ledger.IntegrationTests.csproj", "{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Signer.AzureKeyVault", "src\Nethereum.Signer.AzureKeyVault\Nethereum.Signer.AzureKeyVault.csproj", "{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Signer.AzureKeyVault.Console", "src\Nethereum.Signer.AzureKeyVault.Console\Nethereum.Signer.AzureKeyVault.Console.csproj", "{81FCF6D6-615C-4F29-8464-E06C85433CBF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -997,6 +1004,38 @@ Global
 		{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75}.Release|x64.Build.0 = Release|Any CPU
 		{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75}.Release|x86.ActiveCfg = Release|Any CPU
 		{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75}.Release|x86.Build.0 = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|ARM.Build.0 = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|x64.Build.0 = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Debug|x86.Build.0 = Debug|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|ARM.ActiveCfg = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|ARM.Build.0 = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|x64.ActiveCfg = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|x64.Build.0 = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|x86.ActiveCfg = Release|Any CPU
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530}.Release|x86.Build.0 = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|ARM.Build.0 = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|x64.Build.0 = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Debug|x86.Build.0 = Debug|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|ARM.ActiveCfg = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|ARM.Build.0 = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|x64.ActiveCfg = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|x64.Build.0 = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|x86.ActiveCfg = Release|Any CPU
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1076,6 +1115,8 @@ Global
 		{5BBEAE99-333E-4B98-8453-C5667FB22184} = {EFC55CCF-06EE-42B1-B2B3-04E94586F8DD}
 		{3CA3EFB7-6438-4429-8CDB-C6FE8180607C} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 		{46D7A781-EF76-4E2E-9CFD-1CBCE4B2DA75} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
+		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
+		{81FCF6D6-615C-4F29-8464-E06C85433CBF} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}
