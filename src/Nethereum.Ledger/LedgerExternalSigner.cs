@@ -159,9 +159,6 @@ namespace Nethereum.Ledger
                 var path = KeyPath.Parse("m/44'/60'/0'/0").Derive(_index);
                 return GetByteData(path.Indexes);
             }
-            //return GetByteData(GetDerivationIndices());
-            //this could use other paths
-            //return Helpers.GetDerivationPathData(LedgerManager.CurrentCoin.App, LedgerManager.CurrentCoin.CoinNumber, _account, _index, false, LedgerManager.CurrentCoin.IsSegwit);
         }
 
 
