@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -106,17 +107,17 @@ namespace Nethereum.Ledger
 
     public class LedgerExternalSigner:IEthExternalSigner
     {
-        private readonly uint _account;
         private readonly uint _index;
+        private readonly bool _legacyPath;
         public LedgerManager LedgerManager { get; }
       
         public bool CalculatesV { get; } = true;
         public ExternalSignerFormat ExternalSignerFormat { get; } = ExternalSignerFormat.RLP;
 
-        public LedgerExternalSigner(LedgerManager ledgerManager, uint account, uint index)
+        public LedgerExternalSigner(LedgerManager ledgerManager, uint index, bool legacyPath = false)
         {
-            _account = account;
             _index = index;
+            _legacyPath = legacyPath;
             LedgerManager = ledgerManager;
             LedgerManager.SetCoinNumber(60);
         }
@@ -148,8 +149,51 @@ namespace Nethereum.Ledger
 
         public byte[] GetPath()
         {
+            if (_legacyPath)
+            {
+                var path = KeyPath.Parse("m/44'/60'/0'").Derive(_index);
+                return GetByteData(path.Indexes);
+            }
+            else
+            {
+                var path = KeyPath.Parse("m/44'/60'/0'/0").Derive(_index);
+                return GetByteData(path.Indexes);
+            }
+            //return GetByteData(GetDerivationIndices());
             //this could use other paths
-            return Helpers.GetDerivationPathData(LedgerManager.CurrentCoin.App, LedgerManager.CurrentCoin.CoinNumber, _account, _index, false, LedgerManager.CurrentCoin.IsSegwit);
+            //return Helpers.GetDerivationPathData(LedgerManager.CurrentCoin.App, LedgerManager.CurrentCoin.CoinNumber, _account, _index, false, LedgerManager.CurrentCoin.IsSegwit);
+        }
+
+
+        private static byte[] GetByteData(uint[] indices)
+        {
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                memoryStream.WriteByte((byte)indices.Length);
+                for (int index = 0; index < indices.Length; ++index)
+                {
+                    byte[] bytes = indices[index].ToBytes();
+                    memoryStream.Write(bytes, 0, bytes.Length);
+                }
+                return memoryStream.ToArray();
+            }
         }
     }
+
+    internal static class ExtensionMethods
+    {
+        internal static byte[] ToBytes(this uint value)
+        {
+            return new byte[4]
+            {
+                (byte) (value >> 24),
+                (byte) (value >> 16),
+                (byte) (value >> 8),
+                (byte) value
+            };
+        }
+    }
+
+
+
 }
