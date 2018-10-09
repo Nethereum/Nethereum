@@ -83,9 +83,9 @@ namespace Nethereum.Ledger.IntegrationTests
 
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput);
-           
 
-            var externalAccount = new ExternalAccount(new EthECKeyExternalSigner(new LedgerExternalSigner()), 1);
+            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManager();
+            var externalAccount = new ExternalAccount(new EthECKeyExternalSigner(new LedgerExternalSigner(ledgerManager, 0, 0)), 1);
             await externalAccount.InitialiseAsync();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
             //Ensure contract data is enable in the settings of ledger nano
