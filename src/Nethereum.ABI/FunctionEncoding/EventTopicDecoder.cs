@@ -22,6 +22,13 @@ namespace Nethereum.ABI.FunctionEncoding
             var indexedProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>(true).Parameter.Indexed == true).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order).ToArray();
             var dataProperties = properties.Where(x => x.GetCustomAttribute<ParameterAttribute>(true).Parameter.Indexed == false).OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order).ToArray();
 
+            // Take one off topics count to skip signature
+            var topicCount = (topics.Length - 1);
+            var indexedPropertiesCount = indexedProperties.Length;
+
+            if (indexedPropertiesCount != (topicCount))
+                throw new Exception($"Number of indexes don't match the number of topics. Indexed Properties {indexedPropertiesCount}, Topics : {topicCount}");
+                
             var topicNumber = 0;
             foreach (var topic in topics)
             {
