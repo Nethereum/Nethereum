@@ -9,8 +9,7 @@ namespace Nethereum.Signer
         bool CalculatesV { get; }
         ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; }
         Task<string> GetAddressAsync();
-        Task<byte[]> GetPublicKeyAsync();
-        Task<EthECDSASignature> SignAsync(byte[] hash);
+        Task<EthECDSASignature> SignAsync(byte[] rawBytes);
         Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId);
         Task SignAsync(Transaction transaction);
         Task SignAsync(TransactionChainId transaction);

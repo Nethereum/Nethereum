@@ -160,7 +160,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer.AzureKeyVa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer.AzureKeyVault.Console", "src\Nethereum.Signer.AzureKeyVault.Console\Nethereum.Signer.AzureKeyVault.Console.csproj", "{81FCF6D6-615C-4F29-8464-E06C85433CBF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Signer.Trezor", "src\Nethereum.Signer.Trezor\Nethereum.Signer.Trezor.csproj", "{9DE919BA-B5DF-4C1C-A648-9C2526BBC036}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer.Trezor", "src\Nethereum.Signer.Trezor\Nethereum.Signer.Trezor.csproj", "{9DE919BA-B5DF-4C1C-A648-9C2526BBC036}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Signer.Trezor.Console", "src\Nethereum.Signer.Trezor.Console\Nethereum.Signer.Trezor.Console.csproj", "{972F1082-FE72-4832-B990-37FC78D5F57E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1054,6 +1056,22 @@ Global
 		{9DE919BA-B5DF-4C1C-A648-9C2526BBC036}.Release|x64.Build.0 = Release|Any CPU
 		{9DE919BA-B5DF-4C1C-A648-9C2526BBC036}.Release|x86.ActiveCfg = Release|Any CPU
 		{9DE919BA-B5DF-4C1C-A648-9C2526BBC036}.Release|x86.Build.0 = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|ARM.Build.0 = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|x64.Build.0 = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Debug|x86.Build.0 = Debug|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|ARM.ActiveCfg = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|ARM.Build.0 = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|x64.ActiveCfg = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|x64.Build.0 = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|x86.ActiveCfg = Release|Any CPU
+		{972F1082-FE72-4832-B990-37FC78D5F57E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1136,6 +1154,7 @@ Global
 		{D33EAAAB-0924-4DBF-A34B-351BDF6FB530} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 		{81FCF6D6-615C-4F29-8464-E06C85433CBF} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 		{9DE919BA-B5DF-4C1C-A648-9C2526BBC036} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
+		{972F1082-FE72-4832-B990-37FC78D5F57E} = {C1B11575-2A2B-48E5-B709-B9FD68BCD426}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

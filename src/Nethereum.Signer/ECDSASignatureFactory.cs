@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer.Crypto;
 using Org.BouncyCastle.Math;
 
@@ -33,6 +34,27 @@ namespace Nethereum.Signer
             Array.Copy(rs, 32, s, 0, 32);
             var signature = FromComponents(r, s);
             return signature;
+        }
+
+        public static ECDSASignature ExtractECDSASignature(string signature)
+        {
+            var signatureArray = signature.HexToByteArray();
+            return ExtractECDSASignature(signatureArray);
+        }
+
+        public static ECDSASignature ExtractECDSASignature(byte[] signatureArray)
+        { 
+            var v = signatureArray[64];
+
+            if (v == 0 || v == 1)
+                v = (byte)(v + 27);
+
+            var r = new byte[32];
+            Array.Copy(signatureArray, r, 32);
+            var s = new byte[32];
+            Array.Copy(signatureArray, 32, s, 0, 32);
+
+            return ECDSASignatureFactory.FromComponents(r, s, v);
         }
     }
 }
