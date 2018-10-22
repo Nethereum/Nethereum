@@ -39,7 +39,8 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 {"abi", "abiPath"},
                 {"bin", "binPath"},
                 {"o", "outputPath"},
-                {"ns", "namespace"}
+                {"ns", "namespace"},
+                {"sf", "SingleFile"}
             };
 
             foreach (var expectedArg in expectedArgs)
@@ -58,8 +59,27 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 "-o", "c:/Temp", 
                 "-ns", "DefaultNamespace"));
 
+            var singleFile = true;
+
             _mockCodeGenerationWrapper
-                .Verify(w => w.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/Temp", true));
+                .Verify(w => w.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/Temp", singleFile));
+        }
+
+        [Fact]
+        public void Accepts_And_Passes_Single_File_Parameter()
+        {
+            Assert.Equal(0, _command.Execute(
+                "-cn", "StandardContract", 
+                "-abi", "StandardContract.abi", 
+                "-bin", "StandardContract.bin", 
+                "-o", "c:/Temp", 
+                "-ns", "DefaultNamespace",
+                "-sf", "false"));
+
+            var singleFile = false;
+
+            _mockCodeGenerationWrapper
+                .Verify(w => w.FromAbi("StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/Temp", singleFile));
         }
 
         [Fact]

@@ -53,10 +53,12 @@ namespace Nethereum.Generator.Console.Commands
 
             var contractName = _contractName.Value();
 
-            bool singleFile = false;
+            bool singleFile = true;
 
-            if(!bool.TryParse(_singleFile.Value(), out singleFile)) singleFile = true;
-
+            if (_singleFile.HasValue())
+            {
+                bool.TryParse(_singleFile.Value(), out singleFile);
+            }
 
             CodeGenerationWrapper.FromAbi(contractName, abiFilePath, _binCodeFilePath.Value(), baseNamespace, outputFolder, singleFile);
 
