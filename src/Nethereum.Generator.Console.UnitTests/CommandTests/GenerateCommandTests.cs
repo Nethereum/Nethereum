@@ -2,7 +2,7 @@
 using Nethereum.Generator.Console.Commands;
 using Xunit;
 
-namespace Nethereum.Generator.Console.UnitTests
+namespace Nethereum.Generator.Console.UnitTests.CommandTests
 {
     public class GenerateCommandTests
     {

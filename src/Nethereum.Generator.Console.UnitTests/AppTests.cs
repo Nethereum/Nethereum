@@ -1,8 +1,7 @@
-﻿using Nethereum.Generator.Console.Commands;
-using System.Linq;
+﻿using System.Linq;
 using Xunit;
 
-namespace Nethereum.Generator.Console.UnitTests.CommandTests
+namespace Nethereum.Generator.Console.UnitTests
 {
     public class AppTests
     {
