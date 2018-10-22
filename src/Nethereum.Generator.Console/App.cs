@@ -7,8 +7,7 @@ namespace Nethereum.Generator.Console
     {
         public App()
         {
-            Commands.Add(new GenerateFromProjectCommand());
-            Commands.Add(new GenerateFromAbiCommand());
+            Commands.Add(new GenerateCommand());
             HelpOption("-h | -? | --help");
         }
     }
