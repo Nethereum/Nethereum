@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace Nethereum.Ledger
+namespace Nethereum.Web3.Accounts
 {
 /****
     Copyright(c) 2014 Metaco SA

@@ -133,13 +133,6 @@ namespace Nethereum.Signer
             SimpleRlpSigner.Sign(key, GetChainIdAsBigInteger());
         }
 
-#if !DOTNET35
-        public override async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
-        {
-            await SimpleRlpSigner.SignExternallyAsync(externalSigner, GetChainIdAsBigInteger()).ConfigureAwait(false);
-        }
-#endif
-
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,
             byte[] value,
             byte[] data, byte[] chainId)
@@ -153,6 +146,13 @@ namespace Nethereum.Signer
                 SHASH_DEFAULT
             };
         }
+
+#if !DOTNET35
+        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
+        {
+           await externalSigner.SignAsync(this).ConfigureAwait(false);
+        }
+#endif
 
     }
 

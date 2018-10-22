@@ -42,13 +42,13 @@ namespace Nethereum.HdWallet.IntegrationTests
 
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
 
-            var transactionHash = await standarErc20Service.TransferAsync(account.Address,
-                "0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47", 10, new HexBigInteger(900000));
+            var transactionHash = await standarErc20Service.TransferRequestAsync(
+                "0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47", 10);
 
             var receiptSend = await pollingService.PollForReceiptAsync(transactionHash);
 
             var balance =
-                await standarErc20Service.GetBalanceOfAsync<int>("0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47");
+                await standarErc20Service.BalanceOfQueryAsync("0x98f5438cDE3F0Ff6E11aE47236e93481899d1C47");
 
             Assert.Equal(10, balance);
         }

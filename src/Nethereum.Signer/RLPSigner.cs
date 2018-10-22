@@ -105,35 +105,13 @@ namespace Nethereum.Signer
             Signature = key.SignAndCalculateV(RawHash, chainId);
             rlpSignedEncoded = null;
         }
-#if !DOTNET35
-        public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner, BigInteger chainId)
-        {
-            if (externalSigner.ExternalSignerFormat == ExternalSignerFormat.RLP)
-            {
-                Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw(), chainId);
-            }
-            else
-            {
-                Signature = await externalSigner.SignAndCalculateVAsync(RawHash, chainId);
-            }
 
+        public void SetSignature(EthECDSASignature signature)
+        {
+            Signature = signature;
             rlpSignedEncoded = null;
         }
 
-        public async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
-        {
-            if (externalSigner.ExternalSignerFormat == ExternalSignerFormat.RLP)
-            {
-                Signature = await externalSigner.SignAndCalculateVAsync(GetRLPEncodedRaw());
-            }
-            else
-            {
-                Signature = await externalSigner.SignAndCalculateVAsync(RawHash);
-            }
-
-            rlpSignedEncoded = null;
-        }
-#endif
         public bool IsVSignatureForChain()
         {
             if(Signature == null) throw new Exception("Signature not initiated or calculated");

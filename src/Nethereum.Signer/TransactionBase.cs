@@ -58,16 +58,18 @@ namespace Nethereum.Signer
             SimpleRlpSigner.Sign(key);
         }
 
+        public void SetSignature(EthECDSASignature signature)
+        {
+            SimpleRlpSigner.SetSignature(signature);
+        }
+
         protected static string ToHex(byte[] x)
         {
             if (x == null) return "0x";
             return x.ToHex();
         }
 #if !DOTNET35
-        public virtual async Task SignExternallyAsync(IEthECKeyExternalSigner externalSigner)
-        {
-            await SimpleRlpSigner.SignExternallyAsync(externalSigner).ConfigureAwait(false);
-        }
+        public abstract Task SignExternallyAsync(IEthExternalSigner externalSigner);
 #endif
     }
 }

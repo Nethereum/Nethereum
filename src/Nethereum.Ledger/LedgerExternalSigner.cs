@@ -12,6 +12,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.Signer.Crypto;
+using Nethereum.Web3.Accounts;
 using Helpers = Ledger.Net.Helpers;
 
 namespace Nethereum.Ledger
@@ -105,14 +106,16 @@ namespace Nethereum.Ledger
     }
 
 
-    public class LedgerExternalSigner:IEthExternalSigner
+    public class LedgerExternalSigner: EthExternalSignerBase
     {
         private readonly uint _index;
+        private readonly string _customPath;
         private readonly bool _legacyPath;
         public LedgerManager LedgerManager { get; }
       
-        public bool CalculatesV { get; } = true;
-        public ExternalSignerFormat ExternalSignerFormat { get; } = ExternalSignerFormat.RLP;
+        public override bool CalculatesV { get; protected set; } = true;
+
+        public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.RLP;
 
         public LedgerExternalSigner(LedgerManager ledgerManager, uint index, bool legacyPath = false)
         {
@@ -122,7 +125,15 @@ namespace Nethereum.Ledger
             LedgerManager.SetCoinNumber(60);
         }
 
-        public async Task<byte[]> GetPublicKeyAsync()
+        public LedgerExternalSigner(LedgerManager ledgerManager, uint index, string customPath)
+        {
+            _index = index;
+            _customPath = customPath;
+            LedgerManager = ledgerManager;
+            LedgerManager.SetCoinNumber(60);
+        }
+
+        public override async Task<byte[]> GetPublicKeyAsync()
         {
             var path = GetPath();
             var publicKeyResponse = await LedgerManager.SendRequestAsync<EthereumAppGetPublicKeyResponse, EthereumAppGetPublicKeyRequest>(new EthereumAppGetPublicKeyRequest(true, false, path));
@@ -134,21 +145,37 @@ namespace Nethereum.Ledger
             throw new Exception(publicKeyResponse.StatusMessage);
         }
 
-        public async Task<ECDSASignature> SignAsync(byte[] hash)
+        protected override async Task<ECDSASignature> SignExternallyAsync(byte[] hash)
         {
             var path = GetPath();
 
-            var firstRequest = new EthereumAppSignTransactionRequest(true, path.Concat(hash).ToArray());
+            var firstRequest = new EthereumAppSignatureRequest(true, path.Concat(hash).ToArray());
 
-            var response = await LedgerManager.SendRequestAsync<EthereumAppSignTransactionResponse, EthereumAppSignTransactionRequest>(firstRequest);
+            var response = await LedgerManager.SendRequestAsync<EthereumAppSignatureResponse, EthereumAppSignatureRequest>(firstRequest);
 
             var signature = ECDSASignatureFactory.FromComponents(response.SignatureR, response.SignatureS);
             signature.V = new BigInteger(response.SignatureV).ToBytesForRLPEncoding();
             return signature;
         }
 
+        public override async Task SignAsync(TransactionChainId transaction)
+        {
+            await SignRLPTransactionAsync(transaction).ConfigureAwait(false);
+        }
+
+        public override async Task SignAsync(Transaction transaction)
+        {
+            await SignRLPTransactionAsync(transaction).ConfigureAwait(false);
+        }
+
         public byte[] GetPath()
         {
+            if (!string.IsNullOrEmpty(_customPath))
+            {
+                var path = KeyPath.Parse(_customPath).Derive(_index);
+                return GetByteData(path.Indexes);
+            }
+
             if (_legacyPath)
             {
                 var path = KeyPath.Parse("m/44'/60'/0'").Derive(_index);
