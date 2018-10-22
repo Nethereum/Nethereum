@@ -27,7 +27,7 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
         [Fact]
         public void HasExpectedCommandName()
         {
-            Assert.Equal("gen-fromabi", _command.Name);
+            Assert.Equal("from-abi", _command.Name);
         }
 
         [Fact]

@@ -29,7 +29,7 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
         [Fact]
         public void HasExpectedCommandName()
         {
-            Assert.Equal("gen-fromproject", _command.Name);
+            Assert.Equal("from-project", _command.Name);
         }
 
         [Fact]

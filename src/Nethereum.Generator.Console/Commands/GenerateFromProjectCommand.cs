@@ -14,13 +14,14 @@ namespace Nethereum.Generator.Console.Commands
 
         public GenerateFromProjectCommand()
         {
-            Name = "gen-fromproject";
-            Description = "Generates a Nethereum (c#) code based based on the abi";
+            Name = "from-project";
+            Description = "Generates Nethereum code based on one or many abi's within a project.";
             _projectPath = Option("-p | --projectPath", "The project file name and path", CommandOptionType.SingleValue);
             _assemblyName = Option("-a | --assemblyName", "The output assembly name for the project", CommandOptionType.SingleValue);
-            HelpOption("-? | -h | --help");
             OnExecute((Func<int>)RunCommand);
             CodeGenerationWrapper = new CodeGenerationWrapper();
+
+            this.AddHelpOption();
         }
 
         private int RunCommand()
