@@ -60,7 +60,7 @@ namespace Nethereum.Generators
         {
             var generated = new List<GeneratedFile>();
             generated.Add(GenerateAllMessages());
-            generated.Add(GenerateService());
+            generated.Add(GenerateService(singleMessagesFile:true));
             return generated.ToArray();
         }
 
@@ -89,12 +89,12 @@ namespace Nethereum.Generators
             return generated.ToArray();
         }
 
-        public GeneratedFile GenerateService()
+        public GeneratedFile GenerateService(bool singleMessagesFile = false)
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
 
-            dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
             cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
 
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);

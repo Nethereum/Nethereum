@@ -16,7 +16,11 @@ namespace Nethereum.Generators.CQS
         public string GenerateNamespaceDependencies()
         {
             return string.Join(Environment.NewLine,
-                FileModel.NamespaceDependencies.Distinct().Select(GenerateNamespaceDependency));
+                FileModel.
+                    NamespaceDependencies
+                    .Where(ns => !string.IsNullOrEmpty(ns))
+                    .Distinct()
+                    .Select(GenerateNamespaceDependency));
         }
 
         public abstract string GenerateNamespaceDependency(string namespaceName);

@@ -16,7 +16,7 @@ namespace Nethereum.Generator.Console.Commands
         {
             Name = "from-project";
             Description = "Generates Nethereum code based on one or many abi's within a project.";
-            _projectPath = Option("-p | --projectPath", "The project file name and path", CommandOptionType.SingleValue);
+            _projectPath = Option("-p | --projectPath", "The full project file path or path to the project folder.", CommandOptionType.SingleValue);
             _assemblyName = Option("-a | --assemblyName", "The output assembly name for the project", CommandOptionType.SingleValue);
             OnExecute((Func<int>)RunCommand);
             CodeGenerationWrapper = new CodeGenerationWrapper();

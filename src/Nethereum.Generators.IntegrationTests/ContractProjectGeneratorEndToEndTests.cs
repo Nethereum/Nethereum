@@ -11,14 +11,17 @@ namespace Nethereum.Generators.IntegrationTests
 {
     public class ContractProjectGeneratorEndToEndTests
     {
+        private const string BaseName = "ContractProjGenE2ETests";
+
         [Theory]
         [InlineData(CodeGenLanguage.CSharp)]
         [InlineData(CodeGenLanguage.FSharp)]
         [InlineData(CodeGenLanguage.Vb)]
-        public void GeneratedCodeBuildsSuccessfully(CodeGenLanguage codeGenLanguage)
+        public void Generated_Code_Builds(CodeGenLanguage codeGenLanguage)
         {
             //given
-            var context = new ProjectTestContext(GetType().Name, $"{MethodBase.GetCurrentMethod().Name}{codeGenLanguage}");
+            var context = new ProjectTestContext(BaseName, 
+                $"{MethodBase.GetCurrentMethod().Name}{codeGenLanguage}");
 
             try
             {
@@ -47,6 +50,55 @@ namespace Nethereum.Generators.IntegrationTests
                 };
 
                 var generatedFiles = contractProjectGenerator.GenerateAll();
+                GeneratedFileWriter.WriteFilesToDisk(generatedFiles);
+                context.BuildProject();
+
+                //then
+                Assert.True(context.BuildHasSucceeded());
+            }
+            finally
+            {
+                context.CleanUp();
+            }
+        }
+
+        [Theory]
+        [InlineData(CodeGenLanguage.CSharp)]
+        [InlineData(CodeGenLanguage.FSharp)]
+        [InlineData(CodeGenLanguage.Vb)]
+        public void With_Single_Messages_File_Generated_Code_Builds(CodeGenLanguage codeGenLanguage)
+        {
+            //given
+            var context = new ProjectTestContext(BaseName, 
+                $"{MethodBase.GetCurrentMethod().Name}{codeGenLanguage}");
+
+            try
+            {
+                context.CreateProject(codeGenLanguage, new[]
+                {
+                    new Tuple<string, string>("Nethereum.Web3", Constants.NethereumWeb3Version)
+                });
+
+                var contractMetaData = TestContracts.StandardContract;
+                var contractABI = new GeneratorModelABIDeserialiser().DeserialiseABI(contractMetaData.ABI);
+
+                //when
+                var contractProjectGenerator = new ContractProjectGenerator(
+                    contractABI,
+                    "StandardContract",
+                    contractMetaData.ByteCode,
+                    context.ProjectName,
+                    "StandardContract.Service",
+                    "StandardContract.CQS",
+                    "StandardContract.DTO",
+                    context.TargetProjectFolder,
+                    Path.DirectorySeparatorChar.ToString(),
+                    codeGenLanguage)
+                {
+                    AddRootNamespaceOnVbProjectsToImportStatements = true,
+                };
+
+                var generatedFiles = contractProjectGenerator.GenerateAllMessagesFileAndService();
                 GeneratedFileWriter.WriteFilesToDisk(generatedFiles);
                 context.BuildProject();
 
