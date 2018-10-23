@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ledger.Net" Version="2.0.0" />
+    <PackageReference Include="Trezor.Net" Version="2.4.0" />
   </ItemGroup>
 
   <ItemGroup>

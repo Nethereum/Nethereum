@@ -59,27 +59,12 @@ namespace Nethereum.Signer
 
         private static string CreateStringSignature(EthECDSASignature signature)
         {
-            return "0x" + signature.R.ToHex().PadLeft(64, '0') +
-                   signature.S.ToHex().PadLeft(64, '0') +
-                   signature.V.ToHex();
+            return EthECDSASignature.CreateStringSignature(signature);
         }
 
         public static EthECDSASignature ExtractEcdsaSignature(string signature)
         {
-            var signatureArray = signature.HexToByteArray();
-
-            var v = signatureArray[64];
-
-            if (v == 0 || v == 1)
-                v = (byte) (v + 27);
-
-            var r = new byte[32];
-            Array.Copy(signatureArray, r, 32);
-            var s = new byte[32];
-            Array.Copy(signatureArray, 32, s, 0, 32);
-
-            var ecdaSignature = EthECDSASignatureFactory.FromComponents(r, s, v);
-            return ecdaSignature;
+            return EthECDSASignatureFactory.ExtractECDSASignature(signature);
         }
     }
 }

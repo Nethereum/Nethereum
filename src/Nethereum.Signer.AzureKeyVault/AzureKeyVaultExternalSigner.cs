@@ -9,10 +9,10 @@ using Nethereum.Signer.Crypto;
 
 namespace Nethereum.Signer.AzureKeyVault
 {
-    public class AzureKeyVaultExternalSigner : IEthExternalSigner
+    public class AzureKeyVaultExternalSigner : EthExternalSignerBase
     {
-        public ExternalSignerFormat ExternalSignerFormat { get; } = ExternalSignerFormat.Hash;
-        public bool CalculatesV { get; } = false;
+        public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
+        public override bool CalculatesV { get; protected set; } = false;
         public KeyVaultClient KeyVaultClient { get; private set; }
         public string VaultUrl { get; }
 
@@ -22,7 +22,7 @@ namespace Nethereum.Signer.AzureKeyVault
             VaultUrl = vaultUrl;
         }
 
-        public async Task<byte[]> GetPublicKeyAsync()
+        public override async Task<byte[]> GetPublicKeyAsync()
         {
             var keyBundle = await KeyVaultClient.GetKeyAsync(VaultUrl);
             var xLen = keyBundle.Key.X.Length;
@@ -36,12 +36,21 @@ namespace Nethereum.Signer.AzureKeyVault
             return publicKey;
         }
 
-        public async Task<ECDSASignature> SignAsync(byte[] hash)
+        protected override async Task<ECDSASignature> SignExternallyAsync(byte[] hash)
         {
             var keyOperationResult = await KeyVaultClient.SignAsync(VaultUrl, "ECDSA256", hash);
             var signature = keyOperationResult.Result;
             return ECDSASignatureFactory.FromComponents(signature);
         }
 
+        public override async Task SignAsync(Transaction transaction)
+        {
+            await SignHashTransactionAsync(transaction).ConfigureAwait(false);
+        }
+
+        public override async Task SignAsync(TransactionChainId transaction)
+        {
+            await SignHashTransactionAsync(transaction).ConfigureAwait(false);
+        }
     }
 }

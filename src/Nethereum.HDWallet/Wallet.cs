@@ -3,6 +3,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
+using KeyPath = NBitcoin.KeyPath;
 
 namespace Nethereum.HdWallet
 {

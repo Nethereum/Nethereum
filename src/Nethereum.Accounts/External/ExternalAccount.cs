@@ -10,17 +10,17 @@ namespace Nethereum.Web3.Accounts
 {
     public class ExternalAccount : IAccount
     {
-        public IEthECKeyExternalSigner ExternalSigner { get; }
+        public IEthExternalSigner ExternalSigner { get; }
         public BigInteger? ChainId { get; }
 
 
-        public ExternalAccount(IEthECKeyExternalSigner externalSigner, BigInteger? chainId = null)
+        public ExternalAccount(IEthExternalSigner externalSigner, BigInteger? chainId = null)
         {
             ExternalSigner = externalSigner;
             ChainId = chainId;
         }
 
-        public ExternalAccount(string address, IEthECKeyExternalSigner externalSigner, BigInteger? chainId = null)
+        public ExternalAccount(string address, IEthExternalSigner externalSigner, BigInteger? chainId = null)
         {
             ChainId = chainId;
             Address = address;

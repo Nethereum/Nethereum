@@ -30,7 +30,7 @@ namespace Nethereum.Signer.AzureKeyVault.Console
     class Program
     {
         private static string APP_ID = "a73d5252-12f0-4b3e-80a2-8c13870bbcab";
-        private static string APP_PASSWORD = "";
+        private static string APP_PASSWORD = "RYoSY9QG5VKrFDhER/v8s3lA2vaWb80W+WYKvH/8Rgc=";
         private static string URI = "https://juanakv.vault.azure.net/keys/nethereumec/7ed70afdbf7d43bda5a8090515b154d2";
         static void Main(string[] args)
         {
@@ -40,9 +40,8 @@ namespace Nethereum.Signer.AzureKeyVault.Console
             System.Console.WriteLine(publicKey.ToHex());
 
             var msgHash = new Util.Sha3Keccack().CalculateHash("Hello").HexToByteArray();
-            var ethExternalSigner = new EthECKeyExternalSigner(signer);
-
-            var signature = ethExternalSigner.SignAndCalculateVAsync(msgHash).Result;
+          
+            var signature = signer.SignAsync(msgHash).Result;
             var publicKeyRecovered = EthECKey.RecoverFromSignature(signature, msgHash);
             System.Console.WriteLine(publicKeyRecovered.GetPubKey().ToHex());
 
@@ -57,7 +56,7 @@ namespace Nethereum.Signer.AzureKeyVault.Console
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
 
-            var externalAccount = new ExternalAccount(ethExternalSigner, 1);
+            var externalAccount = new ExternalAccount(signer, 1);
             externalAccount.InitialiseAsync().Wait();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
             var signature2 = externalAccount.TransactionManager.SignTransactionAsync(transactionInput).Result;

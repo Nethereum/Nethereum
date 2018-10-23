@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -81,5 +82,12 @@ namespace Nethereum.Signer
         }
 
         public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature, SimpleRlpSigner.RawHash);
+
+#if !DOTNET35
+        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
+        {
+           await externalSigner.SignAsync(this).ConfigureAwait(false);
+        }
+#endif
     }
 }

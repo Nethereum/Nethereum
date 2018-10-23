@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using Nethereum.Util;
@@ -51,6 +52,13 @@ namespace Nethereum.Signer
         public static EthECDSASignature FromDER(byte[] sig)
         {
             return new EthECDSASignature(sig);
+        }
+
+        public static string CreateStringSignature(EthECDSASignature signature)
+        {
+            return "0x" + signature.R.ToHex().PadLeft(64, '0') +
+                   signature.S.ToHex().PadLeft(64, '0') +
+                   signature.V.ToHex();
         }
 
         public byte[] ToDER()

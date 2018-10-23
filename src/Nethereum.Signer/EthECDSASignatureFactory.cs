@@ -23,5 +23,10 @@
         {
             return new EthECDSASignature(ECDSASignatureFactory.FromComponents(rs));
         }
+
+        public static EthECDSASignature ExtractECDSASignature(string signature)
+        {
+            return new EthECDSASignature(ECDSASignatureFactory.ExtractECDSASignature(signature));
+        }
     }
 }
