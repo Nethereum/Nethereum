@@ -7,7 +7,6 @@ using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
-
     public class EventTopicDecoder : ParameterDecoder
     {
         public T DecodeTopics<T>(object[] topics, string data) where T : new()

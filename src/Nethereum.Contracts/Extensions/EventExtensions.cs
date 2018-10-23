@@ -356,6 +356,27 @@ namespace Nethereum.Contracts.Extensions
             return DecodeAllEvents<TEventDTO>(eventABI, GetLogsForEvent(eventABI, logs));
         }
 
+        public static List<List<ParameterOutput>> DecodeAllEventsDefaultTopics(this EventABI eventABI, JArray logs) 
+        {
+            return DecodeAllEventsDefaultTopics(eventABI, GetLogsForEvent(eventABI, logs));
+        }
+
+        public static List<List<ParameterOutput>> DecodeAllEventsDefaultTopics(this EventABI eventABI, FilterLog[] logs)
+        {
+            var result = new List<List<ParameterOutput>>();
+            if (logs == null) return null;
+
+            foreach (var log in logs)
+            {
+                var eventDecoded = DecodeEventDefaultTopics(eventABI, log);
+                if (eventDecoded != null)
+                {
+                    result.Add(eventDecoded);
+                }
+            }
+            return result;
+        }
+
         public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this EventABI eventABI, FilterLog[] logs) where TEventDTO : new()
         {
             var result = new List<EventLog<TEventDTO>>();
@@ -370,6 +391,13 @@ namespace Nethereum.Contracts.Extensions
                 }
             }
             return result;
+        }
+
+        public static List<ParameterOutput> DecodeEventDefaultTopics(this EventABI eventABI, FilterLog log)
+        {
+            if (!IsLogForEvent(eventABI, log)) return null;
+            var eventDecoder = new EventTopicDecoder();
+            return eventDecoder.DecodeDefaultTopics(eventABI, log.Topics, log.Data);
         }
 
         public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(this EventABI eventABI, FilterLog log) where TEventDTO : new()

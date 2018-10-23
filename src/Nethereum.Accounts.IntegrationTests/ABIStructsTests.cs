@@ -315,6 +315,12 @@ contract TestV2
             var eventStorage = contractHandler.GetEvent<TestStructStorageChangedEvent>();
             var eventOutputs = eventStorage.DecodeAllEventsForEvent(receiptSending.Logs);
             Assert.Equal(1, eventOutputs[0].Event.TestStruct.Id);
+
+            var eventUntyped = new Event(web3.Client, deploymentReceipt.ContractAddress, eventStorage.EventABI);
+            var eventOutputs2 = eventUntyped.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
+            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", eventOutputs2[0][0].Result);
+            Assert.Equal("sender", eventOutputs2[0][0].Parameter.Name);
+
         }
 
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -38,6 +39,26 @@ namespace Nethereum.Contracts
             var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
+
+
+        public async Task<List<List<ParameterOutput>>> GetAllChangesDefault(NewFilterInput filterInput)
+        {
+            if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, the filter input does not belong to this contract");
+            var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
+            return EventABI.DecodeAllEventsDefaultTopics(logs);
+        }
+
+        public async Task<List<List<ParameterOutput>>> GetAllChangesDefault(HexBigInteger filterId)
+        {
+            var logs = await EthFilterLogs.SendRequestAsync(filterId).ConfigureAwait(false);
+            return EventABI.DecodeAllEventsDefaultTopics(logs);
+        }
+
+        public async Task<List<List<ParameterOutput>>> GetFilterChangeDefault(HexBigInteger filterId)
+        {
+            var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
+            return EventABI.DecodeAllEventsDefaultTopics(logs);
+        }
 #endif
         public List<EventLog<T>> DecodeAllEventsForEvent<T>(FilterLog[] logs) where T : new()
         {
@@ -47,6 +68,16 @@ namespace Nethereum.Contracts
         public List<EventLog<T>> DecodeAllEventsForEvent<T>(JArray logs) where T : new()
         {
             return EventABI.DecodeAllEvents<T>(logs);
+        }
+
+        public List<List<ParameterOutput>> DecodeAllEventsDefaultForEvent(FilterLog[] logs)
+        {
+            return EventABI.DecodeAllEventsDefaultTopics(logs);
+        }
+
+        public List<List<ParameterOutput>> DecodeAllEventsDefaultForEvent(JArray logs)
+        {
+            return EventABI.DecodeAllEventsDefaultTopics(logs);
         }
     }
 }
