@@ -19,24 +19,36 @@ namespace Nethereum.ABI.FunctionEncoding
             attributesToABIExtractor = new AttributesToABIExtractor();
         }
 
-        public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties)
+        public object DecodeAttributes(byte[] output, Type objectType)
         {
-            if (output == "0x") return result;
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(objectType);
+            var objectResult = Activator.CreateInstance(objectType);
+            return DecodeAttributes(output, objectResult, properties.ToArray());
+        }
+
+        public object DecodeAttributes(string output, Type objectType)
+        {
+            return DecodeAttributes(output.HexToByteArray(), objectType);
+        }
+
+        public object DecodeAttributes(byte[] output, object result, params PropertyInfo[] properties)
+        {
+            if (output == null || output.Length == 0) return result;
             var parameterObjects = GetParameterOutputsFromAttributes(properties);
             var orderedParameters = parameterObjects.OrderBy(x => x.Parameter.Order).ToArray();
             var parameterResults = DecodeOutput(output, orderedParameters);
 
             foreach (var parameterResult in parameterResults)
             {
-                var parameter = (ParameterOutputProperty) parameterResult;
+                var parameter = (ParameterOutputProperty)parameterResult;
                 var propertyInfo = parameter.PropertyInfo;
                 var decodedResult = parameter.Result;
 
                 if (parameter.Parameter.ABIType is TupleType tupleType)
                 {
 
-                   decodedResult =  Activator.CreateInstance(propertyInfo.PropertyType);
-                   AssingValuesFromPropertyList(decodedResult, parameter);
+                    decodedResult = Activator.CreateInstance(propertyInfo.PropertyType);
+                    AssingValuesFromPropertyList(decodedResult, parameter);
                 }
 #if DOTNET35
                 propertyInfo.SetValue(result, decodedResult, null);
@@ -46,6 +58,18 @@ namespace Nethereum.ABI.FunctionEncoding
             }
 
             return result;
+        }
+
+
+        public object DecodeAttributes(string output, object result, params PropertyInfo[] properties)
+        {
+            if (output == "0x") return result;
+            return DecodeAttributes(output.HexToByteArray(), result, properties);
+        }
+
+        public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties)
+        {
+            return (T)DecodeAttributes(output, (object)result, properties);
         }
 
         public void AssingValuesFromPropertyList(object instance, ParameterOutputProperty result)
@@ -112,6 +136,23 @@ namespace Nethereum.ABI.FunctionEncoding
                         parameterOutputProperty.ChildrenProperties =
                             GetParameterOutputsFromAttributes(property.PropertyType);
                     }
+                    else if (parameterAttribute.Parameter.ABIType is ArrayType arrayType)
+                    {
+                        if (arrayType.ElementType is TupleType tupleTypeElement)
+                        {
+#if NETSTANDARD1_1
+                            var type = property.PropertyType.GenericTypeArguments.FirstOrDefault();
+#else
+                            var type = property.PropertyType.GetGenericArguments().FirstOrDefault();
+#endif
+                            if (type == null) throw new Exception("Tuple array has to decode to a IList<T>: " + parameterAttribute.Parameter.Name);
+
+                            attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(type,
+                                tupleTypeElement);
+                        }
+
+                        parameterAttribute.Parameter.DecodedType = property.PropertyType;
+                    }
                     else
                     {
                         parameterAttribute.Parameter.DecodedType = property.PropertyType;
@@ -130,7 +171,7 @@ namespace Nethereum.ABI.FunctionEncoding
             return GetParameterOutputsFromAttributes(properties.ToArray());
         }
 
-        public List<ParameterOutput> DecodeDefaultData(string data, params Parameter[] inputParameters)
+        public List<ParameterOutput> DecodeDefaultData(byte[] data, params Parameter[] inputParameters)
         {
             var parameterOutputs = new List<ParameterOutput>();
 
@@ -144,6 +185,11 @@ namespace Nethereum.ABI.FunctionEncoding
             }
 
             return DecodeOutput(data, parameterOutputs.ToArray());
+        }
+
+        public List<ParameterOutput> DecodeDefaultData(string data, params Parameter[] inputParameters)
+        { 
+           return DecodeDefaultData(data.HexToByteArray(), inputParameters);
         }
 
         public List<ParameterOutput> DecodeOutput(byte[] outputBytes, params ParameterOutput[] outputParameters)

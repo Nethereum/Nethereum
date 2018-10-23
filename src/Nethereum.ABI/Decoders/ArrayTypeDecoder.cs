@@ -3,17 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.Decoders
 {
     public class ArrayTypeDecoder : TypeDecoder
     {
+        private AttributesToABIExtractor _attributesToABIExtractor;
         public int Size { get; protected set; }
 
         public ArrayTypeDecoder(ABIType elementType, int size)
         {
             Size = size;
             ElementType = elementType;
+            _attributesToABIExtractor = new AttributesToABIExtractor();
         }
 
         protected ABIType ElementType { get; set; }
@@ -43,9 +48,9 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeDynamicElementType(byte[] encoded, Type type, int size)
         {
-            var decoded = (IList)Activator.CreateInstance(type);
+            var decodedListOutput = (IList)Activator.CreateInstance(type);
 
-            if (decoded == null)
+            if (decodedListOutput == null)
                 throw new Exception("Only types that implement IList<T> are supported to decoded Array Types");
 
             var elementType = GetIListElementType(type);
@@ -76,18 +81,41 @@ namespace Nethereum.ABI.Decoders
                 }   
                 var encodedElement =
                     encoded.Skip(currentDataIndex).Take(nextDataIndex - currentDataIndex).ToArray();
-                decoded.Add(ElementType.Decode(encodedElement, elementType));
+
+                DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
                 
                 currentIndex++;
             }
-            return decoded;
+            return decodedListOutput;
+        }
+
+        private void DecodeAndAddElement(Type elementType, IList decodedList, byte[] encodedElement)
+        {
+            if (ElementType is TupleType tupleTypeElement)
+            {
+                InitTupleElementComponents(elementType, tupleTypeElement);
+                decodedList.Add(new ParameterDecoder().DecodeAttributes(encodedElement, elementType));
+            }
+            else
+            {
+                decodedList.Add(ElementType.Decode(encodedElement, elementType));
+            }
+        }
+
+        protected void InitTupleElementComponents(Type elementType, TupleType tupleTypeElement)
+        {
+            if (tupleTypeElement.Components == null)
+            {
+                _attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(elementType,
+                    tupleTypeElement);
+            }
         }
 
         protected virtual object DecodeStaticElementType(byte[] encoded, Type type, int size)
         {
-            var decoded = (IList) Activator.CreateInstance(type);
+            var decodedListOutput = (IList) Activator.CreateInstance(type);
 
-            if (decoded == null)
+            if (decodedListOutput == null)
                 throw new Exception("Only types that implement IList<T> are supported to decoded Array Types");
 
             var elementType = GetIListElementType(type);
@@ -100,12 +128,12 @@ namespace Nethereum.ABI.Decoders
             while (currentIndex != encoded.Length)
             {
                 var encodedElement = encoded.Skip(currentIndex).Take(ElementType.FixedSize).ToArray();
-                decoded.Add(ElementType.Decode(encodedElement, elementType));
+                DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
                 var newIndex = currentIndex + ElementType.FixedSize;
                 currentIndex = newIndex;
             }
 
-            return decoded;
+            return decodedListOutput;
         }
 
         protected static Type GetIListElementType(Type listType)
