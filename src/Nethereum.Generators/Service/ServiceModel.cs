@@ -21,8 +21,12 @@ namespace Nethereum.Generators.Service
             FunctionOutputNamespace = functionOutputNamespace;
             ContractDeploymentCQSMessageModel = new ContractDeploymentCQSMessageModel(contractABI.Constructor, cqsNamespace, byteCode, contractName);
             InitialiseNamespaceDependencies();
-            NamespaceDependencies.Add(cqsNamespace);
-            NamespaceDependencies.Add(functionOutputNamespace);
+
+            if(!string.IsNullOrEmpty(cqsNamespace))
+                NamespaceDependencies.Add(cqsNamespace);
+
+            if(!string.IsNullOrEmpty(functionOutputNamespace))
+                NamespaceDependencies.Add(functionOutputNamespace);
         }
 
         private void InitialiseNamespaceDependencies()

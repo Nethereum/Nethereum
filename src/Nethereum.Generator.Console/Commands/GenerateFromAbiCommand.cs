@@ -18,12 +18,12 @@ namespace Nethereum.Generator.Console.Commands
         {
             Name = "from-abi";
             Description = "Generates Nethereum code based based on a single abi.";
-            _contractName = Option("-cn | --contractName", "The contract name", CommandOptionType.SingleValue);
-            _abiFilePath = Option("-abi | --abiPath", "The abi file and path", CommandOptionType.SingleValue);
-            _binCodeFilePath = Option("-bin | --binPath", "The bin file and path", CommandOptionType.SingleValue);
-            _outputFolder = Option("-o | --outputPath", "The output path for the generated code", CommandOptionType.SingleValue);
-            _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code", CommandOptionType.SingleValue);
-            _singleFile = Option("-sf | --SingleFile", "Generate the message definition in a single file (default true)", CommandOptionType.SingleValue);
+            _contractName = Option("-cn | --contractName", "The contract name (Optional)", CommandOptionType.SingleValue);
+            _abiFilePath = Option("-abi | --abiPath", "The abi file and path (Mandatory)", CommandOptionType.SingleValue);
+            _binCodeFilePath = Option("-bin | --binPath", "The bin file and path (Optional)", CommandOptionType.SingleValue);
+            _outputFolder = Option("-o | --outputPath", "The output path for the generated code (Mandatory)", CommandOptionType.SingleValue);
+            _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code (Mandatory)", CommandOptionType.SingleValue);
+            _singleFile = Option("-sf | --SingleFile", "Generate the message definition in a single file (Optional - default is true)", CommandOptionType.SingleValue);
             OnExecute((Func<int>)RunCommand);
             CodeGenerationWrapper = new CodeGenerationWrapper();
 
