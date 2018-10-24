@@ -45,7 +45,7 @@ namespace Nethereum.Contracts
                 receiptRequestCancellationToken);
         }
 
-        protected async Task<byte[]> CallRawAsync(CallInput callInput)
+        public async Task<byte[]> CallRawAsync(CallInput callInput)
         {
             var result =
                 await
@@ -56,7 +56,7 @@ namespace Nethereum.Contracts
             return result.HexToByteArray();
         }
 
-        protected async Task<byte[]> CallRawAsync(CallInput callInput, BlockParameter block)
+        public async Task<byte[]> CallRawAsync(CallInput callInput, BlockParameter block)
         {
             var result =
                 await
@@ -64,6 +64,26 @@ namespace Nethereum.Contracts
                         .ConfigureAwait(false);
 
             return result.HexToByteArray();
+        }
+
+        public async Task<List<ParameterOutput>> CallDecodingToDefaultAsync(CallInput callInput, BlockParameter block)
+        {
+                var result =
+                await
+                    EthCall.SendRequestAsync(callInput, block)
+                        .ConfigureAwait(false);
+
+            return DecodeInput(result);
+        }
+
+        public async Task<List<ParameterOutput>> CallDecodingToDefaultAsync(CallInput callInput)
+        {
+            var result =
+                await
+                    EthCall.SendRequestAsync(callInput)
+                        .ConfigureAwait(false);
+
+            return DecodeInput(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput)

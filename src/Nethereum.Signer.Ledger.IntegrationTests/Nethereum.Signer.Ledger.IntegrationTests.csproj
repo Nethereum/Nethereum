@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
-    <ProjectReference Include="..\Nethereum.Ledger\Nethereum.Ledger.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.Ledger\Nethereum.Signer.Ledger.csproj" />
   </ItemGroup>
 
 </Project>

@@ -22,7 +22,7 @@ namespace Nethereum.Signer.AzureKeyVault
             VaultUrl = vaultUrl;
         }
 
-        public override async Task<byte[]> GetPublicKeyAsync()
+        protected override async Task<byte[]> GetPublicKeyAsync()
         {
             var keyBundle = await KeyVaultClient.GetKeyAsync(VaultUrl);
             var xLen = keyBundle.Key.X.Length;

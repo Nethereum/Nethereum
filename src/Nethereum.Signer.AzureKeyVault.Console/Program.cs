@@ -30,14 +30,14 @@ namespace Nethereum.Signer.AzureKeyVault.Console
     class Program
     {
         private static string APP_ID = "a73d5252-12f0-4b3e-80a2-8c13870bbcab";
-        private static string APP_PASSWORD = "RYoSY9QG5VKrFDhER/v8s3lA2vaWb80W+WYKvH/8Rgc=";
+        private static string APP_PASSWORD = "P3RpF4Ux2KHX9aoMAk4tUJtn8A5bAECCo/OmnwyeIW8=";
         private static string URI = "https://juanakv.vault.azure.net/keys/nethereumec/7ed70afdbf7d43bda5a8090515b154d2";
         static void Main(string[] args)
         {
             KeyVaultClient kvc = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(GetToken));
             var signer = new AzureKeyVaultExternalSigner(kvc, URI);
-            var publicKey = signer.GetPublicKeyAsync().Result;
-            System.Console.WriteLine(publicKey.ToHex());
+            var address = signer.GetAddressAsync().Result;
+            System.Console.WriteLine(address);
 
             var msgHash = new Util.Sha3Keccack().CalculateHash("Hello").HexToByteArray();
           
