@@ -2,18 +2,32 @@
   <PropertyGroup>
     <TargetNet35>true</TargetNet35>
     <TargetNet461>false</TargetNet461>
+    <TargetNetCore>false</TargetNetCore>
+    <TargetNetStandard>false</TargetNetStandard>
     <TargetUnityNet461AOT>false</TargetUnityNet461AOT>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;net35;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;netcoreapp2.1</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>netstandard1.1;net451;netcoreapp2.1</DefaultFrameworks>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">netcoreapp2.1</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetStandard)'== 'true'">netstandard2.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworks>netstandard1.1;net451;netstandard2.0;netcoreapp2.1</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
-    <HdWalletFrameworks>netstandard1.1;net452;netcoreapp2.1</HdWalletFrameworks>
+    <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1</DefaultFrameworks>
+    <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
+    <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;netcoreapp2.1</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</HdWalletFrameworks>
+    <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;</HdWalletFrameworks>
+    <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</HdWalletFrameworks>
+    <ExternalSignerFrameworks>netstandard2.0;net452;netcoreapp2.1</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ExternalSignerFrameworks>
     <UnityFrameworks>net461;net35</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
-    <IpcWebSocketsFrameworks>net461;netstandard1.3;netcoreapp2.1</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</IpcWebSocketsFrameworks>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
 
@@ -36,11 +50,16 @@
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
     <Reference Include="System" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
     <PackageReference Include="BouncyCastle" Version="1.8.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="netstandard" />
+    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
   </ItemGroup>
 
 </Project>

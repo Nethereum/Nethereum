@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
-SET releaseSuffix=rc1
+SET releaseSuffix=rc2
 SET targetNet35=false
 
 cd Nethereum.Hex
@@ -63,7 +63,19 @@ cd Nethereum.RLP*
 CALL :restorepack
 cd ..
 
-cd Nethereum.Signer*
+cd Nethereum.Signer
+CALL :restorepack
+cd ..
+
+cd Nethereum.Signer.AzureKeyVault
+CALL :restorepack
+cd ..
+
+cd Nethereum.Signer.Ledger
+CALL :restorepack
+cd ..
+
+cd Nethereum.Signer.Trezor
 CALL :restorepack
 cd ..
 

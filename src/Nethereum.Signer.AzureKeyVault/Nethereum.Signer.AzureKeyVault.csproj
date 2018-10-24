@@ -1,15 +1,27 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>Netherum.Signer.AzureKeyVault provides the External Signing capability for Ethereum transactions and Messages using Azure Key Vault</Description>
+    <Copyright>Juan Blanco</Copyright>
+    <AssemblyTitle>Nethereum.Signer.AzureKeyVault</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.Signer.AzureKeyVault</AssemblyName>
+    <PackageId>Nethereum.Signer.AzureKeyVault</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Azure Key Vault</PackageTags>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
 </Project>
