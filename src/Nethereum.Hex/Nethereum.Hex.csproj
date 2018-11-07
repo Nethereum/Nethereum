@@ -7,7 +7,7 @@
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AssemblyName>Nethereum.Hex</AssemblyName>
+    <AssemblyName>Nethereum.Hex</AssemblyName> 
     <PackageId>Nethereum.Hex</PackageId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -29,8 +29,17 @@
     <Compile Include="..\Nethereum.BigInteger.N351\FormatProvider.NumberBuffer.cs" Link="BigInteger\FormatProvider.NumberBuffer.cs" />
     <Compile Include="..\Nethereum.BigInteger.N351\NumericHelpers.cs" Link="BigInteger\NumericHelpers.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Folder Include="BigInteger\" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

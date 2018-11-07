@@ -1,6 +1,6 @@
 rem packing web3 and dependencies
 del /S *.*.nupkg
-SET releaseSuffix=rc3
+SET releaseSuffix=rc4
 SET targetNet35=false
 
 cd Nethereum.Hex
@@ -109,5 +109,6 @@ EXIT /B %ERRORLEVEL%
 
 :restorepack
 dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
 dotnet pack -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
 EXIT /B 0

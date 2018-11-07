@@ -3,6 +3,8 @@
     <VersionMajor>3</VersionMajor>
     <VersionMinor>0</VersionMinor>
     <VersionPatch>0</VersionPatch>
+    <NonDevAssemblyVersion>$(VersionMajor).0.0</NonDevAssemblyVersion>
+    <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
     <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
     
@@ -13,6 +15,5 @@
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
     <UportVersion>0.0.16</UportVersion>
-    <QuorumVersion>0.0.23</QuorumVersion>
   </PropertyGroup>
 </Project>
