@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.Azure.KeyVault;
-using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 
 namespace Nethereum.Signer.AzureKeyVault
@@ -40,7 +36,7 @@ namespace Nethereum.Signer.AzureKeyVault
         {
             var keyOperationResult = await KeyVaultClient.SignAsync(VaultUrl, "ECDSA256", hash);
             var signature = keyOperationResult.Result;
-            return ECDSASignatureFactory.FromComponents(signature);
+            return ECDSASignatureFactory.FromComponents(signature).MakeCanonical();
         }
 
         public override async Task SignAsync(Transaction transaction)
