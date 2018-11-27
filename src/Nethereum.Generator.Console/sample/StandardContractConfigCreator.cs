@@ -7,20 +7,20 @@ namespace Nethereum.Generator.Console.sample
     {
         public static void CreateTestGeneratorConfigFile(string outputFilePath)
         {
-            var config = new GeneratorConfiguration
-            {
-                ABIConfigurations = new List<ABIConfiguration>
-                {
-                    new ABIConfiguration
-                    {
-                        ContractName = "StandardContract",
-                        ABIFile = "StandardContract.abi",
-                        BinFile = "StandardContract.bin"
-                    }
-                }
-            };
+            //var config = new GeneratorConfiguration
+            //{
+            //    Contracts = new List<ABIConfiguration>
+            //    {
+            //        new ABIConfiguration
+            //        {
+            //            ContractName = "StandardContract",
+            //            ABIFile = "StandardContract.abi",
+            //            BinFile = "StandardContract.bin"
+            //        }
+            //    }
+            //};
 
-            config.SaveToJson(outputFilePath);
+            //config.SaveToJson(outputFilePath);
         }
     }
 }

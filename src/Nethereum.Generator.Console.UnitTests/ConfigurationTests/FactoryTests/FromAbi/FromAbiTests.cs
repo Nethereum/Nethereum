@@ -33,8 +33,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     context.TargetProjectFolder);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContract", abiConfig.ContractName);
@@ -74,8 +74,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     context.TargetProjectFolder);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
             }
             finally
@@ -106,8 +106,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     context.TargetProjectFolder);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.Equal("StandardContract", abiConfig.ContractName);
             }
             finally

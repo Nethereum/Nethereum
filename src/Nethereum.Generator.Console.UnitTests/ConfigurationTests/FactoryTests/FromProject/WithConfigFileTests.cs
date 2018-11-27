@@ -27,7 +27,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
 
                 var generatorConfig = new GeneratorConfiguration
                 {
-                    ABIConfigurations = new List<ABIConfiguration>
+                    Contracts = new List<ABIConfiguration>
                     {
                         new ABIConfiguration
                         {
@@ -43,8 +43,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 var config = factory.FromProject(context.TargetProjectFolder, context.OutputAssemblyName);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContractA", abiConfig.ContractName);
@@ -76,7 +76,7 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
 
                 var generatorConfig = new GeneratorConfiguration
                 {
-                    ABIConfigurations = new List<ABIConfiguration>
+                    Contracts = new List<ABIConfiguration>
                     {
                         new ABIConfiguration
                         {
@@ -92,8 +92,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 var config = factory.FromProject(context.TargetProjectFolder, context.OutputAssemblyName);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContractA", abiConfig.ContractName);

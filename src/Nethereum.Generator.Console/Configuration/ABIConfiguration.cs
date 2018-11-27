@@ -1,7 +1,6 @@
 ﻿using Nethereum.Generators.Core;
 using Nethereum.Generators.Model;
 using Nethereum.Generators.Net;
-using Newtonsoft.Json.Converters;
 
 namespace Nethereum.Generator.Console.Configuration
 {

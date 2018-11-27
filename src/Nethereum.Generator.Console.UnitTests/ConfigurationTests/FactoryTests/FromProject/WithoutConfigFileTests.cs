@@ -37,8 +37,8 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 var config = factory.FromProject(path, context.OutputAssemblyName);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config?.Contracts?.Count);
+                var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContract", abiConfig.ContractName);

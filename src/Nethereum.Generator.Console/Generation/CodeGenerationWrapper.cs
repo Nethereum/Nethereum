@@ -1,9 +1,6 @@
-﻿using System;
-using Nethereum.Generator.Console.Configuration;
-using Nethereum.Generators;
-using Nethereum.Generators.Net;
-using System.IO;
+﻿using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators.Core;
+using Nethereum.Generators.Net;
 
 namespace Nethereum.Generator.Console.Generation
 {
@@ -36,34 +33,20 @@ namespace Nethereum.Generator.Console.Generation
             Generate(config);
         }
 
-        private void Generate(GeneratorConfiguration config, bool singleFile = true)
+        public void FromDirectory(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
         {
-            if (config?.ABIConfigurations == null)
-                return;
-
-            foreach (var item in config.ABIConfigurations)
-            {
-                GenerateFilesForItem(item);
-            }
+            var config = _codeGenConfigurationFactory.FromCompiledContractDirectory(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
+            Generate(config, singleFile);
         }
 
-        private void GenerateFilesForItem(ABIConfiguration item, bool singleFile = true)
+        private void Generate(GeneratorConfiguration config, bool singleFile = true)
         {
-            var generator = new ContractProjectGenerator(
-                item.CreateContractABI(),
-                item.ContractName,
-                item.ByteCode,
-                item.BaseNamespace,
-                item.ServiceNamespace,
-                item.CQSNamespace,
-                item.DTONamespace,
-                item.BaseOutputPath,
-                Path.DirectorySeparatorChar.ToString(),
-                item.CodeGenLanguage
-            );
-
-            var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
-            _generatedFileWriter.WriteFiles(generatedFiles);
+            foreach (var generator in config.GetProjectGenerators())
+            {
+                System.Console.WriteLine($"Gen for {generator.ContractName}");
+                var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
+                _generatedFileWriter.WriteFiles(generatedFiles);
+            }
         }
     }
 }

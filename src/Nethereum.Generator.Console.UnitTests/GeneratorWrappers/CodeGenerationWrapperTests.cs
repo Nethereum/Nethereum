@@ -78,7 +78,7 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         {
             return new GeneratorConfiguration
             {
-                ABIConfigurations = new List<ABIConfiguration>
+                Contracts = new List<ABIConfiguration>
                 {
                     new ABIConfiguration
                     {

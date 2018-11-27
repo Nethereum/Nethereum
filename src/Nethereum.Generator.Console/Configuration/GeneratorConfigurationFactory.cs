@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace Nethereum.Generator.Console.Configuration
 {
@@ -12,8 +13,6 @@ namespace Nethereum.Generator.Console.Configuration
     {
         public GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
         {
-            var config = new GeneratorConfiguration();
-
             var abi = GeneratorConfigurationUtils.GetFileContent(outputFolder, abiFilePath);
 
             if (string.IsNullOrEmpty(abi))
@@ -27,20 +26,21 @@ namespace Nethereum.Generator.Console.Configuration
             if (string.IsNullOrEmpty(contractName))
                 contractName = Path.GetFileNameWithoutExtension(abiFilePath);
 
-            var abiConfig = new ABIConfiguration
+            return new GeneratorConfiguration
             {
-                ABI = abi,
-                ByteCode = byteCode,
-                ContractName = contractName
+                Namespace = baseNamespace,
+                OutputFolder = outputFolder,
+                Contracts = new List<CompiledContract>
+                {
+                    new CompiledContract
+                    {
+                        ContractName = contractName,
+                        AbiString = abi,
+                        Bytecode = byteCode
+                    }
+                }
             };
-
-            abiConfig.ResolveEmptyValuesWithDefaults(baseNamespace, outputFolder);
-
-            config.ABIConfigurations = new List<ABIConfiguration>();
-            config.ABIConfigurations.Add(abiConfig);
-            return config;
         }
-
 
         public GeneratorConfiguration FromProject(string destinationProjectFolderOrFileName, string assemblyName)
         {
@@ -69,23 +69,54 @@ namespace Nethereum.Generator.Console.Configuration
 
         public GeneratorConfiguration FromAbiFilesInProject(string projectFileName, string assemblyName, CodeGenLanguage language)
         {
-            var config = new GeneratorConfiguration();
             var projectFolder = Path.GetDirectoryName(projectFileName);
-            var projectName = Path.GetFileNameWithoutExtension(projectFileName);
             var abiFiles = Directory.GetFiles(projectFolder, "*.abi", SearchOption.AllDirectories);
-            var abiConfigurations = new List<ABIConfiguration>(abiFiles.Length);
-            config.ABIConfigurations = abiConfigurations;
+            var contracts = new List<CompiledContract>(abiFiles.Length);
 
-            foreach (var abiFile in abiFiles)
+            foreach (var file in abiFiles)
             {
-                var abiConfig = CreateAbiConfiguration(abiFile, projectFolder, projectName, assemblyName, language);
-                abiConfigurations.Add(abiConfig);
+                var contractName = Path.GetFileNameWithoutExtension(file);
+                var binFileName = Path.Combine(Path.GetDirectoryName(file), contractName + ".bin");
+                var byteCode = File.Exists(binFileName) ? File.ReadAllText(binFileName) : string.Empty;
+
+                contracts.Add(new CompiledContract
+                {
+                    ContractName = contractName,
+                    AbiString = File.ReadAllText(file),
+                    Bytecode = byteCode
+                });
             }
 
-            return config;
+            return new GeneratorConfiguration
+            {
+                Language = language,
+                Contracts = contracts,
+                Namespace = GeneratorConfigurationUtils.CreateNamespaceFromAssemblyName(assemblyName)
+            };
         }
 
-        private static ABIConfiguration CreateAbiConfiguration(string abiFile, string projectFolder, string projectName, string assemblyName, CodeGenLanguage language)
+        public GeneratorConfiguration FromCompiledContractDirectory(string directory, string outputFolder, string baseNamespace, CodeGenLanguage language)
+        {
+            var directoryName = Path.GetDirectoryName(directory);
+            var compiledContracts = Directory.GetFiles(directoryName, "*.json", SearchOption.AllDirectories);
+            var contracts = new List<CompiledContract>(compiledContracts.Length);
+
+            foreach (var file in compiledContracts)
+            {
+                var contract = JsonConvert.DeserializeObject<CompiledContract>(File.ReadAllText(file));
+                contracts.Add(contract);
+            }
+
+            return new GeneratorConfiguration
+            {
+                Language = language,
+                Contracts = contracts,
+                OutputFolder = outputFolder,
+                Namespace = baseNamespace
+            };
+        }
+
+        private static ABIConfiguration CreateAbiConfiguration(string abiFile, string projectFolder, string assemblyName, CodeGenLanguage language)
         {
             var contractName = Path.GetFileNameWithoutExtension(abiFile);
 
@@ -113,24 +144,10 @@ namespace Nethereum.Generator.Console.Configuration
             if (!File.Exists(configFilePath))
                 return null;
 
-            var configuration = GeneratorConfiguration.FromJson(configFilePath);
-
-            if (configuration == null)
-                return null;
-
             var defaultNamespace = GeneratorConfigurationUtils.CreateNamespaceFromAssemblyName(assemblyName);
-
-            foreach (var abiConfiguration in configuration.ABIConfigurations)
-            {
-                abiConfiguration.ResolveEmptyValuesWithDefaults(defaultNamespace, destinationProjectFolder);
-            }
+            var configuration = GeneratorConfiguration.FromJson(configFilePath, defaultNamespace);
 
             return configuration;
         }
-
-
-
-
-
     }
 }
