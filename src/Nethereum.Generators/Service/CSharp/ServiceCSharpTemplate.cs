@@ -17,25 +17,22 @@ namespace Nethereum.Generators.Service
         public override string GenerateClass()
         {
             return
-                $@"
-{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}
+                $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}
 {SpaceUtils.OneTab}{{
-{SpaceUtils.OneTab}
 {_deploymentServiceMethodsCSharpTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}
+{SpaceUtils.NoTabs}
 {SpaceUtils.TwoTabs}protected Nethereum.Web3.Web3 Web3{{ get; }}
-{SpaceUtils.TwoTabs}
+{SpaceUtils.NoTabs}
 {SpaceUtils.TwoTabs}public ContractHandler ContractHandler {{ get; }}
-{SpaceUtils.TwoTabs}
+{SpaceUtils.NoTabs}
 {SpaceUtils.TwoTabs}public {Model.GetTypeName()}(Nethereum.Web3.Web3 web3, string contractAddress)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}Web3 = web3;
 {SpaceUtils.ThreeTabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress);
 {SpaceUtils.TwoTabs}}}
-{SpaceUtils.OneTab}
+{SpaceUtils.NoTabs}
 {_functionServiceMethodCSharpTemplate.GenerateMethods()}
 {SpaceUtils.OneTab}}}";
-           
         }
     }
 }

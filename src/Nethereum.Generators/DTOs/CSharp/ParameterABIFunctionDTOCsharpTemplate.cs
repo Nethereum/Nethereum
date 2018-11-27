@@ -13,7 +13,7 @@ namespace Nethereum.Generators.DTOs
         public ParameterABIFunctionDTOCSharpTemplate()
         {
             var typeMapper = new ABITypeToCSharpType();
-            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);    
+            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);
         }
 
         public string GenerateAllProperties(ParameterABI[] parameters)
@@ -26,7 +26,7 @@ namespace Nethereum.Generators.DTOs
             var parameterModel = new ParameterABIModel(parameter);
             return 
                 $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})]
-{SpaceUtils.TwoTabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{get; set;}}";
+{SpaceUtils.TwoTabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{ get; set; }}";
         }
 
         public string GenerateAllFunctionParameters(ParameterABI[] parameters)

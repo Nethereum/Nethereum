@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Nethereum.Generators.Core;
 
 namespace Nethereum.Generators.CQS
@@ -20,6 +22,7 @@ namespace Nethereum.Generators.CQS
         {
             return
                 $@"{GenerateNamespaceDependencies()}
+{SpaceUtils.NoTabs}
 {SpaceUtils.NoTabs}namespace {FileModel.Namespace}
 {SpaceUtils.NoTabs}{{
 {GenerateAll()}
@@ -29,16 +32,7 @@ namespace Nethereum.Generators.CQS
 
         protected string GenerateAll()
         {
-            var result = "";
-            foreach (var classGenerator in ClassGenerators)
-            {
-                result = result +
-$@"{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}
-{classGenerator.GenerateClass()}";
-            }
-
-            return result;
+            return string.Join($"{Environment.NewLine}{Environment.NewLine}", ClassGenerators.Select(x => x.GenerateClass()));
         }
     }
 

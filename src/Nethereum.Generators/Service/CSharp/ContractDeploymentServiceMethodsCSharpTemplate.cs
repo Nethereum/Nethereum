@@ -40,7 +40,7 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.ThreeTabs}return new {_serviceModel.GetTypeName()}(web3, receipt.ContractAddress);
 {SpaceUtils.TwoTabs}}}";
 
-            return String.Join(Environment.NewLine,sendRequestReceipt, sendRequest, sendRequestContract);
+            return string.Join($"{Environment.NewLine}{Environment.NewLine}", sendRequestReceipt, sendRequest, sendRequestContract);
         }
     }
 }

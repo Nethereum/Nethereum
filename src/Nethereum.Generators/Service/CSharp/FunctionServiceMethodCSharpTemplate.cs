@@ -29,8 +29,7 @@ namespace Nethereum.Generators.Service
         }
 
         public string GenerateMethod(FunctionABI functionABI)
-        { 
-
+        {
             var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, _model.CQSNamespace);
             var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, _model.FunctionOutputNamespace);
             var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor);
@@ -41,9 +40,8 @@ namespace Nethereum.Generators.Service
 
             if (functionABIModel.IsMultipleOutput() && !functionABIModel.IsTransaction())
             {
-
                 var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
-            
+
                 var returnWithInputParam =
 $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
@@ -51,15 +49,13 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.TwoTabs}}}";
 
                 var returnWithoutInputParam =
-                    $@"{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync(BlockParameter blockParameter = null)
+$@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync(BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>(null, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
                 var returnWithSimpleParams =
-                    $@"{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
+$@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}QueryAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
@@ -69,11 +65,11 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam + GenerateLineBreak();
+                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam;
                 }
                 else
                 {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams + GenerateLineBreak();
+                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams;
                 }
             }
 
@@ -109,11 +105,11 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam + GenerateLineBreak();
+                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam;
                 }
                 else
                 {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams + GenerateLineBreak();
+                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams;
                 }
             }
 
