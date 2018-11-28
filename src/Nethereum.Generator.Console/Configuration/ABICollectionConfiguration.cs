@@ -18,9 +18,9 @@ namespace Nethereum.Generator.Console.Configuration
 
         public List<ABIConfiguration> ABIConfigurations { get; set; }
 
-        public Models.Generator GetGeneratorConfiguration()
+        public Models.ProjectGenerator GetGeneratorConfiguration()
         {
-            return new Models.Generator
+            return new Models.ProjectGenerator
             {
                 Namespace = BaseNamespace,
                 OutputFolder = BaseOutputPath,

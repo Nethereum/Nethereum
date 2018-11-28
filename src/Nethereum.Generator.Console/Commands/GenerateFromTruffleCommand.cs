@@ -4,7 +4,7 @@ using Nethereum.Generator.Console.Generation;
 
 namespace Nethereum.Generator.Console.Commands
 {
-    public class GenerateFromDirectoryCommand : CommandLineApplication
+    public class GenerateFromTruffleCommand : CommandLineApplication
     {
         private readonly CommandOption _directory;
         private readonly CommandOption _outputFolder;
@@ -12,9 +12,9 @@ namespace Nethereum.Generator.Console.Commands
         private readonly CommandOption _singleFile;
         public ICodeGenerationWrapper CodeGenerationWrapper { get; set; }
 
-        public GenerateFromDirectoryCommand()
+        public GenerateFromTruffleCommand()
         {
-            Name = "from-directory";
+            Name = "from-truffle";
             Description = "Generates Nethereum code based based on a collection of compiled contracts.";
             _directory = Option("-d | --directory", "The directory containing the compiled contracts (Mandatory)", CommandOptionType.SingleValue);
             _outputFolder = Option("-o | --outputPath", "The output path for the generated code (Mandatory)", CommandOptionType.SingleValue);
@@ -56,7 +56,7 @@ namespace Nethereum.Generator.Console.Commands
                 bool.TryParse(_singleFile.Value(), out singleFile);
             }
 
-            CodeGenerationWrapper.FromDirectory(directoryPath, baseNamespace, outputFolder, singleFile);
+            CodeGenerationWrapper.FromTruffle(directoryPath, baseNamespace, outputFolder, singleFile);
 
             return 0;
         }

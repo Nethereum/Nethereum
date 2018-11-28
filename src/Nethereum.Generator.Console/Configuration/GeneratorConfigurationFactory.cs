@@ -12,7 +12,7 @@ namespace Nethereum.Generator.Console.Configuration
     /// </summary>
     public class GeneratorConfigurationFactory : IGeneratorConfigurationFactory
     {
-        public Models.Generator FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
+        public Models.ProjectGenerator FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder)
         {
             var abi = GeneratorConfigurationUtils.GetFileContent(outputFolder, abiFilePath);
 
@@ -27,7 +27,7 @@ namespace Nethereum.Generator.Console.Configuration
             if (string.IsNullOrEmpty(contractName))
                 contractName = Path.GetFileNameWithoutExtension(abiFilePath);
 
-            return new Models.Generator
+            return new Models.ProjectGenerator
             {
                 Namespace = baseNamespace,
                 OutputFolder = outputFolder,
@@ -42,7 +42,7 @@ namespace Nethereum.Generator.Console.Configuration
             };
         }
 
-        public Models.Generator FromProject(string destinationProjectFolderOrFileName, string assemblyName)
+        public Models.ProjectGenerator FromProject(string destinationProjectFolderOrFileName, string assemblyName)
         {
             (string projectFolder, string projectFilePath) =
                 GeneratorConfigurationUtils.GetFullFileAndFolderPaths(destinationProjectFolderOrFileName);
@@ -67,7 +67,7 @@ namespace Nethereum.Generator.Console.Configuration
             return FromAbiFilesInProject(projectFilePath, assemblyName, language);
         }
 
-        public Models.Generator FromAbiFilesInProject(string projectFileName, string assemblyName, CodeGenLanguage language)
+        public Models.ProjectGenerator FromAbiFilesInProject(string projectFileName, string assemblyName, CodeGenLanguage language)
         {
             var projectFolder = Path.GetDirectoryName(projectFileName);
             var abiFiles = Directory.GetFiles(projectFolder, "*.abi", SearchOption.AllDirectories);
@@ -86,7 +86,7 @@ namespace Nethereum.Generator.Console.Configuration
                 });
             }
 
-            return new Models.Generator
+            return new Models.ProjectGenerator
             {
                 Language = language,
                 Contracts = contracts,
@@ -95,7 +95,7 @@ namespace Nethereum.Generator.Console.Configuration
             };
         }
 
-        public Models.Generator FromCompiledContractDirectory(string directory, string outputFolder, string baseNamespace, CodeGenLanguage language)
+        public Models.ProjectGenerator FromTruffle(string directory, string outputFolder, string baseNamespace, CodeGenLanguage language)
         {
             var directoryName = Path.GetDirectoryName(directory);
             var compiledContracts = Directory.GetFiles(directoryName, "*.json", SearchOption.AllDirectories);
@@ -103,11 +103,11 @@ namespace Nethereum.Generator.Console.Configuration
 
             foreach (var file in compiledContracts)
             {
-                var contract = JsonConvert.DeserializeObject<CompiledContract>(File.ReadAllText(file));
+                var contract = JsonConvert.DeserializeObject<TruffleContract>(File.ReadAllText(file));
                 contracts.Add(contract.GetContractConfiguration());
             }
 
-            return new Models.Generator
+            return new Models.ProjectGenerator
             {
                 Language = language,
                 Contracts = contracts,
@@ -116,7 +116,7 @@ namespace Nethereum.Generator.Console.Configuration
             };
         }
 
-        public Models.Generator FromConfigFile(string destinationProjectFolder, string assemblyName)
+        public Models.ProjectGenerator FromConfigFile(string destinationProjectFolder, string assemblyName)
         {
             var configFilePath = GeneratorConfigurationUtils.DeriveConfigFilePath(destinationProjectFolder);
 

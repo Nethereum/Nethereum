@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators;
 using Nethereum.Generators.Core;
 
 namespace Nethereum.Generator.Console.Models
 {
-    public class Generator
+    public class ProjectGenerator
     {
         public CodeGenLanguage Language { get; set; }
 

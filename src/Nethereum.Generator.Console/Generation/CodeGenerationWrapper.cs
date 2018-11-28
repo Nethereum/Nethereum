@@ -33,13 +33,13 @@ namespace Nethereum.Generator.Console.Generation
             Generate(config);
         }
 
-        public void FromDirectory(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
+        public void FromTruffle(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
         {
-            var config = _codeGenConfigurationFactory.FromCompiledContractDirectory(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
+            var config = _codeGenConfigurationFactory.FromTruffle(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
             Generate(config, singleFile);
         }
 
-        private void Generate(Models.Generator config, bool singleFile = true)
+        private void Generate(Models.ProjectGenerator config, bool singleFile = true)
         {
             foreach (var generator in config.GetProjectGenerators())
             {

@@ -2,7 +2,7 @@
 
 namespace Nethereum.Generator.Console.Models
 {
-    public class CompiledContract
+    public class TruffleContract
     {
         public string ContractName { get; set; }
 

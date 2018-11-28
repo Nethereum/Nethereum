@@ -11,7 +11,7 @@ namespace Nethereum.Generator.Console.Commands
 
             Commands.Add(new GenerateFromProjectCommand());
             Commands.Add(new GenerateFromAbiCommand());
-            Commands.Add(new GenerateFromDirectoryCommand());
+            Commands.Add(new GenerateFromTruffleCommand());
 
             this.AddHelpOption();
         }

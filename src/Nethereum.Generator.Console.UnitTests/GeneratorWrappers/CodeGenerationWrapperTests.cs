@@ -28,7 +28,7 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromAbi_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            Models.Generator stubGenerator = CreateStubConfiguration();
+            Models.ProjectGenerator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromAbi(
@@ -54,7 +54,7 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromProject_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            Models.Generator stubGenerator = CreateStubConfiguration();
+            Models.ProjectGenerator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromProject(
@@ -75,9 +75,9 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
             Assert.True(actualFilesSentToWriter.ToArray().Length > 0);
         }
 
-        private static Models.Generator CreateStubConfiguration()
+        private static Models.ProjectGenerator CreateStubConfiguration()
         {
-            return new Models.Generator
+            return new Models.ProjectGenerator
             {
                 Language = CodeGenLanguage.CSharp,
                 Namespace = "DefaultNamespace",
