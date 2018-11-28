@@ -1,4 +1,6 @@
 ﻿using System;
+using Nethereum.Generators.Model;
+using Nethereum.Generators.Net;
 
 namespace Nethereum.Generators.Tests.Common.TestData
 {

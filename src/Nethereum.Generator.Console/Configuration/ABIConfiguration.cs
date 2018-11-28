@@ -1,6 +1,5 @@
-﻿using Nethereum.Generators.Core;
-using Nethereum.Generators.Model;
-using Nethereum.Generators.Net;
+﻿using System;
+using Nethereum.Generator.Console.Models;
 
 namespace Nethereum.Generator.Console.Configuration
 {
@@ -8,23 +7,29 @@ namespace Nethereum.Generator.Console.Configuration
     {
         public string ContractName { get; set; }
 
-        public string ABI { get; set; }
         public string ABIFile { get; set; }
 
-        public string ByteCode { get; set; }
         public string BinFile { get; set; }
 
-        public string BaseNamespace { get; set; }
-        public string CQSNamespace { get; set; }
-        public string DTONamespace { get; set; }
-        public string ServiceNamespace { get; set; }
-
-        public CodeGenLanguage CodeGenLanguage { get; set; }
-        public string BaseOutputPath { get; set; }
-
-        public ContractABI CreateContractABI()
+        public ContractDefinition GetContractDefinition(string projectFolder)
         {
-            return new GeneratorModelABIDeserialiser().DeserialiseABI(ABI);
+            //by convention - look for bin folder in the same place as the abi
+            if (string.IsNullOrEmpty(BinFile) && !string.IsNullOrEmpty(ABIFile))
+            {
+                if (ABIFile.EndsWith(".abi", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    BinFile = $"{ABIFile.Substring(0, ABIFile.Length - 4)}.bin";
+                }
+            }
+
+            var abi = GeneratorConfigurationUtils.GetFileContent(projectFolder, ABIFile);
+            var byteCode = GeneratorConfigurationUtils.GetFileContent(projectFolder, BinFile);
+
+            return new ContractDefinition(abi)
+            {
+                ContractName = ContractName,
+                Bytecode = byteCode
+            };
         }
     }
 }

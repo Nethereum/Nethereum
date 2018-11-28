@@ -39,11 +39,10 @@ namespace Nethereum.Generator.Console.Generation
             Generate(config, singleFile);
         }
 
-        private void Generate(GeneratorConfiguration config, bool singleFile = true)
+        private void Generate(Models.Generator config, bool singleFile = true)
         {
             foreach (var generator in config.GetProjectGenerators())
             {
-                System.Console.WriteLine($"Gen for {generator.ContractName}");
                 var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
                 _generatedFileWriter.WriteFiles(generatedFiles);
             }

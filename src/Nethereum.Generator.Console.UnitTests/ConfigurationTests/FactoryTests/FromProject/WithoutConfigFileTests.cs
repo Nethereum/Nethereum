@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Nethereum.Generators.UnitTests.TestData;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromProject
@@ -40,15 +41,12 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 Assert.Equal(1, config?.Contracts?.Count);
                 var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
-                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
+                Assert.Equal(CodeGenLanguage.CSharp, config.Language);
                 Assert.Equal("StandardContract", abiConfig.ContractName);
-                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
-                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
-                Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
-                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-                Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
-                Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
-                Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.Abi));
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.Bytecode);
+                Assert.Equal(context.TargetProjectFolder, config.OutputFolder);
+                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), config.Namespace);
             }
             finally
             {

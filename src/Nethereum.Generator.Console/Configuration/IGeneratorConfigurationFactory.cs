@@ -4,9 +4,9 @@ namespace Nethereum.Generator.Console.Configuration
 {
     public interface IGeneratorConfigurationFactory
     {
-        GeneratorConfiguration FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder);
-        GeneratorConfiguration FromProject(string destinationProjectFolderOrFileName, string assemblyName);
-        GeneratorConfiguration FromCompiledContractDirectory(string directory, string outputFolder, string baseNamespace,
+        Models.Generator FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder);
+        Models.Generator FromProject(string destinationProjectFolderOrFileName, string assemblyName);
+        Models.Generator FromCompiledContractDirectory(string directory, string outputFolder, string baseNamespace,
             CodeGenLanguage language);
     }
 }

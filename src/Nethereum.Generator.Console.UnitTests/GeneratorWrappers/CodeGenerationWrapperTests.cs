@@ -6,6 +6,7 @@ using Nethereum.Generators.Net;
 using Nethereum.Generators.UnitTests.TestData;
 using System.Collections.Generic;
 using System.Linq;
+using Nethereum.Generator.Console.Models;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
@@ -27,12 +28,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromAbi_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            GeneratorConfiguration stubGeneratorConfiguration = CreateStubConfiguration();
+            Models.Generator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromAbi(
                     "StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/temp"))
-                .Returns(stubGeneratorConfiguration);
+                .Returns(stubGenerator);
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -53,12 +54,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromProject_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            GeneratorConfiguration stubGeneratorConfiguration = CreateStubConfiguration();
+            Models.Generator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromProject(
                     "c:/temp/projectx", "CompanyA.ProjectX.dll"))
-                .Returns(stubGeneratorConfiguration);
+                .Returns(stubGenerator);
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -74,23 +75,19 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
             Assert.True(actualFilesSentToWriter.ToArray().Length > 0);
         }
 
-        private static GeneratorConfiguration CreateStubConfiguration()
+        private static Models.Generator CreateStubConfiguration()
         {
-            return new GeneratorConfiguration
+            return new Models.Generator
             {
-                Contracts = new List<ABIConfiguration>
+                Language = CodeGenLanguage.CSharp,
+                Namespace = "DefaultNamespace",
+                OutputFolder = "c:/Temp",
+                Contracts = new List<ContractDefinition>
                 {
-                    new ABIConfiguration
+                    new ContractDefinition(TestContracts.StandardContract.ABI)
                     {
-                        ABI = TestContracts.StandardContract.ABI,
-                        ByteCode = TestContracts.StandardContract.ByteCode,
-                        ContractName = "StandardContract",
-                        BaseOutputPath = "c:/Temp",
-                        BaseNamespace = "DefaultNamespace",
-                        ServiceNamespace = "StandardContract.Service",
-                        DTONamespace = "StandardContract.DTO",
-                        CQSNamespace = "StandardContract.CQS",
-                        CodeGenLanguage = CodeGenLanguage.CSharp
+                        Bytecode = TestContracts.StandardContract.ByteCode,
+                        ContractName = "StandardContract"
                     }
                 }
             };

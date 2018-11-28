@@ -6,6 +6,7 @@ using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators.Core;
 using Nethereum.Generators.Tests.Common;
 using Nethereum.Generators.UnitTests.TestData;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromProject
@@ -25,9 +26,10 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 context.WriteFileToProject("solidity\\StandardContract.abi", TestContracts.StandardContract.ABI);
                 context.WriteFileToProject("solidity\\StandardContract.bin", TestContracts.StandardContract.ByteCode);
 
-                var generatorConfig = new GeneratorConfiguration
+                var generatorConfig = new ABICollectionConfiguration
                 {
-                    Contracts = new List<ABIConfiguration>
+                    BaseOutputPath = context.TargetProjectFolder,
+                    ABIConfigurations = new List<ABIConfiguration>
                     {
                         new ABIConfiguration
                         {
@@ -46,15 +48,12 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 Assert.Equal(1, config?.Contracts?.Count);
                 var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
-                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
+                Assert.Equal(CodeGenLanguage.CSharp, config.Language);
                 Assert.Equal("StandardContractA", abiConfig.ContractName);
-                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
-                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
-                Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
-                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-                Assert.Equal("StandardContractA.CQS", abiConfig.CQSNamespace);
-                Assert.Equal("StandardContractA.DTO", abiConfig.DTONamespace);
-                Assert.Equal("StandardContractA.Service", abiConfig.ServiceNamespace);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.Abi));
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.Bytecode);
+                Assert.Equal(context.TargetProjectFolder, config.OutputFolder);
+                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), config.Namespace);
             }
             finally
             {
@@ -71,12 +70,12 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
             try
             {
                 context.CreateProject();
-
                 context.WriteFileToProject("..\\StandardContract.abi", TestContracts.StandardContract.ABI);
 
-                var generatorConfig = new GeneratorConfiguration
+                var generatorConfig = new ABICollectionConfiguration
                 {
-                    Contracts = new List<ABIConfiguration>
+                    BaseOutputPath = context.TargetProjectFolder,
+                    ABIConfigurations = new List<ABIConfiguration>
                     {
                         new ABIConfiguration
                         {
@@ -95,9 +94,9 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 Assert.Equal(1, config?.Contracts?.Count);
                 var abiConfig = config.Contracts.First();
                 Assert.NotNull(abiConfig);
-                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
+                Assert.Equal(CodeGenLanguage.CSharp, config.Language);
                 Assert.Equal("StandardContractA", abiConfig.ContractName);
-                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.Abi));
             }
             finally
             {
