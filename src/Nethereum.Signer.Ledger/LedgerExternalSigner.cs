@@ -62,7 +62,7 @@ namespace Nethereum.Ledger
             var firstRequest = new EthereumAppSignatureRequest(true, path.Concat(hash).ToArray());
 
             var response = await LedgerManager.SendRequestAsync<EthereumAppSignatureResponse, EthereumAppSignatureRequest>(firstRequest);
-
+            if (response.SignatureS == null || response.SignatureR == null) throw new Exception("Signing failure or not accepted");
             var signature = ECDSASignatureFactory.FromComponents(response.SignatureR, response.SignatureS);
             signature.V = new BigInteger(response.SignatureV).ToBytesForRLPEncoding();
             return signature;
