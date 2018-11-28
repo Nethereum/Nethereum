@@ -46,14 +46,17 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
 
                 //then
                 Assert.Equal(1, config?.Contracts?.Count);
-                var abiConfig = config.Contracts.First();
+                var abiConfig = config.GetProjectGenerators().ElementAt(0);
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, config.Language);
                 Assert.Equal("StandardContractA", abiConfig.ContractName);
-                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.Abi));
-                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.Bytecode);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.ContractABI));
+                Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
                 Assert.Equal(context.TargetProjectFolder, config.OutputFolder);
                 Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), config.Namespace);
+                Assert.Equal("StandardContractA.CQS", abiConfig.CQSNamespace);
+                Assert.Equal("StandardContractA.DTO", abiConfig.DTONamespace);
+                Assert.Equal("StandardContractA.Service", abiConfig.ServiceNamespace);
             }
             finally
             {
