@@ -21,7 +21,7 @@ namespace Nethereum.Generators.DTOs
                     $@"{GetPartialMainClass()}
 
 {SpaceUtils.OneTab}[FunctionOutput]
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base :IFunctionOutputDTO 
+{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : IFunctionOutputDTO 
 {SpaceUtils.OneTab}{{
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(Model.FunctionABI.OutputParameters)}
 {SpaceUtils.OneTab}}}";
@@ -31,7 +31,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}:{Model.GetTypeName()}Base{{}}";
+            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
         }
     }
 }

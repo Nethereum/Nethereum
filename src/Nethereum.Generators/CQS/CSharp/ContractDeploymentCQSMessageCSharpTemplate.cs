@@ -20,15 +20,11 @@ namespace Nethereum.Generators.CQS
             return
                 $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}public class {typeName}Base:ContractDeploymentMessage
+{SpaceUtils.OneTab}public class {typeName}Base : ContractDeploymentMessage
 {SpaceUtils.OneTab}{{
-{SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public static string BYTECODE = ""{Model.ByteCode}"";
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {typeName}Base():base(BYTECODE) {{ }}
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {typeName}Base(string byteCode):base(byteCode) {{ }}
-{SpaceUtils.TwoTabs}
+{SpaceUtils.TwoTabs}public {typeName}Base() : base(BYTECODE) {{ }}
+{SpaceUtils.TwoTabs}public {typeName}Base(string byteCode) : base(byteCode) {{ }}
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(Model.ConstructorABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
         }
@@ -37,11 +33,10 @@ namespace Nethereum.Generators.CQS
         {
             var typeName = Model.GetTypeName();
 
-            return $@"{SpaceUtils.OneTab}public partial class {typeName}:{typeName}Base
+            return $@"{SpaceUtils.OneTab}public partial class {typeName} : {typeName}Base
 {SpaceUtils.OneTab}{{
-{SpaceUtils.TwoTabs}public {typeName}():base(BYTECODE) {{ }}
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}public {typeName}(string byteCode):base(byteCode) {{ }}
+{SpaceUtils.TwoTabs}public {typeName}() : base(BYTECODE) {{ }}
+{SpaceUtils.TwoTabs}public {typeName}(string byteCode) : base(byteCode) {{ }}
 {SpaceUtils.OneTab}}}";
         }
     }

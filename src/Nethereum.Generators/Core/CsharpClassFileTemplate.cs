@@ -22,6 +22,7 @@ namespace Nethereum.Generators.CQS
         {
             return
                 $@"{GenerateNamespaceDependencies()}
+{SpaceUtils.NoTabs}
 {SpaceUtils.NoTabs}namespace {ClassModel.Namespace}
 {SpaceUtils.NoTabs}{{
 {SpaceUtils.NoTabs}{ClassTemplate.GenerateClass()}

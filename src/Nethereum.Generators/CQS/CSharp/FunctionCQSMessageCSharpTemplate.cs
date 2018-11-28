@@ -40,7 +40,7 @@ namespace Nethereum.Generators.CQS
             return $@"{GetPartialMainClass()}
 
 {header}
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base:FunctionMessage
+{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : FunctionMessage
 {SpaceUtils.OneTab}{{
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(functionABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
@@ -48,8 +48,7 @@ namespace Nethereum.Generators.CQS
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}:{Model.GetTypeName()}Base{{}}";
-
-        }           
+            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
+        }
     }
 }
