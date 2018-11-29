@@ -4,14 +4,15 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+
 namespace DefaultNamespace
 {
-    public partial class ItemAddedEventDTO:ItemAddedEventDTOBase{}
+    public partial class ItemAddedEventDTO : ItemAddedEventDTOBase { }
 
     [Event("ItemAdded")]
-    public class ItemAddedEventDTOBase: IEventDTO
+    public class ItemAddedEventDTOBase : IEventDTO
     {
         [Parameter("uint256", "itemId", 1, false )]
-        public virtual BigInteger ItemId {get; set;}
+        public virtual BigInteger ItemId { get; set; }
     }
 }

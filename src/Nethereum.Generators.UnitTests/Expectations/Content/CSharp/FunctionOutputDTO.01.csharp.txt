@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+
 namespace DefaultNamespace
 {
-    public partial class GetCarOutputDTO:GetCarOutputDTOBase{}
+    public partial class GetCarOutputDTO : GetCarOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetCarOutputDTOBase :IFunctionOutputDTO 
+    public class GetCarOutputDTOBase : IFunctionOutputDTO 
     {
         [Parameter("uint", "", 1)]
-        public virtual BigInteger ReturnValue1 {get; set;}
+        public virtual BigInteger ReturnValue1 { get; set; }
         [Parameter("string", "", 2)]
-        public virtual string ReturnValue2 {get; set;}
+        public virtual string ReturnValue2 { get; set; }
     }
 }
