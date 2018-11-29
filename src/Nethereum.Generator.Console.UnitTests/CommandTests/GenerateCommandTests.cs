@@ -15,5 +15,11 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
             var abiCommand = app.Commands.FirstOrDefault(c => c.ToString() == fullyQualifedCommandName);
             Assert.NotNull(abiCommand);
         }
+
+        [Fact]
+        public void SupportsHelpArgs()
+        {
+            new GenerateCommand().EnsureHelpArgs();
+        }
     }
 }

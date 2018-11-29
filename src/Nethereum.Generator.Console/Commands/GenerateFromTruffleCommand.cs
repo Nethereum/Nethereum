@@ -19,7 +19,7 @@ namespace Nethereum.Generator.Console.Commands
             _directory = Option("-d | --directory", "The directory containing the compiled contracts (Mandatory)", CommandOptionType.SingleValue);
             _outputFolder = Option("-o | --outputPath", "The output path for the generated code (Mandatory)", CommandOptionType.SingleValue);
             _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code (Mandatory)", CommandOptionType.SingleValue);
-            _singleFile = Option("-sf | --SingleFile", "Generate the message definition in a single file (Optional - default is true)", CommandOptionType.SingleValue);
+            _singleFile = Option("-sf | --singleFile", "Generate the message definition in a single file (Optional - default is true)", CommandOptionType.SingleValue);
             OnExecute((Func<int>)RunCommand);
             CodeGenerationWrapper = new CodeGenerationWrapper();
 
