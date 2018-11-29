@@ -23,22 +23,29 @@ namespace Nethereum.Generator.Console.Generation
             _generatedFileWriter = generatedFileWriter;
         }
 
-        public void FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder, bool singleFile)
+        public void FromAbi(
+            string contractName, string abiFilePath, string binFilePath, 
+            string baseNamespace, string outputFolder, bool singleFile)
         {
-            var projectGenerators = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
-            Generate(projectGenerators, singleFile);
+            var generators = _codeGenConfigurationFactory.FromAbi(
+                contractName, abiFilePath, binFilePath, 
+                baseNamespace, outputFolder);
+
+            Generate(generators, singleFile);
         }
 
         public void FromProject(string projectPath, string assemblyName)
         {
-            var projectGenerators = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
-            Generate(projectGenerators);
+            var generators = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
+            Generate(generators);
         }
 
         public void FromTruffle(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
         {
-            var projectGenerators = _codeGenConfigurationFactory.FromTruffle(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
-            Generate(projectGenerators, singleFile);
+            var generators = _codeGenConfigurationFactory.FromTruffle(
+                inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
+
+            Generate(generators, singleFile);
         }
 
         private void Generate(IEnumerable<ContractProjectGenerator> projectGenerators, bool singleFile = true)

@@ -16,7 +16,7 @@ namespace Nethereum.Generator.Console.Configuration
 
         public IEnumerable<ContractProjectGenerator> GetContractProjectGenerators(string defaultNamespace, string projectFolder)
         {
-            return ABIConfigurations.Select(x => x.GetContractGenerator(defaultNamespace, projectFolder));
+            return ABIConfigurations.Select(x => x.CreateGenerator(defaultNamespace, projectFolder));
         }
 
         public void SaveToJson(string outputDirectory, string fileName = null)

@@ -30,16 +30,9 @@ namespace Nethereum.Generator.Console.Configuration
 
         public CodeGenLanguage CodeGenLanguage { get; set; }
 
-        public ContractProjectGenerator GetContractGenerator(string defaultNamespace, string projectFolder)
+        public ContractProjectGenerator CreateGenerator(string defaultNamespace, string projectFolder)
         {
-            //by convention - look for bin folder in the same place as the abi
-            if (string.IsNullOrEmpty(BinFile) && !string.IsNullOrEmpty(ABIFile))
-            {
-                if (ABIFile.EndsWith(".abi", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    BinFile = $"{ABIFile.Substring(0, ABIFile.Length - 4)}.bin";
-                }
-            }
+            SetBinPath();
 
             var abiString = ABI ?? GeneratorConfigurationUtils.GetFileContent(projectFolder, ABIFile);
             var byteCode = ByteCode ?? GeneratorConfigurationUtils.GetFileContent(projectFolder, BinFile);
@@ -57,6 +50,18 @@ namespace Nethereum.Generator.Console.Configuration
                 Path.DirectorySeparatorChar.ToString(),
                 CodeGenLanguage
             );
+        }
+
+        private void SetBinPath()
+        {
+            //by convention - look for bin folder in the same place as the abi
+            if (string.IsNullOrEmpty(BinFile) && !string.IsNullOrEmpty(ABIFile))
+            {
+                if (ABIFile.EndsWith(".abi", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    BinFile = $"{ABIFile.Substring(0, ABIFile.Length - 4)}.bin";
+                }
+            }
         }
     }
 }

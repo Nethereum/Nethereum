@@ -102,7 +102,9 @@ namespace Nethereum.Generator.Console.Configuration
 
         public IEnumerable<ContractProjectGenerator> FromTruffle(string directory, string outputFolder, string baseNamespace, CodeGenLanguage language)
         {
-            var directoryName = Path.GetDirectoryName(directory);
+            FileAttributes attr = File.GetAttributes(directory);
+
+            var directoryName = attr.HasFlag(FileAttributes.Directory) ? directory : Path.GetDirectoryName(directory);
             var compiledContracts = Directory.GetFiles(directoryName, "*.json", SearchOption.AllDirectories);
             var contracts = new List<ContractDefinition>(compiledContracts.Length);
 
