@@ -28,12 +28,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromAbi_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            Models.ProjectGenerator stubGenerator = CreateStubConfiguration();
+            ProjectGenerator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromAbi(
                     "StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/temp"))
-                .Returns(stubGenerator);
+                .Returns(stubGenerator.GetProjectGenerators());
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -54,12 +54,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromProject_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            Models.ProjectGenerator stubGenerator = CreateStubConfiguration();
+            ProjectGenerator stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromProject(
                     "c:/temp/projectx", "CompanyA.ProjectX.dll"))
-                .Returns(stubGenerator);
+                .Returns(stubGenerator.GetProjectGenerators());
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -75,9 +75,9 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
             Assert.True(actualFilesSentToWriter.ToArray().Length > 0);
         }
 
-        private static Models.ProjectGenerator CreateStubConfiguration()
+        private static ProjectGenerator CreateStubConfiguration()
         {
-            return new Models.ProjectGenerator
+            return new ProjectGenerator
             {
                 Language = CodeGenLanguage.CSharp,
                 Namespace = "DefaultNamespace",

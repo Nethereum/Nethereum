@@ -38,15 +38,14 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 var config = factory.FromProject(path, context.OutputAssemblyName);
 
                 //then
-                Assert.Equal(1, config?.Contracts?.Count);
-                var abiConfig = config.GetProjectGenerators().ElementAt(0);
+                var abiConfig = config.ElementAt(0);
                 Assert.NotNull(abiConfig);
-                Assert.Equal(CodeGenLanguage.CSharp, config.Language);
+                Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContract", abiConfig.ContractName);
                 Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.ContractABI));
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
-                Assert.Equal(context.TargetProjectFolder, config.OutputFolder);
-                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), config.Namespace);
+                Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
+                Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
                 Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
                 Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
                 Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);

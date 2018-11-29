@@ -7,11 +7,11 @@ namespace Nethereum.Generator.Console.Models
 {
     public class ProjectGenerator
     {
-        public CodeGenLanguage Language { get; set; }
-
         public string Namespace { get; set; }
 
         public string OutputFolder { get; set; }
+
+        public CodeGenLanguage Language { get; set; }
 
         public List<ContractDefinition> Contracts { get; set; }
 

@@ -1,4 +1,6 @@
-﻿using Nethereum.Generator.Console.Configuration;
+﻿using System.Collections.Generic;
+using Nethereum.Generator.Console.Configuration;
+using Nethereum.Generators;
 using Nethereum.Generators.Core;
 using Nethereum.Generators.Net;
 
@@ -23,25 +25,25 @@ namespace Nethereum.Generator.Console.Generation
 
         public void FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder, bool singleFile)
         {
-            var config = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
-            Generate(config, singleFile);
+            var projectGenerators = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
+            Generate(projectGenerators, singleFile);
         }
 
         public void FromProject(string projectPath, string assemblyName)
         {
-            var config = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
-            Generate(config);
+            var projectGenerators = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
+            Generate(projectGenerators);
         }
 
         public void FromTruffle(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
         {
-            var config = _codeGenConfigurationFactory.FromTruffle(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
-            Generate(config, singleFile);
+            var projectGenerators = _codeGenConfigurationFactory.FromTruffle(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
+            Generate(projectGenerators, singleFile);
         }
 
-        private void Generate(Models.ProjectGenerator config, bool singleFile = true)
+        private void Generate(IEnumerable<ContractProjectGenerator> projectGenerators, bool singleFile = true)
         {
-            foreach (var generator in config.GetProjectGenerators())
+            foreach (var generator in projectGenerators)
             {
                 var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
                 _generatedFileWriter.WriteFiles(generatedFiles);
