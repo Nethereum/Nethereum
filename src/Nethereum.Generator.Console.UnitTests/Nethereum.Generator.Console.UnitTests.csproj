@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ConfigurationTests\FactoryTests\FromTruffle\" />
+  </ItemGroup>
+
 </Project>
