@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Nethereum.Generators.UnitTests.TestData;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromProject
@@ -37,12 +38,11 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 var config = factory.FromProject(path, context.OutputAssemblyName);
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                var abiConfig = config.ElementAt(0);
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContract", abiConfig.ContractName);
-                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.ContractABI));
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
                 Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
                 Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);

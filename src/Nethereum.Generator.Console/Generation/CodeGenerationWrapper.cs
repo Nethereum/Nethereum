@@ -1,9 +1,8 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using Nethereum.Generator.Console.Configuration;
 using Nethereum.Generators;
-using Nethereum.Generators.Net;
-using System.IO;
 using Nethereum.Generators.Core;
+using Nethereum.Generators.Net;
 
 namespace Nethereum.Generator.Console.Generation
 {
@@ -26,44 +25,29 @@ namespace Nethereum.Generator.Console.Generation
 
         public void FromAbi(string contractName, string abiFilePath, string binFilePath, string baseNamespace, string outputFolder, bool singleFile)
         {
-            var config = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
-            Generate(config, singleFile);
+            var projectGenerators = _codeGenConfigurationFactory.FromAbi(contractName, abiFilePath, binFilePath, baseNamespace, outputFolder);
+            Generate(projectGenerators, singleFile);
         }
 
         public void FromProject(string projectPath, string assemblyName)
         {
-            var config = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
-            Generate(config);
+            var projectGenerators = _codeGenConfigurationFactory.FromProject(projectPath, assemblyName);
+            Generate(projectGenerators);
         }
 
-        private void Generate(GeneratorConfiguration config, bool singleFile = true)
+        public void FromTruffle(string inputDirectory, string baseNamespace, string outputFolder, bool singleFile)
         {
-            if (config?.ABIConfigurations == null)
-                return;
+            var projectGenerators = _codeGenConfigurationFactory.FromTruffle(inputDirectory, outputFolder, baseNamespace, CodeGenLanguage.CSharp);
+            Generate(projectGenerators, singleFile);
+        }
 
-            foreach (var item in config.ABIConfigurations)
+        private void Generate(IEnumerable<ContractProjectGenerator> projectGenerators, bool singleFile = true)
+        {
+            foreach (var generator in projectGenerators)
             {
-                GenerateFilesForItem(item);
+                var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
+                _generatedFileWriter.WriteFiles(generatedFiles);
             }
-        }
-
-        private void GenerateFilesForItem(ABIConfiguration item, bool singleFile = true)
-        {
-            var generator = new ContractProjectGenerator(
-                item.CreateContractABI(),
-                item.ContractName,
-                item.ByteCode,
-                item.BaseNamespace,
-                item.ServiceNamespace,
-                item.CQSNamespace,
-                item.DTONamespace,
-                item.BaseOutputPath,
-                Path.DirectorySeparatorChar.ToString(),
-                item.CodeGenLanguage
-            );
-
-            var generatedFiles = singleFile ? generator.GenerateAllMessagesFileAndService() : generator.GenerateAll();
-            _generatedFileWriter.WriteFiles(generatedFiles);
         }
     }
 }

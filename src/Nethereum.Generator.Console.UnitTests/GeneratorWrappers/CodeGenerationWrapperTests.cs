@@ -7,6 +7,7 @@ using Nethereum.Generators.UnitTests.TestData;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Nethereum.Generators;
 
 namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
 {
@@ -27,12 +28,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromAbi_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            GeneratorConfiguration stubGeneratorConfiguration = CreateStubConfiguration();
+            IEnumerable<ContractProjectGenerator> stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromAbi(
                     "StandardContract", "StandardContract.abi", "StandardContract.bin", "DefaultNamespace", "c:/temp"))
-                .Returns(stubGeneratorConfiguration);
+                .Returns(stubGenerator);
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -53,12 +54,12 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
         public void FromProject_CallsConfigFactory_GeneratesCode_SendsToWriter()
         {
             //given
-            GeneratorConfiguration stubGeneratorConfiguration = CreateStubConfiguration();
+            IEnumerable<ContractProjectGenerator> stubGenerator = CreateStubConfiguration();
 
             _mockGeneratorConfigurationFactory
                 .Setup(f => f.FromProject(
                     "c:/temp/projectx", "CompanyA.ProjectX.dll"))
-                .Returns(stubGeneratorConfiguration);
+                .Returns(stubGenerator);
 
             IEnumerable<GeneratedFile> actualFilesSentToWriter = null;
 
@@ -74,9 +75,9 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
             Assert.True(actualFilesSentToWriter.ToArray().Length > 0);
         }
 
-        private static GeneratorConfiguration CreateStubConfiguration()
+        private static IEnumerable<ContractProjectGenerator> CreateStubConfiguration()
         {
-            return new GeneratorConfiguration
+            var config = new ABICollectionConfiguration
             {
                 ABIConfigurations = new List<ABIConfiguration>
                 {
@@ -94,6 +95,8 @@ namespace Nethereum.Generator.Console.UnitTests.GeneratorWrappers
                     }
                 }
             };
+
+            return config.GetContractProjectGenerators("DefaultNamespace", "c:/Temp");
         }
     }
 }

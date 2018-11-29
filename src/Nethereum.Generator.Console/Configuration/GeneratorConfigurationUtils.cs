@@ -9,46 +9,6 @@ namespace Nethereum.Generator.Console.Configuration
     {
         public static string ConfigFileName = GeneratorConfigurationConstants.ConfigFileName;
 
-        public static void ResolveEmptyValuesWithDefaults(this ABIConfiguration abiConfiguration, string defaultNamespace, string destinationProjectFolder)
-        {
-            if (string.IsNullOrEmpty(abiConfiguration.ContractName) && !string.IsNullOrEmpty(abiConfiguration.ABIFile))
-                abiConfiguration.ContractName = Path.GetFileNameWithoutExtension(abiConfiguration.ABIFile);
-
-            if (string.IsNullOrEmpty(abiConfiguration.ABI))
-                abiConfiguration.ABI = GetFileContent(destinationProjectFolder, abiConfiguration.ABIFile);
-
-            //by convention - look for bin folder in the same place as the abi
-            if (string.IsNullOrEmpty(abiConfiguration.BinFile) && !string.IsNullOrEmpty(abiConfiguration.ABIFile))
-            {
-                if (abiConfiguration.ABIFile.EndsWith(".abi", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    abiConfiguration.BinFile = $"{abiConfiguration.ABIFile.Substring(0, abiConfiguration.ABIFile.Length - 4)}.bin";
-                }
-            }
-
-            if (string.IsNullOrEmpty(abiConfiguration.ByteCode)  && !string.IsNullOrEmpty(abiConfiguration.BinFile))
-                abiConfiguration.ByteCode = GetFileContent(destinationProjectFolder, abiConfiguration.BinFile);
-
-            //no bytecode so clear bin file
-            if (string.IsNullOrEmpty(abiConfiguration.ByteCode))
-                abiConfiguration.BinFile = null;
-
-            if (string.IsNullOrEmpty(abiConfiguration.BaseOutputPath))
-                abiConfiguration.BaseOutputPath = destinationProjectFolder;
-
-            if (string.IsNullOrEmpty(abiConfiguration.BaseNamespace))
-                abiConfiguration.BaseNamespace = defaultNamespace;
-
-            if (string.IsNullOrEmpty(abiConfiguration.CQSNamespace))
-                abiConfiguration.CQSNamespace = $"{abiConfiguration.ContractName}.CQS";
-
-            if (string.IsNullOrEmpty(abiConfiguration.DTONamespace))
-                abiConfiguration.DTONamespace = $"{abiConfiguration.ContractName}.DTO";
-
-            if (string.IsNullOrEmpty(abiConfiguration.ServiceNamespace))
-                abiConfiguration.ServiceNamespace = $"{abiConfiguration.ContractName}.Service";
-        }
-
         public static string GetFileContent(string projectFolder, string relativeOrAbsolutePath)
         {
             if(string.IsNullOrEmpty(relativeOrAbsolutePath))

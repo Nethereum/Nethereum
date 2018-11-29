@@ -7,7 +7,7 @@ namespace Nethereum.Generator.Console.sample
     {
         public static void CreateTestGeneratorConfigFile(string outputFilePath)
         {
-            var config = new GeneratorConfiguration
+            var config = new ABICollectionConfiguration
             {
                 ABIConfigurations = new List<ABIConfiguration>
                 {

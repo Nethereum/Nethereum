@@ -5,6 +5,7 @@ using Nethereum.Generators.UnitTests.TestData;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.FromAbi
@@ -30,15 +31,15 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     "StandardContract.abi",
                     "StandardContract.bin",
                     Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
-                    context.TargetProjectFolder);
+                    context.TargetProjectFolder).ToList();
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config.Count);
+                var abiConfig = config.ElementAt(0);
                 Assert.NotNull(abiConfig);
                 Assert.Equal(CodeGenLanguage.CSharp, abiConfig.CodeGenLanguage);
                 Assert.Equal("StandardContract", abiConfig.ContractName);
-                Assert.Equal(TestContracts.StandardContract.ABI, abiConfig.ABI);
+                Assert.Equal(JsonConvert.SerializeObject(TestContracts.StandardContract.GetContractAbi()), JsonConvert.SerializeObject(abiConfig.ContractABI));
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
                 Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
                 Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
@@ -71,11 +72,11 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     "StandardContract.abi",
                     null, // bin file
                     Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
-                    context.TargetProjectFolder);
+                    context.TargetProjectFolder).ToList();
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config.Count);
+                var abiConfig = config.First();
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
             }
             finally
@@ -103,11 +104,11 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     "StandardContract.abi",
                     "StandardContract.bin",
                     Path.GetFileNameWithoutExtension(context.OutputAssemblyName),
-                    context.TargetProjectFolder);
+                    context.TargetProjectFolder).ToList();
 
                 //then
-                Assert.Equal(1, config?.ABIConfigurations?.Count);
-                var abiConfig = config.ABIConfigurations.First();
+                Assert.Equal(1, config.Count);
+                var abiConfig = config.First();
                 Assert.Equal("StandardContract", abiConfig.ContractName);
             }
             finally
