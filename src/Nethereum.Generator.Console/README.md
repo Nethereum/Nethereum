@@ -39,7 +39,7 @@ Options:
 Commands:
   from-abi      Generates Nethereum code based based on a single abi.
   from-project  Generates Nethereum code based on one or many abi's within a project.
-  from-truffle  Generates Nethereum code based based on a collection of compiled contracts.
+  from-truffle  Generates Nethereum code based based on a collection of Truffle compiled contracts.
 
 ```
 
@@ -157,7 +157,7 @@ Folder contents - after code generation.
 
 ### From a Truffle project
 
-This example generates code for all Truffle contracts output into the build directory.
+This example generates code for all Truffle contracts built to the `./build/contracts` directory.
 ```
 $ Nethereum.Generator.Console generate from-truffle -d ./build/contracts -o ./ClientProject -ns Sample.Ethereum
 ```
