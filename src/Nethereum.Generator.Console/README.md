@@ -39,6 +39,7 @@ Options:
 Commands:
   from-abi      Generates Nethereum code based based on a single abi.
   from-project  Generates Nethereum code based on one or many abi's within a project.
+  from-truffle  Generates Nethereum code based based on a collection of compiled contracts.
 
 ```
 
