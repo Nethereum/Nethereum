@@ -32,7 +32,16 @@ namespace Nethereum.Generators.CQS
 
         protected string GenerateAll()
         {
-            return string.Join($"{Environment.NewLine}{Environment.NewLine}", ClassGenerators.Select(x => x.GenerateClass()));
+            var result = "";
+            foreach (var classGenerator in ClassGenerators)
+            {
+                result = result +
+ $@"{SpaceUtils.NoTabs}
+{SpaceUtils.NoTabs}
+{classGenerator.GenerateClass()}";
+
+            }
+            return result;
         }
     }
 
