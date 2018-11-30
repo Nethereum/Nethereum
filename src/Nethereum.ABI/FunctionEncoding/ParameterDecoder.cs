@@ -140,7 +140,7 @@ namespace Nethereum.ABI.FunctionEncoding
                     {
                         if (arrayType.ElementType is TupleType tupleTypeElement)
                         {
-#if NETSTANDARD1_1
+#if NETSTANDARD1_1 || PCL && !NET35
                             var type = property.PropertyType.GenericTypeArguments.FirstOrDefault();
 #else
                             var type = property.PropertyType.GetGenericArguments().FirstOrDefault();

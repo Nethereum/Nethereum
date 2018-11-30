@@ -43,10 +43,7 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 {"sf", "SingleFile"}
             };
 
-            foreach (var expectedArg in expectedArgs)
-            {
-                Assert.NotNull(_command.Options.FirstOrDefault(x => x.ShortName == expectedArg.Key && x.LongName == expectedArg.Value));
-            }
+            _command.HasArgs(expectedArgs);
         }
 
         [Fact]
@@ -124,6 +121,12 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 "-bin", "StandardContract.bin", 
                 "-o", "c:/Temp", 
                 "-ns", null));
+        }
+
+        [Fact]
+        public void SupportsHelpArgs()
+        {
+            _command.EnsureHelpArgs();
         }
     }
 }

@@ -41,10 +41,7 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
                 {"a", "assemblyName"},
             };
 
-            foreach (var expectedArg in expectedArgs)
-            {
-                Assert.NotNull(_command.Options.FirstOrDefault(x => x.ShortName == expectedArg.Key && x.LongName == expectedArg.Value));
-            }
+            _command.HasArgs(expectedArgs);
         }
 
         [Fact]
@@ -69,6 +66,12 @@ namespace Nethereum.Generator.Console.UnitTests.CommandTests
 
             _mockCodeGenerationWrapper
                 .Verify(w => w.FromProject(expectedPath, expectedAssemblyName));
+        }
+
+        [Fact]
+        public void SupportsHelpArgs()
+        {
+            _command.EnsureHelpArgs();
         }
     }
 }

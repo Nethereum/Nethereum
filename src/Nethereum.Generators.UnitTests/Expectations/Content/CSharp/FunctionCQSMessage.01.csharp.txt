@@ -6,14 +6,15 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.Contracts;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using FunctionOutput;
+
 namespace DefaultNamespace
 {
-    public partial class BaseStatsFunction:BaseStatsFunctionBase{}
+    public partial class BaseStatsFunction : BaseStatsFunctionBase { }
 
     [Function("BaseStats", "uint256")]
-    public class BaseStatsFunctionBase:FunctionMessage
+    public class BaseStatsFunctionBase : FunctionMessage
     {
         [Parameter("uint256", "_number", 1)]
-        public virtual BigInteger Number {get; set;}
+        public virtual BigInteger Number { get; set; }
     }
 }

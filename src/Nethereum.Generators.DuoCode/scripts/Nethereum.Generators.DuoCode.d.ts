@@ -23,7 +23,7 @@ declare module Nethereum {
             GenerateAllMessagesFileAndService(): Core.GeneratedFile[];
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
-            GenerateService(): Core.GeneratedFile;
+            GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateAllCQSMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllFunctionDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GetAllFunctionDTOsGenerators(): System.Collections.Generic.List$1<DTOs.FunctionOutputDTOGenerator>;
