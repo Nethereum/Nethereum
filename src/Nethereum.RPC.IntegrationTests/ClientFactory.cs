@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.RPC.Tests.Testers;
+using Nethereum.JsonRpc.WebSocketClient;
 
 namespace Nethereum.RPC.Tests
 {
@@ -14,6 +15,12 @@ namespace Nethereum.RPC.Tests
         {
            var url = settings.GetRPCUrl();
            return new RpcClient(new Uri(url)); 
+        }
+
+        public static IStreamingClient GetStreamingClient(TestSettings settings)
+        {
+            var url = settings.GetLiveWSRpcUrl();
+            return new StreamingWebSocketClient(url);
         }
     }
 }

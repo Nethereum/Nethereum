@@ -24,6 +24,11 @@ namespace Nethereum.Web3
             IntialiseDefaultGasAndGasPrice();
         }
 
+        public Web3(IClient client, IStreamingClient streamingClient) : this(client)
+        {
+            StreamingClient = streamingClient;
+        }
+
         public Web3(IAccount account, IClient client) : this(client)
         {
             TransactionManager = account.TransactionManager;
@@ -54,6 +59,8 @@ namespace Nethereum.Web3
         public static TransactionSigner OfflineTransactionSigner { get; } = new TransactionSigner();
 
         public IClient Client { get; private set; }
+
+        public IStreamingClient StreamingClient { get; private set; }
 
         public EthApiContractService Eth { get; private set; }
         public ShhApiService Shh { get; private set; }
@@ -95,7 +102,7 @@ namespace Nethereum.Web3
 
         protected virtual void InitialiseInnerServices()
         {
-            Eth = new EthApiContractService(Client);
+            Eth = new EthApiContractService(Client, StreamingClient);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);

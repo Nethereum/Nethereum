@@ -73,6 +73,46 @@ SOFTWARE.
                 throw new Exception("Unable to convert the result to type " + typeof(T), ex);
             }
         }
+
+        /// <summary>
+        /// Parses and returns the result of the rpc streaming response as the type specified. 
+        /// Otherwise throws a parsing exception
+        /// </summary>
+        /// <typeparam name="T">Type of object to parse the response as</typeparam>
+        /// <param name="response">Rpc response object</param>
+        /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
+        /// <returns>Result of response as type specified</returns>
+        public static T GetResult<T>(this RpcStreamingResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
+        {
+            if (response.Params.Result == null)
+            {
+                if (!returnDefaultIfNull && default(T) != null)
+                {
+                    throw new Exception("Unable to convert the result (null) to type " + typeof(T));
+                }
+                return default(T);
+            }
+            try
+            {
+                if (settings == null)
+                {
+                    return response.Params.Result.ToObject<T>();
+                }
+                else
+                {
+                    JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
+                    return response.Params.Result.ToObject<T>(jsonSerializer);
+                }
+            }
+            catch (FormatException ex)
+            {
+                throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Unable to convert the result to type " + typeof(T), ex);
+            }
+        }
     }
 
     [JsonObject]
@@ -120,7 +160,7 @@ SOFTWARE.
         /// <summary>
         /// Reponse result object (Required)
         /// </summary>
-        [JsonProperty("result", Required = Required.Default)] 
+        [JsonProperty("result", Required = Required.Default)]
         public JToken Result { get; private set; }
 
         /// <summary>
@@ -131,6 +171,79 @@ SOFTWARE.
 
         [JsonIgnore]
         public bool HasError { get { return this.Error != null; } }
+    }
+
+    [JsonObject]
+    public class RpcStreamingResponseMessage
+    {
+        [JsonConstructor]
+        protected RpcStreamingResponseMessage()
+        {
+            JsonRpcVersion = "2.0";
+        }
+
+        /// <param name="error">Request error</param>
+        public RpcStreamingResponseMessage(RpcError error) : this()
+        {
+            this.Error = error;
+        }
+
+        /// <param name="method">method name</param>
+        /// <param name="params">Response result object</param>
+        public RpcStreamingResponseMessage(string method, RpcStreamingParams @params) : this()
+        {
+            this.Method = method;
+            this.Params = @params;
+        }
+
+        /// <summary>
+        /// Rpc request version (Required)
+        /// </summary>
+        [JsonProperty("jsonrpc", Required = Required.Always)]
+        public string JsonRpcVersion { get; private set; }
+
+        /// <summary>
+        /// Rpc request version (Required)
+        /// </summary>
+        [JsonProperty("method", Required = Required.Always)]
+        public string Method { get; private set; }
+
+        /// <summary>
+        /// Reponse result object (Required)
+        /// </summary>
+        [JsonProperty("params", Required = Required.Always)]
+        public RpcStreamingParams Params { get; private set; }
+
+        /// <summary>
+        /// Error from processing Rpc request (Required)
+        /// </summary>
+        [JsonProperty("error", Required = Required.Default)]
+        public RpcError Error { get; private set; }
+
+        [JsonIgnore]
+        public bool HasError { get { return this.Error != null; } }
+    }
+
+    [JsonObject]
+    public class RpcStreamingParams
+    {
+        [JsonConstructor]
+        public RpcStreamingParams()
+        {
+
+        }
+
+        /// <summary>
+        /// Response Subscription Id (Required)
+        /// </summary>
+        [JsonProperty("subscription", Required = Required.Always)]
+        public string Subscription { get; private set; }
+
+        /// <summary>
+        /// Reponse result object (Required)
+        /// </summary>
+        [JsonProperty("result", Required = Required.Always)]
+        public JToken Result { get; private set; }
     }
 
     [JsonObject]

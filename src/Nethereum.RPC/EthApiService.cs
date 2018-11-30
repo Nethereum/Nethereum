@@ -17,6 +17,12 @@ namespace Nethereum.RPC
            
         }
 
+        public EthApiService(IClient client, IStreamingClient streamingClient) : this(client,
+            new TransactionManager(client))
+        {
+            Subscriptions = new EthSubscriptionService(streamingClient);
+        }
+
         public EthApiService(IClient client, ITransactionManager transactionManager) : base(client)
         {
             Client = client;
@@ -75,6 +81,8 @@ namespace Nethereum.RPC
         public EthApiBlockService Blocks { get; private set; }
 
         public EthApiFilterService Filters { get; private set; }
+
+        public EthSubscriptionService Subscriptions { get; private set; }
 
         public EthApiCompilerService Compile { get; private set; }
 #if !DOTNET35

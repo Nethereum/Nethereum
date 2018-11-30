@@ -15,7 +15,7 @@ namespace Nethereum.Contracts.UnitTests
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
 
-            var ethApi = new EthApiContractService(null, null);
+            var ethApi = new EthApiContractService(null, (RPC.TransactionManagers.TransactionManager)null);
 
 
             var contract = ethApi.GetContract(abi, "ContractAddress");
@@ -33,7 +33,7 @@ namespace Nethereum.Contracts.UnitTests
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""b"",""type"":""string""},{""name"":""c"",""type"":""uint[3]""} ],""name"":""test"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
-            var ethApi = new EthApiContractService(null, null);
+            var ethApi = new EthApiContractService(null, (RPC.TransactionManagers.TransactionManager)null);
 
             var contract = ethApi.GetContract(abi, "ContractAddress");
 
