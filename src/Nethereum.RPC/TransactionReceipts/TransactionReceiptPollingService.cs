@@ -90,10 +90,15 @@ namespace Nethereum.RPC.TransactionReceipts
             CancellationTokenSource tokenSource = null)
         {
             var transactionReceipt = await SendRequestAndWaitForReceiptAsync(deployFunction, tokenSource).ConfigureAwait(false);
-            var contractAddress = transactionReceipt.ContractAddress;
-            var ethGetCode = new EthGetCode(_transactionManager.Client);
-            var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
-            if (code == "0x") throw new ContractDeploymentException("Code not deployed succesfully", transactionReceipt);
+            if (transactionReceipt.Status.Value != 1 )
+            {
+                var contractAddress = transactionReceipt.ContractAddress;
+                var ethGetCode = new EthGetCode(_transactionManager.Client);
+                var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
+                if (code == "0x")
+                    throw new ContractDeploymentException("Code not deployed succesfully", transactionReceipt);
+            }
+
             return transactionReceipt;
         }
 
