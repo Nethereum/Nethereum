@@ -2,11 +2,19 @@
 
 A dot net core CLI tool which generates Nethereum code based on abi files.
 
+## Installation (Pre-Release)
+
+The example below installs the tool as a global tool (-g) and references the latest pre-release version
+
+```
+dotnet tool install -g Nethereum.Generator.Console --add-source https://www.myget.org/F/nethereum/api/v3/index.json
+```
+
 ## Commands
 
 How to list the available commands.
 ```
-C:\dev\repos\nethereum\src\Nethereum.Generator.Console\bin\Debug\netcoreapp2.1>dotnet Nethereum.Generator.Console.dll --help
+$ Nethereum.Generator.Console --help
 
 Usage:  [options] [command]
 
@@ -21,8 +29,7 @@ Commands:
 ### generate
 
 ```
-C:\dev\repos\nethereum\src\Nethereum.Generator.Console\bin\Debug\netcoreapp2.1>dotnet Nethereum.Generator.Console.dll generate --help
-
+$ Nethereum.Generator.Console generate --help
 
 Usage: generate [options] [command]
 
@@ -32,13 +39,14 @@ Options:
 Commands:
   from-abi      Generates Nethereum code based based on a single abi.
   from-project  Generates Nethereum code based on one or many abi's within a project.
+  from-truffle  Generates Nethereum code based based on a collection of Truffle compiled contracts.
 
 ```
 
 #### from-abi
 
 ```
-C:\dev\repos\nethereum\src\Nethereum.Generator.Console\bin\Debug\netcoreapp2.1>dotnet Nethereum.Generator.Console.dll generate from-abi --help
+$ Nethereum.Generator.Console generate from-abi --help
 
 Usage: from-abi [options]
 
@@ -59,7 +67,7 @@ This command searches for abi files within a project and generates Nethereum cod
 Generated code has namespaces and names which are based on the abi files and project structure.
 
 ```
-C:\dev\repos\nethereum\src\Nethereum.Generator.Console\bin\Debug\netcoreapp2.1>dotnet Nethereum.Generator.Console.dll generate from-project --help
+$ Nethereum.Generator.Console generate from-project --help
 
 Usage: from-project [options]
 
@@ -98,18 +106,24 @@ Example Nethereum.Generator.json config file.
 }
 ```
 
-## Installing the console as a dot net tool.
-
-The example below installs the tool as a global tool (-g) and references a local folder as a nuget package source.
-
-Having a tool makes it easy to call the code generator from anywhere.
-It is especially useful for automated build and integration scripts.
+#### from-truffle
 
 ```
-dotnet tool install -g --add-source C:\dev\repos\nethereum\src\Nethereum.Generator.Console\bin\Release Nethereum.Generator.Console
+$ Nethereum.Generator.Console generate from-truffle --help
+
+Usage: from-truffle [options]
+
+Options:
+  -d | --directory    The directory containing the compiled contracts (Mandatory)
+  -o | --outputPath   The output path for the generated code (Mandatory)
+  -ns | --namespace   The base namespace for the generated code (Mandatory)
+  -sf | --SingleFile  Generate the message definition in a single file (Optional - default is true)
+  -? | -h | --help    Show help information
 ```
 
 ## Running the tool.
+
+### From an ABI
 
 The example below generates code from a StandardContract.abi.
 The screen shots demonstrate the before and after state of the working folder.
@@ -125,7 +139,7 @@ Working folder contents - before and after.
 ![Folder Contents - CQS folder](from-abi-folder-contents-after-2.PNG "Folder Contents - CQS folder")
 ![Folder Contents - service folder](from-abi-folder-contents-after-3.PNG "Folder Contents - Service folder")
 
-## Code generation from a project
+### From a project
 
 The example below generates code from the StandardContract.abi in a dot net project folder.
 These instructions require dot net core 2.1 to be installed.
@@ -140,6 +154,13 @@ These instructions require dot net core 2.1 to be installed.
 
 Folder contents - after code generation.
 ![Folder Contents - after code generation](from-project-folder-contents-after-0.PNG "Folder Contents - after code generation")
+
+### From a Truffle project
+
+This example generates code for all Truffle contracts built to the `./build/contracts` directory.
+```
+$ Nethereum.Generator.Console generate from-truffle -d ./build/contracts -o ./ClientProject -ns Sample.Ethereum
+```
 
 ## Sample -Interacting with the generated code
 

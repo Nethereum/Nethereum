@@ -15,7 +15,7 @@ namespace Nethereum.Generator.Console.Commands
         public GenerateFromTruffleCommand()
         {
             Name = "from-truffle";
-            Description = "Generates Nethereum code based based on a collection of compiled contracts.";
+            Description = "Generates Nethereum code based based on a collection of Truffle compiled contracts.";
             _directory = Option("-d | --directory", "The directory containing the compiled contracts (Mandatory)", CommandOptionType.SingleValue);
             _outputFolder = Option("-o | --outputPath", "The output path for the generated code (Mandatory)", CommandOptionType.SingleValue);
             _baseNamespace = Option("-ns | --namespace", "The base namespace for the generated code (Mandatory)", CommandOptionType.SingleValue);
