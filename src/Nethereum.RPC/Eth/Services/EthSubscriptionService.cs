@@ -11,8 +11,11 @@ namespace Nethereum.RPC.Eth.Services
         public EthSubscriptionService(IStreamingClient client) : base(client)
         {
             NewPendingTransactionSubscription = new EthNewPendingTransactionSubscription(client);
+            NewBlockHeadersSubscription = new EthNewBlockHeadersSubscription(client);
         }
 
         public EthNewPendingTransactionSubscription NewPendingTransactionSubscription { get; private set; }
+
+        public EthNewBlockHeadersSubscription NewBlockHeadersSubscription { get; private set; }
     }
 }

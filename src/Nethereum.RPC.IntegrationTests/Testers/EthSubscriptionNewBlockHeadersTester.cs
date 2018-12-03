@@ -3,22 +3,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Subscriptions;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class EthPendingTransactionSubscriptionTester : StreamingRPCRequestTester
+    public class EthSubscriptionNewBlockHeadersTester : StreamingRPCRequestTester
     {
         [Fact]
-        public async Task ShouldRetrieveTransaction()
+        public async Task ShouldRetrieveBlock()
         {
             var tokenSource = new CancellationTokenSource();
-
             var recievedMessage = false;
             var successfulResponse = false;
             var failureMessage = string.Empty;
-            var successResponse = string.Empty;
+            Block successResponse = null;
             this.StreamingClient.StreamingMessageReceived += (s, e) => 
             {
                 recievedMessage = true;
@@ -29,7 +29,7 @@ namespace Nethereum.RPC.Tests.Testers
                 }
                 else
                 {
-                    successResponse = e.Message.GetResult<string>();
+                    successResponse = e.Message.GetResult<Block>();
                 }
 
                 tokenSource.Cancel();
@@ -39,21 +39,21 @@ namespace Nethereum.RPC.Tests.Testers
 
             try
             {
-                await Task.Delay(5000, tokenSource.Token);
+                await Task.Delay(10000, tokenSource.Token);
             }
             catch (TaskCanceledException)
             {
-                //swallow, escape hatch
+                // swallow, escape hatch
             }
 
             Assert.True(recievedMessage, "Did not recieved response");
             Assert.True(successfulResponse, $"Response indicated failure: {failureMessage}");
-            Assert.False(string.IsNullOrEmpty(successResponse));
+            Assert.NotNull(successResponse);
         }
 
         public override async Task ExecuteAsync(IStreamingClient client)
         {
-            var subscription = new EthNewPendingTransactionSubscription(client);
+            var subscription = new EthNewBlockHeadersSubscription(client);
             await subscription.SendRequestAsync(Guid.NewGuid());
         }
 

@@ -4,7 +4,7 @@ using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public abstract class StreamingRPCRequestTester<T>: IStreamingRPCRequestTester
+    public abstract class StreamingRPCRequestTester: IStreamingRPCRequestTester
     {
         public IStreamingClient StreamingClient { get; set; }
 

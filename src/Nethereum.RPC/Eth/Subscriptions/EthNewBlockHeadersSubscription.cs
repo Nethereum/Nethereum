@@ -16,7 +16,7 @@ namespace Nethereum.RPC.Eth.Subscriptions
 
         public Task SendRequestAsync(object id)
         {
-            return base.SendRequestAsync(id, "newBlockHeaders");
+            return base.SendRequestAsync(id, "newHeads");
         }
 
         public RpcRequest BuildRequest(object id)
