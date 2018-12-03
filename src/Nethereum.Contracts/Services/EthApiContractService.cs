@@ -14,6 +14,10 @@ namespace Nethereum.Contracts.Services
         {
         }
 
+        public EthApiContractService(IClient client, IStreamingClient streamingClient) : base(client, streamingClient)
+        {
+        }
+
         public EthApiContractService(IClient client, ITransactionManager transactionManager) : base(client,
             transactionManager)
         {

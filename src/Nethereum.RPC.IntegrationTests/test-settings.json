@@ -1,6 +1,7 @@
 ﻿{
   "liveSettings": {
-    "rpcUrl": "https://mainnet.infura.io"
+    "rpcUrl": "https://mainnet.infura.io",
+    "wsUrl": "wss://mainnet.infura.io/ws"
   }, 
   "testSettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",

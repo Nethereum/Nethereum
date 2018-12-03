@@ -46,6 +46,11 @@ namespace Nethereum.RPC.Tests.Testers
             return GetLiveSettingsValue("rpcUrl");
         }
 
+        public string GetLiveWSRpcUrl()
+        {
+            return GetLiveSettingsValue("wsUrl");
+        }
+
         public ulong GetBlockNumber()
         {
             return Convert.ToUInt64(GetAppSettingsValue("blockNumber"));
