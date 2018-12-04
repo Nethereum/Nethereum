@@ -19,7 +19,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
         private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         protected readonly string Path;
-        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 4000;
+        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 10000;
 
         private Task listener;
         private CancellationTokenSource cancellationTokenSource;
