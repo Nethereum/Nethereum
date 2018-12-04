@@ -19,7 +19,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
         private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         protected readonly string Path;
-        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 4000;
+        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 10000;
 
         private Task listener;
         private CancellationTokenSource cancellationTokenSource;
@@ -123,8 +123,17 @@ namespace Nethereum.JsonRpc.WebSocketClient
                         {
                             // assume regular rpc response
                             RpcResponseMessage result = JsonConvert.DeserializeObject<RpcResponseMessage>(localChunk, JsonSerializerSettings);
-                            var rpcEventArgs = new RpcResponseMessageEventArgs(result);
 
+                            if (result.HasError)
+                            {
+                                var error = new Client.RpcError(result.Error.Code, result.Error.Message, result.Error.Data);
+                                var rpcErrorEventArgs = new RpcResponseErrorMessageEventArgs(error);
+                                OnError(this, rpcErrorEventArgs);
+
+                                continue;
+                            }
+
+                            var rpcEventArgs = new RpcResponseMessageEventArgs(result);
                             OnMessageRecieved(this, rpcEventArgs);
 
                             continue;

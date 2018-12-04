@@ -16,6 +16,8 @@ namespace Nethereum.JsonRpc.Client
 
         public event EventHandler<RpcResponseMessageEventArgs> MessageReceived;
 
+        public event EventHandler<RpcResponseErrorMessageEventArgs> Error;
+
         protected virtual void OnMessageRecieved(object sender, RpcResponseMessageEventArgs args)
         {
             var handler = MessageReceived;
@@ -28,6 +30,15 @@ namespace Nethereum.JsonRpc.Client
         protected virtual void OnStreamingMessageRecieved(object sender, RpcStreamingResponseMessageEventArgs args)
         {
             var handler = StreamingMessageReceived;
+            if (handler != null)
+            {
+                handler(this, args);
+            }
+        }
+
+        protected virtual void OnError(object sender, RpcResponseErrorMessageEventArgs args)
+        {
+            var handler = Error;
             if (handler != null)
             {
                 handler(this, args);

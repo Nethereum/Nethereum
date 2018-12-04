@@ -8,5 +8,7 @@ namespace Nethereum.JsonRpc.Client
         event EventHandler<RpcStreamingResponseMessageEventArgs> StreamingMessageReceived;
 
         event EventHandler<RpcResponseMessageEventArgs> MessageReceived;
+
+        event EventHandler<RpcResponseErrorMessageEventArgs> Error;
     }
 }

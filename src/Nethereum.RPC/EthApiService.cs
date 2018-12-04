@@ -3,6 +3,7 @@ using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.TransactionManagers;
+using System;
 
 namespace Nethereum.RPC
 {
@@ -10,17 +11,34 @@ namespace Nethereum.RPC
     {
         private BlockParameter defaultBlock;
         private ITransactionManager _transactionManager;
+        private Lazy<EthSubscriptionService> _subscriptionService;
 
         public EthApiService(IClient client) : this(client, 
             new TransactionManager(client))
         {
-           
+            _subscriptionService = new Lazy<EthSubscriptionService>(() => 
+            {
+                throw new InvalidOperationException("Subscriptions require a streaming capable client to be configured");
+            });
         }
 
         public EthApiService(IClient client, IStreamingClient streamingClient) : this(client,
             new TransactionManager(client))
         {
-            Subscriptions = new EthSubscriptionService(streamingClient);
+            if (streamingClient == null)
+            {
+                _subscriptionService = new Lazy<EthSubscriptionService>(() =>
+                {
+                    throw new InvalidOperationException("Subscriptions require a streaming capable client to be configured");
+                });
+            }
+            else
+            {
+                _subscriptionService = new Lazy<EthSubscriptionService>(() => 
+                {
+                    return new EthSubscriptionService(streamingClient);
+                });
+            }
         }
 
         public EthApiService(IClient client, ITransactionManager transactionManager) : base(client)
@@ -82,7 +100,7 @@ namespace Nethereum.RPC
 
         public EthApiFilterService Filters { get; private set; }
 
-        public EthSubscriptionService Subscriptions { get; private set; }
+        public EthSubscriptionService Subscriptions { get { return _subscriptionService.Value; } }
 
         public EthApiCompilerService Compile { get; private set; }
 #if !DOTNET35
