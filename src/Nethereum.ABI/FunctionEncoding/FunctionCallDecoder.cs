@@ -72,7 +72,7 @@ namespace Nethereum.ABI.FunctionEncoding
 
             var function = FunctionOutputAttribute.GetAttribute<T>();
             if (function == null)
-                throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
+                throw new ArgumentException($"Unable to decode to '{typeof(T).Name}' because the type does not apply attribute '[{nameof(FunctionOutputAttribute)}]'.");
 
             var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             DecodeAttributes(output, functionOutputResult, properties.ToArray());
