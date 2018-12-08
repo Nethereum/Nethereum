@@ -1,6 +1,6 @@
-using System;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
+using System;
 
 namespace Nethereum.ABI
 {

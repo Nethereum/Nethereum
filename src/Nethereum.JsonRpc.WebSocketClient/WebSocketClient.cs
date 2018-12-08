@@ -1,27 +1,30 @@
-﻿using System;
+﻿using Common.Logging;
+using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client.RpcMessages;
+using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
-using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.RpcMessages;
-using Newtonsoft.Json;
 
 namespace Nethereum.JsonRpc.WebSocketClient
 {
     public class WebSocketClient : ClientBase, IDisposable
     {
-        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
-        protected readonly string Path;
+        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+        protected string Path { get; set; }
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 2000;
 
         private WebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
             if (jsonSerializerSettings == null)
+            {
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
-            this.Path = path;
+            }
+
+            Path = path;
             JsonSerializerSettings = jsonSerializerSettings;
         }
 
@@ -83,8 +86,8 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var readBufferSize = 512;
             var memoryStream = new MemoryStream();
 
-            int bytesRead = 0;
-            byte[] buffer = new byte[readBufferSize];
+            var bytesRead = 0;
+            var buffer = new byte[readBufferSize];
             bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
             while (bytesRead > 0)
             {

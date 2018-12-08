@@ -3,7 +3,6 @@
     "engine": {
         "authorityRound": {
             "params": {
-                "gasLimitBoundDivisor": "0x400",
                 "stepDuration": "1",
                 "validators" : {
 								    "list": ["0x12890d2cce102216644c59dae5baed380d84830c"]

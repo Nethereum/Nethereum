@@ -124,12 +124,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var filter69 = await multipliedEvent.CreateFilterAsync(69);
 
             HexBigInteger filter49 = null;
-            //Parity does not accept null values for filter
-            if (_ethereumClientIntegrationFixture.Geth)
-            {
+           
+          
                //filter on the second indexed parameter
                filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
-            }
+            
 
             //filter OR on the first indexed parameter
             var filter69And18 = await multipliedEvent.CreateFilterAsync(new[] {69, 18});
@@ -161,12 +160,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);
             var eventLogs69 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69);
 
-            if (_ethereumClientIntegrationFixture.Geth)
-            {
+            
                 //Parity does not accept null values for filter
                 var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
 
-            }
+            
 
             var eventLogsFor69and18 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69And18);
 

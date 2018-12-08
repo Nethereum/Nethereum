@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,21 +14,24 @@ namespace Nethereum.JsonRpc.WebSocketClient
 {
     public class StreamingWebSocketClient : StreamingClientBase, IDisposable
     {
-        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         protected readonly string Path;
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 10000;
 
         private Task listener;
-        private CancellationTokenSource cancellationTokenSource;
+        private readonly CancellationTokenSource cancellationTokenSource;
 
         private StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
             if (jsonSerializerSettings == null)
+            {
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
-            this.Path = path;
+            }
+
+            Path = path;
             JsonSerializerSettings = jsonSerializerSettings;
-            cancellationTokenSource = new CancellationTokenSource();            
+            cancellationTokenSource = new CancellationTokenSource();
         }
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
@@ -91,8 +92,8 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var lastChunk = string.Empty;
             var readBufferSize = 512;
 
-            int bytesRead = 0;
-            byte[] chunkedBuffer = new byte[readBufferSize];
+            var bytesRead = 0;
+            var chunkedBuffer = new byte[readBufferSize];
             bytesRead = await ReceiveBufferedResponseAsync(client, chunkedBuffer, cancellationToken).ConfigureAwait(false);
             while (!cancellationToken.IsCancellationRequested && bytesRead > 0)
             {
@@ -114,7 +115,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                         if (temp.id == null)
                         {
                             // assume streaming subscription response
-                            RpcStreamingResponseMessage streamingResult = JsonConvert.DeserializeObject<RpcStreamingResponseMessage>(localChunk, JsonSerializerSettings);
+                            var streamingResult = JsonConvert.DeserializeObject<RpcStreamingResponseMessage>(localChunk, JsonSerializerSettings);
                             var streamingArgs = new RpcStreamingResponseMessageEventArgs(streamingResult);
 
                             OnStreamingMessageRecieved(this, streamingArgs);
@@ -122,7 +123,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                         else
                         {
                             // assume regular rpc response
-                            RpcResponseMessage result = JsonConvert.DeserializeObject<RpcResponseMessage>(localChunk, JsonSerializerSettings);
+                            var result = JsonConvert.DeserializeObject<RpcResponseMessage>(localChunk, JsonSerializerSettings);
 
                             if (result.HasError)
                             {
@@ -162,7 +163,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                 var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                 var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
                 logger.LogRequest(rpcRequestJson);
-                var cancellationTokenSource = new CancellationTokenSource();               
+                var cancellationTokenSource = new CancellationTokenSource();
                 cancellationTokenSource.CancelAfter(ConnectionTimeout);
 
                 var webSocket = await GetClientWebSocketAsync().ConfigureAwait(false);

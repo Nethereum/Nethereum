@@ -60,17 +60,22 @@ namespace Nethereum.Contracts
 
         public object[] GetTopics<T1>(T1 firstTopic)
         {
-            return GetTopics(new object[] { firstTopic });
+            return GetTopics(firstTopic == null ? null : new[] { (object)firstTopic });
         }
 
         public object[] GetTopics<T1, T2>(T1 firstTopic, T2 secondTopic)
         {
-            return GetTopics(new object[] { firstTopic }, new object[] { secondTopic });
+            return GetTopics(firstTopic == null ? null : new[] { (object)firstTopic },
+                secondTopic == null ? null : new[] { (object)secondTopic });
+                        
         }
 
         public object[] GetTopics<T1, T2, T3>(T1 firstTopic, T2 secondTopic, T3 thirdTopic)
         {
-            return GetTopics(new object[] { firstTopic }, new object[] { secondTopic }, new object[] { thirdTopic });
+
+            return GetTopics(firstTopic == null ? null : new[] { (object)firstTopic },
+                secondTopic == null ? null : new[] { (object)secondTopic },
+                 thirdTopic == null ? null : new[] { (object)thirdTopic });
         }
 
 

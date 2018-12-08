@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
@@ -16,7 +15,11 @@ namespace Nethereum.XUnitEthereumClients
         private static Web3.Web3 _web3;
         public static Web3.Web3 GetWeb33()
         {
-            if(_web3 == null) _web3 = new Web3.Web3(AccountFactory.GetAccount(), ClientFactory.GetClient());
+            if (_web3 == null)
+            {
+                _web3 = new Web3.Web3(AccountFactory.GetAccount(), ClientFactory.GetClient());
+            }
+
             return _web3;
         }
 
@@ -55,13 +58,17 @@ namespace Nethereum.XUnitEthereumClients
     public class EthereumClientIntegrationFixture : IDisposable
     {
         public const string ETHEREUM_CLIENT_COLLECTION_DEFAULT = "Ethereum client Test";
-        private Process _process;
-        private string _exePath;
+        private readonly Process _process;
+        private readonly string _exePath;
 
         private Web3.Web3 _web3;
         public Web3.Web3 GetWeb3()
         {
-            if (_web3 == null) _web3 = new Web3.Web3(AccountFactory.GetAccount(), ClientFactory.GetClient());
+            if (_web3 == null)
+            {
+                _web3 = new Web3.Web3(AccountFactory.GetAccount(), ClientFactory.GetClient());
+            }
+
             return _web3;
         }
 
@@ -79,9 +86,15 @@ namespace Nethereum.XUnitEthereumClients
             // So the tests can run for both Geth and Parity, Windows, Mac and Linux.
 
             var client = Environment.GetEnvironmentVariable("ETHEREUM_CLIENT");
-            
-            if(client == null) Console.WriteLine("**************CLIENT NOT CONFIGURED");
-            else Console.WriteLine("**************CLIENT " + client.ToString());
+
+            if (client == null)
+            {
+                Console.WriteLine("**************CLIENT NOT CONFIGURED");
+            }
+            else
+            {
+                Console.WriteLine("**************CLIENT " + client.ToString());
+            }
 
             if (string.IsNullOrEmpty(client))
             {
@@ -98,7 +111,6 @@ namespace Nethereum.XUnitEthereumClients
                 Console.WriteLine("***** PARITY ****************");
             }
 
-           // Geth = false;
             if (Geth)
             {
 
@@ -108,7 +120,7 @@ namespace Nethereum.XUnitEthereumClients
 
                 DeleteData();
 
-                ProcessStartInfo psiSetup = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"),
+                var psiSetup = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"),
                     @"--datadir=devChain init genesis_clique.json ")
                 {
                     CreateNoWindow = false,
@@ -121,7 +133,7 @@ namespace Nethereum.XUnitEthereumClients
                 Process.Start(psiSetup);
                 Thread.Sleep(3000);
 
-                ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"),
+                var psi = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"),
                     @" --nodiscover --rpc --datadir=devChain  --rpccorsdomain "" * "" --mine --rpcapi ""eth, web3, personal, net, miner, admin, debug"" --rpcaddr ""0.0.0.0"" --unlock 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console  ")
                 {
                     CreateNoWindow = false,
@@ -141,8 +153,8 @@ namespace Nethereum.XUnitEthereumClients
 
                 //DeleteData();
 
-                ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(_exePath, "parity.exe"),
-                    @" --config node0.toml" ) // --logging debug")
+                var psi = new ProcessStartInfo(Path.Combine(_exePath, "parity.exe"),
+                    @" --config node0.toml") // --logging debug")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
@@ -154,14 +166,17 @@ namespace Nethereum.XUnitEthereumClients
                 Thread.Sleep(10000);
             }
 
-         
+
             Thread.Sleep(3000);
         }
 
         public void Dispose()
         {
-            if(!_process.HasExited)
-            _process.Kill();
+            if (!_process.HasExited)
+            {
+                _process.Kill();
+            }
+
             Thread.Sleep(2000);
             DeleteData();
         }

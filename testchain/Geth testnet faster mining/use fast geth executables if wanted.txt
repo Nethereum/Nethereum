@@ -1,5 +1,0 @@
-fastGeth is a custom compiled geth version to process and mine blocks faster for testing. 
-This is a compiled version use at own risk.
-
-To create a custom fast geth see the fast geth instructions
-
