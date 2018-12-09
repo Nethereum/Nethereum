@@ -27,7 +27,7 @@ namespace Nethereum.Contracts
             ContractBuilder = new ContractBuilder(contractMessagesTypes, contractAddress);
         }
 
-        private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
+        private IEthNewFilter EthNewFilter => Eth.Filters.NewFilter;
 
         public ContractBuilder ContractBuilder { get; set; }
 

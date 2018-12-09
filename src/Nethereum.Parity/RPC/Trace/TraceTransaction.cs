@@ -7,7 +7,7 @@ namespace Nethereum.Parity.RPC.Trace
     /// <Summary>
     ///     Returns all traces of given transaction
     /// </Summary>
-    public class TraceTransaction : RpcRequestResponseHandler<JObject>
+    public class TraceTransaction : RpcRequestResponseHandler<JObject>, ITraceTransaction
     {
         public TraceTransaction(IClient client) : base(client, ApiMethods.trace_transaction.ToString())
         {

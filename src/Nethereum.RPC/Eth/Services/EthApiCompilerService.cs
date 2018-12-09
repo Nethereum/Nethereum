@@ -3,7 +3,7 @@ using Nethereum.RPC.Eth.Compilation;
 
 namespace Nethereum.RPC.Eth.Services
 {
-    public class EthApiCompilerService : RpcClientWrapper
+    public class EthApiCompilerService : RpcClientWrapper, IEthApiCompilerService
     {
         public EthApiCompilerService(IClient client) : base(client)
         {
@@ -13,9 +13,9 @@ namespace Nethereum.RPC.Eth.Services
             GetCompilers = new EthGetCompilers(client);
         }
 
-        public EthGetCompilers GetCompilers { get; private set; }
-        public EthCompileLLL CompileLLL { get; private set; }
-        public EthCompileSerpent CompileSerpent { get; private set; }
-        public EthCompileSolidity CompileSolidity { get; private set; }
+        public IEthGetCompilers GetCompilers { get; private set; }
+        public IEthCompileLLL CompileLLL { get; private set; }
+        public IEthCompileSerpent CompileSerpent { get; private set; }
+        public IEthCompileSolidity CompileSolidity { get; private set; }
     }
 }

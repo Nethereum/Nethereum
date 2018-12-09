@@ -6,7 +6,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.RPC.Eth.Transactions
 {
-    public class EthSendTransaction : RpcRequestResponseHandler<string>
+    public class EthSendTransaction : RpcRequestResponseHandler<string>, IEthSendTransaction
     {
         public EthSendTransaction(IClient client) : base(client, ApiMethods.eth_sendTransaction.ToString())
         {

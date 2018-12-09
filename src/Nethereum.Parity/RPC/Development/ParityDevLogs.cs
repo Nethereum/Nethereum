@@ -27,10 +27,16 @@ namespace Nethereum.Parity.RPC.Development
     ///     ]
     ///     }
     /// </Summary>
-    public class ParityDevLogs : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class ParityDevLogs : GenericRpcRequestResponseHandlerNoParam<string[]>, IParityDevLogs
     {
         public ParityDevLogs(IClient client) : base(client, ApiMethods.parity_devLogs.ToString())
         {
         }
+    }
+
+    public interface IParityDevLogs : IGenericRpcRequestResponseHandlerNoParam<string[]>
+    {
+
+
     }
 }

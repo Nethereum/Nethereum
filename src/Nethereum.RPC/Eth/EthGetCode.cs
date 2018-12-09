@@ -31,7 +31,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
     ///     }
     /// </Summary>
-    public class EthGetCode : RpcRequestResponseHandler<string>, IDefaultBlock
+    public class EthGetCode : RpcRequestResponseHandler<string>, IDefaultBlock, IEthGetCode
     {
         public EthGetCode(IClient client) : base(client, ApiMethods.eth_getCode.ToString())
         {
@@ -61,4 +61,5 @@ namespace Nethereum.RPC.Eth
             return base.BuildRequest(id, address.EnsureHexPrefix(), block);
         }
     }
+
 }

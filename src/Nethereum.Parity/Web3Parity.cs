@@ -5,7 +5,7 @@ using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Parity
 {
-    public class Web3Parity : Web3.Web3
+    public class Web3Parity : Web3.Web3, IWeb3Parity
     {
         public Web3Parity(IClient client) : base(client)
         {
@@ -24,11 +24,11 @@ namespace Nethereum.Parity
         {
         }
 
-        public AdminApiService Admin { get; private set; }
-        public AccountsApiService Accounts { get; private set; }
-        public BlockAuthoringApiService BlockAuthoring { get; private set; }
-        public NetworkApiService Network { get; private set; }
-        public TraceApiService Trace { get; private set; }
+        public IAdminApiService Admin { get; private set; }
+        public IAccountsApiService Accounts { get; private set; }
+        public IBlockAuthoringApiService BlockAuthoring { get; private set; }
+        public INetworkApiService Network { get; private set; }
+        public ITraceApiService Trace { get; private set; }
 
 
         protected override void InitialiseInnerServices()

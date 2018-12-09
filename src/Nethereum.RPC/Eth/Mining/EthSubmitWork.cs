@@ -32,7 +32,7 @@ namespace Nethereum.RPC.Eth.Mining
     ///     "result": true
     ///     }
     /// </Summary>
-    public class EthSubmitWork : RpcRequestResponseHandler<bool>
+    public class EthSubmitWork : RpcRequestResponseHandler<bool>, IEthSubmitWork
     {
         public EthSubmitWork(IClient client) : base(client, ApiMethods.eth_submitWork.ToString())
         {

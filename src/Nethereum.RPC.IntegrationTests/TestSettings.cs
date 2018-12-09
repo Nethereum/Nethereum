@@ -46,6 +46,7 @@ namespace Nethereum.RPC.Tests.Testers
             return GetLiveSettingsValue("rpcUrl");
         }
 
+        //TODO:Subscriptions
         public string GetLiveWSRpcUrl()
         {
             return GetLiveSettingsValue("wsUrl");

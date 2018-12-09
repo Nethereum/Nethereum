@@ -12,7 +12,7 @@ using Nethereum.Util;
 
 namespace Nethereum.Web3
 {
-    public class Web3
+    public class Web3 : IWeb3
     {
         private static readonly AddressUtil addressUtil = new AddressUtil();
         private static readonly Sha3Keccack sha3Keccack = new Sha3Keccack();
@@ -22,11 +22,6 @@ namespace Nethereum.Web3
             Client = client;
             InitialiseInnerServices();
             IntialiseDefaultGasAndGasPrice();
-        }
-
-        public Web3(IClient client, IStreamingClient streamingClient) : this(client)
-        {
-            StreamingClient = streamingClient;
         }
 
         public Web3(IAccount account, IClient client) : this(client)
@@ -60,14 +55,10 @@ namespace Nethereum.Web3
 
         public IClient Client { get; private set; }
 
-        public IStreamingClient StreamingClient { get; private set; }
-
-        public EthApiContractService Eth { get; private set; }
-        public ShhApiService Shh { get; private set; }
-
-        public NetApiService Net { get; private set; }
-
-        public PersonalApiService Personal { get; private set; }
+        public IEthApiContractService Eth { get; private set; }
+        public IShhApiService Shh { get; private set; }
+        public INetApiService Net { get; private set; }
+        public IPersonalApiService Personal { get; private set; }
 
         private void IntialiseDefaultGasAndGasPrice()
         {
@@ -102,7 +93,7 @@ namespace Nethereum.Web3
 
         protected virtual void InitialiseInnerServices()
         {
-            Eth = new EthApiContractService(Client, StreamingClient);
+            Eth = new EthApiContractService(Client);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);

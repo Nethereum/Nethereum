@@ -21,10 +21,15 @@ namespace Nethereum.Parity.RPC.Admin
     ///     "result": "['Personal','Work']"
     ///     }
     /// </Summary>
-    public class ParityListVaults : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class ParityListVaults : GenericRpcRequestResponseHandlerNoParam<string[]>, IParityListVaults
     {
         public ParityListVaults(IClient client) : base(client, ApiMethods.parity_listVaults.ToString())
         {
         }
+    }
+
+    public interface IParityListVaults : IGenericRpcRequestResponseHandlerNoParam<string[]>
+    {
+
     }
 }

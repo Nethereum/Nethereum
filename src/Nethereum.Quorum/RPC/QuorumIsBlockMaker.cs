@@ -5,7 +5,7 @@ using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Quorum.RPC
 {
-    public class QuorumIsBlockMaker : RpcRequestResponseHandler<bool>
+    public class QuorumIsBlockMaker : RpcRequestResponseHandler<bool>, IQuorumIsBlockMaker
     {
         public QuorumIsBlockMaker(IClient client) : base(client, ApiMethods.quorum_isBlockMaker.ToString())
         {

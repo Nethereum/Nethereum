@@ -9,7 +9,7 @@ namespace Nethereum.Geth.RPC.Miner
     ///     Sets the minimal accepted gas price when mining transactions. Any transactions that are below this limit are
     ///     excluded from the mining process.
     /// </Summary>
-    public class MinerSetGasPrice : RpcRequestResponseHandler<bool>
+    public class MinerSetGasPrice : RpcRequestResponseHandler<bool>, IMinerSetGasPrice
     {
         public MinerSetGasPrice(IClient client) : base(client, ApiMethods.miner_setGasPrice.ToString())
         {

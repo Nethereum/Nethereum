@@ -31,10 +31,16 @@ namespace Nethereum.Parity.RPC.Network
     ///     }
     ///     }
     /// </Summary>
-    public class ParityNetPeers : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityNetPeers : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityNetPeers
     {
         public ParityNetPeers(IClient client) : base(client, ApiMethods.parity_netPeers.ToString())
         {
         }
+    }
+
+    public interface IParityNetPeers : IGenericRpcRequestResponseHandlerNoParam<JObject>
+    {
+
+
     }
 }

@@ -48,7 +48,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     "result": "0x1" // 1
     ///     }
     /// </Summary>
-    public class EthNewFilter : RpcRequestResponseHandler<HexBigInteger>
+    public class EthNewFilter : RpcRequestResponseHandler<HexBigInteger>, IEthNewFilter
     {
         public EthNewFilter(IClient client) : base(client, ApiMethods.eth_newFilter.ToString())
         {

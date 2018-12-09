@@ -48,7 +48,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     }
     ///     }
     /// </Summary>
-    public class EthGetTransactionReceipt : RpcRequestResponseHandler<TransactionReceipt>
+    public class EthGetTransactionReceipt : RpcRequestResponseHandler<TransactionReceipt>, IEthGetTransactionReceipt
     {
         public EthGetTransactionReceipt(IClient client) : base(client, ApiMethods.eth_getTransactionReceipt.ToString())
         {

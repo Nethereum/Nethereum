@@ -50,7 +50,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     }
     ///     }
     /// </Summary>
-    public class EthGetTransactionByHash : RpcRequestResponseHandler<Transaction>
+    public class EthGetTransactionByHash : RpcRequestResponseHandler<Transaction>, IEthGetTransactionByHash
     {
         public EthGetTransactionByHash(IClient client) : base(client, ApiMethods.eth_getTransactionByHash.ToString())
         {

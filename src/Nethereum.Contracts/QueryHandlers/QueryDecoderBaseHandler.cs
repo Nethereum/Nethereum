@@ -23,7 +23,7 @@ namespace Nethereum.Contracts.QueryHandlers
             QueryRawHandler = new QueryRawHandler<TFunctionMessage>(client, defaultAddressFrom, defaultBlockParameter);
         }
 
-        public QueryDecoderBaseHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
+        public QueryDecoderBaseHandler(IEthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
             QueryRawHandler = new QueryRawHandler<TFunctionMessage>(ethCall, defaultAddressFrom, defaultBlockParameter);
         }

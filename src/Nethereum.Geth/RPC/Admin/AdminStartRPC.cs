@@ -13,7 +13,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     The method returns a boolean flag specifying whether the HTTP RPC listener was opened or not. Please note, only one
     ///     HTTP endpoint is allowed to be active at any time.
     /// </Summary>
-    public class AdminStartRPC : RpcRequestResponseHandler<bool>
+    public class AdminStartRPC : RpcRequestResponseHandler<bool>, IAdminStartRPC
     {
         public AdminStartRPC(IClient client) : base(client, ApiMethods.admin_startRPC.ToString())
         {

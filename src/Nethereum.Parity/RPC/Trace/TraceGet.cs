@@ -8,7 +8,7 @@ namespace Nethereum.Parity.RPC.Trace
     /// <Summary>
     ///     Returns trace at given position.
     /// </Summary>
-    public class TraceGet : RpcRequestResponseHandler<JObject>
+    public class TraceGet : RpcRequestResponseHandler<JObject>, ITraceGet
     {
         public TraceGet(IClient client) : base(client, ApiMethods.trace_get.ToString())
         {

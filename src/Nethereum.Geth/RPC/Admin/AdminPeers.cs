@@ -10,7 +10,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     ÐΞVp2p P2P overlay protocol, as well as specialized information added by each of the running application protocols
     ///     (e.g. eth, les, shh, bzz).
     /// </Summary>
-    public class AdminPeers : GenericRpcRequestResponseHandlerNoParam<JArray>
+    public class AdminPeers : GenericRpcRequestResponseHandlerNoParam<JArray>, IAdminPeers
     {
         public AdminPeers(IClient client) : base(client, ApiMethods.admin_peers.ToString())
         {

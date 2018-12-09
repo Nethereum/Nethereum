@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Parity
 {
-    public class AccountsApiService : RpcClientWrapper
+    public class AccountsApiService : RpcClientWrapper, IAccountsApiService
     {
         public AccountsApiService(IClient client) : base(client)
         {
@@ -14,9 +14,9 @@ namespace Nethereum.Parity
             HardwareAccountsInfo = new ParityHardwareAccountsInfo(client);
         }
 
-        public ParityAccountsInfo AccountsInfo { get; }
-        public ParityDefaultAccount DefaultAccount { get; }
-        public ParityGenerateSecretPhrase GenerateSecretPhrase { get; }
-        public ParityHardwareAccountsInfo HardwareAccountsInfo { get; }
+        public IParityAccountsInfo AccountsInfo { get; }
+        public IParityDefaultAccount DefaultAccount { get; }
+        public IParityGenerateSecretPhrase GenerateSecretPhrase { get; }
+        public IParityHardwareAccountsInfo HardwareAccountsInfo { get; }
     }
 }

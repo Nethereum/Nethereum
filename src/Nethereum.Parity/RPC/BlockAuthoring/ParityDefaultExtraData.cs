@@ -21,10 +21,15 @@ namespace Nethereum.Parity.RPC.BlockAuthoring
     ///     "result": "0xd5830106008650617269747986312e31342e30826c69"
     ///     }
     /// </Summary>
-    public class ParityDefaultExtraData : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ParityDefaultExtraData : GenericRpcRequestResponseHandlerNoParam<string>, IParityDefaultExtraData
     {
         public ParityDefaultExtraData(IClient client) : base(client, ApiMethods.parity_defaultExtraData.ToString())
         {
         }
+    }
+
+    public interface IParityDefaultExtraData : IGenericRpcRequestResponseHandlerNoParam<string>
+    {
+
     }
 }

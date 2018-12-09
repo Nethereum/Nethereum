@@ -25,10 +25,15 @@ namespace Nethereum.Parity.RPC.Admin
     ///     "result": null
     ///     }
     /// </Summary>
-    public class ParityReleasesInfo : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityReleasesInfo : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityReleasesInfo
     {
         public ParityReleasesInfo(IClient client) : base(client, ApiMethods.parity_releasesInfo.ToString())
         {
         }
+    }
+
+    public interface IParityReleasesInfo : IGenericRpcRequestResponseHandlerNoParam<JObject>
+    {
+
     }
 }

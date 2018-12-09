@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Parity
 {
-    public class NetworkApiService : RpcClientWrapper
+    public class NetworkApiService : RpcClientWrapper, INetworkApiService
     {
         public NetworkApiService(IClient client) : base(client)
         {
@@ -15,10 +15,10 @@ namespace Nethereum.Parity
             PendingTransactions = new ParityPendingTransactions(client);
         }
 
-        public ParityChainStatus ChainStatus { get; }
-        public ParityGasPriceHistogram GasPriceHistogram { get; }
-        public ParityNetPeers NetPeers { get; }
-        public ParityNetPort NetPort { get; }
-        public ParityPendingTransactions PendingTransactions { get; }
+        public IParityChainStatus ChainStatus { get; }
+        public IParityGasPriceHistogram GasPriceHistogram { get; }
+        public IParityNetPeers NetPeers { get; }
+        public IParityNetPort NetPort { get; }
+        public IParityPendingTransactions PendingTransactions { get; }
     }
 }

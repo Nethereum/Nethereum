@@ -32,7 +32,7 @@ namespace Nethereum.Parity.RPC.Admin
     ///     }
     ///     }
     /// </Summary>
-    public class ParityPendingTransactionsStats : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityPendingTransactionsStats : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityPendingTransactionsStats
     {
         public ParityPendingTransactionsStats(IClient client) : base(client,
             ApiMethods.parity_pendingTransactionsStats.ToString())

@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Personal
     ///     Example
     ///     personal.listAccounts
     /// </Summary>
-    public class PersonalListAccounts : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class PersonalListAccounts : GenericRpcRequestResponseHandlerNoParam<string[]>, IPersonalListAccounts
     {
         public PersonalListAccounts(IClient client) : base(client, ApiMethods.personal_listAccounts.ToString())
         {

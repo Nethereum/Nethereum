@@ -49,10 +49,16 @@ namespace Nethereum.Parity.RPC.Network
     ///     }
     ///     }
     /// </Summary>
-    public class ParityGasPriceHistogram : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ParityGasPriceHistogram : GenericRpcRequestResponseHandlerNoParam<string>, IParityGasPriceHistogram
     {
         public ParityGasPriceHistogram(IClient client) : base(client, ApiMethods.parity_gasPriceHistogram.ToString())
         {
         }
+    }
+
+    public interface IParityGasPriceHistogram : IGenericRpcRequestResponseHandlerNoParam<string>
+    {
+
+
     }
 }

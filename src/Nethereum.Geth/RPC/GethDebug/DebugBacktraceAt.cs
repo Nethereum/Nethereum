@@ -13,7 +13,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///             .
     ///             debug.backtraceAt("server.go:443")
     /// </Summary>
-    public class DebugBacktraceAt : RpcRequestResponseHandler<string>
+    public class DebugBacktraceAt : RpcRequestResponseHandler<string>, IDebugBacktraceAt
     {
         public DebugBacktraceAt(IClient client) : base(client, ApiMethods.debug_backtraceAt.ToString())
         {

@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Personal
     ///     Example
     ///     personal.unlockAccount(eth.coinbase, "mypasswd", 300)
     /// </Summary>
-    public class PersonalUnlockAccount : RpcRequestResponseHandler<bool>
+    public class PersonalUnlockAccount : RpcRequestResponseHandler<bool>, IPersonalUnlockAccount
     {
         public PersonalUnlockAccount(IClient client) : base(client, ApiMethods.personal_unlockAccount.ToString())
         {

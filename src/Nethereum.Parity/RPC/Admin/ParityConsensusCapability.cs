@@ -21,7 +21,7 @@ namespace Nethereum.Parity.RPC.Admin
     ///     "result": "capable"
     ///     }
     /// </Summary>
-    public class ParityConsensusCapability : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ParityConsensusCapability : GenericRpcRequestResponseHandlerNoParam<string>, IParityConsensusCapability
     {
         public ParityConsensusCapability(IClient client) : base(client,
             ApiMethods.parity_consensusCapability.ToString())

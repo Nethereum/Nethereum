@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Net
     ///     "result": "59"
     ///     }
     /// </Summary>
-    public class NetVersion : GenericRpcRequestResponseHandlerNoParam<string>
+    public class NetVersion : GenericRpcRequestResponseHandlerNoParam<string>, INetVersion
     {
         public NetVersion(IClient client) : base(client, ApiMethods.net_version.ToString())
         {

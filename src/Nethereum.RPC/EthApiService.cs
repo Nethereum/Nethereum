@@ -7,7 +7,7 @@ using System;
 
 namespace Nethereum.RPC
 {
-    public class EthApiService : RpcClientWrapper
+    public class EthApiService : RpcClientWrapper, IEthApiService
     {
         private BlockParameter defaultBlock;
         private ITransactionManager _transactionManager;
@@ -16,29 +16,6 @@ namespace Nethereum.RPC
         public EthApiService(IClient client) : this(client, 
             new TransactionManager(client))
         {
-            _subscriptionService = new Lazy<EthSubscriptionService>(() => 
-            {
-                throw new InvalidOperationException("Subscriptions require a streaming capable client to be configured");
-            });
-        }
-
-        public EthApiService(IClient client, IStreamingClient streamingClient) : this(client,
-            new TransactionManager(client))
-        {
-            if (streamingClient == null)
-            {
-                _subscriptionService = new Lazy<EthSubscriptionService>(() =>
-                {
-                    throw new InvalidOperationException("Subscriptions require a streaming capable client to be configured");
-                });
-            }
-            else
-            {
-                _subscriptionService = new Lazy<EthSubscriptionService>(() => 
-                {
-                    return new EthSubscriptionService(streamingClient);
-                });
-            }
         }
 
         public EthApiService(IClient client, ITransactionManager transactionManager) : base(client)
@@ -76,33 +53,31 @@ namespace Nethereum.RPC
             }
         }
 
-        public EthAccounts Accounts { get; private set; }
+        public IEthAccounts Accounts { get; private set; }
 
-        public EthCoinBase CoinBase { get; private set; }
+        public IEthCoinBase CoinBase { get; private set; }
 
-        public EthGasPrice GasPrice { get; private set; }
-        public EthGetBalance GetBalance { get; }
+        public IEthGasPrice GasPrice { get; private set; }
+        public IEthGetBalance GetBalance { get; }
 
-        public EthGetCode GetCode { get; }
+        public IEthGetCode GetCode { get; }
 
-        public EthGetStorageAt GetStorageAt { get; }
+        public IEthGetStorageAt GetStorageAt { get; }
 
-        public EthProtocolVersion ProtocolVersion { get; private set; }
-        public EthSign Sign { get; private set; }
+        public IEthProtocolVersion ProtocolVersion { get; private set; }
+        public IEthSign Sign { get; private set; }
 
-        public EthSyncing Syncing { get; private set; }
+        public IEthSyncing Syncing { get; private set; }
 
-        public EthApiTransactionsService Transactions { get; }
+        public IEthApiTransactionsService Transactions { get; }
 
-        public EthApiUncleService Uncles { get; private set; }
-        public EthApiMiningService Mining { get; private set; }
-        public EthApiBlockService Blocks { get; private set; }
+        public IEthApiUncleService Uncles { get; private set; }
+        public IEthApiMiningService Mining { get; private set; }
+        public IEthApiBlockService Blocks { get; private set; }
 
-        public EthApiFilterService Filters { get; private set; }
+        public IEthApiFilterService Filters { get; private set; }
 
-        public EthSubscriptionService Subscriptions { get { return _subscriptionService.Value; } }
-
-        public EthApiCompilerService Compile { get; private set; }
+        public IEthApiCompilerService Compile { get; private set; }
 #if !DOTNET35
         public virtual IEtherTransferService  GetEtherTransferService()
         {

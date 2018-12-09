@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Geth
 {
-    public class AdminApiService : RpcClientWrapper
+    public class AdminApiService : RpcClientWrapper, IAdminApiService
     {
         public AdminApiService(IClient client) : base(client)
         {
@@ -19,14 +19,14 @@ namespace Nethereum.Geth
             Peers = new AdminPeers(client);
         }
 
-        public AdminAddPeer AddPeer { get; }
-        public AdminDatadir Datadir { get; }
-        public AdminNodeInfo NodeInfo { get; }
-        public AdminSetSolc SetSolc { get; }
-        public AdminStartRPC StartRPC { get; }
-        public AdminStartWS StartWS { get; }
-        public AdminStopRPC StopRPC { get; }
-        public AdminStopWS StopWS { get; }
-        public AdminPeers Peers { get; }
+        public IAdminAddPeer AddPeer { get; }
+        public IAdminDatadir Datadir { get; }
+        public IAdminNodeInfo NodeInfo { get; }
+        public IAdminSetSolc SetSolc { get; }
+        public IAdminStartRPC StartRPC { get; }
+        public IAdminStartWS StartWS { get; }
+        public IAdminStopRPC StopRPC { get; }
+        public IAdminStopWS StopWS { get; }
+        public IAdminPeers Peers { get; }
     }
 }

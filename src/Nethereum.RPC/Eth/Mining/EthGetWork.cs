@@ -27,10 +27,13 @@ namespace Nethereum.RPC.Eth.Mining
     ///     ]
     ///     }
     /// </Summary>
-    public class EthGetWork : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class EthGetWork : GenericRpcRequestResponseHandlerNoParam<string[]>, IEthGetWork
     {
         public EthGetWork(IClient client) : base(client, ApiMethods.eth_getWork.ToString())
         {
         }
     }
+
+    
+
 }

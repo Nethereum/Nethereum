@@ -34,7 +34,7 @@ namespace Nethereum.Geth.RPC.GethEth
     ///     }
     ///     }]
     /// </Summary>
-    public class EthPendingTransactions : RpcRequestResponseHandler<Transaction[]>
+    public class EthPendingTransactions : RpcRequestResponseHandler<Transaction[]>, IEthPendingTransactions
     {
         public EthPendingTransactions(IClient client) : base(client, ApiMethods.eth_pendingTransactions.ToString())
         {

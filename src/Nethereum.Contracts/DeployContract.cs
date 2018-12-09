@@ -6,7 +6,7 @@ using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts
 {
-    public class DeployContract
+    public class DeployContract : IDeployContract
     {
         private readonly DeployContractTransactionBuilder _deployContractTransactionBuilder;
 

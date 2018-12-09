@@ -29,7 +29,7 @@ namespace Nethereum.Parity.RPC.Accounts
     ///     }
     ///     }
     /// </Summary>
-    public class ParityHardwareAccountsInfo : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityHardwareAccountsInfo : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityHardwareAccountsInfo
     {
         public ParityHardwareAccountsInfo(IClient client) : base(client,
             ApiMethods.parity_hardwareAccountsInfo.ToString())

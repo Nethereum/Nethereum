@@ -30,7 +30,7 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     // the compiled source code
     ///     }
     /// </Summary>
-    public class EthCompileLLL : RpcRequestResponseHandler<JObject>
+    public class EthCompileLLL : RpcRequestResponseHandler<JObject>, IEthCompileLLL
     {
         public EthCompileLLL(IClient client) : base(client, ApiMethods.eth_compileLLL.ToString())
         {

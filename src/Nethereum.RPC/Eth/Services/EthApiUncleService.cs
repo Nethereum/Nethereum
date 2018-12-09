@@ -3,7 +3,7 @@ using Nethereum.RPC.Eth.Uncles;
 
 namespace Nethereum.RPC.Eth.Services
 {
-    public class EthApiUncleService : RpcClientWrapper
+    public class EthApiUncleService : RpcClientWrapper, IEthApiUncleService
     {
         public EthApiUncleService(IClient client) : base(client)
         {
@@ -13,9 +13,9 @@ namespace Nethereum.RPC.Eth.Services
             GetUncleByBlockNumberAndIndex = new EthGetUncleByBlockNumberAndIndex(client);
         }
 
-        public EthGetUncleCountByBlockHash GetUncleCountByBlockHash { get; private set; }
-        public EthGetUncleCountByBlockNumber GetUncleCountByBlockNumber { get; private set; }
-        public EthGetUncleByBlockHashAndIndex GetUncleByBlockHashAndIndex { get; private set; }
-        public EthGetUncleByBlockNumberAndIndex GetUncleByBlockNumberAndIndex { get; private set; }
+        public IEthGetUncleCountByBlockHash GetUncleCountByBlockHash { get; private set; }
+        public IEthGetUncleCountByBlockNumber GetUncleCountByBlockNumber { get; private set; }
+        public IEthGetUncleByBlockHashAndIndex GetUncleByBlockHashAndIndex { get; private set; }
+        public IEthGetUncleByBlockNumberAndIndex GetUncleByBlockNumberAndIndex { get; private set; }
     }
 }

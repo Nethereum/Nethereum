@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     "result": "0x1" // 1
     ///     }
     /// </Summary>
-    public class EthNewPendingTransactionFilter : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class EthNewPendingTransactionFilter : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IEthNewPendingTransactionFilter
     {
         public EthNewPendingTransactionFilter(IClient client)
             : base(client, ApiMethods.eth_newPendingTransactionFilter.ToString())

@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Parity
 {
-    public class AdminApiService : RpcClientWrapper
+    public class AdminApiService : RpcClientWrapper, IAdminApiService
     {
         public AdminApiService(IClient client) : base(client)
         {
@@ -17,12 +17,12 @@ namespace Nethereum.Parity
             VersionInfo = new ParityVersionInfo(client);
         }
 
-        public ParityConsensusCapability ConsensusCapability { get; }
-        public ParityListOpenedVaults ListOpenedVaults { get; }
-        public ParityListVaults ListVaults { get; }
-        public ParityLocalTransactions LocalTransactions { get; }
-        public ParityPendingTransactionsStats PendingTransactionsStats { get; }
-        public ParityReleasesInfo ReleasesInfo { get; }
-        public ParityVersionInfo VersionInfo { get; }
+        public IParityConsensusCapability ConsensusCapability { get; }
+        public IParityListOpenedVaults ListOpenedVaults { get; }
+        public IParityListVaults ListVaults { get; }
+        public IParityLocalTransactions LocalTransactions { get; }
+        public IParityPendingTransactionsStats PendingTransactionsStats { get; }
+        public IParityReleasesInfo ReleasesInfo { get; }
+        public IParityVersionInfo VersionInfo { get; }
     }
 }

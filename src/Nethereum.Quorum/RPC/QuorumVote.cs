@@ -5,7 +5,7 @@ using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Quorum.RPC
 {
-    public class QuorumVote : RpcRequestResponseHandler<string>
+    public class QuorumVote : RpcRequestResponseHandler<string>, IQuorumVote
     {
         public QuorumVote(IClient client) : base(client, ApiMethods.quorum_vote.ToString())
         {

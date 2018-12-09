@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Net
     ///     "result": "0x2" // 2
     ///     }
     /// </Summary>
-    public class NetPeerCount : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class NetPeerCount : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, INetPeerCount
     {
         public NetPeerCount(IClient client) : base(client, ApiMethods.net_peerCount.ToString())
         {

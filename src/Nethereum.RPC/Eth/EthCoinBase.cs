@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "0x407d73d8a49eeb85d32cf465507dd71d507100c1"
     ///     }
     /// </Summary>
-    public class EthCoinBase : GenericRpcRequestResponseHandlerNoParam<string>
+    public class EthCoinBase : GenericRpcRequestResponseHandlerNoParam<string>, IEthCoinBase
     {
         public EthCoinBase(IClient client) : base(client, ApiMethods.eth_coinbase.ToString())
         {

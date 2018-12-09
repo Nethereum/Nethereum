@@ -11,7 +11,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     The method accepts a single argument, the enode URL of the remote peer to start tracking and returns a BOOL
     ///     indicating whether the peer was accepted for tracking or some error occurred.
     /// </Summary>
-    public class AdminAddPeer : RpcRequestResponseHandler<bool>
+    public class AdminAddPeer : RpcRequestResponseHandler<bool>, IAdminAddPeer
     {
         public AdminAddPeer(IClient client) : base(client, ApiMethods.admin_addPeer.ToString())
         {

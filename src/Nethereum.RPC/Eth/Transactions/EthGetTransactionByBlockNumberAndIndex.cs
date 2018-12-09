@@ -25,7 +25,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     "0x0"],"id":1}'
     ///     Result see eth_getTransactionByHash
     /// </Summary>
-    public class EthGetTransactionByBlockNumberAndIndex : RpcRequestResponseHandler<Transaction>
+    public class EthGetTransactionByBlockNumberAndIndex : RpcRequestResponseHandler<Transaction>, IEthGetTransactionByBlockNumberAndIndex
     {
         public EthGetTransactionByBlockNumberAndIndex(IClient client)
             : base(client, ApiMethods.eth_getTransactionByBlockNumberAndIndex.ToString())

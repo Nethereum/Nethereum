@@ -8,12 +8,12 @@ namespace Nethereum.Contracts.QueryHandlers
     public abstract class QueryHandlerBase<TFunctionMessage> 
         where TFunctionMessage : FunctionMessage, new()
     {
-        protected EthCall EthCall { get; set; }
+        protected IEthCall EthCall { get; set; }
         public string DefaultAddressFrom { get; set; }
         protected BlockParameter DefaultBlockParameter { get; set; }
         public FunctionMessageEncodingService<TFunctionMessage> FunctionMessageEncodingService { get; } = new FunctionMessageEncodingService<TFunctionMessage>();
 
-        protected QueryHandlerBase(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
+        protected QueryHandlerBase(IEthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
             EthCall = ethCall;
             DefaultAddressFrom = defaultAddressFrom;

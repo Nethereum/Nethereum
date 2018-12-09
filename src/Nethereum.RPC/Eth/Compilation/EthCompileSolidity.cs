@@ -61,7 +61,7 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     }
     ///     }
     /// </summary>
-    public class EthCompileSolidity : RpcRequestResponseHandler<JToken>
+    public class EthCompileSolidity : RpcRequestResponseHandler<JToken>, IEthCompileSolidity
     {
         public EthCompileSolidity(IClient client) : base(client, ApiMethods.eth_compileSolidity.ToString())
         {

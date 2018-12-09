@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Personal
     ///     Example
     ///     personal.newAccount("mypasswd")
     /// </Summary>
-    public class PersonalNewAccount : RpcRequestResponseHandler<string>
+    public class PersonalNewAccount : RpcRequestResponseHandler<string>, IPersonalNewAccount
     {
         public PersonalNewAccount(IClient client) : base(client, ApiMethods.personal_newAccount.ToString())
         {

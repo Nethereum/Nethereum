@@ -21,10 +21,12 @@ namespace Nethereum.RPC.Eth.Mining
     ///     "result": "0x38a"
     ///     }
     /// </Summary>
-    public class EthHashrate : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class EthHashrate : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IEthHashrate
     {
         public EthHashrate(IClient client) : base(client, ApiMethods.eth_hashrate.ToString())
         {
         }
     }
+
+   
 }

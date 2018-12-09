@@ -9,7 +9,7 @@ namespace Nethereum.RPC.Personal
     /// <Summary>
     ///     Removes the private key with given address from memory. The account can no longer be used to send transactions.
     /// </Summary>
-    public class PersonalLockAccount : RpcRequestResponseHandler<bool>
+    public class PersonalLockAccount : RpcRequestResponseHandler<bool>, IPersonalLockAccount
     {
         public PersonalLockAccount(IClient client) : base(client, ApiMethods.personal_lockAccount.ToString())
         {

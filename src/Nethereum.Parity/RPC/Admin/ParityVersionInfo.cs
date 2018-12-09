@@ -34,10 +34,15 @@ namespace Nethereum.Parity.RPC.Admin
     ///     }
     ///     }
     /// </Summary>
-    public class ParityVersionInfo : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityVersionInfo : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityVersionInfo
     {
         public ParityVersionInfo(IClient client) : base(client, ApiMethods.parity_versionInfo.ToString())
         {
         }
+    }
+
+    public interface IParityVersionInfo : IGenericRpcRequestResponseHandlerNoParam<JObject>
+    {
+
     }
 }

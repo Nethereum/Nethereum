@@ -21,7 +21,7 @@ namespace Nethereum.Parity.RPC.Accounts
     ///     "result": "0x63Cf90D3f0410092FC0fca41846f596223979195"
     ///     }
     /// </Summary>
-    public class ParityDefaultAccount : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ParityDefaultAccount : GenericRpcRequestResponseHandlerNoParam<string>, IParityDefaultAccount
     {
         public ParityDefaultAccount(IClient client) : base(client, ApiMethods.parity_defaultAccount.ToString())
         {

@@ -3,7 +3,7 @@ using Nethereum.RPC.Net;
 
 namespace Nethereum.RPC
 {
-    public class NetApiService : RpcClientWrapper
+    public class NetApiService : RpcClientWrapper, INetApiService
     {
         public NetApiService(IClient client) : base(client)
         {
@@ -12,8 +12,8 @@ namespace Nethereum.RPC
             Version = new NetVersion(client);
         }
 
-        public NetListening Listening { get; private set; }
-        public NetPeerCount PeerCount { get; private set; }
-        public NetVersion Version { get; private set; }
+        public INetListening Listening { get; private set; }
+        public INetPeerCount PeerCount { get; private set; }
+        public INetVersion Version { get; private set; }
     }
 }

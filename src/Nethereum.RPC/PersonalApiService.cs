@@ -3,7 +3,7 @@ using Nethereum.RPC.Personal;
 
 namespace Nethereum.RPC
 {
-    public class PersonalApiService : RpcClientWrapper
+    public class PersonalApiService : RpcClientWrapper, IPersonalApiService
     {
         public PersonalApiService(IClient client) : base(client)
         {
@@ -14,10 +14,10 @@ namespace Nethereum.RPC
             SignAndSendTransaction = new PersonalSignAndSendTransaction(client);
         }
 
-        public PersonalListAccounts ListAccounts { get; private set; }
-        public PersonalNewAccount NewAccount { get; private set; }
-        public PersonalUnlockAccount UnlockAccount { get; private set; }
-        public PersonalLockAccount LockAccount { get; private set; }
-        public PersonalSignAndSendTransaction SignAndSendTransaction { get; private set; }
+        public IPersonalListAccounts ListAccounts { get; private set; }
+        public IPersonalNewAccount NewAccount { get; private set; }
+        public IPersonalUnlockAccount UnlockAccount { get; private set; }
+        public IPersonalLockAccount LockAccount { get; private set; }
+        public IPersonalSignAndSendTransaction SignAndSendTransaction { get; private set; }
     }
 }

@@ -16,7 +16,7 @@ namespace Nethereum.Contracts.QueryHandlers
 
         }
 
-        public QueryRawHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null) : base(ethCall, defaultAddressFrom, defaultBlockParameter)
+        public QueryRawHandler(IEthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null) : base(ethCall, defaultAddressFrom, defaultBlockParameter)
         {
 
         }

@@ -8,13 +8,9 @@ using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts.Services
 {
-    public class EthApiContractService : EthApiService
+    public class EthApiContractService : EthApiService, IEthApiContractService
     {
         public EthApiContractService(IClient client) : base(client)
-        {
-        }
-
-        public EthApiContractService(IClient client, IStreamingClient streamingClient) : base(client, streamingClient)
         {
         }
 
@@ -23,7 +19,7 @@ namespace Nethereum.Contracts.Services
         {
         }
 
-        public DeployContract DeployContract => new DeployContract(TransactionManager);
+        public IDeployContract DeployContract => new DeployContract(TransactionManager);
 
         public Contract GetContract(string abi, string contractAddress)
         {

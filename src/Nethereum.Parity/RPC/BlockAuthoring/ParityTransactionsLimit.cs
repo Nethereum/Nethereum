@@ -21,10 +21,16 @@ namespace Nethereum.Parity.RPC.BlockAuthoring
     ///     "result": 1024
     ///     }
     /// </Summary>
-    public class ParityTransactionsLimit : GenericRpcRequestResponseHandlerNoParam<int>
+    public class ParityTransactionsLimit : GenericRpcRequestResponseHandlerNoParam<int>, IParityTransactionsLimit
     {
         public ParityTransactionsLimit(IClient client) : base(client, ApiMethods.parity_transactionsLimit.ToString())
         {
         }
+    }
+
+    public interface IParityTransactionsLimit : IGenericRpcRequestResponseHandlerNoParam<int>
+    {
+
+
     }
 }

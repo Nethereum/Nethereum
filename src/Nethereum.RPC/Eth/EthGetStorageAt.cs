@@ -35,7 +35,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "0x03"
     ///     }
     /// </Summary>
-    public class EthGetStorageAt : RpcRequestResponseHandler<string>, IDefaultBlock
+    public class EthGetStorageAt : RpcRequestResponseHandler<string>, IDefaultBlock, IEthGetStorageAt
     {
         public EthGetStorageAt(IClient client) : base(client, ApiMethods.eth_getStorageAt.ToString())
         {

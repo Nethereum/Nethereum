@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Shh
     ///     "result": "2"
     ///     }
     /// </Summary>
-    public class ShhVersion : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ShhVersion : GenericRpcRequestResponseHandlerNoParam<string>, IShhVersion
     {
         public ShhVersion(IClient client) : base(client, ApiMethods.shh_version.ToString())
         {

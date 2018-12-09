@@ -22,10 +22,16 @@ namespace Nethereum.Parity.RPC.BlockAuthoring
     ///     "result": "0x5fdfb0" // 6283184
     ///     }
     /// </Summary>
-    public class ParityGasCeilTarget : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class ParityGasCeilTarget : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IParityGasCeilTarget
     {
         public ParityGasCeilTarget(IClient client) : base(client, ApiMethods.parity_gasCeilTarget.ToString())
         {
         }
+    }
+
+    public interface IParityGasCeilTarget : IGenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    {
+
+
     }
 }

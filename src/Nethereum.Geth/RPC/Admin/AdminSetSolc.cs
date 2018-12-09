@@ -12,7 +12,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     current – to the user unknown – working directory of Geth), and returns the version string reported by solc
     ///     --version.
     /// </Summary>
-    public class AdminSetSolc : RpcRequestResponseHandler<string>
+    public class AdminSetSolc : RpcRequestResponseHandler<string>, IAdminSetSolc
     {
         public AdminSetSolc(IClient client) : base(client, ApiMethods.admin_setSolc.ToString())
         {

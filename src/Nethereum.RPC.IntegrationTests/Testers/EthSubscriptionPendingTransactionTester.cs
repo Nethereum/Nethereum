@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    //TODO:Subscriptions
     public class EthPendingTransactionSubscriptionTester : StreamingRPCRequestTester
     {
         [Fact]

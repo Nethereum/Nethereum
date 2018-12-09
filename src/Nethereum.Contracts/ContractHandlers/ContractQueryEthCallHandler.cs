@@ -12,9 +12,9 @@ namespace Nethereum.Contracts.ContractHandlers
         public string DefaultAddressFrom { get; set; }
         public BlockParameter DefaultBlockParameter { get; set; }
 
-        private EthCall EthCall { get; }
+        private IEthCall EthCall { get; }
 
-        public ContractQueryEthCallHandler(EthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
+        public ContractQueryEthCallHandler(IEthCall ethCall, string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
             DefaultAddressFrom = defaultAddressFrom;
             DefaultBlockParameter = defaultBlockParameter;

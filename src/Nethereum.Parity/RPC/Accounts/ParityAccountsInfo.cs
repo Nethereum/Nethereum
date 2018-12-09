@@ -33,7 +33,7 @@ namespace Nethereum.Parity.RPC.Accounts
     ///     }
     ///     }
     /// </Summary>
-    public class ParityAccountsInfo : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityAccountsInfo : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityAccountsInfo
     {
         public ParityAccountsInfo(IClient client) : base(client, ApiMethods.parity_accountsInfo.ToString())
         {

@@ -21,10 +21,16 @@ namespace Nethereum.Parity.RPC.Network
     ///     "result": 30303
     ///     }
     /// </Summary>
-    public class ParityNetPort : GenericRpcRequestResponseHandlerNoParam<int>
+    public class ParityNetPort : GenericRpcRequestResponseHandlerNoParam<int>, IParityNetPort
     {
         public ParityNetPort(IClient client) : base(client, ApiMethods.parity_netPort.ToString())
         {
         }
+    }
+
+    public interface IParityNetPort : IGenericRpcRequestResponseHandlerNoParam<int>
+    {
+
+
     }
 }

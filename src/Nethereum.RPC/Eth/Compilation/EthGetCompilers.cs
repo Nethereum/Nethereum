@@ -1,5 +1,6 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
+using System.Threading.Tasks;
 
 namespace Nethereum.RPC.Eth.Compilation
 {
@@ -20,7 +21,7 @@ namespace Nethereum.RPC.Eth.Compilation
     ///     "result": ["solidity", "lll", "serpent"]
     ///     }
     /// </Summary>
-    public class EthGetCompilers : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class EthGetCompilers : GenericRpcRequestResponseHandlerNoParam<string[]>, IEthGetCompilers
     {
         public EthGetCompilers(IClient client) : base(client, ApiMethods.eth_getCompilers.ToString())
         {

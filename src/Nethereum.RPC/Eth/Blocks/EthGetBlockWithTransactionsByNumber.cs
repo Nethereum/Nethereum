@@ -77,7 +77,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     }
     ///     }
     /// </Summary>
-    public class EthGetBlockWithTransactionsByNumber : RpcRequestResponseHandler<BlockWithTransactions>
+    public class EthGetBlockWithTransactionsByNumber : RpcRequestResponseHandler<BlockWithTransactions>, IEthGetBlockWithTransactionsByNumber
     {
         public EthGetBlockWithTransactionsByNumber(IClient client)
             : base(client, ApiMethods.eth_getBlockByNumber.ToString())

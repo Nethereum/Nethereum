@@ -8,7 +8,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     most accurate information. If a different rate is desired, set the rate and write the profile manually using
     ///     debug_writeBlockProfile.
     /// </Summary>
-    public class DebugBlockProfile : RpcRequestResponseHandler<object>
+    public class DebugBlockProfile : RpcRequestResponseHandler<object>, IDebugBlockProfile
     {
         public DebugBlockProfile(IClient client) : base(client, ApiMethods.debug_blockProfile.ToString())
         {

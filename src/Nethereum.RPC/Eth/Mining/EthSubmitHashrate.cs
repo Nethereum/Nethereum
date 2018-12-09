@@ -30,7 +30,7 @@ namespace Nethereum.RPC.Eth.Mining
     ///     "result": true
     ///     }
     /// </Summary>
-    public class EthSubmitHashrate : RpcRequestResponseHandler<bool>
+    public class EthSubmitHashrate : RpcRequestResponseHandler<bool>, IEthSubmitHashrate
     {
         public EthSubmitHashrate(IClient client) : base(client, ApiMethods.eth_submitHashrate.ToString())
         {

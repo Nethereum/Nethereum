@@ -25,10 +25,16 @@ namespace Nethereum.Parity.RPC.Network
     ///     }
     ///     }
     /// </Summary>
-    public class ParityChainStatus : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityChainStatus : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityChainStatus
     {
         public ParityChainStatus(IClient client) : base(client, ApiMethods.parity_chainStatus.ToString())
         {
         }
+    }
+
+    public interface IParityChainStatus : IGenericRpcRequestResponseHandlerNoParam<JObject>
+    {
+
+
     }
 }

@@ -22,10 +22,16 @@ namespace Nethereum.Parity.RPC.BlockAuthoring
     ///     "result": "0x29f507000" // 11262783488
     ///     }
     /// </Summary>
-    public class ParityMinGasPrice : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class ParityMinGasPrice : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IParityMinGasPrice
     {
         public ParityMinGasPrice(IClient client) : base(client, ApiMethods.parity_minGasPrice.ToString())
         {
         }
+    }
+
+    public interface IParityMinGasPrice : IGenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    {
+
+
     }
 }

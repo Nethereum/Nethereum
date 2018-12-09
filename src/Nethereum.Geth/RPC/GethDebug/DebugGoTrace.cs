@@ -6,7 +6,7 @@ namespace Nethereum.Geth.RPC.Debug
     /// <Summary>
     ///     Turns on Go runtime tracing for the given duration and writes trace data to disk.
     /// </Summary>
-    public class DebugGoTrace : RpcRequestResponseHandler<object>
+    public class DebugGoTrace : RpcRequestResponseHandler<object>, IDebugGoTrace
     {
         public DebugGoTrace(IClient client) : base(client, ApiMethods.debug_goTrace.ToString())
         {

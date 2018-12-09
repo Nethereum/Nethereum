@@ -8,7 +8,7 @@ namespace Nethereum.Parity.RPC.Trace
     /// <Summary>
     ///     Returns traces matching given filter
     /// </Summary>
-    public class TraceFilter : RpcRequestResponseHandler<JArray>
+    public class TraceFilter : RpcRequestResponseHandler<JArray>, ITraceFilter
     {
         public TraceFilter(IClient client) : base(client, ApiMethods.trace_filter.ToString())
         {

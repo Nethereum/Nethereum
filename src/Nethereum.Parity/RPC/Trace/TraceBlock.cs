@@ -8,7 +8,7 @@ namespace Nethereum.Parity.RPC.Trace
     /// <Summary>
     ///     Returns traces created at given block
     /// </Summary>
-    public class TraceBlock : RpcRequestResponseHandler<JArray>
+    public class TraceBlock : RpcRequestResponseHandler<JArray>, ITraceBlock
     {
         public TraceBlock(IClient client) : base(client, ApiMethods.trace_block.ToString())
         {

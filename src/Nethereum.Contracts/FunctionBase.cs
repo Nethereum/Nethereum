@@ -15,7 +15,7 @@ namespace Nethereum.Contracts
         private readonly Contract _contract;
         protected FunctionBuilderBase FunctionBuilderBase { get; set; }
 
-        private EthCall EthCall => _contract.Eth.Transactions.Call;
+        private IEthCall EthCall => _contract.Eth.Transactions.Call;
         protected ITransactionManager TransactionManager => _contract.Eth.TransactionManager;
 
         public string ContractAddress => _contract.Address;

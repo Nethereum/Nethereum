@@ -70,7 +70,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     }
     ///     }
     /// </Summary>
-    public class EthGetBlockWithTransactionsByHash : RpcRequestResponseHandler<BlockWithTransactions>
+    public class EthGetBlockWithTransactionsByHash : RpcRequestResponseHandler<BlockWithTransactions>, IEthGetBlockWithTransactionsByHash
     {
         public EthGetBlockWithTransactionsByHash(IClient client)
             : base(client, ApiMethods.eth_getBlockByHash.ToString())
@@ -153,7 +153,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     }
     ///     }
     /// </Summary>
-    public class EthGetBlockWithTransactionsHashesByHash : RpcRequestResponseHandler<BlockWithTransactionHashes>
+    public class EthGetBlockWithTransactionsHashesByHash : RpcRequestResponseHandler<BlockWithTransactionHashes>, IEthGetBlockWithTransactionsHashesByHash
     {
         public EthGetBlockWithTransactionsHashesByHash(IClient client)
             : base(client, ApiMethods.eth_getBlockByHash.ToString())

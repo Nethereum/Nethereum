@@ -21,7 +21,7 @@ namespace Nethereum.Parity.RPC.Accounts
     ///     "result": "boasting breeches reshape reputably exit handrail stony jargon moneywise unhinge handed ruby"
     ///     }
     /// </Summary>
-    public class ParityGenerateSecretPhrase : GenericRpcRequestResponseHandlerNoParam<string>
+    public class ParityGenerateSecretPhrase : GenericRpcRequestResponseHandlerNoParam<string>, IParityGenerateSecretPhrase
     {
         public ParityGenerateSecretPhrase(IClient client) : base(client,
             ApiMethods.parity_generateSecretPhrase.ToString())

@@ -8,7 +8,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     Similar to debug_traceBlock, traceBlockByHash accepts a block hash and will replay the block that is already
     ///     present in the database.
     /// </Summary>
-    public class DebugTraceBlockByHash : RpcRequestResponseHandler<JObject>
+    public class DebugTraceBlockByHash : RpcRequestResponseHandler<JObject>, IDebugTraceBlockByHash
     {
         public DebugTraceBlockByHash(IClient client) : base(client, ApiMethods.debug_traceBlockByHash.ToString())
         {

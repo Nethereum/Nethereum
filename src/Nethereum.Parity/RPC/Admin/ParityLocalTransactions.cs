@@ -51,10 +51,15 @@ namespace Nethereum.Parity.RPC.Admin
     ///     }
     ///     }
     /// </Summary>
-    public class ParityLocalTransactions : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class ParityLocalTransactions : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityLocalTransactions
     {
         public ParityLocalTransactions(IClient client) : base(client, ApiMethods.parity_localTransactions.ToString())
         {
         }
+    }
+
+    public interface IParityLocalTransactions : IGenericRpcRequestResponseHandlerNoParam<JObject>
+    {
+
     }
 }

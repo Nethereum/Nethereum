@@ -7,7 +7,7 @@ namespace Nethereum.Parity.RPC.Trace
     /// <Summary>
     ///     Traces a call to eth_sendRawTransaction without making the call, returning the traces
     /// </Summary>
-    public class TraceRawTransaction : RpcRequestResponseHandler<JObject>
+    public class TraceRawTransaction : RpcRequestResponseHandler<JObject>, ITraceRawTransaction
     {
         public TraceRawTransaction(IClient client) : base(client, ApiMethods.trace_rawTransaction.ToString())
         {

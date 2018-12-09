@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": ["0x407d73d8a49eeb85d32cf465507dd71d507100c1"]
     ///     }
     /// </Summary>
-    public class EthAccounts : GenericRpcRequestResponseHandlerNoParam<string[]>
+    public class EthAccounts : GenericRpcRequestResponseHandlerNoParam<string[]>, IEthAccounts
     {
         public EthAccounts(IClient client) : base(client, ApiMethods.eth_accounts.ToString())
         {

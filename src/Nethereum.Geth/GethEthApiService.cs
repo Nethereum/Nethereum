@@ -4,13 +4,13 @@ using Nethereum.RPC;
 
 namespace Nethereum.Geth
 {
-    public class GethEthApiService : RpcClientWrapper
+    public class GethEthApiService : RpcClientWrapper, IGethEthApiService
     {
         public GethEthApiService(IClient client) : base(client)
         {
             PendingTransactions = new EthPendingTransactions(client);
         }
 
-        public EthPendingTransactions PendingTransactions { get; }
+        public IEthPendingTransactions PendingTransactions { get; }
     }
 }

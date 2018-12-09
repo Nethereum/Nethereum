@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Geth
 {
-    public class DebugApiService : RpcClientWrapper
+    public class DebugApiService : RpcClientWrapper, IDebugApiService
     {
         public DebugApiService(IClient client) : base(client)
         {
@@ -33,28 +33,28 @@ namespace Nethereum.Geth
             StackErrorChecker = new VmStackErrorChecker();
         }
 
-        public DebugBacktraceAt BacktraceAt { get; }
-        public DebugBlockProfile BlockProfile { get; }
-        public DebugCpuProfile CpuProfile { get; }
-        public DebugDumpBlock DumpBlock { get; }
-        public DebugGcStats GcStats { get; }
-        public DebugGetBlockRlp GetBlockRlp { get; }
-        public DebugGoTrace GoTrace { get; }
-        public DebugMemStats MemStats { get; }
-        public DebugSeedHash SeedHash { get; }
-        public DebugSetBlockProfileRate SetBlockProfileRate { get; }
-        public DebugStacks Stacks { get; }
-        public DebugStartCPUProfile StartCPUProfile { get; }
-        public DebugStartGoTrace StartGoTrace { get; }
-        public DebugStopCPUProfile StopCPUProfile { get; }
-        public DebugStopGoTrace StopGoTrace { get; }
-        public DebugTraceBlock TraceBlock { get; }
-        public DebugTraceBlockByHash TraceBlockByHash { get; }
-        public DebugTraceBlockByNumber TraceBlockByNumber { get; }
-        public DebugTraceBlockFromFile TraceBlockFromFile { get; }
-        public DebugTraceTransaction TraceTransaction { get; }
-        public DebugVerbosity Verbosity { get; }
-        public DebugVmodule Vmodule { get; }
+        public IDebugBacktraceAt BacktraceAt { get; }
+        public IDebugBlockProfile BlockProfile { get; }
+        public IDebugCpuProfile CpuProfile { get; }
+        public IDebugDumpBlock DumpBlock { get; }
+        public IDebugGcStats GcStats { get; }
+        public IDebugGetBlockRlp GetBlockRlp { get; }
+        public IDebugGoTrace GoTrace { get; }
+        public IDebugMemStats MemStats { get; }
+        public IDebugSeedHash SeedHash { get; }
+        public IDebugSetBlockProfileRate SetBlockProfileRate { get; }
+        public IDebugStacks Stacks { get; }
+        public IDebugStartCPUProfile StartCPUProfile { get; }
+        public IDebugStartGoTrace StartGoTrace { get; }
+        public IDebugStopCPUProfile StopCPUProfile { get; }
+        public IDebugStopGoTrace StopGoTrace { get; }
+        public IDebugTraceBlock TraceBlock { get; }
+        public IDebugTraceBlockByHash TraceBlockByHash { get; }
+        public IDebugTraceBlockByNumber TraceBlockByNumber { get; }
+        public IDebugTraceBlockFromFile TraceBlockFromFile { get; }
+        public IDebugTraceTransaction TraceTransaction { get; }
+        public IDebugVerbosity Verbosity { get; }
+        public IDebugVmodule Vmodule { get; }
 
         public VmStackErrorChecker StackErrorChecker { get; }
     }

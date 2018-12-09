@@ -3,7 +3,7 @@ using Nethereum.RPC.Shh;
 
 namespace Nethereum.RPC
 {
-    public class ShhApiService : RpcClientWrapper
+    public class ShhApiService : RpcClientWrapper, IShhApiService
     {
         public ShhApiService(IClient client) : base(client)
         {
@@ -11,7 +11,7 @@ namespace Nethereum.RPC
             Version = new ShhVersion(client);
         }
 
-        public ShhNewIdentity NewIdentity { get; private set; }
-        public ShhVersion Version { get; private set; }
+        public IShhNewIdentity NewIdentity { get; private set; }
+        public IShhVersion Version { get; private set; }
     }
 }

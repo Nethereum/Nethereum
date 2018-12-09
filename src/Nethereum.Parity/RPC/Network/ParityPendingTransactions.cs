@@ -70,11 +70,17 @@ namespace Nethereum.Parity.RPC.Network
     ///     ]
     ///     }
     /// </Summary>
-    public class ParityPendingTransactions : GenericRpcRequestResponseHandlerNoParam<JArray>
+    public class ParityPendingTransactions : GenericRpcRequestResponseHandlerNoParam<JArray>, IParityPendingTransactions
     {
         public ParityPendingTransactions(IClient client) : base(client,
             ApiMethods.parity_pendingTransactions.ToString())
         {
         }
+    }
+
+    public interface IParityPendingTransactions : IGenericRpcRequestResponseHandlerNoParam<JArray>
+    {
+
+
     }
 }

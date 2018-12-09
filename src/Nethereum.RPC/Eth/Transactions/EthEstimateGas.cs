@@ -25,7 +25,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     "result": "0x5208" // 21000
     ///     }
     /// </Summary>
-    public class EthEstimateGas : RpcRequestResponseHandler<HexBigInteger>
+    public class EthEstimateGas : RpcRequestResponseHandler<HexBigInteger>, IEthEstimateGas
     {
         public EthEstimateGas(IClient client) : base(client, ApiMethods.eth_estimateGas.ToString())
         {

@@ -32,7 +32,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     "result": "0x1" // 1
     ///     }
     /// </Summary>
-    public class EthGetTransactionCount : RpcRequestResponseHandler<HexBigInteger>, IDefaultBlock
+    public class EthGetTransactionCount : RpcRequestResponseHandler<HexBigInteger>, IDefaultBlock, IEthGetTransactionCount
     {
         public EthGetTransactionCount(IClient client) : base(client, ApiMethods.eth_getTransactionCount.ToString())
         {
