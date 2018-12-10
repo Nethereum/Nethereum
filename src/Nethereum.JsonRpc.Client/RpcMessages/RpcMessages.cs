@@ -82,8 +82,12 @@ SOFTWARE.
         /// <param name="response">Rpc response object</param>
         /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
         /// <returns>Result of response as type specified</returns>
-        public static T GetResult<T>(this RpcStreamingResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
+        public static T GetStreamingResult<T>(this RpcStreamingResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
         {
+            if(response.Method == null) {
+                return GetResult<T>(response, returnDefaultIfNull, settings);
+            }
+
             if (response.Params.Result == null)
             {
                 if (!returnDefaultIfNull && default(T) != null)
@@ -148,7 +152,7 @@ SOFTWARE.
         /// <summary>
         /// Request id (Required but nullable)
         /// </summary>
-        [JsonProperty("id", Required = Required.AllowNull)]
+        [JsonProperty("id", Required = Required.Default)]
         public object Id { get; private set; }
 
         /// <summary>
@@ -167,30 +171,30 @@ SOFTWARE.
         /// Error from processing Rpc request (Required)
         /// </summary>
         [JsonProperty("error", Required = Required.Default)]
-        public RpcError Error { get; private set; }
+        public RpcError Error { get; protected set; }
 
         [JsonIgnore]
         public bool HasError { get { return this.Error != null; } }
     }
 
     [JsonObject]
-    public class RpcStreamingResponseMessage
+    public class RpcStreamingResponseMessage : RpcResponseMessage
     {
         [JsonConstructor]
         protected RpcStreamingResponseMessage()
         {
-            JsonRpcVersion = "2.0";
+            
         }
 
         /// <param name="error">Request error</param>
-        public RpcStreamingResponseMessage(RpcError error) : this()
+        public RpcStreamingResponseMessage(RpcError error) : base()
         {
             this.Error = error;
         }
 
         /// <param name="method">method name</param>
         /// <param name="params">Response result object</param>
-        public RpcStreamingResponseMessage(string method, RpcStreamingParams @params) : this()
+        public RpcStreamingResponseMessage(string method, RpcStreamingParams @params) : base()
         {
             this.Method = method;
             this.Params = @params;
@@ -199,29 +203,15 @@ SOFTWARE.
         /// <summary>
         /// Rpc request version (Required)
         /// </summary>
-        [JsonProperty("jsonrpc", Required = Required.Always)]
-        public string JsonRpcVersion { get; private set; }
-
-        /// <summary>
-        /// Rpc request version (Required)
-        /// </summary>
-        [JsonProperty("method", Required = Required.Always)]
+        [JsonProperty("method", Required = Required.Default)]
         public string Method { get; private set; }
 
         /// <summary>
         /// Reponse result object (Required)
         /// </summary>
-        [JsonProperty("params", Required = Required.Always)]
+        [JsonProperty("params", Required = Required.Default)]
         public RpcStreamingParams Params { get; private set; }
 
-        /// <summary>
-        /// Error from processing Rpc request (Required)
-        /// </summary>
-        [JsonProperty("error", Required = Required.Default)]
-        public RpcError Error { get; private set; }
-
-        [JsonIgnore]
-        public bool HasError { get { return this.Error != null; } }
     }
 
     [JsonObject]

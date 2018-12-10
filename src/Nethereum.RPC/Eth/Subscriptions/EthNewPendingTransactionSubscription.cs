@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth.Subscriptions
 
         public RpcRequest BuildRequest(object id)
         {
-            return base.BuildRequest(id);
+            return base.BuildRequest(id, "newPendingTransactions");
         }
     }
 }

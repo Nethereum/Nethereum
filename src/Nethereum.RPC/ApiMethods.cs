@@ -47,6 +47,7 @@
         eth_submitWork,
         eth_submitHashrate,
         eth_subscribe,
+        eth_unsubscribe,
         shh_post,
         shh_version,
         shh_newIdentity,

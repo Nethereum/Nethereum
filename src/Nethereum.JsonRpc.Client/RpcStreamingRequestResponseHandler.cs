@@ -13,8 +13,8 @@ namespace Nethereum.JsonRpc.Client
         {
             MethodName = methodName;
             Client = client;
-
-            Client.StreamingMessageReceived += RpcStreamingMessageResponseHandler;
+            if(Client != null)
+                Client.StreamingMessageReceived += RpcStreamingMessageResponseHandler;
         }
 
         public string MethodName { get; }
