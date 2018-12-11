@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.Streaming;
 using Nethereum.RPC.Tests.Testers;
 using Nethereum.JsonRpc.WebSocketClient;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 
 namespace Nethereum.RPC.Tests
 {

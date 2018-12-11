@@ -1,23 +1,22 @@
-﻿using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.RpcMessages;
-using Nethereum.RPC.Eth.Subscriptions;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+
+namespace Nethereum.JsonRpc.Client.Streaming
 {
     public abstract class RpcStreamingSubscriptionHandler<TSubscriptionDataResponse>: IRpcStreamingSubscriptionHandler
     {
         protected IStreamingClient StreamingClient { get; set; }
-        protected EthUnsubscribe EthUnsubscribe { get; set; }
+        protected IUnsubscribeSubscriptionRpcRequestBuilder UnsubscribeSubscriptionRpcRequestBuilder { get; set; }
         protected object SubscribeRequestId { get; set; }
         protected string UnsubscribeRequestId { get; set; }
         private readonly object _lockingObject = new object();
 
-        protected RpcStreamingSubscriptionHandler(IStreamingClient streamingClient)
+        protected RpcStreamingSubscriptionHandler(IStreamingClient streamingClient, IUnsubscribeSubscriptionRpcRequestBuilder unsubscribeSubscriptionRpcRequestBuilder)
         {
             StreamingClient = streamingClient;
-            EthUnsubscribe = new EthUnsubscribe(null);
+            UnsubscribeSubscriptionRpcRequestBuilder = unsubscribeSubscriptionRpcRequestBuilder;
         }
 
         protected async Task SubscribeAsync(RpcRequest rpcRequest)
@@ -26,7 +25,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 throw new Exception("Invalid state to start subscribtion, current state: " + SubscriptionState.ToString());
 
             SubscribeRequestId = rpcRequest.Id;
-            await StreamingClient.SendRequestAsync(rpcRequest, this);
+#if !DOTNET35
+            await StreamingClient.SendRequestAsync(rpcRequest, this).ConfigureAwait(false);
+#endif
             this.SubscriptionState = SubscriptionState.Subscribing;
         }
 
@@ -36,8 +37,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 throw new Exception("Invalid state to unsubscribe, current state: " + SubscriptionState.ToString());
 
             UnsubscribeRequestId = Guid.NewGuid().ToString();
-            var request = EthUnsubscribe.BuildRequest(SubscriptionId, UnsubscribeRequestId);
-            await StreamingClient.SendRequestAsync(request, this);
+            var request = UnsubscribeSubscriptionRpcRequestBuilder.BuildRequest(SubscriptionId, UnsubscribeRequestId);
+#if !DOTNET35
+            await StreamingClient.SendRequestAsync(request, this).ConfigureAwait(false);
+#endif
             this.SubscriptionState = SubscriptionState.Unsubscribing;
         }
 
@@ -117,4 +120,5 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
         }
     }
+
 }

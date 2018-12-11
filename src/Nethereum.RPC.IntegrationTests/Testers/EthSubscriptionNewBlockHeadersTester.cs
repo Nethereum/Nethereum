@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.JsonRpc.Client.Streaming;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Subscriptions;
 using Xunit;
@@ -16,47 +17,32 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async Task ShouldRetrieveBlock()
         {
-            var tokenSource = new CancellationTokenSource();
-            var recievedMessage = false;
-            var successfulResponse = false;
-            var failureMessage = string.Empty;
-            Block successResponse = null;
-            this.StreamingClient.StreamingMessageReceived += (s, e) => 
-            {
-                recievedMessage = true;
-                successfulResponse = !e.Message.HasError;
-                if (e.Message.HasError)
+
+            Block receivedMessage = null;
+            var subscription = new EthNewBlockHeadersSubscription(StreamingClient);
+            subscription.SubscriptionDataResponse += delegate(object sender, StreamingEventArgs<Block> args)
                 {
-                    failureMessage = e.Message.Error.Message;
-                }
-                else
-                {
-                    successResponse = e.Message.GetResult<Block>();
-                }
+                    receivedMessage = args.Response;
+                };
 
-                tokenSource.Cancel();
-            };
-
-            await ExecuteAsync();
-
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
+            
             try
             {
-                await Task.Delay(10000, tokenSource.Token);
+                await Task.Delay(10000);
             }
             catch (TaskCanceledException)
             {
                 // swallow, escape hatch
             }
 
-            Assert.True(recievedMessage, "Did not recieved response");
-            Assert.True(successfulResponse, $"Response indicated failure: {failureMessage}");
-            Assert.NotNull(successResponse);
+            Assert.NotNull(receivedMessage);
         }
 
         public override async Task ExecuteAsync(IStreamingClient client)
         {
             var subscription = new EthNewBlockHeadersSubscription(client);
-            await subscription.SendRequestAsync(Guid.NewGuid());
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
         }
 
         public override Type GetRequestType()

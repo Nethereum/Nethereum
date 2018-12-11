@@ -1,8 +1,6 @@
 ﻿using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.RpcMessages;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.JsonRpc.Client.Streaming
 {
     public interface IStreamingClient
     {

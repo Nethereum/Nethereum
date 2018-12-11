@@ -11,7 +11,6 @@ namespace Nethereum.RPC
     {
         private BlockParameter defaultBlock;
         private ITransactionManager _transactionManager;
-        private Lazy<EthSubscriptionService> _subscriptionService;
 
         public EthApiService(IClient client) : this(client, 
             new TransactionManager(client))

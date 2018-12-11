@@ -35,6 +35,10 @@ namespace Nethereum.RPC.Eth
     /// </Summary>
     public class EthGetBalance : RpcRequestResponseHandler<HexBigInteger>, IDefaultBlock, IEthGetBalance
     {
+        public EthGetBalance() : this(null)
+        {
+        }
+
         public EthGetBalance(IClient client) : base(client, ApiMethods.eth_getBalance.ToString())
         {
             DefaultBlock = BlockParameter.CreateLatest();

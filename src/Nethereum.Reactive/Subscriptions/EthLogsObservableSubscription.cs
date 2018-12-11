@@ -1,16 +1,16 @@
-﻿using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.DTOs;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.Streaming;
-using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Subscriptions;
 
-namespace Nethereum.RPC.Eth.Subscriptions
+namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
-    public class EthLogsSubscription : RpcStreamingSubscriptionEventResponseHandler<FilterLog>
+    public class EthLogsObservableSubscription : RpcStreamingSubscriptionObservableHandler<FilterLog>
     {
         private EthLogsSubscriptionRequestBuilder _ethLogsSubscriptionRequestBuilder;
 
-        public EthLogsSubscription(IStreamingClient client) : base(client, new EthUnsubscribeRequestBuilder())
+        public EthLogsObservableSubscription(IStreamingClient client) : base(client, new EthUnsubscribeRequestBuilder())
         {
             _ethLogsSubscriptionRequestBuilder = new EthLogsSubscriptionRequestBuilder();
         }
@@ -18,6 +18,11 @@ namespace Nethereum.RPC.Eth.Subscriptions
         public Task SubscribeAsync(NewFilterInput filterInput, object id = null)
         {
             return base.SubscribeAsync(BuildRequest(filterInput, id));
+        }
+
+        public Task SubscribeAsync(object id = null)
+        {
+            return base.SubscribeAsync(BuildRequest(new NewFilterInput(), id));
         }
 
         public RpcRequest BuildRequest(NewFilterInput filterInput, object id = null)

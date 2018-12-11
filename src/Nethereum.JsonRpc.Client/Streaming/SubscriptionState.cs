@@ -1,4 +1,4 @@
-﻿namespace Nethereum.JsonRpc.WebSocketStreamingClient
+﻿namespace Nethereum.JsonRpc.Client.Streaming
 {
 
     public enum SubscriptionState

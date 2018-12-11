@@ -1,15 +1,16 @@
 ﻿using Nethereum.JsonRpc.Client;
 using System;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.Streaming;
 
 namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
-    public abstract class RpcStreamingRequestResponseNoParamsObservableHandler<TResponse, TRpcRequestResponseHandler> : RpcStreamingRequestResponseObservableHandler<TResponse>
+    public abstract class RpcStreamingResponseNoParamsObservableHandler<TResponse, TRpcRequestResponseHandler> : RpcStreamingResponseObservableHandler<TResponse>
        where TRpcRequestResponseHandler : RpcRequestResponseHandlerNoParam<TResponse>
     {
         protected TRpcRequestResponseHandler RpcRequestResponseHandler { get; }
 
-        protected RpcStreamingRequestResponseNoParamsObservableHandler(IStreamingClient streamingClient, TRpcRequestResponseHandler rpcRequestResponseHandler) : base(streamingClient)
+        protected RpcStreamingResponseNoParamsObservableHandler(IStreamingClient streamingClient, TRpcRequestResponseHandler rpcRequestResponseHandler) : base(streamingClient)
         {
             RpcRequestResponseHandler = rpcRequestResponseHandler;
         }

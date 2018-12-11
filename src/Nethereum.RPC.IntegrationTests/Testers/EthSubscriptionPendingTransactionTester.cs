@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Subscriptions;
 using Xunit;
 
@@ -12,55 +14,39 @@ namespace Nethereum.RPC.Tests.Testers
     public class EthPendingTransactionSubscriptionTester : StreamingRPCRequestTester
     {
         [Fact]
-        public async Task ShouldRetrieveTransaction()
+        public async Task ShouldRetrievePendingTransaction()
         {
-            var tokenSource = new CancellationTokenSource();
 
-            var recievedMessage = false;
-            var successfulResponse = false;
-            var failureMessage = string.Empty;
-            var successResponse = string.Empty;
-            this.StreamingClient.StreamingMessageReceived += (s, e) => 
+            string receivedMessage = null;
+            var subscription = new EthNewPendingTransactionSubscription(StreamingClient);
+            subscription.SubscriptionDataResponse += delegate (object sender, StreamingEventArgs<string> args)
             {
-                recievedMessage = true;
-                successfulResponse = !e.Message.HasError;
-                if (e.Message.HasError)
-                {
-                    failureMessage = e.Message.Error.Message;
-                }
-                else
-                {
-                    successResponse = e.Message.GetResult<string>();
-                }
-
-                tokenSource.Cancel();
+                receivedMessage = args.Response;
             };
 
-            await ExecuteAsync();
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
 
             try
             {
-                await Task.Delay(5000, tokenSource.Token);
+                await Task.Delay(10000);
             }
             catch (TaskCanceledException)
             {
-                //swallow, escape hatch
+                // swallow, escape hatch
             }
 
-            Assert.True(recievedMessage, "Did not recieved response");
-            Assert.True(successfulResponse, $"Response indicated failure: {failureMessage}");
-            Assert.False(string.IsNullOrEmpty(successResponse));
+            Assert.NotNull(receivedMessage);
         }
 
         public override async Task ExecuteAsync(IStreamingClient client)
         {
             var subscription = new EthNewPendingTransactionSubscription(client);
-            await subscription.SendRequestAsync(Guid.NewGuid());
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
         }
 
         public override Type GetRequestType()
         {
-            return typeof (EthNewPendingTransactionSubscription);
+            return typeof(EthNewPendingTransactionSubscription);
         }
     }
 }

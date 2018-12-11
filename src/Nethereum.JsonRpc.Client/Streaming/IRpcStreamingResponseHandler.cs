@@ -1,6 +1,6 @@
 ﻿using Nethereum.JsonRpc.Client.RpcMessages;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.JsonRpc.Client.Streaming
 {
     public interface IRpcStreamingResponseHandler
     {

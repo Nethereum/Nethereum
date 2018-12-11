@@ -81,6 +81,7 @@ namespace Nethereum.Signer.Trezor
             }
 
             var signature = await TrezorManager.SendMessageAsync<EthereumTxRequest, EthereumSignTx>(txMessage);
+            if (signature.SignatureS == null || signature.SignatureR == null) throw new Exception("Signing failure or not accepted");
             transaction.SetSignature(EthECDSASignatureFactory.FromComponents(signature.SignatureR, signature.SignatureS, (byte)signature.SignatureV));
         }
 

@@ -1,26 +1,30 @@
 ﻿using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 
 namespace Nethereum.RPC.Eth.Subscriptions
 {
-    public class EthNewPendingTransactionSubscription : RpcStreamingRequestResponseHandler<string>
+    public class EthNewPendingTransactionSubscription : RpcStreamingSubscriptionEventResponseHandler<string>
     {
-        public EthNewPendingTransactionSubscription(IStreamingClient client) : base(client, ApiMethods.eth_subscribe.ToString())
+        private EthNewPendingTransactionSubscriptionRequestBuilder _builder;
+
+        public EthNewPendingTransactionSubscription(IStreamingClient client) : base(client, new EthUnsubscribeRequestBuilder())
         {
+            _builder = new EthNewPendingTransactionSubscriptionRequestBuilder();
         }
 
-        public Task SendRequestAsync(object id)
+        public Task SubscribeAsync(object id = null)
         {
-            return base.SendRequestAsync(id, "newPendingTransactions");
+            return base.SubscribeAsync(BuildRequest(id));
         }
 
         public RpcRequest BuildRequest(object id)
         {
-            return base.BuildRequest(id, "newPendingTransactions");
+            return _builder.BuildRequest(id);
         }
     }
 }

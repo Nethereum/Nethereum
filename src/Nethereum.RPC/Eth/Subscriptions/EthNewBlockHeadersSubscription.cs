@@ -1,27 +1,31 @@
 ﻿using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
-using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 
 namespace Nethereum.RPC.Eth.Subscriptions
 {
-    public class EthNewBlockHeadersSubscription : RpcStreamingRequestResponseHandler<Block>
+    public class EthNewBlockHeadersSubscription : RpcStreamingSubscriptionEventResponseHandler<Block>
     {
-        public EthNewBlockHeadersSubscription(IStreamingClient client) : base(client, ApiMethods.eth_subscribe.ToString())
+        private EthNewBlockHeadersSubscriptionRequestBuilder _ethNewBlockHeadersSubscriptionRequestBuilder;
+
+        public EthNewBlockHeadersSubscription(IStreamingClient client) : base(client, new EthUnsubscribeRequestBuilder())
         {
+            _ethNewBlockHeadersSubscriptionRequestBuilder = new EthNewBlockHeadersSubscriptionRequestBuilder();
         }
 
-        public Task SendRequestAsync(object id)
+        public Task SubscribeAsync(object id = null)
         {
-            return base.SendRequestAsync(id, "newHeads");
+            return base.SubscribeAsync(BuildRequest(id));
         }
 
         public RpcRequest BuildRequest(object id)
         {
-            return base.BuildRequest(id, "newHeads");
+            return _ethNewBlockHeadersSubscriptionRequestBuilder.BuildRequest(id);
         }
     }
 }
