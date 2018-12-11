@@ -63,8 +63,8 @@ namespace Nethereum.Tutorials
 
         //event Multiplied(int indexed a, address indexed sender, int result );
 
-        
-        public class MultipliedEvent
+        [Event("Multiplied")]
+        public class MultipliedEvent : IEventDTO
         {
             [Parameter("int", "a", 1, true)]
             public int MultiplicationInput {get; set;}
