@@ -24,11 +24,18 @@ namespace Nethereum.WebSocketsStreamingTest
             blockHeaderSubscription.GetSubscribeResponseAsObservable().Subscribe(subscriptionId =>
                 Console.WriteLine("Block Header subscription Id: " + subscriptionId));
 
-            blockHeaderSubscription.GetSubscribionDataResponsesAsObservable().Subscribe(block =>
+            blockHeaderSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(block =>
                 Console.WriteLine("New Block: " + block.BlockHash));
 
-            blockHeaderSubscription.GetUnsubscribeResponsesAsObservable().Subscribe(response =>
+            blockHeaderSubscription.GetUnsubscribeResponseAsObservable().Subscribe(response =>
                             Console.WriteLine("Block Header unsubscribe result: " + response));
+
+
+            var blockHeaderSubscription2 = new EthNewBlockHeadersEventSubscription(client);
+            blockHeaderSubscription2.SubscriptionDataResponse += (object sender, StreamingEventArgs<Block> e) =>
+            {
+                Console.WriteLine("New Block from event: " + e.Response.BlockHash);
+            };
 
 
             var pendingTransactionsSubscription = new EthNewPendingTransactionObservableSubscription(client);
@@ -36,24 +43,24 @@ namespace Nethereum.WebSocketsStreamingTest
             pendingTransactionsSubscription.GetSubscribeResponseAsObservable().Subscribe(subscriptionId =>
                 Console.WriteLine("Pending transactions subscription Id: " + subscriptionId));
 
-            pendingTransactionsSubscription.GetSubscribionDataResponsesAsObservable().Subscribe(transactionHash =>
+            pendingTransactionsSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(transactionHash =>
                 Console.WriteLine("New Pending TransactionHash: " + transactionHash));
 
-            pendingTransactionsSubscription.GetUnsubscribeResponsesAsObservable().Subscribe(response =>
+            pendingTransactionsSubscription.GetUnsubscribeResponseAsObservable().Subscribe(response =>
                             Console.WriteLine("Pending transactions unsubscribe result: " + response));
 
 
             var ethGetBalance = new EthGetBalanceObservableHandler(client);
-            ethGetBalance.GetResponseAsObservable().Subscribe(balance =>
+            var subs = ethGetBalance.GetResponseAsObservable().Subscribe(balance =>
                             Console.WriteLine("Balance xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: " + balance.Value.ToString()));
-
+           
             var ethBlockNumber = new EthBlockNumberObservableHandler(client);
             ethBlockNumber.GetResponseAsObservable().Subscribe(blockNumber =>
                                 Console.WriteLine("Block number: bbbbbbbbbbbbbb" + blockNumber.Value.ToString()));
 
 
             var ethLogs = new EthLogsObservableSubscription(client);
-            ethLogs.GetSubscribionDataResponsesAsObservable().Subscribe(log =>
+            ethLogs.GetSubscriptionDataResponsesAsObservable().Subscribe(log =>
                 Console.WriteLine("Log Address:" + log.Address));
 
             //no contract address
@@ -61,7 +68,7 @@ namespace Nethereum.WebSocketsStreamingTest
             var filterTransfers = new TransferEventDTO().GetEventABI().CreateFilterInput((string)null);
 
             var ethLogsTokenTransfer = new EthLogsObservableSubscription(client);
-            ethLogsTokenTransfer.GetSubscribionDataResponsesAsObservable().Subscribe(log =>
+            ethLogsTokenTransfer.GetSubscriptionDataResponsesAsObservable().Subscribe(log =>
             {
                 try
                 {
@@ -87,7 +94,9 @@ namespace Nethereum.WebSocketsStreamingTest
 
             blockHeaderSubscription.SubscribeAsync().Wait();
 
-            pendingTransactionsSubscription.SubscribeAsync().Wait();
+            blockHeaderSubscription2.SubscribeAsync().Wait();
+
+            //pendingTransactionsSubscription.SubscribeAsync().Wait();
             
             ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
 
@@ -97,8 +106,8 @@ namespace Nethereum.WebSocketsStreamingTest
 
             ethLogsTokenTransfer.SubscribeAsync().Wait();
 
-            Thread.Sleep(15000);
-            pendingTransactionsSubscription.UnsubscribeAsync().Wait();
+            Thread.Sleep(30000);
+            //pendingTransactionsSubscription.UnsubscribeAsync().Wait();
 
             Thread.Sleep(20000);
 
@@ -107,6 +116,10 @@ namespace Nethereum.WebSocketsStreamingTest
             Thread.Sleep(20000);
         }
 
+        private static void BlockHeaderSubscription2_SubscriptionDataResponse(object sender, StreamingEventArgs<Block> e)
+        {
+            throw new NotImplementedException();
+        }
 
         public partial class TransferEventDTO : TransferEventDTOBase { }
 

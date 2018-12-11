@@ -1,45 +1,84 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.RpcMessages;
-using Nethereum.RPC.Eth.Subscriptions;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
 
-    public class RpcStreamingSubscriptionObservableHandler<TSubscriptionDataResponse> : IRpcStreamingSubscriptionHandler
+    public class StreamingEventArgs<TEntity> : EventArgs
     {
-        protected IStreamingClient StreamingClient { get; set; }
+        public TEntity Response { get; private set; }
+        public RpcResponseException Exception { get; private set; }
 
+        public StreamingEventArgs(TEntity entity, RpcResponseException exception = null)
+        {
+            Response = entity;
+        }
+
+        public StreamingEventArgs(RpcResponseException exception)
+        {
+            Exception = exception;
+        }
+
+    }
+
+    public class RpcStreamingSubscriptionEventResponseHandler<TSubscriptionDataResponse> : RpcStreamingSubscriptionHandler<TSubscriptionDataResponse>
+    {
+        public event EventHandler<StreamingEventArgs<string>> SubscribeResponse;
+        public event EventHandler<StreamingEventArgs<bool>> UnsubscribeResponse;
+        public event EventHandler<StreamingEventArgs<TSubscriptionDataResponse>> SubscriptionDataResponse;
+
+        protected RpcStreamingSubscriptionEventResponseHandler(IStreamingClient streamingClient) : base(streamingClient)
+        {
+     
+        }
+
+        protected override void HandleDataResponse(TSubscriptionDataResponse subscriptionDataResponse)
+        {
+            SubscriptionDataResponse?.Invoke(this, new StreamingEventArgs<TSubscriptionDataResponse>(subscriptionDataResponse));
+        }
+
+        protected override void HandleDataResponseError(RpcResponseException exception)
+        {
+            SubscriptionDataResponse?.Invoke(this, new StreamingEventArgs<TSubscriptionDataResponse>(exception));
+        }
+
+        protected override void HandleSubscribeResponse(string subscriptionId)
+        {
+            SubscribeResponse?.Invoke(this, new StreamingEventArgs<string>(subscriptionId));
+        }
+
+        protected override void HandleSubscribeResponseError(RpcResponseException exception)
+        {
+            SubscribeResponse?.Invoke(this, new StreamingEventArgs<string>(exception));
+        }
+
+        protected override void HandleUnsubscribeResponse(bool success)
+        {
+            UnsubscribeResponse?.Invoke(this, new StreamingEventArgs<bool>(success));
+        }
+
+        protected override void HandleUnsubscribeResponseError(RpcResponseException exception)
+        {
+            UnsubscribeResponse?.Invoke(this, new StreamingEventArgs<bool>(exception));
+        }
+    }
+
+
+    public class RpcStreamingSubscriptionObservableHandler<TSubscriptionDataResponse> : RpcStreamingSubscriptionHandler<TSubscriptionDataResponse>
+    {
         protected Subject<string> SubscribeResponseSubject { get; set; }
         protected Subject<bool> UnsubscribeResponseSubject { get; set; }
         protected Subject<TSubscriptionDataResponse> SubscriptionDataResponseSubject { get; set; }
-        protected EthUnsubscribe EthUnsubscribe { get; set; }
-
-        protected object SubscribeRequestId { get; set; }
-        protected string UnsubscribeRequestId { get; set; }
-
-        protected RpcStreamingSubscriptionObservableHandler(IStreamingClient streamingClient)
+        
+        protected RpcStreamingSubscriptionObservableHandler(IStreamingClient streamingClient):base(streamingClient)
         {
-            StreamingClient = streamingClient;
             SubscribeResponseSubject = new Subject<string>();
             UnsubscribeResponseSubject = new Subject<bool>();
-            EthUnsubscribe = new EthUnsubscribe(null);
             SubscriptionDataResponseSubject = new Subject<TSubscriptionDataResponse>();
-        }
-
-        protected async Task SubscribeAsync(RpcRequest rpcRequest)
-        {
-            if (SubscriptionState != SubscriptionState.Idle)
-                throw new Exception("Invalid state to start subscribtion, current state: " + SubscriptionState.ToString());
-
-            SubscribeRequestId = rpcRequest.Id;
-            await StreamingClient.SendRequestAsync(rpcRequest, this);
-            this.SubscriptionState = SubscriptionState.Subscribing;
         }
 
         public IObservable<string> GetSubscribeResponseAsObservable()
@@ -47,95 +86,48 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return SubscribeResponseSubject.AsObservable();
         }
 
-        public IObservable<TSubscriptionDataResponse> GetSubscribionDataResponsesAsObservable()
+        public IObservable<TSubscriptionDataResponse> GetSubscriptionDataResponsesAsObservable()
         {
             return SubscriptionDataResponseSubject.AsObservable();
         }
 
-        public IObservable<bool> GetUnsubscribeResponsesAsObservable()
+        public IObservable<bool> GetUnsubscribeResponseAsObservable()
         {
             return UnsubscribeResponseSubject.AsObservable();
         }
 
-        public async Task UnsubscribeAsync()
+        protected override void HandleSubscribeResponseError(RpcResponseException exception)
         {
-            if (SubscriptionState != SubscriptionState.Subscribed && SubscriptionState != SubscriptionState.Unsubscribed ) //allow retrying? what happens when it returns false the unsubscription
-                    throw new Exception("Invalid state to unsubscribe, current state: " + SubscriptionState.ToString());
-
-            UnsubscribeRequestId = Guid.NewGuid().ToString();
-            var request = EthUnsubscribe.BuildRequest(SubscriptionId, UnsubscribeRequestId);
-            await StreamingClient.SendRequestAsync(request, this);
-            this.SubscriptionState = SubscriptionState.Unsubscribing;
+            SubscribeResponseSubject.OnError(exception);
+            SubscribeResponseSubject.OnCompleted();
         }
 
-        public void HandleResponse(RpcStreamingResponseMessage rpcStreamingResponse)
+        protected override void HandleUnsubscribeResponseError(RpcResponseException exception)
         {
-            if (rpcStreamingResponse.Method == null)
-            {
-                if (rpcStreamingResponse.Id.ToString() == SubscribeRequestId.ToString())
-                {
-                    if (rpcStreamingResponse.HasError)
-                    {
-                        if (SubscribeResponseSubject != null)
-                        {
-                            SubscribeResponseSubject.OnError(GetException(rpcStreamingResponse));
-                        }
-                    }
-                    else
-                    {
-                        var result = rpcStreamingResponse.GetStreamingResult<string>();
-                        this.SubscriptionState = SubscriptionState.Subscribed;
-                        this.SubscriptionId = result;
-                        StreamingClient.AddSubscription(SubscriptionId, this);
-                        SubscribeResponseSubject.OnNext(result);
-                        SubscribeResponseSubject.OnCompleted();
-                    }
-                }
-
-                if(!string.IsNullOrEmpty(UnsubscribeRequestId) && rpcStreamingResponse.Id.ToString() == UnsubscribeRequestId)
-                {
-                    if (rpcStreamingResponse.HasError)
-                    {
-                        UnsubscribeResponseSubject.OnError(GetException(rpcStreamingResponse));
-                    }
-                    else
-                    {
-                        var result = rpcStreamingResponse.GetStreamingResult<bool>();
-                        if (result)
-                        {
-                            this.SubscriptionState = SubscriptionState.Unsubscribed;
-                            StreamingClient.RemoveSubscription(SubscriptionId);
-                        }
-                        UnsubscribeResponseSubject.OnNext(result);
-                        UnsubscribeResponseSubject.OnCompleted();
-                    }
-                }
-            }
-            else
-            {
-                if (rpcStreamingResponse.HasError)
-                {
-                    SubscriptionDataResponseSubject.OnError(GetException(rpcStreamingResponse));
-                }
-                else
-                {
-                    var result = rpcStreamingResponse.GetStreamingResult<TSubscriptionDataResponse>();
-
-                    SubscriptionDataResponseSubject.OnNext(result);
-
-                }
-            }
+            UnsubscribeResponseSubject.OnError(exception);
         }
 
-        protected RpcResponseException GetException(RpcStreamingResponseMessage rpcStreamingResponse)
+        protected override void HandleDataResponseError(RpcResponseException exception)
         {
-            return new RpcResponseException(new Client.RpcError(rpcStreamingResponse.Error.Code, rpcStreamingResponse.Error.Message,
-                       rpcStreamingResponse.Error.Data));
+            SubscriptionDataResponseSubject.OnError(exception);
         }
 
-        public string SubscriptionId { get; protected set; }
+        protected override void HandleSubscribeResponse(string subscriptionId)
+        {
+            SubscribeResponseSubject.OnNext(subscriptionId);
+            SubscribeResponseSubject.OnCompleted();
+        }
 
-        public SubscriptionState SubscriptionState { get; protected set; } = SubscriptionState.Idle;
-        
+        protected override void HandleUnsubscribeResponse(bool success)
+        {
+            UnsubscribeResponseSubject.OnNext(success);
+            UnsubscribeResponseSubject.OnCompleted();
+            SubscriptionDataResponseSubject.OnCompleted();
+        }
+
+        protected override void HandleDataResponse(TSubscriptionDataResponse subscriptionDataResponse)
+        {
+            SubscriptionDataResponseSubject.OnNext(subscriptionDataResponse);
+        }
     }
 }

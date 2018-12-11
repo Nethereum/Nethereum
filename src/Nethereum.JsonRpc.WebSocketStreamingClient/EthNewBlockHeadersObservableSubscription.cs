@@ -5,6 +5,25 @@ using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
+
+    public class EthNewBlockHeadersEventSubscription : RpcStreamingSubscriptionEventResponseHandler<Block>
+    {
+        EthNewBlockHeadersSubscription _ethNewBlockHeadersSubscription;
+        public EthNewBlockHeadersEventSubscription(IStreamingClient streamingClient) : base(streamingClient)
+        {
+            _ethNewBlockHeadersSubscription = new EthNewBlockHeadersSubscription(null);
+        }
+
+        public Task SubscribeAsync(object id = null)
+        {
+            if (id == null) id = Guid.NewGuid().ToString();
+            var request = _ethNewBlockHeadersSubscription.BuildRequest(id);
+            return base.SubscribeAsync(request);
+        }
+    }
+
+
+
     public class EthNewBlockHeadersObservableSubscription : RpcStreamingSubscriptionObservableHandler<Block>
     {
         EthNewBlockHeadersSubscription _ethNewBlockHeadersSubscription;
