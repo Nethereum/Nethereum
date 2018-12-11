@@ -1,12 +1,10 @@
-﻿using Nethereum.JsonRpc.Client;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text.RegularExpressions;
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.Streaming;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.RPC.Reactive.RpcStreaming
 {
 
     public class RpcStreamingSubscriptionObservableHandler<TSubscriptionDataResponse> : RpcStreamingSubscriptionHandler<TSubscriptionDataResponse>

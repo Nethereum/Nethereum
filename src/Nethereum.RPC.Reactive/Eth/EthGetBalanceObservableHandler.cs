@@ -1,12 +1,12 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.Client.Streaming;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
-using System;
-using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.RPC.Reactive.RpcStreaming;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.RPC.Reactive.Eth
 {
     public class EthGetBalanceObservableHandler : RpcStreamingResponseParamsObservableHandler<HexBigInteger, EthGetBalance>
     {

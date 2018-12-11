@@ -11,6 +11,8 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using System.Numerics;
 using Nethereum.JsonRpc.Client.Streaming;
 using Nethereum.RPC.Eth.Subscriptions;
+using Nethereum.RPC.Reactive.Eth;
+using Nethereum.RPC.Reactive.Eth.Subscriptions;
 
 namespace Nethereum.WebSocketsStreamingTest
 {

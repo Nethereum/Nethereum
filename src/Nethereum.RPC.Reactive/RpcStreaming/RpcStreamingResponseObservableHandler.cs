@@ -1,10 +1,11 @@
-﻿using Nethereum.JsonRpc.Client;
-using System;
+﻿using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.RPC.Reactive.RpcStreaming
 {
     public class RpcStreamingResponseObservableHandler<TResponse> : RpcStreamingRequestResponseHandler<TResponse>
     {

@@ -1,11 +1,11 @@
-﻿using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Subscriptions;
-using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.Streaming;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Subscriptions;
+using Nethereum.RPC.Reactive.RpcStreaming;
 
-namespace Nethereum.JsonRpc.WebSocketStreamingClient
+namespace Nethereum.RPC.Reactive.Eth.Subscriptions
 {
 
     public class EthNewBlockHeadersObservableSubscription : RpcStreamingSubscriptionObservableHandler<Block>
