@@ -23,5 +23,10 @@ namespace Nethereum.ABI
             var input = value as object[];
             return parametersEncoder.EncodeParameters(Components, input);
         }
+
+        public byte[] EncodePacked(object value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

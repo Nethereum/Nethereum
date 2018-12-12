@@ -27,6 +27,11 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value)
         {
+            return Encode(value, 32);
+        }
+
+        public byte[] Encode(object value, uint numberOfBytesArray)
+        {
             BigInteger bigInt;
 
             var stringValue = value as string;
@@ -34,14 +39,19 @@ namespace Nethereum.ABI.Encoders
             if (stringValue != null)
                 bigInt = intTypeDecoder.Decode<BigInteger>(stringValue);
             else if (value is BigInteger)
-                bigInt = (BigInteger) value;
+                bigInt = (BigInteger)value;
             else if (value.IsNumber())
                 bigInt = BigInteger.Parse(value.ToString());
             else if (value is Enum)
                 bigInt = (BigInteger)(int)value;
             else
                 throw new Exception("Invalid value for type '" + this + "': " + value + " (" + value.GetType() + ")");
-            return EncodeInt(bigInt);
+            return EncodeInt(bigInt, numberOfBytesArray);
+        }
+
+        public byte[] EncodePacked(object value)
+        {
+            return Encode(value, _size / 8);
         }
 
         public byte[] EncodeInt(int value)
@@ -49,13 +59,13 @@ namespace Nethereum.ABI.Encoders
             return EncodeInt(new BigInteger(value));
         }
 
-        public byte[] EncodeInt(BigInteger value)
+        public byte[] EncodeInt(BigInteger value, uint numberOfBytesArray)
         {
             ValidateValue(value);
             //It should always be Big Endian.
             var bytes = BitConverter.IsLittleEndian
-                            ? value.ToByteArray().Reverse().ToArray()
-                            : value.ToByteArray();
+                ? value.ToByteArray().Reverse().ToArray()
+                : value.ToByteArray();
 
             if (bytes.Length == 33 && !_signed)
             {
@@ -70,9 +80,7 @@ namespace Nethereum.ABI.Encoders
                 }
             }
 
-            const int maxIntSizeInBytes = 32;
-
-            var ret = new byte[maxIntSizeInBytes];
+            var ret = new byte[numberOfBytesArray];
 
             for (var i = 0; i < ret.Length; i++)
                 if (value.Sign < 0)
@@ -80,9 +88,14 @@ namespace Nethereum.ABI.Encoders
                 else
                     ret[i] = 0;
 
-            Array.Copy(bytes, 0, ret, maxIntSizeInBytes - bytes.Length, bytes.Length);
+            Array.Copy(bytes, 0, ret, (int)numberOfBytesArray - bytes.Length, bytes.Length);
 
             return ret;
+        }
+
+        public byte[] EncodeInt(BigInteger value)
+        {
+            return EncodeInt(value, 32);
         }
 
 

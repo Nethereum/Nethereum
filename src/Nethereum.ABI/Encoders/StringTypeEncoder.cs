@@ -21,5 +21,13 @@ namespace Nethereum.ABI.Encoders
 
             return byteTypeEncoder.Encode(bytes, false);
         }
+
+        public byte[] EncodePacked(object value)
+        {
+            if (!(value is string))
+                throw new Exception("String value expected for type 'string'");
+
+            return Encoding.UTF8.GetBytes((string)value);
+        }
     }
 }

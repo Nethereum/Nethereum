@@ -26,5 +26,16 @@ namespace Nethereum.ABI.Encoders
                 elems[i] = elementType.Encode(l[i]);
             return ByteUtil.Merge(elems);
         }
+
+        public override byte[] EncodeListPacked(IList l)
+        {
+            if (l.Count != arraySize)
+                throw new Exception("List size (" + l.Count + ") != " + arraySize);
+
+            var elems = new byte[arraySize][];
+            for (var i = 0; i < l.Count; i++)
+                elems[i] = elementType.EncodePacked(l[i]);
+            return ByteUtil.Merge(elems);
+        }
     }
 }
