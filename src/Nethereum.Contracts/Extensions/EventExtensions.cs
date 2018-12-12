@@ -71,6 +71,13 @@ namespace Nethereum.Contracts.Extensions
             return new EventTopicBuilder(eventABI);
         }
 
+        public static NewFilterInput CreateFilterInput(this EventABI eventABI, BlockParameter fromBlock = null, BlockParameter toBlock = null)
+        {
+            var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput((string)null, fromBlock, toBlock);
+            ethFilterInput.Topics = eventABI.GetTopicBuilder().GetSignatureTopicAsTheOnlyTopic();
+            return ethFilterInput;
+        }
+
         public static NewFilterInput CreateFilterInput(this EventABI eventABI, string contractAddress, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
             var ethFilterInput = FilterInputBuilder.GetDefaultFilterInput(contractAddress, fromBlock, toBlock);

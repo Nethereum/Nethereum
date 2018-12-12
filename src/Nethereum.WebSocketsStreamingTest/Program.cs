@@ -73,30 +73,29 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //no contract address
 
-            var filterTransfers = new TransferEventDTO().GetEventABI().CreateFilterInput((string)null);
+            var filterTransfers = Event<TransferEventDTO>.GetEventABI().CreateFilterInput();
 
             var ethLogsTokenTransfer = new EthLogsObservableSubscription(client);
             ethLogsTokenTransfer.GetSubscriptionDataResponsesAsObservable().Subscribe(log =>
             {
                 try
                 {
-                    var decoded = new TransferEventDTO().DecodeEvent(log);
+                    var decoded = Event<TransferEventDTO>.DecodeEvent(log);
                     if (decoded != null)
                     {
-                        Console.WriteLine("Contract address: " + log.Address +  " Log Transfer from:" + decoded.From);
+                        Console.WriteLine("Contract address: " + log.Address +  " Log Transfer from:" + decoded.Event.From);
                     }
                     else
                     {
                         Console.WriteLine("Found not standard transfer log");
                     }
                 }
-                catch {
+                catch (Exception ex){
+                    Console.WriteLine("Log Address: "+ log.Address + " is not a standard transfer log:", ex.Message);
                 }
             });
 
             
-                
-
 
             client.Start().Wait();
 
@@ -112,7 +111,7 @@ namespace Nethereum.WebSocketsStreamingTest
 
             ethLogs.SubscribeAsync().Wait();
 
-            ethLogsTokenTransfer.SubscribeAsync().Wait();
+            ethLogsTokenTransfer.SubscribeAsync(filterTransfers).Wait();
 
             Thread.Sleep(30000);
             pendingTransactionsSubscription.UnsubscribeAsync().Wait();

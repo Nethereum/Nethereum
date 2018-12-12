@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
@@ -51,7 +52,7 @@ namespace Nethereum.Contracts
             return new Event(this, ContractBuilder.GetEventAbi(name));
         }
 
-        public Event<T> GetEvent<T>(string name) where T: new()
+        public Event<T> GetEvent<T>(string name) where T: IEventDTO, new()
         {
             return new Event<T>(this);
         }

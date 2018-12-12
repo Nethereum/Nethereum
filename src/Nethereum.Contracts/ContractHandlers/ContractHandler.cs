@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.ContractHandlers
         public string ContractAddress { get; }
         public EthApiContractService EthApiContractService { get; }
 
-        public Event<TEventType> GetEvent<TEventType>() where TEventType : new()
+        public Event<TEventType> GetEvent<TEventType>() where TEventType : IEventDTO, new()
         {
             if (!EventAttribute.IsEventType(typeof(TEventType))) return null;
             return new Event<TEventType>(EthApiContractService.Client, ContractAddress);

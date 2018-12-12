@@ -31,13 +31,13 @@ namespace Nethereum.Contracts.Services
            return new Contract(this, typeof(TContractMessage), contractAddress);
         }
 
-        public Event<TEventType> GetEvent<TEventType>() where TEventType : new()
+        public Event<TEventType> GetEvent<TEventType>() where TEventType : IEventDTO, new()
         {
             if (!EventAttribute.IsEventType(typeof(TEventType))) throw new ArgumentException("The type given is not a valid Event"); ;
             return new Event<TEventType>(Client);
         }
 
-        public Event<TEventType> GetEvent<TEventType>(string contractAddress) where TEventType : new()
+        public Event<TEventType> GetEvent<TEventType>(string contractAddress) where TEventType : IEventDTO, new()
         {
             if (!EventAttribute.IsEventType(typeof(TEventType))) throw new ArgumentException("The type given is not a valid Event");
             return new Event<TEventType>(Client, contractAddress);

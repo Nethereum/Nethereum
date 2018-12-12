@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
@@ -13,7 +15,7 @@ namespace Nethereum.Contracts
     /// Event handler for a typed EventMessage to create filters and access to logs
     /// </summary>
     /// <typeparam name="TEventMessage"></typeparam>
-    public class Event<TEventMessage> : EventBase where TEventMessage : new()
+    public class Event<TEventMessage> : EventBase where TEventMessage : IEventDTO, new()
     {
         public Event(Contract contract) : this(contract.Eth.Client, contract.Address)
         {
@@ -42,6 +44,17 @@ namespace Nethereum.Contracts
         {
             return DecodeAllEvents<TEventMessage>(logs);
         }
+
+        public static EventLog<TEventMessage> DecodeEvent(FilterLog log)
+        {
+            return GetEventABI().DecodeEvent<TEventMessage>(log);
+        }
+
+        public static EventABI GetEventABI()
+        {
+            return EventExtensions.GetEventABI<TEventMessage>();
+        }
+
 #if !DOTNET35
         public async Task<List<EventLog<TEventMessage>>> GetAllChanges(NewFilterInput filterInput)
         {
