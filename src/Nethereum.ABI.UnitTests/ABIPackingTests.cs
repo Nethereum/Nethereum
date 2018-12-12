@@ -100,5 +100,21 @@ namespace Nethereum.ABI.UnitTests
 
             Assert.Equal("0xa13b31627c1ed7aaded5aecec71baf02fe123797fffd45e662eac8e06fbe4955", result.ToHex(true));
         }
+
+    }
+
+    public class AbiEncodeTests
+    {
+        [Fact]
+        public virtual void ShouldEncodeMultipleTypesIncludingDynamicString()
+        {
+            var paramsEncoded =
+                "0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000004500000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
+            var abiEncode = new ABIEncode();
+            var result = abiEncode.GetABIEncoded(new ABIValue("string", "hello"), new ABIValue("int", 69),
+                new ABIValue("string", "world"));
+
+            Assert.Equal("0x" + paramsEncoded, result.ToHex(true));
+        }
     }
 }

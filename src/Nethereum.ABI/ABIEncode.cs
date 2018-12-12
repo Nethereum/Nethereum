@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.ABI.Util;
 using Nethereum.Util;
 
@@ -18,6 +20,16 @@ namespace Nethereum.ABI
             return new Sha3Keccack().CalculateHash(GetABIEncodedPacked(values));
         }
 
+        public byte[] GetSha3ABIEncoded(params ABIValue[] abiValues)
+        {
+            return new Sha3Keccack().CalculateHash(GetABIEncoded(abiValues));
+        }
+
+        public byte[] GetSha3ABIEncoded(params object[] values)
+        {
+            return new Sha3Keccack().CalculateHash(GetABIEncoded(values));
+        }
+
         public byte[] GetABIEncodedPacked(params ABIValue[] abiValues)
         {
             var result = new List<byte>();
@@ -28,7 +40,27 @@ namespace Nethereum.ABI
             return result.ToArray();
         }
 
-        public byte[] GetABIEncodedPacked(params object[] values)
+        public byte[] GetABIEncoded(params ABIValue[] abiValues)
+        {
+            var parameters = new List<Parameter>();
+            var values = new List<object>();
+            var order = 1;
+            foreach (var abiValue in abiValues)
+            {
+                parameters.Add(new Parameter(abiValue.ABIType.Name, order));
+                values.Add(abiValue.Value);
+                order = order + 1;
+            }
+
+            return new ParametersEncoder().EncodeParameters(parameters.ToArray(), values.ToArray());
+        }
+
+        public byte[] GetABIEncoded(params object[] values)
+        {
+            return GetABIEncoded(ConvertValuesToDefaultABIValues(values));
+        }
+
+        private List<ABIValue> ConvertValuesToDefaultABIValues(params object[] values)
         {
             var abiValues = new List<ABIValue>();
             foreach (var value in values)
@@ -61,6 +93,13 @@ namespace Nethereum.ABI
                     abiValues.Add(new ABIValue(new BytesType(), value));
                 }
             }
+
+            return abiValues;
+        }
+
+        public byte[] GetABIEncodedPacked(params object[] values)
+        {
+            var abiValues = ConvertValuesToDefaultABIValues(values);
             return GetABIEncodedPacked(abiValues.ToArray());
         }
 
