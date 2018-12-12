@@ -64,16 +64,16 @@ namespace Nethereum.ABI.UnitTests
         [Fact]
         public virtual void ShouldEncodeSha3UsingDefaultValues()
         {
-            var soliditySha3 = new ABIEncode();
-            var result = soliditySha3.GetSha3ABIEncodedPacked(234564535,
+            var abiEncode = new ABIEncode();
+            var result = abiEncode.GetSha3ABIEncodedPacked(234564535,
                 "0xfff23243".HexToByteArray(), true, -10);
 
             Assert.Equal("3e27a893dc40ef8a7f0841d96639de2f58a132be5ae466d40087a2cfa83b7179", result.ToHex());
 
-            var result2 = soliditySha3.GetSha3ABIEncodedPacked("Hello!%");
+            var result2 = abiEncode.GetSha3ABIEncodedPacked("Hello!%");
             Assert.Equal("661136a4267dba9ccdf6bfddb7c00e714de936674c4bdb065a531cf1cb15c7fc", result2.ToHex());
 
-            var result3 = soliditySha3.GetSha3ABIEncodedPacked(234);
+            var result3 = abiEncode.GetSha3ABIEncodedPacked(234);
             Assert.Equal("61c831beab28d67d1bb40b5ae1a11e2757fa842f031a2d0bc94a7867bc5d26c2", result3.ToHex());
         }
 
