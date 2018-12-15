@@ -27,7 +27,10 @@ namespace Nethereum.ABI.FunctionEncoding
         public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
             params Parameter[] parameters)
         {
-            if(!IsDataForFunction(sha3Signature, data)) return null;
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
+
+            if (!IsDataForFunction(sha3Signature, data)) return null;
 
             if (data.StartsWith(sha3Signature))
                 data = data.Substring(sha3Signature.Length); //4 bytes?
@@ -41,8 +44,8 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public T DecodeFunctionInput<T>(T functionInput, string sha3Signature, string data)
         {
-            if (!sha3Signature.StartsWith("0x")) sha3Signature = "0x" + sha3Signature;
-            if (!data.StartsWith("0x")) data = "0x" + data;
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
 
             if ((data == "0x") || (data == sha3Signature)) return functionInput;
 

@@ -1,5 +1,8 @@
+using System.Runtime.ExceptionServices;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
+using Org.BouncyCastle.Crypto.Digests;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -19,7 +22,9 @@ namespace Nethereum.ABI.UnitTests
         public virtual void ShouldPackAddress()
         {
             var soliditySha3 = new ABIEncode();
-            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", soliditySha3.GetABIEncodedPacked(new ABIValue("address", "0x12890D2cce102216644c59daE5baed380d84830c")).ToHex(true).ConvertToEthereumChecksumAddress());
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c",
+                soliditySha3.GetABIEncodedPacked(new ABIValue("address", "0x12890D2cce102216644c59daE5baed380d84830c"))
+                    .ToHex(true).ConvertToEthereumChecksumAddress());
         }
 
         [Theory]
@@ -83,15 +88,18 @@ namespace Nethereum.ABI.UnitTests
             //0x407D73d8a49eeb85D32Cf465507dd71d507100c1
             var abiEncode = new ABIEncode();
             Assert.Equal("4e8ebbefa452077428f93c9520d3edd60594ff452a29ac7d2ccc11d47f3ab95b",
-                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("address", "0x407D73d8a49eeb85D32Cf465507dd71d507100c1")).ToHex());
+                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("address", "0x407D73d8a49eeb85D32Cf465507dd71d507100c1"))
+                    .ToHex());
 
             Assert.Equal("4e8ebbefa452077428f93c9520d3edd60594ff452a29ac7d2ccc11d47f3ab95b",
-                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("bytes", "0x407D73d8a49eeb85D32Cf465507dd71d507100c1".HexToByteArray())).ToHex());
+                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("bytes",
+                    "0x407D73d8a49eeb85D32Cf465507dd71d507100c1".HexToByteArray())).ToHex());
 
             //bytes32 it is a 32 bytes array so it will be padded with 00 values
             Assert.Equal("3c69a194aaf415ba5d6afca734660d0a3d45acdc05d54cd1ca89a8988e7625b4",
-                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("bytes32", "0x407D73d8a49eeb85D32Cf465507dd71d507100c1".HexToByteArray())).ToHex());
-            
+                abiEncode.GetSha3ABIEncodedPacked(new ABIValue("bytes32",
+                    "0x407D73d8a49eeb85D32Cf465507dd71d507100c1".HexToByteArray())).ToHex());
+
             //web3.utils.soliditySha3({t: 'string', v: 'Hello!%'}, {t: 'int8', v:-23}, {t: 'address', v: '0x85F43D8a49eeB85d32Cf465507DD71d507100C1d'});
             var result =
                 abiEncode.GetSha3ABIEncodedPacked(
@@ -101,20 +109,22 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal("0xa13b31627c1ed7aaded5aecec71baf02fe123797fffd45e662eac8e06fbe4955", result.ToHex(true));
         }
 
-    }
-
-    public class AbiEncodeTests
-    {
-        [Fact]
-        public virtual void ShouldEncodeMultipleTypesIncludingDynamicString()
+        public class TestParamsInput
         {
-            var paramsEncoded =
-                "0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000004500000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
-            var abiEncode = new ABIEncode();
-            var result = abiEncode.GetABIEncoded(new ABIValue("string", "hello"), new ABIValue("int", 69),
-                new ABIValue("string", "world"));
-
-            Assert.Equal("0x" + paramsEncoded, result.ToHex(true));
+            [Parameter("string", 1)] public string First { get; set; }
+            [Parameter("int8", 2)] public int Second { get; set; }
+            [Parameter("address", 3)] public string Third { get; set; }
         }
+
+        [Fact]
+        public virtual void ShouldEncodeParams()
+        {
+            var abiEncode = new ABIEncode();
+            var result = abiEncode.GetSha3ABIParamsEncodedPacked(new TestParamsInput()
+                {First = "Hello!%", Second = -23, Third = "0x85F43D8a49eeB85d32Cf465507DD71d507100C1d"});
+            Assert.Equal("0xa13b31627c1ed7aaded5aecec71baf02fe123797fffd45e662eac8e06fbe4955", result.ToHex(true));
+        }
+
+
     }
 }

@@ -124,37 +124,52 @@ namespace Nethereum.ABI.FunctionEncoding
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
 
+            var parameterObjects = GetParameterAttributeValues(type, instanceValue);
+            var abiParameters = GetParametersInOrder(parameterObjects);
+            var objectValues = GetValuesInOrder(parameterObjects);
+            return EncodeParameters(abiParameters, objectValues);
+        }
+
+        public object[] GetValuesInOrder(List<ParameterAttributeValue> parameterObjects)
+        {
+            return parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
+        }
+
+        public Parameter[] GetParametersInOrder(List<ParameterAttributeValue> parameterObjects)
+        {
+            return parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
+                .Select(x => x.ParameterAttribute.Parameter)
+                .ToArray();
+        }
+
+        public List<ParameterAttributeValue> GetParameterAttributeValues(Type type, object instanceValue)
+        {
             var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             var parameterObjects = new List<ParameterAttributeValue>();
 
             foreach (var property in properties)
             {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
 #if DOTNET35
                     var propertyValue = property.GetValue(instanceValue, null);
 #else
-                    var propertyValue = property.GetValue(instanceValue);
+                var propertyValue = property.GetValue(instanceValue);
 #endif
 
-                    if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
-                    {
-                        attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
-                        propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
-                    }
+                if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
+                {
+                    attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
+                    propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
+                }
 
-                    parameterObjects.Add(new ParameterAttributeValue
-                    {
-                        ParameterAttribute = parameterAttribute,
-                        Value = propertyValue
-                    });
+                parameterObjects.Add(new ParameterAttributeValue
+                {
+                    ParameterAttribute = parameterAttribute,
+                    Value = propertyValue
+                });
             }
 
-            var abiParameters =
-                parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
-                    .Select(x => x.ParameterAttribute.Parameter)
-                    .ToArray();
-            var objectValues = parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
-            return EncodeParameters(abiParameters, objectValues);
+            return parameterObjects;
         }
 
         public object[] GetTupleComponentValuesFromTypeAttributes(Type type, object instanceValue)

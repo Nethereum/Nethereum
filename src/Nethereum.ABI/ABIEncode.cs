@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
@@ -30,6 +31,16 @@ namespace Nethereum.ABI
             return new Sha3Keccack().CalculateHash(GetABIEncoded(values));
         }
 
+        public byte[] GetSha3ABIParamsEncodedPacked<T>(T input)
+        {
+            return new Sha3Keccack().CalculateHash(GetABIParamsEncodedPacked<T>(input));
+        }
+
+        public byte[] GetSha3ABIParamsEncoded<T>(T input)
+        {
+            return new Sha3Keccack().CalculateHash(GetABIParamsEncoded<T>(input));
+        }
+
         public byte[] GetABIEncodedPacked(params ABIValue[] abiValues)
         {
             var result = new List<byte>();
@@ -39,6 +50,8 @@ namespace Nethereum.ABI
             }
             return result.ToArray();
         }
+
+       
 
         public byte[] GetABIEncoded(params ABIValue[] abiValues)
         {
@@ -58,6 +71,31 @@ namespace Nethereum.ABI
         public byte[] GetABIEncoded(params object[] values)
         {
             return GetABIEncoded(ConvertValuesToDefaultABIValues(values));
+        }
+
+        public byte[] GetABIParamsEncodedPacked<T>(T input)
+        {
+            var type = typeof(T);
+            var parametersEncoder = new ParametersEncoder();
+            var parameterObjects = parametersEncoder.GetParameterAttributeValues(type, input).OrderBy(x => x.ParameterAttribute.Order);
+
+            var result = new List<byte>();
+
+            foreach (var abiParameter in parameterObjects)
+            {
+                var abiType = abiParameter.ParameterAttribute.Parameter.ABIType;
+                var value = abiParameter.Value;
+
+                result.AddRange(abiType.EncodePacked(value));
+                
+            }
+            return result.ToArray();
+        }
+
+        public byte[] GetABIParamsEncoded<T>(T input)
+        {
+            var type = typeof(T);
+            return new ParametersEncoder().EncodeParametersFromTypeAttributes(type, input);
         }
 
         private List<ABIValue> ConvertValuesToDefaultABIValues(params object[] values)

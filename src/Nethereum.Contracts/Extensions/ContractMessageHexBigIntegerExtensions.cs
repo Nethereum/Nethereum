@@ -45,5 +45,6 @@ namespace Nethereum.Contracts.Extensions
             }
             return contractMessage.FromAddress;
         }
+
     }
 }
