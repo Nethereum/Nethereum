@@ -1,10 +1,8 @@
 ﻿using Nethereum.Contracts;
-using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.DTOs;
 using System;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading;
 using Nethereum.Contracts.Extensions;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -13,6 +11,7 @@ using Nethereum.JsonRpc.Client.Streaming;
 using Nethereum.RPC.Eth.Subscriptions;
 using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
+using Nethereum.RPC.Reactive.Extensions;
 
 namespace Nethereum.WebSocketsStreamingTest
 {
@@ -41,9 +40,8 @@ namespace Nethereum.WebSocketsStreamingTest
                 Console.WriteLine("New Block from event: " + e.Response.BlockHash);
             };
 
-            var disposable = Observable.FromEventPattern<StreamingEventArgs<Block>>(h => blockHeaderSubscription2.SubscriptionDataResponse += h,
-                h => blockHeaderSubscription2.SubscriptionDataResponse -= h).Subscribe(x =>
-                 Console.WriteLine("New Block from observable from event : " + x.EventArgs.Response.BlockHash)
+            blockHeaderSubscription2.GetDataObservable().Subscribe(x =>
+                 Console.WriteLine("New Block from observable from event : " + x.BlockHash)
                 );
 
             var pendingTransactionsSubscription = new EthNewPendingTransactionObservableSubscription(client);
