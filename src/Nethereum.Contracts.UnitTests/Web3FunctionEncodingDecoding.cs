@@ -15,9 +15,7 @@ namespace Nethereum.Contracts.UnitTests
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
-
             var ethApi = new EthApiContractService(null);
-
 
             var contract = ethApi.GetContract(abi, "ContractAddress");
 

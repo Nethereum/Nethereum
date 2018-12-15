@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client.Streaming;
-using Nethereum.JsonRpc.WebSocketStreamingClient;
 
 namespace Nethereum.RPC.Eth.Subscriptions
 {

@@ -19,29 +19,31 @@ namespace Nethereum.JsonRpc.Client.Streaming
             UnsubscribeSubscriptionRpcRequestBuilder = unsubscribeSubscriptionRpcRequestBuilder;
         }
 
-        protected async Task SubscribeAsync(RpcRequest rpcRequest)
+        protected Task SubscribeAsync(RpcRequest rpcRequest)
         {
             if (SubscriptionState != SubscriptionState.Idle)
-                throw new Exception("Invalid state to start subscribtion, current state: " + SubscriptionState.ToString());
+                throw new Exception("Invalid state to start subscription, current state: " + SubscriptionState.ToString());
 
             SubscribeRequestId = rpcRequest.Id;
-#if !DOTNET35
-            await StreamingClient.SendRequestAsync(rpcRequest, this).ConfigureAwait(false);
-#endif
+
             this.SubscriptionState = SubscriptionState.Subscribing;
+
+            return StreamingClient.SendRequestAsync(rpcRequest, this);
         }
 
-        public async Task UnsubscribeAsync()
+        public Task UnsubscribeAsync()
         {
+
             if (SubscriptionState != SubscriptionState.Subscribed && SubscriptionState != SubscriptionState.Unsubscribed) //allow retrying? what happens when it returns false the unsubscription
                 throw new Exception("Invalid state to unsubscribe, current state: " + SubscriptionState.ToString());
 
             UnsubscribeRequestId = Guid.NewGuid().ToString();
             var request = UnsubscribeSubscriptionRpcRequestBuilder.BuildRequest(SubscriptionId, UnsubscribeRequestId);
-#if !DOTNET35
-            await StreamingClient.SendRequestAsync(request, this).ConfigureAwait(false);
-#endif
+
             this.SubscriptionState = SubscriptionState.Unsubscribing;
+
+            return StreamingClient.SendRequestAsync(request, this);
+
         }
 
         protected RpcResponseException GetException(RpcStreamingResponseMessage rpcStreamingResponse)
