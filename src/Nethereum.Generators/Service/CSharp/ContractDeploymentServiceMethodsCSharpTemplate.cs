@@ -8,6 +8,7 @@ namespace Nethereum.Generators.Service
     {
         private ContractDeploymentCQSMessageModel _contractDeploymentCQSMessageModel;
         private ServiceModel _serviceModel;
+        private static readonly string SpaceFollowingFunction = (Environment.NewLine + Environment.NewLine);
 
         public ContractDeploymentServiceMethodsCSharpTemplate(ServiceModel model)
         {
@@ -40,7 +41,7 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.ThreeTabs}return new {_serviceModel.GetTypeName()}(web3, receipt.ContractAddress);
 {SpaceUtils.TwoTabs}}}";
 
-            return string.Join(Environment.NewLine, sendRequestReceipt, sendRequest, sendRequestContract);
+            return string.Join(SpaceFollowingFunction, sendRequestReceipt, sendRequest, sendRequestContract);
         }
     }
 }

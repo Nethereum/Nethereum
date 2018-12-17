@@ -147,7 +147,7 @@ $@"<?xml version=""1.0"" encoding=""utf-8""?>
             DotNet(args);
         }
 
-        public string TargetFramework { get; set; } = "netcoreapp2.1";
+        public string TargetFramework { get; set; } = "netstandard2.0";
 
         private void CreateProjectFile(CodeGenLanguage language)
         {
