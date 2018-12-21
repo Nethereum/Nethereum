@@ -114,7 +114,16 @@ namespace Nethereum.ABI.FunctionEncoding
                 }
                 else
                 {
-                    encodedBytes[i] = parameters[i].ABIType.Encode(values[i]);
+                    try
+                    {
+                        encodedBytes[i] = parameters[i].ABIType.Encode(values[i]);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(
+                            $"An error occurred encoding parameter value. Parameter Order: '{parameters[i].Order}', Name: '{parameters[i].Name}', Value: '{values[i] ?? "null"}'.  Ensure the value is valid for the parameter type.",
+                            ex);
+                    }
                 }
             return ByteUtil.Merge(encodedBytes);
         }
@@ -202,7 +211,6 @@ namespace Nethereum.ABI.FunctionEncoding
             return parameterObjects.ToArray();
         }
  
-
     }
  }
 

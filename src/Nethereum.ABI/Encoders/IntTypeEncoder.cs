@@ -45,7 +45,7 @@ namespace Nethereum.ABI.Encoders
             else if (value is Enum)
                 bigInt = (BigInteger)(int)value;
             else
-                throw new Exception("Invalid value for type '" + this + "': " + value + " (" + value.GetType() + ")");
+                throw new Exception("Invalid value for type '" + this + "': " + value + " (" + value?.GetType() + ")");
             return EncodeInt(bigInt, numberOfBytesArray);
         }
 
