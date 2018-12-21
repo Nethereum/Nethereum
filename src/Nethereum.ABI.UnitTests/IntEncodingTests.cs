@@ -263,6 +263,15 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldThrowErrorWhenValueIsNull()
+        {
+            var intType = new IntType("int");
+            object given = null;
+            var ex = Assert.Throws<Exception>(() => intType.Encode(given));
+            Assert.Equal($"Invalid value for type 'Nethereum.ABI.Encoders.IntTypeEncoder'. Value: null, ValueType: ()", ex.Message);
+        }
+
+        [Fact]
         public void Test()
         {
             Debug.WriteLine(ToTwosComplement(-37797598375987353).ToByteArray().Reverse().ToArray().ToHex());

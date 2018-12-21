@@ -144,7 +144,7 @@ namespace Nethereum.ABI.UnitTests
 
 
         [Fact]
-        public virtual void ShouldEncodeMultipleTypesIncludingDynamiString()
+        public virtual void ShouldEncodeMultipleTypesIncludingDynamicString()
         {
             var paramsEncoded =
                 "0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000004500000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c64000000000000000000000000000000000000000000000000000000";
@@ -155,6 +155,22 @@ namespace Nethereum.ABI.UnitTests
 
             var result = functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, "hello", 69, "world");
             Assert.Equal("0x" + sha3Signature + paramsEncoded, result);
+        }
+
+        [Fact]
+        public virtual void WhenAnAddressParameterValueIsNull_ShouldProvideAHelpfulError()
+        {
+            var functionCallEncoder = new FunctionCallEncoder();
+            var sha3Signature = "c6888fa1";
+            var inputsParameters = new[] {CreateParam("address", "_address1")};
+            var parameterValues = new object[] {null};
+
+            var ex = Assert.Throws<Exception>(() => functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, parameterValues));
+
+            const string ExpectedError =
+                "An error occurred encoding parameter value. Parameter Order: '1', Name: '_address1', Value: 'null'.  Ensure the value is valid for the parameter type.";
+
+            Assert.Equal(ExpectedError, ex.Message);
         }
     }
 }
