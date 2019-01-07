@@ -63,7 +63,7 @@ namespace Nethereum.Web3.Accounts
         public string SignTransaction(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (!string.Equals(transaction.From.EnsureHexPrefix(), Account.Address.EnsureHexPrefix(), StringComparison.CurrentCultureIgnoreCase))
+            if (!string.Equals(transaction.From.EnsureHexPrefix(), Account.Address.EnsureHexPrefix(), StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Invalid account used signing");
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
