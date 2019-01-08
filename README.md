@@ -1,9 +1,10 @@
 # Nethereum
 [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
 
-Azure DevOps CI [![CI Build / Test Status](https://dev.azure.com/nethereum/nethereum/_apis/build/status/nethereum-CI)](https://dev.azure.com/nethereum/nethereum/_build/latest?definitionId=3)
+Azure DevOps CI [![CI Build / Test Status](https://dev.azure.com/nethereumproject/Nethereum/_apis/build/status/nethereum-CI)](https://dev.azure.com/nethereumproject/Nethereum/_build/latest?definitionId=2)
 
-Azure DevOps CI Code Gen: [![CI Code gen Build / Test Status](https://dev.azure.com/nethereum/nethereum/_apis/build/status/nethereum%20ci%20codegen)](https://dev.azure.com/nethereum/nethereum/_build/latest?definitionId=4)
+
+Azure DevOps CI Code Gen: [![CI Code gen Build / Test Status](https://dev.azure.com/nethereumproject/Nethereum/_apis/build/status/nethereum%20ci%20codegen)](https://dev.azure.com/nethereumproject/Nethereum/_build/latest?definitionId=3)
 CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vpre/nethereum.web3.svg?style=plastic)](https://www.myget.org/feed/nethereum/package/nuget/Nethereum.Web3)
 
 
