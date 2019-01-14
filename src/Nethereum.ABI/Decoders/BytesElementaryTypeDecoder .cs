@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace Nethereum.ABI.Decoders
 {
@@ -28,6 +29,9 @@ namespace Nethereum.ABI.Decoders
                 return new Guid(returnArray);
             }
 
+            if (type == typeof(string))
+                return DecodeString(encoded);
+
             return returnArray;
         }
 
@@ -38,9 +42,15 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            if (_size == 1) return (type == typeof(byte[]) || type == typeof(byte));
-            if (_size == 16) return (type == typeof(byte[]) || type == typeof(Guid));
-            return (type == typeof(byte[]));
+            bool specialTypeSupported = false;
+            if (_size == 1 && type == typeof(byte)) specialTypeSupported = true;
+            if (_size == 16 && type == typeof(Guid)) specialTypeSupported = true;
+            return (type == typeof(byte[]) || type == typeof(string) || type == typeof(object) || specialTypeSupported);
+        }
+
+        private string DecodeString(byte[] encoded)
+        {
+            return Encoding.UTF8.GetString(encoded, 0, encoded.Length).TrimEnd('\0');
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace Nethereum.ABI.Encoders
 {
@@ -52,6 +53,15 @@ namespace Nethereum.ABI.Encoders
             if (_size == 16 && value is Guid)
             {
                 value = ((Guid) value).ToByteArray();
+            }
+
+            if (value is string)
+            {
+                var returnBytes = new byte[32];
+                var bytes = Encoding.UTF8.GetBytes((string)value);
+                if (bytes.Length > _size) throw new ArgumentException($"After retrieving the UTF8 bytes for the string, it is longer than {_size} bytes, which is longer than solidity type bytes{_size}");
+                Array.Copy(bytes, 0, returnBytes, 0, bytes.Length);
+                return returnBytes;
             }
 
             if (!(value is byte[]))

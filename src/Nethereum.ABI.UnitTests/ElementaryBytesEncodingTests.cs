@@ -155,5 +155,149 @@ namespace Nethereum.ABI.UnitTests
             var result = bytesType.Decode<Guid>(encoded);
             Assert.Equal(guid, result);
         }
+
+        [Theory]
+        [InlineData("bytes1", "M",
+            "0x4d00000000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes2", "US",
+            "0x5553000000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes3", "USD",
+            "0x5553440000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes4", "USDT",
+            "0x5553445400000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes5", "world",
+            "0x776f726c64000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes6", "Monero",
+            "0x4d6f6e65726f0000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes7", "Bitcoin",
+            "0x426974636f696e00000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes8", "Ethereum",
+            "0x457468657265756d000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes9", "parameter",
+            "0x706172616d657465720000000000000000000000000000000000000000000000")]
+        [InlineData("bytes10", "preference",
+            "0x707265666572656e636500000000000000000000000000000000000000000000")]
+        [InlineData("bytes11", "negotiation",
+            "0x6e65676f74696174696f6e000000000000000000000000000000000000000000")]
+        [InlineData("bytes12", "architecture",
+            "0x6172636869746563747572650000000000000000000000000000000000000000")]
+        [InlineData("bytes13", "constellation",
+            "0x636f6e7374656c6c6174696f6e00000000000000000000000000000000000000")]
+        [InlineData("bytes14", "infrastructure",
+            "0x696e667261737472756374757265000000000000000000000000000000000000")]
+        [InlineData("bytes15", "Congratulations",
+            "0x436f6e67726174756c6174696f6e730000000000000000000000000000000000")]
+        [InlineData("bytes16", "Decentralization",
+            "0x446563656e7472616c697a6174696f6e00000000000000000000000000000000")]
+        [InlineData("bytes17", "Industrialization",
+            "0x496e647573747269616c697a6174696f6e000000000000000000000000000000")]
+        [InlineData("bytes18", "Oversimplification",
+            "0x4f76657273696d706c696669636174696f6e0000000000000000000000000000")]
+        [InlineData("bytes19", "Electrocardiography",
+            "0x456c656374726f63617264696f67726170687900000000000000000000000000")]
+        [InlineData("bytes20", "Internationalization",
+            "0x496e7465726e6174696f6e616c697a6174696f6e000000000000000000000000")]
+        [InlineData("bytes21", "Electroencephalograph",
+            "0x456c656374726f656e63657068616c6f67726170680000000000000000000000")]
+        [InlineData("bytes22", "iPGFpzdOLmnuOUb0ySuNXM",
+            "0x69504746707a644f4c6d6e754f5562307953754e584d00000000000000000000")]
+        [InlineData("bytes23", "4tNpt3aj8Cx0QXFDc9t4qAu",
+            "0x34744e707433616a384378305158464463397434714175000000000000000000")]
+        [InlineData("bytes24", "4eJdTnL3rfrJx56Y3rmH0ZQO",
+            "0x34654a64546e4c337266724a7835365933726d48305a514f0000000000000000")]
+        [InlineData("bytes25", "ooltCa5mLEcoALph16501pK47",
+            "0x6f6f6c744361356d4c45636f414c70683136353031704b343700000000000000")]
+        [InlineData("bytes26", "ONFTYFIPO7WsPMJqMcEZGL6KUF",
+            "0x4f4e4654594649504f375773504d4a714d63455a474c364b5546000000000000")]
+        [InlineData("bytes27", "Z0rXR0LEPim0jvRptXTrvoq6UZn",
+            "0x5a30725852304c4550696d306a76527074585472766f7136555a6e0000000000")]
+        [InlineData("bytes28", "nAKeqiXpusuk8z9YbmUN8lK6tKN8",
+            "0x6e414b65716958707573756b387a3959626d554e386c4b36744b4e3800000000")]
+        [InlineData("bytes29", "JBPMZL09LYTbkiwaJMOPM 47wBv W",
+            "0x4a42504d5a4c30394c5954626b6977614a4d4f504d2034377742762057000000")]
+        [InlineData("bytes30", "6yrn 9EksFQQbUva6MSmd9g72ga1YJ",
+            "0x3679726e2039456b7346515162557661364d536d6439673732676131594a0000")]
+        [InlineData("bytes31", "EmnZyNRjT av7KcXuE8hpvzNmvRt3EO",
+            "0x456d6e5a794e526a54206176374b63587545386870767a4e6d76527433454f00")]
+        [InlineData("bytes32", "86GYWVsRIJwTTna3h5b3hz58EDk5b9ji",
+            "0x3836475957567352494a7754546e613368356233687a353845446b3562396a69")]
+        public virtual void ShouldDecodeString(string typeName, string expected, string hex)
+        {
+            var bytesType = ABIType.CreateABIType(typeName);
+            var result = bytesType.Decode<string>(hex);
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("bytes1", "M", 
+            "0x4d00000000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes2", "US", 
+            "0x5553000000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes3", "USD", 
+            "0x5553440000000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes4", "USDT", 
+            "0x5553445400000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes5", "world", 
+            "0x776f726c64000000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes6", "Monero", 
+            "0x4d6f6e65726f0000000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes7", "Bitcoin", 
+            "0x426974636f696e00000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes8", "Ethereum", 
+            "0x457468657265756d000000000000000000000000000000000000000000000000")]
+        [InlineData("bytes9", "parameter", 
+            "0x706172616d657465720000000000000000000000000000000000000000000000")]
+        [InlineData("bytes10", "preference", 
+            "0x707265666572656e636500000000000000000000000000000000000000000000")]
+        [InlineData("bytes11", "negotiation", 
+            "0x6e65676f74696174696f6e000000000000000000000000000000000000000000")]
+        [InlineData("bytes12", "architecture", 
+            "0x6172636869746563747572650000000000000000000000000000000000000000")]
+        [InlineData("bytes13", "constellation", 
+            "0x636f6e7374656c6c6174696f6e00000000000000000000000000000000000000")]
+        [InlineData("bytes14", "infrastructure", 
+            "0x696e667261737472756374757265000000000000000000000000000000000000")]
+        [InlineData("bytes15", "Congratulations", 
+            "0x436f6e67726174756c6174696f6e730000000000000000000000000000000000")]
+        [InlineData("bytes16", "Decentralization", 
+            "0x446563656e7472616c697a6174696f6e00000000000000000000000000000000")]
+        [InlineData("bytes17", "Industrialization", 
+            "0x496e647573747269616c697a6174696f6e000000000000000000000000000000")]
+        [InlineData("bytes18", "Oversimplification", 
+            "0x4f76657273696d706c696669636174696f6e0000000000000000000000000000")]
+        [InlineData("bytes19", "Electrocardiography", 
+            "0x456c656374726f63617264696f67726170687900000000000000000000000000")]
+        [InlineData("bytes20", "Internationalization", 
+            "0x496e7465726e6174696f6e616c697a6174696f6e000000000000000000000000")]
+        [InlineData("bytes21", "Electroencephalograph", 
+            "0x456c656374726f656e63657068616c6f67726170680000000000000000000000")]
+        [InlineData("bytes22", "iPGFpzdOLmnuOUb0ySuNXM",
+            "0x69504746707a644f4c6d6e754f5562307953754e584d00000000000000000000")]
+        [InlineData("bytes23", "4tNpt3aj8Cx0QXFDc9t4qAu",
+            "0x34744e707433616a384378305158464463397434714175000000000000000000")]
+        [InlineData("bytes24", "4eJdTnL3rfrJx56Y3rmH0ZQO",
+            "0x34654a64546e4c337266724a7835365933726d48305a514f0000000000000000")]
+        [InlineData("bytes25", "ooltCa5mLEcoALph16501pK47",
+            "0x6f6f6c744361356d4c45636f414c70683136353031704b343700000000000000")]
+        [InlineData("bytes26", "ONFTYFIPO7WsPMJqMcEZGL6KUF",
+            "0x4f4e4654594649504f375773504d4a714d63455a474c364b5546000000000000")]
+        [InlineData("bytes27", "Z0rXR0LEPim0jvRptXTrvoq6UZn",
+            "0x5a30725852304c4550696d306a76527074585472766f7136555a6e0000000000")]
+        [InlineData("bytes28", "nAKeqiXpusuk8z9YbmUN8lK6tKN8",
+            "0x6e414b65716958707573756b387a3959626d554e386c4b36744b4e3800000000")]
+        [InlineData("bytes29", "JBPMZL09LYTbkiwaJMOPM 47wBv W",
+            "0x4a42504d5a4c30394c5954626b6977614a4d4f504d2034377742762057000000")]
+        [InlineData("bytes30", "6yrn 9EksFQQbUva6MSmd9g72ga1YJ",
+            "0x3679726e2039456b7346515162557661364d536d6439673732676131594a0000")]
+        [InlineData("bytes31", "EmnZyNRjT av7KcXuE8hpvzNmvRt3EO",
+            "0x456d6e5a794e526a54206176374b63587545386870767a4e6d76527433454f00")]
+        [InlineData("bytes32", "86GYWVsRIJwTTna3h5b3hz58EDk5b9ji",
+            "0x3836475957567352494a7754546e613368356233687a353845446b3562396a69")]
+        public virtual void ShouldEncodeString(string typeName, string word, string expected)
+        {
+            var bytesType = ABIType.CreateABIType(typeName);
+            var result = bytesType.Encode(word);
+            Assert.Equal(expected, result.ToHex(true));
+        }
     }
 }
