@@ -31,7 +31,7 @@
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
 
-   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(MSBuildProjectName)' != 'Nethereum.HdWallet'">
     <PackageReference Include="Newtonsoft.Json" Version="[10.0.3,13)" />
   </ItemGroup>
   
