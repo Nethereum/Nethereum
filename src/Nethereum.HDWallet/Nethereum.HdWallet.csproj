@@ -15,7 +15,7 @@
     <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NBitcoin" Version="4.1.1.10" />
+    <PackageReference Include="NBitcoin" Version="4.1.1.77" />
   </ItemGroup>
 
   <ItemGroup>
