@@ -6,6 +6,10 @@
     <PackageId>Nethereum.RPC.UnitTests</PackageId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netcoreapp2.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Update="test-settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
