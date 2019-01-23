@@ -58,7 +58,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
             if (EventAttribute.IsEventType(contractMessageType))
             {
                 var eventAttribute = EventAttribute.GetAttribute(contractMessageType);
-                var eventABI = new EventABI(eventAttribute.Name);
+                var eventABI = new EventABI(eventAttribute.Name, eventAttribute.IsAnonymous);
                 eventABI.InputParameters = ExtractParametersFromAttributes(contractMessageType);
                 return eventABI;
             }

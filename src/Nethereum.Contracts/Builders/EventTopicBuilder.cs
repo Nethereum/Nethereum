@@ -26,16 +26,34 @@ namespace Nethereum.Contracts
 
         public object[] GetTopics(object[] firstTopic)
         {
+            if (eventABI.IsAnonymous)
+            {
+                return new[] { GetValueTopic(firstTopic, 1) };
+            }
+
             return new[] {GetSignatureTopic(), GetValueTopic(firstTopic, 1)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic)
         {
+            if (eventABI.IsAnonymous)
+            {
+                return new[] { GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2) };
+            }
+
             return new[] {GetSignatureTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2)};
         }
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic, object[] thirdTopic)
         {
+            if (eventABI.IsAnonymous)
+            {
+                return new[]
+                {
+                    GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2), GetValueTopic(thirdTopic, 3)
+                };
+            }
+
             return new[]
             {
                 GetSignatureTopic(), GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2),

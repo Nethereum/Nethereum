@@ -17,6 +17,7 @@ namespace Nethereum.ABI.JsonDeserialisation
         public EventABI BuildEvent(IDictionary<string, object> eventobject)
         {
             var eventABI = new EventABI((string) eventobject["name"]);
+            eventABI.IsAnonymous = (bool)eventobject["anonymous"];
             eventABI.InputParameters = BuildEventParameters((List<object>) eventobject["inputs"]);
 
             return eventABI;

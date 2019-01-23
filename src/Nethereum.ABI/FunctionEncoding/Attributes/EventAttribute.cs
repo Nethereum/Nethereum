@@ -6,12 +6,18 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
     [AttributeUsage(AttributeTargets.Class)]
     public class EventAttribute : Attribute
     {
-        public EventAttribute(string name)
+        public EventAttribute(string name) : this(name, false)
+        {
+        }
+
+        public EventAttribute(string name, bool isAnonymous)
         {
             this.Name = name;
+            this.IsAnonymous = isAnonymous;
         }
 
         public string Name { get; set; }
+        public bool IsAnonymous { get; set; }
 
         public static EventAttribute GetAttribute<T>()
         {

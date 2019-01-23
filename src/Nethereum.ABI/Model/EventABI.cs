@@ -7,13 +7,19 @@ namespace Nethereum.ABI.Model
         private readonly SignatureEncoder signatureEncoder;
         private string sha3Signature;
 
-        public EventABI(string name)
+        public EventABI(string name) : this(name, false)
+        {
+        }
+
+        public EventABI(string name, bool isAnonymous)
         {
             Name = name;
+            IsAnonymous = isAnonymous;
             signatureEncoder = new SignatureEncoder();
         }
 
         public string Name { get; }
+        public bool IsAnonymous { get; set; }
 
         public Parameter[] InputParameters { get; set; }
 

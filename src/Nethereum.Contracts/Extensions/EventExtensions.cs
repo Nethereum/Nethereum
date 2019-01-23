@@ -40,6 +40,9 @@ namespace Nethereum.Contracts.Extensions
 
         public static bool IsLogForEvent(this EventABI eventABI, FilterLog log)
         {
+            if (eventABI.IsAnonymous)
+                return true;
+
             return IsLogForEvent(log, eventABI.Sha3Signature);
         }
 
@@ -295,6 +298,10 @@ namespace Nethereum.Contracts.Extensions
                 {
                     return false;
                 }
+
+                if (eventABI.IsAnonymous)
+                    return true;
+
                 if(eventABI.IsTopicSignatureForEvent(filterInput.Topics[0]))
                     return true;
             }
@@ -411,7 +418,7 @@ namespace Nethereum.Contracts.Extensions
         public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(this EventABI eventABI, FilterLog log) where TEventDTO : new()
         {
             if (!IsLogForEvent(eventABI, log)) return null;
-            var eventDecoder = new EventTopicDecoder();
+            var eventDecoder = new EventTopicDecoder(eventABI.IsAnonymous);
             var eventObject = eventDecoder.DecodeTopics<TEventDTO>(log.Topics, log.Data);
             return new EventLog<TEventDTO>(eventObject, log);
         }
