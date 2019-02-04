@@ -7,6 +7,6 @@ namespace Nethereum.Parity.RPC.Trace
     public interface ITraceTransaction
     {
         RpcRequest BuildRequest(string transactionHash, object id = null);
-        Task<JObject> SendRequestAsync(string transactionHash, object id = null);
+        Task<JArray> SendRequestAsync(string transactionHash, object id = null);
     }
 }

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 {
-    public class TraceTransactionTester : RPCRequestTester<JObject>
+    public class TraceTransactionTester : RPCRequestTester<JArray>
     {
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
