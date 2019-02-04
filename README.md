@@ -134,6 +134,7 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 [Nethereum Game Sample](https://github.com/Nethereum/nethereum.game.sample)| Sample game demonstrating how to integrate Nethereum with [UrhoSharp's SamplyGame](https://github.com/xamarin/urho-samples/tree/master/SamplyGame) to build a cross-platform game interacting with Ethereum |
 [Nethereum UI wallet sample](https://github.com/Nethereum/nethereum.UI.wallet.sample)| Cross platform wallet example using Nethereum, Xamarin.Forms and MvvmCross, targeting: Android, iOS, Windows Mobile, Desktop (windows 10 uwp), IoT with the Raspberry PI and Xbox. |
 |[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
+|[Loupe](https://github.com/coinpress/Loupe) | A C# ASP.NET Core blockchain explorer made using Razor Pages to show the ease of getting data from public or private blockchains.  |
 
 ### Video guides
 There a few video guides, which might be helpful to get started. Please note that these videos are for version 1.0, so some areas have changed.
