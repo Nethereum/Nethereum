@@ -7,6 +7,7 @@ namespace Nethereum.RPC
 {
     public interface IEthApiService
     {
+        IEthChainId ChainId { get; }
         IEthAccounts Accounts { get; }
         IEthApiBlockService Blocks { get; }
         IEthCoinBase CoinBase { get; }

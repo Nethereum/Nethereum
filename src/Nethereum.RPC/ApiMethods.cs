@@ -3,6 +3,7 @@
     public enum ApiMethods
     {
         net_listening,
+        eth_chainId,
         eth_protocolVersion,
         eth_syncing,
         eth_coinbase,

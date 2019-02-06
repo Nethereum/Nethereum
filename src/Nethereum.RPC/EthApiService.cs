@@ -20,6 +20,8 @@ namespace Nethereum.RPC
         public EthApiService(IClient client, ITransactionManager transactionManager) : base(client)
         {
             Client = client;
+            
+            ChainId = new EthChainId(client);
             Accounts = new EthAccounts(client);
             CoinBase = new EthCoinBase(client);
             GasPrice = new EthGasPrice(client);
@@ -52,6 +54,7 @@ namespace Nethereum.RPC
             }
         }
 
+        public IEthChainId ChainId { get; private set; }
         public IEthAccounts Accounts { get; private set; }
 
         public IEthCoinBase CoinBase { get; private set; }
