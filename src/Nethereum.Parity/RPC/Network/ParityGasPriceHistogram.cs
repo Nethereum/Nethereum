@@ -1,5 +1,6 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Parity.RPC.Network
 {
@@ -49,14 +50,14 @@ namespace Nethereum.Parity.RPC.Network
     ///     }
     ///     }
     /// </Summary>
-    public class ParityGasPriceHistogram : GenericRpcRequestResponseHandlerNoParam<string>, IParityGasPriceHistogram
+    public class ParityGasPriceHistogram : GenericRpcRequestResponseHandlerNoParam<JObject>, IParityGasPriceHistogram
     {
         public ParityGasPriceHistogram(IClient client) : base(client, ApiMethods.parity_gasPriceHistogram.ToString())
         {
         }
     }
 
-    public interface IParityGasPriceHistogram : IGenericRpcRequestResponseHandlerNoParam<string>
+    public interface IParityGasPriceHistogram : IGenericRpcRequestResponseHandlerNoParam<JObject>
     {
 
 

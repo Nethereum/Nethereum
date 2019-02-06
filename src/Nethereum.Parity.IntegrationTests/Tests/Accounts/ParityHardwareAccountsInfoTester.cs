@@ -21,10 +21,18 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         }
 
         [Fact]
-        public async void ShouldGetHardwareAccountsInfo()
+        public async Task ShouldSucceed()
         {
-            var result = await ExecuteAsync();
-            Assert.NotNull(result);
+            try
+            {
+                var result = await ExecuteAsync();
+                Assert.NotNull(result);
+            }
+            catch (RpcResponseException exception)
+            {
+                Assert.Equal(-32023, exception.RpcError.Code);
+                Assert.Equal("Custom(\"No hardware wallet accounts were found\")", exception.RpcError.Data.Value<string>());
+            }
         }
     }
 }

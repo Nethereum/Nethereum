@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 {
     public class TraceTransactionTester : RPCRequestTester<JArray>
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override async Task<JArray> ExecuteAsync(IClient client)
         {
             var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
@@ -40,10 +40,11 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
         }
 
         [Fact]
-        public async void ShouldNotReturnNull()
+        public async void ShouldReturnTraceArray()
         {
             var result = await ExecuteAsync();
             Assert.NotNull(result);
+            Assert.NotEmpty(result);
         }
     }
 }

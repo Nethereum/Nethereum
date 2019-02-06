@@ -6,6 +6,7 @@ namespace Nethereum.Parity.IntegrationTests
 {
     public class TestSettings
     {
+        public const string CollectionName = "Parity Integration Tests";
         public static string ParitySettings = "parityRopstenSettings";
         public static string GethSettings = "testSettings";
 

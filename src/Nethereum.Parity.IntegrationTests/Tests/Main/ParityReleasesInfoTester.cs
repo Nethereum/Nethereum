@@ -21,10 +21,14 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         }
 
         [Fact]
-        public async void ShouldNotReturnNull()
+        public async void ShouldSucceed()
         {
-            var result = await ExecuteAsync();
-            Assert.NotNull(result);
+            //6th Feb 2019 - given the example curl attempt
+            //curl --data '{"method":"parity_releasesInfo","params":[],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545
+            //parity returns a null result
+            //{"jsonrpc":"2.0","result":null,"id":1}
+            //so we can no longer check for not null
+            await ExecuteAsync();
         }
     }
 }

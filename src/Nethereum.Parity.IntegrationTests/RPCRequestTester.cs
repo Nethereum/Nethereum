@@ -1,9 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
+using Xunit;
 
 namespace Nethereum.Parity.IntegrationTests
 {
+    [Collection(TestSettings.CollectionName)]
     public abstract class RPCRequestTester<T> : IRPCRequestTester
     {
         protected RPCRequestTester()
