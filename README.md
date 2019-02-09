@@ -115,8 +115,9 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 |  Project Source |  Description |
 | ------------- |--------------------------|
 | [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Generator.Console) |  |
-| [Nethereum.Console](https://github.com/Nethereum/Nethereum.Console) | A collection of command line utilities to interact with Ethereum and account management |
-
+| [Nethereum.Console](https://github.com/Nethereum/Nethereum.Console) | A collection of command line utilities to interact with Ethereum and account management | |
+[Testchains](https://github.com/Nethereum/TestChains) | Pre-configured devchains for fast response (PoA) | | 
+[DappHybrid](https://github.com/Nethereum/Nethereum.DappHybrid) | A cross-platform hybrid hosting mechanism for web based decentralised applications |
 ## Training modules
 
 |  Project Source |  Description |
@@ -134,7 +135,8 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 [Nethereum Game Sample](https://github.com/Nethereum/nethereum.game.sample)| Sample game demonstrating how to integrate Nethereum with [UrhoSharp's SamplyGame](https://github.com/xamarin/urho-samples/tree/master/SamplyGame) to build a cross-platform game interacting with Ethereum |
 [Nethereum UI wallet sample](https://github.com/Nethereum/nethereum.UI.wallet.sample)| Cross platform wallet example using Nethereum, Xamarin.Forms and MvvmCross, targeting: Android, iOS, Windows Mobile, Desktop (windows 10 uwp), IoT with the Raspberry PI and Xbox. |
 |[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
-
+[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
+[Blazor/Blockchain Explorer](https://github.com/Nethereum/NethereumBlazor) | Wasm blockchain explorer based on [Blazor](https://github.com/aspnet/Blazor) and [ReactiveUI](https://github.com/reactiveui/ReactiveUI)|
 ### Video guides
 There a few video guides, which might be helpful to get started. Please note that these videos are for version 1.0, so some areas have changed.
 
