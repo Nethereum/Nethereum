@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<bool> ExecuteAsync(IClient client)
         {
             var personalunlockAccount = new PersonalUnlockAccount(client);
-            ulong? duration = null;
+            int? duration = null;
             await personalunlockAccount.SendRequestAsync(Settings.GetDefaultAccount(), Settings.GetDefaultAccountPassword(), duration);
             if (Settings.IsParity())
             {

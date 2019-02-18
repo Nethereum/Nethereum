@@ -139,24 +139,24 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 
 
                 var transactionRequestAndReceiptWithInput =
-                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({messageType} {messageVariableName}, CancellationTokenSource cancellationToken = null)
+                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({messageType} {messageVariableName}, CancellationToken token = default(CancellationToken))
 {SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationToken);
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, token);
 {SpaceUtils.TwoTabs}}}";
 
                 var transactionRequestAndReceiptWithoutInput =
-                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
+                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync(CancellationToken token = default(CancellationToken))
 {SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync<{messageType}>(null, cancellationToken);
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync<{messageType}>(null, token);
 {SpaceUtils.TwoTabs}}}";
 
                 var transactionRequestAndReceiptWithSimpleParams =
-                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, CancellationTokenSource cancellationToken = null)
+                    $@"{SpaceUtils.TwoTabs}public Task<TransactionReceipt> {functionNameUpper}RequestAndWaitForReceiptAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, CancellationToken token = default(CancellationToken))
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
 {SpaceUtils.ThreeTabs}
-{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationToken);
+{SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, token);
 {SpaceUtils.TwoTabs}}}";
 
                 if (functionABIModel.HasNoInputParameters())

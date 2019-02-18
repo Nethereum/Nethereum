@@ -10,17 +10,17 @@ namespace Nethereum.ENS
     public partial class DNSResolverService
     {
     
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, DNSResolverDeployment dNSResolverDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, DNSResolverDeployment dNSResolverDeployment, CancellationToken token = default(CancellationToken))
         {
-            return web3.Eth.GetContractDeploymentHandler<DNSResolverDeployment>().SendRequestAndWaitForReceiptAsync(dNSResolverDeployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<DNSResolverDeployment>().SendRequestAndWaitForReceiptAsync(dNSResolverDeployment, token);
         }
         public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, DNSResolverDeployment dNSResolverDeployment)
         {
             return web3.Eth.GetContractDeploymentHandler<DNSResolverDeployment>().SendRequestAsync(dNSResolverDeployment);
         }
-        public static async Task<DNSResolverService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, DNSResolverDeployment dNSResolverDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<DNSResolverService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, DNSResolverDeployment dNSResolverDeployment, CancellationToken token = default(CancellationToken))
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, dNSResolverDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, dNSResolverDeployment, token);
             return new DNSResolverService(web3, receipt.ContractAddress);
         }
     
@@ -71,9 +71,9 @@ namespace Nethereum.ENS
              return ContractHandler.SendRequestAsync(setDnsrrFunction);
         }
 
-        public Task<TransactionReceipt> SetDnsrrRequestAndWaitForReceiptAsync(SetDnsrrFunction setDnsrrFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> SetDnsrrRequestAndWaitForReceiptAsync(SetDnsrrFunction setDnsrrFunction, CancellationToken token = default(CancellationToken))
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setDnsrrFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setDnsrrFunction, token);
         }
 
         public Task<string> SetDnsrrRequestAsync(byte[] node, byte[] data)
@@ -85,13 +85,13 @@ namespace Nethereum.ENS
              return ContractHandler.SendRequestAsync(setDnsrrFunction);
         }
 
-        public Task<TransactionReceipt> SetDnsrrRequestAndWaitForReceiptAsync(byte[] node, byte[] data, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> SetDnsrrRequestAndWaitForReceiptAsync(byte[] node, byte[] data, CancellationToken token = default(CancellationToken))
         {
             var setDnsrrFunction = new SetDnsrrFunction();
                 setDnsrrFunction.Node = node;
                 setDnsrrFunction.Data = data;
             
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setDnsrrFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setDnsrrFunction, token);
         }
 
         public Task<string> OwnerQueryAsync(OwnerFunction ownerFunction, BlockParameter blockParameter = null)

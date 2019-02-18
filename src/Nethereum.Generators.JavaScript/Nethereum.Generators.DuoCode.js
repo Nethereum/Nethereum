@@ -2461,7 +2461,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTem
         var messageType = this._contractDeploymentCQSMessageModel.GetTypeName();
         var messageVariableName = this._contractDeploymentCQSMessageModel.GetVariableName();
 
-        var sendRequestReceipt = String.Format("{0}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, {1} {2}, CancellationTokenSource cancellationTokenSource = null)\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource);\r\n{7}}}", 
+        var sendRequestReceipt = String.Format("{0}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, {1} {2}, CancellationToken token = default(CancellationToken))\r\n{3}{{\r\n{4}return web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, token);\r\n{7}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
@@ -2469,7 +2469,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTem
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequestContract = String.Format("{0}public static async Task<{1}> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, {2} {3}, CancellationTokenSource cancellationTokenSource = null)\r\n{4}{{\r\n{5}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource);\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
+        var sendRequestContract = String.Format("{0}public static async Task<{1}> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, {2} {3}, CancellationToken token = default(CancellationToken))\r\n{4}{{\r\n{5}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {6}, token);\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._serviceModel.GetTypeName(), messageType, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), 
@@ -2591,16 +2591,16 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
 
-            var transactionRequestAndReceiptWithInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationTokenSource cancellationToken = null)\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken);\r\n{7}}}", 
+            var transactionRequestAndReceiptWithInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationToken token = default(CancellationToken))\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, token);\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceiptWithoutInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAndWaitForReceiptAsync<{4}>(null, cancellationToken);\r\n{5}}}", 
+            var transactionRequestAndReceiptWithoutInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync(CancellationToken token = default(CancellationToken))\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAndWaitForReceiptAsync<{4}>(null, token);\r\n{5}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2}, CancellationTokenSource cancellationToken = null)\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAndWaitForReceiptAsync({10}, cancellationToken);\r\n{11}}}", 
+            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2}, CancellationToken token = default(CancellationToken))\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAndWaitForReceiptAsync({10}, token);\r\n{11}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageVariableName, messageType, this._parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
@@ -2661,7 +2661,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsFSharpTem
         var messageType = this._contractDeploymentCQSMessageModel.GetTypeName();
         var messageVariableName = this._contractDeploymentCQSMessageModel.GetVariableName();
 
-        var sendRequestReceipt = String.Format("{0}static member DeployContractAndWaitForReceiptAsync(web3: Web3, {1}: {2}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> = \r\n{3}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null\r\n{4}web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSourceVal)\r\n{7}", 
+        var sendRequestReceipt = String.Format("{0}static member DeployContractAndWaitForReceiptAsync(web3: Web3, {1}: {2}, ?token : CancellationToken): Task<TransactionReceipt> = \r\n{3}let cancellationTokenSourceVal = defaultArg token null\r\n{4}web3.Eth.GetContractDeploymentHandler<{5}>().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSourceVal)\r\n{7}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
@@ -2669,7 +2669,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsFSharpTem
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequestContract = String.Format("{0}static member DeployContractAndGetServiceAsync(web3: Web3, {1}: {2}, ?cancellationTokenSource : CancellationTokenSource) = async {{\r\n{3}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null\r\n{4}let! receipt = {5}.DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSourceVal) |> Async.AwaitTask\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
+        var sendRequestContract = String.Format("{0}static member DeployContractAndGetServiceAsync(web3: Web3, {1}: {2}, ?token : CancellationToken) = async {{\r\n{3}let cancellationTokenSourceVal = defaultArg token null\r\n{4}let! receipt = {5}.DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSourceVal) |> Async.AwaitTask\r\n{7}return new {8}(web3, receipt.ContractAddress);\r\n{9}}}", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), messageVariableName, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), Nethereum.Generators.Core.SpaceUtils().ThreeTabs]);
@@ -2735,7 +2735,7 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodFSharpTemplate, null
                     messageType, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceipt = String.Format("{0}member this.{1}RequestAndWaitForReceiptAsync({2}: {3}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> =\r\n{4}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null\r\n{5}this.ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSourceVal);\r\n{7}", 
+            var transactionRequestAndReceipt = String.Format("{0}member this.{1}RequestAndWaitForReceiptAsync({2}: {3}, ?token : CancellationToken): Task<TransactionReceipt> =\r\n{4}let cancellationTokenSourceVal = defaultArg token null\r\n{5}this.ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSourceVal);\r\n{7}", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                     messageType, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
@@ -2785,7 +2785,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsVbTemplat
         var messageType = this._contractDeploymentCQSMessageModel.GetTypeName();
         var messageVariableName = this._contractDeploymentCQSMessageModel.GetVariableName();
 
-        var sendRequestReceipt = String.Format("{0}Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAndWaitForReceiptAsync({6}, cancellationTokenSource)\r\n{7}\r\n{8}End Function", 
+        var sendRequestReceipt = String.Format("{0}Public Shared Function DeployContractAndWaitForReceiptAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)\r\n{3}\r\n{4}Return web3.Eth.GetContractDeploymentHandler(Of {5})().SendRequestAndWaitForReceiptAsync({6}, token)\r\n{7}\r\n{8}End Function", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
@@ -2795,7 +2795,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsVbTemplat
                 Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        var sendRequestContract = String.Format("{0}Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional cancellationTokenSource As CancellationTokenSource = Nothing) As Task(Of {3})\r\n{4}\r\n{5}Dim receipt = Await DeployContractAndWaitForReceiptAsync(web3, {6}, cancellationTokenSource)\r\n{7}Return New {8}(web3, receipt.ContractAddress)\r\n{9}\r\n{10}End Function", 
+        var sendRequestContract = String.Format("{0}Public Shared Async Function DeployContractAndGetServiceAsync(ByVal web3 As Nethereum.Web3.Web3, ByVal {1} As {2}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of {3})\r\n{4}\r\n{5}Dim receipt = Await DeployContractAndWaitForReceiptAsync(web3, {6}, token)\r\n{7}Return New {8}(web3, receipt.ContractAddress)\r\n{9}\r\n{10}End Function", 
             [Nethereum.Generators.Core.SpaceUtils().TwoTabs, messageVariableName, messageType, this._serviceModel.GetTypeName(), 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), 
@@ -2923,19 +2923,19 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodVbTemplate, null, fu
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceiptWithInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal {2} As {3}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {6})({7}, cancellationToken)\r\n{8}\r\n{9}End Function", 
+            var transactionRequestAndReceiptWithInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal {2} As {3}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {6})({7}, token)\r\n{8}\r\n{9}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, messageVariableName, 
                     messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
                     messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-            var transactionRequestAndReceiptWithoutInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{2}\r\n{3}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {4})(Nothing, cancellationToken)\r\n{5}\r\n{6}End Function", 
+            var transactionRequestAndReceiptWithoutInput = String.Format("{0}Public Function {1}RequestAndWaitForReceiptAsync(ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)\r\n{2}\r\n{3}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {4})(Nothing, token)\r\n{5}\r\n{6}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageType, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
 
-            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}RequestAndWaitForReceiptAsync({3}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Dim {6} = New {7}()\r\n{8}\r\n{9}\r\n{10}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {11})({12}, cancellationToken)\r\n{13}\r\n{14}End Function", 
+            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}\r\n{1}Public Function {2}RequestAndWaitForReceiptAsync({3}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)\r\n{4}\r\n{5}Dim {6} = New {7}()\r\n{8}\r\n{9}\r\n{10}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {11})({12}, token)\r\n{13}\r\n{14}End Function", 
                 [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     functionNameUpper, this._parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 

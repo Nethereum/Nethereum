@@ -17,17 +17,17 @@ namespace SolidityCallAnotherContract.Contracts.Test.Service
     public class TestService
     {
     
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3 web3, TestDeployment testDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3 web3, TestDeployment testDeployment, CancellationToken token = default(CancellationToken))
         {
-            return web3.Eth.GetContractDeploymentHandler<TestDeployment>().SendRequestAndWaitForReceiptAsync(testDeployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<TestDeployment>().SendRequestAndWaitForReceiptAsync(testDeployment, token);
         }
         public static Task<string> DeployContractAsync(Web3 web3, TestDeployment testDeployment)
         {
             return web3.Eth.GetContractDeploymentHandler<TestDeployment>().SendRequestAsync(testDeployment);
         }
-        public static async Task<TestService> DeployContractAndGetServiceAsync(Web3 web3, TestDeployment testDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<TestService> DeployContractAndGetServiceAsync(Web3 web3, TestDeployment testDeployment, CancellationToken token = default(CancellationToken))
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, testDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, testDeployment, token);
             return new TestService(web3, receipt.ContractAddress);
         }
     

@@ -23,11 +23,11 @@ namespace Nethereum.RPC.TransactionManagers
             return _transactionManager.SendTransactionAsync(transactionInput);
         }
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, CancellationToken token = default(CancellationToken))
         {
             var fromAddress = _transactionManager?.Account?.Address;
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
-            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
+            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, token);
         }
 
     }

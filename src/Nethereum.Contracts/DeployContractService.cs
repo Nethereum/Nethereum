@@ -6,7 +6,7 @@ using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts
 {
-    public class DeployContract : IDeployContract
+    public class DeployContract
     {
         private readonly DeployContractTransactionBuilder _deployContractTransactionBuilder;
 
@@ -28,7 +28,6 @@ namespace Nethereum.Contracts
             return _deployContractTransactionBuilder.GetData(contractByteCode, inputParams);
         }
 
-#if !DOTNET35
         public Task<HexBigInteger> EstimateGasAsync(string abi, string contractByteCode, string from,
             params object[] values)
         {
@@ -90,18 +89,6 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
-        public Task<string> SendRequestAsync(string abi, string contractByteCode, string from, HexBigInteger gas,
-            HexBigInteger gasPrice,
-            HexBigInteger value,
-            HexBigInteger nonce,
-            params object[] values)
-        {
-            var transaction =
-                _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, gasPrice, value, nonce,
-                    values);
-            return TransactionManager.SendTransactionAsync(transaction);
-        }
-
         public Task<string> SendRequestAsync(string abi, string contractByteCode, string from,
             params object[] values)
         {
@@ -157,16 +144,7 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
-        public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
-            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams)
-        {
-            var transaction =
-                _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, nonce,
-                    inputParams);
-            return TransactionManager.SendTransactionAsync(transaction);
-        }
-
-
+#if !DOTNET35
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode,
             string from, HexBigInteger gas, CancellationToken token = default(CancellationToken),
             params object[] values)
@@ -266,18 +244,6 @@ namespace Nethereum.Contracts
         {
             var transaction =
                 _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value,
-                    inputParams);
-            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction,
-                token);
-        }
-
-        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode,
-            string from,
-            HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams,
-            CancellationToken token = default(CancellationToken))
-        {
-            var transaction =
-                _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, nonce,
                     inputParams);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction,
                 token);

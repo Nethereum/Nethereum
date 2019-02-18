@@ -31,10 +31,10 @@ namespace Nethereum.JsonRpc.Client
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
 
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+                var token = new CancellationTokenSource();
+                token.CancelAfter(ConnectionTimeout);
 
-                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token)
+                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, token.Token)
                     .ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 

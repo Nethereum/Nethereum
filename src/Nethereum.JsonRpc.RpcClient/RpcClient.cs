@@ -46,12 +46,12 @@ namespace Nethereum.JsonRpc.Client
                 var httpClient = GetOrCreateHttpClient();
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+                var token = new CancellationTokenSource();
+                token.CancelAfter(ConnectionTimeout);
 
                 logger.LogRequest(rpcRequestJson);
 
-                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
+                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, token.Token).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();

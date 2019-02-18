@@ -153,28 +153,28 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.TwoTabs}End Function";
 
                 var transactionRequestAndReceiptWithInput =
-                    $@"{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync(ByVal {messageVariableName} As {messageType}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)
+                    $@"{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync(ByVal {messageVariableName} As {messageType}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)
 {SpaceUtils.TwoTabs}
-{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})({messageVariableName}, cancellationToken)
+{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})({messageVariableName}, token)
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}End Function";
 
                 var transactionRequestAndReceiptWithoutInput =
-                    $@"{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync(ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)
+                    $@"{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync(ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)
 {SpaceUtils.TwoTabs}
-{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})(Nothing, cancellationToken)
+{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})(Nothing, token)
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}End Function";
 
 
                 var transactionRequestAndReceiptWithSimpleParams =
                     $@"{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync({_parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, ByVal Optional cancellationToken As CancellationTokenSource = Nothing) As Task(Of TransactionReceipt)
+{SpaceUtils.TwoTabs}Public Function {functionNameUpper}RequestAndWaitForReceiptAsync({_parameterAbiFunctionDtoVbTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, ByVal Optional token As CancellationToken = CType(Nothing, CancellationToken)) As Task(Of TransactionReceipt)
 {SpaceUtils.TwoTabs}
 {SpaceUtils.ThreeTabs}Dim {messageVariableName} = New {messageType}()
 {_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
 {SpaceUtils.ThreeTabs}
-{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})({messageVariableName}, cancellationToken)
+{SpaceUtils.ThreeTabs}Return ContractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})({messageVariableName}, token)
 {SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}End Function";
 

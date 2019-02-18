@@ -17,9 +17,9 @@ namespace DefaultNamespace
 {
     public partial class StandardContractService
     {
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationToken token = default(CancellationToken))
         {
-            return web3.Eth.GetContractDeploymentHandler<StandardContractDeployment>().SendRequestAndWaitForReceiptAsync(standardContractDeployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<StandardContractDeployment>().SendRequestAndWaitForReceiptAsync(standardContractDeployment, token);
         }
 
         public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment)
@@ -27,9 +27,9 @@ namespace DefaultNamespace
             return web3.Eth.GetContractDeploymentHandler<StandardContractDeployment>().SendRequestAsync(standardContractDeployment);
         }
 
-        public static async Task<StandardContractService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<StandardContractService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationToken token = default(CancellationToken))
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, standardContractDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, standardContractDeployment, token);
             return new StandardContractService(web3, receipt.ContractAddress);
         }
 
@@ -48,9 +48,9 @@ namespace DefaultNamespace
              return ContractHandler.SendRequestAsync(addAdministratorFunction);
         }
 
-        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(AddAdministratorFunction addAdministratorFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(AddAdministratorFunction addAdministratorFunction, CancellationToken token = default(CancellationToken))
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, token);
         }
 
         public Task<string> AddAdministratorRequestAsync(byte[] administratorId)
@@ -61,12 +61,12 @@ namespace DefaultNamespace
              return ContractHandler.SendRequestAsync(addAdministratorFunction);
         }
 
-        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] administratorId, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] administratorId, CancellationToken token = default(CancellationToken))
         {
             var addAdministratorFunction = new AddAdministratorFunction();
                 addAdministratorFunction.AdministratorId = administratorId;
             
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, token);
         }
     }
 }
