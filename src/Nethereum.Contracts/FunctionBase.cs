@@ -39,10 +39,10 @@ namespace Nethereum.Contracts
    
 
         protected Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput,
-            CancellationTokenSource receiptRequestCancellationToken = null)
+            CancellationToken token = default(CancellationToken))
         {
             return TransactionManager.TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput,
-                receiptRequestCancellationToken);
+                token);
         }
 
         public async Task<byte[]> CallRawAsync(CallInput callInput)

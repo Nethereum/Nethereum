@@ -22,8 +22,8 @@ namespace Nethereum.Generators.Service
                 _contractDeploymentCQSMessageModel.GetVariableName();
 
             var sendRequestReceipt =
-                $@"{SpaceUtils.TwoTabs}static member DeployContractAndWaitForReceiptAsync(web3: Web3, {messageVariableName}: {messageType}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> = 
-{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null
+                $@"{SpaceUtils.TwoTabs}static member DeployContractAndWaitForReceiptAsync(web3: Web3, {messageVariableName}: {messageType}, ?token : CancellationToken): Task<TransactionReceipt> = 
+{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg token null
 {SpaceUtils.ThreeTabs}web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSourceVal)
 {SpaceUtils.TwoTabs}";
 
@@ -33,8 +33,8 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.TwoTabs}";
 
             var sendRequestContract =
-                $@"{SpaceUtils.TwoTabs}static member DeployContractAndGetServiceAsync(web3: Web3, {messageVariableName}: {messageType}, ?cancellationTokenSource : CancellationTokenSource) = async {{
-{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null
+                $@"{SpaceUtils.TwoTabs}static member DeployContractAndGetServiceAsync(web3: Web3, {messageVariableName}: {messageType}, ?token : CancellationToken) = async {{
+{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg token null
 {SpaceUtils.ThreeTabs}let! receipt = {_serviceModel.GetTypeName()}.DeployContractAndWaitForReceiptAsync(web3, {messageVariableName}, cancellationTokenSourceVal) |> Async.AwaitTask
 {SpaceUtils.ThreeTabs}return new {_serviceModel.GetTypeName()}(web3, receipt.ContractAddress);
 {SpaceUtils.ThreeTabs}}}";

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
@@ -26,7 +27,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), default(CancellationToken), multiplier);
 
 
             var traceTransaction = new TraceBlock(client);

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
@@ -52,7 +53,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), default(CancellationToken), multiplier);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -82,7 +83,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), default(CancellationToken), multiplier);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -111,7 +112,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), default(CancellationToken), multiplier);
 
             var contractAddress = receipt.ContractAddress;
 

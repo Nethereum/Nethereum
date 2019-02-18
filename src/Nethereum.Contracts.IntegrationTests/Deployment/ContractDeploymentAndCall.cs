@@ -1,3 +1,4 @@
+using System.Threading;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.XUnitEthereumClients;
@@ -30,7 +31,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCode,
-                senderAddress, new HexBigInteger(900000), null, null, null);
+                senderAddress, new HexBigInteger(900000), null, null);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
@@ -222,7 +223,7 @@ contract Purchase {
             var receipt =
                 await
                     web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode,
-                        senderAddress, new HexBigInteger(900000), null, 7, 8);
+                        senderAddress, new HexBigInteger(900000), default(CancellationToken), 7, 8);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 

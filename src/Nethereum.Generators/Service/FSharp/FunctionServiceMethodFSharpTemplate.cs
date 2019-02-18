@@ -70,8 +70,8 @@ namespace Nethereum.Generators.Service
 {SpaceUtils.TwoTabs}";
 
                 var transactionRequestAndReceipt =
-                    $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}RequestAndWaitForReceiptAsync({messageVariableName}: {messageType}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> =
-{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null
+                    $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}RequestAndWaitForReceiptAsync({messageVariableName}: {messageType}, ?token : CancellationToken): Task<TransactionReceipt> =
+{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg token null
 {SpaceUtils.ThreeTabs}this.ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSourceVal);
 {SpaceUtils.TwoTabs}";
 

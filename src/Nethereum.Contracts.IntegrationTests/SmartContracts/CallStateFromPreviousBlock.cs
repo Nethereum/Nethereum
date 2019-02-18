@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexTypes;
+﻿using System.Threading;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
@@ -29,7 +30,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             var newAddress = "0x12890d2cce102216644c59dae5baed380d848301";
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode,
-                address, new HexBigInteger(900000), null, null, null, totalSupply);
+                address, new HexBigInteger(900000), null, null, default(CancellationToken), totalSupply);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var transferFunction = contract.GetFunction("transfer");
@@ -37,11 +38,11 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 
             var gas = await transferFunction.EstimateGasAsync(address, null, null, newAddress, 1000);
             var receiptFirstBlock =
-                await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, null, newAddress,
+                await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, default(CancellationToken), newAddress,
                     1000);
             var balanceFirstBlock = await balanceFunction.CallAsync<int>(newAddress);
             var receiptSecondBlock =
-                await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, null, newAddress,
+                await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, default(CancellationToken), newAddress,
                     1000);
             var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress);
             var balanceOldBlock =

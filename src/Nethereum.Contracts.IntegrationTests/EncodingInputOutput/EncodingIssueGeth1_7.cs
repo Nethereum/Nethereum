@@ -37,7 +37,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(byteCode, senderAddress,
-                new HexBigInteger(900000), null, null, null);
+                new HexBigInteger(900000), null, null);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var addChargeFunction = contract.GetFunction("addCharge");

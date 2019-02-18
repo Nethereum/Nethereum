@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3.Accounts;
@@ -38,7 +39,7 @@ namespace Nethereum.Contracts.IntegrationTests
                     smartContractByteCode,
                     account.Address,
                     new HexBigInteger(900000),
-                    null,
+                    default(CancellationToken),
                     multiplier);
 
             var contractAddress = receipt.ContractAddress;
@@ -49,7 +50,7 @@ namespace Nethereum.Contracts.IntegrationTests
             //correct gas estimation with a parameter
             var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, default(CancellationToken), 5);
 
             Assert.Equal(1, receipt1.Status.Value);
 
@@ -79,7 +80,7 @@ namespace Nethereum.Contracts.IntegrationTests
                     smartContractByteCode,
                     account.Address,
                     new HexBigInteger(900000),
-                    null,
+                    default(CancellationToken),
                     multiplier);
 
             var contractAddress = receipt.ContractAddress;
@@ -91,7 +92,7 @@ namespace Nethereum.Contracts.IntegrationTests
             //it will ran out of gas
             var estimatedGas = await multiplyFunction.EstimateGasAsync();
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, default(CancellationToken), 5);
 
             Assert.Equal(0, receipt1.Status.Value);
 
