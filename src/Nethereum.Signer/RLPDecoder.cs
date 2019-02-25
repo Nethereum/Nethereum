@@ -9,7 +9,7 @@ namespace Nethereum.Signer
         {
             var decodedList = RLP.RLP.Decode(rawdata);
             var decodedData = new List<byte[]>();
-            var decodedElements = (RLPCollection)decodedList[0];
+            var decodedElements = (RLPCollection)decodedList;
             EthECDSASignature signature = null;
             for (var i = 0; i < numberOfEncodingElements; i++)
                 decodedData.Add(decodedElements[i].RLPData);

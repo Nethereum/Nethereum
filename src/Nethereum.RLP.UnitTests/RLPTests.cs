@@ -13,7 +13,7 @@ namespace Nethereum.RLP.UnitTests
             var encoderesult = Nethereum.RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult).RLPData;
             Assert.Equal(test, decodeResult.ToStringFromRLPDecoded());
         }
 
@@ -23,7 +23,7 @@ namespace Nethereum.RLP.UnitTests
             var encoderesult = Nethereum.RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult).RLPData;
             Assert.Equal(test, decodeResult.ToBigIntegerFromRLPDecoded());
         }
 
@@ -32,7 +32,7 @@ namespace Nethereum.RLP.UnitTests
             var encoderesult = Nethereum.RLP.RLP.EncodeList(EncodeElementsBytes(test.ToBytesForRLPEncoding()));
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0] as RLPCollection;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult) as RLPCollection;
             for (var i = 0; i < test.Length; i++)
                 Assert.Equal(test[i], decodeResult[i].RLPData.ToStringFromRLPDecoded());
         }
@@ -55,7 +55,7 @@ namespace Nethereum.RLP.UnitTests
             var encoderesult = Nethereum.RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult).RLPData;
             Assert.Equal(test, decodeResult.ToBigIntegerFromRLPDecoded());
         }
 
@@ -67,7 +67,7 @@ namespace Nethereum.RLP.UnitTests
             var encoderesult = Nethereum.RLP.RLP.EncodeList(test);
             Assert.Equal(expected, encoderesult.ToHex());
 
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0] as RLPCollection;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult) as RLPCollection;
             Assert.True(decodeResult.Count == 0);
         }
 
@@ -79,7 +79,7 @@ namespace Nethereum.RLP.UnitTests
             var expected = "80";
             var encoderesult = Nethereum.RLP.RLP.EncodeElement(testBytes);
             Assert.Equal(expected, encoderesult.ToHex());
-            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult)[0].RLPData;
+            var decodeResult = Nethereum.RLP.RLP.Decode(encoderesult).RLPData;
             Assert.Null(decodeResult);
         }
 

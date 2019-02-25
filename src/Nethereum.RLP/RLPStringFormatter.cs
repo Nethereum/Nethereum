@@ -11,8 +11,7 @@ namespace Nethereum.RLP
             var output = new StringBuilder();
             if (element == null)
                 throw new Exception("RLPElement object can't be null");
-            var rlpCollection = element as RLPCollection;
-            if (rlpCollection != null)
+            if (element is RLPCollection rlpCollection)
             {
                 output.Append("[");
                 foreach (var innerElement in rlpCollection)

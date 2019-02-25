@@ -103,16 +103,11 @@ namespace Nethereum.RLP
             return BitConverter.ToInt32(bytes, 0);
         }
 
-        /// <summary>
-        ///     Parses byte[] message into RLP items
-        /// </summary>
-        /// <param name="msgData">raw RLP data </param>
-        /// <returns> RlpList: outcome of recursive RLP structure </returns>
-        public static RLPCollection Decode(byte[] msgData)
+        public static IRLPElement Decode(byte[] msgData)
         {
             var rlpCollection = new RLPCollection();
             Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
-            return rlpCollection;
+            return rlpCollection[0];
         }
 
         /// <summary>
