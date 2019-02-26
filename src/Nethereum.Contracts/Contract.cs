@@ -52,7 +52,7 @@ namespace Nethereum.Contracts
             return new Event(this, ContractBuilder.GetEventAbi(name));
         }
 
-        public Event<T> GetEvent<T>(string name) where T: IEventDTO, new()
+        public Event<T> GetEvent<T>() where T: IEventDTO, new()
         {
             return new Event<T>(this);
         }
