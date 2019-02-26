@@ -58,7 +58,7 @@ namespace Nethereum.Contracts
 #if !DOTNET35
         public async Task<List<EventLog<TEventMessage>>> GetAllChanges(NewFilterInput filterInput)
         {
-            if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, use CreateFilterInput");
+            if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, the event signatures, or contract addresses do not match, please use the method CreateFilterInput from this class");
             var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
             return DecodeAllEvents<TEventMessage>(logs);
         }
