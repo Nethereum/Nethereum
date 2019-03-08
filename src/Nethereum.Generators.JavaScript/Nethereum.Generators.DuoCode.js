@@ -670,10 +670,13 @@ $d.define(Nethereum.Generators.Core.ABITypeToDotNetTypeBase, null, function($t, 
     };
     $p.Convert = function ABITypeToDotNetTypeBase_Convert(typeName, outputArrayAsList) {
         var indexFirstBracket = typeName.indexOf("[");
+        var numberOfArrays = System.Linq.Enumerable.Count$1(System.Char, typeName, $d.delegate(function(x) {
+            return x == 91 /*'['*/;
+        }));
         if (indexFirstBracket > -1) {
             var elementTypeName = typeName.Substring$1(0, indexFirstBracket);
             if (outputArrayAsList) {
-                return this.GetListType(this.Convert(elementTypeName, true));
+                return this.GetListType(this.Convert(elementTypeName, true), numberOfArrays);
             }
             else {
                 return this.GetArrayType(this.Convert(elementTypeName, false));
@@ -790,8 +793,12 @@ $d.define(Nethereum.Generators.Core.ABITypeToCSharpType, Nethereum.Generators.Co
     $p.GetArrayType = function ABITypeToCSharpType_GetArrayType(type) {
         return type + "[]";
     };
-    $p.GetListType = function ABITypeToCSharpType_GetListType(type) {
-        return "List<" + type + ">";
+    $p.GetListType = function ABITypeToCSharpType_GetListType(type, numberOfArrays) {
+        var output = type;
+        for (var i = 0; i < numberOfArrays; i++) {
+            output = "List<" + output + ">";
+        }
+        return output;
     };
 });
 $d.define(Nethereum.Generators.Core.ABITypeToFSharpType, Nethereum.Generators.Core.ABITypeToDotNetTypeBase, function($t, $p) {
@@ -838,8 +845,12 @@ $d.define(Nethereum.Generators.Core.ABITypeToFSharpType, Nethereum.Generators.Co
     $p.GetArrayType = function ABITypeToFSharpType_GetArrayType(type) {
         return type + "[]";
     };
-    $p.GetListType = function ABITypeToFSharpType_GetListType(type) {
-        return "List<" + type + ">";
+    $p.GetListType = function ABITypeToFSharpType_GetListType(type, numberOfArrays) {
+        var output = type;
+        for (var i = 0; i < numberOfArrays; i++) {
+            output = "List<" + output + ">";
+        }
+        return output;
     };
 });
 $d.define(Nethereum.Generators.Core.ABITypeToVBType, Nethereum.Generators.Core.ABITypeToDotNetTypeBase, function($t, $p) {
@@ -886,8 +897,12 @@ $d.define(Nethereum.Generators.Core.ABITypeToVBType, Nethereum.Generators.Core.A
     $p.GetArrayType = function ABITypeToVBType_GetArrayType(type) {
         return type + "()";
     };
-    $p.GetListType = function ABITypeToVBType_GetListType(type) {
-        return String.Format("List(Of {0})", [type]);
+    $p.GetListType = function ABITypeToVBType_GetListType(type, numberOfArrays) {
+        var output = type;
+        for (var i = 0; i < numberOfArrays; i++) {
+            output = String.Format("List(Of {0})", [output]);
+        }
+        return output;
     };
 });
 Nethereum.Generators.Core.IGenerator = $d.type("Nethereum.Generators.Core.IGenerator", 66, $asm, function($t, $p) {
@@ -2448,6 +2463,9 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
     };
 });
 $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTemplate, null, function($t, $p) {
+    $t.cctor = function() {
+        $t.SpaceFollowingFunction = (System.Environment().NewLine + System.Environment().NewLine);
+    };
     $t.$ator = function() {
         this._contractDeploymentCQSMessageModel = null;
         this._serviceModel = null;
@@ -2475,7 +2493,7 @@ $d.define(Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTem
                 messageVariableName, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, this._serviceModel.GetTypeName(), 
                 Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
 
-        return String.Join(System.Environment().NewLine, $d.array(String, [sendRequestReceipt, sendRequest, 
+        return String.Join($t.SpaceFollowingFunction, $d.array(String, [sendRequestReceipt, sendRequest, 
             sendRequestContract]));
     };
 });

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace Nethereum.Generators.Core
 {
@@ -7,12 +8,13 @@ namespace Nethereum.Generators.Core
         public string Convert(string typeName, bool outputArrayAsList = false)
         {
             var indexFirstBracket = typeName.IndexOf("[");
+            var numberOfArrays = typeName.Count(x => x == '[');
             if (indexFirstBracket > -1)
             {
                 var elementTypeName = typeName.Substring(0, indexFirstBracket);
                 if (outputArrayAsList)
                 {
-                    return GetListType(Convert(elementTypeName, true));
+                    return GetListType(Convert(elementTypeName, true), numberOfArrays);
                 }
                 else
                 {
@@ -117,6 +119,6 @@ namespace Nethereum.Generators.Core
         protected abstract string GetBooleanType();
         protected abstract string GetBigIntegerType();
         protected abstract string GetArrayType(string type);
-        protected abstract string GetListType(string type);
+        protected abstract string GetListType(string type, int numberOfArrays = 1);
     }
 }

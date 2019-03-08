@@ -44,8 +44,8 @@ namespace Nethereum.Generator.Console.Configuration
                 byteCode,
                 BaseNamespace ?? defaultNamespace,
                 ServiceNamespace ?? $"{ContractName}.Service",
-                CQSNamespace ?? $"{ContractName}.CQS",
-                DTONamespace ?? $"{ContractName}.DTO",
+                CQSNamespace ?? $"{ContractName}.ContractDefinition",
+                DTONamespace ?? $"{ContractName}.ContractDefinition",
                 BaseOutputPath ?? projectFolder,
                 Path.DirectorySeparatorChar.ToString(),
                 CodeGenLanguage

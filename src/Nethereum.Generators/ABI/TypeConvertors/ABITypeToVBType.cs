@@ -67,9 +67,14 @@ namespace Nethereum.Generators.Core
             return type + "()";
         }
 
-        protected override string GetListType(string type)
+        protected override string GetListType(string type, int numberOfArrays = 1)
         {
-            return $@"List(Of {type})";
+            var output = type;
+            for (var i = 0; i < numberOfArrays; i++)
+            {
+                output = $@"List(Of {output})"; 
+            }
+            return output;
         }
     }
 }
