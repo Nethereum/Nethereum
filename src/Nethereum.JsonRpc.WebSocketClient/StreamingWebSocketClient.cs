@@ -20,7 +20,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
     /// * On Stop, Error, Disconnection remove requests handlers 
     /// * Interceptor support and other generic stuff, interceptors need response handler support?
     /// </summary>
-    public class StreamingWebSocketClient : IStreamingClient
+    public class StreamingWebSocketClient : IStreamingClient, IDisposable
     {
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
