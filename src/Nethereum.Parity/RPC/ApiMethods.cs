@@ -70,6 +70,10 @@
         trace_transaction,
         trace_filter,
         trace_call,
-        trace_rawTransaction
+        trace_rawTransaction,
+
+        //pub sub
+        parity_unsubscribe,
+        parity_subscribe
     }
 }
