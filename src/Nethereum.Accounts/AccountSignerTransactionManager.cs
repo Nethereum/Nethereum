@@ -11,15 +11,14 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
+using Nethereum.Util;
 using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
-
-
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
-        private readonly TransactionSigner _transactionSigner;
+        private readonly AccountOfflineTransactionSigner _transactionSigner;
         public BigInteger? ChainId { get; private set; }
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
@@ -27,7 +26,7 @@ namespace Nethereum.Web3.Accounts
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
-            _transactionSigner = new TransactionSigner();
+            _transactionSigner = new AccountOfflineTransactionSigner();
         }
 
 
@@ -38,7 +37,7 @@ namespace Nethereum.Web3.Accounts
             Client = rpcClient;
             Account = new Account(privateKey);
             Account.NonceService = new InMemoryNonceService(Account.Address, rpcClient);
-            _transactionSigner = new TransactionSigner();
+            _transactionSigner = new AccountOfflineTransactionSigner();
         }
 
         public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey, chainId)
@@ -63,42 +62,14 @@ namespace Nethereum.Web3.Accounts
         public string SignTransaction(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (!string.Equals(transaction.From.EnsureHexPrefix(), Account.Address.EnsureHexPrefix(), StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Invalid account used signing");
             SetDefaultGasPriceAndCostIfNotSet(transaction);
-
-            var nonce = transaction.Nonce;
-            if(nonce == null) throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
-
-            var gasPrice = transaction.GasPrice;
-            var gasLimit = transaction.Gas;
-
-            var value = transaction.Value ?? new HexBigInteger(0);
-
-            string signedTransaction;
-
-            if (ChainId == null)
-            {
-                signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
-            }
-            else
-            {
-                signedTransaction = _transactionSigner.SignTransaction(((Account)Account).PrivateKey, ChainId.Value,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
-            }
-
-            return signedTransaction;
+            return _transactionSigner.SignTransaction((Account) Account, transaction, ChainId);
         }
 
         protected async Task<string> SignTransactionRetrievingNextNonceAsync(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower())
+            if (!transaction.From.IsTheSameAddress(Account.Address))
                 throw new Exception("Invalid account used signing");
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
@@ -126,7 +97,7 @@ namespace Nethereum.Web3.Accounts
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            if (transaction.From.EnsureHexPrefix().ToLower() != Account.Address.EnsureHexPrefix().ToLower())
+            if (!transaction.From.IsTheSameAddress(Account.Address))
                 throw new Exception("Invalid account used signing");
 
             var ethSendTransaction = new EthSendRawTransaction(Client);

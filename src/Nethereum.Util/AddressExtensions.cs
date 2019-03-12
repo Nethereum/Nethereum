@@ -24,5 +24,10 @@
         {
             return AddressUtil.Current.IsValidAddressLength(address);
         }
+
+        public static bool IsTheSameAddress(this string address, string otherAddress)
+        {
+            return AddressUtil.Current.AreAddressesTheSame(address, otherAddress);
+        }
     }
 }

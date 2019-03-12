@@ -15,11 +15,11 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
     /// <summary>
     /// TODO: 
-    /// * Stop client
-    /// * Error handler generic / this can be converted to observable or assigned as such / others can check on it
-    /// * On Stop, Error, Disconnection remove requests handlers 
     /// * Interceptor support and other generic stuff, interceptors need response handler support?
     /// </summary>
+    ///
+    public delegate void WebSocketStreamingErrorEventHandler(object sender, Exception ex);
+
     public class StreamingWebSocketClient : IStreamingClient, IDisposable
     {
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
@@ -33,6 +33,8 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private Task _listener;
         private CancellationTokenSource _cancellationTokenSource;
+
+        public event WebSocketStreamingErrorEventHandler Error;
 
         private StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
@@ -48,7 +50,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private readonly ILog _log;
 
         public bool IsStarted { get; private set; }
-        public bool IsRunning { get; private set; }
 
         private ClientWebSocket _clientWebSocket;
 
@@ -99,7 +100,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             _log = log;
         }
 
-        public Task Start()
+        public Task StartAsync()
 
         {
             if (IsStarted)
@@ -108,7 +109,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
 
             _cancellationTokenSource = new CancellationTokenSource();
-
+ 
             _listener = Task.Factory.StartNew(async () =>
             {
                 await HandleIncomingMessagesAsync();
@@ -118,6 +119,11 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             return ConnectWebSocketAsync();
 
+        }
+
+        public Task StopAsync()
+        {
+            return CloseDisposeAndClearRequestsAsync();
         }
 
         private async Task ConnectWebSocketAsync()
@@ -133,13 +139,25 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Websocket connection timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                var rpcException = new RpcClientTimeoutException($"Websocket connection timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                HandleError(rpcException);
+                throw rpcException;
             }
-            catch
+            catch(Exception ex)
             {
-                _clientWebSocket = null;
+                HandleError(ex);
                 throw;
             }
+        }
+
+        private void HandleError(Exception exception)
+        {
+            Error?.Invoke(this,exception);
+            foreach (var rpcStreamingResponseHandler in _requests)
+            {
+                rpcStreamingResponseHandler.Value.HandleClientError(exception);    
+            }
+            CloseDisposeAndClearRequestsAsync().Wait();
         }
 
         public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
@@ -158,7 +176,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                HandleError(exception);
+                throw exception;
             }
         }
 
@@ -262,6 +282,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 }
                 catch (Exception ex)
                 {
+                    HandleError(ex);
                     logger.LogException(ex);
                 }
             }
@@ -299,8 +320,80 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         public void Dispose()
         {
-            _clientWebSocket?.Dispose();
-            _cancellationTokenSource.Dispose();
+            CloseDisposeAndClearRequestsAsync().Wait();
+        }
+
+        private async Task CloseDisposeAndClearRequestsAsync()
+        {
+            IsStarted = false;
+
+            try
+            {
+                if (_clientWebSocket != null)
+                {
+                    await _clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "",
+                        new CancellationTokenSource(ConnectionTimeout).Token);
+                }
+
+                _clientWebSocket?.Dispose();
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _clientWebSocket = null;
+            }
+
+            try
+            {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _cancellationTokenSource = null;
+            }
+
+#if !NETSTANDARD1_3
+            try
+            {
+                _listener?.Dispose();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _listener = null;
+            }
+#else
+            _listener = null;
+
+#endif
+            try
+            {
+                foreach (var rpcStreamingResponseHandler in _requests)
+                {
+                    rpcStreamingResponseHandler.Value.HandleClientDisconnection();
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _requests.Clear();
+            }
+
         }
 
         public async Task SendRequestAsync(RpcRequest request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)

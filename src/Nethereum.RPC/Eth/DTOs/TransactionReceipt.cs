@@ -1,4 +1,5 @@
 using Nethereum.Hex.HexTypes;
+using Nethereum.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -76,7 +77,7 @@ namespace Nethereum.RPC.Eth.DTOs
                        BlockNumber == val.BlockNumber &&
                        CumulativeGasUsed == val.CumulativeGasUsed &&
                        GasUsed == val.GasUsed &&
-                       ContractAddress == val.ContractAddress &&
+                       ContractAddress.IsTheSameAddress(val.ContractAddress) &&
                        Status == val.Status;
             }
 

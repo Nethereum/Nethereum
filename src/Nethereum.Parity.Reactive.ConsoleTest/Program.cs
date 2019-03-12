@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Reactive.Linq;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.IpcClient;
 using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Reactive.Polling;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 
@@ -28,13 +30,19 @@ namespace Nethereum.Parity.Reactive.ConsoleTest
 
 
             var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
+            client.Error += Client_Error;
+
             var accountBalanceSubscription = new ParityPubSubObservableSubscription<HexBigInteger>(client);
             var ethBalanceRequest = new EthGetBalance().BuildRequest("0x12890d2cce102216644c59daE5baed380d84830c", BlockParameter.CreateLatest());
 
             accountBalanceSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(newBalance =>
-                Console.WriteLine("New Balance: " + newBalance.Value.ToString()));
+                Console.WriteLine("New Balance: " + newBalance.Value.ToString()), onError => Console.WriteLine("Error:" + onError.Message));
 
-            client.Start().Wait();
+            accountBalanceSubscription.GetSubscribeResponseAsObservable()
+                .Subscribe(x => Console.WriteLine("SubscriptionId:" + x));
+
+
+            client.StartAsync().Wait();
 
             accountBalanceSubscription.SubscribeAsync(ethBalanceRequest).Wait();
             // do transfer 
@@ -48,6 +56,32 @@ namespace Nethereum.Parity.Reactive.ConsoleTest
 
             }
 
+            client.StopAsync().Wait();
+
+            var accountBalanceSubscription2 = new ParityPubSubObservableSubscription<HexBigInteger>(client);
+            var ethBalanceRequest2 = new EthGetBalance().BuildRequest("0x12890d2cce102216644c59daE5baed380d84830c", BlockParameter.CreateLatest());
+
+            accountBalanceSubscription2.GetSubscriptionDataResponsesAsObservable().Subscribe(newBalance =>
+                Console.WriteLine("New Balance: " + newBalance.Value.ToString()));
+
+            accountBalanceSubscription2.GetSubscribeResponseAsObservable()
+                .Subscribe(x => Console.WriteLine("SubscriptionId:" + x));
+
+            client.StartAsync().Wait();
+
+            accountBalanceSubscription2.SubscribeAsync(ethBalanceRequest2).Wait();
+
+            for (int i = 0; i < 10; i++)
+            {
+                web3.Eth.GetEtherTransferService()
+                    .TransferEtherAndWaitForReceiptAsync("0x12890d2cce102216644c59daE5baed380d848306", 10).Wait();
+
+            }
+        }
+
+        private static void Client_Error(object sender, Exception ex)
+        {
+           Console.WriteLine("Error :" + ex.Message);
         }
     }
 }

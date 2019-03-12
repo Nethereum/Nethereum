@@ -7,6 +7,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -314,7 +315,8 @@ namespace Nethereum.Contracts.Extensions
             if (filterInput.Address != null && filterInput.Address.Length > 0)
             {
                 return filterInput.Address.Count(x =>
-                           string.Equals(x, contractAdress, StringComparison.CurrentCultureIgnoreCase)) > 0;
+                           x.IsTheSameAddress(contractAdress)) > 0;
+                           
             }
             return false;
         }

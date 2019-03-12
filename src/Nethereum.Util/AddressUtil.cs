@@ -19,6 +19,13 @@ namespace Nethereum.Util
             }
         }
 
+        public bool AreAddressesTheSame(string address1, string address2)
+        {
+            //simple string comparison as opposed to use big integer comparison
+            return string.Equals(address1.EnsureHexPrefix().ToLowerInvariant(), address2.EnsureHexPrefix().ToLowerInvariant(),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
         public string ConvertToChecksumAddress(string address)
         {
             address = address.ToLower().RemoveHexPrefix();

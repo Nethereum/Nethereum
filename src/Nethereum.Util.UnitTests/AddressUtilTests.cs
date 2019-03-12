@@ -1,9 +1,36 @@
-﻿using Xunit;
+﻿using System;
+using System.Globalization;
+using System.Threading;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Xunit;
 
 namespace Nethereum.Util.UnitTests
 {
     public class AddressUtilTests
     {
+        [Fact]
+        public void ShouldCompareAddressesCorrectly()
+        {
+            var address1 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+            var address2 = "0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAed";
+
+            Assert.True(address1.IsTheSameAddress(address2));
+
+            var address3 = "0x5aaeb6053F3E94C9b9A09f33669435E7Ef1BeAex";
+
+            Assert.False(address1.IsTheSameAddress(address3));
+
+
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("da-DK");
+            var address4 = "0xc25aeeacaa3f110612086febfb423fb34cb9952c";
+            var address5 = "0xc25AEEaCaA3f110612086fEbfb423fb34cB9952C";
+
+            Assert.True(address4.IsTheSameAddress(address5));
+
+            Assert.False(string.Equals(address4.EnsureHexPrefix(), address5.EnsureHexPrefix(), StringComparison.CurrentCultureIgnoreCase));
+
+        }
+
         public string ToChecksumAddress(string address)
         {
             return new AddressUtil().ConvertToChecksumAddress(address);

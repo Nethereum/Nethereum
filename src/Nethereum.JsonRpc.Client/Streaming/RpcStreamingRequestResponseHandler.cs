@@ -38,5 +38,15 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 HandleResponse(result);
             }
         }
+
+        public void HandleClientError(Exception ex)
+        {
+            HandleResponseError(new RpcResponseException(new RpcError(-1, "Client connection error")));
+        }
+
+        public void HandleClientDisconnection()
+        {
+            HandleResponseError(new RpcResponseException(new RpcError(-1, "Client disconnected")));
+        }
     }
 }

@@ -64,6 +64,47 @@ namespace Nethereum.JsonRpc.Client.Streaming
         protected abstract void HandleUnsubscribeResponse(bool success);
         protected abstract void HandleDataResponse(TSubscriptionDataResponse subscriptionDataResponse);
 
+        public void HandleClientError(Exception ex)
+        {
+
+            if (SubscriptionState == SubscriptionState.Subscribed)
+            {
+                HandleDataResponseError(new RpcResponseException(new RpcError(-1, "Client connection error")));
+            }
+
+            if (SubscriptionState == SubscriptionState.Subscribing)
+            {
+                HandleSubscribeResponseError(new RpcResponseException(new RpcError(-1, "Client connection error")));
+            }
+
+            if (SubscriptionState == SubscriptionState.Unsubscribing)
+            {
+                HandleUnsubscribeResponseError(new RpcResponseException(new RpcError(-1, "Client connection error")));
+            }
+
+            SubscriptionState = SubscriptionState.Idle;
+        }
+
+        public void HandleClientDisconnection()
+        {
+
+            if (SubscriptionState == SubscriptionState.Subscribed)
+            {
+                HandleDataResponseError(new RpcResponseException(new RpcError(-1, "Client disconnected")));
+            }
+
+            if (SubscriptionState == SubscriptionState.Subscribing)
+            {
+                HandleSubscribeResponseError(new RpcResponseException(new RpcError(-1, "Client disconnected")));
+            }
+
+            if (SubscriptionState == SubscriptionState.Unsubscribing)
+            {
+                HandleUnsubscribeResponseError(new RpcResponseException(new RpcError(-1, "Client disconnected")));
+            }
+
+            SubscriptionState = SubscriptionState.Idle;
+        }
 
         public void HandleResponse(RpcStreamingResponseMessage rpcStreamingResponse)
         {
@@ -100,7 +141,7 @@ namespace Nethereum.JsonRpc.Client.Streaming
                             var result = rpcStreamingResponse.GetStreamingResult<bool>();
                             if (result)
                             {
-                                this.SubscriptionState = SubscriptionState.Unsubscribed;
+                                this.SubscriptionState = SubscriptionState.Idle;
                                 StreamingClient.RemoveSubscription(SubscriptionId);
                             }
                             HandleUnsubscribeResponse(result);

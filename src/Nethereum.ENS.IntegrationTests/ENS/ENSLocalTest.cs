@@ -5,6 +5,7 @@ using Nethereum.Geth;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.Util;
 using Nethereum.Web3.Accounts.Managed;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
@@ -38,7 +39,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
             //Owner address
             var expectedAddress = "0xfdb33f8ac7ce72d7d4795dd8610e323b4c122fbb";
-            Assert.Equal(expectedAddress.ToLower(), theAddress.ToLower());
+            Assert.True(expectedAddress.IsTheSameAddress(theAddress));   
         }
 
     }
