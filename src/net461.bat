@@ -84,11 +84,11 @@ CALL :build
 cd ..
 
 
-cd Nethereum.Parity.Reactive*
+cd Nethereum.Parity.Reactive
 CALL :restorepack
 cd..
 
-cd Nethereum.RPC.Reactive*
+cd Nethereum.RPC.Reactive
 CALL :restorepack
 cd..
 
