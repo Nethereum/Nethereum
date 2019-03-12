@@ -8,7 +8,7 @@
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
    <Description>Code generation of Nethereum integration classes using the Solidity Abi and Bin</Description>
    <Copyright>Juan Blanco</Copyright>
-   <Version>3.1.0</Version>
+   <Version>3.1.1</Version>
    <Authors>Juan Blanco, Dave Whiffin</Authors> 
 </PropertyGroup>
 </Project>
