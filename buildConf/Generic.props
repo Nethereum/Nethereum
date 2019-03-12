@@ -1,6 +1,6 @@
 <Project>
  <PropertyGroup>
-   <Authors>Juan Blanco</Authors>
+   <Authors>Juan Blanco, Nethereum contributors</Authors>
    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
    <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
    <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>

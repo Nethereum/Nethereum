@@ -95,7 +95,7 @@ namespace Nethereum.WebSocketsStreamingTest
 
             
 
-            client.Start().Wait();
+            client.StartAsync().Wait();
 
             blockHeaderSubscription.SubscribeAsync().Wait();
 

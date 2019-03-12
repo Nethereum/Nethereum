@@ -99,6 +99,15 @@ cd Nethereum.Accounts*
 CALL :restorepack
 cd ..
 
+cd Nethereum.Parity.Reactive*
+CALL :restorepack
+cd..
+
+cd Nethereum.RPC.Reactive*
+CALL :restorepack
+cd..
+
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
