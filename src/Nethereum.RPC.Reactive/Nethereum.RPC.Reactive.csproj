@@ -7,7 +7,7 @@
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(ReactiveFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.RPC.Reactive</AssemblyName>
-    <PackageId>Nethereum.JsonRpc.WebSocketClient</PackageId>
+    <PackageId>Nethereum.RPC.Reactive</PackageId>
     <PackageTags>Json;RPC;Reactive;Ethereum;Nethereum</PackageTags>
   </PropertyGroup>
 
