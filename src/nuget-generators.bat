@@ -18,11 +18,9 @@ setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages-generators
 for /R %DIR% %%a in (*.nupkg) do xcopy "%%a" "%OUTPUTDIR%"
-xcopy *.nupkg packages-generators /s /y
-
 
 for /R %DIR% %%a in (*.snupkg) do xcopy "%%a" "%OUTPUTDIR%"
-xcopy *.snupkg packages /s /y
+
 
 EXIT /B %ERRORLEVEL%
 
