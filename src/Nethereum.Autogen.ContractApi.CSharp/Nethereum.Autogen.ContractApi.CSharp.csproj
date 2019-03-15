@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <NuspecFile>nuget\Nethereum.ABI.Autogen.nuspec</NuspecFile>
+    <NuspecFile>nuget\Nethereum.Autogen.ContractApi.CSharp.nuspec</NuspecFile>
     <StartupObject></StartupObject>
     <ApplicationIcon />
   </PropertyGroup>

@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <package>
   <metadata>
-    <id>Nethereum.ABI.Autogen</id>
-    <version>1.0.0.1</version>
+    <id>Nethereum.Autogen.ContractApi.CSharp</id>
+    <version>3.1.2</version>
     <authors>Dave Whiffin, Juan Blanco</authors>
     <owners>Dave Whiffin, Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <summary>Ethereum (Solidity) to DotNet code generator</summary>
+    <summary>Code Generates a Nethereum C# Api for contracts based on Ethereum Abi files.</summary>
     <description>Generates dot net code for Ethereum (Solidity) contracts.  
       Will automatically create dot net files based on .abi files within the target project during pre build.  
       More control can be gained by adding a Nethereum.Generator.config file to the root of the project.
@@ -16,6 +16,6 @@
   <files>
     <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.dll" target="tools" />
     <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.json" target="tools" />
-    <file src="Nethereum.ABI.Autogen.targets" target="build" />
+    <file src="Nethereum.Autogen.ContractApi.CSharp.targets" target="build" />
   </files>
 </package>
