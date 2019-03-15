@@ -1,47 +1,47 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28711.60
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generator.Console", "src\Nethereum.Generator.Console\Nethereum.Generator.Console.csproj", "{5A9F1DA7-7931-4869-8E3A-B2F26DBFC303}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generator.Console", "src\Nethereum.Generator.Console\Nethereum.Generator.Console.csproj", "{5A9F1DA7-7931-4869-8E3A-B2F26DBFC303}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.UnitTests", "src\Nethereum.Generators.UnitTests\Nethereum.Generators.UnitTests.csproj", "{FEE250FE-8115-4D48-8517-7FA556E0B554}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.UnitTests", "src\Nethereum.Generators.UnitTests\Nethereum.Generators.UnitTests.csproj", "{FEE250FE-8115-4D48-8517-7FA556E0B554}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators", "src\Nethereum.Generators\Nethereum.Generators.csproj", "{C289A9F5-C810-4EB9-A04F-7CB5429A7A3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators", "src\Nethereum.Generators\Nethereum.Generators.csproj", "{C289A9F5-C810-4EB9-A04F-7CB5429A7A3B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.DuoCode", "src\Nethereum.Generators.DuoCode\Nethereum.Generators.DuoCode.csproj", "{EB8AD30C-1914-42C9-9E10-A810B2CA296B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.BuildDuoProjectFile", "src\Nethereum.Generators.BuildDuoProjectFile\Nethereum.Generators.BuildDuoProjectFile.csproj", "{A1EF670F-8721-4D11-A65B-1741B60E29C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Net", "src\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj", "{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Net", "src\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj", "{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Desktop", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.csproj", "{0874565B-E01E-44F8-B930-78E51842D7E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Desktop", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.csproj", "{0874565B-E01E-44F8-B930-78E51842D7E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Desktop.UI", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.Desktop\Nethereum.Generators.Desktop.UI.csproj", "{8661B52B-036C-46D2-BE63-382E48F0AFFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Desktop.UI", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.Desktop\Nethereum.Generators.Desktop.UI.csproj", "{8661B52B-036C-46D2-BE63-382E48F0AFFF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Desktop.XamMac", "src\Nethereum.Generators.Desktop\Nethereum.Generators.Desktop.XamMac\Nethereum.Generators.Desktop.XamMac.csproj", "{F3EBAE07-D97F-4BA8-8179-2E0C78DF4CC9}"
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "nethereum-codegen", "src\Nethereum.Generators.JavaScript\nethereum-codegen.njsproj", "{03DBBE19-48CF-4164-B972-E2646BFA9E9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Desktop.Core", "src\Nethereum.Generators.Desktop.Core\Nethereum.Generators.Desktop.Core.csproj", "{028702B8-D508-4FDE-BA94-72F89DEDB763}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Desktop.Core", "src\Nethereum.Generators.Desktop.Core\Nethereum.Generators.Desktop.Core.csproj", "{028702B8-D508-4FDE-BA94-72F89DEDB763}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Plugin.UnitTestLib", "src\Nethereum.Generators.Plugin.UnitTestLib\Nethereum.Generators.Plugin.UnitTestLib.csproj", "{7954A487-9386-4826-82A5-6812DC99F605}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Plugin.UnitTestLib", "src\Nethereum.Generators.Plugin.UnitTestLib\Nethereum.Generators.Plugin.UnitTestLib.csproj", "{7954A487-9386-4826-82A5-6812DC99F605}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.ABI.Autogen", "src\Nethereum.ABI.Autogen\Nethereum.ABI.Autogen.csproj", "{C81025D0-F9B4-4694-85FD-13B54F6964F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generator.Console.UnitTests", "src\Nethereum.Generator.Console.UnitTests\Nethereum.Generator.Console.UnitTests.csproj", "{8C826F21-786D-4D52-B645-613D2F804452}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generator.Console.UnitTests", "src\Nethereum.Generator.Console.UnitTests\Nethereum.Generator.Console.UnitTests.csproj", "{8C826F21-786D-4D52-B645-613D2F804452}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.IntegrationTests", "src\Nethereum.Generators.IntegrationTests\Nethereum.Generators.IntegrationTests.csproj", "{F4CD9527-23C9-4314-9A39-09DD20FC16F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.IntegrationTests", "src\Nethereum.Generators.IntegrationTests\Nethereum.Generators.IntegrationTests.csproj", "{F4CD9527-23C9-4314-9A39-09DD20FC16F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Tests.Common", "src\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj", "{8C9533E5-3F57-4E29-9D6F-F772D821871B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.Tests.Common", "src\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj", "{8C9533E5-3F57-4E29-9D6F-F772D821871B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.ProtocolBuffers", "src\Nethereum.Generators.ProtocolBuffers\Nethereum.Generators.ProtocolBuffers.csproj", "{656B0C1A-552B-4F5E-9E77-E1F5354AC432}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.ProtocolBuffers", "src\Nethereum.Generators.ProtocolBuffers\Nethereum.Generators.ProtocolBuffers.csproj", "{656B0C1A-552B-4F5E-9E77-E1F5354AC432}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.ProtocolBuffers.Net", "src\Nethereum.Generators.ProtocolBuffers.Net\Nethereum.Generators.ProtocolBuffers.Net.csproj", "{24820AE7-D553-4802-A673-789BE7BFC4E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.ProtocolBuffers.Net", "src\Nethereum.Generators.ProtocolBuffers.Net\Nethereum.Generators.ProtocolBuffers.Net.csproj", "{24820AE7-D553-4802-A673-789BE7BFC4E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.ProtocolBuffers.UnitTests", "src\Nethereum.Generators.ProtocolBuffers.UnitTests\Nethereum.Generators.ProtocolBuffers.UnitTests.csproj", "{B3264F2D-6F87-48C1-9A7F-00A24315EC0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.ProtocolBuffers.UnitTests", "src\Nethereum.Generators.ProtocolBuffers.UnitTests\Nethereum.Generators.ProtocolBuffers.UnitTests.csproj", "{B3264F2D-6F87-48C1-9A7F-00A24315EC0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Autogen.ContractApi.CSharp", "src\Nethereum.Autogen.ContractApi.CSharp\Nethereum.Autogen.ContractApi.CSharp.csproj", "{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -247,22 +247,6 @@ Global
 		{7954A487-9386-4826-82A5-6812DC99F605}.Release|x64.Build.0 = Release|Any CPU
 		{7954A487-9386-4826-82A5-6812DC99F605}.Release|x86.ActiveCfg = Release|Any CPU
 		{7954A487-9386-4826-82A5-6812DC99F605}.Release|x86.Build.0 = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|ARM.Build.0 = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|x64.Build.0 = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Debug|x86.Build.0 = Debug|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|ARM.ActiveCfg = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|ARM.Build.0 = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|x64.ActiveCfg = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|x64.Build.0 = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|x86.ActiveCfg = Release|Any CPU
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5}.Release|x86.Build.0 = Release|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -359,6 +343,22 @@ Global
 		{B3264F2D-6F87-48C1-9A7F-00A24315EC0E}.Release|x64.Build.0 = Release|Any CPU
 		{B3264F2D-6F87-48C1-9A7F-00A24315EC0E}.Release|x86.ActiveCfg = Release|Any CPU
 		{B3264F2D-6F87-48C1-9A7F-00A24315EC0E}.Release|x86.Build.0 = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|ARM.Build.0 = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|x64.Build.0 = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Debug|x86.Build.0 = Debug|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|ARM.ActiveCfg = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|ARM.Build.0 = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|x64.ActiveCfg = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|x64.Build.0 = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|x86.ActiveCfg = Release|Any CPU
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -376,13 +376,13 @@ Global
 		{03DBBE19-48CF-4164-B972-E2646BFA9E9B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{028702B8-D508-4FDE-BA94-72F89DEDB763} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{7954A487-9386-4826-82A5-6812DC99F605} = {962EC435-6130-4B75-BAC1-12323B067443}
-		{C81025D0-F9B4-4694-85FD-13B54F6964F5} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{8C826F21-786D-4D52-B645-613D2F804452} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{F4CD9527-23C9-4314-9A39-09DD20FC16F8} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{8C9533E5-3F57-4E29-9D6F-F772D821871B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{656B0C1A-552B-4F5E-9E77-E1F5354AC432} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{24820AE7-D553-4802-A673-789BE7BFC4E7} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{B3264F2D-6F87-48C1-9A7F-00A24315EC0E} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{B3D9C3F0-AAE7-4C22-8EB7-0EB33420AC00} = {962EC435-6130-4B75-BAC1-12323B067443}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

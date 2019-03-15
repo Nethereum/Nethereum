@@ -5,6 +5,6 @@ echo.Publishing
 cd ../Nethereum.Generator.Console
 dotnet publish -c release
 echo.Packing
-cd ../Nethereum.ABI.Autogen
+cd ../Nethereum.Autogen.ContractApi.CSharp
 dotnet pack -c release
 echo.Finished
