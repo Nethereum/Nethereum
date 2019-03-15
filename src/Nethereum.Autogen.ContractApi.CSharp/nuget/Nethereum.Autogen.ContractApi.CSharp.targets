@@ -9,7 +9,7 @@
   </PropertyGroup> 
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generating dotnet files based on abi files in project and/or Nethereum.ABI.Autogen.config" />
+    <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generating dotnet files based on abi files in project and/or Nethereum.Generator.json" />
     <Exec Condition = "$(IsWindows) == 'true' and $(NethereumGenerateCode) != 'false'" Command="dotnet %USERPROFILE%\.nuget\packages\Nethereum.Autogen.ContractApi.CSharp\$(NugetVersion)\tools\Nethereum.Generator.Console.dll generate from-project -p $(ProjectPath) -a $(TargetFileName)" />
     <Exec Condition = "$(IsWindows) == ''  and $(NethereumGenerateCode) != 'false'" Command="dotnet ~/.nuget/packages/Nethereum.Autogen.ContractApi.CSharp/$(NugetVersion)/tools/Nethereum.Generator.Console.dll generate from-project -p $(ProjectPath) -a $(TargetFileName)" />
     <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generation finished." />
