@@ -22,7 +22,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static string RemoveHexPrefix(this string value)
         {
-            return value.Replace("0x", "");
+            return value.Substring(value.StartsWith("0x") ? 2 : 0);
         }
 
         public static bool IsTheSameHex(this string first, string second)
