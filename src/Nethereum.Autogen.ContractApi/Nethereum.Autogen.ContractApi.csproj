@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;netstandard1.1;netstandard2.0;net451</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <NuspecFile>nuget\Nethereum.Autogen.ContractApi.nuspec</NuspecFile>
     <StartupObject></StartupObject>
