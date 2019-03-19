@@ -35,8 +35,18 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include="NethereumKey.snk" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
@@ -77,8 +87,14 @@
     <Compile Include="..\..\src\Nethereum.Hex\HexTypes\HexUTF8String.cs">
       <Link>Hex\HexTypes\HexUTF8String.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\ABIEncode.cs">
+      <Link>ABI\ABIEncode.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\ABIType.cs">
       <Link>ABI\ABIType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\ABIValue.cs">
+      <Link>ABI\ABIValue.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\AddressType.cs">
       <Link>ABI\AddressType.cs</Link>
@@ -257,6 +273,12 @@
     <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\ParameterAttribute.cs">
       <Link>ABI\FunctionEncoding\Attributes\ParameterAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\ParameterAttributeIndexedTopics.cs">
+      <Link>ABI\FunctionEncoding\Attributes\ParameterAttributeIndexedTopics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\ParameterIndexedTopicExtractor.cs">
+      <Link>ABI\FunctionEncoding\Attributes\ParameterIndexedTopicExtractor.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\Attributes\PropertiesExtractor.cs">
       <Link>ABI\FunctionEncoding\Attributes\PropertiesExtractor.cs</Link>
     </Compile>
@@ -299,6 +321,18 @@
     <Compile Include="..\..\src\Nethereum.RPC\EthApiService.cs">
       <Link>RPC\EthApiService.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\IEthApiService.cs">
+      <Link>RPC\IEthApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\INetApiService.cs">
+      <Link>RPC\INetApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\IPersonalApiService.cs">
+      <Link>RPC\IPersonalApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\IShhApiService.cs">
+      <Link>RPC\IShhApiService.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\NetApiService.cs">
       <Link>RPC\NetApiService.cs</Link>
     </Compile>
@@ -316,6 +350,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\EthAccounts.cs">
       <Link>RPC\Eth\EthAccounts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\EthChainId.cs">
+      <Link>RPC\Eth\EthChainId.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\EthCoinBase.cs">
       <Link>RPC\Eth\EthCoinBase.cs</Link>
@@ -344,6 +381,36 @@
     <Compile Include="..\..\src\Nethereum.RPC\Eth\IDefaultBlock.cs">
       <Link>RPC\Eth\IDefaultBlock.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthAccounts.cs">
+      <Link>RPC\Eth\IEthAccounts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthChainId.cs">
+      <Link>RPC\Eth\IEthChainId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthCoinBase.cs">
+      <Link>RPC\Eth\IEthCoinBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthGasPrice.cs">
+      <Link>RPC\Eth\IEthGasPrice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthGetBalance.cs">
+      <Link>RPC\Eth\IEthGetBalance.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthGetCode.cs">
+      <Link>RPC\Eth\IEthGetCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthGetStorageAt.cs">
+      <Link>RPC\Eth\IEthGetStorageAt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthProtocolVersion.cs">
+      <Link>RPC\Eth\IEthProtocolVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthSign.cs">
+      <Link>RPC\Eth\IEthSign.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\IEthSyncing.cs">
+      <Link>RPC\Eth\IEthSyncing.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\EthBlockNumber.cs">
       <Link>RPC\Eth\Blocks\EthBlockNumber.cs</Link>
     </Compile>
@@ -362,6 +429,27 @@
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\EthGetBlockWithTransactionsHashesByNumber.cs">
       <Link>RPC\Eth\Blocks\EthGetBlockWithTransactionsHashesByNumber.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthBlockNumber.cs">
+      <Link>RPC\Eth\Blocks\IEthBlockNumber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockTransactionCountByHash.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockTransactionCountByHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockTransactionCountByNumber.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockTransactionCountByNumber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockWithTransactionsByHash.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockWithTransactionsByHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockWithTransactionsByNumber.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockWithTransactionsByNumber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockWithTransactionsHashesByHash.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockWithTransactionsHashesByHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\IEthGetBlockWithTransactionsHashesByNumber.cs">
+      <Link>RPC\Eth\Blocks\IEthGetBlockWithTransactionsHashesByNumber.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\EthCompileLLL.cs">
       <Link>RPC\Eth\Compilation\EthCompileLLL.cs</Link>
     </Compile>
@@ -373,6 +461,18 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\EthGetCompilers.cs">
       <Link>RPC\Eth\Compilation\EthGetCompilers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\IEthCompileLLL.cs">
+      <Link>RPC\Eth\Compilation\IEthCompileLLL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\IEthCompileSerpent.cs">
+      <Link>RPC\Eth\Compilation\IEthCompileSerpent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\IEthCompileSolidity.cs">
+      <Link>RPC\Eth\Compilation\IEthCompileSolidity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\IEthGetCompilers.cs">
+      <Link>RPC\Eth\Compilation\IEthGetCompilers.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\Block.cs">
       <Link>RPC\Eth\DTOs\Block.cs</Link>
@@ -394,6 +494,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\EthNewFilterInput.cs">
       <Link>RPC\Eth\DTOs\EthNewFilterInput.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\EthNewSubscriptionInput.cs">
+      <Link>RPC\Eth\DTOs\EthNewSubscriptionInput.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\FilterLog.cs">
       <Link>RPC\Eth\DTOs\FilterLog.cs</Link>
@@ -440,6 +543,33 @@
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\EthUninstallFilter.cs">
       <Link>RPC\Eth\Filters\EthUninstallFilter.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthGetFilterChangesForBlockOrTransaction.cs">
+      <Link>RPC\Eth\Filters\IEthGetFilterChangesForBlockOrTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthGetFilterChangesForEthNewFilter.cs">
+      <Link>RPC\Eth\Filters\IEthGetFilterChangesForEthNewFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthGetFilterLogsForBlockOrTransaction.cs">
+      <Link>RPC\Eth\Filters\IEthGetFilterLogsForBlockOrTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthGetFilterLogsForEthNewFilter.cs">
+      <Link>RPC\Eth\Filters\IEthGetFilterLogsForEthNewFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthGetLogs.cs">
+      <Link>RPC\Eth\Filters\IEthGetLogs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthNewBlockFilter.cs">
+      <Link>RPC\Eth\Filters\IEthNewBlockFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthNewFilter.cs">
+      <Link>RPC\Eth\Filters\IEthNewFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthNewPendingTransactionFilter.cs">
+      <Link>RPC\Eth\Filters\IEthNewPendingTransactionFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Filters\IEthUninstallFilter.cs">
+      <Link>RPC\Eth\Filters\IEthUninstallFilter.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\EthGetWork.cs">
       <Link>RPC\Eth\Mining\EthGetWork.cs</Link>
     </Compile>
@@ -454,6 +584,21 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\EthSubmitWork.cs">
       <Link>RPC\Eth\Mining\EthSubmitWork.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\IEthGetWork.cs">
+      <Link>RPC\Eth\Mining\IEthGetWork.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\IEthHashrate.cs">
+      <Link>RPC\Eth\Mining\IEthHashrate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\IEthMining.cs">
+      <Link>RPC\Eth\Mining\IEthMining.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\IEthSubmitHashrate.cs">
+      <Link>RPC\Eth\Mining\IEthSubmitHashrate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Mining\IEthSubmitWork.cs">
+      <Link>RPC\Eth\Mining\IEthSubmitWork.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\EthApiBlockService.cs">
       <Link>RPC\Eth\Services\EthApiBlockService.cs</Link>
@@ -472,6 +617,51 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\EthApiUncleService.cs">
       <Link>RPC\Eth\Services\EthApiUncleService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiBlockService.cs">
+      <Link>RPC\Eth\Services\IEthApiBlockService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiCompilerService.cs">
+      <Link>RPC\Eth\Services\IEthApiCompilerService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiFilterService.cs">
+      <Link>RPC\Eth\Services\IEthApiFilterService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiMiningService.cs">
+      <Link>RPC\Eth\Services\IEthApiMiningService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiTransactionsService.cs">
+      <Link>RPC\Eth\Services\IEthApiTransactionsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Services\IEthApiUncleService.cs">
+      <Link>RPC\Eth\Services\IEthApiUncleService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthLogsSubscription.cs">
+      <Link>RPC\Eth\Subscriptions\EthLogsSubscription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthLogsSubscriptionRequestBuilder.cs">
+      <Link>RPC\Eth\Subscriptions\EthLogsSubscriptionRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthNewBlockHeadersSubscription.cs">
+      <Link>RPC\Eth\Subscriptions\EthNewBlockHeadersSubscription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthNewBlockHeadersSubscriptionRequestBuilder.cs">
+      <Link>RPC\Eth\Subscriptions\EthNewBlockHeadersSubscriptionRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthNewPendingTransactionSubscription.cs">
+      <Link>RPC\Eth\Subscriptions\EthNewPendingTransactionSubscription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthNewPendingTransactionSubscriptionRequestBuilder.cs">
+      <Link>RPC\Eth\Subscriptions\EthNewPendingTransactionSubscriptionRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthSyncingSubscription.cs">
+      <Link>RPC\Eth\Subscriptions\EthSyncingSubscription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthSyncingSubscriptionRequestBuilder.cs">
+      <Link>RPC\Eth\Subscriptions\EthSyncingSubscriptionRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Subscriptions\EthUnsubscribeRequestBuilder.cs">
+      <Link>RPC\Eth\Subscriptions\EthUnsubscribeRequestBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\EthCall.cs">
       <Link>RPC\Eth\Transactions\EthCall.cs</Link>
@@ -500,6 +690,33 @@
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\EthSendTransaction.cs">
       <Link>RPC\Eth\Transactions\EthSendTransaction.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthCall.cs">
+      <Link>RPC\Eth\Transactions\IEthCall.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthEstimateGas.cs">
+      <Link>RPC\Eth\Transactions\IEthEstimateGas.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthGetTransactionByBlockHashAndIndex.cs">
+      <Link>RPC\Eth\Transactions\IEthGetTransactionByBlockHashAndIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthGetTransactionByBlockNumberAndIndex.cs">
+      <Link>RPC\Eth\Transactions\IEthGetTransactionByBlockNumberAndIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthGetTransactionByHash.cs">
+      <Link>RPC\Eth\Transactions\IEthGetTransactionByHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthGetTransactionCount.cs">
+      <Link>RPC\Eth\Transactions\IEthGetTransactionCount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthGetTransactionReceipt.cs">
+      <Link>RPC\Eth\Transactions\IEthGetTransactionReceipt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthSendRawTransaction.cs">
+      <Link>RPC\Eth\Transactions\IEthSendRawTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Transactions\IEthSendTransaction.cs">
+      <Link>RPC\Eth\Transactions\IEthSendTransaction.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\EthGetUncleByBlockHashAndIndex.cs">
       <Link>RPC\Eth\Uncles\EthGetUncleByBlockHashAndIndex.cs</Link>
     </Compile>
@@ -512,8 +729,32 @@
     <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\EthGetUncleCountByBlockNumber.cs">
       <Link>RPC\Eth\Uncles\EthGetUncleCountByBlockNumber.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\IEthGetUncleByBlockHashAndIndex.cs">
+      <Link>RPC\Eth\Uncles\IEthGetUncleByBlockHashAndIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\IEthGetUncleByBlockNumberAndIndex.cs">
+      <Link>RPC\Eth\Uncles\IEthGetUncleByBlockNumberAndIndex.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\IEthGetUncleCountByBlockHash.cs">
+      <Link>RPC\Eth\Uncles\IEthGetUncleCountByBlockHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Eth\Uncles\IEthGetUncleCountByBlockNumber.cs">
+      <Link>RPC\Eth\Uncles\IEthGetUncleCountByBlockNumber.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\GenericRpcRequesteResponseHandlerNoParam.cs">
       <Link>RPC\Infrastructure\GenericRpcRequesteResponseHandlerNoParam.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs">
+      <Link>RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Net\INetListening.cs">
+      <Link>RPC\Net\INetListening.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Net\INetPeerCount.cs">
+      <Link>RPC\Net\INetPeerCount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Net\INetVersion.cs">
+      <Link>RPC\Net\INetVersion.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Net\NetListening.cs">
       <Link>RPC\Net\NetListening.cs</Link>
@@ -530,6 +771,21 @@
     <Compile Include="..\..\src\Nethereum.RPC\NonceServices\INonceService.cs">
       <Link>RPC\NonceServices\INonceService.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Personal\IPersonalListAccounts.cs">
+      <Link>RPC\Personal\IPersonalListAccounts.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Personal\IPersonalLockAccount.cs">
+      <Link>RPC\Personal\IPersonalLockAccount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Personal\IPersonalNewAccount.cs">
+      <Link>RPC\Personal\IPersonalNewAccount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Personal\IPersonalSignAndSendTransaction.cs">
+      <Link>RPC\Personal\IPersonalSignAndSendTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Personal\IPersonalUnlockAccount.cs">
+      <Link>RPC\Personal\IPersonalUnlockAccount.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalListAccounts.cs">
       <Link>RPC\Personal\PersonalListAccounts.cs</Link>
     </Compile>
@@ -544,6 +800,12 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Personal\PersonalUnlockAccount.cs">
       <Link>RPC\Personal\PersonalUnlockAccount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhNewIdentity.cs">
+      <Link>RPC\Shh\IShhNewIdentity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhVersion.cs">
+      <Link>RPC\Shh\IShhVersion.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhNewIdentity.cs">
       <Link>RPC\Shh\ShhNewIdentity.cs</Link>
@@ -581,6 +843,9 @@
     <Compile Include="..\..\src\Nethereum.RPC\Web3\Web3Sha3.cs">
       <Link>RPC\Web3\Web3Sha3.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Web3\IWeb3.cs">
+      <Link>Web3\IWeb3.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Web3\Web3.cs">
       <Link>Web3\Web3.cs</Link>
     </Compile>
@@ -604,6 +869,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\DefaultJsonSerializerSettingsFactory.cs">
       <Link>NethereumJsonRpc\DefaultJsonSerializerSettingsFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\IBaseClient.cs">
+      <Link>NethereumJsonRpc\IBaseClient.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\IClient.cs">
       <Link>NethereumJsonRpc\IClient.cs</Link>
@@ -629,6 +897,9 @@
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequest.cs">
       <Link>NethereumJsonRpc\RpcRequest.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequestBuilder.cs">
+      <Link>NethereumJsonRpc\RpcRequestBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcRequestResponseHandler.cs">
       <Link>NethereumJsonRpc\RpcRequestResponseHandler.cs</Link>
     </Compile>
@@ -640,6 +911,36 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\RpcMessages\RpcMessages.cs">
       <Link>NethereumJsonRpc\RpcMessages\RpcMessages.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\IRpcStreamingResponseHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\IRpcStreamingResponseHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\IRpcStreamingSubscriptionHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\IRpcStreamingSubscriptionHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\IStreamingClient.cs">
+      <Link>NethereumJsonRpc\Streaming\IStreamingClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\IUnsubscribeSubscriptionRpcRequestBuilder.cs">
+      <Link>NethereumJsonRpc\Streaming\IUnsubscribeSubscriptionRpcRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\RpcStreamingRequestResponseHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\RpcStreamingRequestResponseHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\RpcStreamingResponseEventHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\RpcStreamingResponseEventHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\RpcStreamingSubscriptionEventResponseHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\RpcStreamingSubscriptionEventResponseHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\RpcStreamingSubscriptionHandler.cs">
+      <Link>NethereumJsonRpc\Streaming\RpcStreamingSubscriptionHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\StreamingEventArgs.cs">
+      <Link>NethereumJsonRpc\Streaming\StreamingEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.Client\Streaming\SubscriptionState.cs">
+      <Link>NethereumJsonRpc\Streaming\SubscriptionState.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\RpcClient.cs">
       <Link>NethereumJsonRpcClient\RpcClient.cs</Link>
@@ -737,11 +1038,26 @@
     <Compile Include="..\..\src\Nethereum.KeyStore\Model\ScryptParams.cs">
       <Link>KeyStore\Model\ScryptParams.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\IWeb3Quorum.cs">
+      <Link>Quorum\IWeb3Quorum.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\Web3Quorum.cs">
       <Link>Quorum\Web3Quorum.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\RPC\ApiMethods.cs">
       <Link>Quorum\RPC\ApiMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\RPC\IQuorumCanonicalHash.cs">
+      <Link>Quorum\RPC\IQuorumCanonicalHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\RPC\IQuorumIsBlockMaker.cs">
+      <Link>Quorum\RPC\IQuorumIsBlockMaker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\RPC\IQuorumIsVoter.cs">
+      <Link>Quorum\RPC\IQuorumIsVoter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\RPC\IQuorumVote.cs">
+      <Link>Quorum\RPC\IQuorumVote.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\RPC\QuorumCanonicalHash.cs">
       <Link>Quorum\RPC\QuorumCanonicalHash.cs</Link>
@@ -779,6 +1095,9 @@
     <Compile Include="..\..\src\Nethereum.Quorum\RPC\Interceptors\PrivateForInterceptor.cs">
       <Link>Quorum\RPC\Interceptors\PrivateForInterceptor.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\RPC\Services\IQuorumChainService.cs">
+      <Link>Quorum\RPC\Services\IQuorumChainService.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\RPC\Services\QuorumChainService.cs">
       <Link>Quorum\RPC\Services\QuorumChainService.cs</Link>
     </Compile>
@@ -790,6 +1109,21 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\GethEthApiService.cs">
       <Link>Geth\GethEthApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\IAdminApiService.cs">
+      <Link>Geth\IAdminApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\IDebugApiService.cs">
+      <Link>Geth\IDebugApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\IGethEthApiService.cs">
+      <Link>Geth\IGethEthApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\IMinerApiService.cs">
+      <Link>Geth\IMinerApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\IWeb3Geth.cs">
+      <Link>Geth\IWeb3Geth.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\MinerApiService.cs">
       <Link>Geth\MinerApiService.cs</Link>
@@ -829,6 +1163,33 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\AdminStopWS.cs">
       <Link>Geth\RPC\Admin\AdminStopWS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminAddPeer.cs">
+      <Link>Geth\RPC\Admin\IAdminAddPeer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminDatadir.cs">
+      <Link>Geth\RPC\Admin\IAdminDatadir.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminNodeInfo.cs">
+      <Link>Geth\RPC\Admin\IAdminNodeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminPeers.cs">
+      <Link>Geth\RPC\Admin\IAdminPeers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminSetSolc.cs">
+      <Link>Geth\RPC\Admin\IAdminSetSolc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminStartRPC.cs">
+      <Link>Geth\RPC\Admin\IAdminStartRPC.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminStartWS.cs">
+      <Link>Geth\RPC\Admin\IAdminStartWS.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminStopRPC.cs">
+      <Link>Geth\RPC\Admin\IAdminStopRPC.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Admin\IAdminStopWS.cs">
+      <Link>Geth\RPC\Admin\IAdminStopWS.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugBacktraceAt.cs">
       <Link>Geth\RPC\GethDebug\DebugBacktraceAt.cs</Link>
@@ -896,11 +1257,89 @@
     <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DebugVmodule.cs">
       <Link>Geth\RPC\GethDebug\DebugVmodule.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugBacktraceAt.cs">
+      <Link>Geth\RPC\GethDebug\IDebugBacktraceAt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugBlockProfile.cs">
+      <Link>Geth\RPC\GethDebug\IDebugBlockProfile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugCpuProfile.cs">
+      <Link>Geth\RPC\GethDebug\IDebugCpuProfile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugDumpBlock.cs">
+      <Link>Geth\RPC\GethDebug\IDebugDumpBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugGcStats.cs">
+      <Link>Geth\RPC\GethDebug\IDebugGcStats.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugGetBlockRlp.cs">
+      <Link>Geth\RPC\GethDebug\IDebugGetBlockRlp.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugGoTrace.cs">
+      <Link>Geth\RPC\GethDebug\IDebugGoTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugMemStats.cs">
+      <Link>Geth\RPC\GethDebug\IDebugMemStats.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugSeedHash.cs">
+      <Link>Geth\RPC\GethDebug\IDebugSeedHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugSetBlockProfileRate.cs">
+      <Link>Geth\RPC\GethDebug\IDebugSetBlockProfileRate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugStacks.cs">
+      <Link>Geth\RPC\GethDebug\IDebugStacks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugStartCPUProfile.cs">
+      <Link>Geth\RPC\GethDebug\IDebugStartCPUProfile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugStartGoTrace.cs">
+      <Link>Geth\RPC\GethDebug\IDebugStartGoTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugStopCPUProfile.cs">
+      <Link>Geth\RPC\GethDebug\IDebugStopCPUProfile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugStopGoTrace.cs">
+      <Link>Geth\RPC\GethDebug\IDebugStopGoTrace.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugTraceBlock.cs">
+      <Link>Geth\RPC\GethDebug\IDebugTraceBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugTraceBlockByHash.cs">
+      <Link>Geth\RPC\GethDebug\IDebugTraceBlockByHash.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugTraceBlockByNumber.cs">
+      <Link>Geth\RPC\GethDebug\IDebugTraceBlockByNumber.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugTraceBlockFromFile.cs">
+      <Link>Geth\RPC\GethDebug\IDebugTraceBlockFromFile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugTraceTransaction.cs">
+      <Link>Geth\RPC\GethDebug\IDebugTraceTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugVerbosity.cs">
+      <Link>Geth\RPC\GethDebug\IDebugVerbosity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\IDebugVmodule.cs">
+      <Link>Geth\RPC\GethDebug\IDebugVmodule.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\RPC\GethDebug\DTOs\TraceTransactionOptions.cs">
       <Link>Geth\RPC\GethDebug\DTOs\TraceTransactionOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\RPC\GethEth\EthPendingTransactions.cs">
       <Link>Geth\RPC\GethEth\EthPendingTransactions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\GethEth\IEthPendingTransactions.cs">
+      <Link>Geth\RPC\GethEth\IEthPendingTransactions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\IMinerSetGasPrice.cs">
+      <Link>Geth\RPC\Miner\IMinerSetGasPrice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\IMinerStart.cs">
+      <Link>Geth\RPC\Miner\IMinerStart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\IMinerStop.cs">
+      <Link>Geth\RPC\Miner\IMinerStop.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Geth\RPC\Miner\MinerSetGasPrice.cs">
       <Link>Geth\RPC\Miner\MinerSetGasPrice.cs</Link>
@@ -932,6 +1371,9 @@
     <Compile Include="..\..\src\Nethereum.Contracts\Event{1}.cs">
       <Link>Contracts\Event{1}.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\FilterInputNotForEventException.cs">
+      <Link>Contracts\FilterInputNotForEventException.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Function.cs">
       <Link>Contracts\Function.cs</Link>
     </Compile>
@@ -943,6 +1385,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Function{1}.cs">
       <Link>Contracts\Function{1}.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\IDeployContract.cs">
+      <Link>Contracts\IDeployContract.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\IEventLog.cs">
       <Link>Contracts\IEventLog.cs</Link>
@@ -1037,6 +1482,9 @@
     <Compile Include="..\..\src\Nethereum.Contracts\DeploymentHandlers\IDeploymentTransactionSenderHandler.cs">
       <Link>Contracts\DeploymentHandlers\IDeploymentTransactionSenderHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Extensions\ContractMessageAbiEncodeExtensions.cs">
+      <Link>Contracts\Extensions\ContractMessageAbiEncodeExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Extensions\ContractMessageHexBigIntegerExtensions.cs">
       <Link>Contracts\Extensions\ContractMessageHexBigIntegerExtensions.cs</Link>
     </Compile>
@@ -1084,6 +1532,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\Services\EthApiContractService.cs">
       <Link>Contracts\Services\EthApiContractService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Contracts\Services\IEthApiContractService.cs">
+      <Link>Contracts\Services\IEthApiContractService.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionEstimatorHandler.cs">
       <Link>Contracts\TransactionHandlers\ITransactionEstimatorHandler.cs</Link>
@@ -1238,6 +1689,24 @@
     <Compile Include="..\..\src\Nethereum.Parity\BlockAuthoringApiService.cs">
       <Link>Parity\BlockAuthoringApiService.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\IAccountsApiService.cs">
+      <Link>Parity\IAccountsApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\IAdminApiService.cs">
+      <Link>Parity\IAdminApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\IBlockAuthoringApiService.cs">
+      <Link>Parity\IBlockAuthoringApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\INetworkApiService.cs">
+      <Link>Parity\INetworkApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\ITraceApiService.cs">
+      <Link>Parity\ITraceApiService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\IWeb3Parity.cs">
+      <Link>Parity\IWeb3Parity.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Parity\NetworkApiService.cs">
       <Link>Parity\NetworkApiService.cs</Link>
     </Compile>
@@ -1250,6 +1719,18 @@
     <Compile Include="..\..\src\Nethereum.Parity\RPC\ApiMethods.cs">
       <Link>Parity\RPC\ApiMethods.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\IParityAccountsInfo.cs">
+      <Link>Parity\RPC\Accounts\IParityAccountsInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\IParityDefaultAccount.cs">
+      <Link>Parity\RPC\Accounts\IParityDefaultAccount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\IParityGenerateSecretPhrase.cs">
+      <Link>Parity\RPC\Accounts\IParityGenerateSecretPhrase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\IParityHardwareAccountsInfo.cs">
+      <Link>Parity\RPC\Accounts\IParityHardwareAccountsInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityAccountsInfo.cs">
       <Link>Parity\RPC\Accounts\ParityAccountsInfo.cs</Link>
     </Compile>
@@ -1261,6 +1742,12 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Parity\RPC\Accounts\ParityHardwareAccountsInfo.cs">
       <Link>Parity\RPC\Accounts\ParityHardwareAccountsInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\IParityConsensusCapability.cs">
+      <Link>Parity\RPC\Admin\IParityConsensusCapability.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\IParityPendingTransactionsStats.cs">
+      <Link>Parity\RPC\Admin\IParityPendingTransactionsStats.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Parity\RPC\Admin\ParityConsensusCapability.cs">
       <Link>Parity\RPC\Admin\ParityConsensusCapability.cs</Link>
@@ -1322,6 +1809,30 @@
     <Compile Include="..\..\src\Nethereum.Parity\RPC\Network\ParityPendingTransactions.cs">
       <Link>Parity\RPC\Network\ParityPendingTransactions.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\PubSub\ParitySubscribeRequestBuilder.cs">
+      <Link>Parity\RPC\PubSub\ParitySubscribeRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\PubSub\ParityUnsubscribeRequestBuilder.cs">
+      <Link>Parity\RPC\PubSub\ParityUnsubscribeRequestBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceBlock.cs">
+      <Link>Parity\RPC\Trace\ITraceBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceCall.cs">
+      <Link>Parity\RPC\Trace\ITraceCall.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceFilter.cs">
+      <Link>Parity\RPC\Trace\ITraceFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceGet.cs">
+      <Link>Parity\RPC\Trace\ITraceGet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceRawTransaction.cs">
+      <Link>Parity\RPC\Trace\ITraceRawTransaction.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\ITraceTransaction.cs">
+      <Link>Parity\RPC\Trace\ITraceTransaction.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Parity\RPC\Trace\TraceBlock.cs">
       <Link>Parity\RPC\Trace\TraceBlock.cs</Link>
     </Compile>
@@ -1348,6 +1859,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Accounts\Account.cs">
       <Link>Accounts\Account.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Accounts\AccountOfflineTransactionSigner.cs">
+      <Link>Accounts\AccountOfflineTransactionSigner.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Accounts\AccountSignerTransactionManager.cs">
       <Link>Accounts\AccountSignerTransactionManager.cs</Link>

@@ -1,5 +1,5 @@
 ﻿{
-  "version": "3.0.0",
+  "version": "3.2.1",
   "description": "Nethereum.Portable includes all the Nethereum libraries in a single package Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum and StardardToken",
   "authors": [
     "Juan Blanco"
