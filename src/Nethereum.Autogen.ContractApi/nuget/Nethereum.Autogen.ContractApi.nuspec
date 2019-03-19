@@ -2,10 +2,12 @@
 <package>
   <metadata>
     <id>Nethereum.Autogen.ContractApi</id>
-    <version>3.1.2</version>
+    <version>3.1.3</version>
     <authors>Dave Whiffin, Juan Blanco</authors>
     <owners>Dave Whiffin, Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
+	<licenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</licenseUrl>
+	<iconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</iconUrl>
     <summary>Code Generates a Nethereum C#, Vb or F# Api for contracts based on Ethereum Abi files.</summary>
     <description>Generates dot net code for Ethereum (Solidity) contracts.  
       Will automatically create dot net files based on .abi files within the target project during pre build. 
