@@ -2,7 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -28,6 +30,17 @@ namespace Nethereum.RPC.TransactionManagers
             var fromAddress = _transactionManager?.Account?.Address;
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
             return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
+        }
+
+        public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEther(string address, decimal gasPriceGwei, BigInteger? gas = null)
+        {
+            var ethGetBalance = new EthGetBalance(_transactionManager.Client);
+            var currentBalance = await ethGetBalance.SendRequestAsync(address);
+            var gasPrice = UnitConversion.Convert.ToWei(gasPriceGwei, UnitConversion.EthUnit.Gwei);
+            var gasAmount = gas ?? _transactionManager.DefaultGas;
+
+            var totalAmount = currentBalance.Value - (gasAmount * gasPrice);
+            return UnitConversion.Convert.FromWei(totalAmount);
         }
 
     }
