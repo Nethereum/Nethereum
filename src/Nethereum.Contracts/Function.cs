@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -52,6 +54,28 @@ namespace Nethereum.Contracts
         }
 
 #if !DOTNET35
+
+        public Task<List<ParameterOutput>> CallDecodingToDefaultAsync(params object[] functionInput)
+        {
+            return base.CallDecodingToDefaultAsync(CreateCallInput(functionInput));
+        }
+
+        public Task<List<ParameterOutput>> CallDecodingToDefaultAsync(string from, HexBigInteger gas,
+            HexBigInteger value, params object[] functionInput)
+        {
+            return base.CallDecodingToDefaultAsync(CreateCallInput(from, gas, value, functionInput));
+        }
+
+        public Task<List<ParameterOutput>> CallDecodingToDefaultAsync(string from, HexBigInteger gas,
+            HexBigInteger value, BlockParameter block, params object[] functionInput)
+        {
+            return base.CallDecodingToDefaultAsync(CreateCallInput(from, gas, value, functionInput), block);
+        }
+
+        public Task<List<ParameterOutput>> CallDecodingToDefaultAsync(BlockParameter block, params object[] functionInput)
+        {
+            return base.CallDecodingToDefaultAsync(CreateCallInput(functionInput), block);
+        }
 
         public Task<TReturn> CallAsync<TReturn>(params object[] functionInput)
         {

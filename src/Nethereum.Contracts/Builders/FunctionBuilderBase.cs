@@ -40,6 +40,11 @@ namespace Nethereum.Contracts
                 FunctionABI.InputParameters);
         }
 
+        public List<ParameterOutput> DecodeOutput(string data)
+        {
+            return FunctionCallDecoder.DecodeDefaultData(data,
+                FunctionABI.OutputParameters);
+        }
         public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
         {
             return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(

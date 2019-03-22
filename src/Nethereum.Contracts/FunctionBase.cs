@@ -73,7 +73,7 @@ namespace Nethereum.Contracts
                     EthCall.SendRequestAsync(callInput, block)
                         .ConfigureAwait(false);
 
-            return DecodeInput(result);
+            return FunctionBuilderBase.DecodeOutput(result);
         }
 
         public async Task<List<ParameterOutput>> CallDecodingToDefaultAsync(CallInput callInput)
@@ -83,7 +83,7 @@ namespace Nethereum.Contracts
                     EthCall.SendRequestAsync(callInput)
                         .ConfigureAwait(false);
 
-            return DecodeInput(result);
+            return FunctionBuilderBase.DecodeOutput(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput)
