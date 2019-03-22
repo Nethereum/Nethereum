@@ -92,7 +92,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var test1 = contract.GetFunction("test1");
             Assert.Equal("3457987492347979798742", (await test1.CallDecodingToDefaultAsync()).First().Result.ToString());
-            Assert.Equal("3457987492347979798742", (await test1.CallDecodingToDefaultAsync(@from: senderAddress, null, null )).First().Result.ToString());
+            Assert.Equal("3457987492347979798742", (await test1.CallDecodingToDefaultAsync(@from: senderAddress, gas:null, value: null)).First().Result.ToString());
 
             return "OK";
         }
