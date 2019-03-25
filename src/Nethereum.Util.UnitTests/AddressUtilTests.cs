@@ -29,6 +29,10 @@ namespace Nethereum.Util.UnitTests
 
             Assert.False(string.Equals(address4.EnsureHexPrefix(), address5.EnsureHexPrefix(), StringComparison.CurrentCultureIgnoreCase));
 
+            Assert.False(address4.IsTheSameAddress(null));
+            string address6 = null;
+
+            Assert.True(address6.IsTheSameAddress(null));
         }
 
         public string ToChecksumAddress(string address)

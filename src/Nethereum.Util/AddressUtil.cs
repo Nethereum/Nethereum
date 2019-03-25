@@ -22,8 +22,7 @@ namespace Nethereum.Util
         public bool AreAddressesTheSame(string address1, string address2)
         {
             //simple string comparison as opposed to use big integer comparison
-            return string.Equals(address1.EnsureHexPrefix().ToLowerInvariant(), address2.EnsureHexPrefix().ToLowerInvariant(),
-                StringComparison.OrdinalIgnoreCase);
+            return string.Equals(address1.EnsureHexPrefix()?.ToLowerInvariant(), address2.EnsureHexPrefix()?.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase); 
         }
 
         public string ConvertToChecksumAddress(string address)
@@ -42,12 +41,14 @@ namespace Nethereum.Util
 
         public string ConvertToValid20ByteAddress(string address)
         {
+            if (address == null) address = string.Empty;
             address = address.RemoveHexPrefix();
             return address.PadLeft(40, '0').EnsureHexPrefix();
         }
 
         public bool IsValidAddressLength(string address)
         {
+            if (string.IsNullOrEmpty(address)) return false;
             address = address.RemoveHexPrefix();
             return address.Length == 40;
         }
@@ -57,12 +58,14 @@ namespace Nethereum.Util
         /// </summary>
         public bool IsValidEthereumAddressHexFormat(string address)
         {
+            if (string.IsNullOrEmpty(address)) return false;
             return address.HasHexPrefix() && IsValidAddressLength(address) &&
                    address.ToCharArray().All(char.IsLetterOrDigit);
         }
 
         public bool IsChecksumAddress(string address)
         {
+            if (string.IsNullOrEmpty(address)) return false;
             address = address.RemoveHexPrefix();
             var addressHash = new Sha3Keccack().CalculateHash(address.ToLower());
 
