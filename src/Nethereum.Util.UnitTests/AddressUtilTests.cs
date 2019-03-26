@@ -32,6 +32,7 @@ namespace Nethereum.Util.UnitTests
             Assert.False(address4.IsTheSameAddress(null));
             string address6 = null;
 
+            //strange behaviour, but still permitted.
             Assert.True(address6.IsTheSameAddress(null));
         }
 

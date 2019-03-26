@@ -1,10 +1,14 @@
-﻿using Nethereum.RPC.Eth.DTOs;
+﻿using System;
+using System.Net.Http.Headers;
+using System.Text;
+using Nethereum.RPC.Eth.DTOs;
 using Xunit;
 
 namespace Nethereum.RPC.UnitTests.FormatTesters
 {
     public class CallInputFormatTester
     {
+
         [Fact]
         public void ShouldForceCorrectFormatForCallInput()
         {

@@ -29,6 +29,12 @@ namespace Nethereum.JsonRpc.Client
             JsonSerializerSettings jsonSerializerSettings = null, HttpClientHandler httpClientHandler = null, ILog log = null)
         {
             _baseUrl = baseUrl;
+
+            if (authHeaderValue == null)
+            {
+                authHeaderValue = UserAuthentication.FromUri(baseUrl).GetBasicAuthenticationHeaderValue();
+            }
+
             _authHeaderValue = authHeaderValue;
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
