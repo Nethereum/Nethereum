@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RLP
@@ -367,6 +368,11 @@ namespace Nethereum.RLP
 
                 return data;
             }
+        }
+
+        public static byte[] EncodeElementsAndList(params byte[][] dataItems)
+        {
+            return EncodeList(dataItems.Select(EncodeElement).ToArray());
         }
 
         public static byte[] EncodeList(params byte[][] items)

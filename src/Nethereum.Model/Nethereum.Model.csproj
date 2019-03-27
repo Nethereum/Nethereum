@@ -1,11 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>Nethereum.Model Ethereum Core Moel Class Library</Description>
+    <Copyright>Juan Blanco</Copyright>
+    <AssemblyTitle>Nethereum.Model</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+    <AssemblyName>Nethereum.Model</AssemblyName>
+    <PackageId>Nethereum.Model</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 
 </Project>

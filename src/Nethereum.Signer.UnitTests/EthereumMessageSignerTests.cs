@@ -81,5 +81,25 @@ namespace Nethereum.Signer.UnitTests
             var addressRec = signer.EncodeUTF8AndEcRecover(msg, sig);
             Assert.Equal(address.ToLower(), addressRec.ToLower());
         }
+
+        [Fact]
+        public void ShouldVerifySignatureEncodingMessageAsUTF8()
+        {
+            var address = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var msg = "Hello from Nethereum";
+            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+
+            var signer = new EthereumMessageSigner();
+
+            var signature = signer.EncodeUTF8AndSign(msg, new EthECKey(privateKey));
+
+            var signatureExpected =
+                "0xe20e42c13fbf52a5d65229f4dd1dcd3255691166ce2852456631baf4836afd4630480609a76794ee3018c5514ee3a0592031cf2490e7356dffe4ed202606f5181c";
+
+            Assert.Equal(signatureExpected, signature);
+
+            var addressRec = signer.EncodeUTF8AndEcRecover(msg, signatureExpected);
+            Assert.Equal(address.ToLower(), addressRec.ToLower());
+        }
     }
 }
