@@ -20,12 +20,20 @@ namespace Nethereum.RPC.UnitTests.FormatTesters
 
         }
 
-        [Fact]
-        public void ShouldBeAbleToAuthenticateUsingBasicScheme()
-        {
-        //    IClient client = new RpcClient(new Uri(""));
+        //[Fact]
+        //public void ShouldBeAbleToAuthenticateUsingBasicScheme()
+        //{
+        //        IClient client = new RpcClient(new Uri(""));
+        //        var ethGetBlockNumber = new Eth.Blocks.EthBlockNumber(client);
+        //        var number = ethGetBlockNumber.SendRequestAsync().Result;
+        //}
+
+        //[Fact]
+        //public void ShouldBeAbleToAuthenticateUsingBasicSchemeNoUserNamePassword()
+        //{
+        //    IClient client = new RpcClient(new Uri("https://mainnet.infura.io"));
         //    var ethGetBlockNumber = new Eth.Blocks.EthBlockNumber(client);
         //    var number = ethGetBlockNumber.SendRequestAsync().Result;
-        }
+        //}
     }
 }

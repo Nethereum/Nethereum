@@ -32,7 +32,7 @@ namespace Nethereum.JsonRpc.Client
 
             if (authHeaderValue == null)
             {
-                authHeaderValue = UserAuthentication.FromUri(baseUrl).GetBasicAuthenticationHeaderValue();
+                authHeaderValue = UserAuthentication.FromUri(baseUrl)?.GetBasicAuthenticationHeaderValue();
             }
 
             _authHeaderValue = authHeaderValue;

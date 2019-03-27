@@ -22,6 +22,8 @@ namespace Nethereum.JsonRpc.Client
 
         public static UserAuthentication FromUri(Uri uri)
         {
+            if (string.IsNullOrEmpty(uri.UserInfo)) return null;
+                
             var userInfo = uri.UserInfo?.Split(':');
             UserAuthentication userAuthentication = null;
             if (userInfo != null)
