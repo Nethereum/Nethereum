@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ModelTests\" />
     <Folder Include="Properties\" />
   </ItemGroup>
 

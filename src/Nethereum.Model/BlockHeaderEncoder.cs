@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Signer;
 
 namespace Nethereum.Model
 {
@@ -12,6 +13,15 @@ namespace Nethereum.Model
         public byte[] EncodeCliqueSigHeaderAndHash(BlockHeader header)
         {
             return new Util.Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header));
+        }
+
+        public string RecoverCliqueSigner(BlockHeader blockHeader)
+        {
+            var blockEncoded = EncodeCliqueSigHeader(blockHeader);
+            var signature = blockHeader.ExtraData.Skip(blockHeader.ExtraData.Length - 65).ToArray();
+            return
+                new MessageSigner().EcRecover(BlockHeaderEncoder.Current.EncodeCliqueSigHeaderAndHash(blockHeader),
+                    signature.ToHex());
         }
 
         public byte[] EncodeCliqueSigHeader(BlockHeader header)

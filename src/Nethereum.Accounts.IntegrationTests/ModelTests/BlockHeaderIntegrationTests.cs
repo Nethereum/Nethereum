@@ -31,11 +31,7 @@ namespace Nethereum.Accounts.IntegrationTests
                 var block =
                     await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
                 var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
-                var blockEncoded = BlockHeaderEncoder.Current.EncodeCliqueSigHeader(blockHeader);
-                var signature = blockHeader.ExtraData.Skip(blockHeader.ExtraData.Length - 65).ToArray();
-                var account =
-                    new MessageSigner().EcRecover(BlockHeaderEncoder.Current.EncodeCliqueSigHeaderAndHash(blockHeader),
-                        signature.ToHex());
+                var account = BlockHeaderEncoder.Current.RecoverCliqueSigner(blockHeader);
                 Assert.True(AccountFactory.Address.IsTheSameAddress(account));
 
             }
