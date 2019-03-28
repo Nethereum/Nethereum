@@ -15,7 +15,7 @@ namespace Nethereum.Parity.RPC.Trace.TraceDTOs
         ///     To this block
         /// </summary>
         [JsonProperty(PropertyName = "toBlock")]
-        public string ToBlock { get; set; }
+        public BlockParameter ToBlock { get; set; }
 
         /// <summary>
         ///     From address
@@ -29,6 +29,12 @@ namespace Nethereum.Parity.RPC.Trace.TraceDTOs
         [JsonProperty(PropertyName = "count")]
         public int Count { get; set; }
 
+
+        /// <summary>
+        ///    After (optional) The offset trace number
+        /// </summary>
+        [JsonProperty(PropertyName = "after")]
+        public int After { get; set; }
 
         /// <summary>
         ///     To address
