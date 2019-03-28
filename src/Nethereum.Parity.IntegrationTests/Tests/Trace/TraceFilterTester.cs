@@ -30,7 +30,13 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 
             var traceTransaction = new TraceFilter(client);
             //ToAddress = new []{receiverAddress}, FromBlock = new BlockParameter(receipt.BlockNumber), Count = 1}
-            return await traceTransaction.SendRequestAsync(new TraceFilterDTO {FromAddresses = new[] {senderAddress}});
+            return await traceTransaction.SendRequestAsync(new TraceFilterDTO
+            {
+                FromBlock = new BlockParameter(receipt.BlockNumber),
+                ToBlock = new BlockParameter(receipt.BlockNumber),
+                FromAddresses = new[] {senderAddress},
+                Count = 10,
+            });
         }
 
         public override Type GetRequestType()
