@@ -16,7 +16,12 @@
         "networkID" : "0x677AF40754",
         "gasLimitBoundDivisor": "0x400",
         "eip658Transition": 0,
-        "eip155Transition": 0
+        "eip155Transition": 0,
+        "eip1052Transition":0,
+        "eip1014Transition":0,
+        "eip145Transition":0,
+        "eip214Transition":0,
+        "eip211Transition":0
     },
     "genesis": {
         "seal": {
