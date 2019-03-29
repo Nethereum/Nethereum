@@ -1,19 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
+using Nethereum.Model;
 
 namespace Nethereum.Signer
 {
     public class RLPEncoder
     {
-        private static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
-
-        public static byte[] EncodeData(byte[][] data)
-        {
-            var encodedData = new List<byte[]>();
-            encodedData.AddRange(data.Select(RLP.RLP.EncodeElement).ToArray());
-            return RLP.RLP.EncodeList(encodedData.ToArray());
-        }
-
         public static byte[] EncodeSigned(SignedData signedData, int numberOfElements)
         {
             var encodedData = new List<byte[]>();
@@ -30,9 +22,9 @@ namespace Nethereum.Signer
             }
             else
             {
-                v = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                r = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
-                s = RLP.RLP.EncodeElement(EMPTY_BYTE_ARRAY);
+                v = RLP.RLP.EncodeElement(DefaultValues.EMPTY_BYTE_ARRAY);
+                r = RLP.RLP.EncodeElement(DefaultValues.EMPTY_BYTE_ARRAY);
+                s = RLP.RLP.EncodeElement(DefaultValues.EMPTY_BYTE_ARRAY);
             }
 
             encodedData.Add(v);

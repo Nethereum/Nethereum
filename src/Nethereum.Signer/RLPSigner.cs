@@ -82,7 +82,7 @@ namespace Nethereum.Signer
 
         public byte[] GetRLPEncodedRaw()
         {
-            rlpRawWitNoSignature = RLPEncoder.EncodeData(Data);
+            rlpRawWitNoSignature = RLP.RLP.EncodeElementsAndList(Data);
             return rlpRawWitNoSignature;
         }
 

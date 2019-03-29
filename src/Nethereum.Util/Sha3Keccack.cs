@@ -7,6 +7,8 @@ namespace Nethereum.Util
 {
     public class Sha3Keccack
     {
+        public static Sha3Keccack Current { get; } = new Sha3Keccack();
+
         public string CalculateHash(string value)
         {
             var input = Encoding.UTF8.GetBytes(value);

@@ -4,16 +4,16 @@ namespace Nethereum.Signer
 {
     public class TransactionFactory
     {
-        public static TransactionBase CreateTransaction(string rlpHex)
+        public static SignedTransactionBase CreateTransaction(string rlpHex)
         {
             return CreateTransaction(rlpHex.HexToByteArray());
         }
 
-        public static TransactionBase CreateTransaction(byte[] rlp)
+        public static SignedTransactionBase CreateTransaction(byte[] rlp)
         {
-            var rlpSigner = TransactionBase.CreateDefaultRLPSigner(rlp);
+            var rlpSigner = SignedTransactionBase.CreateDefaultRLPSigner(rlp);
             return rlpSigner.IsVSignatureForChain()
-                ? (TransactionBase) new TransactionChainId(rlpSigner)
+                ? (SignedTransactionBase) new TransactionChainId(rlpSigner)
                 : new Transaction(rlpSigner);
         }
     }
