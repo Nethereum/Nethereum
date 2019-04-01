@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Nethereum.Model
 {
@@ -36,18 +35,5 @@ namespace Nethereum.Model
         /// fragments are contained in the state database under their corresponding hashes for later retrieval
         /// </summary>
         public byte[] CodeHash { get; set; } = DefaultValues.EMPTY_DATA_HASH;
-    }
-
-
-    public class Log
-    {
-        public string Address { get; set; }
-        public byte[] Data { get; set; }
-        public List<LogTopic> Topics { get; set; }
-    }
-
-    public class LogTopic
-    {
-        public byte[] Topic { get; set; }
     }
 }
