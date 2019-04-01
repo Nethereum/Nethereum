@@ -5,9 +5,11 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Hex.HexTypes;
 using System.Collections;
 using System;
+using System.Text;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
@@ -23,10 +25,10 @@ namespace Nethereum.JsonRpc.UnityClient
         private readonly EthGasPriceUnityRequest _ethGasPriceUnityRequest;
         public bool EstimateGas { get; set; } = true;
 
-        public TransactionSignedUnityRequest(string url, string privateKey, string account)
+        public TransactionSignedUnityRequest(string url, string privateKey)
         {
             _url = url;
-            _account = account;
+            _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
             _transactionSigner = new TransactionSigner(); 
             _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(_url);
@@ -58,6 +60,13 @@ namespace Nethereum.JsonRpc.UnityClient
         public IEnumerator SignAndSendTransaction(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException("transactionInput");
+
+            if (string.IsNullOrEmpty(transactionInput.From)) transactionInput.From = _account;
+
+            if (!transactionInput.From.IsTheSameAddress(_account))
+            {
+                throw new Exception("Transaction Input From address does not match private keys address");
+            }
 
             if (transactionInput.Gas == null)
             {

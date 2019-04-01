@@ -6,19 +6,17 @@ namespace Nethereum.JsonRpc.UnityClient
 {
     public class EthTransferUnityRequest : UnityRequest<string>
     {
-        private readonly string _account;
         private TransactionSignedUnityRequest _transactionSignedUnityRequest;
 
-        public EthTransferUnityRequest(string url, string privateKey, string account)
+        public EthTransferUnityRequest(string url, string privateKey)
         {
-            _account = account;
-            _transactionSignedUnityRequest = new TransactionSignedUnityRequest(url, privateKey, account);
+            _transactionSignedUnityRequest = new TransactionSignedUnityRequest(url, privateKey);
         }
 
         public IEnumerator TransferEther(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null)
         {
             var transactionInput =
-                EtherTransferTransactionInputBuilder.CreateTransactionInput(_account, toAddress, etherAmount,
+                EtherTransferTransactionInputBuilder.CreateTransactionInput(null, toAddress, etherAmount,
                     gasPriceGwei, gas);
             yield return  _transactionSignedUnityRequest.SignAndSendTransaction(transactionInput);
 
