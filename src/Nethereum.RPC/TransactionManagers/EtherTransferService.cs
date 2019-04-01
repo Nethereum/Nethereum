@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
@@ -15,7 +16,7 @@ namespace Nethereum.RPC.TransactionManagers
 
         public EtherTransferService(ITransactionManager transactionManager)
         {
-            _transactionManager = transactionManager;
+            _transactionManager = transactionManager ?? throw new ArgumentNullException(nameof(transactionManager));
         }
 
         public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null)
@@ -43,6 +44,13 @@ namespace Nethereum.RPC.TransactionManagers
             return UnitConversion.Convert.FromWei(totalAmount);
         }
 
+        public async Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount) 
+        {
+            var fromAddress = _transactionManager?.Account?.Address;
+            var callInput = (CallInput)EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount);
+            var hexEstimate = await _transactionManager.EstimateGasAsync(callInput);
+            return hexEstimate.Value;
+        }
     }
 #endif
 }
