@@ -42,19 +42,22 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldEncodeDecode()
         {
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var block = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
-            var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
+            if (_ethereumClientIntegrationFixture.Geth)
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var block =
+                    await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
+                var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
 
-            var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);
-            var decoded = BlockHeaderEncoder.Current.Decode(encoded);
+                var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);
+                var decoded = BlockHeaderEncoder.Current.Decode(encoded);
 
-            Assert.Equal(blockHeader.StateRoot.ToHex(), decoded.StateRoot.ToHex());
-            Assert.Equal(blockHeader.LogsBloom.ToHex(), decoded.LogsBloom.ToHex());
-            Assert.Equal(blockHeader.MixHash.ToHex(), decoded.MixHash.ToHex());
-            Assert.Equal(blockHeader.ReceiptHash.ToHex(), decoded.ReceiptHash.ToHex());
-            Assert.Equal(blockHeader.Difficulty, decoded.Difficulty);
-
+                Assert.Equal(blockHeader.StateRoot.ToHex(), decoded.StateRoot.ToHex());
+                Assert.Equal(blockHeader.LogsBloom.ToHex(), decoded.LogsBloom.ToHex());
+                Assert.Equal(blockHeader.MixHash.ToHex(), decoded.MixHash.ToHex());
+                Assert.Equal(blockHeader.ReceiptHash.ToHex(), decoded.ReceiptHash.ToHex());
+                Assert.Equal(blockHeader.Difficulty, decoded.Difficulty);
+            }
         }
 
     }
