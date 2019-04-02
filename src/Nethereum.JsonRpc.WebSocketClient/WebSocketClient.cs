@@ -137,8 +137,9 @@ namespace Nethereum.JsonRpc.WebSocketClient
             }
             catch (Exception ex)
             {
-                logger.LogException(ex);
-                throw new RpcClientUnknownException("Error occurred trying to send web socket requests(s)", ex);
+                var exception = new RpcClientUnknownException("Error occurred when trying to web socket requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
             }
             finally
             {

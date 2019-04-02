@@ -74,12 +74,15 @@ namespace Nethereum.JsonRpc.Client
             }
             catch(TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                 var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                 logger.LogException(exception);
+                 throw exception;
             }
             catch (Exception ex)
             {
-                logger.LogException(ex);
-                throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                var exception = new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
             }
         }
 

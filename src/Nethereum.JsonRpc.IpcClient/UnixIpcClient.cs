@@ -114,7 +114,8 @@ namespace Nethereum.JsonRpc.IpcClient
 #if NET461
                     var val = client.Send(requestBytes, SocketFlags.None);
 #else
-                    var val = client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).Result;
+                    var val =
+ client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).Result;
 #endif
                     using (var memoryStream = ReceiveFullResponse(client))
                     {
@@ -129,11 +130,16 @@ namespace Nethereum.JsonRpc.IpcClient
                         }
                     }
                 }
-            
-            } catch (Exception ex) {
-                logger.LogException(ex);
-                throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+
             }
+            catch (Exception ex)
+            {
+
+                var exception = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+        }
         }
 
 #region IDisposable Support
