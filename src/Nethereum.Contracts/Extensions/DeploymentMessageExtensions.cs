@@ -3,6 +3,12 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Extensions
 {
+
+}
+
+namespace Nethereum.Contracts
+{
+
     public static class DeploymentMessageExtensions
     {
         public static DeploymentMessageEncodingService<TContractMessage> GetEncodingService<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
@@ -41,6 +47,10 @@ namespace Nethereum.Contracts.Extensions
             return GetEncodingService<TContractMessage>(contractMessage).HasASwarmAddressTheByteCode(contractMessage);
         }
 
-       
+        public static void LinkLibraries<TContractMessage>(this TContractMessage contractMessage, params ByteCodeLibrary[] byteCodeLibraries) where TContractMessage : ContractDeploymentMessage, new()
+        {
+            var libraryLinker = new ByteCodeLibraryLinker();
+            contractMessage.ByteCode = libraryLinker.LinkByteCode(contractMessage.ByteCode, byteCodeLibraries);
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Contracts.Extensions
+namespace Nethereum.Contracts
 {
     public static class FunctionMessageExtensions
     {

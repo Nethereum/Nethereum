@@ -11,7 +11,7 @@ using Nethereum.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.Contracts.Extensions
+namespace Nethereum.Contracts
 {
     public static class EventExtensions
     {

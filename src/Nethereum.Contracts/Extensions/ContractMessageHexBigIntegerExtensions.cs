@@ -3,7 +3,7 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Util;
 
-namespace Nethereum.Contracts.Extensions
+namespace Nethereum.Contracts
 {
     public static class ContractMessageHexBigIntegerExtensions
     {

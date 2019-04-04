@@ -1,7 +1,7 @@
 ﻿using Nethereum.ABI;
 using Nethereum.Contracts.CQS;
 
-namespace Nethereum.Contracts.Extensions
+namespace Nethereum.Contracts
 {
     public static class ContractMessageAbiEncodeExtensions
     {
