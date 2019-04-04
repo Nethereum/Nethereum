@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.Decoders;
+using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexConvertors.Extensions;
