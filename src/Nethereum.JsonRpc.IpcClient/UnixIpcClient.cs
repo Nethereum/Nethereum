@@ -139,8 +139,7 @@ namespace Nethereum.JsonRpc.IpcClient
                 logger.LogException(exception);
                 throw exception;
             }
-        }
-        }
+        }    
 
 #region IDisposable Support
 
