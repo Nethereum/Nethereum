@@ -24,6 +24,8 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public string EncodeRequest(string contractByteCode, string encodedParameters)
         {
+            ByteCodeLibraryLinker.EnsureDoesNotContainPlaceholders(contractByteCode);
+
             var prefix = "0x";
 
             if (contractByteCode.StartsWith(prefix))

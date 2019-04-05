@@ -1,6 +1,7 @@
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
+using System;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Deployment
@@ -26,10 +27,10 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             // Deploy unlinked contract, which should throw exception
             var senderAddress = AccountFactory.Address;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var ex = Assert.ThrowsAsync<System.FormatException>(
+            var ex = Assert.ThrowsAsync<Exception>(
                 async () => await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCode,
                 senderAddress, new HexBigInteger(900000), null, null, null)).Result;            
-            Assert.Contains($"could not be converted to byte array", ex.Message);
+            Assert.Contains($"The byte code contains library address placeholders (prefix: '__$', suffix: '$__').", ex.Message);
         }
 
         [Fact]

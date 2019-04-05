@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionManagers;
@@ -212,6 +213,7 @@ namespace Nethereum.Contracts
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from,
             HexBigInteger gas, CancellationTokenSource receiptRequestCancellationToken = null)
         {
+            _deployContractTransactionBuilder.EnsureByteCodeDoesNotContainPlaceholders(contractByteCode);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(
                 new TransactionInput(contractByteCode, gas, from), receiptRequestCancellationToken);
         }
@@ -220,6 +222,7 @@ namespace Nethereum.Contracts
             HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value,
             CancellationTokenSource receiptRequestCancellationToken = null)
         {
+            _deployContractTransactionBuilder.EnsureByteCodeDoesNotContainPlaceholders(contractByteCode);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(
                 new TransactionInput(contractByteCode, null, from, gas, gasPrice, value),
                 receiptRequestCancellationToken);
@@ -228,6 +231,7 @@ namespace Nethereum.Contracts
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from,
             HexBigInteger gas, HexBigInteger value, CancellationTokenSource receiptRequestCancellationToken = null)
         {
+            _deployContractTransactionBuilder.EnsureByteCodeDoesNotContainPlaceholders(contractByteCode);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(
                 new TransactionInput(contractByteCode, null, from, gas, value), receiptRequestCancellationToken);
         }
@@ -235,6 +239,7 @@ namespace Nethereum.Contracts
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractByteCode, string from,
             CancellationTokenSource receiptRequestCancellationToken = null)
         {
+            _deployContractTransactionBuilder.EnsureByteCodeDoesNotContainPlaceholders(contractByteCode);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(
                 new TransactionInput(contractByteCode, null, from), receiptRequestCancellationToken);
         }

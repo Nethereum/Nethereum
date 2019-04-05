@@ -31,6 +31,8 @@ namespace Nethereum.Contracts
 
         private string BuildEncodedData(string abi, string contractByteCode, object[] values)
         {
+            EnsureByteCodeDoesNotContainPlaceholders(contractByteCode);
+
             if (values == null || values.Length == 0)
                 return _constructorCallEncoder.EncodeRequest(contractByteCode, "");
             var contract = _abiDeserialiser.DeserialiseContract(abi);
@@ -124,6 +126,11 @@ namespace Nethereum.Contracts
             var transaction = new TransactionInput(encodedData, null, from, gas, gasPrice, value);
             transaction.Nonce = nonce;
             return transaction;
+        }
+
+        public void EnsureByteCodeDoesNotContainPlaceholders(string byteCode)
+        {
+            ByteCodeLibraryLinker.EnsureDoesNotContainPlaceholders(byteCode);
         }
     }
 }
