@@ -1,5 +1,5 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
-namespace Nethereum.Contracts
+namespace Nethereum.ABI.FunctionEncoding
 {
     public class ByteCodeLibraryLinker
     {

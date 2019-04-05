@@ -1,3 +1,4 @@
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
 using Xunit;

@@ -1,5 +1,5 @@
 ﻿using Nethereum.Util;
-namespace Nethereum.Contracts
+namespace Nethereum.ABI.FunctionEncoding
 {
     public class ByteCodeLibrary
     {

@@ -1,4 +1,5 @@
-﻿using Nethereum.Contracts.MessageEncodingServices;
+﻿using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Extensions
