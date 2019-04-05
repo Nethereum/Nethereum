@@ -27,7 +27,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var ex = Assert.ThrowsAsync<System.FormatException>(
                 async () => await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCode,
-                senderAddress, new HexBigInteger(900000), null, null, null)).Result;
+                senderAddress, new HexBigInteger(900000), null, null, null)).Result;            
             Assert.Contains($"could not be converted to byte array", ex.Message);
         }
 
@@ -64,6 +64,14 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var contractReceipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCodeLinked,
                 senderAddress, new HexBigInteger(900000), null, null, null);
             Assert.Equal(contractReceipt.Status, new HexBigInteger(1));
+
+
+            // Make a test call to the contract, to prove it is able to call the library functions ok
+            var abi = @"[{""constant"":true,""inputs"":[],""name"":""testLibraryUse"",""outputs"":[{""name"":""result"",""type"":""string""}],""payable"":false,""stateMutability"":""pure"",""type"":""function""}]";
+            var contract = web3.Eth.GetContract(abi, contractReceipt.ContractAddress);
+            var testLibraryUseFunction = contract.GetFunction("testLibraryUse");
+            var callResult = await testLibraryUseFunction.CallAsync<string>();
+            Assert.Equal("42", callResult);
         }
     }
 }
