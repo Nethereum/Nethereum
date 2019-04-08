@@ -31,17 +31,23 @@ namespace Nethereum.Quorum
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
         }
-        public Web3Quorum(string accountAddress, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+
+        public Web3Quorum(QuorumAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
-            var account = new QuorumAccount(accountAddress);
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
+        }
+
+        public Web3Quorum(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+        {
+
         }
 
         protected override void InitialiseInnerServices()
         {
             base.InitialiseInnerServices();
             Quorum = new QuorumChainService(Client);
+            base.TransactionManager.DefaultGasPrice = 0;
         }
 
         public IQuorumChainService Quorum { get; private set; }
