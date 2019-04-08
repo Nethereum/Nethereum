@@ -5,12 +5,10 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Signer.Ledger</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.Ledger</AssemblyName>
     <PackageId>Nethereum.Signer.Ledger</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Ledger</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

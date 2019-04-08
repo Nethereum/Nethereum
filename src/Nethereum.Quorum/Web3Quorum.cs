@@ -55,12 +55,13 @@ namespace Nethereum.Quorum
         public List<string> PrivateFor { get; private set; }
         public string PrivateFrom { get; private set; }
 
-        public void SetPrivateRequestParameters(List<string> privateFor, string privateFrom = null)
+        public void SetPrivateRequestParameters(IEnumerable<string> privateFor, string privateFrom = null)
         {
-            if(privateFor == null || privateFor.Count == 0) throw new ArgumentNullException(nameof(privateFor));
-            this.PrivateFor = privateFor;
+            var list = privateFor.ToList();
+            if(privateFor == null || list.Count == 0) throw new ArgumentNullException(nameof(privateFor));
+            this.PrivateFor = list;
             this.PrivateFrom = privateFrom;
-            this.Client.OverridingRequestInterceptor = new PrivateForInterceptor(privateFor, privateFrom);
+            this.Client.OverridingRequestInterceptor = new PrivateForInterceptor(list, privateFrom);
         }
 
         public void ClearPrivateForRequestParameters()

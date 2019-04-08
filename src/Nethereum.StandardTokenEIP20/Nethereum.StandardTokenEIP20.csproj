@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.StandardTokenEIP20</AssemblyName>
     <PackageId>Nethereum.StandardTokenEIP20</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

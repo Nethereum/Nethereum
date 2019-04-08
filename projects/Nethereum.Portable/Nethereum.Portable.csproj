@@ -39,9 +39,6 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <DelaySign>false</DelaySign>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyOriginatorKeyFile>NethereumKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
@@ -104,6 +101,9 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\BoolType.cs">
       <Link>ABI\BoolType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\ByteCodeConstants.cs">
+      <Link>ABI\ByteCodeConstants.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\Bytes32Type.cs">
       <Link>ABI\Bytes32Type.cs</Link>
@@ -209,6 +209,12 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\Encoders\TupleTypeEncoder.cs">
       <Link>ABI\Encoders\TupleTypeEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ByteCodeLibrary.cs">
+      <Link>ABI\FunctionEncoding\ByteCodeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ByteCodeLibraryLinker.cs">
+      <Link>ABI\FunctionEncoding\ByteCodeLibraryLinker.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ByteCodeSwarmExtractor.cs">
       <Link>ABI\FunctionEncoding\ByteCodeSwarmExtractor.cs</Link>
@@ -747,6 +753,9 @@
     <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs">
       <Link>RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.RPC\ModelFactories\BlockHeaderRPCFactory.cs">
+      <Link>RPC\ModelFactories\BlockHeaderRPCFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.RPC\Net\INetListening.cs">
       <Link>RPC\Net\INetListening.cs</Link>
     </Compile>
@@ -849,6 +858,27 @@
     <Compile Include="..\..\src\Nethereum.Web3\Web3.cs">
       <Link>Web3\Web3.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\Account.cs">
+      <Link>Model\Account.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\AccountEncoder.cs">
+      <Link>Model\AccountEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\BlockHeader.cs">
+      <Link>Model\BlockHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\BlockHeaderEncoder.cs">
+      <Link>Model\BlockHeaderEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\DefaultValues.cs">
+      <Link>Model\DefaultValues.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\Log.cs">
+      <Link>Model\Log.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Model\LogBloomFilter.cs">
+      <Link>Model\LogBloomFilter.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\StandardTokenService.cs">
       <Link>EIP20\StandardTokenService.cs</Link>
     </Compile>
@@ -948,6 +978,9 @@
     <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\SimpleRpcClient.cs">
       <Link>NethereumJsonRpcClient\SimpleRpcClient.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\UserAuthentication.cs">
+      <Link>NethereumJsonRpcClient\UserAuthentication.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.KeyStore\IKeyStoreService.cs">
       <Link>KeyStore\IKeyStoreService.cs</Link>
     </Compile>
@@ -1040,6 +1073,12 @@
     </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\IWeb3Quorum.cs">
       <Link>Quorum\IWeb3Quorum.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\QuorumAccount.cs">
+      <Link>Quorum\QuorumAccount.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\Nethereum.Quorum\QuorumTransactionManager.cs">
+      <Link>Quorum\QuorumTransactionManager.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Quorum\Web3Quorum.cs">
       <Link>Quorum\Web3Quorum.cs</Link>
@@ -1593,6 +1632,9 @@
     <Compile Include="..\..\src\Nethereum.Signer\Chain.cs">
       <Link>Signer\Chain.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Signer\CliqueBlockHeaderRecovery.cs">
+      <Link>Signer\CliqueBlockHeaderRecovery.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Signer\ECDSASignatureFactory.cs">
       <Link>Signer\ECDSASignatureFactory.cs</Link>
     </Compile>
@@ -1632,11 +1674,11 @@
     <Compile Include="..\..\src\Nethereum.Signer\SignedData.cs">
       <Link>Signer\SignedData.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Nethereum.Signer\SignedTransactionBase.cs">
+      <Link>Signer\SignedTransactionBase.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Nethereum.Signer\Transaction.cs">
       <Link>Signer\Transaction.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Nethereum.Signer\TransactionBase.cs">
-      <Link>Signer\TransactionBase.cs</Link>
     </Compile>
     <Compile Include="..\..\src\Nethereum.Signer\TransactionChainId.cs">
       <Link>Signer\TransactionChainId.cs</Link>

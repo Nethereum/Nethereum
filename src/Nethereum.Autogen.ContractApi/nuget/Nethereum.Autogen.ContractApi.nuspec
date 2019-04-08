@@ -2,11 +2,11 @@
 <package>
   <metadata>
     <id>Nethereum.Autogen.ContractApi</id>
-    <version>3.1.4</version>
+    <version>3.2.0</version>
     <authors>Dave Whiffin, Juan Blanco</authors>
     <owners>Dave Whiffin, Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-	<licenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</licenseUrl>
+	<license type="file">LICENSE.md</license>
 	<iconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</iconUrl>
     <summary>Code Generates a Nethereum C#, Vb or F# Api for contracts based on Ethereum Abi files.</summary>
     <description>Generates dot net code for Ethereum (Solidity) contracts.  
@@ -19,6 +19,7 @@
   <files>
     <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.dll" target="tools" />
     <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.json" target="tools" />
+	<file src="..\..\..\LICENSE.md" target="" />
     <file src="Nethereum.Autogen.ContractApi.targets" target="build" />
   </files>
 </package>

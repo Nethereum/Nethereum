@@ -6,12 +6,10 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Signer.Trezor</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.Trezor</AssemblyName>
     <PackageId>Nethereum.Signer.Trezor</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Trezor</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

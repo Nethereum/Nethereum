@@ -5,12 +5,10 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Signer.AzureKeyVault</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.AzureKeyVault</AssemblyName>
     <PackageId>Nethereum.Signer.AzureKeyVault</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Azure Key Vault</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

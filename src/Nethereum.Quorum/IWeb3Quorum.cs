@@ -11,6 +11,6 @@ namespace Nethereum.Quorum
         IQuorumChainService Quorum { get; }
 
         void ClearPrivateForRequestParameters();
-        void SetPrivateRequestParameters(List<string> privateFor, string privateFrom = null);
+        void SetPrivateRequestParameters(IEnumerable<string> privateFor, string privateFrom = null);
     }
 }

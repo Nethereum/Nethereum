@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.Parity</AssemblyName>
     <PackageId>Nethereum.Parity</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Parity</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

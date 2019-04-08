@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.RPC</AssemblyName>
     <PackageId>Nethereum.RPC</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

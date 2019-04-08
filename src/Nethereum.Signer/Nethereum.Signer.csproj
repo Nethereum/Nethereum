@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.Signer</AssemblyName>
     <PackageId>Nethereum.Signer</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Transactions;Signer</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

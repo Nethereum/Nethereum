@@ -108,6 +108,9 @@ cd Nethereum.RPC.Reactive
 CALL :restorepack
 cd..
 
+cd Nethereum.Model
+CALL :restorepack
+cd..
 
 setlocal
 set DIR=%~dp0

@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.RLP</AssemblyName>
     <PackageId>Nethereum.RLP</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;RLP</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
