@@ -2,31 +2,46 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Numerics;
 using System.Threading.Tasks;
 using Common.Logging;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Quorum.RPC.Interceptors;
 using Nethereum.Quorum.RPC.Services;
+using Nethereum.RPC.Accounts;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.NonceServices;
+using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Quorum
 {
+
     public class Web3Quorum : Web3.Web3, IWeb3Quorum
     {
-        public Web3Quorum(IClient client):base(client)
+        public Web3Quorum(IClient client, string accountAddress) :base(client)
         {
-           
+            var account = new QuorumAccount(accountAddress);
+            TransactionManager = account.TransactionManager;
+            TransactionManager.Client = Client;
         }
 
-        public Web3Quorum(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+        public Web3Quorum(IClient client, QuorumAccount account) : base(client)
         {
-
+            TransactionManager = account.TransactionManager;
+            TransactionManager.Client = Client;
+        }
+        public Web3Quorum(string accountAddress, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+        {
+            var account = new QuorumAccount(accountAddress);
+            TransactionManager = account.TransactionManager;
+            TransactionManager.Client = Client;
         }
 
         protected override void InitialiseInnerServices()
         {
             base.InitialiseInnerServices();
             Quorum = new QuorumChainService(Client);
-            base.TransactionManager.DefaultGasPrice = 0;
         }
 
         public IQuorumChainService Quorum { get; private set; }
