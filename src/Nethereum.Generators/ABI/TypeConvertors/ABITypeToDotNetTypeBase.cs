@@ -5,7 +5,7 @@ namespace Nethereum.Generators.Core
 {
     public abstract class ABITypeToDotNetTypeBase : ITypeConvertor
     {
-        public string Convert(string typeName, bool outputArrayAsList = false)
+        public string Convert(string typeName, string dotnetClassName = null, bool outputArrayAsList = false)
         {
             var indexFirstBracket = typeName.IndexOf("[");
             var numberOfArrays = typeName.Count(x => x == '[');
@@ -14,13 +14,16 @@ namespace Nethereum.Generators.Core
                 var elementTypeName = typeName.Substring(0, indexFirstBracket);
                 if (outputArrayAsList)
                 {
-                    return GetListType(Convert(elementTypeName, true), numberOfArrays);
+                    return GetListType(Convert(elementTypeName, dotnetClassName, true), numberOfArrays);
                 }
                 else
                 {
-                    return GetArrayType(Convert(elementTypeName));
+                    return GetArrayType(Convert(elementTypeName, dotnetClassName));
                 }
             }
+
+            if (dotnetClassName != null) return dotnetClassName;
+
             if ("bool" == typeName)
             {
                 return GetBooleanType();

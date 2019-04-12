@@ -39,6 +39,7 @@ Nethereum.Generators.Model.ContractABI = $d.declare("Nethereum.Generators.Model.
 Nethereum.Generators.Model.EventABI = $d.declare("Nethereum.Generators.Model.EventABI", 0, $asm);
 Nethereum.Generators.Model.FunctionABI = $d.declare("Nethereum.Generators.Model.FunctionABI", 0, $asm);
 Nethereum.Generators.Model.ParameterABI = $d.declare("Nethereum.Generators.Model.ParameterABI", 0, $asm);
+Nethereum.Generators.Model.StructABI = $d.declare("Nethereum.Generators.Model.StructABI", 0, $asm);
 Nethereum.Generators.Core.ABITypeToCSharpType = $d.declare("Nethereum.Generators.Core.ABITypeToCSharpType", 
     0, $asm);
 Nethereum.Generators.Core.ABITypeToDotNetTypeBase = $d.declare("Nethereum.Generators.Core.ABITypeToDotNetTypeBase", 
@@ -125,6 +126,10 @@ Nethereum.Generators.DTOs.FunctionOutputDTOGenerator = $d.declare("Nethereum.Gen
     0, $asm);
 Nethereum.Generators.DTOs.FunctionOutputDTOModel = $d.declare("Nethereum.Generators.DTOs.FunctionOutputDTOModel", 
     0, $asm);
+Nethereum.Generators.DTOs.StructTypeGenerator = $d.declare("Nethereum.Generators.DTOs.StructTypeGenerator", 
+    0, $asm);
+Nethereum.Generators.DTOs.StructTypeModel = $d.declare("Nethereum.Generators.DTOs.StructTypeModel", 0, 
+    $asm);
 Nethereum.Generators.DTOs.EventDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.EventDTOCSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate", 
@@ -132,6 +137,8 @@ Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate = $d.declare("Nethereu
 Nethereum.Generators.DTOs.ParameterABIEventDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.ParameterABIEventDTOCSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate", 
+    0, $asm);
+Nethereum.Generators.DTOs.StructTypeCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.StructTypeCSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.EventDTOFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.EventDTOFSharpTemplate", 
     0, $asm);
@@ -225,6 +232,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
             64040).ctor)();
         generated.Add(this.GenerateAllMessages());
+        generated.AddRange(this.GenerateAllStructs());
         generated.Add(this.GenerateService(true));
         return generated.ToArray();
     };
@@ -288,6 +296,34 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
                 }, this));
             }).call(this);
         return generated;
+    };
+    $p.GenerateAllStructs = function ContractProjectGenerator_GenerateAllStructs() {
+        var generators = this.GetAllStructTypeGenerators();
+        var structFullPath = this.GetFullPath(this.get_DTONamespace());
+        var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
+            64040).ctor)();
+        var $iter = generators;
+        var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
+        while ($enumerator.System$Collections$IEnumerator$MoveNext())
+            (function() {
+                var generator = $enumerator.System$Collections$IEnumerator$get_Current();
+                this.GenerateAndAdd(generated, $d.delegate(function() {
+                    return generator.GenerateFileContent$1(structFullPath);
+                }, this));
+            }).call(this);
+        return generated;
+    };
+    $p.GetAllStructTypeGenerators = function ContractProjectGenerator_GetAllStructTypeGenerators() {
+        var structTypeNamespace = this.GetFullNamespace(this.get_DTONamespace());
+        var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.StructTypeGenerator, 
+            21723).ctor)();
+        for (var $i = 0, $a = this.get_ContractABI().get_Structs(), $length = $a.length; $i < $length; $i++) {
+            var structAbi = $a[$i];
+            var structTypeGenerator = new Nethereum.Generators.DTOs.StructTypeGenerator.ctor(structAbi, 
+                structTypeNamespace, this.get_CodeGenLanguage());
+            generators.Add(structTypeGenerator);
+        }
+        return generators;
     };
     $p.GetAllFunctionDTOsGenerators = function ContractProjectGenerator_GetAllFunctionDTOsGenerators() {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
@@ -442,8 +478,10 @@ $d.define(Nethereum.Generators.Core.FunctionABIModel, null, function($t, $p) {
     };
     $p.GetSingleOutputReturnType = function FunctionABIModel_GetSingleOutputReturnType() {
         if (this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length == 1) {
-            return this._abiTypeToDotnetTypeConvertor.Nethereum$Generators$Core$ITypeConvertor$Convert(this.get_FunctionABI().get_OutputParameters()[0].get_Type(), 
-                true);
+            var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(this.get_FunctionABI().get_OutputParameters()[0]);
+
+            return this._abiTypeToDotnetTypeConvertor.Nethereum$Generators$Core$ITypeConvertor$Convert(parameterModel.get_Parameter().get_Type(), 
+                parameterModel.GetStructTypeClassName(), true);
         }
         return null;
     };
@@ -544,6 +582,11 @@ $d.define(Nethereum.Generators.Core.ParameterABIModel, Nethereum.Generators.Core
 
         return this.get_CommonGenerators().GeneratePropertyName(name);
     };
+    $p.GetStructTypeClassName = function ParameterABIModel_GetStructTypeClassName() {
+        if (String.IsNullOrEmpty(this.get_Parameter().get_StructType()))
+            return null;
+        return this.get_CommonGenerators().GenerateClassName(this.get_Parameter().get_StructType());
+    };
     $p.NameOrDefault = function ParameterABIModel_NameOrDefault(name, order, parameterDirection) {
         if (!String.IsNullOrEmpty(name))
             return name;
@@ -562,12 +605,14 @@ $d.define(Nethereum.Generators.Core.ParameterABIModelTypeMap, null, function($t,
         this._typeConvertor = typeConvertor;
     };
     $p.GetParameterDotNetOutputMapType = function ParameterABIModelTypeMap_GetParameterDotNetOutputMapType(parameter) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
         return this._typeConvertor.Nethereum$Generators$Core$ITypeConvertor$Convert(parameter.get_Type(), 
-            true);
+            parameterModel.GetStructTypeClassName(), true);
     };
     $p.GetParameterDotNetInputMapType = function ParameterABIModelTypeMap_GetParameterDotNetInputMapType(parameter) {
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
         return this._typeConvertor.Nethereum$Generators$Core$ITypeConvertor$Convert(parameter.get_Type(), 
-            false);
+            parameterModel.GetStructTypeClassName(), false);
     };
 });
 Nethereum.Generators.Core.IMessage$1 = $d.type("Nethereum.Generators.Core.IMessage`1", 322, $asm, function($t, $p, TParameter) {
@@ -595,6 +640,7 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
         this.Functions = null;
         this.Constructor = null;
         this.Events = null;
+        this.Structs = null;
     };
     $t.ctor = function ContractABI() {
         $t.$baseType.ctor.call(this);
@@ -605,6 +651,8 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
     $p.set_Constructor = function ContractABI_set_Constructor(value) { this.Constructor = value;return value; };
     $p.get_Events = function ContractABI_get_Events() { return this.Events; };
     $p.set_Events = function ContractABI_set_Events(value) { this.Events = value;return value; };
+    $p.get_Structs = function ContractABI_get_Structs() { return this.Structs; };
+    $p.set_Structs = function ContractABI_set_Structs(value) { this.Structs = value;return value; };
 });
 $d.define(Nethereum.Generators.Model.EventABI, null, function($t, $p) {
     $t.$ator = function() {
@@ -650,16 +698,38 @@ $d.define(Nethereum.Generators.Model.FunctionABI, null, function($t, $p) {
 });
 $d.define(Nethereum.Generators.Model.ParameterABI, Nethereum.Generators.Core.Parameter, function($t, $p) {
     $t.$ator = function() {
+        this.StructType = null;
         this.Indexed = false;
     };
-    $t.ctor$1 = function ParameterABI(type, name, order) {
+    $t.ctor$1 = function ParameterABI(type, name, order, structType) {
         $t.$baseType.ctor.call(this, name, type, order);
+        this.set_StructType(structType);
     };
     $t.ctor = function ParameterABI(type, order) {
-        $t.ctor$1.call(this, type, null, order);
+        $t.ctor$1.call(this, type, null, order, null);
     };
+    $p.get_StructType = function ParameterABI_get_StructType() { return this.StructType; };
+    $p.set_StructType = function ParameterABI_set_StructType(value) { this.StructType = value;return value; };
     $p.get_Indexed = function ParameterABI_get_Indexed() { return this.Indexed; };
     $p.set_Indexed = function ParameterABI_set_Indexed(value) { this.Indexed = value;return value; };
+});
+$d.define(Nethereum.Generators.Model.StructABI, null, function($t, $p) {
+    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 38994)]; };
+    $t.$ator = function() {
+        this.InputParameters = null;
+        this.Name = null;
+    };
+    $t.ctor = function StructABI(name) {
+        $t.$baseType.ctor.call(this);
+        this.set_Name(name);
+    };
+    $p.get_InputParameters = function StructABI_get_InputParameters() { return this.InputParameters; };
+    $p.set_InputParameters = function StructABI_set_InputParameters(value) { this.InputParameters = value;return value; };
+    $p.get_Name = function StructABI_get_Name() { return this.Name; };
+    $p.set_Name = function StructABI_set_Name(value) { this.Name = value;return value; };
+    $p.Nethereum$Generators$Core$IMessage$1$get_InputParameters = $p.get_InputParameters;
+    $p.Nethereum$Generators$Core$IMessage$1$get_Name = $p.get_Name;
+    $p.Nethereum$Generators$Core$IMessage$1$set_Name = $p.set_Name;
 });
 Nethereum.Generators.Core.ITypeConvertor = $d.type("Nethereum.Generators.Core.ITypeConvertor", 66, $asm, function($t, $p) {
 });
@@ -668,7 +738,7 @@ $d.define(Nethereum.Generators.Core.ABITypeToDotNetTypeBase, null, function($t, 
     $t.ctor = function ABITypeToDotNetTypeBase() {
         $t.$baseType.ctor.call(this);
     };
-    $p.Convert = function ABITypeToDotNetTypeBase_Convert(typeName, outputArrayAsList) {
+    $p.Convert = function ABITypeToDotNetTypeBase_Convert(typeName, dotnetClassName, outputArrayAsList) {
         var indexFirstBracket = typeName.indexOf("[");
         var numberOfArrays = System.Linq.Enumerable.Count$1(System.Char, typeName, $d.delegate(function(x) {
             return x == 91 /*'['*/;
@@ -676,12 +746,16 @@ $d.define(Nethereum.Generators.Core.ABITypeToDotNetTypeBase, null, function($t, 
         if (indexFirstBracket > -1) {
             var elementTypeName = typeName.Substring$1(0, indexFirstBracket);
             if (outputArrayAsList) {
-                return this.GetListType(this.Convert(elementTypeName, true), numberOfArrays);
+                return this.GetListType(this.Convert(elementTypeName, dotnetClassName, true), numberOfArrays);
             }
             else {
-                return this.GetArrayType(this.Convert(elementTypeName, false));
+                return this.GetArrayType(this.Convert(elementTypeName, dotnetClassName, false));
             }
         }
+
+        if (dotnetClassName != null)
+            return dotnetClassName;
+
         if ("bool" == typeName) {
             return this.GetBooleanType();
         }
@@ -2040,6 +2114,62 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOModel, Nethereum.Generators
         return this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length > 0 && this.get_FunctionABI().get_Constant();
     };
 });
+$d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
+    54825), Nethereum.Generators.DTOs.StructTypeModel, 14242), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
+    $t.ctor = function StructTypeGenerator(structTypeABI, namespace, codeGenLanguage) {
+        $t.$baseType.ctor.call(this);
+        this.set_ClassModel((function() {
+            var $obj = new Nethereum.Generators.DTOs.StructTypeModel.ctor(structTypeABI, namespace);
+            $obj.set_CodeGenLanguage(codeGenLanguage);
+            return $obj;
+        }).call(this));
+        this.InitialiseTemplate(codeGenLanguage);
+    };
+    $p.InitialiseTemplate = function StructTypeGenerator_InitialiseTemplate(codeGenLanguage) {
+        switch (codeGenLanguage) {
+            case 0 /* CodeGenLanguage.CSharp */:
+                this.set_ClassTemplate(new Nethereum.Generators.DTOs.StructTypeCSharpTemplate.ctor(this.get_ClassModel()));
+                break;
+            case 1 /* CodeGenLanguage.Vb */:
+                throw new System.NotImplementedException.ctor();
+                // ClassTemplate = new FunctionOutputDTOVbTemplate(ClassModel);
+                break;
+            case 3 /* CodeGenLanguage.FSharp */:
+                throw new System.NotImplementedException.ctor();
+                // ClassTemplate = new FunctionOutputDTOFSharpTemplate(ClassModel);
+                break;
+            default:
+                throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+                    codeGenLanguage), "Code generation not implemented for this language");
+        }
+    };
+    $p.GenerateClass = function StructTypeGenerator_GenerateClass() {
+        return this.get_ClassTemplate().GenerateClass();
+    };
+    $p.GenerateFileContent = function StructTypeGenerator_GenerateFileContent() {
+        return this.get_ClassTemplate().GenerateFullClass();
+    };
+    $p.Nethereum$Generators$Core$IFileGenerator$GenerateFileContent = $p.GenerateFileContent;
+    $p.Nethereum$Generators$Core$IGenerator$GenerateClass = $p.GenerateClass;
+    $p.Nethereum$Generators$Core$IClassGenerator$GenerateClass = $p.GenerateClass;
+});
+$d.define(Nethereum.Generators.DTOs.StructTypeModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
+    $t.$ator = function() {
+        this.StructTypeABI = null;
+    };
+    $p.get_StructTypeABI = function StructTypeModel_get_StructTypeABI() { return this.StructTypeABI; };
+    $t.ctor = function StructTypeModel(structTypeABI, namespace) {
+        $t.$baseType.ctor.call(this, namespace, structTypeABI.get_Name(), "");
+        this.StructTypeABI = structTypeABI;
+        this.InitisialiseNamespaceDependencies();
+    };
+    $p.InitisialiseNamespaceDependencies = function StructTypeModel_InitisialiseNamespaceDependencies() {
+        this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+    };
+});
 $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
     44939), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
@@ -2159,6 +2289,31 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate, null,
         return String.Format("{0}{1}.{2} = {3};", [spacing, objectName, parameterModel.GetPropertyName(), 
             parameterModel.GetVariableName()]);
     };
+});
+$d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
+    54825), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $t.$ator = function() {
+        this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $t.ctor = function StructTypeCSharpTemplate(model) {
+        $t.$baseType.ctor.call(this, model);
+        this._parameterAbiFunctionDtocSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate.ctor();
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 
+            this));
+    };
+    $p.GenerateClass = function StructTypeCSharpTemplate_GenerateClass() {
+        return String.Format("{0}\r\n\r\n{1}public class {2}Base \r\n{3}{{\r\n{4}\r\n{5}}}", [this.GetPartialMainClass(), 
+            Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_StructTypeABI().get_InputParameters()), 
+            Nethereum.Generators.Core.SpaceUtils().OneTab]);
+
+    };
+    $p.GetPartialMainClass = function StructTypeCSharpTemplate_GetPartialMainClass() {
+        return String.Format("{0}public partial class {1} : {2}Base {{ }}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), this.get_Model().GetTypeName()]);
+    };
+    $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
     44939), function($t, $p) {

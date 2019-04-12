@@ -112,6 +112,10 @@ cd Nethereum.Model
 CALL :restorepack
 cd..
 
+cd Nethereum.StandardNonFungibleTokenERC721
+CALL :restorepack
+cd..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages

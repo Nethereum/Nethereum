@@ -13,12 +13,14 @@ namespace Nethereum.Generators.Core
 
         public string GetParameterDotNetOutputMapType(ParameterABI parameter)
         {
-            return _typeConvertor.Convert(parameter.Type, true);
+            var parameterModel = new ParameterABIModel(parameter);
+            return _typeConvertor.Convert(parameter.Type, parameterModel.GetStructTypeClassName(), true);
         }
 
         public string GetParameterDotNetInputMapType(ParameterABI parameter)
         {
-            return _typeConvertor.Convert(parameter.Type, false);
+            var parameterModel = new ParameterABIModel(parameter);
+            return _typeConvertor.Convert(parameter.Type, parameterModel.GetStructTypeClassName(), false);
         }
 
     }

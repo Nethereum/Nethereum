@@ -47,6 +47,12 @@ namespace Nethereum.Generators.Core
             return CommonGenerators.GeneratePropertyName(name);
         }
 
+        public virtual string GetStructTypeClassName()
+        {
+            if (string.IsNullOrEmpty(Parameter.StructType)) return null;
+            return CommonGenerators.GenerateClassName(Parameter.StructType);
+        }
+
         private string NameOrDefault(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
         {
             if (!string.IsNullOrEmpty(name))

@@ -60,6 +60,7 @@ namespace Nethereum.Generators
         {
             var generated = new List<GeneratedFile>();
             generated.Add(GenerateAllMessages());
+            generated.AddRange(GenerateAllStructs());
             generated.Add(GenerateService(singleMessagesFile:true));
             return generated.ToArray();
         }
@@ -121,6 +122,30 @@ namespace Nethereum.Generators
                 GenerateAndAdd(generated, () => generator.GenerateFileContent(dtoFullPath));
             }
             return generated;
+        }
+
+        public List<GeneratedFile> GenerateAllStructs()
+        {
+            var generators = GetAllStructTypeGenerators();
+            var structFullPath = GetFullPath(DTONamespace);
+            var generated = new List<GeneratedFile>();
+            foreach (var generator in generators)
+            {
+                GenerateAndAdd(generated, () => generator.GenerateFileContent(structFullPath));
+            }
+            return generated;
+        }
+
+        public List<StructTypeGenerator> GetAllStructTypeGenerators()
+        {
+            var structTypeNamespace = GetFullNamespace(DTONamespace);
+            var generators = new List<StructTypeGenerator>();
+            foreach (var structAbi in ContractABI.Structs)
+            {
+                var structTypeGenerator = new StructTypeGenerator(structAbi, structTypeNamespace, CodeGenLanguage);
+                generators.Add(structTypeGenerator);
+            }
+            return generators;
         }
 
         public List<FunctionOutputDTOGenerator> GetAllFunctionDTOsGenerators()

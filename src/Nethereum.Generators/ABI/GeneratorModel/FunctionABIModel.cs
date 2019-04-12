@@ -12,13 +12,17 @@ namespace Nethereum.Generators.Core
         {
             FunctionABI = functionABI;
             this._abiTypeToDotnetTypeConvertor = abiTypeToDotnetTypeConvertor;
+            
         }
 
         public string GetSingleOutputReturnType()
         {
             if (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1)
             {
-                return _abiTypeToDotnetTypeConvertor.Convert(FunctionABI.OutputParameters[0].Type, true);
+                var parameterModel = new ParameterABIModel(FunctionABI.OutputParameters[0]);
+                
+                return _abiTypeToDotnetTypeConvertor.Convert(parameterModel.Parameter.Type,  
+                    parameterModel.GetStructTypeClassName(), true);
             }
             return null;
         }
