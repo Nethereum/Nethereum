@@ -37,6 +37,14 @@ namespace Nethereum.Structs.StructSample.ContractDefinition
         public virtual PurchaseOrder PurchaseOrder { get; set; }
     }
 
+    public partial class GetPurchaseOrder2Function : GetPurchaseOrder2FunctionBase { }
+
+    [Function("GetPurchaseOrder2", typeof(GetPurchaseOrder2OutputDTO))]
+    public class GetPurchaseOrder2FunctionBase : FunctionMessage
+    {
+
+    }
+
     public partial class GetPurchaseOrderFunction : GetPurchaseOrderFunctionBase { }
 
     [Function("GetPurchaseOrder", typeof(GetPurchaseOrderOutputDTO))]
@@ -57,6 +65,15 @@ namespace Nethereum.Structs.StructSample.ContractDefinition
     }
 
 
+
+    public partial class GetPurchaseOrder2OutputDTO : GetPurchaseOrder2OutputDTOBase { }
+
+    [FunctionOutput]
+    public class GetPurchaseOrder2OutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("tuple", "purchaseOrder", 1)]
+        public virtual PurchaseOrder PurchaseOrder { get; set; }
+    }
 
     public partial class GetPurchaseOrderOutputDTO : GetPurchaseOrderOutputDTOBase { }
 

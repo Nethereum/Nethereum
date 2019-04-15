@@ -68,6 +68,26 @@ namespace Nethereum.Structs.StructSample
              return ContractHandler.SendRequestAndWaitForReceiptAsync(setPurchaseOrderFunction, cancellationToken);
         }
 
+        public Task<string> GetPurchaseOrder2RequestAsync(GetPurchaseOrder2Function getPurchaseOrder2Function)
+        {
+             return ContractHandler.SendRequestAsync(getPurchaseOrder2Function);
+        }
+
+        public Task<string> GetPurchaseOrder2RequestAsync()
+        {
+             return ContractHandler.SendRequestAsync<GetPurchaseOrder2Function>();
+        }
+
+        public Task<TransactionReceipt> GetPurchaseOrder2RequestAndWaitForReceiptAsync(GetPurchaseOrder2Function getPurchaseOrder2Function, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(getPurchaseOrder2Function, cancellationToken);
+        }
+
+        public Task<TransactionReceipt> GetPurchaseOrder2RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync<GetPurchaseOrder2Function>(null, cancellationToken);
+        }
+
         public Task<GetPurchaseOrderOutputDTO> GetPurchaseOrderQueryAsync(GetPurchaseOrderFunction getPurchaseOrderFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(getPurchaseOrderFunction, blockParameter);

@@ -14,7 +14,7 @@ namespace Nethereum.Generators.Model
         {
         }
 
-        public string StructType { get; protected set; }
+        public string StructType { get;  set; }
         public bool Indexed { get; set; }
     }
 }

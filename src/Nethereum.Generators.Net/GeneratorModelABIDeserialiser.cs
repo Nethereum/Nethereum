@@ -38,6 +38,11 @@ namespace Nethereum.Generators.Net
                 }).ToArray()
             };
 
+            var structDeserialiser = new StructABIDeserialiser();
+            var structs = structDeserialiser.GetStructsFromAbi(abi);
+            contractABI.Structs = structs;
+            structDeserialiser.SetTupleTypeSameAsName(contractABI);
+
             return contractABI;
         }
 

@@ -556,6 +556,7 @@ declare module Nethereum {
             // Nethereum.Generators.Model.ParameterABI
             export interface ParameterABI extends Core.Parameter {
                 get_StructType(): string;
+                set_StructType(value: string): void;
                 get_Indexed(): boolean;
                 set_Indexed(value: boolean): void;
             }

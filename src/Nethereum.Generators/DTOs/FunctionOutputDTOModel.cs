@@ -21,8 +21,9 @@ namespace Nethereum.Generators.DTOs
 
         public bool CanGenerateOutputDTO()
         {
-            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 0 &&
-                   FunctionABI.Constant;
+            return (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 0 &&
+                   FunctionABI.Constant) ||
+                   (new FunctionABIModel(FunctionABI, null).IsMultipleOutput());
         }
     }
 }

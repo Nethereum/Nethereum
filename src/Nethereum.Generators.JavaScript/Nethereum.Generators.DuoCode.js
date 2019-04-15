@@ -2115,7 +2115,8 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOModel, Nethereum.Generators
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
     $p.CanGenerateOutputDTO = function FunctionOutputDTOModel_CanGenerateOutputDTO() {
-        return this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length > 0 && this.get_FunctionABI().get_Constant();
+        return (this.get_FunctionABI().get_OutputParameters() != null && this.get_FunctionABI().get_OutputParameters().length > 0 && this.get_FunctionABI().get_Constant()) || new Nethereum.Generators.Core.FunctionABIModel.ctor(this.get_FunctionABI(), 
+            null).IsMultipleOutput();
     };
 });
 $d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
