@@ -39,7 +39,7 @@ namespace Nethereum.Structs.StructSample.ContractDefinition
 
     public partial class GetPurchaseOrderFunction : GetPurchaseOrderFunctionBase { }
 
-    [Function("GetPurchaseOrder", "tuple")]
+    [Function("GetPurchaseOrder", typeof(GetPurchaseOrderOutputDTO))]
     public class GetPurchaseOrderFunctionBase : FunctionMessage
     {
 

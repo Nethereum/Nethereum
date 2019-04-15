@@ -1170,6 +1170,17 @@ declare module Nethereum {
             }
             const ParameterABIFunctionDTOFSharpTemplate: ParameterABIFunctionDTOFSharpTemplateTypeFunc;
 
+            // Nethereum.Generators.DTOs.StructTypeFSharpTemplate
+            export interface StructTypeFSharpTemplate extends CQS.ClassTemplateBase$1<StructTypeModel>, Core.IClassTemplate {
+            }
+            export interface StructTypeFSharpTemplateTypeFunc extends TypeFunction {
+                (): StructTypeFSharpTemplateTypeFunc;
+                prototype: StructTypeFSharpTemplate;
+                new (model: StructTypeModel): StructTypeFSharpTemplate;
+                ctor: { new (model: StructTypeModel): StructTypeFSharpTemplate; };
+            }
+            const StructTypeFSharpTemplate: StructTypeFSharpTemplateTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOVbTemplate
             export interface EventDTOVbTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
                 GetPartialMainClass(): string;
@@ -1223,6 +1234,18 @@ declare module Nethereum {
                 ctor: { new (): ParameterABIFunctionDTOVbTemplate; };
             }
             const ParameterABIFunctionDTOVbTemplate: ParameterABIFunctionDTOVbTemplateTypeFunc;
+
+            // Nethereum.Generators.DTOs.StructTypeVbTemplate
+            export interface StructTypeVbTemplate extends CQS.ClassTemplateBase$1<StructTypeModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
+            }
+            export interface StructTypeVbTemplateTypeFunc extends TypeFunction {
+                (): StructTypeVbTemplateTypeFunc;
+                prototype: StructTypeVbTemplate;
+                new (model: StructTypeModel): StructTypeVbTemplate;
+                ctor: { new (model: StructTypeModel): StructTypeVbTemplate; };
+            }
+            const StructTypeVbTemplate: StructTypeVbTemplateTypeFunc;
         }
         module XUnit {
             // Nethereum.Generators.XUnit.SimpleTestGenerator

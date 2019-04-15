@@ -38,12 +38,14 @@ namespace Nethereum.Generators.Core
 
         public bool IsMultipleOutput()
         {
-            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 1;
+            return (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 1) || 
+                (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length ==1 && 
+                FunctionABI.OutputParameters[0].Type.StartsWith("tuple")) ;
         }
 
         public bool IsSingleOutput()
         {
-            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1;
+            return FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1 && !FunctionABI.OutputParameters[0].Type.StartsWith("tuple");
         }
   
         public bool HasNoInputParameters()
