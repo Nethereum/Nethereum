@@ -33,6 +33,11 @@ namespace Nethereum.ABI.JsonDeserialisation
                 {
                     Indexed = (bool) input["indexed"]
                 };
+
+                if (parameter.ABIType is TupleType tupleType)
+                {
+                    tupleType.SetComponents(BuildFunctionParameters((List<object>)input["components"]));
+                }
                 parameters.Add(parameter);
             }
 
@@ -57,6 +62,11 @@ namespace Nethereum.ABI.JsonDeserialisation
                 parameterOrder = parameterOrder + 1;
                 var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder,
                     TryGetSignatureValue(input));
+
+                if (parameter.ABIType is TupleType tupleType)
+                {
+                    tupleType.SetComponents(BuildFunctionParameters((List<object>) input["components"]));
+                }
                 parameters.Add(parameter);
             }
 

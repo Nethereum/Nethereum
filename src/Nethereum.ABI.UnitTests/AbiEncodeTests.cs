@@ -1,5 +1,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System.Linq;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
