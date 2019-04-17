@@ -29,19 +29,40 @@ namespace Nethereum.ABI.JsonDeserialisation
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder)
+                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder)
                 {
-                    Indexed = (bool) input["indexed"]
+                    Indexed = (bool)input["indexed"]
                 };
+                InitialiseTupleComponents(input, parameter);
 
-                if (parameter.ABIType is TupleType tupleType)
-                {
-                    tupleType.SetComponents(BuildFunctionParameters((List<object>)input["components"]));
-                }
                 parameters.Add(parameter);
             }
 
             return parameters.ToArray();
+        }
+
+        private void InitialiseTupleComponents(IDictionary<string, object> input, Parameter parameter)
+        {
+            if (parameter.ABIType is TupleType tupleType)
+            {
+                tupleType.SetComponents(BuildFunctionParameters((List<object>)input["components"]));
+            }
+
+            var arrayType = parameter.ABIType as ArrayType;
+
+            while (arrayType != null)
+            {
+
+                if (arrayType.ElementType is TupleType arrayTupleType)
+                {
+                    arrayTupleType.SetComponents(BuildFunctionParameters((List<object>)input["components"]));
+                    arrayType = null;
+                }
+                else
+                {
+                    arrayType = arrayType.ElementType as ArrayType;
+                }
+            }
         }
 
         public FunctionABI BuildFunction(IDictionary<string, object> function)
@@ -63,10 +84,8 @@ namespace Nethereum.ABI.JsonDeserialisation
                 var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder,
                     TryGetSignatureValue(input));
 
-                if (parameter.ABIType is TupleType tupleType)
-                {
-                    tupleType.SetComponents(BuildFunctionParameters((List<object>) input["components"]));
-                }
+                InitialiseTupleComponents(input, parameter);
+
                 parameters.Add(parameter);
             }
 

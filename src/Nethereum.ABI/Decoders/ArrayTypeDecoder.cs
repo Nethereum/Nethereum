@@ -51,12 +51,12 @@ namespace Nethereum.ABI.Decoders
             var decodedListOutput = (IList)Activator.CreateInstance(type);
 
             if (decodedListOutput == null)
-                throw new Exception("Only types that implement IList<T> are supported to decoded Array Types");
+                throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
 
             var elementType = GetIListElementType(type);
 
             if (elementType == null)
-                throw new Exception("Only types that implement IList<T> are supported to decoded Array Types");
+                throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
 
             var intDecoder = new IntTypeDecoder();
             var dataIndexes = new List<int>();
@@ -136,7 +136,7 @@ namespace Nethereum.ABI.Decoders
             return decodedListOutput;
         }
 
-        protected static Type GetIListElementType(Type listType)
+        public static Type GetIListElementType(Type listType)
         {
 #if DOTNET35
             var enumType = listType.GetTypeInfo().ImplementedInterfaces()

@@ -19,7 +19,8 @@ namespace Nethereum.ABI
         public byte[] Encode(object value)
         {
             if (!(value == null || value is object[]))
-                throw new Exception("Expected object array of component values to encode");
+                return parametersEncoder.EncodeParametersFromTypeAttributes(value.GetType(), value);
+
             var input = value as object[];
             return parametersEncoder.EncodeParameters(Components, input);
         }

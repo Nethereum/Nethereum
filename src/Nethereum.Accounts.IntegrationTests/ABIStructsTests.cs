@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
@@ -322,6 +323,5 @@ contract TestV2
             Assert.Equal("sender", eventOutputs2[0].Event[0].Parameter.Name);
 
         }
-
     }
 }

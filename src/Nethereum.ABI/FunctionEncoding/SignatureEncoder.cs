@@ -53,10 +53,22 @@ namespace Nethereum.ABI.FunctionEncoding
             {
                 return GenerateParametersSignature(tupleType.Components);
             }
-            else
+
+            var arrayType = parameter.ABIType as ArrayType;
+
+            while (arrayType != null)
             {
-                return parameter.ABIType.CanonicalName;
+                if (arrayType.ElementType is TupleType arrayTupleType)
+                {
+                    return GenerateParametersSignature(arrayTupleType.Components) + parameter.ABIType.CanonicalName.Replace("tuple", "");
+                }
+                else
+                {
+                    arrayType = arrayType.ElementType as ArrayType;
+                }
             }
+
+            return parameter.ABIType.CanonicalName;
         }
     }
 }
