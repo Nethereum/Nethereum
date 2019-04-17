@@ -74,10 +74,9 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
             foreach (var property in properties)
             {
                 var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
-                if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
-                {
-                    InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
-                }
+                
+                InitTupleComponentsFromTypeAttributes(property.PropertyType, parameterAttribute.Parameter.ABIType);
+                
                 parameters.Add(parameterAttribute.Parameter);   
             }
             return parameters.ToArray();
