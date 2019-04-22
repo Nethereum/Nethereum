@@ -71,23 +71,23 @@ namespace Nethereum.ABI.FunctionEncoding
             attributesToABIExtractor = new AttributesToABIExtractor();
         }
 
-        public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
+        public byte[] EncodeAbiTypes(ABIType[] abiTypes, params object[] values)
         {
-            if ((values == null) && (parameters.Length > 0))
+            if ((values == null) && (abiTypes.Length > 0))
                 throw new ArgumentNullException(nameof(values), "No values specified for encoding");
 
-            if (values == null) return new byte[] {};
+            if (values == null) return new byte[] { };
 
-            if (values.Length > parameters.Length)
-                throw new Exception("Too many arguments: " + values.Length + " > " + parameters.Length);
+            if (values.Length > abiTypes.Length)
+                throw new Exception("Too many arguments: " + values.Length + " > " + abiTypes.Length);
 
             var staticSize = 0;
             var dynamicCount = 0;
             // calculating static size and number of dynamic params
             for (var i = 0; i < values.Length; i++)
             {
-                var parameter = parameters[i];
-                var parameterSize = parameter.ABIType.FixedSize;
+                var abiType = abiTypes[i];
+                var parameterSize = abiType.FixedSize;
                 if (parameterSize < 0)
                 {
                     dynamicCount++;
@@ -104,9 +104,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var currentDynamicPointer = staticSize;
             var currentDynamicCount = 0;
             for (var i = 0; i < values.Length; i++)
-                if (parameters[i].ABIType.IsDynamic())
+            {
+                var abiType = abiTypes[i];
+                if (abiType.IsDynamic())
                 {
-                    var dynamicValueBytes = parameters[i].ABIType.Encode(values[i]);
+                   var  dynamicValueBytes = abiType.Encode(values[i]);
+                
                     encodedBytes[i] = intTypeEncoder.EncodeInt(currentDynamicPointer);
                     encodedBytes[values.Length + currentDynamicCount] = dynamicValueBytes;
                     currentDynamicCount++;
@@ -116,16 +119,88 @@ namespace Nethereum.ABI.FunctionEncoding
                 {
                     try
                     {
-                        encodedBytes[i] = parameters[i].ABIType.Encode(values[i]);
+                        encodedBytes[i] = abiType.Encode(values[i]);
                     }
                     catch (Exception ex)
                     {
                         throw new Exception(
-                            $"An error occurred encoding parameter value. Parameter Order: '{parameters[i].Order}', Name: '{parameters[i].Name}', Value: '{values[i] ?? "null"}'.  Ensure the value is valid for the parameter type.",
+                            $"An error occurred encoding abi value.  Order: '{i}', Type: '{abiType.Name}', Value: '{values[i] ?? "null"}'.  Ensure the value is valid for the abi type.",
                             ex);
                     }
                 }
+            }
             return ByteUtil.Merge(encodedBytes);
+        }
+
+        public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
+        {
+            return EncodeAbiTypes(parameters.Select(x => x.ABIType).ToArray(), values);
+            //TODO: Try catch find parameter error
+
+            //if ((values == null) && (parameters.Length > 0))
+            //    throw new ArgumentNullException(nameof(values), "No values specified for encoding");
+
+            //if (values == null) return new byte[] {};
+
+            //if (values.Length > parameters.Length)
+            //    throw new Exception("Too many arguments: " + values.Length + " > " + parameters.Length);
+
+            //var staticSize = 0;
+            //var dynamicCount = 0;
+            //// calculating static size and number of dynamic params
+            //for (var i = 0; i < values.Length; i++)
+            //{
+            //    var abiType = parameters[i].ABIType;
+            //    var parameterSize = abiType.FixedSize;
+            //    if (parameterSize < 0)
+            //    {
+            //        dynamicCount++;
+            //        staticSize += 32;
+            //    }
+            //    else
+            //    {
+            //        staticSize += parameterSize;
+            //    }
+            //}
+
+            //var encodedBytes = new byte[values.Length + dynamicCount][];
+
+            //var currentDynamicPointer = staticSize;
+            //var currentDynamicCount = 0;
+            //for (var i = 0; i < values.Length; i++)
+            //{
+            //    var abiType = parameters[i].ABIType;
+            //    if (abiType.IsDynamic())
+            //    {
+            //        byte[] dynamicValueBytes;
+            //        if (abiType.CanonicalName.StartsWith("tuple") && abiType is DynamicArrayType)
+            //        {
+            //            dynamicValueBytes = EncodeParameters(new[] { parameters[i] }, values[i]);
+            //        }
+            //        else
+            //        {
+            //            dynamicValueBytes = abiType.Encode(values[i]);
+            //        }
+            //        encodedBytes[i] = intTypeEncoder.EncodeInt(currentDynamicPointer);
+            //        encodedBytes[values.Length + currentDynamicCount] = dynamicValueBytes;
+            //        currentDynamicCount++;
+            //        currentDynamicPointer += dynamicValueBytes.Length;
+            //    }
+            //    else
+            //    {
+            //        try
+            //        {
+            //            encodedBytes[i] = abiType.Encode(values[i]);
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            throw new Exception(
+            //                $"An error occurred encoding parameter value. Parameter Order: '{parameters[i].Order}', Name: '{parameters[i].Name}', Value: '{values[i] ?? "null"}'.  Ensure the value is valid for the parameter type.",
+            //                ex);
+            //        }
+            //    }
+            //}
+            //return ByteUtil.Merge(encodedBytes);
         }
 
         
@@ -165,9 +240,10 @@ namespace Nethereum.ABI.FunctionEncoding
                 var propertyValue = property.GetValue(instanceValue);
 #endif
 
+                attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, parameterAttribute.Parameter.ABIType);
+
                 if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
                 {
-                    attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, tupleType);
                     propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
                 }
 
