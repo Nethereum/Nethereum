@@ -165,10 +165,10 @@ namespace Nethereum.ABI.UnitTests
             var inputsParameters = new[] {CreateParam("address", "_address1")};
             var parameterValues = new object[] {null};
 
-            var ex = Assert.Throws<Exception>(() => functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, parameterValues));
+            var ex = Assert.Throws<AbiEncodingException>(() => functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, parameterValues));
 
             const string ExpectedError =
-                "An error occurred encoding parameter value. Parameter Order: '1', Name: '_address1', Value: 'null'.  Ensure the value is valid for the parameter type.";
+                "An error occurred encoding abi value. Order: '1', Type: 'address', Value: 'null'.  Ensure the value is valid for the abi type.";
 
             Assert.Equal(ExpectedError, ex.Message);
         }
