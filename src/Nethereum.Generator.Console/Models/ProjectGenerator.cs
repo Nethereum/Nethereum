@@ -24,9 +24,9 @@ namespace Nethereum.Generator.Console.Models
                     contract.ContractName,
                     contract.Bytecode,
                     Namespace,
-                    $"{contract.ContractName}.Service",
-                    $"{contract.ContractName}.CQS",
-                    $"{contract.ContractName}.DTO",
+                    $"{contract.ContractName}",
+                    $"{contract.ContractName}.ContractDefinition",
+                    $"{contract.ContractName}.ContractDefinition",
                     OutputFolder,
                     Path.DirectorySeparatorChar.ToString(),
                     Language

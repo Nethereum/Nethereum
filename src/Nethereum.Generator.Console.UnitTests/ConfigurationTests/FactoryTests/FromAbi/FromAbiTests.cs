@@ -43,9 +43,9 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                 Assert.Equal(TestContracts.StandardContract.ByteCode, abiConfig.ByteCode);
                 Assert.Equal(context.TargetProjectFolder, abiConfig.BaseOutputPath);
                 Assert.Equal(Path.GetFileNameWithoutExtension(context.OutputAssemblyName), abiConfig.BaseNamespace);
-                Assert.Equal("StandardContract.CQS", abiConfig.CQSNamespace);
-                Assert.Equal("StandardContract.DTO", abiConfig.DTONamespace);
-                Assert.Equal("StandardContract.Service", abiConfig.ServiceNamespace);
+                Assert.Equal("StandardContract.ContractDefinition", abiConfig.CQSNamespace);
+                Assert.Equal("StandardContract.ContractDefinition", abiConfig.DTONamespace);
+                Assert.Equal("StandardContract", abiConfig.ServiceNamespace);
             }
             finally
             {

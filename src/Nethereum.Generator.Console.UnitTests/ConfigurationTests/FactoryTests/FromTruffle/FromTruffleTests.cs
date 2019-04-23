@@ -102,9 +102,9 @@ namespace Nethereum.Generator.Console.UnitTests.ConfigurationTests.FactoryTests.
                     Assert.Equal(context.TargetProjectFolder, actualConfig.BaseOutputPath);
 
                     Assert.Equal("DefaultNamespace", actualConfig.BaseNamespace);
-                    Assert.Equal($"{truffleFile.ContractName}.CQS", actualConfig.CQSNamespace);
-                    Assert.Equal($"{truffleFile.ContractName}.DTO", actualConfig.DTONamespace);
-                    Assert.Equal($"{truffleFile.ContractName}.Service", actualConfig.ServiceNamespace);
+                    Assert.Equal($"{truffleFile.ContractName}.ContractDefinition", actualConfig.CQSNamespace);
+                    Assert.Equal($"{truffleFile.ContractName}.ContractDefinition", actualConfig.DTONamespace);
+                    Assert.Equal($"{truffleFile.ContractName}", actualConfig.ServiceNamespace);
                 }
             }
             finally
