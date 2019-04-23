@@ -7,12 +7,14 @@ using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
+using Nethereum.ABI.FunctionEncoding;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
-    public class TestInternalArrayOfStructs
+    public class TestInternalDynamicArrayOfNonDynamicStructs
     {
+        
         /*
 pragma solidity "0.5.7";
 pragma experimental ABIEncoderV2;
@@ -370,120 +372,76 @@ contract StructsSample
         }
 
     }
-
-
-
-    public class Test
-    {
-        [Fact]
-        public void TestArray()
-        {
-
-            var purchaseOrder = new PurchaseOrder();
-            purchaseOrder.CustomerId = 1000;
-            purchaseOrder.Id = 1;
-            purchaseOrder.LineItem = new List<LineItem>();
-            purchaseOrder.LineItem.Add(new LineItem() { Id = 1, ProductId = 100, Quantity = 2 });
-            purchaseOrder.LineItem.Add(new LineItem() { Id = 2, ProductId = 200, Quantity = 3 });
-            var listPurchaseOrder = new List<PurchaseOrder>();
-            listPurchaseOrder.Add(purchaseOrder);
-            var project = new Project();
-            project.Id = 1;
-            project.PurchaseOrder = listPurchaseOrder;
-
-            var function = new SetProjectFunction();
-            function.Project = project;
-            var callData = function.GetCallData();
-        }
-
-        public partial class LineItem : LineItemBase { }
-
-        public class LineItemBase
-        {
-            [Parameter("uint256", "id", 1)]
-            public virtual BigInteger Id { get; set; }
-            [Parameter("uint256", "productId", 2)]
-            public virtual BigInteger ProductId { get; set; }
-            [Parameter("uint256", "quantity", 3)]
-            public virtual BigInteger Quantity { get; set; }
-        }
-
-        public partial class Project : ProjectBase { }
-
-        public class ProjectBase
-        {
-            [Parameter("uint256", "id", 1)]
-            public virtual BigInteger Id { get; set; }
-            [Parameter("tuple[]", "purchaseOrder", 2)]
-            public virtual List<PurchaseOrder> PurchaseOrder { get; set; }
-        }
-
-        public partial class PurchaseOrder : PurchaseOrderBase { }
-
-        public class PurchaseOrderBase
-        {
-            [Parameter("uint256", "id", 1)]
-            public virtual BigInteger Id { get; set; }
-            [Parameter("tuple[]", "lineItem", 2)]
-            public virtual List<LineItem> LineItem { get; set; }
-            [Parameter("uint256", "customerId", 3)]
-            public virtual BigInteger CustomerId { get; set; }
-        }
-
-        public partial class StructsSampleArraysDeployment : StructsSampleArraysDeploymentBase
-        {
-            public StructsSampleArraysDeployment() : base(BYTECODE) { }
-            public StructsSampleArraysDeployment(string byteCode) : base(byteCode) { }
-        }
-
-        public class StructsSampleArraysDeploymentBase : ContractDeploymentMessage
-        {
-            public static string BYTECODE = "608060405234801561001057600080fd5b506106bf806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806326b429e01461003b5780637055610714610050575b600080fd5b61004e610049366004610368565b610063565b005b61004e61005e36600461032b565b61009f565b7ff9756f2508e2141d70824b19893d9649682e025922afc47156fa33718807a4d933826040516100949291906105d9565b60405180910390a150565b7f39f3985c6850354dd99ea6229c76a43b99298fe1ae8b35a6cb1c7554742fbe5d33826040516100949291906105b9565b600082601f8301126100e157600080fd5b81356100f46100ef82610620565b6105f9565b9150818183526020840193506020810190508385606084028201111561011957600080fd5b60005b83811015610147578161012f888261020b565b8452506020909201916060919091019060010161011c565b5050505092915050565b600082601f83011261016257600080fd5b81356101706100ef82610620565b81815260209384019390925082018360005b8381101561014757813586016101988882610266565b8452506020928301929190910190600101610182565b600082601f8301126101bf57600080fd5b81356101cd6100ef82610620565b81815260209384019390925082018360005b8381101561014757813586016101f588826102c5565b84525060209283019291909101906001016101df565b60006060828403121561021d57600080fd5b61022760606105f9565b905060006102358484610318565b825250602061024684848301610318565b602083015250604061025a84828501610318565b60408301525092915050565b60006040828403121561027857600080fd5b61028260406105f9565b905060006102908484610318565b825250602082013567ffffffffffffffff8111156102ad57600080fd5b6102b9848285016101ae565b60208301525092915050565b6000606082840312156102d757600080fd5b6102e160606105f9565b905060006102ef8484610318565b825250602082013567ffffffffffffffff81111561030c57600080fd5b610246848285016100d0565b60006103248235610660565b9392505050565b60006020828403121561033d57600080fd5b813567ffffffffffffffff81111561035457600080fd5b61036084828501610151565b949350505050565b60006020828403121561037a57600080fd5b813567ffffffffffffffff81111561039157600080fd5b61036084828501610266565b60006103a983836104f5565b505060600190565b60006103248383610532565b60006103248383610567565b6103d281610663565b82525050565b60006103e382610647565b6103ed818561064b565b93506103f883610641565b60005b828110156104235761040e86835161039d565b955061041982610641565b91506001016103fb565b5093949350505050565b600061043882610647565b610442818561064b565b93508360208202850161045485610641565b60005b8481101561048b57838303885261046f8383516103b1565b925061047a82610641565b602098909801979150600101610457565b50909695505050505050565b60006104a282610647565b6104ac818561064b565b9350836020820285016104be85610641565b60005b8481101561048b5783830388526104d98383516103bd565b92506104e482610641565b6020989098019791506001016104c1565b8051606083019061050684826105b0565b50602082015161051960208501826105b0565b50604082015161052c60408501826105b0565b50505050565b8051600090604084019061054685826105b0565b506020830151848203602086015261055e8282610497565b95945050505050565b8051600090606084019061057b85826105b0565b506020830151848203602086015261059382826103d8565b91505060408301516105a860408601826105b0565b509392505050565b6103d281610660565b604081016105c782856103c9565b8181036020830152610360818461042d565b604081016105e782856103c9565b81810360208301526103608184610532565b60405181810167ffffffffffffffff8111828210171561061857600080fd5b604052919050565b600067ffffffffffffffff82111561063757600080fd5b5060209081020190565b60200190565b5190565b90815260200190565b6001600160a01b031690565b90565b600061066e82610674565b92915050565b600061066e82600061066e8261065456fea265627a7a72305820f1f4feb2f2bfdae581ce915e6dc35071f4cf13893c537729e50043c0f2992cd76c6578706572696d656e74616cf50037";
-            public StructsSampleArraysDeploymentBase() : base(BYTECODE) { }
-            public StructsSampleArraysDeploymentBase(string byteCode) : base(byteCode) { }
-
-        }
-
-        public partial class SetProjectFunction : SetProjectFunctionBase { }
-
-        [Function("SetProject")]
-        public class SetProjectFunctionBase : FunctionMessage
-        {
-            [Parameter("tuple", "project", 1)]
-            public virtual Project Project { get; set; }
-        }
-
-        public partial class SetProjectsFunction : SetProjectsFunctionBase { }
-
-        [Function("SetProjects")]
-        public class SetProjectsFunctionBase : FunctionMessage
-        {
-            [Parameter("tuple[]", "project", 1)]
-            public virtual List<Project> Project { get; set; }
-        }
-
-        public partial class ProjectChangedEventDTO : ProjectChangedEventDTOBase { }
-
-        [Event("ProjectChanged")]
-        public class ProjectChangedEventDTOBase : IEventDTO
-        {
-            [Parameter("address", "sender", 1, false)]
-            public virtual string Sender { get; set; }
-            [Parameter("tuple", "project", 2, false)]
-            public virtual Project Project { get; set; }
-        }
-
-        public partial class ProjectsChangedEventDTO : ProjectsChangedEventDTOBase { }
-
-        [Event("ProjectsChanged")]
-        public class ProjectsChangedEventDTOBase : IEventDTO
-        {
-            [Parameter("address", "sender", 1, false)]
-            public virtual string Sender { get; set; }
-            [Parameter("tuple[]", "project", 2, false)]
-            public virtual List<Project> Project { get; set; }
-        }
-
-
-    }
 }
+		
+
+
+
+
+
+      
+         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

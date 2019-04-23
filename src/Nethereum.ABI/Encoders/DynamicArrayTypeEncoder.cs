@@ -21,11 +21,16 @@ namespace Nethereum.ABI.Encoders
         {
             if (_elementType.IsDynamic())
             {
-                var elems = new byte[l.Count + 2][];
+                var elems = new byte[l.Count + 1 + l.Count][];
                 elems[0] = _intTypeEncoder.EncodeInt(l.Count);
-                elems[1] = _intTypeEncoder.EncodeInt(32); //size
+
+                var currentSize = 0;
                 for (var i = 0; i < l.Count; i++)
-                    elems[i + 2] = _elementType.Encode(l[i]);
+                {
+                    elems[i + 1] = _intTypeEncoder.EncodeInt((l.Count * 32) + currentSize); //location element
+                    elems[i + 1 + l.Count] = _elementType.Encode(l[i]);
+                    currentSize = currentSize + elems[i + 1 + l.Count].Length;
+                }
                 return ByteUtil.Merge(elems);
             }
             else
