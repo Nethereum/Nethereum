@@ -60,9 +60,14 @@ namespace Nethereum.Generators.Net
 
             foreach (IDictionary<string, object> element in contract)
             {
-                if ((string)element["type"] == "function")
+                var elementType = (string)element["type"];
+                if (elementType == "function")
                     structs.AddRange(BuildStructsFromParameters((List<object>)element["outputs"]));
-                structs.AddRange(BuildStructsFromParameters((List<object>)element["inputs"]));
+
+                if (elementType == "function" || elementType == "event" || elementType == "constructor")
+                {
+                    structs.AddRange(BuildStructsFromParameters((List<object>)element["inputs"]));
+                }
             }
             return GetDistinctStructsByTypeName(structs);
         }

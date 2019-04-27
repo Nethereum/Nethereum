@@ -25,9 +25,11 @@ function buildEvent(item) {
 }
 function buildStructsFromParameters(items) {
     var structs = [];
-    for (var i = 0, len = items.length; i < len; i++) {
-        if (items[i].type.startsWith("tuple")) {
-            structs = structs.concat(buildStructsFromTuple(items[i]));
+    if (items !== null && items !== undefined) {
+        for (var i = 0, len = items.length; i < len; i++) {
+            if (items[i].type.startsWith("tuple")) {
+                structs = structs.concat(buildStructsFromTuple(items[i]));
+            }
         }
     }
     return structs;

@@ -1921,7 +1921,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.G
         }
 
         if (this._functionABIModel.HasNoReturn()) {
-            header = String.Format("{0}[<Function(\"{1}\">]", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            header = String.Format("{0}[<Function(\"{1}\")>]", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 functionABI.get_Name()]);
         }
 
