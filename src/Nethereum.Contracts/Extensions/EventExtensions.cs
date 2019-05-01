@@ -5,6 +5,7 @@ using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
+using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
@@ -68,6 +69,21 @@ namespace Nethereum.Contracts
         {
             var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
             return eventABI;
+        }
+
+        public static FilterInputBuilder<TEventDTO> GetFilterBuilder<TEventDTO>(this IEthApiContractService contractService) where TEventDTO : class, IEventDTO, new()
+        {
+            return new FilterInputBuilder<TEventDTO>();
+        }
+
+        public static FilterInputBuilder<TEventDTO> GetFilterBuilder<TEventDTO>(this Event<TEventDTO> e) where TEventDTO : class,  IEventDTO, new()
+        {
+            return new FilterInputBuilder<TEventDTO>();
+        }
+
+        public static FilterInputBuilder<TEventDTO> GetFilterBuilder<TEventDTO>(this TEventDTO eventDTO) where TEventDTO : class, IEventDTO
+        {
+            return new FilterInputBuilder<TEventDTO>();
         }
 
         public static EventTopicBuilder GetTopicBuilder(this EventABI eventABI)

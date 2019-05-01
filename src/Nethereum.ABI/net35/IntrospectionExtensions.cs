@@ -3,7 +3,7 @@ namespace System.Reflection
 {
 
     using System.Collections.Generic;
-    internal static class IntrospectionExtensions
+    public static class IntrospectionExtensions
     {
         // This allows us to use the new reflection API which separates Type and TypeInfo
         // while still supporting .NET 3.5 and 4.0. This class matches the API of the same
