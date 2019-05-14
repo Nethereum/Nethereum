@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-//using System.Dynamic;
 using Nethereum.ABI.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.ABI.JsonDeserialisation
 {
@@ -92,10 +92,19 @@ namespace Nethereum.ABI.JsonDeserialisation
             return parameters.ToArray();
         }
 
-        public ContractABI DeserialiseContract(string abi)
+        public ContractABI DeserialiseContract(string abi) 
         {
             var convertor = new ExpandoObjectConverter();
-            var contract = JsonConvert.DeserializeObject<List<Dictionary<string,object>>>(abi, convertor);
+            var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, convertor);
+            return DeserialiseContractBody(contract);
+        }
+        public ContractABI DeserialiseContract(JArray abi) {
+            var convertor = new JObjectToExpandoConverter();
+            return DeserialiseContractBody(convertor.JObjectArray(abi));
+        }
+
+        private ContractABI DeserialiseContractBody(List<IDictionary<string, object>> contract)
+        {
             var functions = new List<FunctionABI>();
             var events = new List<EventABI>();
             ConstructorABI constructor = null;
