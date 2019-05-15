@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.JsonDeserialisation;
+using Newtonsoft.Json.Linq;
 using System.Linq;
 using Xunit;
 
@@ -25,5 +26,13 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal("0cc400bd", functionABI.Sha3Signature);
         }
 
+        [Fact]
+        public void ShouldDeserialiseJArrayStyleABI() {
+            var abi = "[{\"constant\":false,\"inputs\":[{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"name\":\"productId\",\"type\":\"uint256\"},{\"name\":\"quantity\",\"type\":\"uint256\"}],\"name\":\"lineItem\",\"type\":\"tuple[]\"},{\"name\":\"customerId\",\"type\":\"uint256\"}],\"name\":\"purchaseOrder\",\"type\":\"tuple\"}],\"name\":\"SetPurchaseOrder\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"GetPurchaseOrder2\",\"outputs\":[{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"name\":\"productId\",\"type\":\"uint256\"},{\"name\":\"quantity\",\"type\":\"uint256\"}],\"name\":\"lineItem\",\"type\":\"tuple[]\"},{\"name\":\"customerId\",\"type\":\"uint256\"}],\"name\":\"purchaseOrder\",\"type\":\"tuple\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"GetPurchaseOrder\",\"outputs\":[{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"name\":\"productId\",\"type\":\"uint256\"},{\"name\":\"quantity\",\"type\":\"uint256\"}],\"name\":\"lineItem\",\"type\":\"tuple[]\"},{\"name\":\"customerId\",\"type\":\"uint256\"}],\"name\":\"purchaseOrder\",\"type\":\"tuple\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"sender\",\"type\":\"address\"},{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"components\":[{\"name\":\"id\",\"type\":\"uint256\"},{\"name\":\"productId\",\"type\":\"uint256\"},{\"name\":\"quantity\",\"type\":\"uint256\"}],\"name\":\"lineItem\",\"type\":\"tuple[]\"},{\"name\":\"customerId\",\"type\":\"uint256\"}],\"indexed\":false,\"name\":\"purchaseOrder\",\"type\":\"tuple\"}],\"name\":\"PurchaseOrderChanged\",\"type\":\"event\"}]";
+            var contractAbi = new ABIDeserialiser().DeserialiseContract(JArray.Parse(abi));
+            var functionABI = contractAbi.Functions.FirstOrDefault(e => e.Name == "SetPurchaseOrder");
+            var sig = functionABI.Sha3Signature;
+            Assert.Equal("0cc400bd", functionABI.Sha3Signature);
+        }
     }
 }
