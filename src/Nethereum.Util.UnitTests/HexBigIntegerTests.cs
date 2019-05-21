@@ -10,6 +10,8 @@ namespace Nethereum.Util.UnitTests
         {
             Assert.Equal("1000", new HexBigInteger(1000).ToString());
             Assert.Equal("1000", $"{new HexBigInteger(1000)}");
+            Assert.Equal("0", $"{new HexBigInteger("0x")}");
+            Assert.Equal("0", $"{new HexBigInteger(null)}");
         }
     }
 }
