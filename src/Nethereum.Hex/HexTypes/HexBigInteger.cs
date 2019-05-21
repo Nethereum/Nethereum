@@ -27,7 +27,7 @@ namespace Nethereum.Hex.HexTypes
 
         public override string ToString()
         {
-            return value.ToString();
+            return Value.ToString();
         }
     }
 }

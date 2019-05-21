@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexTypes;
+﻿using Nethereum.Hex.HexConvertors;
+using Nethereum.Hex.HexTypes;
 using Xunit;
 
 namespace Nethereum.Util.UnitTests
@@ -12,6 +13,7 @@ namespace Nethereum.Util.UnitTests
             Assert.Equal("1000", $"{new HexBigInteger(1000)}");
             Assert.Equal("0", $"{new HexBigInteger("0x")}");
             Assert.Equal("0", $"{new HexBigInteger(null)}");
+            Assert.Equal("1000", $"{new HexBigInteger("3E8")}");
         }
     }
 }
