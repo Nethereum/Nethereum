@@ -24,5 +24,10 @@ namespace Nethereum.Hex.HexTypes
 
             return false;
         }
+
+        public override string ToString()
+        {
+            return value.ToString();
+        }
     }
 }
