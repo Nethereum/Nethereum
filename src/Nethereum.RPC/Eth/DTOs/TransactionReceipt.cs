@@ -63,7 +63,7 @@ namespace Nethereum.RPC.Eth.DTOs
 
         public bool? HasErrors()
         {
-            if (Status == null) return null;
+            if (Status?.HexValue == null) return null;
             return Status.Value == 0;
         }
 
