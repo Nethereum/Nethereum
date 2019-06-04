@@ -37,6 +37,9 @@
         miner_hashrate,
         miner_start,
         miner_stop,
-        miner_setGasPrice
+        miner_setGasPrice,
+        txpool_content,
+        txpool_inspect,
+        txpool_status
     }
 }

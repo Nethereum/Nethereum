@@ -2332,7 +2332,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function EventDTOFSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[<Event(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}interface IEventDTO with\r\n{5}\r\n{6}", 
+            return String.Format("{0}[<Event(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}inherit EventDTO()\r\n{5}\r\n{6}", 
                 [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     this._parameterAbiEventDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_EventABI().get_InputParameters()), 
@@ -2356,7 +2356,7 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate, Nethereum.G
     };
     $p.GenerateClass = function FunctionOutputDTOFSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[<FunctionOutput>]\r\n{1}type {2}() =\r\n{3}interface IFunctionOutputDTO with\r\n{4}\r\n{5}", 
+            return String.Format("{0}[<FunctionOutput>]\r\n{1}type {2}() =\r\n{3}inherit FunctionOutputDTO() \r\n{4}\r\n{5}", 
                 [Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_FunctionABI().get_OutputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab]);
@@ -2404,7 +2404,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate, null,
     };
     $p.GenerateProperty = function ParameterABIFunctionDTOFSharpTemplate_GenerateProperty(parameter) {
         var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter);
-        return String.Format("{0}[<Parameter(\"{1}\", \"{2}\", {3})>]\r\n{4}member val {5} = Unchecked.defaultof<{6}> with get, set", 
+        return String.Format("{0}[<Parameter(\"{1}\", \"{2}\", {3})>]\r\n{4}member val public {5} = Unchecked.defaultof<{6}> with get, set", 
             [Nethereum.Generators.Core.SpaceUtils().ThreeTabs, parameter.get_Type(), parameter.get_Name(), 
                 parameter.get_Order(), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, parameterModel.GetPropertyName(), 
                 this.parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)]);

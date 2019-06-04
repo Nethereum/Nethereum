@@ -19,7 +19,7 @@ namespace Nethereum.Generators.DTOs
                 return
                     $@"{SpaceUtils.OneTab}[<Event(""{Model.EventABI.Name}"")>]
 {SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}interface IEventDTO with
+{SpaceUtils.TwoTabs}inherit EventDTO()
 {_parameterAbiEventDtoFSharpTemplate.GenerateAllProperties(Model.EventABI.InputParameters)}
 {SpaceUtils.OneTab}";
             }
