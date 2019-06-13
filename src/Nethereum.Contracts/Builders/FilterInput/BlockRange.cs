@@ -21,8 +21,8 @@ namespace Nethereum.Contracts
 
         public BlockRange(HexBigInteger from, HexBigInteger to)
         {
-            From = from;
-            To = to;
+            From = from ?? throw new ArgumentNullException(nameof(from));
+            To = to ?? throw new ArgumentNullException(nameof(to));
             BlockCount = (To.Value - From.Value) + 1;
             _hashCode = new { From, To }.GetHashCode();
         }
@@ -34,7 +34,8 @@ namespace Nethereum.Contracts
 
         public bool Equals(BlockRange other)
         {
-            return From.Equals(other.From.Value) && To.Equals(other.To.Value);
+            return (From.Value).Equals(other.From.Value) && 
+                (To.Value).Equals(other.To.Value);
         }
 
         public override bool Equals(object obj)
