@@ -14,7 +14,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
-        public void When_From_And_To_Are_The_Same_The_Range_Is_Not_Equal()
+        public void When_From_And_To_Are_Not_The_Same_The_Range_Is_Not_Equal()
         {
             Assert.NotEqual(new BlockRange(0, 1), new BlockRange(1, 0));
             Assert.NotEqual(new BlockRange(1, 0), new BlockRange(0, 1));
