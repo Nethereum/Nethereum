@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Contracts.Extensions;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.MessageEncodingServices
@@ -31,6 +32,16 @@ namespace Nethereum.Contracts.MessageEncodingServices
                 contractMessage.GetHexNonce(),
                 contractMessage);
             return transactionInput;
+        }
+
+        public string GetDeploymentData(TContractDeployment contractMessage)
+        {
+            return DeployContractTransactionBuilder.GetData(contractMessage.ByteCode, contractMessage);
+        }
+
+        public byte[] GetDeploymentDataHash(TContractDeployment contractMessage)
+        {
+            return Util.Sha3Keccack.Current.CalculateHash(GetDeploymentData(contractMessage).HexToByteArray());
         }
 
 

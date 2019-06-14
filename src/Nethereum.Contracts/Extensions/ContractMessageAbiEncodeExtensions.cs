@@ -28,5 +28,6 @@ namespace Nethereum.Contracts
             var encoder = new ABIEncode();
             return encoder.GetSha3ABIParamsEncodedPacked(contractMessage);
         }
+
     }
 }

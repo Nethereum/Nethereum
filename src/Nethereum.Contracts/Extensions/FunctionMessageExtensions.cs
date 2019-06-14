@@ -53,5 +53,11 @@ namespace Nethereum.Contracts
         {
             return GetEncodingService<TContractMessage>(contractMessage).GetCallData(contractMessage);
         }
+
+        public static byte[] GetCallDataHash<TContractMessage>(this TContractMessage contractMessage)
+            where TContractMessage : FunctionMessage
+        {
+            return GetEncodingService<TContractMessage>(contractMessage).GetCallDataHash(contractMessage);
+        }
     }
 }
