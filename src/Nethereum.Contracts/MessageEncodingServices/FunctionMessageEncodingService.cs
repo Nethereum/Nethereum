@@ -31,6 +31,11 @@ namespace Nethereum.Contracts.MessageEncodingServices
             return FunctionBuilder.GetDataAsBytes(contractMessage);
         }
 
+        public byte[] GetCallDataHash(TContractFunction contractMessage)
+        {
+            return Util.Sha3Keccack.Current.CalculateHash(GetCallData(contractMessage));
+        }
+
         public CallInput CreateCallInput(TContractFunction contractMessage)
         {
             return FunctionBuilder.CreateCallInput(contractMessage,
