@@ -17,7 +17,7 @@ namespace Nethereum.Pantheon.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var permRemoveNodesFromWhitelist = new PermRemoveNodesFromWhitelist(client);
-            return await permRemoveNodesFromWhitelist.SendRequestAsync(new []{ Settings.GetDefaultAccount()});
+            return await permRemoveNodesFromWhitelist.SendRequestAsync(new []{ Settings.GetDefaultNodeIrl()});
         }
 
         public override Type GetRequestType()

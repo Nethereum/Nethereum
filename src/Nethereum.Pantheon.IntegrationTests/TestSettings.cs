@@ -25,6 +25,11 @@ namespace Nethereum.RPC.Tests.Testers
             return GetAppSettingsValue("defaultAccount");
         }
 
+        public string GetDefaultNodeIrl()
+        {
+            return GetAppSettingsValue("defaultNodeIrl");
+        }
+
         public string GetBlockHash()
         {
             return GetAppSettingsValue("blockhash");
