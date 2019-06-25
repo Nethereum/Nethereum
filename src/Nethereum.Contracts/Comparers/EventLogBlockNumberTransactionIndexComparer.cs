@@ -13,4 +13,16 @@ namespace Nethereum.Contracts.Comparers
             return new FilterLogBlockNumberTransactionIndexComparer().Compare(xLog.Log, yLog.Log);
         }
     }
+
+
+    public class EventLogBlockNumberTransactionIndexComparer<TEventLog> : IComparer<TEventLog> where TEventLog : IEventLog
+    {
+        public int Compare(TEventLog x, TEventLog y)
+        {
+            var xLog = x as IEventLog;
+            var yLog = y as IEventLog;
+            if (xLog == null || yLog == null) throw new Exception("Both instances should implement IEventLog");
+            return new FilterLogBlockNumberTransactionIndexComparer().Compare(xLog.Log, yLog.Log);
+        }
+    }
 }

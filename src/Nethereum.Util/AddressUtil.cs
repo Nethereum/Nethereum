@@ -9,6 +9,7 @@ namespace Nethereum.Util
     public class AddressUtil
     {
         private static AddressUtil _current;
+        public const string AddressEmptyAsHex = "0x0";
 
         public static AddressUtil Current
         {
@@ -17,6 +18,34 @@ namespace Nethereum.Util
                 if (_current == null) _current = new AddressUtil();
                 return _current;
             }
+        }
+
+        public bool IsAnEmptyAddress(string address)
+        {
+#if !NET35
+            if (string.IsNullOrWhiteSpace(address))
+                return true;
+#else
+            if (string.IsNullOrEmpty(address)) return true;
+#endif
+                return address == AddressEmptyAsHex;
+
+        }
+
+        public bool IsNotAnEmptyAddress(string address)
+        {
+            return !IsAnEmptyAddress(address);
+
+        }
+
+        public string AddressValueOrEmpty(string address)
+        {
+            return address.IsAnEmptyAddress() ? AddressEmptyAsHex : address;
+        }
+
+        public bool IsEmptyOrEqualsAddress(string address1, string candidate)
+        {
+            return IsAnEmptyAddress(address1) || AreAddressesTheSame(address1,candidate);
         }
 
         public bool AreAddressesTheSame(string address1, string address2)

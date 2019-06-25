@@ -52,6 +52,11 @@ namespace Nethereum.Contracts
             return new Event(this, ContractBuilder.GetEventAbi(name));
         }
 
+        public Event GetEventBySignature(string signature)
+        {
+            return new Event(this, ContractBuilder.GetEventAbiBySignature(signature));
+        }
+
         public Event<T> GetEvent<T>() where T: IEventDTO, new()
         {
             return new Event<T>(this);
@@ -67,9 +72,19 @@ namespace Nethereum.Contracts
             return new Function(this, GetFunctionBuilder(name));
         }
 
+        public Function GetFunctionBySignature(string signature)
+        {
+            return new Function(this, GetFunctionBuilderBySignature(signature));
+        }
+
         private FunctionBuilder GetFunctionBuilder(string name)
         {
             return ContractBuilder.GetFunctionBuilder(name);
+        }
+
+        private FunctionBuilder GetFunctionBuilderBySignature(string signature)
+        {
+            return ContractBuilder.GetFunctionBuilderBySignature(signature);
         }
 
         private FunctionBuilder<TFunctionInput> GetFunctionBuilder<TFunctionInput>()

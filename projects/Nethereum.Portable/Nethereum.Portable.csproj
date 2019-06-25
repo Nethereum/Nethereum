@@ -1925,6 +1925,26 @@
 				<Link>Contracts\Builders\FunctionBuilderBase.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInput\BlockRange.cs">
+				<Link>Contracts\Builders\FilterInput\BlockRange.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInput\FilterExtensions.cs">
+				<Link>Contracts\Builders\FilterInput\FilterExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInput\FilterInputBuilder_T.cs">
+				<Link>Contracts\Builders\FilterInput\FilterInputBuilder_T.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInput\TopicFilter.cs">
+				<Link>Contracts\Builders\FilterInput\TopicFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Builders\FilterInput\TopicFilterContainer.cs">
+				<Link>Contracts\Builders\FilterInput\TopicFilterContainer.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs">
 				<Link>Contracts\Comparers\EventLogBlockNumberTransactionIndexComparer.cs</Link>
 		</Compile>

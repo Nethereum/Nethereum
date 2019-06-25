@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
+using Nethereum.Contracts.Comparers;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
@@ -44,6 +46,8 @@ namespace Nethereum.Contracts
         {
             if (eventABI.IsAnonymous)
                 return true;
+
+            if (!eventABI.HasSameNumberOfIndexes(log)) return false;
 
             return IsLogForEvent(log, eventABI.Sha3Signature);
         }
@@ -456,6 +460,7 @@ namespace Nethereum.Contracts
         public static TEventDTO DecodeEvent<TEventDTO>(this TEventDTO eventDTO, FilterLog log) where TEventDTO : IEventDTO
         {
             var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
+           
             return DecodeEvent<TEventDTO>(eventDTO, eventABI, log);
         }
 
@@ -474,6 +479,65 @@ namespace Nethereum.Contracts
         public static bool IsLogForEvent<TEventDTO>(this TEventDTO eventDTO, FilterLog log) where TEventDTO : IEventDTO
         {
             return IsLogForEvent<TEventDTO>(log);
+        }
+
+        public static bool HasSameNumberOfIndexes<TEventDTO>(FilterLog log) where TEventDTO : IEventDTO
+        {
+            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
+            return eventABI.HasSameNumberOfIndexes(log);
+        }
+
+        public static bool HasSameNumberOfIndexes<TEventDTO>(this TEventDTO eventDTO, FilterLog log) where TEventDTO : IEventDTO
+        {
+            return eventDTO.GetEventABI().HasSameNumberOfIndexes(log);
+        }
+
+        public static bool HasSameNumberOfIndexes(this EventABI eventAbi, FilterLog log)
+        {
+            return eventAbi.NumberOfIndexes == (log.Topics.Length - 1);
+        }
+
+        public static List<EventLog<TEventDTO>> DecodeAllEventsIgnoringIndexMisMatches<TEventDTO>(this FilterLog[] logs) where TEventDTO : class, new()
+        {
+            var list = new List<EventLog<TEventDTO>>();
+
+            foreach (var log in logs)
+            {
+                if (log.IsLogForEvent<TEventDTO>())
+                {
+                    list.Add(log.DecodeEvent<TEventDTO>());
+                }
+            }
+
+            return list;
+        }
+
+        public static FilterLog[] Sort(this IEnumerable<FilterLog> logs)
+        {
+            var list = logs.ToList();    
+            list.Sort(new FilterLogBlockNumberTransactionIndexComparer());
+            return list.ToArray();
+        }
+
+        public static EventLog<TEventDTO>[] Sort<TEventDTO>(this IEnumerable<EventLog<TEventDTO>> events) where TEventDTO : IEventDTO
+        {
+            var list = events.ToList();
+            list.Sort(new EventLogBlockNumberTransactionIndexComparer<EventLog<TEventDTO>>());
+            return list.ToArray();
+        }
+
+        public static string EventSignature(this FilterLog log) => log.GetTopic(0);
+        public static string IndexedVal1(this FilterLog log) => log.GetTopic(1);
+        public static string IndexedVal2(this FilterLog log) => log.GetTopic(2);
+        public static string IndexedVal3(this FilterLog log) => log.GetTopic(3);
+        private static string GetTopic(this FilterLog log, int number)
+        {
+            if (log.Topics == null) return null;
+
+            if (log.Topics.Length > number)
+                return log.Topics[number].ToString();
+
+            return null;
         }
     }
 }

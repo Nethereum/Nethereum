@@ -90,5 +90,73 @@ namespace Nethereum.Util.UnitTests
             Assert.Equal(address3, ToChecksumAddress(address3.ToUpper()));
             Assert.Equal(address4, ToChecksumAddress(address4.ToUpper()));
         }
+
+        public const string Address1 = "0x7009b29f2094457d3dba62d1953efea58176ba27";
+        public const string Address2 = "0x1009b29f2094457d3dba62d1953efea58176ba27";
+        public const string LowerCaseAddress1 = "0x7009b29f2094457d3dba62d1953efea58176ba27";
+        public const string UpperCaseAddress1 = "0x7009B29F2094457D3DBA62D1953EFEA58176BA27";
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(AddressUtil.AddressEmptyAsHex)]
+        public void IsAnEmptyAddress_When_Address_Is_Empty_Returns_True(string address)
+        {
+            Assert.True(address.IsAnEmptyAddress());
+        }
+
+        [Theory]
+        [InlineData(Address1)]
+        public void IsNotAnEmptyAddress_When_Address_Is_Not_Empty_Returns_True(string address)
+        {
+            Assert.True(address.IsAnEmptyAddress());
+        }
+
+        [Theory]
+        [InlineData(AddressUtil.AddressEmptyAsHex, AddressUtil.AddressEmptyAsHex)]
+        [InlineData(null, AddressUtil.AddressEmptyAsHex)]
+        [InlineData("", null)]
+        [InlineData(AddressUtil.AddressEmptyAsHex, "")]
+        [InlineData(" ", " ")]
+        [InlineData(LowerCaseAddress1, LowerCaseAddress1)]
+        [InlineData(UpperCaseAddress1, LowerCaseAddress1)]
+        [InlineData(LowerCaseAddress1, UpperCaseAddress1)]
+        [InlineData(UpperCaseAddress1, UpperCaseAddress1)]
+        public void EqualsAddress_When_Addresses_Are_Equal_Returns_True(string address1, string address2)
+        {
+            Assert.True(address1.IsTheSameAddress(address2));
+            Assert.True(address2.IsTheSameAddress(address1));
+        }
+
+        [Theory]
+        [InlineData(null, Address1)]
+        [InlineData(AddressUtil.AddressEmptyAsHex, Address1)]
+        [InlineData(Address1, Address2)]
+        public void EqualsAddress_When_Addresses_Are_Not_Equal_Returns_False(string address1, string address2)
+        {
+            Assert.False(address1.IsTheSameAddress(address2));
+            Assert.False(address2.IsTheSameAddress(address1));
+        }
+
+        [Theory]
+        [InlineData(Address1)]
+        [InlineData(AddressUtil.AddressEmptyAsHex)]
+        public void AddressOrEmpty_When_The_Address_Is_Not_Empty_Returns_The_Address(string address)
+        {
+            Assert.Equal(address, address.AddressValueOrEmpty());
+        }
+
+        [Theory]
+        [InlineData(AddressUtil.AddressEmptyAsHex)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void AddressOrEmpty_When_The_Address_Is_Empty_Returns_An_Empty_Address(string address)
+        {
+            Assert.Equal(AddressUtil.AddressEmptyAsHex, address.AddressValueOrEmpty());
+        }
+
+       
     }
 }

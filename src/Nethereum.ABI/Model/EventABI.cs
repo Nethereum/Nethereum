@@ -1,4 +1,5 @@
 using Nethereum.ABI.FunctionEncoding;
+using System.Linq;
 
 namespace Nethereum.ABI.Model
 {
@@ -6,6 +7,7 @@ namespace Nethereum.ABI.Model
     {
         private readonly SignatureEncoder signatureEncoder;
         private string sha3Signature;
+        private int? numberOfIndexes;
 
         public EventABI(string name) : this(name, false)
         {
@@ -30,6 +32,18 @@ namespace Nethereum.ABI.Model
                 if (sha3Signature != null) return sha3Signature;
                 sha3Signature = signatureEncoder.GenerateSha3Signature(Name, InputParameters);
                 return sha3Signature;
+            }
+        }
+
+        public int NumberOfIndexes
+        {
+            get
+            {
+                if(numberOfIndexes == null)
+                {
+                    numberOfIndexes = InputParameters.Where(x => x.Indexed == true).Count();
+                }
+                return numberOfIndexes.Value;
             }
         }
     }
