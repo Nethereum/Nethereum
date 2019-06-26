@@ -152,8 +152,6 @@ namespace Nethereum.RPC.UnitTests
         [InlineData(UpperCaseAddress1, UpperCaseAddress1)]
         [InlineData(AddressUtil.AddressEmptyAsHex, AddressUtil.AddressEmptyAsHex)]
         [InlineData("", "")]
-        [InlineData(AddressUtil.AddressEmptyAsHex, "")]
-        [InlineData(AddressUtil.AddressEmptyAsHex, null)]
         public void TransactionReceipt_IsContractAddressEqual_When_Addresses_Are_Equal_Returns_True
             (string contractAddress, string address)
         {
