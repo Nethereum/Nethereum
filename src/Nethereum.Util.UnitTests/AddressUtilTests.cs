@@ -58,6 +58,10 @@ namespace Nethereum.Util.UnitTests
             //length
             var address5 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeA'#";
             Assert.False(address5.IsValidEthereumAddressHexFormat());
+
+
+            var address6 = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAeZ";
+            Assert.False(address6.IsValidEthereumAddressHexFormat());
         }
 
         [Fact]
@@ -110,7 +114,7 @@ namespace Nethereum.Util.UnitTests
         [InlineData(Address1)]
         public void IsNotAnEmptyAddress_When_Address_Is_Not_Empty_Returns_True(string address)
         {
-            Assert.True(address.IsAnEmptyAddress());
+            Assert.True(address.IsNotAnEmptyAddress());
         }
 
         [Theory]

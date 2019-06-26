@@ -50,6 +50,8 @@ namespace Nethereum.Util
 
         public bool AreAddressesTheSame(string address1, string address2)
         {
+            if (address1.IsAnEmptyAddress() && address2.IsAnEmptyAddress()) return true;
+            if (address1.IsAnEmptyAddress() || address2.IsAnEmptyAddress()) return false;
             //simple string comparison as opposed to use big integer comparison
             return string.Equals(address1.EnsureHexPrefix()?.ToLowerInvariant(), address2.EnsureHexPrefix()?.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase); 
         }
@@ -89,7 +91,7 @@ namespace Nethereum.Util
         {
             if (string.IsNullOrEmpty(address)) return false;
             return address.HasHexPrefix() && IsValidAddressLength(address) &&
-                   address.ToCharArray().All(char.IsLetterOrDigit);
+                   address.IsHex();
         }
 
         public bool IsChecksumAddress(string address)
