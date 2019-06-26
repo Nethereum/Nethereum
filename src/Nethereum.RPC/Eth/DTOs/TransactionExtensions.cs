@@ -31,11 +31,11 @@ namespace Nethereum.RPC.Eth.DTOs
             return txn.IsFrom(from) && txn.IsTo(to);
         }
 
-        public static bool IsForContractCreation(
+        public static bool CreatedContract(
             this Transaction transaction, TransactionReceipt transactionReceipt)
         {
             return transaction.To.IsAnEmptyAddress() &&
-                   transactionReceipt.ContractAddress.IsAnEmptyAddress();
+                   transactionReceipt.ContractAddress.IsNotAnEmptyAddress();
         }
 
     }
