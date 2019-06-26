@@ -494,7 +494,7 @@ namespace Nethereum.Contracts
 
         public static bool HasSameNumberOfIndexes(this EventABI eventAbi, FilterLog log)
         {
-            return eventAbi.NumberOfIndexes == (log.Topics.Length - 1);
+            return eventAbi.NumberOfIndexes == (log.Topics?.Length - 1);
         }
 
         public static List<EventLog<TEventDTO>> DecodeAllEventsIgnoringIndexMisMatches<TEventDTO>(this FilterLog[] logs) where TEventDTO : class, new()
