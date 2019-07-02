@@ -6,6 +6,7 @@ using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
+using Nethereum.BlockProcessing.ValueObjects;
 using Nethereum.Contracts.Comparers;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -530,7 +531,7 @@ namespace Nethereum.Contracts
         public static string IndexedVal1(this FilterLog log) => log.GetTopic(1);
         public static string IndexedVal2(this FilterLog log) => log.GetTopic(2);
         public static string IndexedVal3(this FilterLog log) => log.GetTopic(3);
-        private static string GetTopic(this FilterLog log, int number)
+        public static string GetTopic(this FilterLog log, int number)
         {
             if (log.Topics == null) return null;
 
@@ -539,5 +540,7 @@ namespace Nethereum.Contracts
 
             return null;
         }
+
+       
     }
 }

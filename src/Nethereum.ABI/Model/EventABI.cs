@@ -41,7 +41,7 @@ namespace Nethereum.ABI.Model
             {
                 if(numberOfIndexes == null)
                 {
-                    numberOfIndexes = InputParameters.Where(x => x.Indexed == true).Count();
+                    numberOfIndexes = InputParameters.Count(x => x.Indexed == true);
                 }
                 return numberOfIndexes.Value;
             }

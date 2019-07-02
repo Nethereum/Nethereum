@@ -24,5 +24,19 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
         {
             return GetProperties(type).Where(x => x.IsDefined(typeof(ParameterAttribute), true));
         }
+
+        public static ParameterAttributeIndexedTopics[] GetIndexedTopics<T>()
+        {
+            return PropertiesExtractor
+                .GetPropertiesWithParameterAttribute(typeof(T))
+                .Select(p => new ParameterAttributeIndexedTopics
+                {
+                    ParameterAttribute = p.GetCustomAttribute<ParameterAttribute>(),
+                    PropertyInfo = p
+                })
+                .Where(p => p.ParameterAttribute?.Parameter.Indexed ?? false)
+                .OrderBy(p => p.ParameterAttribute.Order)
+                .ToArray();
+        }
     }
 }
