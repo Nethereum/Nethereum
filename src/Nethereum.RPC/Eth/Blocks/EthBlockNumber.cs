@@ -4,6 +4,7 @@ using Nethereum.RPC.Infrastructure;
 
 namespace Nethereum.RPC.Eth.Blocks
 {
+
     /// <Summary>
     ///     eth_blockNumber
     ///     Returns the number of most recent block.
