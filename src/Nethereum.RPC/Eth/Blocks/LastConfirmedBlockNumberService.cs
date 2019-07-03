@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.RPC.Eth.Blocks
 {
-    public class LastConfirmedBlockNumberService
+    public class LastConfirmedBlockNumberService : ILastConfirmedBlockNumberService
     {
         private readonly IEthBlockNumber _ethBlockNumber;
         private readonly IWaitStrategy _waitStrategy;
@@ -37,7 +37,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         }
 
-        public async Task<BigInteger> GetLastConfirmedBlockNumber(BigInteger? waitForConfirmedBlockNumber, CancellationToken cancellationToken)
+        public async Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber, CancellationToken cancellationToken)
         {
             var currentBlockOnChain = await GetCurrentBlockOnChain();
             uint attemptCount = 0;
@@ -72,7 +72,7 @@ namespace Nethereum.RPC.Eth.Blocks
             return false;
         }
 
-        public void LogWaitingForBlockAvailability(BigInteger currentBlock, uint minimumBlockConfirmations, BigInteger? maxBlockOnChain, uint attempt)
+        private void LogWaitingForBlockAvailability(BigInteger currentBlock, uint minimumBlockConfirmations, BigInteger? maxBlockOnChain, uint attempt)
         {
             if (_log != null) _log.Info($"Waiting for current block ({currentBlock}) to be more than {minimumBlockConfirmations} confirmations behind the max block on the chain ({maxBlockOnChain}). Attempt: {attempt}.");
         }
