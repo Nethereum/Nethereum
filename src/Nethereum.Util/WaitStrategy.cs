@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Utils
 {
+#if !NET35
     public class WaitStrategy : IWaitStrategy
     {
         private static readonly int[] WaitIntervals = {1000, 2000, 5000, 10000, 15000};
@@ -16,4 +17,5 @@ namespace Nethereum.Utils
             return Task.Delay(intervalMs);
         }
     }
+#endif
 }

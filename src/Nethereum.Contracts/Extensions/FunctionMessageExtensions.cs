@@ -1,5 +1,4 @@
-﻿using Nethereum.BlockProcessing.ValueObjects;
-using Nethereum.Contracts.MessageEncodingServices;
+﻿using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts
@@ -61,12 +60,12 @@ namespace Nethereum.Contracts
             return GetEncodingService<TContractMessage>(contractMessage).GetCallDataHash(contractMessage);
         }
 
-        public static bool IsForFunction<TFunctionMessage>(this TransactionWithReceipt transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
+        public static bool IsForFunction<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
         {
             return transactionWithReceipt.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
         }
 
-        public static TFunctionMessage Decode<TFunctionMessage>(this TransactionWithReceipt transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
+        public static TFunctionMessage Decode<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
         {
             return transactionWithReceipt.Transaction?.DecodeTransactionToFunctionMessage<TFunctionMessage>();
         }

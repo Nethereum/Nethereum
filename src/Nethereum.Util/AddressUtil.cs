@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -6,6 +7,25 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
 {
+    public class UniqueAddressList : HashSet<string>
+    {
+        public UniqueAddressList() : base(new AddressEqualityComparer()) { }
+    }
+
+
+    public class AddressEqualityComparer : IEqualityComparer<string>
+    {
+        public bool Equals(string x, string y)
+        {
+            return x.IsTheSameAddress(y);
+        }
+
+        public int GetHashCode(string obj)
+        {
+            return -1;
+        }
+    }
+
     public class AddressUtil
     {
         private static AddressUtil _current;

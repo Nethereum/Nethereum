@@ -6,7 +6,6 @@ using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
-using Nethereum.BlockProcessing.ValueObjects;
 using Nethereum.Contracts.Comparers;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexConvertors.Extensions;

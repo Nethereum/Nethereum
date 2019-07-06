@@ -12,6 +12,12 @@ namespace Nethereum.RPC.Eth.DTOs
             return receipt.ContractAddress.IsEmptyOrEqualsAddress(contractAddress);
         }
 
+
+        public static bool IsForContractCreation(this TransactionReceiptVO receipt)
+        {
+            return receipt.Transaction.IsForContractCreation(receipt.TransactionReceipt);
+        }
+
         public static bool IsContractAddressEqual(this TransactionReceipt receipt, string address)
         {
             return receipt.ContractAddress.IsTheSameAddress(address);

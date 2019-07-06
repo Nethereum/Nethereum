@@ -1,4 +1,5 @@
-﻿using Common.Logging;
+﻿#if !NET35
+using Common.Logging;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Utils;
 using System.Numerics;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.RPC.Eth.Blocks
 {
+
     public class LastConfirmedBlockNumberService : ILastConfirmedBlockNumberService
     {
         private readonly IEthBlockNumber _ethBlockNumber;
@@ -78,4 +80,6 @@ namespace Nethereum.RPC.Eth.Blocks
         }
 
     }
+
 }
+#endif

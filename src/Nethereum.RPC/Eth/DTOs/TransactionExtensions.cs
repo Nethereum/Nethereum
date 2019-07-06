@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Nethereum.Util;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
@@ -36,6 +39,47 @@ namespace Nethereum.RPC.Eth.DTOs
         {
             return transaction.To.IsAnEmptyAddress() &&
                    transactionReceipt.ContractAddress.IsNotAnEmptyAddress();
+        }
+
+        public static IEnumerable<FilterLogVO> GetTransactionLogs(this Transaction transaction, TransactionReceipt receipt)
+        {
+            for (var i = 0; i < receipt.Logs?.Count; i++)
+            {
+                if (receipt.Logs[i] is JObject log)
+                {
+                    var typedLog = log.ToObject<FilterLog>();
+
+                    yield return
+                        new FilterLogVO(transaction, receipt, typedLog);
+                }
+            }
+        }
+
+        public static string[] GetAllRelatedAddresses(this Transaction tx, TransactionReceipt receipt)
+        {
+            if (tx == null)
+                return new string[] { };
+
+            var uniqueAddresses = new UniqueAddressList()
+                {tx.From};
+
+            if (tx.To.IsNotAnEmptyAddress())
+                uniqueAddresses.Add(tx.To);
+
+            if (receipt != null)
+            {
+                if (receipt.ContractAddress.IsNotAnEmptyAddress())
+                    uniqueAddresses.Add(receipt.ContractAddress);
+
+                foreach (var log in tx.GetTransactionLogs(receipt))
+                {
+                    if (log.Address.IsNotAnEmptyAddress())
+                        uniqueAddresses.Add(log.Address);
+                }
+            }
+
+            return uniqueAddresses.ToArray();
+
         }
 
     }

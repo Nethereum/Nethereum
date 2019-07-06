@@ -1,10 +1,10 @@
 ﻿using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.BlockProcessing.ValueObjects
+namespace Nethereum.RPC.Eth.DTOs
 {
-    public class ContractTransaction
+    public class ContractTransactionVO
     {
-        public ContractTransaction(string contractAddress, string code, Transaction transaction)
+        public ContractTransactionVO(string contractAddress, string code, Transaction transaction)
         {
             ContractAddress = contractAddress;
             Code = code;
