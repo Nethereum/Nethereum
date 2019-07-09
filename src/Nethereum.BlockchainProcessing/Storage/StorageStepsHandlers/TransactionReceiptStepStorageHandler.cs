@@ -5,7 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
 {
-    public class TransactionReceiptStepStorageHandler : IProcessorHandler<TransactionReceiptVO>
+    public class TransactionReceiptStepStorageHandler : ProcessorBaseHandler<TransactionReceiptVO>
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly IAddressTransactionRepository _addressTransactionRepository;
@@ -16,25 +16,19 @@ namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
             _addressTransactionRepository = addressTransactionRepository;
         }
 
-        public async Task ExecuteAsync(TransactionReceiptVO transactionReceiptVO)
+        protected override async Task ExecuteInternalAsync(TransactionReceiptVO transactionReceiptVO)
         {
-            await _transactionRepository.UpsertAsync(transactionReceiptVO.Transaction,
-                                                     transactionReceiptVO.TransactionReceipt, 
-                                                     transactionReceiptVO.Failed, 
-                                                     transactionReceiptVO.BlockTimestamp).ConfigureAwait(false);
+            await _transactionRepository.UpsertAsync(transactionReceiptVO).ConfigureAwait(false);
 
             if(_addressTransactionRepository != null)
             {
                 var newContractAddress = transactionReceiptVO.IsForContractCreation() ? transactionReceiptVO.TransactionReceipt.ContractAddress : string.Empty;
                 foreach (var address in transactionReceiptVO.GetAllRelatedAddresses())
                 {
-                    await _addressTransactionRepository.UpsertAsync(transactionReceiptVO.Transaction,
-                                                                    transactionReceiptVO.TransactionReceipt, 
-                                                                    transactionReceiptVO.Failed, 
-                                                                    transactionReceiptVO.BlockTimestamp, 
+                    await _addressTransactionRepository.UpsertAsync(transactionReceiptVO,
                                                                     address, 
                                                                     null, 
-                                                                    false, newContractAddress).ConfigureAwait(false);
+                                                                    newContractAddress).ConfigureAwait(false);
                 }
             }
         }

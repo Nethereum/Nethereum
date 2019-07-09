@@ -5,19 +5,17 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
 {
-    public class ContractCreationStorageStepHandler : IProcessorHandler<ContractCreationVO>
+    public class ContractCreationStorageStepHandler : ProcessorBaseHandler<ContractCreationVO>
     {
         private readonly IContractRepository _contractRepository;
         public ContractCreationStorageStepHandler(IContractRepository contractRepository)
         {
             _contractRepository = contractRepository;
         }
-        public Task ExecuteAsync(ContractCreationVO contractCreation)
+        protected override Task ExecuteInternalAsync(ContractCreationVO contractCreation)
         {
             return _contractRepository.UpsertAsync(
-               contractCreation.ContractAddress,
-               contractCreation.Code,
-               contractCreation.Transaction);
+                contractCreation);
         }
     }
 }

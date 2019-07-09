@@ -64,7 +64,7 @@ namespace Nethereum.BlockchainProcessing
         }
 
         //Scenario I have a repository and want to start from a block number if provided (if already processed I will use the latest one) and continue until the last block number provided
-        public async Task ExecuteAsync(BigInteger toBlockNumber, CancellationToken cancellationToken, BigInteger? startAtBlockNumberIfNotProcessed)
+        public async Task ExecuteAsync(BigInteger toBlockNumber, CancellationToken cancellationToken, BigInteger? startAtBlockNumberIfNotProcessed = null)
         {
             var fromBlockNumber = await GetStartBlockNumber(startAtBlockNumberIfNotProcessed);
 

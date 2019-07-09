@@ -5,7 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
 {
-    public class FilterLogStepStorageHandler : IProcessorHandler<FilterLogVO>
+    public class FilterLogStepStorageHandler : ProcessorBaseHandler<FilterLogVO>
     {
         private readonly ITransactionLogRepository _transactionLogRepository;
 
@@ -14,9 +14,9 @@ namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
             _transactionLogRepository = transactionLogRepository;
         }
 
-        public Task ExecuteAsync(FilterLogVO filterLog)
+        protected override Task ExecuteInternalAsync(FilterLogVO filterLog)
         {
-            return _transactionLogRepository.UpsertAsync(filterLog.Log);
+            return _transactionLogRepository.UpsertAsync(filterLog);
         }
     }
 }

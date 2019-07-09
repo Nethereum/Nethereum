@@ -6,7 +6,7 @@ namespace Nethereum.BlockchainProcessing.Storage.Repositories
 {
     public interface ITransactionLogRepository
     {
-        Task UpsertAsync(FilterLog log);
+        Task UpsertAsync(FilterLogVO log);
         Task<ITransactionLogView> FindByTransactionHashAndLogIndexAsync(string hash, long idx);
     }
 }

@@ -4,47 +4,48 @@ using System.Threading.Tasks;
 
 namespace Nethereum.BlockchainProcessing.Processor
 {
-    public class Processor<T>: IProcessor<T>
+    public class Processor<T>: ProcessorBaseHandler<T>, IProcessor<T>
     {
-        public Func<T, Task<bool>> Criteria { get; protected set; }
-        protected List<Func<T,Task>> ProcessorHandlers { get; set; } = new List<Func<T, Task>>();
-        public virtual void SetMatchCriteria(Func<T, bool> criteria)
+        public Processor()
         {
-            Func<T, Task<bool>> asyncCriteria = async (t) => criteria(t);
 
-            SetMatchCriteria(asyncCriteria);
+        }
+        public Processor(Func<T, Task<bool>> criteria):base(criteria)
+        {
+            
         }
 
-        public virtual void SetMatchCriteria(Func<T, Task<bool>> criteria)
+        public Processor(Func<T, bool> criteria) : base(criteria)
         {
-            Criteria = criteria;
+            
         }
+        protected List<IProcessorHandler<T>> ProcessorHandlers { get; set; } = new List<IProcessorHandler<T>>();
 
         public virtual void AddProcessorHandler(Func<T,Task> action)
         {
-            ProcessorHandlers.Add(action);
+            ProcessorHandlers.Add(new ProcessorHandler<T>(action));
         }
+        public virtual void AddProcessorHandler(Func<T, Task> action, Func<T, bool> criteria)
+        {
+            ProcessorHandlers.Add(new ProcessorHandler<T>(action, criteria));
+        }
+
+        public virtual void AddProcessorHandler(Func<T, Task> action, Func<T, Task<bool>> criteria)
+        {
+            ProcessorHandlers.Add(new ProcessorHandler<T>(action, criteria));
+        }
+
         public virtual void AddProcessorHandler(IProcessorHandler<T> processorHandler)
         {
-            ProcessorHandlers.Add(processorHandler.ExecuteAsync);
+            ProcessorHandlers.Add(processorHandler);
         }
 
-        public virtual async Task<bool> IsMatchAsync(T value)
+        protected override async Task ExecuteInternalAsync(T value)
         {
-            if (Criteria == null) return true;
-            return await Criteria(value).ConfigureAwait(false);
-        }
-
-        public virtual async Task ExecuteAsync(T value)
-        {
-            if (await IsMatchAsync(value))
+            foreach (var x in ProcessorHandlers)
             {
-                foreach (var x in ProcessorHandlers)
-                {
-                    await x(value).ConfigureAwait(false);
-                }
+                await x.ExecuteAsync(value).ConfigureAwait(false);
             }
         }
-
     }
 }

@@ -5,7 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
 {
-    public class BlockStepStorageHandler : IProcessorHandler<Block>
+    public class BlockStepStorageHandler : ProcessorBaseHandler<Block>
     {
         private readonly IBlockRepository _blockRepository;
 
@@ -13,8 +13,7 @@ namespace Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers
         {
             _blockRepository = blockRepository;
         }
-
-        public Task ExecuteAsync(Block block)
+        protected override Task ExecuteInternalAsync(Block block)
         {
             return _blockRepository.UpsertBlockAsync(block);
         }
