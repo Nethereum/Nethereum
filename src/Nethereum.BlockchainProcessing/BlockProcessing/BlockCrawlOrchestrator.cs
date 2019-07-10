@@ -6,6 +6,7 @@ using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
 using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.Contracts.Services;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts;
 
 namespace Nethereum.BlockchainProcessing.BlockProcessing
 {
@@ -19,6 +20,8 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         protected TransactionReceiptCrawlerStep TransactionWithReceiptCrawlerStep { get; }
         protected ContractCreatedCrawlerStep ContractCreatedCrawlerStep { get; }
 
+        protected FilterLogCrawlerStep FilterLogCrawlerStep { get; }
+
         public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
         {
             
@@ -28,6 +31,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             TransactionWithBlockCrawlerStep = new TransactionCrawlerStep(ethApi);
             TransactionWithReceiptCrawlerStep = new TransactionReceiptCrawlerStep(ethApi);
             ContractCreatedCrawlerStep = new ContractCreatedCrawlerStep(ethApi);
+            FilterLogCrawlerStep = new FilterLogCrawlerStep(ethApi);
         }
 
         public virtual async Task CrawlBlock(BigInteger blockNumber)
@@ -61,6 +65,26 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             {
                 await ContractCreatedCrawlerStep.ExecuteStepAsync(currentStepCompleted.StepData, completedStep.ExecutedStepsCollection);
             }
+
+            await CrawlFilterLogs(currentStepCompleted);
+        }
+
+
+        protected virtual async Task CrawlFilterLogs(CrawlerStepCompleted<TransactionReceiptVO> completedStep)
+        {
+            if (completedStep != null)
+            {
+                foreach (var log in completedStep.StepData.TransactionReceipt.Logs.ConvertToFilterLog())
+                {
+                    await CrawlFilterLog(completedStep, log);
+                }
+            }
+        }
+
+        protected virtual async Task CrawlFilterLog(CrawlerStepCompleted<TransactionReceiptVO> completedStep, FilterLog filterLog)
+        {
+            var currentStepCompleted = await FilterLogCrawlerStep.ExecuteStepAsync(
+                new FilterLogVO(completedStep.StepData.Transaction, completedStep.StepData.TransactionReceipt, filterLog), completedStep.ExecutedStepsCollection);
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber)

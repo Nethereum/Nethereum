@@ -18,7 +18,4 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
             return new TransactionReceiptVO(transactionVO.Block, transactionVO.Transaction, receipt, receipt.HasErrors()?? false);
         }
     }
-
-
-
 }
