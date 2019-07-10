@@ -32,6 +32,7 @@ namespace Nethereum.Quorum
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             transactionInput.From = Account.Address;
+            if(transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(0);
             transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + DefaultGasIncrement);
             return base.SendTransactionAsync(transactionInput);
         }

@@ -12,22 +12,22 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
     public class BlockCrawlOrchestrator: IBlockchainProcessingOrchestrator
     {
-        protected IEthApiContractService Web3 { get; set; }
+        protected IEthApiContractService EthApi { get; set; }
         public IEnumerable<BlockchainProcessorExecutionSteps> ExecutionStepsCollection { get; }
         protected BlockCrawlerStep BlockCrawlerStep { get; }
         protected TransactionCrawlerStep TransactionWithBlockCrawlerStep { get; }
         protected TransactionReceiptCrawlerStep TransactionWithReceiptCrawlerStep { get; }
         protected ContractCreatedCrawlerStep ContractCreatedCrawlerStep { get; }
 
-        public BlockCrawlOrchestrator(IEthApiContractService web3, IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
+        public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
         {
             
             this.ExecutionStepsCollection = executionStepsCollection;
-            Web3 = web3;
-            BlockCrawlerStep = new BlockCrawlerStep(web3);
-            TransactionWithBlockCrawlerStep = new TransactionCrawlerStep(web3);
-            TransactionWithReceiptCrawlerStep = new TransactionReceiptCrawlerStep(web3);
-            ContractCreatedCrawlerStep = new ContractCreatedCrawlerStep(web3);
+            EthApi = ethApi;
+            BlockCrawlerStep = new BlockCrawlerStep(ethApi);
+            TransactionWithBlockCrawlerStep = new TransactionCrawlerStep(ethApi);
+            TransactionWithReceiptCrawlerStep = new TransactionReceiptCrawlerStep(ethApi);
+            ContractCreatedCrawlerStep = new ContractCreatedCrawlerStep(ethApi);
         }
 
         public virtual async Task CrawlBlock(BigInteger blockNumber)

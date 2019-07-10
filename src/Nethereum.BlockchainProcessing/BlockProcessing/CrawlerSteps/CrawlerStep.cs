@@ -23,11 +23,11 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
             var processStepValue = await GetStepDataAsync(parentStep);
             if (processStepValue == null) return null;
             var stepsToProcesss =
-                await executionStepsCollection.FilterMatchingStepAsync(parentStep).ConfigureAwait(false);
+                await executionStepsCollection.FilterMatchingStepAsync(processStepValue).ConfigureAwait(false);
 
             if (stepsToProcesss.Any())
             {
-                await stepsToProcesss.ExecuteCurrentStepAsync(parentStep);
+                await stepsToProcesss.ExecuteCurrentStepAsync(processStepValue);
             }
             return new CrawlerStepCompleted<TProcessStep>(stepsToProcesss, processStepValue);
 
