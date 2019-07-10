@@ -14,7 +14,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
     public class BlockCrawlOrchestrator: IBlockchainProcessingOrchestrator
     {
         protected IEthApiContractService EthApi { get; set; }
-        public IEnumerable<BlockchainProcessorExecutionSteps> ExecutionStepsCollection { get; }
+        public IEnumerable<BlockProcessingSteps> ProcessingStepsCollection { get; }
         protected BlockCrawlerStep BlockCrawlerStep { get; }
         protected TransactionCrawlerStep TransactionWithBlockCrawlerStep { get; }
         protected TransactionReceiptCrawlerStep TransactionWithReceiptCrawlerStep { get; }
@@ -22,10 +22,10 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         protected FilterLogCrawlerStep FilterLogCrawlerStep { get; }
 
-        public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
+        public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockProcessingSteps> processingStepsCollection)
         {
             
-            this.ExecutionStepsCollection = executionStepsCollection;
+            this.ProcessingStepsCollection = processingStepsCollection;
             EthApi = ethApi;
             BlockCrawlerStep = new BlockCrawlerStep(ethApi);
             TransactionWithBlockCrawlerStep = new TransactionCrawlerStep(ethApi);
@@ -36,7 +36,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         public virtual async Task CrawlBlock(BigInteger blockNumber)
         {
-            var blockCrawlerStepCompleted = await BlockCrawlerStep.ExecuteStepAsync(blockNumber, ExecutionStepsCollection);
+            var blockCrawlerStepCompleted = await BlockCrawlerStep.ExecuteStepAsync(blockNumber, ProcessingStepsCollection);
             await CrawlTransactions(blockCrawlerStepCompleted);
 
         }

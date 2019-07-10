@@ -18,7 +18,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
 
         public abstract Task<TProcessStep> GetStepDataAsync(TParentStep parentStep);
 
-        public virtual async Task<CrawlerStepCompleted<TProcessStep>> ExecuteStepAsync(TParentStep parentStep, IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
+        public virtual async Task<CrawlerStepCompleted<TProcessStep>> ExecuteStepAsync(TParentStep parentStep, IEnumerable<BlockProcessingSteps> executionStepsCollection)
         {
             var processStepValue = await GetStepDataAsync(parentStep);
             if (processStepValue == null) return null;

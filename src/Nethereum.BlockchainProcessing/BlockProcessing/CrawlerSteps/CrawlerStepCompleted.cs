@@ -4,13 +4,13 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
 {
     public class CrawlerStepCompleted<T>
     {
-        public CrawlerStepCompleted(IEnumerable<BlockchainProcessorExecutionSteps> executedStepsCollection, T stepData)
+        public CrawlerStepCompleted(IEnumerable<BlockProcessingSteps> executedStepsCollection, T stepData)
         {
             ExecutedStepsCollection = executedStepsCollection;
             StepData = stepData;
         }
 
-        public IEnumerable<BlockchainProcessorExecutionSteps> ExecutedStepsCollection { get; private set; }
+        public IEnumerable<BlockProcessingSteps> ExecutedStepsCollection { get; private set; }
         public T StepData { get; private set; }
 
     }

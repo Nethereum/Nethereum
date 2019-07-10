@@ -4,9 +4,9 @@ using Nethereum.BlockchainProcessing.Storage.StorageStepsHandlers;
 
 namespace Nethereum.BlockchainProcessing.Storage
 {
-    public class StorageBlockchainProcessorExecutionSteps: BlockchainProcessorExecutionSteps
+    public class StorageBlockProcessingSteps: BlockProcessingSteps
     {
-        public StorageBlockchainProcessorExecutionSteps(IBlockchainStoreRepositoryFactory repositoryFactory)
+        public StorageBlockProcessingSteps(IBlockchainStoreRepositoryFactory repositoryFactory)
         {
             AddBlockStepStorageHandler(repositoryFactory);
             AddContractCreationStepStorageHandler(repositoryFactory);
@@ -17,25 +17,25 @@ namespace Nethereum.BlockchainProcessing.Storage
         protected virtual void AddBlockStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
         {
             var handler = new BlockStepStorageHandler(repositoryFactory.CreateBlockRepository());
-            this.BlockStepProcessor.AddProcessorHandler(handler);
+            this.BlockStep.AddProcessorHandler(handler);
         }
 
         protected virtual void AddContractCreationStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
         {
             var handler = new ContractCreationStorageStepHandler(repositoryFactory.CreateContractRepository());
-            this.ContractCreationStepProcessor.AddProcessorHandler(handler);
+            this.ContractCreationStep.AddProcessorHandler(handler);
         }
 
         protected virtual void AddTransactionReceiptStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
         {
             var handler = new TransactionReceiptStepStorageHandler(repositoryFactory.CreateTransactionRepository(), repositoryFactory.CreateAddressTransactionRepository());
-            this.TransactionReceiptStepProcessor.AddProcessorHandler(handler);
+            this.TransactionReceiptStep.AddProcessorHandler(handler);
         }
 
         protected virtual void AddFilterLogStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
         {
             var handler = new FilterLogStepStorageHandler(repositoryFactory.CreateTransactionLogRepository());
-            this.FilterLogStepProcesor.AddProcessorHandler(handler);
+            this.FilterLogStep.AddProcessorHandler(handler);
         }
     }
 }

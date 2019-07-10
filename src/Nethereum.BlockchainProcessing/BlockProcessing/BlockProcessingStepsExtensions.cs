@@ -5,9 +5,9 @@ using Nethereum.BlockchainProcessing.Processor;
 
 namespace Nethereum.BlockchainProcessing.BlockProcessing
 {
-    public static class BlockchainProcessorExecutionStepsExtensions
+    public static class BlockProcessingStepsExtensions
     {
-        public static async Task<bool> HasAnyStepMatchAsync<T>(this IEnumerable<BlockchainProcessorExecutionSteps> list,
+        public static async Task<bool> HasAnyStepMatchAsync<T>(this IEnumerable<BlockProcessingSteps> list,
             T value)
         {
             foreach (var item in list)
@@ -31,15 +31,15 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         }
 
         public static IEnumerable<IProcessor<T>> GetAllSteps<T>(
-            this IEnumerable<BlockchainProcessorExecutionSteps> list)
+            this IEnumerable<BlockProcessingSteps> list)
         {
             return list.Select(x => x.GetStep<T>());
         }
 
-        public static async Task<IEnumerable<BlockchainProcessorExecutionSteps>> FilterMatchingStepAsync<T>(
-            this IEnumerable<BlockchainProcessorExecutionSteps> list, T value)
+        public static async Task<IEnumerable<BlockProcessingSteps>> FilterMatchingStepAsync<T>(
+            this IEnumerable<BlockProcessingSteps> list, T value)
         {
-            var listResult = new List<BlockchainProcessorExecutionSteps>();
+            var listResult = new List<BlockProcessingSteps>();
             foreach (var item in list)
             {
                 if (await item.GetStep<T>().IsMatchAsync(value))
@@ -50,7 +50,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         }
 
         public static async Task ExecuteCurrentStepAsync<T>(
-            this IEnumerable<BlockchainProcessorExecutionSteps> list, T value)
+            this IEnumerable<BlockProcessingSteps> list, T value)
         {
             var steps = list.GetAllSteps<T>();
             foreach (var step in steps)
@@ -58,10 +58,6 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
                 await step.ExecuteAsync(value);
             }
         }
-    
-
-
-}
-
-
+        
+    }
 }

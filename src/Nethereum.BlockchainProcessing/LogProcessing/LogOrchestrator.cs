@@ -6,50 +6,54 @@ using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
 using Nethereum.BlockchainProcessing.Orchestrator;
+using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.Contracts.Services;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.LogProcessing
 {
-    //public class LogOrchestrator : IBlockchainProcessingOrchestrator
-    //{
-    //    protected IEthApiContractService EthApi { get; set; }
+    public class LogOrchestrator : IBlockchainProcessingOrchestrator
+    {
+        private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
+        private NewFilterInput _filterInput;
+        protected IEthApiContractService EthApi { get; set; }
 
-    //    public BlockCrawlOrchestrator(IEthApiContractService ethApi,
-    //        IEnumerable<BlockchainProcessorExecutionSteps> executionStepsCollection)
-    //    {
+        public LogOrchestrator(IEthApiContractService ethApi,
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null)
+        {
+            EthApi = ethApi;
+            _logProcessors = logProcessors;
+            _filterInput = filterInput ?? new NewFilterInput();
+        }
 
-    //    }
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber)
+        {
+            var progress = new OrchestrationProgress();
+            try
+            {
+                _filterInput.FromBlock = new BlockParameter(fromNumber.ToHexBigInteger());
+                _filterInput.ToBlock = new BlockParameter(toNumber.ToHexBigInteger());
+                //TODO: add retry strategy on too many records.
+                var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput);
 
-    //    public Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber)
-    //    {
-    //        var logs = await _web3.Eth.Filters.GetLogs.SendRequestAsync(new NewFilterInput
-    //        {
-    //            FromBlock = new BlockParameter(fromNumber),
-    //            ToBlock = new BlockParameter(toNumber)
-    //        });
+                if (logs == null) return progress;
+                //TODO: Add paralell execution strategy
+                foreach (var logProcessor in _logProcessors)
+                {
+                    foreach (var log in logs)
+                    {
+                      await logProcessor.ExecuteAsync(log);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progress.Exception = ex;
+            }
 
-    //        if (logs == null) return;
+            return progress;
 
-    //        var processingCollection = new List<LogsMatchedForProcessing>();
-
-    //        foreach (var logProcessor in _logProcessors)
-    //        {
-    //            processingCollection.Add(new LogsMatchedForProcessing(logProcessor));
-    //        }
-
-    //        foreach (var log in logs)
-    //        {
-    //            foreach (var matchedForProcessing in processingCollection)
-    //            {
-    //                matchedForProcessing.AddIfMatched(log);
-    //            }
-    //        }
-
-    //        foreach (var matchedForProcessing in processingCollection)
-    //        {
-    //            await matchedForProcessing.ProcessLogsAsync();
-    //        }
-    //    }
-    //}
+        }
+    }
 }
