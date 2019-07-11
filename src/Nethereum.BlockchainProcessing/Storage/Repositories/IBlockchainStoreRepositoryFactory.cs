@@ -1,4 +1,6 @@
-﻿namespace Nethereum.BlockchainProcessing.Storage.Repositories
+﻿using Nethereum.BlockchainProcessing.ProgressRepositories;
+
+namespace Nethereum.BlockchainProcessing.Storage.Repositories
 {
     public interface IBlockchainStoreRepositoryFactory
     {
