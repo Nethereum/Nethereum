@@ -5,7 +5,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 {
     public class BlockProcessingSteps
     {
-        public IProcessor<Block> BlockStep = new Processor<Block>();
+        public IProcessor<BlockWithTransactions> BlockStep = new Processor<BlockWithTransactions>();
         public IProcessor<TransactionVO> TransactionStep = new Processor<TransactionVO>();
         public IProcessor<TransactionReceiptVO> TransactionReceiptStep = new Processor<TransactionReceiptVO>();
         public IProcessor<FilterLogVO> FilterLogStep = new Processor<FilterLogVO>();
@@ -13,7 +13,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         public virtual IProcessor<T>  GetStep<T>()
         {
             var type = typeof(T);
-            if (type == typeof(Block))
+            if (type == typeof(BlockWithTransactions))
             {
                 return (IProcessor<T>)BlockStep;
             }

@@ -25,5 +25,50 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
             to.Input = @from.Input ?? string.Empty;
             to.Nonce = (long)@from.Nonce.Value;
         }
+
+        public static Transaction MapToStorageEntityForUpsert(this TransactionReceiptVO transactionReceiptVO)
+        {
+            return transactionReceiptVO.MapToStorageEntityForUpsert<Transaction>();
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TransactionReceiptVO transactionReceiptVO) where TEntity: Transaction, new()
+        {
+            var tx = new TEntity();
+
+            tx.Map(transactionReceiptVO.Transaction);
+            tx.Map(transactionReceiptVO.TransactionReceipt);
+
+            tx.Failed = transactionReceiptVO.TransactionReceipt.HasErrors() ?? false;
+            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.ToLong();
+            tx.Error = transactionReceiptVO.Error ?? string.Empty;
+            tx.HasVmStack = transactionReceiptVO.HasVmStack;
+
+            tx.UpdateRowDates();
+
+            return tx;
+        }
+
+        public static Transaction MapToStorageEntityForUpsert(this TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract)
+        {
+            return transactionReceiptVO.MapToStorageEntityForUpsert<Transaction>(code, failedCreatingContract);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract) where TEntity : Transaction, new()
+        {
+            var tx = new TEntity();
+
+            tx.Map(transactionReceiptVO.Transaction);
+            tx.Map(transactionReceiptVO.TransactionReceipt);
+
+            tx.NewContractAddress = transactionReceiptVO.TransactionReceipt.ContractAddress;
+            tx.Failed = failedCreatingContract;
+            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.ToLong();
+            tx.Error = string.Empty;
+            tx.HasVmStack = transactionReceiptVO.HasVmStack;
+
+            tx.UpdateRowDates();
+
+            return tx;
+        }
     }
 }

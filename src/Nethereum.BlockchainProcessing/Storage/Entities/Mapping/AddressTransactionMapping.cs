@@ -8,5 +8,19 @@
             to.Hash = @from.TransactionHash;
             to.Address = address;
         }
+
+        public static AddressTransaction MapToStorageEntityForUpsert(this Nethereum.RPC.Eth.DTOs.TransactionReceiptVO @from, string address)
+        {
+            return from.MapToStorageEntityForUpsert<AddressTransaction>(address);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this Nethereum.RPC.Eth.DTOs.TransactionReceiptVO @from, string address)
+            where TEntity : AddressTransaction, new()
+        {
+            var to = new TEntity();
+            to.Map(from.Transaction, address);
+            to.UpdateRowDates();
+            return to;
+        }
     }
 }

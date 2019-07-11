@@ -6,6 +6,26 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
 {
     public static class TransactionLogMapping
     {
+        public static TransactionLog MapToStorageEntityForUpsert(this FilterLogVO filterLog)
+        {
+            var logEntity = new TransactionLog();
+
+            logEntity.Map(filterLog.Log);
+            logEntity.UpdateRowDates();
+
+            return logEntity;
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this FilterLogVO filterLog) where TEntity : TransactionLog, new()
+        {
+            var logEntity = new TEntity();
+
+            logEntity.Map(filterLog.Log);
+            logEntity.UpdateRowDates();
+
+            return logEntity;
+        }
+
         public static void Map(this TransactionLog transactionLog, FilterLog log)
         {
             transactionLog.TransactionHash = log.TransactionHash;
