@@ -41,6 +41,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 //TODO: Add paralell execution strategy
                 foreach (var logProcessor in _logProcessors)
                 {
+                    //TODO: put them in order using log ordering
                     foreach (var log in logs)
                     {
                       await logProcessor.ExecuteAsync(log);

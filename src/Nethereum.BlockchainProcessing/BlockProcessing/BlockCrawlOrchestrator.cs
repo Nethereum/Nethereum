@@ -13,14 +13,14 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
     public class BlockCrawlOrchestrator: IBlockchainProcessingOrchestrator
     {
-        protected IEthApiContractService EthApi { get; set; }
+        public IEthApiContractService EthApi { get; set; }
         public IEnumerable<BlockProcessingSteps> ProcessingStepsCollection { get; }
-        protected BlockCrawlerStep BlockCrawlerStep { get; }
-        protected TransactionCrawlerStep TransactionWithBlockCrawlerStep { get; }
-        protected TransactionReceiptCrawlerStep TransactionWithReceiptCrawlerStep { get; }
-        protected ContractCreatedCrawlerStep ContractCreatedCrawlerStep { get; }
+        public BlockCrawlerStep BlockCrawlerStep { get; }
+        public TransactionCrawlerStep TransactionWithBlockCrawlerStep { get; }
+        public TransactionReceiptCrawlerStep TransactionWithReceiptCrawlerStep { get; }
+        public ContractCreatedCrawlerStep ContractCreatedCrawlerStep { get; }
 
-        protected FilterLogCrawlerStep FilterLogCrawlerStep { get; }
+        public FilterLogCrawlerStep FilterLogCrawlerStep { get; }
 
         public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockProcessingSteps> processingStepsCollection)
         {
