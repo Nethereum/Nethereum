@@ -33,8 +33,11 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
 
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this TransactionReceiptVO transactionReceiptVO) where TEntity: Transaction, new()
         {
-            var tx = new TEntity();
+            return new TEntity().MapToStorageEntityForUpsert(transactionReceiptVO);
+        }
 
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity tx, TransactionReceiptVO transactionReceiptVO) where TEntity : Transaction, new()
+        {
             tx.Map(transactionReceiptVO.Transaction);
             tx.Map(transactionReceiptVO.TransactionReceipt);
 
@@ -55,8 +58,11 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
 
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract) where TEntity : Transaction, new()
         {
-            var tx = new TEntity();
+            return new TEntity().MapToStorageEntityForUpsert(transactionReceiptVO, code, failedCreatingContract);
+        }
 
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity tx, TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract) where TEntity : Transaction, new()
+        {
             tx.Map(transactionReceiptVO.Transaction);
             tx.Map(transactionReceiptVO.TransactionReceipt);
 

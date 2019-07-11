@@ -8,15 +8,16 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
     {
         public static Block MapToStorageEntityForUpsert(this Nethereum.RPC.Eth.DTOs.Block source)
         {
-            var block = new Block();
-            block.Map(source);
-            block.UpdateRowDates();
-            return block;
+            return new Block().MapToStorageEntityForUpsert(source);
         }
 
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this Nethereum.RPC.Eth.DTOs.Block source) where TEntity : Block, new()
         {
-            var block = new TEntity();
+            return new TEntity().MapToStorageEntityForUpsert(source);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity block, Nethereum.RPC.Eth.DTOs.Block source) where TEntity : Block
+        {
             block.Map(source);
             block.UpdateRowDates();
             return block;

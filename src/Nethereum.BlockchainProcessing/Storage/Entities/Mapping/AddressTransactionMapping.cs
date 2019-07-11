@@ -17,7 +17,12 @@
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this Nethereum.RPC.Eth.DTOs.TransactionReceiptVO @from, string address)
             where TEntity : AddressTransaction, new()
         {
-            var to = new TEntity();
+            return MapToStorageEntityForUpsert<TEntity>(new TEntity(), from, address);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity to, Nethereum.RPC.Eth.DTOs.TransactionReceiptVO @from, string address)
+            where TEntity : AddressTransaction
+        {
             to.Map(from.Transaction, address);
             to.UpdateRowDates();
             return to;

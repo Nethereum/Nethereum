@@ -11,7 +11,12 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
 
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this BigInteger source) where TEntity : BlockProgress, new()
         {
-            var block = new TEntity { LastBlockProcessed = source.ToString() };
+            return new TEntity().MapToStorageEntityForUpsert(source);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity block, BigInteger source) where TEntity : BlockProgress, new()
+        {
+            block.LastBlockProcessed = source.ToString();
             block.UpdateRowDates();
             return block;
         }

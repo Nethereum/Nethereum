@@ -13,6 +13,11 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this ContractCreationVO contractCreationVO) where TEntity : Contract, new()
         {
             var contract = new TEntity();
+            return contract.MapToStorageEntityForUpsert(contractCreationVO);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity contract, ContractCreationVO contractCreationVO) where TEntity : Contract
+        {
             contract.Map(contractCreationVO.ContractAddress, contractCreationVO.Code, contractCreationVO.Transaction);
             contract.UpdateRowDates();
             return contract;

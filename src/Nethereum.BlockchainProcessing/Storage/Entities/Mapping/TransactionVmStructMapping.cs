@@ -6,7 +6,11 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
     {
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this JObject stackTrace, string transactionHash, string address) where TEntity: TransactionVmStack, new()
         {
-            var entity = new TEntity();
+            return new TEntity().MapToStorageEntityForUpsert(stackTrace, transactionHash, address);
+        }
+
+        public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity entity, JObject stackTrace, string transactionHash, string address) where TEntity : TransactionVmStack, new()
+        {
             entity.Map(transactionHash, address, stackTrace);
             entity.UpdateRowDates();
             return entity;
