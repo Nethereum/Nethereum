@@ -8,7 +8,7 @@
         string IndexVal1 { get;  }
         string IndexVal2 { get;  }
         string IndexVal3 { get;  }
-        long LogIndex { get;  }
+        string LogIndex { get;  }
         string TransactionHash { get;  }
     }
 }

@@ -3,17 +3,17 @@
     public interface IBlockView
     {
         string BlockNumber { get;  }
-        long Difficulty { get;  }
+        string Difficulty { get;  }
         string ExtraData { get;  }
-        long GasLimit { get; }
-        long GasUsed { get; }
+        string GasLimit { get; }
+        string GasUsed { get; }
         string Hash { get; }
         string Miner { get; }
-        long Nonce { get; }
+        string Nonce { get; }
         string ParentHash { get; }
-        long Size { get; }
-        long TotalDifficulty { get; }
+        string Size { get; }
+        string TotalDifficulty { get; }
         long TransactionCount { get; }
-        long TimeStamp { get; }
+        string TimeStamp { get; }
     }
 }

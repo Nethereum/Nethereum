@@ -6,9 +6,9 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
     {
         public static void Map(this TransactionBase to, TransactionReceipt @from)
         {
-            to.TransactionIndex = (long)@from.TransactionIndex.Value;
-            to.GasUsed = (long)@from.GasUsed.Value;
-            to.CumulativeGasUsed = (long)@from.CumulativeGasUsed.Value;
+            to.TransactionIndex = @from.TransactionIndex.Value.ToString();
+            to.GasUsed = @from.GasUsed.Value.ToString();
+            to.CumulativeGasUsed = @from.CumulativeGasUsed.Value.ToString();
             to.HasLog = @from.Logs.Count > 0;
         }
 
@@ -20,10 +20,10 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
             to.Value = @from.Value.Value.ToString();
             to.AddressTo = @from.To ?? string.Empty;
             to.BlockNumber = @from.BlockNumber.Value.ToString();
-            to.Gas = (long)@from.Gas.Value;
-            to.GasPrice = (long)@from.GasPrice.Value;
+            to.Gas = @from.Gas.Value.ToString();
+            to.GasPrice = @from.GasPrice.Value.ToString();
             to.Input = @from.Input ?? string.Empty;
-            to.Nonce = (long)@from.Nonce.Value;
+            to.Nonce = @from.Nonce.Value.ToString();
         }
 
         public static Transaction MapToStorageEntityForUpsert(this TransactionReceiptVO transactionReceiptVO)
@@ -42,7 +42,7 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
             tx.Map(transactionReceiptVO.TransactionReceipt);
 
             tx.Failed = transactionReceiptVO.TransactionReceipt.HasErrors() ?? false;
-            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.ToLong();
+            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.Value.ToString();
             tx.Error = transactionReceiptVO.Error ?? string.Empty;
             tx.HasVmStack = transactionReceiptVO.HasVmStack;
 
@@ -68,7 +68,7 @@ namespace Nethereum.BlockchainProcessing.Storage.Entities.Mapping
 
             tx.NewContractAddress = transactionReceiptVO.TransactionReceipt.ContractAddress;
             tx.Failed = failedCreatingContract;
-            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.ToLong();
+            tx.TimeStamp = transactionReceiptVO.BlockTimestamp.Value.ToString();
             tx.Error = string.Empty;
             tx.HasVmStack = transactionReceiptVO.HasVmStack;
 
