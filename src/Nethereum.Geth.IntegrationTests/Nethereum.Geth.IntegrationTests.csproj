@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="VMStackParsing\TestData\StackTrace_Calls.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_Creations.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_DelegateCalls.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_SelfDestruct.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="test-settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -21,6 +28,10 @@
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_Calls.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_Creations.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_DelegateCalls.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_SelfDestruct.json" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
   </ItemGroup>
