@@ -7,6 +7,7 @@ using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
 using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.Processor;
+using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -38,10 +39,12 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput);
 
                 if (logs == null) return progress;
+
+                logs = logs.Sort();
+
                 //TODO: Add paralell execution strategy
                 foreach (var logProcessor in _logProcessors)
                 {
-                    //TODO: put them in order using log ordering
                     foreach (var log in logs)
                     {
                       await logProcessor.ExecuteAsync(log);
