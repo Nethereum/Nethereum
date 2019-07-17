@@ -60,14 +60,19 @@ namespace Nethereum.Contracts
             return GetEncodingService<TContractMessage>(contractMessage).GetCallDataHash(contractMessage);
         }
 
-        public static bool IsForFunction<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
+        public static TFunctionMessage Decode<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
+        {
+            return transactionWithReceipt.Transaction?.DecodeTransactionToFunctionMessage<TFunctionMessage>();
+        }
+
+        public static bool IsTransactionForFunctionMessage<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
         {
             return transactionWithReceipt.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
         }
 
-        public static TFunctionMessage Decode<TFunctionMessage>(this TransactionReceiptVO transactionWithReceipt) where TFunctionMessage : FunctionMessage, new()
+        public static bool IsTransactionForFunctionMessage<TFunctionMessage>(this TransactionVO transactionVO) where TFunctionMessage : FunctionMessage, new()
         {
-            return transactionWithReceipt.Transaction?.DecodeTransactionToFunctionMessage<TFunctionMessage>();
+            return transactionVO.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
         }
     }
 }

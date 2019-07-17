@@ -1,4 +1,7 @@
 ﻿
+using Nethereum.Hex.HexTypes;
+using System.Numerics;
+
 namespace Nethereum.RPC.Eth.DTOs
 {
     public class FilterLogVO
@@ -16,7 +19,7 @@ namespace Nethereum.RPC.Eth.DTOs
         public Transaction Transaction { get; private set; }
         public TransactionReceipt Receipt { get; private set; }
         public FilterLog Log { get; private set; }
-        public long LogIndex => Log == null ? -1 : (long)Log.LogIndex.Value;
+        public HexBigInteger LogIndex => Log?.LogIndex;
         public string Address => Log?.Address;
 
         //public string EventSignature => Log?.EventSignature();

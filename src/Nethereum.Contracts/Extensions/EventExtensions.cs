@@ -30,6 +30,12 @@ namespace Nethereum.Contracts
             return eventABI.IsLogForEvent(log);
         }
 
+        public static bool IsLogForEvent<TEventDTO>(this FilterLogVO filterLogVO)
+        {
+            if(filterLogVO.Log == null) return false;
+            return filterLogVO.Log.IsLogForEvent<TEventDTO>();
+        }
+
         public static bool IsFilterInputForEvent<TEventDTO>(string contractAddress,
             NewFilterInput filterInput)
         {

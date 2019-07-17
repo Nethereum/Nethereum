@@ -41,6 +41,11 @@ namespace Nethereum.RPC.Eth.DTOs
                    transactionReceipt.ContractAddress.IsNotAnEmptyAddress();
         }
 
+        public static bool CreatedContract(this TransactionReceiptVO transactionReceiptVO, string contractAddress)
+        {
+            return transactionReceiptVO.TransactionReceipt.IsContractAddressEqual(contractAddress);
+        }
+
         public static IEnumerable<FilterLogVO> GetTransactionLogs(this Transaction transaction, TransactionReceipt receipt)
         {
             for (var i = 0; i < receipt.Logs?.Count; i++)
