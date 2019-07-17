@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
@@ -28,7 +29,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             _filterInput = filterInput ?? new NewFilterInput();
         }
 
-        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber)
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken)
         {
             var progress = new OrchestrationProgress();
             try
@@ -40,15 +41,21 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                 if (logs == null) return progress;
 
-                logs = logs.Sort();
+                if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
+                { 
+                    
+                    logs = logs.Sort();
 
-                //TODO: Add paralell execution strategy
-                foreach (var logProcessor in _logProcessors)
-                {
-                    foreach (var log in logs)
+                    //TODO: Add paralell execution strategy
+                    foreach (var logProcessor in _logProcessors)
                     {
-                      await logProcessor.ExecuteAsync(log);
+                        foreach (var log in logs)
+                        {
+                            await logProcessor.ExecuteAsync(log);
+                        }
                     }
+
+                    progress.BlockNumberProcessTo = toNumber;
                 }
             }
             catch (Exception ex)

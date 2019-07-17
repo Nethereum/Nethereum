@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
 using Nethereum.BlockchainProcessing.Orchestrator;
@@ -87,13 +88,13 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
                 new FilterLogVO(completedStep.StepData.Transaction, completedStep.StepData.TransactionReceipt, filterLog), completedStep.ExecutedStepsCollection);
         }
 
-        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber)
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken)
         {
             var progress = new OrchestrationProgress();
             try
             {
                 var currentBlockNumber = fromNumber;
-                while (currentBlockNumber <= toNumber)
+                while (currentBlockNumber <= toNumber && !cancellationToken.IsCancellationRequested)
                 {
 
                     await CrawlBlock(currentBlockNumber);
