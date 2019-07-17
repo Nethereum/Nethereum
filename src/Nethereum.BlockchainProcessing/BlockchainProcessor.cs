@@ -27,14 +27,14 @@ namespace Nethereum.BlockchainProcessing
         //All scenarios have a repository (default in memory)
 
         //Scenario I have a repository and want to start from a block number if provided (if already processed I will use the latest one) and continue until cancellation
-        public async Task ExecuteAsync(CancellationToken cancellationToken, BigInteger? startAtBlockNumberIfNotProcessed = null)
+        public async Task ExecuteAsync(CancellationToken cancellationToken = default(CancellationToken), BigInteger? startAtBlockNumberIfNotProcessed = null)
         {
             var fromBlockNumber = await GetStartBlockNumber(startAtBlockNumberIfNotProcessed);
-
+            
             while (!cancellationToken.IsCancellationRequested)
             {
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken);
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess);
+                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = GetNextMinimumBlockNumber(progress.BlockNumberProcessTo);
@@ -64,7 +64,7 @@ namespace Nethereum.BlockchainProcessing
         }
 
         //Scenario I have a repository and want to start from a block number if provided (if already processed I will use the latest one) and continue until the last block number provided
-        public async Task ExecuteAsync(BigInteger toBlockNumber, CancellationToken cancellationToken, BigInteger? startAtBlockNumberIfNotProcessed = null)
+        public async Task ExecuteAsync(BigInteger toBlockNumber, CancellationToken cancellationToken = default(CancellationToken), BigInteger? startAtBlockNumberIfNotProcessed = null)
         {
             var fromBlockNumber = await GetStartBlockNumber(startAtBlockNumberIfNotProcessed);
 
@@ -73,7 +73,7 @@ namespace Nethereum.BlockchainProcessing
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken);
                 if (blockToProcess > toBlockNumber) blockToProcess = toBlockNumber;
 
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess);
+                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = GetNextMinimumBlockNumber(progress.BlockNumberProcessTo);

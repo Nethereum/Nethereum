@@ -29,7 +29,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             _filterInput = filterInput ?? new NewFilterInput();
         }
 
-        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken)
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken = default(CancellationToken))
         {
             var progress = new OrchestrationProgress();
             try
