@@ -19,52 +19,81 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
     {
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
+        private BlockRangeRequestStrategy _blockRangeRequestStrategy;
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
-            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null)
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
+            _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest);
         }
 
-        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var progress = new OrchestrationProgress();
-            try
+            var retryRequestNumber = 0;
+            var maxRetries = 4;
+            var nextBlockNumberFrom = fromNumber;
+
+            while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
             {
-                _filterInput.FromBlock = new BlockParameter(fromNumber.ToHexBigInteger());
-                _filterInput.ToBlock = new BlockParameter(toNumber.ToHexBigInteger());
-                //TODO: add retry strategy on too many records.
-                var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput);
+                try
+                {
 
-                if (logs == null) return progress;
-
-                if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
-                { 
-                    
-                    logs = logs.Sort();
-
-                    //TODO: Add paralell execution strategy
-                    foreach (var logProcessor in _logProcessors)
+                    if (progress.BlockNumberProcessTo != null)
                     {
-                        foreach (var log in logs)
-                        {
-                            await logProcessor.ExecuteAsync(log);
-                        }
+                        nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
                     }
 
-                    progress.BlockNumberProcessTo = toNumber;
+                    var nextBlockNumberTo =
+                        _blockRangeRequestStrategy.GeBlockNumberToRequestTo(nextBlockNumberFrom - 1, toNumber,
+                            retryRequestNumber);
+
+                    _filterInput.FromBlock = new BlockParameter(nextBlockNumberFrom.ToHexBigInteger());
+                    _filterInput.ToBlock = new BlockParameter(nextBlockNumberTo.ToHexBigInteger());
+
+                    var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput);
+
+                    if (logs == null) return progress;
+
+                    if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
+                    {
+
+                        logs = logs.Sort();
+
+                        //TODO: Add paralell execution strategy
+                        foreach (var logProcessor in _logProcessors)
+                        {
+                            foreach (var log in logs)
+                            {
+                                await logProcessor.ExecuteAsync(log);
+                            }
+                        }
+
+                        progress.BlockNumberProcessTo = nextBlockNumberTo;
+                    }
+                
+                }
+                catch (Exception ex)
+                {
+                    //TODO ADD better logic for retries 
+                    if (retryRequestNumber > maxRetries)
+                    {
+                        progress.Exception = ex;
+                    }
+                    else
+                    {
+                        retryRequestNumber = retryRequestNumber + 1;
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                progress.Exception = ex;
-            }
-
             return progress;
 
         }
+
     }
 }
