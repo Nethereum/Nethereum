@@ -42,6 +42,7 @@ namespace Nethereum.BlockchainProcessing
                 }
                 else
                 {
+                    await UpdateLastBlockProcessed(progress.BlockNumberProcessTo);
                     throw progress.Exception;
                 }
             }
@@ -81,6 +82,7 @@ namespace Nethereum.BlockchainProcessing
                 }
                 else
                 {
+                    await UpdateLastBlockProcessed(progress.BlockNumberProcessTo);
                     throw progress.Exception;
                 }
             }
