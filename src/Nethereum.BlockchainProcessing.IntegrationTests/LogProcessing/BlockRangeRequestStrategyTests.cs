@@ -1,7 +1,4 @@
 ﻿using Nethereum.BlockchainProcessing.LogProcessing;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
@@ -37,6 +34,8 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             var strategy = new BlockRangeRequestStrategy(10);
             //minimum
             Assert.Equal(2, strategy.GeBlockNumberToRequestTo(1, 100, 4));
+            //silly retry count - just to prove we get the next block number back
+            Assert.Equal(2, strategy.GeBlockNumberToRequestTo(1, 100, 50));
         }
     }
 }

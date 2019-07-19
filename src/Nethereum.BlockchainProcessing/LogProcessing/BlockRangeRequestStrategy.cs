@@ -21,8 +21,16 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
             for (var attemptNumber = 1 ; attemptNumber < currentAttemptCount; attemptNumber ++)
             {
-                //reduce by half for each retry
-                retryWeightedMax = retryWeightedMax /2;
+                var newMax = retryWeightedMax / 2;
+                if(newMax > 0)
+                {
+                    retryWeightedMax = newMax;
+                }
+                else
+                {
+                    retryWeightedMax = 1;
+                    break;
+                }
             }
 
             if(numberOfBlocksRequested <= retryWeightedMax) 
