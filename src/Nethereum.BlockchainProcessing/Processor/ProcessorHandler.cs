@@ -7,6 +7,8 @@ namespace Nethereum.BlockchainProcessing.Processor
     {
         private Func<T, Task> _action;
 
+        protected ProcessorHandler(){}
+
         public ProcessorHandler(Func<T, Task> action)
         {
             _action = action;
