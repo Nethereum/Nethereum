@@ -22,6 +22,8 @@ namespace Nethereum.BlockchainProcessing.Processor
 
         public void SetMatchCriteria(Func<T, bool> criteria)
         {
+            if(criteria == null) return;
+
             Func<T, Task<bool>> asyncCriteria = async (t) => criteria(t);
 
             SetMatchCriteria(asyncCriteria);

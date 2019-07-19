@@ -1,22 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Nethereum.BlockchainProcessing.BlockProcessing;
-using Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps;
-using Nethereum.BlockchainProcessing.Orchestrator;
+﻿using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nethereum.BlockchainProcessing.LogProcessing
 {
     public class LogOrchestrator : IBlockchainProcessingOrchestrator
     {
+        public const int MaxGetLogsRetries = 10;
+
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
         private BlockRangeRequestStrategy _blockRangeRequestStrategy;
@@ -35,64 +34,87 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             CancellationToken cancellationToken = default(CancellationToken))
         {
             var progress = new OrchestrationProgress();
-            var retryRequestNumber = 0;
-            var maxRetries = 4;
             var nextBlockNumberFrom = fromNumber;
 
             while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
             {
-                try
+                if (progress.BlockNumberProcessTo != null)
+                {
+                    nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
+                }
+
+                var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
+
+                if (getLogsResponse == null) return progress;
+
+                var logs = getLogsResponse.Value.Logs;
+
+                if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
                 {
 
-                    if (progress.BlockNumberProcessTo != null)
+                    logs = logs.Sort();
+
+                    //TODO: Add parallel execution strategy
+                    foreach (var logProcessor in _logProcessors)
                     {
-                        nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
-                    }
-
-                    var nextBlockNumberTo =
-                        _blockRangeRequestStrategy.GeBlockNumberToRequestTo(nextBlockNumberFrom - 1, toNumber,
-                            retryRequestNumber);
-
-                    _filterInput.FromBlock = new BlockParameter(nextBlockNumberFrom.ToHexBigInteger());
-                    _filterInput.ToBlock = new BlockParameter(nextBlockNumberTo.ToHexBigInteger());
-
-                    var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput);
-
-                    if (logs == null) return progress;
-
-                    if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
-                    {
-
-                        logs = logs.Sort();
-
-                        //TODO: Add parallel execution strategy
-                        foreach (var logProcessor in _logProcessors)
+                        foreach (var log in logs)
                         {
-                            foreach (var log in logs)
-                            {
-                                await logProcessor.ExecuteAsync(log);
-                            }
+                            await logProcessor.ExecuteAsync(log);
                         }
+                    }
 
-                        progress.BlockNumberProcessTo = nextBlockNumberTo;
-                    }
+                    progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                }
                 
-                }
-                catch (Exception ex)
-                {
-                    //TODO ADD better logic for retries 
-                    if (retryRequestNumber > maxRetries)
-                    {
-                        progress.Exception = ex;
-                    }
-                    else
-                    {
-                        retryRequestNumber = retryRequestNumber + 1;
-                    }
-                }
+
             }
             return progress;
 
+        }
+
+        struct GetLogsResponse
+        {
+            public GetLogsResponse(BigInteger from, BigInteger to, FilterLog[] logs)
+            {
+                Logs = logs;
+                From = from;
+                To = to;
+            }
+
+            public FilterLog[] Logs { get;set;}
+            public BigInteger From { get; set; }
+            public BigInteger To { get; set;}
+        }
+
+        private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0)
+        {
+            try 
+            {
+                retryRequestNumber++;
+
+                var adjustedToBlock =
+                    _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
+                        retryRequestNumber);
+
+                _filterInput.SetBlockRange(fromBlock, adjustedToBlock);
+
+                var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
+
+                return new GetLogsResponse(fromBlock, adjustedToBlock, logs);
+
+            }
+            catch(Exception ex)
+            {
+                if (retryRequestNumber > MaxGetLogsRetries)
+                {
+                    progress.Exception = ex;
+                    return null;
+                }
+                else
+                {
+                    return await GetLogsAsync(progress, fromBlock, toBlock, retryRequestNumber).ConfigureAwait(false);
+                }
+            }
         }
 
     }
