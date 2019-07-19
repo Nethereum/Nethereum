@@ -93,7 +93,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 retryRequestNumber++;
 
                 var adjustedToBlock =
-                    _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock - 1, toBlock,
+                    _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
                         retryRequestNumber);
 
                 _filterInput.SetBlockRange(fromBlock, adjustedToBlock);

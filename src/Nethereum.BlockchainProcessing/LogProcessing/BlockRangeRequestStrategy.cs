@@ -11,22 +11,26 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             _defaultNumberOfBlocksPerRequest = defaultNumberOfBlocksPerRequest;
         }
 
-        public BigInteger GeBlockNumberToRequestTo(BigInteger lastBlockNumber, BigInteger maxBlockNumberToRequestTo, int retryRequestNumber = 1)
+        public BigInteger GeBlockNumberToRequestTo(BigInteger fromBlockNumber, BigInteger maxBlockNumberToRequestTo, int currentAttemptCount = 1)
         {
-            var numberOfBlocks = maxBlockNumberToRequestTo - lastBlockNumber + 1;
+            if(currentAttemptCount < 1) currentAttemptCount = 1;
 
-            int maxNumberOfBlocks = _defaultNumberOfBlocksPerRequest;
+            var numberOfBlocksRequested = maxBlockNumberToRequestTo - fromBlockNumber + 1;
 
-            for (var retryNumber = 1 ; retryNumber < retryRequestNumber; retryNumber ++)
+            int retryWeightedMax = _defaultNumberOfBlocksPerRequest;
+
+            for (var attemptNumber = 1 ; attemptNumber < currentAttemptCount; attemptNumber ++)
             {
                 //reduce by half for each retry
-                maxNumberOfBlocks = maxNumberOfBlocks /2;
+                retryWeightedMax = retryWeightedMax /2;
             }
 
-            if(numberOfBlocks <= maxNumberOfBlocks) 
+            if(numberOfBlocksRequested <= retryWeightedMax) 
                 return maxBlockNumberToRequestTo;
 
-            return numberOfBlocks == 1 ? lastBlockNumber + 1 : lastBlockNumber + (maxNumberOfBlocks - 1);
+            if(retryWeightedMax == 1) return fromBlockNumber + 1;
+
+            return fromBlockNumber + (retryWeightedMax -1);
            
         }
     }
