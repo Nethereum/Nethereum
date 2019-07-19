@@ -65,7 +65,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                         logs = logs.Sort();
 
-                        //TODO: Add paralell execution strategy
+                        //TODO: Add parallel execution strategy
                         foreach (var logProcessor in _logProcessors)
                         {
                             foreach (var log in logs)
