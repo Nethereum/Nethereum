@@ -1,6 +1,8 @@
-﻿using Nethereum.RPC.Eth.DTOs;
+﻿using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace Nethereum.Contracts
 {
@@ -30,10 +32,22 @@ namespace Nethereum.Contracts
             return masterList;
         }
 
-        public static void SetBlockRange(this NewFilterInput filter, BlockRange range)
+        public static BigInteger? NumberOfBlocksInBlockParameters(this NewFilterInput filter)
         {
-            filter.FromBlock = new BlockParameter(range.From);
-            filter.ToBlock = new BlockParameter(range.To);
+            if(filter.FromBlock?.BlockNumber == null || filter.ToBlock?.BlockNumber == null) return null;
+            return (filter.ToBlock.BlockNumber.Value - filter.FromBlock.BlockNumber.Value) + 1;
+        }
+
+        public static void SetBlockRange(this NewFilterInput filter, BlockRange range) => 
+            SetBlockRange(filter, range.From, range.To);
+
+        public static void SetBlockRange(this NewFilterInput filter, BigInteger from, BigInteger to) => 
+            SetBlockRange(filter, from.ToHexBigInteger(), to.ToHexBigInteger());
+
+        public static void SetBlockRange(this NewFilterInput filter, HexBigInteger from, HexBigInteger to)
+        {
+            filter.FromBlock = new BlockParameter(from);
+            filter.ToBlock = new BlockParameter(to);
         }
 
         public static bool IsTopicFiltered(this NewFilterInput filter, uint topicNumber)

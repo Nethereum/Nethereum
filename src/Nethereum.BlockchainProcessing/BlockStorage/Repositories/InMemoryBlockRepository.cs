@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
+using Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping;
 using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
