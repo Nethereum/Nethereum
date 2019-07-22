@@ -42,6 +42,8 @@ namespace Nethereum.ABI.UnitTests
             HexBigInteger val2 = null;
 
             Assert.Equal(val1, val2);
+            var areEqual = (val1 == val2);
+            Assert.True(areEqual);
         }
 
         [Fact]

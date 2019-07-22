@@ -18,15 +18,5 @@ namespace Nethereum.Hex.HexTypes
         {
             return new HexUTF8String {HexValue = hex};
         }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is HexUTF8String val)
-            {
-                return val.Value == Value;
-            }
-
-            return false;
-        }
     }
 }

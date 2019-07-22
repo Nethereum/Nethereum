@@ -103,23 +103,13 @@ namespace Nethereum.Hex.HexTypes
 
         public static bool operator == (HexRPCType<T> lhs, HexRPCType<T> rhs)
         {
-            // Check for null on left side.
-            if (lhs is null)
-            {
-                if (rhs is null)
-                {
-                    // null == null = true.
-                    return true;
-                }
-
-                // Only the left side is null.
-                return false;
-            }
-            // Equals handles case of null on right side.
-            return lhs.Equals(rhs);
+            var lhso = (object) lhs;
+            var rhso = (object) rhs;
+            if (lhso != null) return lhso.Equals(rhso);
+            if (rhso != null) return false; //lhs is null / rhs is not
+            return true; // both null;
         }
-
-        public static bool operator != (HexRPCType<T> lhs, HexRPCType<T> rhs)
+        public static bool operator !=(HexRPCType<T> lhs, HexRPCType<T> rhs)
         {
             return !(lhs == rhs);
         }
@@ -129,9 +119,20 @@ namespace Nethereum.Hex.HexTypes
             return Value.GetHashCode();
         }
 
+        public override bool Equals(object obj)
+        {
+            if (obj is HexRPCType<T> val)
+            {
+                // Value is lazy loaded and always e
+                return val.Value.Equals(Value);
+            }
+
+            return false;
+        }
+
         public bool Equals(HexRPCType<T> other)
         {
-            return other == null  ? false : Value.Equals(other.Value);
+            return this.Equals((object)other);
         }
     }
 }

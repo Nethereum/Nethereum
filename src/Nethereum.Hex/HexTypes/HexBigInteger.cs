@@ -16,17 +16,7 @@ namespace Nethereum.Hex.HexTypes
         {
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj is HexBigInteger val)
-            {
-                return val.Value == Value;
-            }
-
-            return false;
-        }
-
-
+        
         public override string ToString()
         {
             return Value.ToString();
