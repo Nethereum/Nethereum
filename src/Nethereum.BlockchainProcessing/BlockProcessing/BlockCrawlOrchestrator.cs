@@ -8,6 +8,7 @@ using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.Contracts.Services;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts;
+using System.Linq;
 
 namespace Nethereum.BlockchainProcessing.BlockProcessing
 {
@@ -55,7 +56,11 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         {
             var currentStepCompleted = await TransactionWithBlockCrawlerStep.ExecuteStepAsync(
                 new TransactionVO(txn, completedStep.StepData), completedStep.ExecutedStepsCollection);
-            await CrawlTransactionReceipt(currentStepCompleted);
+
+            if(currentStepCompleted.ExecutedStepsCollection.Any())
+            { 
+                await CrawlTransactionReceipt(currentStepCompleted);
+            }
         }
 
         protected virtual async Task CrawlTransactionReceipt(CrawlerStepCompleted<TransactionVO> completedStep)

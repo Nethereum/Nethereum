@@ -19,6 +19,20 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public LastConfirmedBlockNumberService(
             IEthBlockNumber ethBlockNumber,
+            uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
+            ILog log = null,
+            IWaitStrategy waitStrategy = null
+            ) : this(
+                ethBlockNumber, 
+                waitStrategy ?? new WaitStrategy(), 
+                minimumBlockConfirmations, 
+                log)
+        {
+
+        }
+
+        public LastConfirmedBlockNumberService(
+            IEthBlockNumber ethBlockNumber,
             IWaitStrategy waitStrategy,
             uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null
@@ -30,14 +44,7 @@ namespace Nethereum.RPC.Eth.Blocks
             _log = log;
         }
 
-        public LastConfirmedBlockNumberService(
-            IEthBlockNumber ethBlockNumber,
-            uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
-            ILog log = null
-            ) : this(ethBlockNumber, new WaitStrategy(), minimumBlockConfirmations, log)
-        {
 
-        }
 
         public async Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber, CancellationToken cancellationToken)
         {
@@ -66,7 +73,7 @@ namespace Nethereum.RPC.Eth.Blocks
         private bool IsBlockNumberConfirmed(BigInteger? blockNumber, BigInteger currentBlockNumberOnChain, uint minimumBlockConfirmations)
         {
             if (blockNumber == null ||
-                currentBlockNumberOnChain - minimumBlockConfirmations > blockNumber)
+                (currentBlockNumberOnChain - minimumBlockConfirmations) >= blockNumber)
             {
                 return true;
             }
