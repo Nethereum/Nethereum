@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors;
 using Newtonsoft.Json;
@@ -24,6 +25,7 @@ namespace Nethereum.Hex.HexTypes
 
             return false;
         }
+
 
         public override string ToString()
         {
