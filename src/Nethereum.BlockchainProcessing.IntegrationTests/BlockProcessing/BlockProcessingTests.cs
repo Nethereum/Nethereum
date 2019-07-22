@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Nethereum.BlockchainProcessing.BlockProcessing;
 
 namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
 {
@@ -68,6 +69,30 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         }
 
         [Fact]
+        public async Task Should_Retrieve_Receipt_When_There_Is_No_Tx_Criteria()
+        {
+            Initialise(lastBlockProcessed: null);
+            mockRpcResponses.MockGetBlockNumber(100);
+
+            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
+
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: 1, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => processedBlockchainData.Blocks.Add(block));
+            processingSteps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.TransactionsWithReceipt.Add(tx));
+
+            var blockToCrawl = new BigInteger(1);
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await blockchainProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+
+            Assert.Single(processedBlockchainData.Blocks);
+            Assert.Equal(2, processedBlockchainData.TransactionsWithReceipt.Count);
+            Assert.Equal(2, mockRpcResponses.ReceiptRequestCount);
+        }
+
+        [Fact]
         public async Task When_Step_Criteria_Is_Set_Should_Invoke_Handler_If_Matched()
         {
             Initialise(lastBlockProcessed: null);
@@ -127,10 +152,10 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         [Fact]
         public async Task When_There_Is_Prior_Progress_A_Minimum_Starting_Block_Number_Can_Prevent_Processing_Earlier_Blocks()
         {
-            Initialise(lastBlockProcessed: null); //no prior progress
+            Initialise(lastBlockProcessed: 5); 
             mockRpcResponses.MockGetBlockNumber(100);
 
-            var minBlock = new BigInteger(2);
+            var minBlock = new BigInteger(10);
 
             var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
 
