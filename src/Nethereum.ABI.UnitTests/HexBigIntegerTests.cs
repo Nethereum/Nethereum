@@ -1,7 +1,7 @@
 ﻿using Nethereum.Hex.HexTypes;
 using Xunit;
 
-namespace Nethereum.Util.UnitTests
+namespace Nethereum.ABI.UnitTests
 {
     public class HexBigIntegerTests
     {

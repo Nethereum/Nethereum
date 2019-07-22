@@ -104,9 +104,9 @@ namespace Nethereum.Hex.HexTypes
         public static bool operator == (HexRPCType<T> lhs, HexRPCType<T> rhs)
         {
             // Check for null on left side.
-            if (Object.ReferenceEquals(lhs, null))
+            if (lhs is null)
             {
-                if (Object.ReferenceEquals(rhs, null))
+                if (rhs is null)
                 {
                     // null == null = true.
                     return true;
