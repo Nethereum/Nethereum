@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http.Headers;
 using Common.Logging;
+using Nethereum.BlockchainProcessing.Services;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
@@ -59,6 +60,7 @@ namespace Nethereum.Web3
         public IShhApiService Shh { get; private set; }
         public INetApiService Net { get; private set; }
         public IPersonalApiService Personal { get; private set; }
+        public IBlockchainProcessingService Processing { get; private set; }
 
         private void IntialiseDefaultGasAndGasPrice()
         {
@@ -94,6 +96,7 @@ namespace Nethereum.Web3
         protected virtual void InitialiseInnerServices()
         {
             Eth = new EthApiContractService(Client);
+            Processing = new BlockchainProcessingService(Eth);
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);

@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors;
 using Newtonsoft.Json;
@@ -15,16 +16,7 @@ namespace Nethereum.Hex.HexTypes
         {
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj is HexBigInteger val)
-            {
-                return val.Value == Value;
-            }
-
-            return false;
-        }
-
+        
         public override string ToString()
         {
             return Value.ToString();
