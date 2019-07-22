@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 namespace Nethereum.Hex.HexTypes
 {
     [JsonConverter(typeof(HexRPCTypeJsonConverter<HexBigInteger, BigInteger>))]
-    public class HexBigInteger : HexRPCType<BigInteger>, IEquatable<HexBigInteger>
+    public class HexBigInteger : HexRPCType<BigInteger>
     {
         public HexBigInteger(string hex) : base(new HexBigIntegerBigEndianConvertor(), hex)
         {
@@ -20,39 +20,12 @@ namespace Nethereum.Hex.HexTypes
         {
             if (obj is HexBigInteger val)
             {
-                return Equals(val);
+                return val.Value == Value;
             }
 
             return false;
         }
 
-        public bool Equals(HexBigInteger other)
-        {
-            return other == null ? false : other.Value == Value;
-        }
-
-        public static bool operator == (HexBigInteger lhs, HexBigInteger rhs)
-        {
-            // Check for null on left side.
-            if (Object.ReferenceEquals(lhs, null))
-            {
-                if (Object.ReferenceEquals(rhs, null))
-                {
-                    // null == null = true.
-                    return true;
-                }
-
-                // Only the left side is null.
-                return false;
-            }
-            // Equals handles case of null on right side.
-            return lhs.Equals(rhs);
-        }
-
-        public static bool operator != (HexBigInteger lhs, HexBigInteger rhs)
-        {
-            return !(lhs == rhs);
-        }
 
         public override string ToString()
         {

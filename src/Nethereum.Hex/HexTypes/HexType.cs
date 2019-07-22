@@ -4,7 +4,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Hex.HexTypes
 {
-    public class HexRPCType<T>
+    public class HexRPCType<T>: IEquatable<HexRPCType<T>>
     {
         protected IHexConvertor<T> convertor;
 
@@ -101,9 +101,37 @@ namespace Nethereum.Hex.HexTypes
             return hexRpcType.Value;
         }
 
+        public static bool operator == (HexRPCType<T> lhs, HexRPCType<T> rhs)
+        {
+            // Check for null on left side.
+            if (Object.ReferenceEquals(lhs, null))
+            {
+                if (Object.ReferenceEquals(rhs, null))
+                {
+                    // null == null = true.
+                    return true;
+                }
+
+                // Only the left side is null.
+                return false;
+            }
+            // Equals handles case of null on right side.
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator != (HexRPCType<T> lhs, HexRPCType<T> rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         public override int GetHashCode()
         {
             return Value.GetHashCode();
+        }
+
+        public bool Equals(HexRPCType<T> other)
+        {
+            return other == null  ? false : Value.Equals(other.Value);
         }
     }
 }
