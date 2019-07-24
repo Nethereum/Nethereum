@@ -363,6 +363,16 @@ namespace Nethereum.Contracts
             return false;
         }
 
+        public static JArray ConvertToJArray(this FilterLog[] filterLogs)
+        {
+            return JArray.FromObject(filterLogs);
+        }
+
+        public static JObject ConvertToJObject(this FilterLog filterLog)
+        {
+            return JObject.FromObject(filterLog);
+        }
+
         public static FilterLog ConvertToFilterLog(this JObject log)
         {
             return JsonConvert.DeserializeObject<FilterLog>(log.ToString());

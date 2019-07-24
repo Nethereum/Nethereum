@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Nethereum.BlockchainProcessing.Services;
 using Nethereum.Contracts.Services;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.Blocks;
@@ -39,6 +40,9 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
 
         public Mock<IEthGetCode> GetCodeMock = new Mock<IEthGetCode>();
 
+        public Mock<IBlockchainProcessingService> BlockchainProcessingServiceMock = new Mock<IBlockchainProcessingService>();
+
+        public BlockchainBlockProcessingService BlockProcessingService;
         public IEthApiContractService Eth => EthApiContractServiceMock.Object;
 
         public Web3Mock()
@@ -46,6 +50,11 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
             Mock.Setup(m => m.Eth).Returns(EthApiContractServiceMock.Object);
             EthApiContractServiceMock.Setup(e => e.Blocks).Returns(BlocksServiceMock.Object);
             EthApiContractServiceMock.Setup(e => e.GetCode).Returns(GetCodeMock.Object);
+            Mock.Setup(m => m.Processing).Returns(BlockchainProcessingServiceMock.Object);
+
+            BlockProcessingService = new BlockchainBlockProcessingService(EthApiContractServiceMock.Object);
+            BlockchainProcessingServiceMock.Setup(s => s.Blocks).Returns(BlockProcessingService);
+
             BlocksServiceMock.Setup(b => b.GetBlockNumber).Returns(BlockNumberMock.Object);
             BlocksServiceMock.Setup(b => b.GetBlockWithTransactionsByNumber).Returns(GetBlockWithTransactionsByNumberMock.Object);
             EthApiContractServiceMock.Setup(e => e.Filters).Returns(FilterServiceMock.Object);
