@@ -22,12 +22,12 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
-            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100)
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
-            _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest);
+            _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight);
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber,
@@ -90,7 +90,6 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         {
             try 
             {
-                retryRequestNumber++;
 
                 var adjustedToBlock =
                     _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
@@ -105,14 +104,14 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             }
             catch(Exception ex)
             {
-                if (retryRequestNumber > MaxGetLogsRetries)
+                if (retryRequestNumber >= MaxGetLogsRetries)
                 {
                     progress.Exception = ex;
                     return null;
                 }
                 else
                 {
-                    return await GetLogsAsync(progress, fromBlock, toBlock, retryRequestNumber).ConfigureAwait(false);
+                    return await GetLogsAsync(progress, fromBlock, toBlock, retryRequestNumber + 1).ConfigureAwait(false);
                 }
             }
         }

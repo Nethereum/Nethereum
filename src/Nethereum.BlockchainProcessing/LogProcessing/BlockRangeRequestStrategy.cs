@@ -5,41 +5,53 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
     public class BlockRangeRequestStrategy
     {
         private readonly int _defaultNumberOfBlocksPerRequest;
+        private readonly int _retryWeight;
 
-        public BlockRangeRequestStrategy(int defaultNumberOfBlocksPerRequest = 100)
+        public BlockRangeRequestStrategy(int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
             _defaultNumberOfBlocksPerRequest = defaultNumberOfBlocksPerRequest;
+            _retryWeight = retryWeight;
         }
 
-        public BigInteger GeBlockNumberToRequestTo(BigInteger fromBlockNumber, BigInteger maxBlockNumberToRequestTo, int currentAttemptCount = 1)
+        public BigInteger GeBlockNumberToRequestTo(BigInteger fromBlockNumber, BigInteger maxBlockNumberToRequestTo, int retryRequestNumber = 0)
         {
-            if(currentAttemptCount < 1) currentAttemptCount = 1;
+            var totalNumberOfBlocksRequested = (int)(fromBlockNumber - maxBlockNumberToRequestTo + 1);
 
-            var numberOfBlocksRequested = maxBlockNumberToRequestTo - fromBlockNumber + 1;
+            var maxNumberOfBlocks = _defaultNumberOfBlocksPerRequest;
 
-            int retryWeightedMax = _defaultNumberOfBlocksPerRequest;
-
-            for (var attemptNumber = 1 ; attemptNumber < currentAttemptCount; attemptNumber ++)
+            //we start with the smaller batch instead if we only need less than the total batch
+            if (totalNumberOfBlocksRequested < maxNumberOfBlocks)
             {
-                var newMax = retryWeightedMax / 2;
-                if(newMax > 0)
+                maxNumberOfBlocks = totalNumberOfBlocksRequested;
+            }
+
+            if (retryRequestNumber > 0)
+            {
+                maxNumberOfBlocks = GetMaxNumberOfBlocksToRequestToRetryAttempt(retryRequestNumber, maxNumberOfBlocks);
+            }
+
+            if ((fromBlockNumber + maxNumberOfBlocks) > maxBlockNumberToRequestTo)
+            {
+                return maxBlockNumberToRequestTo;
+            }
+            else
+            {
+                if (maxNumberOfBlocks > 1)
                 {
-                    retryWeightedMax = newMax;
+                    // including fromBlockNumber in the count of max number of blocks
+                    return fromBlockNumber + maxNumberOfBlocks - 1;
                 }
                 else
                 {
-                    retryWeightedMax = 1;
-                    break;
+                    //if maxNumber of blocks is 1 or less, we can only retrieve the current block (from block number)
+                    return fromBlockNumber;
                 }
             }
+        }
 
-            if(numberOfBlocksRequested <= retryWeightedMax) 
-                return maxBlockNumberToRequestTo;
-
-            if(retryWeightedMax == 1) return fromBlockNumber + 1;
-
-            return fromBlockNumber + (retryWeightedMax -1);
-           
+        protected virtual int GetMaxNumberOfBlocksToRequestToRetryAttempt(int retryRequestNumber, int numberOfBlocksPerRequest)
+        {
+            return numberOfBlocksPerRequest / (retryRequestNumber + 1) + (_retryWeight * retryRequestNumber);
         }
     }
 }
