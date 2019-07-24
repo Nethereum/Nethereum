@@ -24,7 +24,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             _web3Mock = new Web3Mock();
             _logsHandled = new List<FilterLog>();
             _logHandler = new ProcessorHandler<FilterLog>((filterLog) => { _logsHandled.Add(filterLog); return Task.CompletedTask; });
-            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new []{ _logHandler });
+            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new []{ _logHandler }, null, 100, 1);
         }
 
         [Fact]
@@ -56,24 +56,25 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
         }
 
         [Fact]
-        public async Task When_Max_Log_Retrieval_Attempt_Is_Exceeded_Returns_Null()
+        public async Task When_Max_Log_Retrieval_RetryAttempt_Is_Exceeded_Returns_Null()
         {
             var fromBlock = new BigInteger(10);
             var toBlock = new BigInteger(20);
 
             var retrievalException = new Exception("fake retrieval exception");
 
-            var attempts = 0;
+            var calls = 0;
             //set up to throw every time
             _web3Mock.GetLogsMock
                 .Setup(s => s.SendRequestAsync(It.IsAny<NewFilterInput>(), null))
-                .Callback(() => attempts++)
+                .Callback(() => calls++)
                 .ThrowsAsync(retrievalException);
 
             var progress = await _logOrchestrator.ProcessAsync(fromBlock, toBlock);
 
+            var retries = calls - 1; // minus first call
             Assert.Equal(retrievalException, progress.Exception);
-            Assert.Equal(attempts, LogOrchestrator.MaxGetLogsRetries + 1);
+            Assert.Equal(LogOrchestrator.MaxGetLogsRetries, retries);
             Assert.Empty(_logsHandled);
         }
     }
