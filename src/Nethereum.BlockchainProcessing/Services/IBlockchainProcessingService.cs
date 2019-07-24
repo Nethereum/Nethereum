@@ -3,6 +3,7 @@ using Common.Logging;
 using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.BlockchainProcessing.Services
 {
@@ -17,27 +18,27 @@ namespace Nethereum.BlockchainProcessing.Services
 
         BlockchainProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration,
-            uint minimumBlockConfirmations = default,
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null);
 
 
         BlockchainProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
-            uint minimumBlockConfirmations = default,
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null);
 
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
-            uint minimumBlockConfirmations = default,
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
-            uint minimumBlockConfirmations = default,
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
     }
