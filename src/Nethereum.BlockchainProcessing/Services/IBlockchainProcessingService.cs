@@ -14,47 +14,30 @@ namespace Nethereum.BlockchainProcessing.Services
 
     public interface IBlockchainBlockProcessingService
     {
-        BlockchainProcessor CreateBlockProcessor(
-            Action<BlockProcessingSteps> stepsConfiguration,
-            ILog log = null);
 
         BlockchainProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration,
-            uint minimumBlockConfirmations,
+            uint minimumBlockConfirmations = default,
             ILog log = null);
+
 
         BlockchainProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
+            uint minimumBlockConfirmations = default,
             ILog log = null);
 
-        BlockchainProcessor CreateBlockProcessor(
-            IBlockProgressRepository blockProgressRepository,
-            Action<BlockProcessingSteps> stepsConfiguration,
-            uint minimumBlockConfirmations,
-            ILog log = null);
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
-            Action<BlockProcessingSteps> configureSteps = null,
-            ILog log = null);
-
-        BlockchainProcessor CreateBlockStorageProcessor(
-            IBlockchainStoreRepositoryFactory blockchainStorageFactory,
-            uint minimumBlockConfirmations,
+            uint minimumBlockConfirmations = default,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
-            Action<BlockProcessingSteps> configureSteps = null,
-            ILog log = null);
-
-        BlockchainProcessor CreateBlockStorageProcessor(
-            IBlockchainStoreRepositoryFactory blockchainStorageFactory,
-            IBlockProgressRepository blockProgressRepository,
-            uint minimumBlockConfirmations,
+            uint minimumBlockConfirmations = default,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
     }

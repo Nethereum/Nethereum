@@ -22,28 +22,11 @@ namespace Nethereum.BlockchainProcessing.Services
 
         public BlockchainProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration, 
-            ILog log = null) => CreateBlockProcessor(
-                stepsConfiguration, 
-                LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
-                log);
-
-        public BlockchainProcessor CreateBlockProcessor(
-            Action<BlockProcessingSteps> stepsConfiguration, 
-            uint minimumBlockConfirmations, 
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
             ILog log = null) => CreateBlockProcessor(
                 new InMemoryBlockchainProgressRepository(lastBlockProcessed: null),
                 stepsConfiguration, 
                 minimumBlockConfirmations, 
-                log);
-
-
-        public BlockchainProcessor CreateBlockProcessor(
-            IBlockProgressRepository blockProgressRepository, 
-            Action<BlockProcessingSteps> stepsConfiguration, 
-            ILog log = null) => CreateBlockProcessor(
-                blockProgressRepository, 
-                stepsConfiguration, 
-                LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
                 log);
 
         public BlockchainProcessor CreateBlockProcessor(
@@ -61,19 +44,9 @@ namespace Nethereum.BlockchainProcessing.Services
             return new BlockchainProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
         }
 
-
         public BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory, 
-            Action<BlockProcessingSteps> configureSteps = null, 
-            ILog log = null) => CreateBlockStorageProcessor(
-                blockchainStorageFactory, 
-                LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
-                configureSteps, 
-                log);
-
-        public BlockchainProcessor CreateBlockStorageProcessor(
-            IBlockchainStoreRepositoryFactory blockchainStorageFactory, 
-            uint minimumBlockConfirmations, 
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
             Action<BlockProcessingSteps> configureSteps = null, 
             ILog log = null) => CreateBlockStorageProcessor(
                 blockchainStorageFactory, 
@@ -82,21 +55,11 @@ namespace Nethereum.BlockchainProcessing.Services
                 configureSteps, 
                 log);
 
-        public BlockchainProcessor CreateBlockStorageProcessor(
-            IBlockchainStoreRepositoryFactory blockchainStorageFactory, 
-            IBlockProgressRepository blockProgressRepository, 
-            Action<BlockProcessingSteps> configureSteps = null, 
-            ILog log = null) => CreateBlockStorageProcessor(
-                blockchainStorageFactory, 
-                blockProgressRepository, 
-                LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS, 
-                configureSteps, 
-                log);
 
         public BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
-            uint minimumBlockConfirmations,
+            uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null)
         {
