@@ -19,7 +19,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public LastConfirmedBlockNumberService(
             IEthBlockNumber ethBlockNumber,
-            uint? minimumBlockConfirmations = null,
+            uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null,
             IWaitStrategy waitStrategy = null
             ) : this(
@@ -34,13 +34,13 @@ namespace Nethereum.RPC.Eth.Blocks
         public LastConfirmedBlockNumberService(
             IEthBlockNumber ethBlockNumber,
             IWaitStrategy waitStrategy,
-            uint? minimumBlockConfirmations = null,
+            uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null
             )
         {
             _ethBlockNumber = ethBlockNumber;
             _waitStrategy = waitStrategy;
-            _minimumBlockConfirmations = minimumBlockConfirmations ?? DEFAULT_BLOCK_CONFIRMATIONS;
+            _minimumBlockConfirmations = minimumBlockConfirmations;
             _log = log;
         }
 

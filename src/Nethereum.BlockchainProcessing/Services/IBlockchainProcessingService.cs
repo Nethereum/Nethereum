@@ -15,29 +15,47 @@ namespace Nethereum.BlockchainProcessing.Services
     public interface IBlockchainBlockProcessingService
     {
         BlockchainProcessor CreateBlockProcessor(
-            Action<BlockProcessingSteps> stepsConfiguration = null,
-            uint? minimumBlockConfirmations = null,
-            uint? lastBlockNumberProcessed = null,
+            Action<BlockProcessingSteps> stepsConfiguration,
+            ILog log = null);
+
+        BlockchainProcessor CreateBlockProcessor(
+            Action<BlockProcessingSteps> stepsConfiguration,
+            uint minimumBlockConfirmations,
             ILog log = null);
 
         BlockchainProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
-            Action<BlockProcessingSteps> stepsConfiguration = null,
-            uint? minimumBlockConfirmations = null,
+            Action<BlockProcessingSteps> stepsConfiguration,
+            ILog log = null);
+
+        BlockchainProcessor CreateBlockProcessor(
+            IBlockProgressRepository blockProgressRepository,
+            Action<BlockProcessingSteps> stepsConfiguration,
+            uint minimumBlockConfirmations,
             ILog log = null);
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             Action<BlockProcessingSteps> configureSteps = null,
-            uint? minimumBlockConfirmations = null,
-            uint? lastBlockNumberProcessed = null,
+            ILog log = null);
+
+        BlockchainProcessor CreateBlockStorageProcessor(
+            IBlockchainStoreRepositoryFactory blockchainStorageFactory,
+            uint minimumBlockConfirmations,
+            Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
 
         BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> configureSteps = null,
-            uint? minimumBlockConfirmations = null,
+            ILog log = null);
+
+        BlockchainProcessor CreateBlockStorageProcessor(
+            IBlockchainStoreRepositoryFactory blockchainStorageFactory,
+            IBlockProgressRepository blockProgressRepository,
+            uint minimumBlockConfirmations,
+            Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
     }
 }
