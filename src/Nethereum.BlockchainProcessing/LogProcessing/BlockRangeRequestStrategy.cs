@@ -15,7 +15,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         public BigInteger GeBlockNumberToRequestTo(BigInteger fromBlockNumber, BigInteger maxBlockNumberToRequestTo, int retryRequestNumber = 0)
         {
-            var totalNumberOfBlocksRequested = (int)(fromBlockNumber - maxBlockNumberToRequestTo + 1);
+            var totalNumberOfBlocksRequested = (int)(maxBlockNumberToRequestTo - fromBlockNumber) + 1;
 
             var maxNumberOfBlocks = _defaultNumberOfBlocksPerRequest;
 
