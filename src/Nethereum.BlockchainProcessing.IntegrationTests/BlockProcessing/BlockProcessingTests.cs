@@ -143,7 +143,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(progressRepository, steps =>
             {
                 //capture a block and then cancel
                 steps.BlockStep.AddSynchronousProcessorHandler((block) => {
@@ -151,7 +151,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
                     cancellationTokenSource.Cancel();
                 });
             }
-            , progressRepository);
+            );
 
             await blockProcessor.ExecuteAsync(cancellationTokenSource.Token);
 
@@ -175,7 +175,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
             var cancellationTokenSource = new CancellationTokenSource();
             var processedData = new ProcessedBlockchainData();
 
-            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(progressRepository, steps =>
             {
                 //capture a block and then cancel
                 steps.BlockStep.AddSynchronousProcessorHandler((block) => {
@@ -183,7 +183,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
                     cancellationTokenSource.Cancel();
                 });
             }
-            , progressRepository);
+            );
 
 
             await blockProcessor.ExecuteAsync(cancellationTokenSource.Token, minBlock);
@@ -198,7 +198,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         {
             var blockLastProcessed = new BigInteger(100);
             var nextBlock = blockLastProcessed + 1;
-            const uint MIN_CONFIRMATIONS = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS;
+            const uint MIN_CONFIRMATIONS = 12;
 
             var progressRepository = new InMemoryBlockchainProgressRepository(blockLastProcessed);
 
@@ -213,7 +213,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
             var cancellationTokenSource = new CancellationTokenSource();
             var processedData = new ProcessedBlockchainData();
 
-            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(progressRepository, steps =>
             {
                 //capture a block and then cancel
                 steps.BlockStep.AddSynchronousProcessorHandler((block) => {
@@ -221,7 +221,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
                     cancellationTokenSource.Cancel();
                 });
             }
-            , progressRepository);
+            , MIN_CONFIRMATIONS);
 
 
             await blockProcessor.ExecuteAsync(cancellationTokenSource.Token);
