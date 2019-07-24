@@ -1,9 +1,10 @@
 ﻿using Nethereum.BlockchainProcessing.Processor;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.RPC.Eth.Blocks;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Nethereum.BlockchainProcessing.BlockProcessing;
 
 namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
 {
@@ -14,110 +15,115 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         [Fact]
         public async Task Should_Crawl_Blocks_And_Invoke_Handling_Steps()
         {
-            Initialise(lastBlockProcessed: null);
-            mockRpcResponses.MockGetBlockNumber(100);
-
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
-
-            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: 1, numberOfTransactions: 2, logsPerTransaction: 2);
-
-            //note: there is no criteria set - so we handle everything
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => processedBlockchainData.Blocks.Add(block));
-            processingSteps.TransactionStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.Transactions.Add(tx));
-            processingSteps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.TransactionsWithReceipt.Add(tx));
-            processingSteps.ContractCreationStep.AddSynchronousProcessorHandler((c) => processedBlockchainData.ContractCreations.Add(c));
-            processingSteps.FilterLogStep.AddSynchronousProcessorHandler((filterLog) => processedBlockchainData.FilterLogs.Add(filterLog));
-
             var blockToCrawl = new BigInteger(1);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: blockToCrawl, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
+
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => processedData.Blocks.Add(block));
+                steps.TransactionStep.AddSynchronousProcessorHandler((tx) => processedData.Transactions.Add(tx));
+                steps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedData.TransactionsWithReceipt.Add(tx));
+                steps.ContractCreationStep.AddSynchronousProcessorHandler((c) => processedData.ContractCreations.Add(c));
+                steps.FilterLogStep.AddSynchronousProcessorHandler((filterLog) => processedData.FilterLogs.Add(filterLog));
+            });
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            await blockchainProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+            await blockProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
 
-            Assert.Single(processedBlockchainData.Blocks);
-            Assert.Equal(2, processedBlockchainData.Transactions.Count);
-            Assert.Equal(2, processedBlockchainData.TransactionsWithReceipt.Count);
-            Assert.Equal(4, processedBlockchainData.FilterLogs.Count);
-
-            Assert.Equal(blockToCrawl, await base.progressRepository.GetLastBlockNumberProcessedAsync());
+            Assert.Single(processedData.Blocks);
+            Assert.Equal(2, processedData.Transactions.Count);
+            Assert.Equal(2, processedData.TransactionsWithReceipt.Count);
+            Assert.Equal(4, processedData.FilterLogs.Count);
         }
 
         [Fact]
         public async Task Should_Not_Retrieve_Receipt_When_Tx_Does_Not_Meet_Handler_Criteria()
         {
-            Initialise(lastBlockProcessed: null);
-            mockRpcResponses.MockGetBlockNumber(100);
-
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
-
-            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: 1, numberOfTransactions: 2, logsPerTransaction: 2);
-
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => processedBlockchainData.Blocks.Add(block));
-            processingSteps.TransactionStep.SetMatchCriteria((tx) => false);
-            processingSteps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.TransactionsWithReceipt.Add(tx));
-
             var blockToCrawl = new BigInteger(1);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: blockToCrawl, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
+
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => processedData.Blocks.Add(block));
+                steps.TransactionStep.SetMatchCriteria((tx) => false);
+                steps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedData.TransactionsWithReceipt.Add(tx));
+            });
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            await blockchainProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+            await blockProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
 
-            Assert.Single(processedBlockchainData.Blocks);
-            Assert.Empty(processedBlockchainData.Transactions);
-            Assert.Empty(processedBlockchainData.TransactionsWithReceipt);
+            Assert.Single(processedData.Blocks);
+            Assert.Empty(processedData.Transactions);
+            Assert.Empty(processedData.TransactionsWithReceipt);
             Assert.Equal(0, mockRpcResponses.ReceiptRequestCount);
         }
 
         [Fact]
         public async Task Should_Retrieve_Receipt_When_There_Is_No_Tx_Criteria()
         {
-            Initialise(lastBlockProcessed: null);
-            mockRpcResponses.MockGetBlockNumber(100);
-
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
-
-            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: 1, numberOfTransactions: 2, logsPerTransaction: 2);
-
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => processedBlockchainData.Blocks.Add(block));
-            processingSteps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.TransactionsWithReceipt.Add(tx));
-
             var blockToCrawl = new BigInteger(1);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: blockToCrawl, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
+
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => processedData.Blocks.Add(block));
+                steps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedData.TransactionsWithReceipt.Add(tx));
+            });
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            await blockchainProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+            await blockProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
 
-            Assert.Single(processedBlockchainData.Blocks);
-            Assert.Equal(2, processedBlockchainData.TransactionsWithReceipt.Count);
+            Assert.Single(processedData.Blocks);
+            Assert.Equal(2, processedData.TransactionsWithReceipt.Count);
             Assert.Equal(2, mockRpcResponses.ReceiptRequestCount);
         }
 
         [Fact]
         public async Task When_Step_Criteria_Is_Set_Should_Invoke_Handler_If_Matched()
         {
-            Initialise(lastBlockProcessed: null);
-            mockRpcResponses.MockGetBlockNumber(100);
-
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
-
-            //we-re going to be given two transactions per block
-            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: 1, numberOfTransactions: 2, logsPerTransaction: 2);
-
-            processingSteps.TransactionStep.SetMatchCriteria(tx => true);
-
-            //create some criteria to prevent handling unwanted transactions
-            //this rule will match the first transaction
-            processingSteps.TransactionReceiptStep.SetMatchCriteria(tx => tx.Transaction.TransactionIndex.Value == 0);
-            processingSteps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedBlockchainData.TransactionsWithReceipt.Add(tx));
-
             var blockToCrawl = new BigInteger(1);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: blockToCrawl, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
+
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                steps.TransactionStep.SetMatchCriteria(tx => true);
+
+                //create some criteria to prevent handling unwanted transactions
+                //this rule will match the first transaction
+                steps.TransactionReceiptStep.SetMatchCriteria(tx => tx.Transaction.TransactionIndex.Value == 0);
+                steps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedData.TransactionsWithReceipt.Add(tx));
+
+            });
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            await blockchainProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+            await blockProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
 
             //we should have captured the first tx in the block
-            Assert.Single(processedBlockchainData.TransactionsWithReceipt);
+            Assert.Single(processedData.TransactionsWithReceipt);
         }
 
         [Fact]
@@ -125,55 +131,66 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         {
             //pretend we have already completed block 1
             var lastBlockProcessed = new BigInteger(1);
-            Initialise(lastBlockProcessed: lastBlockProcessed);
-            mockRpcResponses.MockGetBlockNumber(100);
-
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
-
             var nextBlockExpected = lastBlockProcessed + 1;
 
+            var progressRepository = new InMemoryBlockchainProgressRepository(lastBlockProcessed);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
             mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: nextBlockExpected, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            //capture a block and then cancel
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => {
-                processedBlockchainData.Blocks.Add(block);
-                cancellationTokenSource.Cancel();
-            });
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                //capture a block and then cancel
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => {
+                    processedData.Blocks.Add(block);
+                    cancellationTokenSource.Cancel();
+                });
+            }
+            , progressRepository);
 
-            await blockchainProcessor.ExecuteAsync(cancellationTokenSource.Token);
+            await blockProcessor.ExecuteAsync(cancellationTokenSource.Token);
 
-            Assert.Single(processedBlockchainData.Blocks); // one block processed
-            Assert.Equal(nextBlockExpected, processedBlockchainData.Blocks[0].Number.Value); // should have been the next block
-            Assert.Equal(nextBlockExpected, await base.progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
+            Assert.Single(processedData.Blocks); // one block processed
+            Assert.Equal(nextBlockExpected, processedData.Blocks[0].Number.Value); // should have been the next block
+            Assert.Equal(nextBlockExpected, await progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
         }
 
         [Fact]
-        public async Task When_There_Is_Prior_Progress_A_Minimum_Starting_Block_Number_Can_Prevent_Processing_Earlier_Blocks()
+        public async Task When_There_Is_Prior_Progress_A_Minimum_Starting_Block_Number_Will_Prevent_Processing_Earlier_Blocks()
         {
-            Initialise(lastBlockProcessed: 5); 
-            mockRpcResponses.MockGetBlockNumber(100);
-
+            var lastBlockProcessed = new BigInteger(5);
             var minBlock = new BigInteger(10);
 
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
+            var progressRepository = new InMemoryBlockchainProgressRepository(lastBlockProcessed);
 
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
             mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: minBlock, numberOfTransactions: 2, logsPerTransaction: 2);
 
             var cancellationTokenSource = new CancellationTokenSource();
+            var processedData = new ProcessedBlockchainData();
 
-            //capture a block and then cancel
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => {
-                processedBlockchainData.Blocks.Add(block);
-                cancellationTokenSource.Cancel();
-            });
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                //capture a block and then cancel
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => {
+                    processedData.Blocks.Add(block);
+                    cancellationTokenSource.Cancel();
+                });
+            }
+            , progressRepository);
 
-            await blockchainProcessor.ExecuteAsync(cancellationTokenSource.Token, minBlock);
 
-            Assert.Single(processedBlockchainData.Blocks); // one block processed
-            Assert.Equal(minBlock, processedBlockchainData.Blocks[0].Number.Value); // should have been the next block
-            Assert.Equal(minBlock, await base.progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
+            await blockProcessor.ExecuteAsync(cancellationTokenSource.Token, minBlock);
+
+            Assert.Single(processedData.Blocks); // one block processed
+            Assert.Equal(minBlock, processedData.Blocks[0].Number.Value); // should have been the next block
+            Assert.Equal(minBlock, await progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
         }
 
         [Fact]
@@ -181,33 +198,38 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
         {
             var blockLastProcessed = new BigInteger(100);
             var nextBlock = blockLastProcessed + 1;
-            const uint minimumConfirmations = 10;
-            //we have already processed block 100
-            Initialise(lastBlockProcessed: blockLastProcessed, minimumBlockConfirmations: minimumConfirmations);
-            //when first asked - pretend the current block is behind the required confirmations
-            mockRpcResponses.MockGetBlockNumber(blockLastProcessed + minimumConfirmations);
-            //the next time return an incremented block which is under the confirmation limit
-            mockRpcResponses.MockGetBlockNumber(nextBlock + minimumConfirmations);
+            const uint MIN_CONFIRMATIONS = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS;
 
-            var blockchainProcessor = new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockService);
+            var progressRepository = new InMemoryBlockchainProgressRepository(blockLastProcessed);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            //when first asked - pretend the current block is behind the required confirmations
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(blockLastProcessed + MIN_CONFIRMATIONS);
+            //the next time return an incremented block which is under the confirmation limit
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(nextBlock + MIN_CONFIRMATIONS);
 
             mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: nextBlock, numberOfTransactions: 2, logsPerTransaction: 2);
 
             var cancellationTokenSource = new CancellationTokenSource();
+            var processedData = new ProcessedBlockchainData();
 
-            //handle a block and then cancel
-            processingSteps.BlockStep.AddSynchronousProcessorHandler((block) => {
-                processedBlockchainData.Blocks.Add(block);
-                cancellationTokenSource.Cancel();
-            });
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                //capture a block and then cancel
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => {
+                    processedData.Blocks.Add(block);
+                    cancellationTokenSource.Cancel();
+                });
+            }
+            , progressRepository);
 
-            await blockchainProcessor.ExecuteAsync(cancellationTokenSource.Token);
 
-            Assert.Single(processedBlockchainData.Blocks); //should have processed a single block before cancellation
+            await blockProcessor.ExecuteAsync(cancellationTokenSource.Token);
+
+            Assert.Single(processedData.Blocks); //should have processed a single block before cancellation
             Assert.Equal(2, mockRpcResponses.BlockNumberRequestCount); //should have asked for latest block twice
-            Assert.Equal(1, base.WaitForBlockOccurances); // we should have waited once
-            Assert.Equal(nextBlock, processedBlockchainData.Blocks[0].Number.Value); // should have handled the expected block
-            Assert.Equal(nextBlock, await base.progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
+            Assert.Equal(nextBlock, processedData.Blocks[0].Number.Value); // should have handled the expected block
+            Assert.Equal(nextBlock, await progressRepository.GetLastBlockNumberProcessedAsync()); // should have updated progress
         }
     }
 }
