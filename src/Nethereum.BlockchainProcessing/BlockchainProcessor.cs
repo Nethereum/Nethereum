@@ -95,11 +95,6 @@ namespace Nethereum.BlockchainProcessing
             return fromBlockNumber;
         }
 
-        public BigInteger GetNextMinimumBlockNumber(BigInteger? lastProcessedNumber)
-        {
-            return 1 + (lastProcessedNumber ?? 0);
-        }
-
         private async Task UpdateLastBlockProcessed(BigInteger? lastBlock)
         {
             if (lastBlock != null)
