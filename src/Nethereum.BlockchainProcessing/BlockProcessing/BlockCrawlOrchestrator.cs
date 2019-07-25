@@ -24,6 +24,12 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         public FilterLogCrawlerStep FilterLogCrawlerStep { get; }
 
+        public BlockCrawlOrchestrator(IEthApiContractService ethApi, BlockProcessingSteps blockProcessingSteps)
+            :this(ethApi, new[] { blockProcessingSteps })
+        {
+
+        }
+
         public BlockCrawlOrchestrator(IEthApiContractService ethApi, IEnumerable<BlockProcessingSteps> processingStepsCollection)
         {
             

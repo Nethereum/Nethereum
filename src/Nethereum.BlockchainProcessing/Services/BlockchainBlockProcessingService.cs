@@ -1,4 +1,5 @@
 using System;
+using Common.Logging;
 using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockStorage;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
@@ -18,47 +19,67 @@ namespace Nethereum.BlockchainProcessing.Services
         }
 
 #if !DOTNET35
+
         public BlockchainProcessor CreateBlockProcessor(
-            Action<BlockProcessingSteps> stepsConfiguration = null,
-            IBlockProgressRepository blockProgressRepository = null)
+            Action<BlockProcessingSteps> stepsConfiguration, 
+            uint minimumBlockConfirmations, 
+            ILog log = null) => CreateBlockProcessor(
+                new InMemoryBlockchainProgressRepository(),
+                stepsConfiguration, 
+                minimumBlockConfirmations, 
+                log);
+
+        public BlockchainProcessor CreateBlockProcessor(
+            IBlockProgressRepository blockProgressRepository,
+            Action<BlockProcessingSteps> stepsConfiguration,
+            uint minimumBlockConfirmations,
+            ILog log = null)
         {
             var processingSteps = new BlockProcessingSteps();
-            var orchestrator = new BlockCrawlOrchestrator(_ethApiContractService, new[] { processingSteps });
-            var progressRepository = blockProgressRepository ??
-                                     new InMemoryBlockchainProgressRepository(lastBlockProcessed: null);
-            var lastConfirmedBlockNumberService =
-                new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber);
+            var orchestrator = new BlockCrawlOrchestrator(_ethApiContractService, processingSteps );
+            var lastConfirmedBlockNumberService = new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber, minimumBlockConfirmations);
+
             stepsConfiguration?.Invoke(processingSteps);
-            return new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockNumberService);
+
+            return new BlockchainProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
         }
+
+        public BlockchainProcessor CreateBlockStorageProcessor(
+            IBlockchainStoreRepositoryFactory blockchainStorageFactory, 
+            uint minimumBlockConfirmations, 
+            Action<BlockProcessingSteps> configureSteps = null, 
+            ILog log = null) => CreateBlockStorageProcessor(
+                blockchainStorageFactory, 
+                null, 
+                minimumBlockConfirmations, 
+                configureSteps, 
+                log);
 
 
         public BlockchainProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
+            IBlockProgressRepository blockProgressRepository,
+            uint minimumBlockConfirmations,
             Action<BlockProcessingSteps> configureSteps = null,
-            IBlockProgressRepository blockProgressRepository = null)
+            ILog log = null)
         {
             var processingSteps = new BlockStorageProcessingSteps(blockchainStorageFactory);
-            var orchestrator = new BlockCrawlOrchestrator(_ethApiContractService, new[] { processingSteps });
+            var orchestrator = new BlockCrawlOrchestrator(_ethApiContractService, processingSteps);
 
             if (blockProgressRepository == null && blockchainStorageFactory is IBlockProgressRepositoryFactory progressRepoFactory)
             {
                 blockProgressRepository = progressRepoFactory.CreateBlockProgressRepository();
             }
 
-            return CreateBlockProcessor(configureSteps, blockProgressRepository, processingSteps);
-        }
-
-        private BlockchainProcessor CreateBlockProcessor(Action<BlockProcessingSteps> configureSteps, IBlockProgressRepository blockProgressRepository, BlockProcessingSteps processingSteps)
-        {
-            var orchestrator = new BlockCrawlOrchestrator(_ethApiContractService, new[] { processingSteps });
-            var progressRepository = blockProgressRepository ?? new InMemoryBlockchainProgressRepository(lastBlockProcessed: null);
-            var lastConfirmedBlockNumberService = new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber);
+            blockProgressRepository = blockProgressRepository ?? new InMemoryBlockchainProgressRepository();
+            var lastConfirmedBlockNumberService = new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber, minimumBlockConfirmations);
 
             configureSteps?.Invoke(processingSteps);
 
-            return new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockNumberService);
+            return new BlockchainProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
+
         }
+
 #endif
     }
 }

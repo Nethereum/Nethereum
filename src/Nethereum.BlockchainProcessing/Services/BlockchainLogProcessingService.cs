@@ -146,7 +146,7 @@ namespace Nethereum.BlockchainProcessing.Services
             var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter);
 
             var progressRepository = blockProgressRepository ??
-                                     new InMemoryBlockchainProgressRepository(lastBlockProcessed: null);
+                                     new InMemoryBlockchainProgressRepository();
             var lastConfirmedBlockNumberService =
                 new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber);
 
