@@ -21,7 +21,6 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null);
 
-
         BlockchainProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
