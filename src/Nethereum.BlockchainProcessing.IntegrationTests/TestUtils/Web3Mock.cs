@@ -43,6 +43,8 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
         public Mock<IBlockchainProcessingService> BlockchainProcessingServiceMock = new Mock<IBlockchainProcessingService>();
 
         public BlockchainBlockProcessingService BlockProcessingService;
+
+        public BlockchainLogProcessingService LogProcessingService;
         public IEthApiContractService Eth => EthApiContractServiceMock.Object;
 
         public Web3Mock()
@@ -54,6 +56,9 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
 
             BlockProcessingService = new BlockchainBlockProcessingService(EthApiContractServiceMock.Object);
             BlockchainProcessingServiceMock.Setup(s => s.Blocks).Returns(BlockProcessingService);
+
+            LogProcessingService = new BlockchainLogProcessingService(EthApiContractServiceMock.Object);
+            BlockchainProcessingServiceMock.Setup(s => s.Logs).Returns(LogProcessingService);
 
             BlocksServiceMock.Setup(b => b.GetBlockNumber).Returns(BlockNumberMock.Object);
             BlocksServiceMock.Setup(b => b.GetBlockWithTransactionsByNumber).Returns(GetBlockWithTransactionsByNumberMock.Object);

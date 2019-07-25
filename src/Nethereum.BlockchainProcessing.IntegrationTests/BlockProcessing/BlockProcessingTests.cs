@@ -1,4 +1,5 @@
-﻿using Nethereum.BlockchainProcessing.Processor;
+﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.RPC.Eth.Blocks;
 using System.Numerics;
@@ -9,7 +10,7 @@ using Xunit;
 namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
 {
 
-    public class BlockProcessingTests : BlockProcessingTestBase
+    public class BlockProcessingTests : ProcessingTestBase
     {
 
         [Fact]

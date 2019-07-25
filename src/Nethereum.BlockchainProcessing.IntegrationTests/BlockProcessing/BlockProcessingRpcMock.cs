@@ -10,11 +10,9 @@ using System.Threading.Tasks;
 
 namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
 {
-    public class BlockProcessingRpcMock
+    public class BlockProcessingRpcMock : ProcessingRpcMockBase
     {
-        protected Queue<HexBigInteger> blockNumberQueue;
-
-        public BlockProcessingRpcMock(Web3Mock web3Mock)
+        public BlockProcessingRpcMock(Web3Mock web3Mock):base(web3Mock)
         {
 
             web3Mock.GetBlockWithTransactionsByNumberMock.Setup(s => s.SendRequestAsync(It.IsAny<HexBigInteger>(), null))
@@ -30,23 +28,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
                     ReceiptRequestCount ++;
                     return Task.FromResult(Receipts.FirstOrDefault(b => b.TransactionHash == hash));
                 });
-
-            blockNumberQueue = new Queue<HexBigInteger>();
-
-            web3Mock
-                .BlockNumberMock
-                .Setup(m => m.SendRequestAsync(null))
-                .Returns(() => {
-                    BlockNumberRequestCount ++;
-                    return Task.FromResult(blockNumberQueue.Dequeue()); });
         }
-
-        public virtual void AddToGetBlockNumberRequestQueue(BigInteger blockNumberToReturn)
-        {
-            blockNumberQueue.Enqueue(new HexBigInteger(blockNumberToReturn));
-        }
-
-        public int BlockNumberRequestCount { get; set;}
 
         public int BlockRequestCount { get;set;}
         public int ReceiptRequestCount { get;set;}
