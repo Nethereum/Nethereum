@@ -84,7 +84,7 @@ namespace Nethereum.BlockchainProcessing
             }
 
             //we have previously processed - assume we want the next block
-            var fromBlockNumber = 1 + lastProcessedNumber.Value + 1;
+            var fromBlockNumber = lastProcessedNumber.Value + 1;
 
             //check that the next block is not behind what has been requested
             if (startAtBlockNumberIfNotProcessed != null && startAtBlockNumberIfNotProcessed > fromBlockNumber)
