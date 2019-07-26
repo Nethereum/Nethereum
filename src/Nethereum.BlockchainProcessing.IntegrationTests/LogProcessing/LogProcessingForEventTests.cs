@@ -86,10 +86,10 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
 
             var logProcessor = Web3.Processing.Logs.CreateProcessor<TransferEventDTO>(
                 //action
-                transferEventLog => { 
+                action: transferEventLog => { 
                     transfersHandled.Add(transferEventLog); return Task.CompletedTask; }, 
                 //criteria
-                transferEventLog => {
+                criteria: transferEventLog => {
                     var match = transferEventLog.Event.Value > 9999999999999;
                     return Task.FromResult(match);
                     });
