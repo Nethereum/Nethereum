@@ -45,8 +45,9 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
             {
                 transactions[i] = new Transaction
                 {
+                    TransactionIndex = new HexBigInteger(i),
+                    BlockNumber = new HexBigInteger(blockNumber),
                     TransactionHash = $"0x{blockNumber}{i}ce02e0b4fdf5cfee0ed21141b38c2d88113c58828c771e813ce2624af127cd",
-                    TransactionIndex = new HexBigInteger(i)
                 };
             }
 
@@ -66,6 +67,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
                 }
 
                 Receipts.AddRange(new[] {new TransactionReceipt {
+                        TransactionIndex = tx.TransactionIndex,
                         TransactionHash = tx.TransactionHash,
                         Logs = logs.ConvertToJArray() },
                     });

@@ -5,10 +5,10 @@
         public static int TransactionCount(this Block block)
         {
             if (block is BlockWithTransactions b)
-                return b.Transactions.Length;
+                return b.Transactions?.Length ?? 0;
 
             if (block is BlockWithTransactionHashes bh)
-                return bh.TransactionHashes.Length;
+                return bh.TransactionHashes?.Length ?? 0;
 
             return 0;
         }

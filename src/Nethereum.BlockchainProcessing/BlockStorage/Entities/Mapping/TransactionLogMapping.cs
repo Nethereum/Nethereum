@@ -28,7 +28,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
         public static void Map(this TransactionLog transactionLog, FilterLog log)
         {
             transactionLog.TransactionHash = log.TransactionHash;
-            transactionLog.LogIndex = log.LogIndex.Value.ToString();
+            transactionLog.LogIndex = log.LogIndex?.Value.ToString();
             transactionLog.Address = log.Address;
             transactionLog.Data = log.Data;
 
