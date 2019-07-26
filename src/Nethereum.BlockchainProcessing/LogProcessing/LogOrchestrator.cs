@@ -51,25 +51,27 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                 if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
                 {
-
                     logs = logs.Sort();
-
-                    //TODO: Add parallel execution strategy
-                    foreach (var logProcessor in _logProcessors)
-                    {
-                        foreach (var log in logs)
-                        {
-                            await logProcessor.ExecuteAsync(log);
-                        }
-                    }
-
+                    await InvokeLogProcessors(logs).ConfigureAwait(false);
                     progress.BlockNumberProcessTo = getLogsResponse.Value.To;
                 }
-                
+
 
             }
             return progress;
 
+        }
+
+        private async Task InvokeLogProcessors(FilterLog[] logs)
+        {
+            //TODO: Add parallel execution strategy
+            foreach (var logProcessor in _logProcessors)
+            {
+                foreach (var log in logs)
+                {
+                    await logProcessor.ExecuteAsync(log);
+                }
+            }
         }
 
         struct GetLogsResponse

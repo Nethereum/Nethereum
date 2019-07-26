@@ -15,6 +15,8 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
     {
         public List<FilterLog> Logs { get; set;} = new List<FilterLog>();
 
+        public List<NewFilterInput> GetLogsFiltersInvoked { get;set;} = new List<NewFilterInput>();
+
         public Exception GetLogsException { get; set;}
 
         public LogProcessingRpcMock(Web3Mock web3Mock):base(web3Mock)
@@ -22,6 +24,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             web3Mock.GetLogsMock.Setup(s => s.SendRequestAsync(It.IsAny<NewFilterInput>(), null))
                 .Returns<NewFilterInput, object>((filter, id) => {
 
+                    GetLogsFiltersInvoked.Add(filter);
                     GetLogRequestCount ++;
 
                     if(GetLogsException != null) throw GetLogsException;
@@ -38,13 +41,14 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
 
         public int GetLogRequestCount { get; set; }
 
-        public void SetupLogsToReturn(BigInteger blockNumber, int numberOfTransactions, int logsPerTransaction)
+        public void SetupLogsToReturn(
+            BigInteger blockNumber, int numberOfTransactions, int logsPerTransaction, Func<BigInteger, int, int, FilterLog> createLog = null)
         {
             for(var t = 0; t < numberOfTransactions; t++)
             {
                 for (var l = 0; l < logsPerTransaction; l++)
                 {
-                    var log = new FilterLog
+                    var log = createLog?.Invoke(blockNumber, t, l) ?? new FilterLog
                     {
                         BlockNumber = new HexBigInteger(blockNumber),
                         LogIndex = new HexBigInteger(l),

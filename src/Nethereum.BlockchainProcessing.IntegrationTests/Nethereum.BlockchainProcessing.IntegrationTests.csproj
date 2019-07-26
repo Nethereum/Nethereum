@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+    <ProjectReference Include="..\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
