@@ -41,6 +41,7 @@ namespace Nethereum.RPC.TransactionManagers
             var gasAmount = gas ?? _transactionManager.DefaultGas;
 
             var totalAmount = currentBalance.Value - (gasAmount * gasPrice);
+            if(totalAmount <= 0) throw new Exception("Insufficient balance to make a transfer");
             return UnitConversion.Convert.FromWei(totalAmount);
         }
 
