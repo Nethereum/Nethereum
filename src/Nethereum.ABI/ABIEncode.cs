@@ -51,7 +51,6 @@ namespace Nethereum.ABI
             return result.ToArray();
         }
 
-       
 
         public byte[] GetABIEncoded(params ABIValue[] abiValues)
         {
@@ -70,7 +69,7 @@ namespace Nethereum.ABI
 
         public byte[] GetABIEncoded(params object[] values)
         {
-            return GetABIEncoded(ConvertValuesToDefaultABIValues(values));
+            return GetABIEncoded(ConvertValuesToDefaultABIValues(values).ToArray());
         }
 
         public byte[] GetABIParamsEncodedPacked<T>(T input)
