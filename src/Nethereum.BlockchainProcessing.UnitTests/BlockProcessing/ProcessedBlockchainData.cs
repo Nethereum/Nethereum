@@ -1,7 +1,7 @@
 ﻿using Nethereum.RPC.Eth.DTOs;
 using System.Collections.Generic;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 {
     public class ProcessedBlockchainData
     {

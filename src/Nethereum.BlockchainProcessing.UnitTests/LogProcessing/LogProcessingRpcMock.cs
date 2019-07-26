@@ -1,5 +1,5 @@
 ﻿using Moq;
-using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json.Linq;
@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class LogProcessingRpcMock : ProcessingRpcMockBase
     {
@@ -60,6 +60,21 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
                 }
             }
 
+        }
+
+        public void SetupGetLogsToReturnDummyFilterLogs(
+            BigInteger blockFrom,
+            BigInteger blockTo,
+            int logsPerTransaction,
+            int transactionsPerBlock)
+        {
+            for (var block = blockFrom; block <= blockTo; block++)
+            {
+                SetupLogsToReturn(
+                    block,
+                    transactionsPerBlock,
+                    logsPerTransaction);
+            }
         }
 
         public void SetupGetLogsToReturnDummyERC20Transfers(

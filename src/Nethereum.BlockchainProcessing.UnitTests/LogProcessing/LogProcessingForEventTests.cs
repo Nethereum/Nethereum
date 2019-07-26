@@ -1,4 +1,4 @@
-﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class LogProcessingForEventTests : ProcessingTestBase
     {

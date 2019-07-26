@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.Services
+namespace Nethereum.BlockchainProcessing.UnitTests.Services
 {
     public class BlockchainProcessorTests : BlockchainProcessorExecutionTestBase
     {

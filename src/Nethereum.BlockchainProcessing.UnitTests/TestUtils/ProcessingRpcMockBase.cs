@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
+namespace Nethereum.BlockchainProcessing.UnitTests.TestUtils
 {
     public class ProcessingRpcMockBase
     {

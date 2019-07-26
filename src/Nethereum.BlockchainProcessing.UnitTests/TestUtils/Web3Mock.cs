@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
+namespace Nethereum.BlockchainProcessing.UnitTests.TestUtils
 {
     public class Web3Mock
     {

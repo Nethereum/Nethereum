@@ -1,4 +1,4 @@
-﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.RPC.Eth.DTOs;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class LogProcessingTests : ProcessingTestBase
     {
