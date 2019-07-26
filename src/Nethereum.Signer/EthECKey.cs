@@ -111,7 +111,7 @@ namespace Nethereum.Signer
 
         public byte[] GetPrivateKeyAsBytes()
         {
-            return _ecKey.PrivateKey.D.ToByteArray();
+            return _ecKey.PrivateKey.D.ToByteArrayUnsigned();
         }
 
         public string GetPrivateKey()

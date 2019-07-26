@@ -89,6 +89,12 @@ namespace Nethereum.HdWallet
             return key.PrivateKey.ToBytes();
         }
 
+        public byte[] GetPublicKey(int index)
+        {
+            var key = GetEthereumKey(index);
+            return key.GetPubKey();
+        }
+
         public byte[] GetPrivateKey(int startIndex, string address, int maxIndexSearch = 20)
         {
             var checkSumAddress = new AddressUtil().ConvertToChecksumAddress(address);
