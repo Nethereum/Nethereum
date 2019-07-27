@@ -1,5 +1,5 @@
 ﻿using Moq;
-using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.BlockchainProcessing.LogProcessing;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.Contracts;
@@ -10,7 +10,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class LogOrchestratorTests
     {

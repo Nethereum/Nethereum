@@ -194,7 +194,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Processing", "Processing", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.BlockchainProcessing", "src\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj", "{8263F0CC-E6CA-43B0-95D8-8FBB68D523E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.BlockchainProcessing.IntegrationTests", "src\Nethereum.BlockchainProcessing.IntegrationTests\Nethereum.BlockchainProcessing.IntegrationTests.csproj", "{06315261-CFE1-4741-B272-9F3144BEAA62}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.BlockchainProcessing.UnitTests", "src\Nethereum.BlockchainProcessing.UnitTests\Nethereum.BlockchainProcessing.UnitTests.csproj", "{6D73F977-E63F-4581-B26B-3A24B7149E35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1264,22 +1264,22 @@ Global
 		{8263F0CC-E6CA-43B0-95D8-8FBB68D523E4}.Release|x64.Build.0 = Release|Any CPU
 		{8263F0CC-E6CA-43B0-95D8-8FBB68D523E4}.Release|x86.ActiveCfg = Release|Any CPU
 		{8263F0CC-E6CA-43B0-95D8-8FBB68D523E4}.Release|x86.Build.0 = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|ARM.Build.0 = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|x64.Build.0 = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Debug|x86.Build.0 = Debug|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|Any CPU.Build.0 = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|ARM.ActiveCfg = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|ARM.Build.0 = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|x64.ActiveCfg = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|x64.Build.0 = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|x86.ActiveCfg = Release|Any CPU
-		{06315261-CFE1-4741-B272-9F3144BEAA62}.Release|x86.Build.0 = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|ARM.Build.0 = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|x64.Build.0 = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Debug|x86.Build.0 = Debug|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|ARM.ActiveCfg = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|ARM.Build.0 = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|x64.ActiveCfg = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|x64.Build.0 = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|x86.ActiveCfg = Release|Any CPU
+		{6D73F977-E63F-4581-B26B-3A24B7149E35}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1378,7 +1378,7 @@ Global
 		{FB6A216F-95D8-48F1-80AD-29EFDF5DDFA2} = {9706B654-C57D-4221-9A58-585BBE2C44D7}
 		{10EC8412-1238-4307-A564-5EF6BBDB1134} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{8263F0CC-E6CA-43B0-95D8-8FBB68D523E4} = {10EC8412-1238-4307-A564-5EF6BBDB1134}
-		{06315261-CFE1-4741-B272-9F3144BEAA62} = {10EC8412-1238-4307-A564-5EF6BBDB1134}
+		{6D73F977-E63F-4581-B26B-3A24B7149E35} = {10EC8412-1238-4307-A564-5EF6BBDB1134}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

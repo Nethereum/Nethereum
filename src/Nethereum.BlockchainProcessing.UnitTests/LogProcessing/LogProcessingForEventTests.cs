@@ -1,16 +1,13 @@
-﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC.Eth.DTOs;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class LogProcessingForEventTests : ProcessingTestBase
     {
@@ -28,7 +25,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             //set up mock 
             var logRpcMock = new LogProcessingRpcMock(Web3Mock);
             logRpcMock.SetupGetCurrentBlockNumber(currentBlockOnChain);
-            SetupGetLogsToReturnDummyTransfers(blockFrom, blockTo, logRpcMock, logsPerTransaction, transactionsPerBlock);
+            logRpcMock.SetupGetLogsToReturnDummyERC20Transfers(blockFrom, blockTo, logsPerTransaction, transactionsPerBlock);
 
             var transfersHandled = new List<EventLog<TransferEventDTO>>();
 
@@ -55,7 +52,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             //set up mock 
             var logRpcMock = new LogProcessingRpcMock(Web3Mock);
             logRpcMock.SetupGetCurrentBlockNumber(currentBlockOnChain);
-            SetupGetLogsToReturnDummyTransfers(blockFrom, blockTo, logRpcMock, logsPerTransaction, transactionsPerBlock);
+            logRpcMock.SetupGetLogsToReturnDummyERC20Transfers(blockFrom, blockTo, logsPerTransaction, transactionsPerBlock);
 
             var approvalsHandled = new List<EventLog<ApprovalEventDTO>>();
 
@@ -80,7 +77,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             //set up mock 
             var logRpcMock = new LogProcessingRpcMock(Web3Mock);
             logRpcMock.SetupGetCurrentBlockNumber(currentBlockOnChain);
-            SetupGetLogsToReturnDummyTransfers(blockFrom, blockTo, logRpcMock, logsPerTransaction, transactionsPerBlock);
+            logRpcMock.SetupGetLogsToReturnDummyERC20Transfers(blockFrom, blockTo, logsPerTransaction, transactionsPerBlock);
 
             var transfersHandled = new List<EventLog<TransferEventDTO>>();
 
@@ -113,7 +110,7 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             //set up mock 
             var logRpcMock = new LogProcessingRpcMock(Web3Mock);
             logRpcMock.SetupGetCurrentBlockNumber(currentBlockOnChain);
-            SetupGetLogsToReturnDummyTransfers(blockFrom, blockTo, logRpcMock, logsPerTransaction, transactionsPerBlock);
+            logRpcMock.SetupGetLogsToReturnDummyERC20Transfers(blockFrom, blockTo, logsPerTransaction, transactionsPerBlock);
 
             var transfersHandled = new List<EventLog<TransferEventDTO>>();
 
@@ -133,48 +130,6 @@ namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
             Assert.Equal(expectedGetLogsFilter.Topics[0], actualGetLogsFilter.Topics[0]);
         }
 
-        private static void SetupGetLogsToReturnDummyTransfers(BigInteger blockFrom, BigInteger blockTo, LogProcessingRpcMock logRpcMock, int logsPerTransaction, int transactionsPerBlock)
-        {
-            for (var block = blockFrom; block <= blockTo; block++)
-            {
-                logRpcMock.SetupLogsToReturn(
-                    block,
-                    transactionsPerBlock,
-                    logsPerTransaction,
-                    (bNum, txIndex, logIndex) =>
-                    CreateDummyTransfer(bNum, txIndex, logIndex));
-            }
-        }
-
-        private static FilterLog CreateDummyTransfer(BigInteger blockNumber, BigInteger transactionIndex, BigInteger logIndex)
-        {
-            var sample = SampleTransferLog();
-            sample.BlockNumber = blockNumber.ToHexBigInteger();
-            sample.TransactionIndex = transactionIndex.ToHexBigInteger();
-            sample.LogIndex = logIndex.ToHexBigInteger();
-            return sample;
-        }
-
-        private static FilterLog SampleTransferLog()
-        {
-            return SampleTransferLogAsJObject.ToObject<FilterLog>();
-        }
-
-        private static readonly JObject SampleTransferLogAsJObject = JObject.Parse(
-    $@"{{
-  'address': '0x243e72b69141f6af525a9a5fd939668ee9f2b354',
-  'topics': [
-    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    '0x00000000000000000000000012890d2cce102216644c59dae5baed380d84830c',
-    '0x00000000000000000000000013f022d72158410433cbd66f5dd8bf6d2d129924'
-  ],
-  'data': '0x00000000000000000000000000000000000000000000000000000000000003e8',
-  'blockNumber': '0x36',
-  'transactionHash': '0x19ce02e0b4fdf5cfee0ed21141b38c2d88113c58828c771e813ce2624af127cd',
-  'transactionIndex': '0x0',
-  'blockHash': '0x58dab5a71037752b36e0a6af02f290fbc3dc5b2abf88d88f2c04defd9b8fb03b',
-  'logIndex': '0x0',
-  'removed': false
-}}");
     }
+
 }

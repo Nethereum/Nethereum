@@ -1,7 +1,7 @@
-﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Web3;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.TestUtils
+namespace Nethereum.BlockchainProcessing.UnitTests.TestUtils
 {
     public class ProcessingTestBase
     {

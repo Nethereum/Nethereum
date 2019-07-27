@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.Services
+namespace Nethereum.BlockchainProcessing.UnitTests.Services
 {
     public class BlockchainProcessorExecutionTestBase: BlockchainProcessorTestBase
     {

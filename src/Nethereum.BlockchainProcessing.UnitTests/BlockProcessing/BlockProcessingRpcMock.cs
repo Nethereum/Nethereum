@@ -1,5 +1,5 @@
 ﻿using Moq;
-using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 {
     public class BlockProcessingRpcMock : ProcessingRpcMockBase
     {

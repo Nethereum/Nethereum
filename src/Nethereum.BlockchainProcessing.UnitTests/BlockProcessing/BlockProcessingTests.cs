@@ -1,4 +1,4 @@
-﻿using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.RPC.Eth.Blocks;
@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 {
 
     public class BlockProcessingTests : ProcessingTestBase

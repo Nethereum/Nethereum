@@ -1,7 +1,7 @@
 ﻿using Nethereum.BlockchainProcessing.LogProcessing;
 using Xunit;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.LogProcessing
+namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
 {
     public class BlockRangeRequestStrategyTests
     {

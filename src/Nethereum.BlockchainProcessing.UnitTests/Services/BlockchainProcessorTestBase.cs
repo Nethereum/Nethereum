@@ -4,7 +4,7 @@ using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.RPC.Eth.Blocks;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.Services
+namespace Nethereum.BlockchainProcessing.UnitTests.Services
 {
     public class BlockchainProcessorTestBase
     {

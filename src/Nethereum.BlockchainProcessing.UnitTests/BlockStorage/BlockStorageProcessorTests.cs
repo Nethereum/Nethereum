@@ -1,13 +1,13 @@
 ﻿using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
-using Nethereum.BlockchainProcessing.IntegrationTests.BlockProcessing;
-using Nethereum.BlockchainProcessing.IntegrationTests.TestUtils;
+using Nethereum.BlockchainProcessing.UnitTests.BlockProcessing;
+using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Nethereum.BlockchainProcessing.IntegrationTests.BlockStorage
+namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage
 {
     public class BlockStorageProcessorTests : ProcessingTestBase
     {
