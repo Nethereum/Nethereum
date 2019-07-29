@@ -15,6 +15,7 @@ namespace Nethereum.BlockchainProcessing.Services
         BlockchainProcessor CreateProcessor<TEventDTO>(
             Action<EventLog<TEventDTO>> action,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
+            Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
             ILog log = null) where TEventDTO : class, new();
 

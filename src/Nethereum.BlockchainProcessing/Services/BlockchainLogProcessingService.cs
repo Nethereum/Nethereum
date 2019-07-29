@@ -24,9 +24,10 @@ namespace Nethereum.BlockchainProcessing.Services
         public BlockchainProcessor CreateProcessor<TEventDTO>(
             Action<EventLog<TEventDTO>> action,
             uint minimumBlockConfirmations,
+            Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
             ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action)}, minimumBlockConfirmations,
+            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(), blockProgressRepository, log);
 
 

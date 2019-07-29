@@ -10,7 +10,8 @@ namespace Nethereum.BlockchainProcessing.Processor
         Func<EventLog<TEvent>, Task> _eventAction;
         Func<EventLog<TEvent>, Task<bool>> _eventCriteria;
 
-        public EventLogProcessorHandler(Func<EventLog<TEvent>, Task> action) : this(action, null)
+        public EventLogProcessorHandler(
+            Func<EventLog<TEvent>, Task> action) : this(action, null)
         {
         }
 
