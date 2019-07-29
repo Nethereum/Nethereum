@@ -2,7 +2,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.ENS Ethereum Name service library</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>netstandard1.3;net451</TargetFrameworks>

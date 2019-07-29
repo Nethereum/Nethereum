@@ -2,16 +2,13 @@
  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Encoding and decoding of ABI Types, functions, events of Ethereum contracts</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.ABI</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.ABI</AssemblyName>
     <PackageId>Nethereum.ABI</PackageId>
   </PropertyGroup>
-
-  <ItemGroup>
+ <ItemGroup>
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>

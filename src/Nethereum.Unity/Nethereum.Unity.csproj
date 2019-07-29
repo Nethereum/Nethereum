@@ -2,10 +2,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.Unity Nethereum Unity Class Library to interact with Ethereum from Unity3d</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Unity</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(UnityFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Unity</AssemblyName>
     <PackageId>Nethereum.Unity</PackageId>

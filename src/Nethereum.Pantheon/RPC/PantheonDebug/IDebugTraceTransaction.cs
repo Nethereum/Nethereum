@@ -2,8 +2,13 @@ using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
 
-public interface IDebugTraceTransaction
+namespace Nethereum.Pantheon.RPC.Debug
 {
-    Task<JObject> SendRequestAsync(string transactionHash, object id = null);
-    RpcRequest BuildRequest(string transactionHash, object id = null);
+
+    public interface IDebugTraceTransaction
+    {
+        Task<JObject> SendRequestAsync(string transactionHash, object id = null);
+        RpcRequest BuildRequest(string transactionHash, object id = null);
+    }
+
 }

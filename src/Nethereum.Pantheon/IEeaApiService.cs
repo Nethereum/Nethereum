@@ -1,3 +1,5 @@
+using Nethereum.Pantheon.RPC.EEA;
+
 namespace Nethereum.Pantheon
 {
     public interface IEeaApiService

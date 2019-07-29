@@ -2,10 +2,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.Uport Uport integration library</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Uport</AssemblyTitle>
     <VersionPrefix>$(UportVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Uport</AssemblyName>
     <PackageId>Nethereum.Uport</PackageId>

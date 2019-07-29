@@ -2,10 +2,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum signer library to sign and verify messages, RLP and transactions using an Ethereum account</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Signer</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer</AssemblyName>
     <PackageId>Nethereum.Signer</PackageId>

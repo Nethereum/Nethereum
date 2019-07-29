@@ -1,8 +1,11 @@
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 
-public interface IIbftProposeValidatorVote
+namespace Nethereum.Pantheon.RPC.IBFT
 {
-    Task<bool> SendRequestAsync(string accountAddress, bool addValidator, object id = null);
-    RpcRequest BuildRequest(string accountAddress, bool addValidator, object id = null);
+    public interface IIbftProposeValidatorVote
+    {
+        Task<bool> SendRequestAsync(string accountAddress, bool addValidator, object id = null);
+        RpcRequest BuildRequest(string accountAddress, bool addValidator, object id = null);
+    }
 }

@@ -1,12 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
     <Description>Nethereum.Accounts Ethereum Accounts and Transaction Managers Class Library  </Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Accounts</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Accounts</AssemblyName>
     <PackageId>Nethereum.Accounts</PackageId>

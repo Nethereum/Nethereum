@@ -2,7 +2,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum Contracts is the core library to interact via RPC with Smart contracts in Ethereum</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Contracts</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
