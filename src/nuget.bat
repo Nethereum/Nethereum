@@ -116,6 +116,19 @@ cd Nethereum.StandardNonFungibleTokenERC721
 CALL :restorepack
 cd..
 
+cd Nethereum.Pantheon
+CALL :restorepack
+cd..
+
+cd Nethereum.RSK
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainProcessing
+CALL :restorepack
+cd..
+
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages

@@ -2,7 +2,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.RPC.Reactive, Reactive Client Subscriptions (WebSockets) and RPC Extensions for Nethereum</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.RPC.Reactive</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(ReactiveFrameworks)</TargetFrameworks>

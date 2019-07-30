@@ -73,6 +73,10 @@
 				<Link>Hex\HexTypes\HexBigInteger.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Hex\HexTypes\HexBigIntegerNumberExtensions.cs">
+				<Link>Hex\HexTypes\HexBigIntegerNumberExtensions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Hex\HexTypes\HexType.cs">
 				<Link>Hex\HexTypes\HexType.cs</Link>
 		</Compile>
@@ -593,6 +597,14 @@
 				<Link>RPC\Eth\Blocks\IEthGetBlockWithTransactionsHashesByNumber.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\ILastConfirmedBlockNumberService.cs">
+				<Link>RPC\Eth\Blocks\ILastConfirmedBlockNumberService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\Blocks\LastConfirmedBlockNumberService.cs">
+				<Link>RPC\Eth\Blocks\LastConfirmedBlockNumberService.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Compilation\EthCompileLLL.cs">
 				<Link>RPC\Eth\Compilation\EthCompileLLL.cs</Link>
 		</Compile>
@@ -627,6 +639,10 @@
 		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\Block.cs">
 				<Link>RPC\Eth\DTOs\Block.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\BlockExtensions.cs">
+				<Link>RPC\Eth\DTOs\BlockExtensions.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\BlockParameter.cs">
@@ -669,12 +685,44 @@
 				<Link>RPC\Eth\DTOs\Transaction.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\TransactionExtensions.cs">
+				<Link>RPC\Eth\DTOs\TransactionExtensions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\TransactionInput.cs">
 				<Link>RPC\Eth\DTOs\TransactionInput.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\TransactionReceipt.cs">
 				<Link>RPC\Eth\DTOs\TransactionReceipt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\TransactionReceiptExtensions.cs">
+				<Link>RPC\Eth\DTOs\TransactionReceiptExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\ContractCreationVO.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\ContractCreationVO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\ContractTransaction.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\ContractTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\FilterLogVO.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\FilterLogVO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\TransactionReceiptVO.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\TransactionReceiptVO.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\TransactionVmStack.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\TransactionVmStack.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Eth\DTOs\ValueObjects\TransactionVO.cs">
+				<Link>RPC\Eth\DTOs\ValueObjects\TransactionVO.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Eth\Exceptions\ContractDeploymentException.cs">
@@ -1837,6 +1885,18 @@
 				<Link>Geth\RPC\Miner\MinerStop.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Geth\VMStackParsing\OpCodes.cs">
+				<Link>Geth\VMStackParsing\OpCodes.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Geth\VMStackParsing\StructLog.cs">
+				<Link>Geth\VMStackParsing\StructLog.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Geth\VMStackParsing\VmStackExtensions.cs">
+				<Link>Geth\VMStackParsing\VmStackExtensions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\Contract.cs">
 				<Link>Contracts\Contract.cs</Link>
 		</Compile>
@@ -1863,10 +1923,6 @@
 		
         <Compile Include="..\..\src\Nethereum.Contracts\Event{1}.cs">
 				<Link>Contracts\Event{1}.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\..\src\Nethereum.Contracts\FilterInputNotForEventException.cs">
-				<Link>Contracts\FilterInputNotForEventException.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\Function.cs">
@@ -2033,6 +2089,10 @@
 				<Link>Contracts\DeploymentHandlers\IDeploymentTransactionSenderHandler.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\Exceptions\FilterInputNotForEventException.cs">
+				<Link>Contracts\Exceptions\FilterInputNotForEventException.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\Extensions\ContractMessageAbiEncodeExtensions.cs">
 				<Link>Contracts\Extensions\ContractMessageAbiEncodeExtensions.cs</Link>
 		</Compile>
@@ -2165,6 +2225,14 @@
 				<Link>Util\ContractUtils.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Util\IWaitStrategy.cs">
+				<Link>Util\IWaitStrategy.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\PredicateBuilder.cs">
+				<Link>Util\PredicateBuilder.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Util\Sha3Keccack.cs">
 				<Link>Util\Sha3Keccack.cs</Link>
 		</Compile>
@@ -2175,6 +2243,10 @@
 		
         <Compile Include="..\..\src\Nethereum.Util\UnitConversion.cs">
 				<Link>Util\UnitConversion.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\WaitStrategy.cs">
+				<Link>Util\WaitStrategy.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Signer\Chain.cs">
@@ -2571,6 +2643,678 @@
 		
         <Compile Include="..\..\src\Nethereum.Accounts\Managed\ManagedAccountTransactionManager.cs">
 				<Link>Accounts\Managed\ManagedAccountTransactionManager.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockchainProcessor.cs">
+				<Link>BlockchainProcessing\BlockchainProcessor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\BlockCrawlOrchestrator.cs">
+				<Link>BlockchainProcessing\BlockProcessing\BlockCrawlOrchestrator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\BlockProcessingSteps.cs">
+				<Link>BlockchainProcessing\BlockProcessing\BlockProcessingSteps.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\BlockProcessingStepsExtensions.cs">
+				<Link>BlockchainProcessing\BlockProcessing\BlockProcessingStepsExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\BlockCrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\BlockCrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\ContractCreatedCrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\ContractCreatedCrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\CrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\CrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\CrawlerStepCompleted.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\CrawlerStepCompleted.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\FilterLogCrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\FilterLogCrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\TransactionCrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\TransactionCrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockProcessing\CrawlerSteps\TransactionReceiptCrawlerStep.cs">
+				<Link>BlockchainProcessing\BlockProcessing\CrawlerSteps\TransactionReceiptCrawlerStep.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\BlockStorageProcessingSteps.cs">
+				<Link>BlockchainProcessing\BlockStorage\BlockStorageProcessingSteps.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\BlockStorageStepHandler.cs">
+				<Link>BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\BlockStorageStepHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\ContractCreationStorageStepHandler.cs">
+				<Link>BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\ContractCreationStorageStepHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\FilterLogStorageStepHandler.cs">
+				<Link>BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\FilterLogStorageStepHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\TransactionReceiptStorageStepHandler.cs">
+				<Link>BlockchainProcessing\BlockStorage\BlockStorageStepsHandlers\TransactionReceiptStorageStepHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\AddressTransaction.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\AddressTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Block.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Block.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\BlockProgress.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\BlockProgress.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\ColumnLengths.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\ColumnLengths.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Contract.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Contract.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\DbSchemaAttribute.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\DbSchemaAttribute.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\DbSchemaNames.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\DbSchemaNames.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\IAddressTransactionView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\IAddressTransactionView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\IBlockView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\IBlockView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\IContractView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\IContractView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\ITransactionLogView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\ITransactionLogView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\ITransactionView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\ITransactionView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\ITransactionVmStackView.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\ITransactionVmStackView.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\TableRow.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\TableRow.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Transaction.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Transaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\TransactionBase.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\TransactionBase.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\TransactionLog.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\TransactionLog.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\TransactionVmStack.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\TransactionVmStack.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\AddressTransactionMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\AddressTransactionMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\BlockMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\BlockMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\BlockProgressMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\BlockProgressMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\ContractMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\ContractMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionLogMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionLogMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionVmStructMapping.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\TransactionVmStructMapping.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Entities\Mapping\Utils.cs">
+				<Link>BlockchainProcessing\BlockStorage\Entities\Mapping\Utils.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\IAddressTransactionRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\IAddressTransactionRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\IBlockchainStoreRepositoryFactory.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\IBlockchainStoreRepositoryFactory.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\IBlockRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\IBlockRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\IContractRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\IContractRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryAddressTransactionRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryAddressTransactionRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockchainStorageRepositoryContext.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockchainStorageRepositoryContext.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockchainStorageRepositoryFactory.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockchainStorageRepositoryFactory.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryBlockRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryContractRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryContractRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionLogRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionLogRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionVMStackRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\InMemoryTransactionVMStackRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\ITransactionLogRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\ITransactionLogRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\ITransactionRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\ITransactionRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\BlockStorage\Repositories\ITransactionVMStackRepository.cs">
+				<Link>BlockchainProcessing\BlockStorage\Repositories\ITransactionVMStackRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\LogProcessing\BlockRangeRequestStrategy.cs">
+				<Link>BlockchainProcessing\LogProcessing\BlockRangeRequestStrategy.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\LogProcessing\LogOrchestrator.cs">
+				<Link>BlockchainProcessing\LogProcessing\LogOrchestrator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Orchestrator\IBlockchainProcessingOrchestrator.cs">
+				<Link>BlockchainProcessing\Orchestrator\IBlockchainProcessingOrchestrator.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Orchestrator\OrchestrationProgress.cs">
+				<Link>BlockchainProcessing\Orchestrator\OrchestrationProgress.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\EventLogProcessorHandler.cs">
+				<Link>BlockchainProcessing\Processor\EventLogProcessorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\IProcessor.cs">
+				<Link>BlockchainProcessing\Processor\IProcessor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\IProcessorHandler.cs">
+				<Link>BlockchainProcessing\Processor\IProcessorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\Processor.cs">
+				<Link>BlockchainProcessing\Processor\Processor.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\ProcessorBaseHandler.cs">
+				<Link>BlockchainProcessing\Processor\ProcessorBaseHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\ProcessorExtensions.cs">
+				<Link>BlockchainProcessing\Processor\ProcessorExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Processor\ProcessorHandler.cs">
+				<Link>BlockchainProcessing\Processor\ProcessorHandler.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\ProgressRepositories\IBlockProgressRepository.cs">
+				<Link>BlockchainProcessing\ProgressRepositories\IBlockProgressRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\ProgressRepositories\IBlockProgressRepositoryFactory.cs">
+				<Link>BlockchainProcessing\ProgressRepositories\IBlockProgressRepositoryFactory.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\ProgressRepositories\InMemoryBlockchainProgressRepository.cs">
+				<Link>BlockchainProcessing\ProgressRepositories\InMemoryBlockchainProgressRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\BlockchainBlockProcessingService.cs">
+				<Link>BlockchainProcessing\Services\BlockchainBlockProcessingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\BlockchainLogProcessingService.cs">
+				<Link>BlockchainProcessing\Services\BlockchainLogProcessingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\BlockchainProcessingService.cs">
+				<Link>BlockchainProcessing\Services\BlockchainProcessingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\IBlockchainLogProcessingService.cs">
+				<Link>BlockchainProcessing\Services\IBlockchainLogProcessingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\IBlockchainProcessingService.cs">
+				<Link>BlockchainProcessing\Services\IBlockchainProcessingService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\AdminApiService.cs">
+				<Link>Pantheon\AdminApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\ApiMethods.cs">
+				<Link>Pantheon\ApiMethods.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\CliqueApiService.cs">
+				<Link>Pantheon\CliqueApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\DebugApiService.cs">
+				<Link>Pantheon\DebugApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\EeaApiService.cs">
+				<Link>Pantheon\EeaApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\IAdminApiService.cs">
+				<Link>Pantheon\IAdminApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\IbftApiService.cs">
+				<Link>Pantheon\IbftApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\ICliqueApiService.cs">
+				<Link>Pantheon\ICliqueApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\IDebugApiService.cs">
+				<Link>Pantheon\IDebugApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\IEeaApiService.cs">
+				<Link>Pantheon\IEeaApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\IPermissioningApiService.cs">
+				<Link>Pantheon\IPermissioningApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\ITxPoolApiService.cs">
+				<Link>Pantheon\ITxPoolApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\MinerApiService.cs">
+				<Link>Pantheon\MinerApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\PermissioningApiService.cs">
+				<Link>Pantheon\PermissioningApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\TxPoolApiService.cs">
+				<Link>Pantheon\TxPoolApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\Web3Pantheon.cs">
+				<Link>Pantheon\Web3Pantheon.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\ApiMethods.cs">
+				<Link>Pantheon\RPC\ApiMethods.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\AdminAddPeer.cs">
+				<Link>Pantheon\RPC\Admin\AdminAddPeer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\AdminNodeInfo.cs">
+				<Link>Pantheon\RPC\Admin\AdminNodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\AdminPeers.cs">
+				<Link>Pantheon\RPC\Admin\AdminPeers.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\AdminRemovePeer.cs">
+				<Link>Pantheon\RPC\Admin\AdminRemovePeer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\IAdminAddPeer.cs">
+				<Link>Pantheon\RPC\Admin\IAdminAddPeer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\IAdminNodeInfo.cs">
+				<Link>Pantheon\RPC\Admin\IAdminNodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\IAdminPeers.cs">
+				<Link>Pantheon\RPC\Admin\IAdminPeers.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Admin\IAdminRemovePeer.cs">
+				<Link>Pantheon\RPC\Admin\IAdminRemovePeer.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\CliqueDiscard.cs">
+				<Link>Pantheon\RPC\Clique\CliqueDiscard.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\CliqueGetSigners.cs">
+				<Link>Pantheon\RPC\Clique\CliqueGetSigners.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\CliqueGetSignersAtHash.cs">
+				<Link>Pantheon\RPC\Clique\CliqueGetSignersAtHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\CliqueProposals.cs">
+				<Link>Pantheon\RPC\Clique\CliqueProposals.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\CliquePropose.cs">
+				<Link>Pantheon\RPC\Clique\CliquePropose.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\ICliqueDiscard.cs">
+				<Link>Pantheon\RPC\Clique\ICliqueDiscard.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\ICliqueProposals.cs">
+				<Link>Pantheon\RPC\Clique\ICliqueProposals.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Clique\ICliquePropose.cs">
+				<Link>Pantheon\RPC\Clique\ICliquePropose.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\EEA\EeaGetTransactionReceipt.cs">
+				<Link>Pantheon\RPC\EEA\EeaGetTransactionReceipt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\EEA\EeaSendRawTransaction.cs">
+				<Link>Pantheon\RPC\EEA\EeaSendRawTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\EEA\IEeaGetTransactionReceipt.cs">
+				<Link>Pantheon\RPC\EEA\IEeaGetTransactionReceipt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\EEA\IEeaSendRawTransaction.cs">
+				<Link>Pantheon\RPC\EEA\IEeaSendRawTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\EEA\DTOs\TransactionReceipt.cs">
+				<Link>Pantheon\RPC\EEA\DTOs\TransactionReceipt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IbftDiscardValidatorVote.cs">
+				<Link>Pantheon\RPC\IBFT\IbftDiscardValidatorVote.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IbftGetPendingVotes.cs">
+				<Link>Pantheon\RPC\IBFT\IbftGetPendingVotes.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IbftGetValidatorsByBlockHash.cs">
+				<Link>Pantheon\RPC\IBFT\IbftGetValidatorsByBlockHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IbftGetValidatorsByBlockNumber.cs">
+				<Link>Pantheon\RPC\IBFT\IbftGetValidatorsByBlockNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IbftProposeValidatorVote.cs">
+				<Link>Pantheon\RPC\IBFT\IbftProposeValidatorVote.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IIbftDiscardValidatorVote.cs">
+				<Link>Pantheon\RPC\IBFT\IIbftDiscardValidatorVote.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IIbftGetPendingVotes.cs">
+				<Link>Pantheon\RPC\IBFT\IIbftGetPendingVotes.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IIbftGetValidatorsByBlockHash.cs">
+				<Link>Pantheon\RPC\IBFT\IIbftGetValidatorsByBlockHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IIbftGetValidatorsByBlockNumber.cs">
+				<Link>Pantheon\RPC\IBFT\IIbftGetValidatorsByBlockNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\IBFT\IIbftProposeValidatorVote.cs">
+				<Link>Pantheon\RPC\IBFT\IIbftProposeValidatorVote.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Miner\IMinerStart.cs">
+				<Link>Pantheon\RPC\Miner\IMinerStart.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Miner\IMinerStop.cs">
+				<Link>Pantheon\RPC\Miner\IMinerStop.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Miner\MinerStart.cs">
+				<Link>Pantheon\RPC\Miner\MinerStart.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Miner\MinerStop.cs">
+				<Link>Pantheon\RPC\Miner\MinerStop.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\DebugMetrics.cs">
+				<Link>Pantheon\RPC\PantheonDebug\DebugMetrics.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\DebugStorageRangeAt.cs">
+				<Link>Pantheon\RPC\PantheonDebug\DebugStorageRangeAt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\DebugTraceTransaction.cs">
+				<Link>Pantheon\RPC\PantheonDebug\DebugTraceTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\IDebugMetrics.cs">
+				<Link>Pantheon\RPC\PantheonDebug\IDebugMetrics.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\IDebugStorageRangeAt.cs">
+				<Link>Pantheon\RPC\PantheonDebug\IDebugStorageRangeAt.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\PantheonDebug\IDebugTraceTransaction.cs">
+				<Link>Pantheon\RPC\PantheonDebug\IDebugTraceTransaction.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermAddAccountsToWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermAddAccountsToWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermAddNodesToWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermAddNodesToWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermGetAccountsWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermGetAccountsWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermGetNodesWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermGetNodesWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermReloadPermissionsFromFile.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermReloadPermissionsFromFile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermRemoveAccountsFromWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermRemoveAccountsFromWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\IPermRemoveNodesFromWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\IPermRemoveNodesFromWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermAddAccountsToWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermAddAccountsToWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermAddNodesToWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermAddNodesToWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermGetAccountsWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermGetAccountsWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermGetNodesWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermGetNodesWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermReloadPermissionsFromFile.cs">
+				<Link>Pantheon\RPC\Permissioning\PermReloadPermissionsFromFile.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermRemoveAccountsFromWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermRemoveAccountsFromWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Permissioning\PermRemoveNodesFromWhitelist.cs">
+				<Link>Pantheon\RPC\Permissioning\PermRemoveNodesFromWhitelist.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Txpool\ITxpoolPantheonStatistics.cs">
+				<Link>Pantheon\RPC\Txpool\ITxpoolPantheonStatistics.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Txpool\ITxpoolPantheonTransactions.cs">
+				<Link>Pantheon\RPC\Txpool\ITxpoolPantheonTransactions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Txpool\TxpoolPantheonStatistics.cs">
+				<Link>Pantheon\RPC\Txpool\TxpoolPantheonStatistics.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Pantheon\RPC\Txpool\TxpoolPantheonTransactions.cs">
+				<Link>Pantheon\RPC\Txpool\TxpoolPantheonTransactions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\IRskEthApiService.cs">
+				<Link>RSK\IRskEthApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RskEthApiService.cs">
+				<Link>RSK\RskEthApiService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\Web3Rsk.cs">
+				<Link>RSK\Web3Rsk.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsByHash.cs">
+				<Link>RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsByHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsByNumber.cs">
+				<Link>RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsByNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsHashesByHash.cs">
+				<Link>RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsHashesByHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsHashesByNumber.cs">
+				<Link>RSK\RPC\RskEth\IRskEthGetBlockWithTransactionsHashesByNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\RskEthGetBlockWithTransactionsByHash.cs">
+				<Link>RSK\RPC\RskEth\RskEthGetBlockWithTransactionsByHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\RskEthGetBlockWithTransactionsByNumber.cs">
+				<Link>RSK\RPC\RskEth\RskEthGetBlockWithTransactionsByNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\RskEthGetBlockWithTransactionsHashesByHash.cs">
+				<Link>RSK\RPC\RskEth\RskEthGetBlockWithTransactionsHashesByHash.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\RskEthGetBlockWithTransactionsHashesByNumber.cs">
+				<Link>RSK\RPC\RskEth\RskEthGetBlockWithTransactionsHashesByNumber.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\DTOs\IRskBlockExtended.cs">
+				<Link>RSK\RPC\RskEth\DTOs\IRskBlockExtended.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\DTOs\RskBlockExtendedExtensions.cs">
+				<Link>RSK\RPC\RskEth\DTOs\RskBlockExtendedExtensions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\DTOs\RSKBlockWithTransactionHashes.cs">
+				<Link>RSK\RPC\RskEth\DTOs\RSKBlockWithTransactionHashes.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\RPC\RskEth\DTOs\RskBlockWithTransactions.cs">
+				<Link>RSK\RPC\RskEth\DTOs\RskBlockWithTransactions.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RSK\Util\AddressUtli.cs">
+				<Link>RSK\Util\AddressUtli.cs</Link>
 		</Compile>
 		
         </ItemGroup>

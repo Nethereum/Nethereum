@@ -4,10 +4,8 @@
     <Description>Nethereum.HdWallet uses BIP32 and BIP39 to generate an HD tree of Ethereum compatible addreses from a randomly generated word seeds. 
     This is compatible with keys generated using the standard (m/44'/60'/0'/0/x) usded in  BIP44, MetaMask, Jaxx, MyEtherWallet (default), TREZOR App, Exodus
     or (m/44'/60'/0'/x) used in Electrum, MyEtherWallet (ledger), Ledger Chrome App, imToken </Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.HdWallet</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(HdWalletFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.HdWallet</AssemblyName>
     <PackageId>Nethereum.HdWallet</PackageId>

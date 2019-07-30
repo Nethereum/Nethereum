@@ -2,7 +2,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.JsonRpc WebSocketClient</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.JsonRpc.WebSocketClient</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(IpcWebSocketsFrameworks)</TargetFrameworks>

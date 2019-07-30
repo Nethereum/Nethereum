@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Netherum.Rsk is the extended Web3 library for Rsk. including the non-generic RPC API client methods to interact with the Rsk chain </Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Rsk</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>

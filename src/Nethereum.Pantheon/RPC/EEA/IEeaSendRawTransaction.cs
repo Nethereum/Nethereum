@@ -1,8 +1,11 @@
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 
-public interface IEeaSendRawTransaction
+namespace Nethereum.Pantheon.RPC.EEA
 {
-    Task<string> SendRequestAsync(string signedTransaction, object id = null);
-    RpcRequest BuildRequest(string signedTransaction, object id = null);
+    public interface IEeaSendRawTransaction
+    {
+        Task<string> SendRequestAsync(string signedTransaction, object id = null);
+        RpcRequest BuildRequest(string signedTransaction, object id = null);
+    }
 }

@@ -2,10 +2,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum.StandardNonFungibleTokenERC721 Ethereum Service to interact with ERC721 compliant contracts</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.StandardNonFungibleTokenERC721</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.StandardNonFungibleTokenERC721</AssemblyName>
     <PackageId>Nethereum.StandardNonFungibleTokenERC721</PackageId>

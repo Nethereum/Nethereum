@@ -3,10 +3,8 @@
 
   <PropertyGroup>
     <Description>Nethereum.BlockchainProcessing Ethereum blockchain processing allowing to crawl Blocks, Transactions, TransactionReceipts and Logs (Event) for storage and / or using custom handlers like queuing , search, etc</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.BlockchainProcessing</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <Authors>Juan Blanco, Dave Whiffin</Authors>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.BlockchainProcessing</AssemblyName>
     <PackageId>Nethereum.BlockchainProcessing</PackageId>
