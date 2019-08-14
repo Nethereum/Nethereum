@@ -22,7 +22,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
                 hasFailed = HasFailedToCreateContract(code);
             }
             return new ContractCreationVO(transactionReceiptVO, code,
-                hasFailed.Value);
+                hasFailed ?? false);
         }
 
         protected virtual bool HasFailedToCreateContract(string code)
