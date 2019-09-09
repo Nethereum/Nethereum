@@ -18,16 +18,23 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
-        private BlockRangeRequestStrategy _blockRangeRequestStrategy;
         protected IEthApiContractService EthApi { get; set; }
+
+        public IBlockRangeRequestStrategy BlockRangeRequestStrategy {get; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
             IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+            :this(ethApi, logProcessors, filterInput, new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight))
+        {
+        }
+
+        public LogOrchestrator(IEthApiContractService ethApi,
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, IBlockRangeRequestStrategy blockRangeRequestStrategy = null)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
-            _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight);
+            BlockRangeRequestStrategy = blockRangeRequestStrategy ?? new BlockRangeRequestStrategy();
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber,
@@ -94,7 +101,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             {
 
                 var adjustedToBlock =
-                    _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
+                    BlockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
                         retryRequestNumber);
 
                 _filterInput.SetBlockRange(fromBlock, adjustedToBlock);

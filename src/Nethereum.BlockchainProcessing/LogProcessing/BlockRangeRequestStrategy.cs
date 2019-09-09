@@ -2,31 +2,32 @@
 
 namespace Nethereum.BlockchainProcessing.LogProcessing
 {
-    public class BlockRangeRequestStrategy
+    public class BlockRangeRequestStrategy : IBlockRangeRequestStrategy
     {
-        private readonly int _defaultNumberOfBlocksPerRequest;
-        private readonly int _retryWeight;
+        public int DefaultNumberOfBlocksPerRequest {get; }
+        public int RetryWeight {get; }
 
         public BlockRangeRequestStrategy(int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
-            _defaultNumberOfBlocksPerRequest = defaultNumberOfBlocksPerRequest;
-            _retryWeight = retryWeight;
+            DefaultNumberOfBlocksPerRequest = defaultNumberOfBlocksPerRequest;
+            RetryWeight = retryWeight;
         }
 
         public BigInteger GeBlockNumberToRequestTo(BigInteger fromBlockNumber, BigInteger maxBlockNumberToRequestTo, int retryRequestNumber = 0)
         {
-            var totalNumberOfBlocksRequested = (int)(maxBlockNumberToRequestTo - fromBlockNumber) + 1;
+            var blocksRequested = (int)(maxBlockNumberToRequestTo - fromBlockNumber) + 1;
 
-            var maxNumberOfBlocks = _defaultNumberOfBlocksPerRequest;
+            var maxNumberOfBlocks = DefaultNumberOfBlocksPerRequest;
 
-            //we start with the smaller batch instead if we only need less than the total batch
-            if (totalNumberOfBlocksRequested < maxNumberOfBlocks)
+            // block size is lower than max
+            if (blocksRequested < maxNumberOfBlocks)
             {
-                maxNumberOfBlocks = totalNumberOfBlocksRequested;
+                maxNumberOfBlocks = blocksRequested;
             }
 
             if (retryRequestNumber > 0)
             {
+                //reduce block range relative to retry number
                 maxNumberOfBlocks = GetMaxNumberOfBlocksToRequestToRetryAttempt(retryRequestNumber, maxNumberOfBlocks);
             }
 
@@ -51,7 +52,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         protected virtual int GetMaxNumberOfBlocksToRequestToRetryAttempt(int retryRequestNumber, int numberOfBlocksPerRequest)
         {
-            return numberOfBlocksPerRequest / (retryRequestNumber + 1) + (_retryWeight * retryRequestNumber);
+            return numberOfBlocksPerRequest / (retryRequestNumber + 1) + (RetryWeight * retryRequestNumber);
         }
     }
 }

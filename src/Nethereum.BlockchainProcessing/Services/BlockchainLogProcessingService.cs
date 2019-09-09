@@ -26,9 +26,15 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+                CreateProcessor(
+                    new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, 
+                    minimumBlockConfirmations,
+                    new FilterInputBuilder<TEventDTO>().Build(), 
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
 
         public BlockchainProcessor CreateProcessorForContract<TEventDTO>(
@@ -37,16 +43,21 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[]
-            {
-                new EventLogProcessorHandler<TEventDTO>(action, criteria)
-            },
-                minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(new[]
-            {
-                contractAddress
-            }), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+                CreateProcessor(
+                    new[]
+                    {
+                        new EventLogProcessorHandler<TEventDTO>(action, criteria)
+                    },
+                    minimumBlockConfirmations,
+                    new FilterInputBuilder<TEventDTO>().Build(new[]
+                    {
+                        contractAddress
+                    }), 
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
 
         public BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
@@ -55,18 +66,30 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(contractAddresses), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+            CreateProcessor(
+                new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, 
+                minimumBlockConfirmations,
+                new FilterInputBuilder<TEventDTO>().Build(contractAddresses), 
+                blockProgressRepository, 
+                log, 
+                blockRangeRequestStrategy);
 
         public BlockchainProcessor CreateProcessor<TEventDTO>(
             Func<EventLog<TEventDTO>, Task> action,
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+            CreateProcessor(
+                new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, 
+                minimumBlockConfirmations,
+                new FilterInputBuilder<TEventDTO>().Build(), 
+                blockProgressRepository, 
+                log, 
+                blockRangeRequestStrategy);
 
 
         public BlockchainProcessor CreateProcessorForContract<TEventDTO>(
@@ -75,9 +98,15 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(new[] {contractAddress}), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+            CreateProcessor(
+                new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, 
+                minimumBlockConfirmations,
+                new FilterInputBuilder<TEventDTO>().Build(new[] {contractAddress}), 
+                blockProgressRepository, 
+                log, 
+                blockRangeRequestStrategy);
 
         public BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
             string[] contractAddresses,
@@ -85,18 +114,30 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
-            CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
-                new FilterInputBuilder<TEventDTO>().Build(contractAddresses), blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class, new() =>
+            CreateProcessor(
+                new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, 
+                minimumBlockConfirmations,
+                new FilterInputBuilder<TEventDTO>().Build(contractAddresses), 
+                blockProgressRepository, 
+                log, 
+                blockRangeRequestStrategy);
 
         public BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
             ProcessorHandler<FilterLog> logProcessor,
             string[] contractAddresses,
             uint minimumBlockConfirmations,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class =>
-            CreateProcessor(new[] {logProcessor}, minimumBlockConfirmations, new FilterInputBuilder<TEventDTO>().Build(contractAddresses),
-                blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) where TEventDTO : class =>
+                CreateProcessor(
+                    new[] {logProcessor}, 
+                    minimumBlockConfirmations, 
+                    new FilterInputBuilder<TEventDTO>().Build(contractAddresses),
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
         public BlockchainProcessor CreateProcessorForContract(
 
@@ -105,8 +146,15 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
-            new NewFilterInput {Address = new[] {contractAddress}}, blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) =>
+                CreateProcessor(
+                    new[] {new ProcessorHandler<FilterLog>(action, criteria)}, 
+                    minimumBlockConfirmations,
+                    new NewFilterInput {Address = new[] {contractAddress}}, 
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
         public BlockchainProcessor CreateProcessorForContracts(
 
@@ -115,8 +163,15 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
-            new NewFilterInput {Address = contractAddresses}, blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) => 
+                CreateProcessor(
+                    new[] {new ProcessorHandler<FilterLog>(action, criteria)}, 
+                    minimumBlockConfirmations,
+                    new NewFilterInput {Address = contractAddresses}, 
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
 
         //sync action and criter
@@ -127,8 +182,15 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, bool> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
-            blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) => 
+                CreateProcessor(
+                    new[] {new ProcessorHandler<FilterLog>(action, criteria)}, 
+                    minimumBlockConfirmations, 
+                    filter,
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
         //async action and criteria
         public BlockchainProcessor CreateProcessor(
@@ -138,8 +200,15 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, Task<bool>> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
-            blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) => 
+                CreateProcessor(
+                    new[] {new ProcessorHandler<FilterLog>(action, criteria)}, 
+                    minimumBlockConfirmations, 
+                    filter,
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
         //single processor
         public BlockchainProcessor CreateProcessor(
@@ -148,7 +217,15 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {logProcessor}, minimumBlockConfirmations, filter, blockProgressRepository, log);
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null) => 
+                CreateProcessor(
+                    new[] {logProcessor}, 
+                    minimumBlockConfirmations, 
+                    filter, 
+                    blockProgressRepository, 
+                    log, 
+                    blockRangeRequestStrategy);
 
         //multi processor
         public BlockchainProcessor CreateProcessor(
@@ -157,9 +234,10 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null)
+            ILog log = null,
+            IBlockRangeRequestStrategy blockRangeRequestStrategy = null)
         {
-            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter);
+            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, blockRangeRequestStrategy);
 
             var progressRepository = blockProgressRepository ??
                                      new InMemoryBlockchainProgressRepository();

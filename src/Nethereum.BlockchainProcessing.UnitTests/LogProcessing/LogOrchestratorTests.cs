@@ -28,6 +28,25 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
         }
 
         [Fact]
+        public void BlockRangeRequestStrategy_Is_Defaulted_When_Not_Explicity_Set()
+        {
+            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new[] { _logHandler }, null, 100, 1);
+            var actualStrategy = _logOrchestrator.BlockRangeRequestStrategy as BlockRangeRequestStrategy;
+            Assert.NotNull(actualStrategy);
+            Assert.Equal(100, actualStrategy.DefaultNumberOfBlocksPerRequest);
+            Assert.Equal(1, actualStrategy.RetryWeight);
+        }
+
+        [Fact]
+        public void BlockRangeRequestStrategy_Can_Be_Injected()
+        {
+            var blockRangeRequestStrategy = new BlockRangeRequestStrategy();
+            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new[] { _logHandler }, null, blockRangeRequestStrategy);
+            Assert.Same(blockRangeRequestStrategy, _logOrchestrator.BlockRangeRequestStrategy);
+        }
+
+
+        [Fact]
         public async Task Should_Retrieve_Logs_And_Invoke_Handlers_And_Report_Last_Block_Processed()
         {
             var fromBlock = new BigInteger(10);
