@@ -35,7 +35,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             block.ParentHash = source.ParentHash ?? string.Empty;
             block.Miner = source.Miner ?? string.Empty;
             block.Nonce = source.Nonce;
-            block.TransactionCount = source.TransactionCount();
+            block.TransactionCount = source.SupportsTransactionCount() ? source.TransactionCount() : 0;
         }
     }
 }

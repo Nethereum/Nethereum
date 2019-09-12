@@ -48,13 +48,26 @@ namespace Nethereum.RPC.UnitTests
         }
 
         [Fact]
-        public void Block_TransactionCount_Returns_0()
+        public void Block_TransactionCount_Returns_0_Or_Throws_Depending_On_Flag()
         {
             var block = new Block();
-            Assert.Equal(0, block.TransactionCount());
+            Assert.Equal(0, block.TransactionCount(throwWhenNotSupported: false));
+
+            var ex = Assert.Throws<ArgumentException>(() => block.TransactionCount(throwWhenNotSupported: true));
+            const string EXPECTED_EXCEPTION_MESSAGE = "TransactionCount error.  Block does not support returning a transaction count.";
+            Assert.Equal(EXPECTED_EXCEPTION_MESSAGE, ex.Message);
+
+            //ensure the default is to throw if not supported
+            Assert.Throws<ArgumentException>(() => block.TransactionCount());
         }
 
-
+        [Fact]
+        public void Block_Supports_Transaction_Count()
+        {
+            Assert.True(new BlockWithTransactionHashes().SupportsTransactionCount());
+            Assert.True(new BlockWithTransactions().SupportsTransactionCount());
+            Assert.False(new Block().SupportsTransactionCount());
+        }
 
         [Theory]
         [InlineData(Address1)]
