@@ -24,12 +24,12 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
     {
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
-        private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _sendRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
 
         private readonly string _path;
-        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 100000;
+        public static int ForceCompleteReadTotalMilliseconds { get; set; } = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;// 100000;
 
-        private ConcurrentDictionary<string, IRpcStreamingResponseHandler> _requests = new ConcurrentDictionary<string, IRpcStreamingResponseHandler>();
+        private readonly ConcurrentDictionary<string, IRpcStreamingResponseHandler> _requests = new ConcurrentDictionary<string, IRpcStreamingResponseHandler>();
 
         private Task _listener;
         private CancellationTokenSource _cancellationTokenSource;
@@ -46,7 +46,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         }
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
-        private readonly object _lockingObject = new object();
         private readonly ILog _log;
 
         public bool IsStarted { get; private set; }
@@ -90,12 +89,13 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
                 if (_requests.TryRemove(response.Id.ToString(), out handler))
                 {
-                     handler.HandleResponse(response);
+                    handler.HandleResponse(response);
                 }
             }
         }
 
-        public StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : this(path, jsonSerializerSettings)
+        public StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) 
+            : this(path, jsonSerializerSettings)
         {
             _log = log;
         }
@@ -109,7 +109,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
 
             _cancellationTokenSource = new CancellationTokenSource();
- 
+
             _listener = Task.Factory.StartNew(async () =>
             {
                 await HandleIncomingMessagesAsync();
@@ -128,13 +128,12 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private async Task ConnectWebSocketAsync()
         {
-            try
-            {
-                if (_clientWebSocket == null || _clientWebSocket.State != WebSocketState.Open)
+            try 
+            { 
+                if (_clientWebSocket.IsNullOrNotOpen())
                 {
                     _clientWebSocket = new ClientWebSocket();
                     await _clientWebSocket.ConnectAsync(new Uri(_path), new CancellationTokenSource(ConnectionTimeout).Token).ConfigureAwait(false);
-
                 }
             }
             catch (TaskCanceledException ex)
@@ -143,19 +142,20 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 HandleError(rpcException);
                 throw rpcException;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 HandleError(ex);
                 throw;
             }
+
         }
 
         private void HandleError(Exception exception)
         {
-            Error?.Invoke(this,exception);
+            Error?.Invoke(this, exception);
             foreach (var rpcStreamingResponseHandler in _requests)
             {
-                rpcStreamingResponseHandler.Value.HandleClientError(exception);    
+                rpcStreamingResponseHandler.Value.HandleClientError(exception);
             }
             CloseDisposeAndClearRequestsAsync().Wait();
         }
@@ -164,6 +164,8 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         {
             try
             {
+                if (client.IsNullOrNotOpen()) return 0;
+
                 var timeoutToken = new CancellationTokenSource(ForceCompleteReadTotalMilliseconds).Token;
                 var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token, timeoutToken);
 
@@ -191,7 +193,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             var memoryStream = new MemoryStream();
             bool completedNextMessage = false;
 
-
             while (!completedNextMessage && !_cancellationTokenSource.IsCancellationRequested)
             {
                 if (lastBuffer != null && lastBuffer.Length > 0)
@@ -203,7 +204,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                     var buffer = new byte[readBufferSize];
                     var bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
                     if (bytesRead == 0) completedNextMessage = true;
-                   
+
                     completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, bytesRead);
                 }
             }
@@ -211,7 +212,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return memoryStream;
         }
 
-        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead=-1)
+        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead = -1)
         {
             int currentIndex = 0;
             //bytesRead == -1 used to signal cached previous buffer
@@ -223,9 +224,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 bufferToRead = bytesRead;
             }
 
-            while(currentIndex < bufferToRead)
+            while (currentIndex < bufferToRead)
             {
-                if(buffer[currentIndex] == 10)
+                if (buffer[currentIndex] == 10)
                 {
                     if (currentIndex + 1 < bufferToRead) // bytes remaining
                     {
@@ -253,20 +254,27 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             return false;
         }
-            
+
+        private bool Cancelled()
+        {
+            return _cancellationTokenSource == null ? 
+                true : 
+                _cancellationTokenSource.IsCancellationRequested;
+        }
 
         private async Task HandleIncomingMessagesAsync()
         {
             var logger = new RpcLogger(_log);
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            while (!Cancelled())
             {
                 try
                 {
-                    if (_clientWebSocket != null && _clientWebSocket.State == WebSocketState.Open && AnyQueueRequests())
+                    if (_clientWebSocket.IsNotNullAndOpen() && AnyQueueRequests())
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
                         {
-                            if (memoryData.Length == 0) return;
+                            if (memoryData.Length == 0) continue;
+
                             memoryData.Position = 0;
                             using (var streamReader = new StreamReader(memoryData))
                             using (var reader = new JsonTextReader(streamReader))
@@ -275,7 +283,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                                 var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
                                 HandleResponse(message);
                                 logger.LogResponse(message);
-
                             }
                         }
                     }
@@ -288,13 +295,15 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
         }
 
-        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null )
+        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)
         {
+            if (_clientWebSocket == null) throw new InvalidOperationException("Websocket is null.  Ensure that StartAsync has been called to create the websocket.");
+
             var logger = new RpcLogger(_log);
-            
+
             try
             {
-                await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await _sendRequestSemaphoreSlim.WaitAsync().ConfigureAwait(false);
                 var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                 var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
                 logger.LogRequest(rpcRequestJson);
@@ -314,8 +323,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
             finally
             {
-                _semaphoreSlim.Release();
+                _sendRequestSemaphoreSlim.Release();
             }
+
         }
 
         public void Dispose()
@@ -326,6 +336,22 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private async Task CloseDisposeAndClearRequestsAsync()
         {
             IsStarted = false;
+
+            // The loop within HandleIncomingMessagesAsync depends on the cancellation token
+            // so cancel the token and stop the loop before disposing the websocket
+            try
+            {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _cancellationTokenSource = null;
+            }
 
             try
             {
@@ -345,20 +371,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             finally
             {
                 _clientWebSocket = null;
-            }
-
-            try
-            {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-                _cancellationTokenSource = null;
             }
 
 #if !NETSTANDARD1_3
@@ -401,7 +413,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             var reqMsg = new RpcRequestMessage(request.Id,
                                              request.Method,
                                              request.RawParameters);
-             await SendRequestAsync(reqMsg, requestResponseHandler, route).ConfigureAwait(false);
+            await SendRequestAsync(reqMsg, requestResponseHandler, route).ConfigureAwait(false);
         }
     }
 }

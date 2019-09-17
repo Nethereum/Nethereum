@@ -3,12 +3,19 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class PersonalUnlLockAccountTester : RPCRequestTester<bool>, IRPCRequestTester
     {
+        public PersonalUnlLockAccountTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettings.GethLocalSettings)
+        {
+        }
 
         [Fact]
         public async void ShouldUnLockAccountAndReturnTrue()

@@ -2,8 +2,8 @@
   "liveSettings": {
     "rpcUrl": "https://mainnet.infura.io",
     "wsUrl": "wss://mainnet.infura.io/ws"
-  }, 
-  "testSettings": {
+  },
+  "gethLocalSettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
     "rpcUrl": "http://localhost:8545/",
@@ -11,7 +11,18 @@
     "blockhash": "0x0b7f7e2151328f33dbb14a8285331a6fd0b1081d1f5edea1937b7bee4dce7c5b",
     "blockNumber": "1",
     "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
-    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4",
+    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4"
+  },
+  "gethRinkebySettings": {
+    "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
+    "defaultAccountPassword": "password",
+    "rpcUrl": "https://rinkeby.infura.io/v3/7238211010344719ad14a89db874158c",
+    "wsUrl": "wss://rinkeby.infura.io/ws/v3/7238211010344719ad14a89db874158c",
+    "debugLogLocation": "",
+    "blockhash": "0x6a2814825536e69a4a0e99d04c06f32bfb6474b688cc506ca115f33fc9104786",
+    "blockNumber": "5117461",
+    "transactionHash": "0x98a70385061587d9ba67fb26dcf57c3d0421e3bc185e6f33dbcf2fcbdeceb427",
+    "contractAddress": "0xE0314688F6A6dB94aDc55d4186d2fc9B78d11bfB"
   },
   "parityRopstenSettings": {
     "defaultAccount": "0xe84a30306b0BEEfD34a13A8d20d333078Ba7792e",

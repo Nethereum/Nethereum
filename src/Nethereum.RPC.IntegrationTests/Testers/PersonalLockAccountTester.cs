@@ -2,13 +2,20 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class PersonalLockAccountTester : RPCRequestTester<bool>, IRPCRequestTester
     {
-        
+        public PersonalLockAccountTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettings.GethLocalSettings)
+        {
+        }
+
         [Fact]
         public async void ShouldLockAccountAndReturnTrue()
         {

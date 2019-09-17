@@ -1,22 +1,41 @@
+using Nethereum.JsonRpc.Client;
+using Nethereum.XUnitEthereumClients;
 using System;
 using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.Streaming;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public abstract class RPCRequestTester<T>: IRPCRequestTester
     {
         public IClient Client { get; set; }
-        public IStreamingClient StreamingClient { get; set; }
 
         public TestSettings Settings { get; set; }
 
-        protected RPCRequestTester()
+        /// <summary>
+        /// Sets up a local test net
+        /// </summary>
+        /// <param name="ethereumClientIntegrationFixture"></param>
+        /// <param name="settingsName"></param>
+        protected RPCRequestTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture,
+            string settingsName)
         {
-            Settings = new TestSettings();
+            Settings = new TestSettings(settingsName);
+            Client = ethereumClientIntegrationFixture.GetWeb3().Client;
+        }
+
+        protected RPCRequestTester() : this(new TestSettings())
+        {
+        }
+
+        protected RPCRequestTester(string settingsName) :this(new TestSettings(settingsName))
+        {
+        }
+
+        protected RPCRequestTester(TestSettings settings)
+        {
+            Settings = settings;
             Client = ClientFactory.GetClient(Settings);
-            StreamingClient = ClientFactory.GetStreamingClient(Settings);
         }
 
         public Task<T> ExecuteAsync()
