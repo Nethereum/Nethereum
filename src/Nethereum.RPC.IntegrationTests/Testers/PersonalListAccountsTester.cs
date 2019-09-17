@@ -2,12 +2,20 @@
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Personal;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class PersonalListAccountsTester : RPCRequestTester<string[]>, IRPCRequestTester
     {
+        public PersonalListAccountsTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettings.GethLocalSettings)
+        {
+        }
+
         [Fact]
         public async void ShouldRetrieveTheAccounts()
         {

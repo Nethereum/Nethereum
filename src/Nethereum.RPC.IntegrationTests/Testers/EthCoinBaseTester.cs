@@ -1,16 +1,22 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
-using Nethereum.RPC.Eth.Compilation;
-using Newtonsoft.Json.Linq;
+using Nethereum.XUnitEthereumClients;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-  
+
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EthCoinBaseTester : RPCRequestTester<string>, IRPCRequestTester
     {
+        public EthCoinBaseTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) : 
+            base(ethereumClientIntegrationFixture, TestSettings.GethLocalSettings)
+        {
+        }
+
         [Fact]
         public async void ShouldReturnCoinBaseAccount()
         {
