@@ -46,7 +46,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         }
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
-        private readonly object _lockingObject = new object();
         private readonly ILog _log;
 
         public bool IsStarted { get; private set; }
@@ -130,7 +129,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         {
             try
             {
-                if (_clientWebSocket == null || _clientWebSocket.State != WebSocketState.Open)
+                if (_clientWebSocket.IsNullOrNotOpen())
                 {
                     _clientWebSocket = new ClientWebSocket();
                     await _clientWebSocket.ConnectAsync(new Uri(_path), new CancellationTokenSource(ConnectionTimeout).Token).ConfigureAwait(false);
@@ -164,6 +163,8 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         {
             try
             {
+                if (client.IsNullOrNotOpen()) return 0;
+
                 var timeoutToken = new CancellationTokenSource(ForceCompleteReadTotalMilliseconds).Token;
                 var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token, timeoutToken);
 
@@ -184,6 +185,13 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private byte[] lastBuffer;
 
+        private bool Cancelled()
+        {
+            return _cancellationTokenSource == null ?
+                true :
+                _cancellationTokenSource.IsCancellationRequested;
+        }
+
         //this could be moved to AsycEnumerator
         public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client)
         {
@@ -192,7 +200,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             bool completedNextMessage = false;
 
 
-            while (!completedNextMessage && !_cancellationTokenSource.IsCancellationRequested)
+            while (!completedNextMessage && !Cancelled())
             {
                 if (lastBuffer != null && lastBuffer.Length > 0)
                 {
@@ -258,15 +266,15 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private async Task HandleIncomingMessagesAsync()
         {
             var logger = new RpcLogger(_log);
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            while (!Cancelled())
             {
                 try
                 {
-                    if (_clientWebSocket != null && _clientWebSocket.State == WebSocketState.Open && AnyQueueRequests())
+                    if (_clientWebSocket.IsNotNullAndOpen() && AnyQueueRequests())
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
                         {
-                            if (memoryData.Length == 0) return;
+                            if (memoryData.Length == 0) continue;
                             memoryData.Position = 0;
                             using (var streamReader = new StreamReader(memoryData))
                             using (var reader = new JsonTextReader(streamReader))
@@ -329,6 +337,22 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         {
             IsStarted = false;
 
+            // The loop within HandleIncomingMessagesAsync depends on the cancellation token
+            // so cancel the token and stop the loop before disposing the websocket
+            try
+            {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _cancellationTokenSource = null;
+            }
+
             try
             {
                 if (_clientWebSocket != null)
@@ -347,20 +371,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             finally
             {
                 _clientWebSocket = null;
-            }
-
-            try
-            {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-                _cancellationTokenSource = null;
             }
 
 #if !NETSTANDARD1_3
