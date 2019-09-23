@@ -1,14 +1,12 @@
+using Nethereum.JsonRpc.Client;
 using System;
 using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.Client.Streaming;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public abstract class RPCRequestTester<T>: IRPCRequestTester
     {
         public IClient Client { get; set; }
-        public IStreamingClient StreamingClient { get; set; }
 
         public TestSettings Settings { get; set; }
 
@@ -16,7 +14,6 @@ namespace Nethereum.RPC.Tests.Testers
         {
             Settings = new TestSettings();
             Client = ClientFactory.GetClient(Settings);
-            StreamingClient = ClientFactory.GetStreamingClient(Settings);
         }
 
         public Task<T> ExecuteAsync()

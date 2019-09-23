@@ -19,11 +19,9 @@ namespace Nethereum.RPC.Tests
            return new RpcClient(new Uri(url)); 
         }
 
-        //TODO:Subscriptions
         public static IStreamingClient GetStreamingClient(TestSettings settings)
         {
-            var url = settings.GetLiveWSRpcUrl();
-            return new StreamingWebSocketClient(url);
+            return new StreamingWebSocketClient(settings.GetWSRpcUrl());
         }
     }
 }

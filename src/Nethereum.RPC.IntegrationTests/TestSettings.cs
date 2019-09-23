@@ -7,8 +7,13 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class TestSettings
     {
-        public TestSettings()
+        public TestSettings():this(GethSettings)
         {
+        }
+
+        public TestSettings(string currentSettings)
+        {
+            CurrentSettings = currentSettings;
             var builder = new ConfigurationBuilder()
            .AddJsonFile("test-settings.json");
             Configuration = builder.Build();
@@ -16,6 +21,7 @@ namespace Nethereum.RPC.Tests.Testers
 
         public static string ParitySettings = "parityRopstenSettings";
         public static string GethSettings = "testSettings";
+        public static string GethRinkebySettings = "gethRinkebySettings";
 
         public string CurrentSettings = TestSettings.GethSettings;
 
@@ -46,10 +52,14 @@ namespace Nethereum.RPC.Tests.Testers
             return GetLiveSettingsValue("rpcUrl");
         }
 
-        //TODO:Subscriptions
         public string GetLiveWSRpcUrl()
         {
             return GetLiveSettingsValue("wsUrl");
+        }
+
+        public string GetWSRpcUrl()
+        {
+            return GetAppSettingsValue("wsUrl");
         }
 
         public ulong GetBlockNumber()

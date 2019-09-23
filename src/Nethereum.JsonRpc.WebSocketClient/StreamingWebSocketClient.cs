@@ -29,7 +29,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private readonly string _path;
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 100000;
 
-        private ConcurrentDictionary<string, IRpcStreamingResponseHandler> _requests = new ConcurrentDictionary<string, IRpcStreamingResponseHandler>();
+        private readonly ConcurrentDictionary<string, IRpcStreamingResponseHandler> _requests = new ConcurrentDictionary<string, IRpcStreamingResponseHandler>();
 
         private Task _listener;
         private CancellationTokenSource _cancellationTokenSource;
