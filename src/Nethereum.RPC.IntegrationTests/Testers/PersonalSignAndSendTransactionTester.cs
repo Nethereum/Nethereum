@@ -3,12 +3,20 @@ using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class PersonalSignAndSendTransactionTester : RPCRequestTester<string>, IRPCRequestTester
     {
+        public PersonalSignAndSendTransactionTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettings.GethLocalSettings)
+        {
+        }
+
         [Fact]
         public async void ShouldSignAndSendTransaction()
         {

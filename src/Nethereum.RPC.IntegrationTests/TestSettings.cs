@@ -1,27 +1,33 @@
-using System;
-//using System.Configuration;
-using System.Linq;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Linq;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public class TestSettings
     {
-        public TestSettings()
+        public TestSettings():this(GethRinkebySettings)
         {
+        }
+
+        public TestSettings(string currentSettings)
+        {
+            CurrentSettings = currentSettings;
             var builder = new ConfigurationBuilder()
            .AddJsonFile("test-settings.json");
             Configuration = builder.Build();
         }
 
-        public static string ParitySettings = "parityRopstenSettings";
-        public static string GethSettings = "testSettings";
+        public static string LiveSettings = "liveSettings";
+        public static string ParityRopstenSettings = "parityRopstenSettings";
+        public static string GethLocalSettings = "gethLocalSettings";
+        public static string GethRinkebySettings = "gethRinkebySettings";
 
-        public string CurrentSettings = TestSettings.GethSettings;
+        public string CurrentSettings;
 
         public bool IsParity()
         {
-            return CurrentSettings == ParitySettings;
+            return CurrentSettings == ParityRopstenSettings;
         }
 
         public IConfigurationRoot Configuration { get; set; }
@@ -41,40 +47,14 @@ namespace Nethereum.RPC.Tests.Testers
             return GetAppSettingsValue("transactionHash");
         }
 
-        public string GetLiveRpcUrl()
+        public string GetWSRpcUrl()
         {
-            return GetLiveSettingsValue("rpcUrl");
-        }
-
-        //TODO:Subscriptions
-        public string GetLiveWSRpcUrl()
-        {
-            return GetLiveSettingsValue("wsUrl");
+            return GetAppSettingsValue("wsUrl");
         }
 
         public ulong GetBlockNumber()
         {
             return Convert.ToUInt64(GetAppSettingsValue("blockNumber"));
-        }
-
-        private string GetAppSettingsValue(string key)
-        {
-            return GetSectionSettingsValue(key, CurrentSettings);
-        }
-
-        private string GetLiveSettingsValue(string key)
-        {
-            return GetSectionSettingsValue(key, "liveSettings");
-        }
-
-        private string GetSectionSettingsValue(string key, string sectionSettingsKey)
-        {
-            var configuration = Configuration.GetSection(sectionSettingsKey);
-            var children = configuration.GetChildren();
-            var setting = children.FirstOrDefault(x => x.Key == key);
-            if (setting != null)
-                return setting.Value;
-            throw new Exception("Setting: " + key + " Not found");
         }
 
         public string GetRPCUrl()
@@ -92,9 +72,20 @@ namespace Nethereum.RPC.Tests.Testers
             return GetAppSettingsValue("contractAddress");
         }
 
-        public string GetDefaultLogLocation()
+        private string GetAppSettingsValue(string key)
         {
-            return GetAppSettingsValue("debugLogLocation");
+            return GetSectionSettingsValue(key, CurrentSettings);
         }
+
+        private string GetSectionSettingsValue(string key, string sectionSettingsKey)
+        {
+            var configuration = Configuration.GetSection(sectionSettingsKey);
+            var children = configuration.GetChildren();
+            var setting = children.FirstOrDefault(x => x.Key == key);
+            if (setting != null)
+                return setting.Value;
+            throw new Exception("Setting: " + key + " Not found");
+        }
+
     }
 }
