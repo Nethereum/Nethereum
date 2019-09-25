@@ -10,9 +10,8 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetUncleByBlockHashAndIndexTester : RPCRequestTester<BlockWithTransactionHashes>, IRPCRequestTester
     {
-        public EthGetUncleByBlockHashAndIndexTester():base()
+        public EthGetUncleByBlockHashAndIndexTester():base(TestSettingsCategory.live)
         {
-              this.Client = new RpcClient(new Uri(Settings.GetLiveRpcUrl()));  
         }
 
         [Fact]

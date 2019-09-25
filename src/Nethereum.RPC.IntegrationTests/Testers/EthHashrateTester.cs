@@ -9,6 +9,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthHashrateTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+        public EthHashrateTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnHashRate()
         {

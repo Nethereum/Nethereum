@@ -1,14 +1,19 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetTransactionByHashTester : RPCRequestTester<Transaction>
     {
+        public EthGetTransactionByHashTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTheTransaction()
         {

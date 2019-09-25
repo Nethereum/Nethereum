@@ -10,6 +10,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetTransactionByBlockHashAndIndexTester : RPCRequestTester<Transaction>
     {
+        public EthGetTransactionByBlockHashAndIndexTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTheTransaction()
         {

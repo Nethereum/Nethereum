@@ -1,14 +1,19 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public class EthBlockNumberTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+        public EthBlockNumberTester():base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldRetrieveBlockNumberEqualOrBiggerThanZero()
         {

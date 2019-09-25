@@ -9,6 +9,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetTransactionCountTester : RPCRequestTester<HexBigInteger>
     {
+        public EthGetTransactionCountTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTheTransactionCountOfTheAccount()
         {

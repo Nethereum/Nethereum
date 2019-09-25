@@ -12,9 +12,8 @@ namespace Nethereum.RPC.Tests.Testers
     public class EthGetUncleCountByBlockHashTester : RPCRequestTester<HexBigInteger>
     {
 
-        public EthGetUncleCountByBlockHashTester():base()
+        public EthGetUncleCountByBlockHashTester():base(TestSettingsCategory.live)
         {
-            this.Client = new RpcClient(new Uri(Settings.GetLiveRpcUrl()));
         }
 
         [Fact]

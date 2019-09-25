@@ -8,9 +8,13 @@ using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-
     public class EthGetTransactionByBlockNumberAndIndexTester : RPCRequestTester<Transaction>
     {
+        public EthGetTransactionByBlockNumberAndIndexTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTheTransaction()
         {

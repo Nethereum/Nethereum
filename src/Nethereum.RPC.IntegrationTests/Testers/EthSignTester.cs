@@ -7,6 +7,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthSignTester : RPCRequestTester<string>, IRPCRequestTester
     {
+        public EthSignTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethSign = new EthSign(client);

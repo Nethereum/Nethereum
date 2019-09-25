@@ -1,33 +1,53 @@
-using System;
-//using System.Configuration;
-using System.Linq;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Linq;
 
 namespace Nethereum.RPC.Tests.Testers
 {
     public class TestSettings
     {
-        public TestSettings():this(GethSettings)
+        public readonly string EthereumClient;
+        public readonly string CurrentSettings;
+
+        public TestSettings() : this(TestSettingsCategory.hostedTestNet)
         {
         }
 
-        public TestSettings(string currentSettings)
+        public TestSettings(TestSettingsCategory settingsCategory)
         {
-            CurrentSettings = currentSettings;
             var builder = new ConfigurationBuilder()
-           .AddJsonFile("test-settings.json");
+                //load defaults from json file
+                .AddJsonFile("test-settings.json")
+                //allow environmental overrides (e.g. ETHEREUM_CLIENT )
+                .AddEnvironmentVariables();
+
             Configuration = builder.Build();
+            EthereumClient = Configuration["ETHEREUM_CLIENT"] ?? "geth";
+            CurrentSettings = GetSettingName(Configuration, EthereumClient, settingsCategory);
         }
 
-        public static string ParitySettings = "parityRopstenSettings";
-        public static string GethSettings = "testSettings";
-        public static string GethRinkebySettings = "gethRinkebySettings";
+        private static string GetSettingName(IConfigurationRoot configuration, string ethereumClient, TestSettingsCategory settingsCategory)
+        {
+            string settingName = null;
+            var testConfigurationSections = configuration.GetSection("testConfigurations");
+            foreach (var configurationSection in testConfigurationSections.GetChildren())
+            {
+                if (ethereumClient == configurationSection["ethereumClient"])
+                {
+                    settingName = configurationSection[settingsCategory.ToString()];
+                    break;
+                }
+            }
 
-        public string CurrentSettings = TestSettings.GethSettings;
+            if(string.IsNullOrEmpty(settingName))
+                throw new Exception($"TestSettings not found for Ethereum Client : {ethereumClient} and TestSettingsCategory: '{settingsCategory}'");
+
+            return settingName;
+        }
 
         public bool IsParity()
         {
-            return CurrentSettings == ParitySettings;
+            return EthereumClient.Equals("parity", StringComparison.OrdinalIgnoreCase);
         }
 
         public IConfigurationRoot Configuration { get; set; }
@@ -45,16 +65,6 @@ namespace Nethereum.RPC.Tests.Testers
         public string GetTransactionHash()
         {
             return GetAppSettingsValue("transactionHash");
-        }
-
-        public string GetLiveRpcUrl()
-        {
-            return GetLiveSettingsValue("rpcUrl");
-        }
-
-        public string GetLiveWSRpcUrl()
-        {
-            return GetLiveSettingsValue("wsUrl");
         }
 
         public string GetWSRpcUrl()

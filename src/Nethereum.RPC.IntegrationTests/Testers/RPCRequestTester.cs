@@ -1,4 +1,5 @@
 using Nethereum.JsonRpc.Client;
+using Nethereum.XUnitEthereumClients;
 using System;
 using System.Threading.Tasks;
 
@@ -10,9 +11,26 @@ namespace Nethereum.RPC.Tests.Testers
 
         public TestSettings Settings { get; set; }
 
-        protected RPCRequestTester()
+        /// <summary>
+        /// Sets up a local test net
+        /// </summary>
+        /// <param name="ethereumClientIntegrationFixture"></param>
+        /// <param name="settingsName"></param>
+        protected RPCRequestTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture, TestSettingsCategory testSettingsCategory)
         {
-            Settings = new TestSettings();
+            Settings = new TestSettings(testSettingsCategory);
+            Client = ethereumClientIntegrationFixture.GetWeb3().Client;
+        }
+
+        protected RPCRequestTester(TestSettingsCategory testSettingsCategory) 
+            : this(new TestSettings(testSettingsCategory))
+        {
+        }
+
+        protected RPCRequestTester(TestSettings settings)
+        {
+            Settings = settings;
             Client = ClientFactory.GetClient(Settings);
         }
 

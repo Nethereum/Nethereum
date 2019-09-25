@@ -9,6 +9,11 @@ namespace Nethereum.RPC.Tests.Testers
 
     public class EthGetCodeTester : RPCRequestTester<string>
     {
+        public EthGetCodeTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void Should()
         {

@@ -4,12 +4,21 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EthEstimateGasTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+
+        public EthEstimateGasTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettingsCategory.localTestNet)
+        {
+        }
+
         [Fact]
         public async void ShouldEstimateGas()
         {

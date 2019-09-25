@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Nethereum.RPC.IntegrationTests": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ETHEREUM_CLIENT": "geth"
+      }
+    }
+  }
+}

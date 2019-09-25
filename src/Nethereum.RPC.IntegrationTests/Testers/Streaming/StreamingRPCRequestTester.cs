@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers.Streaming
 
         protected StreamingRPCRequestTester()
         {
-            Settings = new TestSettings(TestSettings.GethRinkebySettings);
+            Settings = new TestSettings(TestSettingsCategory.hostedTestNet);
         }
 
         protected virtual async Task<StreamingWebSocketClientTestContext> CreateAndStartStreamingClientAsync()

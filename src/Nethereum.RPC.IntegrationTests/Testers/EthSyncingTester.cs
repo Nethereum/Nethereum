@@ -10,6 +10,11 @@ namespace Nethereum.RPC.Tests.Testers
     
     public class EthSyncingTester : RPCRequestTester<SyncingOutput>, IRPCRequestTester
     {
+        public EthSyncingTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void HighestBlockShouldBeBiggerThan0WhenSyncing()
         {

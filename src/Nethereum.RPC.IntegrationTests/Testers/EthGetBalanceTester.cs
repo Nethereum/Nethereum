@@ -1,17 +1,24 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Tests.Testers;
+using Nethereum.XUnitEthereumClients;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EthGetBalanceTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+        public EthGetBalanceTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) :
+            base(ethereumClientIntegrationFixture, TestSettingsCategory.localTestNet)
+        {
+        }
+
         [Fact]
         public async void ShouldReturnBalanceBiggerThanZero()
         {

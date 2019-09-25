@@ -1,16 +1,19 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
-using Nethereum.RPC.Eth.DTOs;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-
     public class EthGetBlockTransactionCountByHashTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+        public EthGetBlockTransactionCountByHashTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTransactionCount()
         {

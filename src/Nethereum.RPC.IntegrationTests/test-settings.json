@@ -1,9 +1,19 @@
 ﻿{
-  "liveSettings": {
-    "rpcUrl": "https://mainnet.infura.io",
-    "wsUrl": "wss://mainnet.infura.io/ws"
-  },
-  "testSettings": {
+  "testConfigurations": [
+    {
+      "ethereumClient": "geth",
+      "localTestNet": "localGethSettings",
+      "hostedTestNet": "infuraRinkebySettings",
+      "live": "infuraMainNetSettings"
+    },
+    {
+      "ethereumClient": "parity",
+      "localTestNet": "localParitySettings",
+      "hostedTestNet": "infuraRopstenSettings",
+      "live": "infuraMainNetSettings"
+    }
+  ],
+  "localGethSettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
     "rpcUrl": "http://localhost:8545/",
@@ -13,14 +23,14 @@
     "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
     "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4"
   },
-  "parityRopstenSettings": {
-    "defaultAccount": "0xe84a30306b0BEEfD34a13A8d20d333078Ba7792e",
+  "localParitySettings": {
+    "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
     "rpcUrl": "http://localhost:8545/",
-    "blockhash": "0xe2d80e5134ae5ed9b900af89d275e32645f038e48b9d30411a25354901e6a3d0",
-    "blockNumber": "34153"
+    "blockhash": "0x52d8f5fcb94e66c920105ca5f94a60bdd2f28523703f21b93bc0829dbc81ded1",
+    "blockNumber": "1"
   },
-  "gethRinkebySettings": {
+  "infuraRinkebySettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
     "rpcUrl": "https://rinkeby.infura.io/v3/7238211010344719ad14a89db874158c",
@@ -30,5 +40,20 @@
     "blockNumber": "5117461",
     "transactionHash": "0x98a70385061587d9ba67fb26dcf57c3d0421e3bc185e6f33dbcf2fcbdeceb427",
     "contractAddress": "0xE0314688F6A6dB94aDc55d4186d2fc9B78d11bfB"
+  },
+  "infuraRopstenSettings": {
+    "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
+    "defaultAccountPassword": "password",
+    "rpcUrl": "https://ropsten.infura.io/v3/7238211010344719ad14a89db874158c",
+    "wsUrl": "wss://ropsten.infura.io/ws/v3/7238211010344719ad14a89db874158c",
+    "debugLogLocation": "",
+    "blockhash": "0x649723fbdc13fcd919519686e8d0ba927e8dfe5925e66df14ea40cb149601a66",
+    "blockNumber": "6450612",
+    "transactionHash": "0x4a39218cf50c5ab19b48bf08f9593e66b612d2b9bef390bddeabbafc5bb0e91a",
+    "contractAddress": "0x69d01187b64b10976ff347042b0b2fdb7439824d"
+  },
+  "infuraMainNetSettings": {
+    "rpcUrl": "https://mainnet.infura.io",
+    "wsUrl": "wss://mainnet.infura.io/ws"
   }
 }

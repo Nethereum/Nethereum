@@ -9,6 +9,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetTransactionReceiptTester : RPCRequestTester<TransactionReceipt>, IRPCRequestTester
     {
+        public EthGetTransactionReceiptTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldRetrieveReceipt()
         {

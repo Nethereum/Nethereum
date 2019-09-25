@@ -10,6 +10,11 @@ namespace Nethereum.RPC.Tests.Testers
 {
     public class EthGetBlockTransactionCountByNumberTester : RPCRequestTester<HexBigInteger>
     {
+        public EthGetBlockTransactionCountByNumberTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
         public async void ShouldReturnTransactionCount()
         {

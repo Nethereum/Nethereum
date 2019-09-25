@@ -3,13 +3,21 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Compilation;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EthGetCompilersTester : RPCRequestTester<string[]>
     {
-        [Fact]
+        public EthGetCompilersTester(
+            EthereumClientIntegrationFixture ethereumClientIntegrationFixture) : 
+            base(ethereumClientIntegrationFixture, TestSettingsCategory.localTestNet)
+        {
+        }
+
+        [Fact(Skip = "Geth removed support for this method in 2016")]
         public async void ShouldReturnCompilers()
         {
             var result = await ExecuteAsync();

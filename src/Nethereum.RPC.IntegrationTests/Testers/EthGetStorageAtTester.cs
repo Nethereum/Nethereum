@@ -7,12 +7,15 @@ using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-
-
     public class EthGetStorageAtTester : RPCRequestTester<string>
     {
+        public EthGetStorageAtTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+
+        }
+
         [Fact]
-        public async void ShouldRetunStorage()
+        public async void ShouldReturnStorage()
         {
             var result = await ExecuteAsync();
             Assert.NotNull(result);

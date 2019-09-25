@@ -1,15 +1,18 @@
-using System;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-
     public class EthGasPriceTester : RPCRequestTester<HexBigInteger>, IRPCRequestTester
     {
+        public EthGasPriceTester() : base(TestSettingsCategory.hostedTestNet)
+        {
+        }
+
         [Fact]
         public async void ShouldGetTheGasPrice()
         {

@@ -55,7 +55,7 @@ namespace Nethereum.XUnitEthereumClients
     }
 
 
-    public class EthereumClientIntegrationFixture : IDisposable
+    public partial class EthereumClientIntegrationFixture : IDisposable
     {
         public const string ETHEREUM_CLIENT_COLLECTION_DEFAULT = "Ethereum client Test";
         private readonly Process _process;
@@ -84,6 +84,9 @@ namespace Nethereum.XUnitEthereumClients
             //3 Arguments setup
             //4 Arguments.
             // So the tests can run for both Geth and Parity, Windows, Mac and Linux.
+
+            EnvironmentalVariableLoader.LoadFromLaunchSettings();
+            EnvironmentalVariableLoader.CopyUserTargetVariablesIntoProcessTarget();
 
             var client = Environment.GetEnvironmentVariable("ETHEREUM_CLIENT");
 
