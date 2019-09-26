@@ -85,8 +85,9 @@ namespace Nethereum.XUnitEthereumClients
             //4 Arguments.
             // So the tests can run for both Geth and Parity, Windows, Mac and Linux.
 
-            EnvironmentalVariableLoader.LoadFromLaunchSettings();
-            EnvironmentalVariableLoader.CopyUserTargetVariablesIntoProcessTarget();
+            // user targetted env vars are often not loaded in a unit test context
+            // so force them to be
+            EnvironmentalVariableLoader.LoadIfNotAlreadyLoaded();
 
             var client = Environment.GetEnvironmentVariable("ETHEREUM_CLIENT");
 

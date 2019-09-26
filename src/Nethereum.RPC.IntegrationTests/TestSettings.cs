@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Nethereum.XUnitEthereumClients;
 using System;
 using System.Linq;
 
@@ -15,6 +16,10 @@ namespace Nethereum.RPC.Tests.Testers
 
         public TestSettings(TestSettingsCategory settingsCategory)
         {
+            // user targetted env vars are often not loaded in a unit test context
+            // so force them to be
+            EnvironmentalVariableLoader.LoadIfNotAlreadyLoaded();
+
             var builder = new ConfigurationBuilder()
                 //load defaults from json file
                 .AddJsonFile("test-settings.json")

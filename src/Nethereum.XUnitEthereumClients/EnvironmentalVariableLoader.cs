@@ -8,6 +8,18 @@ namespace Nethereum.XUnitEthereumClients
 {
     public static class EnvironmentalVariableLoader
     {
+        public static void LoadIfNotAlreadyLoaded()
+        {
+            if (!LaunchSettingsLoaded)
+                LoadFromLaunchSettings();
+
+            if (!UserTargetVariablesCopiedToProcess)
+                CopyUserTargetVariablesIntoProcessTarget();
+        }
+
+        public static bool LaunchSettingsLoaded {get; private set; }
+        public static bool UserTargetVariablesCopiedToProcess {get; private set; }
+
         /// <summary>
         /// loads environmentVariables in launchSettings.json into environmental variables
         /// </summary>
@@ -36,6 +48,8 @@ namespace Nethereum.XUnitEthereumClients
                     Environment.SetEnvironmentVariable(variable.Name, variable.Value.ToString());
                 }
             }
+
+            LaunchSettingsLoaded = true;
         }
 
         /// <summary>
@@ -53,6 +67,8 @@ namespace Nethereum.XUnitEthereumClients
                     (string)userVariables[variableName], 
                     EnvironmentVariableTarget.Process);
             }
+
+            UserTargetVariablesCopiedToProcess = true;
         }
     }
 }
