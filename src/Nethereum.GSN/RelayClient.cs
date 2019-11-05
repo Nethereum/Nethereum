@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.GSN
 {
-    internal class RelayClient : IRelayClient
+    public class RelayClient : IRelayClient
     {
         private readonly int _httpTimeout;
 

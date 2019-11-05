@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.GSN
 {
-    internal class RelayHubManager : IRelayHubManager
+    public class RelayHubManager : IRelayHubManager
     {
         private readonly GSNOptions _options;
         private readonly IEthApiContractService _ethApiContractService;
