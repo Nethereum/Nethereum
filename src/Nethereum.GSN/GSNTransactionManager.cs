@@ -1,10 +1,10 @@
-﻿using Nethereum.GSN.DTOs;
-using Nethereum.GSN.Models;
-using Nethereum.GSN.Policies;
-using Nethereum.ABI;
+﻿using Nethereum.ABI;
 using Nethereum.ABI.Encoders;
 using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.Contracts.Services;
+using Nethereum.GSN.DTOs;
+using Nethereum.GSN.Models;
+using Nethereum.GSN.Policies;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -80,8 +80,10 @@ namespace Nethereum.GSN
                 .GetRelaysAsync(relayHubAddress, _relayPolicy)
                 .ConfigureAwait(false);
 
-            foreach (var relay in relays)
+            foreach (var lazyRelay in relays)
             {
+                var relay = lazyRelay.Value;
+
                 if (!relay.Ready ||
                     relay.MinGasPrice.CompareTo(transactionInput.GasPrice.Value) == 1)
                 {
@@ -304,7 +306,8 @@ namespace Nethereum.GSN
             catch (Exception ex)
             {
                 if (!ex.Message.Contains("the tx doesn't have the correct nonce") &&
-                    !ex.Message.Contains("known transaction"))
+                    !ex.Message.Contains("known transaction") &&
+                    !ex.Message.Contains("nonce too low"))
                 {
                     throw ex;
                 }

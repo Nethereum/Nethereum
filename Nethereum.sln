@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.902
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29424.173
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
@@ -199,6 +199,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GSN", "GSN", "{6CAAEB71-77A2-4548-B682-696CF9D58812}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.GSN", "src\Nethereum.GSN\Nethereum.GSN.csproj", "{530844B2-0708-47BD-8D08-DF02855A7656}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.GSN.UnitTests", "src\Nethereum.GSN.UnitTests\Nethereum.GSN.UnitTests.csproj", "{53413ECA-F88D-405B-8CBB-C1EFEB11C925}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -1300,6 +1302,22 @@ Global
 		{530844B2-0708-47BD-8D08-DF02855A7656}.Release|x64.Build.0 = Release|Any CPU
 		{530844B2-0708-47BD-8D08-DF02855A7656}.Release|x86.ActiveCfg = Release|Any CPU
 		{530844B2-0708-47BD-8D08-DF02855A7656}.Release|x86.Build.0 = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|ARM.Build.0 = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|x64.Build.0 = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Debug|x86.Build.0 = Debug|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|ARM.ActiveCfg = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|ARM.Build.0 = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|x64.ActiveCfg = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|x64.Build.0 = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|x86.ActiveCfg = Release|Any CPU
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1401,6 +1419,7 @@ Global
 		{6D73F977-E63F-4581-B26B-3A24B7149E35} = {10EC8412-1238-4307-A564-5EF6BBDB1134}
 		{6CAAEB71-77A2-4548-B682-696CF9D58812} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{530844B2-0708-47BD-8D08-DF02855A7656} = {6CAAEB71-77A2-4548-B682-696CF9D58812}
+		{53413ECA-F88D-405B-8CBB-C1EFEB11C925} = {6CAAEB71-77A2-4548-B682-696CF9D58812}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

@@ -1,9 +1,9 @@
-﻿using Nethereum.GSN.DTOs;
-using Nethereum.GSN.Models;
-using Nethereum.GSN.Policies;
-using Nethereum.ABI.FunctionEncoding.Attributes;
+﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
+using Nethereum.GSN.DTOs;
+using Nethereum.GSN.Models;
+using Nethereum.GSN.Policies;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using System;
@@ -37,6 +37,10 @@ namespace Nethereum.GSN
             var address = await getHubAddrHandler
                .QueryAsync<string>(contractAddress, getHubAddr)
                .ConfigureAwait(false);
+            if(address == null)
+            {
+                throw new Exception($"Contract does not support Gas Station Network");
+            }
 
             var code = await _ethApiContractService.GetCode
                 .SendRequestAsync(address)

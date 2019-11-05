@@ -3,15 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Nethereum.GSN
 {
-    public class RelayCollection : IEnumerable<Relay>, IEnumerator<Relay>
+    public class RelayCollection : IEnumerator<Relay>, IEnumerable<Lazy<Relay>>
     {
         private readonly IRelayClient _relayClient;
-
-        private RelayOnChain[] _relaysOnChain;
-        private Relay[] _relays;
+        private Lazy<Relay>[] _relays;
 
         int position = -1;
 
@@ -21,7 +20,7 @@ namespace Nethereum.GSN
             {
                 try
                 {
-                    return _relays[position];
+                    return _relays[position].Value;
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -34,49 +33,33 @@ namespace Nethereum.GSN
 
         public RelayCollection(IRelayClient relayClient, IEnumerable<RelayOnChain> relays)
         {
-            _relayClient = relayClient;
-
-            _relaysOnChain = new RelayOnChain[relays.Count()];
-            _relays = new Relay[relays.Count()];
-
-            for (int i = 0; i < relays.Count(); i++)
+            if (relays == null)
             {
-                _relaysOnChain[i] = relays.ElementAt(i);
+                throw new ArgumentNullException(nameof(relays));
             }
+
+            _relayClient = relayClient;
+            _relays = relays
+                .Select(x => new Lazy<Relay>(() => Get(new Relay(x))))
+                .ToArray();
         }
 
         public void Dispose()
         {
         }
 
-        public IEnumerator<Relay> GetEnumerator()
+        public IEnumerator<Lazy<Relay>> GetEnumerator()
         {
-            return this;
+            for (int index = 0; index < _relays.Length; index++)
+            {
+                yield return _relays[index];
+            }
         }
 
         public bool MoveNext()
         {
             position++;
-            if (_relays[position] == null && position < _relaysOnChain.Length)
-            {
-                try
-                {
-                    var relayUrl = new Uri(_relaysOnChain[position].Url);
-                    var response = _relayClient.GetAddrAsync(relayUrl).Result;
-                    _relays[position] = new Relay(_relaysOnChain[position])
-                    {
-                        Address = response.RelayServerAddress, // re-writes address from response
-                        MinGasPrice = response.MinGasPrice,
-                        Ready = response.Ready,
-                        Version = response.Version,
-                    };
-                }
-                catch
-                {
-                    _relays[position] = new Relay(_relaysOnChain[position]);
-                }
-            }
-            return position < _relaysOnChain.Length;
+            return position < _relays.Length;
         }
 
         public void Reset()
@@ -87,6 +70,33 @@ namespace Nethereum.GSN
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        private Relay Get(Relay relay)
+        {
+            return relay.IsLoaded ? relay : Load(relay).Result;
+        }
+
+        private async Task<Relay> Load(Relay relay)
+        {
+            try
+            {
+                var relayUrl = new Uri(relay.Url);
+                var response = await _relayClient.GetAddrAsync(relayUrl);
+
+                return new Relay(relay)
+                {
+                    Address = response.RelayServerAddress, // re-writes address from response
+                    MinGasPrice = response.MinGasPrice,
+                    Ready = response.Ready,
+                    IsLoaded = true,
+                    Version = response.Version,
+                };
+            }
+            catch
+            {
+                return relay;
+            }
         }
     }
 }

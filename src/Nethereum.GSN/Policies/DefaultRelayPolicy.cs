@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.GSN.Models;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.GSN.Models;
 
 namespace Nethereum.GSN.Policies
 {
-    public class DefaultRelayPriorityPolicy : IRelayPolicy
+    public class DefaultRelayPolicy : IRelayPolicy
     {
         public IEnumerable<RelayOnChain> Execute(IEnumerable<RelayOnChain> relays)
         {
