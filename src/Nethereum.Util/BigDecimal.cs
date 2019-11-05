@@ -123,6 +123,34 @@ namespace Nethereum.Util
         }
 
         /// <summary>
+        /// Rounds the number to the specified amount of significant digits.
+        /// </summary>
+        internal BigDecimal Round(int significantDigits) {
+            if (significantDigits < 0 || significantDigits > 2_000_000_000)
+                throw new ArgumentOutOfRangeException(paramName: nameof(significantDigits));
+
+            if (Exponent >= -significantDigits) return this;
+
+            var shortened = this;
+            shortened.Normalize();
+            bool negativeCarry = false;
+
+            while (shortened.Exponent < -significantDigits) {
+                var rem = shortened.Mantissa % 10;
+                shortened.Mantissa /= 10;
+                shortened.Mantissa +=
+                    rem >= 5 ? +1
+                    : rem >= -4 ? 0
+                    : rem < -5 ? -1
+                    : negativeCarry ? -1: 0;
+                negativeCarry = rem < 0;
+                shortened.Exponent++;
+            }
+
+            return shortened;
+        }
+
+        /// <summary>
         ///     Truncate the number, removing all decimal digits.
         /// </summary>
         /// <returns>The truncated number</returns>
@@ -380,6 +408,23 @@ namespace Nethereum.Util
                 exponent -= diff;
             }
             return tmp * Math.Pow(basis, exponent);
+        }
+
+        #endregion
+
+        #region Formatting
+
+        public string ToString(string formatSpecifier, IFormatProvider format) {
+            char fmt = NumberFormatting.ParseFormatSpecifier(formatSpecifier, out int digits);
+            if (fmt != 'c' && fmt != 'C')
+                throw new NotImplementedException();
+
+            Normalize();
+            if (Exponent == 0)
+                return Mantissa.ToString(formatSpecifier, format);
+
+            var numberFormatInfo = NumberFormatInfo.GetInstance(format);
+            return BigDecimalFormatter.ToCurrencyString(this, digits, numberFormatInfo);
         }
 
         #endregion
