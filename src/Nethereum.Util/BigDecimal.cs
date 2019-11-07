@@ -124,30 +124,26 @@ namespace Nethereum.Util
 
         /// <summary>
         /// Rounds the number to the specified amount of significant digits.
+        /// Midpoints (like 0.5 or -0.5) are rounded away from 0 (e.g. to 1 and -1 respectively).
         /// </summary>
-        internal BigDecimal Round(int significantDigits) {
+        public BigDecimal RoundAwayFromZero(int significantDigits) {
             if (significantDigits < 0 || significantDigits > 2_000_000_000)
                 throw new ArgumentOutOfRangeException(paramName: nameof(significantDigits));
 
             if (Exponent >= -significantDigits) return this;
 
-            var shortened = this;
+            bool negative = this.Mantissa < 0;
+            var shortened = negative ? -this : this;
             shortened.Normalize();
-            bool negativeCarry = false;
 
             while (shortened.Exponent < -significantDigits) {
                 var rem = shortened.Mantissa % 10;
                 shortened.Mantissa /= 10;
-                shortened.Mantissa +=
-                    rem >= 5 ? +1
-                    : rem >= -4 ? 0
-                    : rem < -5 ? -1
-                    : negativeCarry ? -1: 0;
-                negativeCarry = rem < 0;
+                shortened.Mantissa += rem >= 5 ? +1 : 0;
                 shortened.Exponent++;
             }
 
-            return shortened;
+            return negative ? -shortened : shortened;
         }
 
         /// <summary>
