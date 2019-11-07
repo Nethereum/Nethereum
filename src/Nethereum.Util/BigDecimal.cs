@@ -137,8 +137,7 @@ namespace Nethereum.Util
             shortened.Normalize();
 
             while (shortened.Exponent < -significantDigits) {
-                var rem = shortened.Mantissa % 10;
-                shortened.Mantissa /= 10;
+                shortened.Mantissa = BigInteger.DivRem(shortened.Mantissa, 10, out var rem);
                 shortened.Mantissa += rem >= 5 ? +1 : 0;
                 shortened.Exponent++;
             }
