@@ -11,7 +11,7 @@ namespace Nethereum.Util {
             if (maxDigits < 0)
                 maxDigits = format.CurrencyDecimalDigits;
 
-            BigDecimal rounded = value.Round(significantDigits: maxDigits);
+            BigDecimal rounded = value.RoundAwayFromZero(significantDigits: maxDigits);
             var digits = rounded.GetDigits(out int exponent);
             var result = new StringBuilder();
             NumberFormatting.FormatCurrency(result,

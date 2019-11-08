@@ -1,4 +1,7 @@
-﻿using Xunit;
+﻿using System;
+using System.Globalization;
+
+using Xunit;
 
 namespace Nethereum.Util.UnitTests
 {
@@ -82,6 +85,25 @@ namespace Nethereum.Util.UnitTests
         public void ShouldCastToInt()
         {
             Assert.Equal(200, (int) (BigDecimal) 200.002m);
+        }
+
+        [Theory]
+        [InlineData("0.5")]
+        [InlineData("-0.5")]
+        [InlineData("0.51")]
+        [InlineData("-0.51")]
+        [InlineData("1")]
+        [InlineData("0")]
+        [InlineData("-1")]
+        public void ShouldRoundCorrectly(string value)
+        {
+            var big = BigDecimal.Parse(value);
+            decimal regular = decimal.Parse(value, CultureInfo.InvariantCulture);
+
+            decimal roundedRegular = Math.Round(regular, MidpointRounding.AwayFromZero);
+            var roundedBig = big.RoundAwayFromZero(significantDigits: 0);
+
+            Assert.Equal(expected: (BigDecimal)roundedRegular, roundedBig);
         }
     }
 }
