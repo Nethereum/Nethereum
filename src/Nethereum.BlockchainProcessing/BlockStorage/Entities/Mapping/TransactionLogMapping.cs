@@ -1,6 +1,7 @@
-﻿using System.Linq;
-using Nethereum.Contracts;
+﻿using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
+using System.Linq;
+using System.Numerics;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
 {
@@ -49,7 +50,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
                 TransactionHash = transactionLogView.TransactionHash,
                 Address = transactionLogView.Address,
                 Data = transactionLogView.Data,
-                LogIndex = new Hex.HexTypes.HexBigInteger(transactionLogView.LogIndex),
+                LogIndex = new Hex.HexTypes.HexBigInteger(BigInteger.Parse(transactionLogView.LogIndex)),
                 Topics = new[] {transactionLogView.EventHash, 
                                 transactionLogView.IndexVal1, 
                                 transactionLogView.IndexVal2, 

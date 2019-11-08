@@ -290,6 +290,8 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null )
         {
+            if (_clientWebSocket == null) throw new InvalidOperationException("Websocket is null.  Ensure that StartAsync has been called to create the websocket.");
+
             var logger = new RpcLogger(_log);
             
             try

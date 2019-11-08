@@ -1,16 +1,17 @@
-﻿namespace Nethereum.RPC.Eth.DTOs
+﻿using System;
+
+namespace Nethereum.RPC.Eth.DTOs
 {
     public static class BlockExtensions
     {
-        public static int TransactionCount(this Block block)
+        public static int TransactionCount(this BlockWithTransactions block)
         {
-            if (block is BlockWithTransactions b)
-                return b.Transactions?.Length ?? 0;
+            return block.Transactions?.Length ?? 0;
+        }
 
-            if (block is BlockWithTransactionHashes bh)
-                return bh.TransactionHashes?.Length ?? 0;
-
-            return 0;
+        public static int TransactionCount(this BlockWithTransactionHashes block)
+        {
+            return block.TransactionHashes?.Length ?? 0;
         }
     }
 }

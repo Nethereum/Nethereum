@@ -47,15 +47,6 @@ namespace Nethereum.RPC.UnitTests
             Assert.Equal(blockWithTransactionHashes.TransactionHashes.Length, blockWithTransactionHashes.TransactionCount());
         }
 
-        [Fact]
-        public void Block_TransactionCount_Returns_0()
-        {
-            var block = new Block();
-            Assert.Equal(0, block.TransactionCount());
-        }
-
-
-
         [Theory]
         [InlineData(Address1)]
         public void Transaction_IsToAnEmptyAddress_When_Address_Is_Not_Empty_Returns_False(string address)

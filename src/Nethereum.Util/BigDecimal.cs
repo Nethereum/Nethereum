@@ -123,6 +123,29 @@ namespace Nethereum.Util
         }
 
         /// <summary>
+        /// Rounds the number to the specified amount of significant digits.
+        /// Midpoints (like 0.5 or -0.5) are rounded away from 0 (e.g. to 1 and -1 respectively).
+        /// </summary>
+        public BigDecimal RoundAwayFromZero(int significantDigits) {
+            if (significantDigits < 0 || significantDigits > 2_000_000_000)
+                throw new ArgumentOutOfRangeException(paramName: nameof(significantDigits));
+
+            if (Exponent >= -significantDigits) return this;
+
+            bool negative = this.Mantissa < 0;
+            var shortened = negative ? -this : this;
+            shortened.Normalize();
+
+            while (shortened.Exponent < -significantDigits) {
+                shortened.Mantissa = BigInteger.DivRem(shortened.Mantissa, 10, out var rem);
+                shortened.Mantissa += rem >= 5 ? +1 : 0;
+                shortened.Exponent++;
+            }
+
+            return negative ? -shortened : shortened;
+        }
+
+        /// <summary>
         ///     Truncate the number, removing all decimal digits.
         /// </summary>
         /// <returns>The truncated number</returns>
@@ -380,6 +403,23 @@ namespace Nethereum.Util
                 exponent -= diff;
             }
             return tmp * Math.Pow(basis, exponent);
+        }
+
+        #endregion
+
+        #region Formatting
+
+        public string ToString(string formatSpecifier, IFormatProvider format) {
+            char fmt = NumberFormatting.ParseFormatSpecifier(formatSpecifier, out int digits);
+            if (fmt != 'c' && fmt != 'C')
+                throw new NotImplementedException();
+
+            Normalize();
+            if (Exponent == 0)
+                return Mantissa.ToString(formatSpecifier, format);
+
+            var numberFormatInfo = NumberFormatInfo.GetInstance(format);
+            return BigDecimalFormatter.ToCurrencyString(this, digits, numberFormatInfo);
         }
 
         #endregion
