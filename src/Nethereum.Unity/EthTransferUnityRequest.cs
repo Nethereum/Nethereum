@@ -8,9 +8,9 @@ namespace Nethereum.JsonRpc.UnityClient
     {
         private TransactionSignedUnityRequest _transactionSignedUnityRequest;
 
-        public EthTransferUnityRequest(string url, string privateKey)
+        public EthTransferUnityRequest(string url, string privateKey, BigInteger? chainId)
         {
-            _transactionSignedUnityRequest = new TransactionSignedUnityRequest(url, privateKey);
+            _transactionSignedUnityRequest = new TransactionSignedUnityRequest(url, privateKey, chainId);
         }
 
         public IEnumerator TransferEther(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null)

@@ -5,6 +5,7 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Hex.HexTypes;
 using System.Collections;
 using System;
+using System.Numerics;
 using System.Text;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
@@ -18,15 +19,18 @@ namespace Nethereum.JsonRpc.UnityClient
         private string _url;
         private readonly string _privateKey;
         private readonly string _account;
+        private readonly BigInteger? _chainId;
         private readonly TransactionSigner _transactionSigner;
         private readonly EthGetTransactionCountUnityRequest _transactionCountRequest;
         private readonly EthSendRawTransactionUnityRequest _ethSendTransactionRequest;
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
         private readonly EthGasPriceUnityRequest _ethGasPriceUnityRequest;
         public bool EstimateGas { get; set; } = true;
+        
 
-        public TransactionSignedUnityRequest(string url, string privateKey)
+        public TransactionSignedUnityRequest(string url, string privateKey, BigInteger? chainId = null)
         {
+            _chainId = chainId;
             _url = url;
             _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
@@ -128,9 +132,21 @@ namespace Nethereum.JsonRpc.UnityClient
             if (value == null)
                 value = new HexBigInteger(0);
 
-            var signedTransaction = _transactionSigner.SignTransaction(_privateKey, transactionInput.To, value.Value, nonce,
-                transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
-            
+            string signedTransaction;
+
+            if (_chainId == null)
+            {
+                signedTransaction = _transactionSigner.SignTransaction(_privateKey, transactionInput.To, value.Value, nonce,
+                    transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
+
+            }
+            else
+            {
+                signedTransaction = _transactionSigner.SignTransaction(_privateKey, _chainId, transactionInput.To, value.Value, nonce,
+                    transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
+
+            }
+                 
             
             yield return _ethSendTransactionRequest.SendRequest(signedTransaction);
             
