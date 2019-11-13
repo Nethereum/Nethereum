@@ -65,15 +65,14 @@ namespace Nethereum.JsonRpc.WebSocketClient
         }
 
 
-        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
+        public async Task<WebSocketReceiveResult> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
         {
             try
             {
                 var segmentBuffer = new ArraySegment<byte>(buffer);
-                var result = await client
+                return await client
                     .ReceiveAsync(segmentBuffer, new CancellationTokenSource(ForceCompleteReadTotalMilliseconds).Token)
                     .ConfigureAwait(false);
-                return result.Count;
             }
             catch (TaskCanceledException ex)
             {
@@ -86,21 +85,23 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var readBufferSize = 512;
             var memoryStream = new MemoryStream();
 
-            var bytesRead = 0;
             var buffer = new byte[readBufferSize];
-            bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+            var receivedResult = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+            var bytesRead = receivedResult.Count;
+
             while (bytesRead > 0)
             {
                 memoryStream.Write(buffer, 0, bytesRead);
                 var lastByte = buffer[bytesRead - 1];
 
-                if (lastByte == 10 || bytesRead < 512)  //return signalled with a line feed / or just less than the full message
+                if (lastByte == 10 || bytesRead < 512 || receivedResult.EndOfMessage)  //return signaled with a line feed / or just less than the full message
                 {
                     bytesRead = 0;
                 }
                 else
                 {
-                    bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+                    receivedResult = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+                    bytesRead = receivedResult.Count;
                 }
             }
             return memoryStream;

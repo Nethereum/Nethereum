@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 
@@ -34,6 +35,8 @@ namespace Nethereum.XUnitEthereumClients
         public static IClient GetClient()
         {
             return new RpcClient(new Uri("http://localhost:8545"));
+           // return new WebSocketClient("ws://127.0.0.1:8546/ws");
+
         }
     }
 
@@ -134,7 +137,7 @@ namespace Nethereum.XUnitEthereumClients
                 Thread.Sleep(3000);
 
                 var psi = new ProcessStartInfo(Path.Combine(_exePath, "geth.exe"),
-                    @" --nodiscover --rpc --datadir=devChain  --rpccorsdomain "" * "" --mine --rpcapi ""eth, web3, personal, net, miner, admin, debug"" --rpcaddr ""0.0.0.0"" --allow-insecure-unlock --unlock 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console  ")
+                    @" --nodiscover --rpc --datadir=devChain  --rpccorsdomain "" * "" --mine --rpcapi ""eth, web3, personal, net, miner, admin, debug"" --rpcaddr ""0.0.0.0"" --allow-insecure-unlock --unlock 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt""  --ws  --wsaddr ""0.0.0.0"" --wsapi ""eth, web3, personal, net, miner, admin, debug"" --wsorigins "" * "" --verbosity 0 console  ")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
