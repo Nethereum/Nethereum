@@ -88,7 +88,7 @@ namespace Nethereum.Util
 
         private int GetEthUnitValueLength(BigInteger unitValue)
         {
-            return unitValue.ToString().Length - 1;
+            return unitValue.ToStringInvariant().Length - 1;
         }
 
         public BigInteger GetEthUnitValue(EthUnit ethUnit)
@@ -96,51 +96,51 @@ namespace Nethereum.Util
             switch (ethUnit)
             {
                 case EthUnit.Wei:
-                    return BigInteger.Parse("1");
+                    return BigIntegerExtensions.ParseInvariant("1");
                 case EthUnit.Kwei:
-                    return BigInteger.Parse("1000");
+                    return BigIntegerExtensions.ParseInvariant("1000");
                 case EthUnit.Babbage:
-                    return BigInteger.Parse("1000");
+                    return BigIntegerExtensions.ParseInvariant("1000");
                 case EthUnit.Femtoether:
-                    return BigInteger.Parse("1000");
+                    return BigIntegerExtensions.ParseInvariant("1000");
                 case EthUnit.Mwei:
-                    return BigInteger.Parse("1000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000");
                 case EthUnit.Picoether:
-                    return BigInteger.Parse("1000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000");
                 case EthUnit.Gwei:
-                    return BigInteger.Parse("1000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000");
                 case EthUnit.Shannon:
-                    return BigInteger.Parse("1000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000");
                 case EthUnit.Nanoether:
-                    return BigInteger.Parse("1000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000");
                 case EthUnit.Nano:
-                    return BigInteger.Parse("1000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000");
                 case EthUnit.Szabo:
-                    return BigInteger.Parse("1000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000");
                 case EthUnit.Microether:
-                    return BigInteger.Parse("1000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000");
                 case EthUnit.Micro:
-                    return BigInteger.Parse("1000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000");
                 case EthUnit.Finney:
-                    return BigInteger.Parse("1000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000");
                 case EthUnit.Milliether:
-                    return BigInteger.Parse("1000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000");
                 case EthUnit.Milli:
-                    return BigInteger.Parse("1000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000");
                 case EthUnit.Ether:
-                    return BigInteger.Parse("1000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000");
                 case EthUnit.Kether:
-                    return BigInteger.Parse("1000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000");
                 case EthUnit.Grand:
-                    return BigInteger.Parse("1000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000");
                 case EthUnit.Einstein:
-                    return BigInteger.Parse("1000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000");
                 case EthUnit.Mether:
-                    return BigInteger.Parse("1000000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000000");
                 case EthUnit.Gether:
-                    return BigInteger.Parse("1000000000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000000000");
                 case EthUnit.Tether:
-                    return BigInteger.Parse("1000000000000000000000000000000");
+                    return BigIntegerExtensions.ParseInvariant("1000000000000000000000000000000");
             }
             throw new NotImplementedException();
         }
@@ -148,7 +148,7 @@ namespace Nethereum.Util
 
         public bool TryValidateUnitValue(BigInteger ethUnit)
         {
-            if (ethUnit.ToString().Trim('0') == "1") return true;
+            if (ethUnit.ToStringInvariant().Trim('0') == "1") return true;
             throw new Exception("Invalid unit value, it should be a power of 10 ");
         }
 
@@ -238,7 +238,7 @@ namespace Nethereum.Util
         {
             if (currentNumberOfDecimals == 0)
             {
-                if (value.ToString() == Math.Round(value).ToString()) return 0;
+                if (value.ToStringInvariant() == Math.Round(value).ToStringInvariant()) return 0;
                 currentNumberOfDecimals = 1;
             }
             if (currentNumberOfDecimals == maxNumberOfDecimals) return maxNumberOfDecimals;
@@ -251,11 +251,11 @@ namespace Nethereum.Util
         //public BigInteger ToWei(decimal amount, BigInteger fromUnit)
         //{
 
-        //var maxDigits = fromUnit.ToString().Length - 1;
-        //var stringAmount = amount.ToString("#.#############################", System.Globalization.CultureInfo.InvariantCulture);
+        //var maxDigits = fromUnit.ToStringInvariant().Length - 1;
+        //var stringAmount = amount.ToStringInvariant("#.#############################", System.Globalization.CultureInfo.InvariantCulture);
         //if (stringAmount.IndexOf(".") == -1)
         //{
-        //    return BigInteger.Parse(stringAmount) * fromUnit;
+        //    return BigIntegerExtensions.ParseInvariant(stringAmount) * fromUnit;
         //}
 
         //stringAmount = stringAmount.TrimEnd('0');
@@ -265,10 +265,10 @@ namespace Nethereum.Util
 
         //if (decimalPlaces > maxDigits)
         //{
-        //    return BigInteger.Parse(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1, maxDigits));
+        //    return BigIntegerExtensions.ParseInvariant(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1, maxDigits));
         //}
 
-        //return BigInteger.Parse(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1).PadRight(maxDigits, '0'));   
+        //return BigIntegerExtensions.ParseInvariant(stringAmount.Substring(0, decimalPosition) + stringAmount.Substring(decimalPosition + 1).PadRight(maxDigits, '0'));   
         //}
     }
 }
