@@ -142,7 +142,7 @@ namespace Nethereum.JsonRpc.UnityClient
             }
             else
             {
-                signedTransaction = _transactionSigner.SignTransaction(_privateKey, _chainId, transactionInput.To, value.Value, nonce,
+                signedTransaction = _transactionSigner.SignTransaction(_privateKey, _chainId.Value, transactionInput.To, value.Value, nonce,
                     transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
 
             }
