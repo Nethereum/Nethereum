@@ -54,6 +54,21 @@ namespace Nethereum.RPC.Eth.DTOs
             }
         }
 
+        public static TransactionInput ConvertToTransactionInput(this Transaction txn)
+        {
+            var txnInput = new TransactionInput
+            {
+                Data = txn.Input,
+                Gas = txn.Gas,
+                GasPrice = txn.GasPrice,
+                Nonce = txn.Nonce,
+                Value = txn.Value,
+                From = txn.From,
+                To = txn.To
+            };
+            return txnInput;
+        }
+
         public static string[] GetAllRelatedAddresses(this Transaction tx, TransactionReceipt receipt)
         {
             if (tx == null)

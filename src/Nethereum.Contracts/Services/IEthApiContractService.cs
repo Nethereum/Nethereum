@@ -2,6 +2,7 @@
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.RPC;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.Contracts.Services
 {
@@ -18,6 +19,7 @@ namespace Nethereum.Contracts.Services
         ContractHandler GetContractHandler(string contractAddress);
         IContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>() where TContractFunctionMessage : FunctionMessage, new();
         IContractTransactionHandler<TContractFunctionMessage> GetContractTransactionHandler<TContractFunctionMessage>() where TContractFunctionMessage : FunctionMessage, new();
+        IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }
 #endif
       
     }

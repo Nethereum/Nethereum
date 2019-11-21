@@ -58,9 +58,35 @@ namespace Nethereum.ABI.FunctionEncoding
             return functionInput;
         }
 
+        public ErrorFunction DecodeFunctionError(string output)
+        {
+            if (ErrorFunction.IsErrorData(output))
+            {
+                return DecodeFunctionInput<ErrorFunction>(ErrorFunction.ERROR_FUNCTION_ID, output);
+            }
+
+            return null;
+        }
+
+        public string DecodeFunctionErrorMessage(string output)
+        {
+            var error = DecodeFunctionError(output);
+            return error?.Message;
+        }
+
+        public void ThrowIfErrorOnOutput(string output)
+        {
+            var error = DecodeFunctionError(output);
+            if(error != null)
+            {
+                throw new SmartContractRevertException(error.Message);
+            }
+        }
+
         public T DecodeFunctionOutput<T>(string output) where T : new()
         {
             if (output == "0x") return default(T);
+            ThrowIfErrorOnOutput(output);
             var result = new T();
             DecodeFunctionOutput(result, output);
             return result;
@@ -70,7 +96,7 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             if (output == "0x")
                 return functionOutputResult;
-
+            ThrowIfErrorOnOutput(output);
             var type = typeof(T);
 
             var function = FunctionOutputAttribute.GetAttribute<T>();
@@ -90,6 +116,7 @@ namespace Nethereum.ABI.FunctionEncoding
         public T DecodeOutput<T>(string output, params Parameter[] outputParameter) where T : new()
         {
             if (output == "0x") return default(T);
+            ThrowIfErrorOnOutput(output);
             var function = FunctionOutputAttribute.GetAttribute<T>();
 
             if (function == null)
@@ -111,7 +138,7 @@ namespace Nethereum.ABI.FunctionEncoding
         public T DecodeSimpleTypeOutput<T>(Parameter outputParameter, string output)
         {
             if (output == "0x") return default(T);
-
+            ThrowIfErrorOnOutput(output);
             if (outputParameter != null)
             {
                 outputParameter.DecodedType = typeof(T);

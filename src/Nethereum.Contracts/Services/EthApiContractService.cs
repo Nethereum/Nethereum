@@ -4,6 +4,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
+using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Contracts.Services
@@ -12,11 +13,17 @@ namespace Nethereum.Contracts.Services
     {
         public EthApiContractService(IClient client) : base(client)
         {
+#if !DOTNET35
+            GetContractTransactionErrorReason = new EthGetContractTransactionErrorReason(Transactions);
+#endif            
         }
 
         public EthApiContractService(IClient client, ITransactionManager transactionManager) : base(client,
             transactionManager)
         {
+#if !DOTNET35
+            GetContractTransactionErrorReason = new EthGetContractTransactionErrorReason(Transactions);
+#endif 
         }
 
         public IDeployContract DeployContract => new DeployContract(TransactionManager);
@@ -67,6 +74,8 @@ namespace Nethereum.Contracts.Services
         {
             return new ContractTransactionHandler<TContractFunctionMessage>(this.TransactionManager);
         }
+
+        public IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }
 
         public IContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>()
             where TContractFunctionMessage : FunctionMessage, new()
