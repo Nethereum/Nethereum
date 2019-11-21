@@ -90,7 +90,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
                 if (_requests.TryRemove(response.Id.ToString(), out handler))
                 {
-                     handler.HandleResponse(response);
+                    handler.HandleResponse(response);
                 }
             }
         }
@@ -109,7 +109,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
 
             _cancellationTokenSource = new CancellationTokenSource();
- 
+
             _listener = Task.Factory.StartNew(async () =>
             {
                 await HandleIncomingMessagesAsync();
@@ -145,7 +145,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 HandleError(rpcException);
                 throw rpcException;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 HandleError(ex);
                 throw;
@@ -159,10 +159,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private void HandleError(Exception exception)
         {
-            Error?.Invoke(this,exception);
+            Error?.Invoke(this, exception);
             foreach (var rpcStreamingResponseHandler in _requests)
             {
-                rpcStreamingResponseHandler.Value.HandleClientError(exception);    
+                rpcStreamingResponseHandler.Value.HandleClientError(exception);
             }
             CloseDisposeAndClearRequestsAsync().Wait();
         }
@@ -224,7 +224,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                     var buffer = new byte[readBufferSize];
                     var bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
                     if (bytesRead == 0) completedNextMessage = true;
-                   
+
                     completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, bytesRead);
                 }
             }
@@ -232,7 +232,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return memoryStream;
         }
 
-        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead=-1)
+        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead = -1)
         {
             int currentIndex = 0;
             //bytesRead == -1 used to signal cached previous buffer
@@ -244,9 +244,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 bufferToRead = bytesRead;
             }
 
-            while(currentIndex < bufferToRead)
+            while (currentIndex < bufferToRead)
             {
-                if(buffer[currentIndex] == 10)
+                if (buffer[currentIndex] == 10)
                 {
                     if (currentIndex + 1 < bufferToRead) // bytes remaining
                     {
@@ -274,7 +274,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             return false;
         }
-            
+
 
         private async Task HandleIncomingMessagesAsync()
         {
@@ -309,7 +309,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
         }
 
-        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null )
+        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)
         {
             if (_clientWebSocket == null) throw new InvalidOperationException("Websocket is null.  Ensure that StartAsync has been called to create the websocket.");
 
@@ -429,7 +429,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             var reqMsg = new RpcRequestMessage(request.Id,
                                              request.Method,
                                              request.RawParameters);
-             await SendRequestAsync(reqMsg, requestResponseHandler, route).ConfigureAwait(false);
+            await SendRequestAsync(reqMsg, requestResponseHandler, route).ConfigureAwait(false);
         }
     }
 }
