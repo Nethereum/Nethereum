@@ -6,7 +6,7 @@ namespace Nethereum.Generators.Core
         
     {
         protected TClassTemplate ClassTemplate { get; set; }
-        protected TClassModel ClassModel { get; set; }
+        public TClassModel ClassModel { get; set; }
 
         public GeneratedFile GenerateFileContent(string outputPath)
         {
