@@ -58,7 +58,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                     await contractHandler.QueryAsync<ThrowItFunction, bool>());
                 Assert.Equal("Smart contract error: An error message", error.Message);
             }
-            else // parity
+            else // parity throws Rpc exception : "VM execution error."
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var errorThrowDeployment = new ErrorThrowDeployment();
