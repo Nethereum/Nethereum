@@ -1,6 +1,7 @@
 ﻿using System.Security.Authentication;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -42,16 +43,34 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         
         public async void ShouldThrowErrorDecodingCall()
         {
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var errorThrowDeployment = new ErrorThrowDeployment();
+            //Parity does throw an RPC exception if the call is reverted, no info included
+            if (_ethereumClientIntegrationFixture.Geth)
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var errorThrowDeployment = new ErrorThrowDeployment();
 
-            var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>().SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
-            var contractAddress = transactionReceiptDeployment.ContractAddress;
-         
-            var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-            var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
-                await contractHandler.QueryAsync<ThrowItFunction, bool>());
-            Assert.Equal("Smart contract error: An error message", error.Message);
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                var contractAddress = transactionReceiptDeployment.ContractAddress;
+
+                var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                    await contractHandler.QueryAsync<ThrowItFunction, bool>());
+                Assert.Equal("Smart contract error: An error message", error.Message);
+            }
+            else // parity
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var errorThrowDeployment = new ErrorThrowDeployment();
+
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                var contractAddress = transactionReceiptDeployment.ContractAddress;
+
+                var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+                    await contractHandler.QueryAsync<ThrowItFunction, bool>());
+            }
         }
 
         public partial class ErrorThrowDeployment : ErrorThrowDeploymentBase
