@@ -144,9 +144,11 @@ namespace Nethereum.JsonRpc.Client
                 var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
                 httpClient.BaseAddress = _baseUrl;
-                httpClient.DefaultRequestHeaders.ConnectionClose = false;
-                ServicePointManager.FindServicePoint(_baseUrl).ConnectionLimit = 10000;
-                _httpClients.Add(_baseUrl.AbsoluteUri, httpClient);
+                httpClient.DefaultRequestHeaders.ConnectionClose = false; //keepAlive by default
+                var servicePoint = ServicePointManager.FindServicePoint(_baseUrl);
+                servicePoint.ConnectionLimit = 2000; // 2000 connections
+                servicePoint.ConnectionLeaseTimeout = 10000; //10 sec
+                _httpClients.Add(_baseUrl.AbsoluteUri, httpClient); //store for reuse
                 return httpClient;
             }
         }
