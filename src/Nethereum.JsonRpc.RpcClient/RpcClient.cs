@@ -15,6 +15,9 @@ namespace Nethereum.JsonRpc.Client
 {
     public class RpcClient : ClientBase
     {
+        private readonly int CONNECTION_LIMIT = 2000; //max 2000 connections
+        private readonly int CONNECTION_LEASE_TIMEOUT = 10000; //10 seconds for reconnect
+
         private readonly AuthenticationHeaderValue _authHeaderValue;
         private readonly Uri _baseUrl;
         private readonly HttpClientHandler _httpClientHandler;
@@ -42,48 +45,6 @@ namespace Nethereum.JsonRpc.Client
             _log = log;
             _httpClient = GetClient();
         }
-
-        /*protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
-        {
-            var logger = new RpcLogger(_log);
-            try
-            {
-                var httpClient = GetOrCreateHttpClient();
-                var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
-                var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
-
-                logger.LogRequest(rpcRequestJson);
-
-                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
-                httpResponseMessage.EnsureSuccessStatusCode();
-
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                using (var streamReader = new StreamReader(stream))
-                using (var reader = new JsonTextReader(streamReader))
-                {
-                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
-                    var message = serializer.Deserialize<RpcResponseMessage>(reader);
-
-                    logger.LogResponse(message);
-
-                    return message;
-                }
-            }
-            catch (TaskCanceledException ex)
-            {
-                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
-                logger.LogException(exception);
-                throw exception;
-            }
-            catch (Exception ex)
-            {
-                var exception = new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
-                logger.LogException(exception);
-                throw exception;
-            }
-        }*/
 
         protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
@@ -144,10 +105,10 @@ namespace Nethereum.JsonRpc.Client
                 var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
                 httpClient.BaseAddress = _baseUrl;
-                httpClient.DefaultRequestHeaders.ConnectionClose = false; //keepAlive by default
+                httpClient.DefaultRequestHeaders.ConnectionClose = false; //keepAlive by default for reuse connection
                 var servicePoint = ServicePointManager.FindServicePoint(_baseUrl);
-                servicePoint.ConnectionLimit = 2000; // 2000 connections
-                servicePoint.ConnectionLeaseTimeout = 10000; //10 sec
+                servicePoint.ConnectionLimit = CONNECTION_LIMIT;
+                servicePoint.ConnectionLeaseTimeout = CONNECTION_LEASE_TIMEOUT;
                 _httpClients.Add(_baseUrl.AbsoluteUri, httpClient); //store for reuse
                 return httpClient;
             }
