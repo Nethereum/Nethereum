@@ -136,7 +136,7 @@ namespace Nethereum.JsonRpc.Client
         {
             lock (_lockObject)
             {
-                if (_httpClients[_baseUrl.AbsoluteUri] != null)
+                if (_httpClients.ContainsKey(_baseUrl.AbsoluteUri))
                 {
                     return _httpClients[_baseUrl.AbsoluteUri];
                 }
