@@ -6,9 +6,18 @@ port = 30300
 [rpc]
 port = 8545
 apis = ["web3", "eth", "net", "personal", "parity", "parity_set", "traces", "rpc", "parity_accounts"]
+cors = ["all"]
+hosts = ["all"]
 [ipc]
 disable = false
 apis = ["web3", "eth", "net", "parity", "parity_accounts", "personal", "traces", "rpc", "secretstore"]
+[websockets]
+disable = false
+port = 8546
+interface = "local"
+origins = ["all"]
+apis = ["web3", "eth", "personal", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub"]
+hosts = ["all"]
 [ui]
 port = 8180
 [account]

@@ -88,7 +88,7 @@ cd Nethereum.Uport*
 CALL :restorepack
 cd ..
 
-cd Nethereum.HdWallet*
+cd Nethereum.HDWallet
 CALL :restorepack
 cd ..
 
