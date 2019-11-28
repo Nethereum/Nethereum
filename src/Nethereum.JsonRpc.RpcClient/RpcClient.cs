@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -143,6 +144,8 @@ namespace Nethereum.JsonRpc.Client
                 var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
                 httpClient.BaseAddress = _baseUrl;
+                httpClient.DefaultRequestHeaders.ConnectionClose = false;
+                ServicePointManager.FindServicePoint(_baseUrl).ConnectionLimit = 10000;
                 _httpClients.Add(_baseUrl.AbsoluteUri, httpClient);
                 return httpClient;
             }
