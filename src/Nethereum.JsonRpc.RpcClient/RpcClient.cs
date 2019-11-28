@@ -44,7 +44,7 @@ namespace Nethereum.JsonRpc.Client
             CreateNewHttpClient();
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        /*protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             var logger = new RpcLogger(_log);
             try
@@ -65,18 +65,62 @@ namespace Nethereum.JsonRpc.Client
                 using (var reader = new JsonTextReader(streamReader))
                 {
                     var serializer = JsonSerializer.Create(_jsonSerializerSettings);
-                    var message =  serializer.Deserialize<RpcResponseMessage>(reader);
+                    var message = serializer.Deserialize<RpcResponseMessage>(reader);
 
                     logger.LogResponse(message);
-                    
+
                     return message;
                 }
             }
-            catch(TaskCanceledException ex)
+            catch (TaskCanceledException ex)
             {
-                 var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
-                 logger.LogException(exception);
-                 throw exception;
+                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+            catch (Exception ex)
+            {
+                var exception = new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+        }*/
+
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        {
+            var logger = new RpcLogger(_log);
+            try
+            {
+                var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
+                httpClient.BaseAddress = _baseUrl;
+                var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
+                var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+
+                logger.LogRequest(rpcRequestJson);
+
+                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
+                httpResponseMessage.EnsureSuccessStatusCode();
+
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                using (var streamReader = new StreamReader(stream))
+                using (var reader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
+                    var message = serializer.Deserialize<RpcResponseMessage>(reader);
+
+                    logger.LogResponse(message);
+
+                    return message;
+                }
+            }
+            catch (TaskCanceledException ex)
+            {
+                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                logger.LogException(exception);
+                throw exception;
             }
             catch (Exception ex)
             {
@@ -86,7 +130,7 @@ namespace Nethereum.JsonRpc.Client
             }
         }
 
-       
+
 
         private HttpClient GetOrCreateHttpClient()
         {
