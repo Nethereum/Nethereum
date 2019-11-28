@@ -46,13 +46,13 @@ namespace Nethereum.JsonRpc.Client
             _httpClient = GetClient();
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null)
         {
             var logger = new RpcLogger(_log);
             var cancellationTokenSource = new CancellationTokenSource();
             try
             {
-                var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
+                var rpcRequestJson = JsonConvert.SerializeObject(rpcRequestMessage, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
                 cancellationTokenSource.CancelAfter(ConnectionTimeout);
 
