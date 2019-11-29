@@ -19,17 +19,15 @@ namespace Nethereum.RPC.TransactionManagers
             _transactionManager = transactionManager ?? throw new ArgumentNullException(nameof(transactionManager));
         }
 
-        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null)
+        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null)
         {
-            var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
+            var transactionInput = BuildTransactionInput(toAddress, etherAmount, gasPriceGwei, gas, nonce);
             return _transactionManager.SendTransactionAsync(transactionInput);
         }
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, CancellationTokenSource tokenSource = null, BigInteger? nonce = null)
         {
-            var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
+            var transactionInput = BuildTransactionInput(toAddress, etherAmount, gasPriceGwei, gas, nonce);
             return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
         }
 
@@ -41,16 +39,28 @@ namespace Nethereum.RPC.TransactionManagers
             var gasAmount = gas ?? _transactionManager.DefaultGas;
 
             var totalAmount = currentBalance.Value - (gasAmount * gasPrice);
-            if(totalAmount <= 0) throw new Exception("Insufficient balance to make a transfer");
+            if (totalAmount <= 0) throw new Exception("Insufficient balance to make a transfer");
             return UnitConversion.Convert.FromWei(totalAmount);
         }
 
-        public async Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount) 
+        public async Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount)
         {
             var fromAddress = _transactionManager?.Account?.Address;
             var callInput = (CallInput)EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount);
             var hexEstimate = await _transactionManager.EstimateGasAsync(callInput);
             return hexEstimate.Value;
+        }
+
+        private TransactionInput BuildTransactionInput(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null)
+        {
+            var fromAddress = _transactionManager?.Account?.Address;
+            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas);
+            if (nonce.HasValue)
+            {
+                transactionInput.Nonce = nonce.Value.ToHexBigInteger();
+            }
+
+            return transactionInput;
         }
     }
 #endif
