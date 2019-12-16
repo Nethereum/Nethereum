@@ -57,7 +57,7 @@
     </Reference>
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  Condition=" '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' ">
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
