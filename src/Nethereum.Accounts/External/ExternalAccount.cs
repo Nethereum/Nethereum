@@ -1,10 +1,16 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.NonceServices;
+using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
+using Nethereum.Web3.Accounts.Managed;
+using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {

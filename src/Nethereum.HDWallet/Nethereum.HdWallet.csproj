@@ -10,7 +10,6 @@
     <AssemblyName>Nethereum.HdWallet</AssemblyName>
     <PackageId>Nethereum.HdWallet</PackageId>
     <PackageTags>Nethereum;Ethereum;Blockchain;HdWallet</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NBitcoin" Version="4.1.1.77" />

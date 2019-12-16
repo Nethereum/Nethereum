@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Contracts.IntegrationTests </Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
