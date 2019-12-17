@@ -28,12 +28,12 @@ namespace Nethereum.RPC.UnitTests
         [InlineData("")]
         public void CreateTransactionInput_IncorrectToAddress_ThrowsArgumentNullException(string toAddress)
         {
-            string expectedMessage = "Value cannot be null.\r\nParameter name: toAddress";
+            string expectedMessage = "Value cannot be null";
 
             Exception ex = Assert.Throws<ArgumentNullException>(() =>
                 EtherTransferTransactionInputBuilder.CreateTransactionInput(null, toAddress, 0));
 
-            Assert.Equal(expectedMessage, ex.Message);
+            Assert.StartsWith(expectedMessage, ex.Message);
         }
 
         [Theory]
@@ -41,12 +41,12 @@ namespace Nethereum.RPC.UnitTests
         [InlineData(0)]
         public void CreateTransactionInput_IncorrectEtherAmount_ThrowsArgumentOutOfRangeException(decimal etherAmount)
         {
-            string expectedMessage = "Specified argument was out of the range of valid values.\r\nParameter name: etherAmount";
+            string expectedMessage = "Specified argument was out of the range of valid values";
 
             Exception ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
                 EtherTransferTransactionInputBuilder.CreateTransactionInput(null, ToAddress, etherAmount));
 
-            Assert.Equal(expectedMessage, ex.Message);
+            Assert.StartsWith(expectedMessage, ex.Message);
         }
 
         [Theory]
@@ -54,12 +54,12 @@ namespace Nethereum.RPC.UnitTests
         [InlineData(0)]
         public void CreateTransactionInput_IncorrectGasPriceGwei_ThrowsArgumentOutOfRangeException(decimal gasPriceGwei)
         {
-            string expectedMessage = "Specified argument was out of the range of valid values.\r\nParameter name: gasPriceGwei";
+            string expectedMessage = "Specified argument was out of the range of valid values.";
 
             Exception ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
                 EtherTransferTransactionInputBuilder.CreateTransactionInput(null, ToAddress, EthAmount, gasPriceGwei));
 
-            Assert.Equal(expectedMessage, ex.Message);
+            Assert.StartsWith(expectedMessage, ex.Message);
         }
 
         [Fact]

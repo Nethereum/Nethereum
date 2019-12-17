@@ -21,7 +21,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             if (value.Sign < 0) throw new Exception("Hex Encoding of Negative BigInteger value is not supported");
             if (value == 0) return "0x0";
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETCOREAPP3_1
             var bytes = value.ToByteArray(true, !littleEndian);
 #else
             var bytes = value.ToByteArray(littleEndian);
