@@ -37,7 +37,8 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
 
                 var senderAddress = AccountFactory.Address;
                 var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
-                    new RpcClient(new Uri("http://localhost:8545"), null, null, null, LogManager.GetLogger<ILog>()));
+                    client: new RpcClient(
+                        new Uri("http://localhost:8545"), authHeaderValue: null, null, null, LogManager.GetLogger<ILog>()));
 
                 ////deploy the contract, including abi and a paramter of 7. 
                 //var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
