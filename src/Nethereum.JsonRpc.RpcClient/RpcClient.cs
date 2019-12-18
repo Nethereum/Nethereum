@@ -14,6 +14,7 @@ namespace Nethereum.JsonRpc.Client
     public class RpcClient : ClientBase
     {
         private const int NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT = 60;
+        private const int MAXIMUM_CONNECTIONS_PER_SERVER = 20;
         private readonly AuthenticationHeaderValue _authHeaderValue;
         private readonly Uri _baseUrl;
         private readonly HttpClientHandler _httpClientHandler;
@@ -22,6 +23,7 @@ namespace Nethereum.JsonRpc.Client
         private volatile bool _firstHttpClient;
         private HttpClient _httpClient;
         private HttpClient _httpClient2;
+        private bool _rotateHttpClients = true;
         private DateTime _httpClientLastCreatedAt;
         private readonly object _lockObject = new object();
 
@@ -36,12 +38,59 @@ namespace Nethereum.JsonRpc.Client
             }
 
             _authHeaderValue = authHeaderValue;
+
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            
             _jsonSerializerSettings = jsonSerializerSettings;
             _httpClientHandler = httpClientHandler;
             _log = log;
-            CreateNewHttpClient();
+
+#if NETCOREAPP2_1 || NETCOREAPP3_1
+            _httpClient = CreateNewHttpClient();
+            _rotateHttpClients = false;
+#else
+            CreateNewRotatedHttpClient();
+#endif
+        }
+
+        private static HttpMessageHandler GetDefaultHandler()
+        {
+#if NETSTANDARD2_0
+            return new HttpClientHandler
+            {
+                MaxConnectionsPerServer = MAXIMUM_CONNECTIONS_PER_SERVER
+            };
+#elif NETCOREAPP2_1 || NETCOREAPP3_1
+            return new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
+                PooledConnectionIdleTimeout = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
+                MaxConnectionsPerServer = MAXIMUM_CONNECTIONS_PER_SERVER
+            };
+#else
+            return new HttpClientHandler();
+#endif
+        }
+
+        public RpcClient(Uri baseUrl, HttpClient httpClient, AuthenticationHeaderValue authHeaderValue = null,
+           JsonSerializerSettings jsonSerializerSettings = null, ILog log = null)
+        {
+            _baseUrl = baseUrl;
+
+            if (authHeaderValue == null)
+            {
+                authHeaderValue = UserAuthentication.FromUri(baseUrl)?.GetBasicAuthenticationHeaderValue();
+            }
+
+            _authHeaderValue = authHeaderValue;
+            if (jsonSerializerSettings == null)
+                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            _jsonSerializerSettings = jsonSerializerSettings;
+            _log = log;
+            InitialiseHttpClient(httpClient);
+            _httpClient = httpClient;
+            _rotateHttpClients = false;
         }
 
         protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
@@ -86,45 +135,74 @@ namespace Nethereum.JsonRpc.Client
             }
         }
 
-       
-
         private HttpClient GetOrCreateHttpClient()
         {
-            lock (_lockObject)
+            if (_rotateHttpClients) //already created if not rotated
             {
-                var timeSinceCreated = DateTime.UtcNow - _httpClientLastCreatedAt;
-                if (timeSinceCreated.TotalSeconds > NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT)
-                    CreateNewHttpClient();
+                lock (_lockObject)
+                {
+                    var timeSinceCreated = DateTime.UtcNow - _httpClientLastCreatedAt;
+                    if (timeSinceCreated.TotalSeconds > NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT)
+                        CreateNewRotatedHttpClient();
+                    return GetClient();
+                }
+            }
+            else
+            {
                 return GetClient();
             }
         }
 
         private HttpClient GetClient()
         {
-            lock (_lockObject)
+            if (_rotateHttpClients)
             {
-                return _firstHttpClient ? _httpClient : _httpClient2;
+                lock (_lockObject)
+                {
+
+                    return _firstHttpClient ? _httpClient : _httpClient2;
+                }
+            }
+            else
+            {
+                return _httpClient;
             }
         }
 
-        private void CreateNewHttpClient()
+        private void CreateNewRotatedHttpClient()
         {
-            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
-            httpClient.BaseAddress = _baseUrl;
+            var httpClient = CreateNewHttpClient();
             _httpClientLastCreatedAt = DateTime.UtcNow;
+            
             if (_firstHttpClient)
+            {
                 lock (_lockObject)
                 {
                     _firstHttpClient = false;
                     _httpClient2 = httpClient;
                 }
+            }
             else
+            {
                 lock (_lockObject)
                 {
                     _firstHttpClient = true;
                     _httpClient = httpClient;
                 }
+            }
+        }
+
+        private HttpClient CreateNewHttpClient()
+        {
+            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient(GetDefaultHandler());
+            InitialiseHttpClient(httpClient);
+            return httpClient;
+        }
+
+        private void InitialiseHttpClient(HttpClient httpClient)
+        {
+            httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
+            httpClient.BaseAddress = _baseUrl;
         }
     }
 }
