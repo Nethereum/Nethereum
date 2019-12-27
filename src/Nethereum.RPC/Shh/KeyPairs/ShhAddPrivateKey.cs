@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nethereum.RPC.Shh
+namespace Nethereum.RPC.Shh.KeyPair
 {
     public class ShhAddPrivateKey : RpcRequestResponseHandler<string>, IShhAddPrivateKey
     {

@@ -1,7 +1,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Infrastructure;
 
-namespace Nethereum.RPC.Shh
+namespace Nethereum.RPC.Shh.KeyPair
 {
     /// <Summary>
     ///     shh_newIdentity

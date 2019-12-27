@@ -1,5 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Shh;
+using Nethereum.RPC.Shh.KeyPair;
 using Nethereum.RPC.Tests.Testers;
 using System;
 using System.Collections.Generic;

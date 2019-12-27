@@ -48,11 +48,11 @@ namespace Nethereum.JsonRpc.UnityClient
 
     public class ShhNewKeyPairUnityRequest : UnityRpcClient<System.String>
     {
-        private readonly Nethereum.RPC.Shh.ShhNewKeyPair _shhNewKeyPair;
+        private readonly Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair _shhNewKeyPair;
 
         public ShhNewKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
         {
-            _shhNewKeyPair = new Nethereum.RPC.Shh.ShhNewKeyPair(null);
+            _shhNewKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair(null);
         }
 
         public IEnumerator SendRequest()
@@ -64,11 +64,11 @@ namespace Nethereum.JsonRpc.UnityClient
 
     public class ShhAddPrivateKeyUnityRequest : UnityRpcClient<System.String>
     {
-        private readonly Nethereum.RPC.Shh.ShhAddPrivateKey _addPrivateKey;
+        private readonly Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey _addPrivateKey;
 
         public ShhAddPrivateKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
         {
-            _addPrivateKey = new Nethereum.RPC.Shh.ShhAddPrivateKey(null);
+            _addPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey(null);
         }
 
         public IEnumerator SendRequest(string privateKey)

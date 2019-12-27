@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Shh;
+using Nethereum.RPC.Shh.KeyPair;
 
 namespace Nethereum.RPC.Tests.Testers
 {
