@@ -9,11 +9,11 @@ namespace Nethereum.RPC
         {
             NewKeyPair = new ShhNewKeyPair(client);
             Version = new ShhVersion(client);
-            //AddPrivateKey = new ShhAddPrivateKey(client);
+            AddPrivateKey = new ShhAddPrivateKey(client);
         }
 
         public IShhNewKeyPair NewKeyPair { get; private set; }
         public IShhVersion Version { get; private set; } 
-        //public IShhAddPrivateKey AddPrivateKey { get; private set; }
+        public IShhAddPrivateKey AddPrivateKey { get; private set; }
     }
 }

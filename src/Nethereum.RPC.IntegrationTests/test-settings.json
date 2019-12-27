@@ -2,7 +2,7 @@
   "liveSettings": {
     "rpcUrl": "https://mainnet.infura.io",
     "wsUrl": "wss://mainnet.infura.io/ws"
-  }, 
+  },
   "testSettings": {
     "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
     "defaultAccountPassword": "password",
@@ -12,6 +12,7 @@
     "blockNumber": "1",
     "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
     "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4",
+    "defaultPrivateKey": "0x62e01471dbfe82393e163a371f771196b093eb2e3c9f5f75732059125d10b28a"
   },
   "parityRopstenSettings": {
     "defaultAccount": "0xe84a30306b0BEEfD34a13A8d20d333078Ba7792e",
