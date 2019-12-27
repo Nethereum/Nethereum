@@ -1,5 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Shh.KeyPair;
+using Nethereum.RPC.Shh.KeyPair; 
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,6 +12,7 @@ namespace Nethereum.RPC.Shh
         {
             AddPrivateKey = new ShhAddPrivateKey(client);
             NewKeyPair = new ShhNewKeyPair(client);
+            HasKeyPair = new ShhHasKeyPair(client);
         }
 
         public IShhNewKeyPair NewKeyPair { get; private set; }
