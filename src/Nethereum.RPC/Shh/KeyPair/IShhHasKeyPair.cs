@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.RPC.Shh.KeyPair
 {
-    public interface IShhHasKeyPair  
-    {
-        Task<bool> SendRequestAsync(string keypair, object id = null);
-        RpcRequest BuildRequest(string keypair, object id = null);
+    public interface IShhHasKeyPair : IGenericRpcRequestResponseHandlerParamString<bool>
+    { 
     }
 }
