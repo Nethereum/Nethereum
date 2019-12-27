@@ -13,6 +13,7 @@ namespace Nethereum.RPC.Shh
             AddPrivateKey = new ShhAddPrivateKey(client);
             NewKeyPair = new ShhNewKeyPair(client);
             HasKeyPair = new ShhHasKeyPair(client);
+            DeleteKeyPair = new ShhDeleteKeyPair(client);
         }
 
         public IShhNewKeyPair NewKeyPair { get; private set; }
