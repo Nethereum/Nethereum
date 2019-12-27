@@ -5,17 +5,17 @@ using Nethereum.RPC.Shh;
 
 namespace Nethereum.RPC.Tests.Testers
 {
-    public class ShhNewIdentityTester : IRPCRequestTester
+    public class ShhNewKeyPairTester : IRPCRequestTester
     {
         public async Task<object> ExecuteTestAsync(IClient client)
         {
-            var shhNewIdentity = new ShhNewIdentity(client);
-            return await shhNewIdentity.SendRequestAsync();
+            var shhNewKeyPair = new ShhNewKeyPair(client);
+            return await shhNewKeyPair.SendRequestAsync();
         }
 
         public Type GetRequestType()
         {
-            return typeof (ShhNewIdentity);
+            return typeof (ShhNewKeyPair);
         }
     }
 }

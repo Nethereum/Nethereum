@@ -7,11 +7,13 @@ namespace Nethereum.RPC
     {
         public ShhApiService(IClient client) : base(client)
         {
-            NewIdentity = new ShhNewIdentity(client);
+            NewKeyPair = new ShhNewKeyPair(client);
             Version = new ShhVersion(client);
+            //AddPrivateKey = new ShhAddPrivateKey(client);
         }
 
-        public IShhNewIdentity NewIdentity { get; private set; }
-        public IShhVersion Version { get; private set; }
+        public IShhNewKeyPair NewKeyPair { get; private set; }
+        public IShhVersion Version { get; private set; } 
+        //public IShhAddPrivateKey AddPrivateKey { get; private set; }
     }
 }

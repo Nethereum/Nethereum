@@ -4,7 +4,8 @@ namespace Nethereum.RPC
 {
     public interface IShhApiService
     {
-        IShhNewIdentity NewIdentity { get; }
+        IShhNewKeyPair NewKeyPair { get; }
+        //IShhAddPrivateKey AddPrivateKey { get; }
         IShhVersion Version { get; }
     }
 }

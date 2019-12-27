@@ -46,18 +46,18 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                 
 
-    public class ShhNewIdentityUnityRequest:UnityRpcClient<System.String>
+    public class ShhNewKeyPairUnityRequest:UnityRpcClient<System.String>
     {
-        private readonly Nethereum.RPC.Shh.ShhNewIdentity _shhNewIdentity;
+        private readonly Nethereum.RPC.Shh.ShhNewKeyPair _shhNewKeyPair;
 
-        public ShhNewIdentityUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
+        public ShhNewKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
         {
-            _shhNewIdentity = new Nethereum.RPC.Shh.ShhNewIdentity(null);
+            _shhNewKeyPair = new Nethereum.RPC.Shh.ShhNewKeyPair(null);
         }
 
         public IEnumerator SendRequest()
         {
-            var request = _shhNewIdentity.BuildRequest();
+            var request = _shhNewKeyPair.BuildRequest();
             yield return SendRequest(request);
         }
     }
