@@ -1,5 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Shh.KeyPair; 
+using Nethereum.RPC.Shh.KeyPair;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,6 +14,8 @@ namespace Nethereum.RPC.Shh
             NewKeyPair = new ShhNewKeyPair(client);
             HasKeyPair = new ShhHasKeyPair(client);
             DeleteKeyPair = new ShhDeleteKeyPair(client);
+            GetPublicKey = new ShhGetPublicKey(client);
+            GetPrivateKey = new ShhGetPrivateKey(client);
         }
 
         public IShhNewKeyPair NewKeyPair { get; private set; }
