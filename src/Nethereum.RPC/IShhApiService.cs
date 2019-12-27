@@ -6,6 +6,7 @@ namespace Nethereum.RPC
     {
         IShhKeyPair KeyPair { get; } 
         IShhSymKey SymKey { get; } 
+        IShhMessageFilter MessageFilter { get; } 
         IShhVersion Version { get; }
     }
 }

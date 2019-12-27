@@ -10,9 +10,11 @@ namespace Nethereum.RPC
             KeyPair = new ShhKeyPair(client);
             Version = new ShhVersion(client);
             SymKey = new ShhSymKey(client);
+            MessageFilter = new ShhMessageFilter(client);
         }
         public IShhKeyPair KeyPair { get; private set; }
         public IShhVersion Version { get; private set; } 
-        public IShhSymKey SymKey { get; private set; }
+        public IShhSymKey SymKey { get; private set; } 
+        public IShhMessageFilter MessageFilter { get; private set; }
     }
 }
