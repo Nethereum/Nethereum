@@ -26,6 +26,11 @@ namespace Nethereum.RPC.Tests.Testers
 
         public IConfigurationRoot Configuration { get; set; }
 
+        public string GetDefaultPublicKey()
+        {
+            return GetAppSettingsValue("defaultPublicKey");
+        }
+
         public string GetDefaultPrivateKey()
         {
             return GetAppSettingsValue("defaultPrivateKey");

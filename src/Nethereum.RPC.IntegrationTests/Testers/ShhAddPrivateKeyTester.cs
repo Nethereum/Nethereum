@@ -5,11 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
-namespace Nethereum.RPC.IntegrationTests.Testers
+namespace Nethereum.RPC.Tests.Testers
 {
     public class ShhAddPrivateKeyTester : RPCRequestTester<string>, IRPCRequestTester
     {
+        [Fact]
+        public async void ShouldReturnTheKeyPairID()
+        {
+            var result = await ExecuteAsync();
+            Assert.NotNull(result);
+        }
+
         public override Task<string> ExecuteAsync(IClient client)
         {
             var shhAddPrivateKey = new ShhAddPrivateKey(client);
