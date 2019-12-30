@@ -29,6 +29,14 @@ namespace Nethereum.Quorum.RPC.Interceptors
                 var privateTransaction = new PrivateTransactionInput(transaction, privateFor.ToArray(), privateFrom);
                 return await interceptedSendRequestAsync(new RpcRequest(request.Id, request.Method, privateTransaction), route).ConfigureAwait(false);
             }
+
+            if (request.Method == "eth_sendRawTransaction")
+            {
+                var rawTrasaction = request.RawParameters[0];
+                
+                return await interceptedSendRequestAsync(new RpcRequest(request.Id, "eth_sendRawPrivateTransaction", rawTrasaction, new PrivateRawTransaction(privateFor.ToArray())), route).ConfigureAwait(false);
+            }
+
             return await interceptedSendRequestAsync(request, route).ConfigureAwait(false);
         }
 
@@ -42,6 +50,12 @@ namespace Nethereum.Quorum.RPC.Interceptors
                 var privateTransaction = new PrivateTransactionInput(transaction, privateFor.ToArray(), privateFrom);
                 paramList[0] = privateTransaction;
                 return await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);
+            }
+
+            if (method == "eth_sendRawTransaction")
+            {
+                var rawTrasaction = paramList[0];
+                return await interceptedSendRequestAsync("eth_sendRawPrivateTransaction", route, new object[] { rawTrasaction, new PrivateRawTransaction(privateFor.ToArray())}).ConfigureAwait(false);
             }
 
             return await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);

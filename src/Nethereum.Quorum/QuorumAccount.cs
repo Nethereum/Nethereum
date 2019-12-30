@@ -1,34 +1,29 @@
-﻿using Nethereum.RPC.Accounts;
-using Nethereum.RPC.NonceServices;
-using Nethereum.RPC.TransactionManagers;
+﻿using Nethereum.Signer;
+using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Quorum
 {
-    public class QuorumAccount : IAccount
+    public class QuorumAccount : Account
     {
-        public QuorumAccount(string accountAddress)
+
+        public QuorumAccount(EthECKey key):base(key)
         {
-            Address = accountAddress;
-            InitialiseDefaultTransactionManager();
+            
         }
 
-        public QuorumAccount(string accountAddress,
-            QuorumTransactionManager transactionManager)
+        public QuorumAccount(string privateKey):base(privateKey)
         {
-            Address = accountAddress;
-            TransactionManager = transactionManager;
-            transactionManager.SetAccount(this);
+       
         }
 
-        public string Address { get; protected set; }
-
-        public ITransactionManager TransactionManager { get; protected set; }
-
-        public INonceService NonceService { get; set; }
-
-        protected virtual void InitialiseDefaultTransactionManager()
+        public QuorumAccount(byte[] privateKey):base(privateKey)
         {
-            TransactionManager = new QuorumTransactionManager(null, this);
+         
+        }
+
+        protected override void InitialiseDefaultTransactionManager()
+        {
+            TransactionManager = new QuorumTransactionManager(null, null, this);
         }
     }
 }

@@ -13,6 +13,7 @@ using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Quorum
 {
@@ -21,21 +22,31 @@ namespace Nethereum.Quorum
     {
         public Web3Quorum(IClient client, string accountAddress) :base(client)
         {
-            var account = new QuorumAccount(accountAddress);
+            var account = new UnlockedAccount(accountAddress);
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
         }
 
-        public Web3Quorum(IClient client, QuorumAccount account) : base(client)
+        public Web3Quorum(IClient client, UnlockedAccount account) : base(client)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
         }
 
-        public Web3Quorum(QuorumAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+        public Web3Quorum(UnlockedAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
+        }
+
+        public Web3Quorum(QuorumAccount account, IClient client, string privateUrl) : base(account, client)
+        {
+            ((QuorumTransactionManager) TransactionManager).PrivateUrl = privateUrl;
+        }
+
+        public Web3Quorum(QuorumAccount account, string privateUrl, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
+        {
+            ((QuorumTransactionManager)TransactionManager).PrivateUrl = privateUrl;
         }
 
         public Web3Quorum(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
@@ -62,6 +73,12 @@ namespace Nethereum.Quorum
             this.PrivateFor = list;
             this.PrivateFrom = privateFrom;
             this.Client.OverridingRequestInterceptor = new PrivateForInterceptor(list, privateFrom);
+
+            if (TransactionManager is QuorumTransactionManager manager)
+            {
+                manager.PrivateFor = PrivateFor;
+                manager.PrivateFrom = PrivateFrom;
+            }
         }
 
         public void ClearPrivateForRequestParameters()
@@ -73,8 +90,12 @@ namespace Nethereum.Quorum
 
             PrivateFor = null;
             PrivateFrom = null;
-        }
 
-       
+            if (TransactionManager is QuorumTransactionManager manager)
+            {
+                manager.PrivateFor = null;
+                manager.PrivateFrom = null;
+            }
+        }
     }
 }
