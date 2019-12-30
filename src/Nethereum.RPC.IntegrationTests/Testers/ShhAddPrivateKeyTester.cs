@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override Task<string> ExecuteAsync(IClient client)
         {
             var shhAddPrivateKey = new ShhAddPrivateKey(client);
-            return shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultPrivateKey());
+            return shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
         }
 
         public override Type GetRequestType()

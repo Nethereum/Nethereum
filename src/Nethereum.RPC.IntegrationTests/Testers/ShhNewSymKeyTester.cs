@@ -31,40 +31,4 @@ namespace Nethereum.RPC.Tests.Testers
             return typeof(ShhNewKeyPair);
         }
     }
-
-    public class ShhPostTester : RPCRequestTester<string>, IRPCRequestTester
-    {
-        [Fact]
-        public async void ShouldReturnResult()
-        {
-            var result = await ExecuteAsync();
-            Assert.NotNull(result);
-        }
-
-        public override async Task<string> ExecuteAsync(IClient client)
-        {
-            var shhNewKeyPair = new ShhPost(client);
-            var shhAddPrivateKey = new ShhAddPrivateKey(client);
-
-            var keyPair = await shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultPrivateKey());
-            //4 Bytes
-            var topic = UTF8Encoding.ASCII.GetBytes("default_topic").Take(4).ToArray().ToHex(true);
-            var payload = UTF8Encoding.ASCII.GetBytes("default_message").ToHex(true);
-            return await shhNewKeyPair.SendRequestAsync(new Shh.DTOs.MessageInput
-            {
-                PubKey = Settings.GetDefaultPublicKey(),
-                Ttl = 7,
-                Topic = topic,
-                PowTarget = 2.1,
-                PowTime = 100,
-                Payload = payload,
-                Sig = keyPair
-            });
-        }
-
-        public override Type GetRequestType()
-        {
-            return typeof(ShhNewKeyPair);
-        }
-    }
 }

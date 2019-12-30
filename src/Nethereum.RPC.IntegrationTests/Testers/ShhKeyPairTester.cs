@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Tests.Testers
             var getPublicKey = new ShhGetPublicKey(Client);
             var deleteKeyPair = new ShhDeleteKeyPair(Client);
 
-            var addResult = await addPrivateKey.SendRequestAsync(Settings.GetDefaultPrivateKey());
+            var addResult = await addPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
             var hasKeyPairResult = await hasKeyPair.SendRequestAsync(addResult);
             var getPrivateKeyResult = await getPrivateKey.SendRequestAsync(addResult);
             var getPublicKeyResult = await getPublicKey.SendRequestAsync(addResult); 
@@ -28,15 +28,15 @@ namespace Nethereum.RPC.Tests.Testers
 
             Assert.NotNull(addResult);
             Assert.True(hasKeyPairResult);
-            Assert.Equal(Settings.GetDefaultPrivateKey(), getPrivateKeyResult);
-            Assert.Equal(Settings.GetDefaultPublicKey(), getPublicKeyResult);
+            Assert.Equal(Settings.GetDefaultShhPrivateKey(), getPrivateKeyResult);
+            Assert.Equal(Settings.GetDefaultShhPublicKey(), getPublicKeyResult);
             Assert.True(deleteKeyPairResult);
         }
 
         public override Task<bool> ExecuteAsync(IClient client)
         {
             var shhAddPrivateKey = new ShhDeleteKeyPair(client);
-            return shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultPrivateKey());
+            return shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
         }
 
         public override Type GetRequestType()
