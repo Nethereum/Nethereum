@@ -16,7 +16,7 @@ namespace Nethereum.Quorum.Tests
     public class QuorumPrivateContractTests
     {
 
-        ///private string url = "http://13.91.34....";
+       /// private string url = "http://13.91.34.xxx";
         private string url = "http://localhost";
 
         [Fact]
@@ -39,10 +39,13 @@ namespace Nethereum.Quorum.Tests
 
             var contractAddress = transactionReceipt.ContractAddress;
 
-            var balance = await web3Quorum.Eth.GetContractQueryHandler<BalanceOfFunction>()
-                .QueryAsync<BigInteger>(contractAddress,
-                    new BalanceOfFunction() {Owner = "0xed9d02e382b34818e88b88a309c7fe71e65f419d"}); //account.Address });
-            }
+            var totalSupply = await web3Quorum.Eth.GetContractQueryHandler<TotalSupplyFunction>()
+                .QueryAsync<BigInteger>(contractAddress);
+
+            //var balance = await web3Quorum.Eth.GetContractQueryHandler<BalanceOfFunction>()
+            //    .QueryAsync<BigInteger>(contractAddress,
+            //        new BalanceOfFunction() { Owner = "0xed9d02e382b34818e88b88a309c7fe71e65f419d" }); //account.Address });
+        }
 
 
         [Fact]
@@ -81,6 +84,12 @@ namespace Nethereum.Quorum.Tests
         {
             [Parameter("address", "_owner", 1)]
             public string Owner { get; set; }
+        }
+
+        [Function(name: "totalSupply", returnType: "uint256")]
+        public class TotalSupplyFunction : FunctionMessage
+        {
+
         }
 
         [Fact]
