@@ -23,7 +23,7 @@ namespace Nethereum.RPC.Shh.DTOs
         // Maximal time in seconds to be spent on proof of work.
         public long PowTime { get; set; }
         // Minimal PoW target required for this message.
-        public long PowTarget { get; set; }
+        public double PowTarget { get; set; }
         //(optional): Optional peer ID (for peer-to-peer message only).
         public string TargetPeer { get; set; }    
     }
