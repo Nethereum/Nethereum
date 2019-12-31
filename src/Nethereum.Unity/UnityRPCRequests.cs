@@ -46,23 +46,6 @@ namespace Nethereum.JsonRpc.UnityClient
     }
                              
 
-    public class ShhVersionUnityRequest:UnityRpcClient<System.String>
-    {
-        private readonly Nethereum.RPC.Shh.ShhVersion _shhVersion;
-
-        public ShhVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
-        {
-            _shhVersion = new Nethereum.RPC.Shh.ShhVersion(null);
-        }
-
-        public IEnumerator SendRequest()
-        {
-            var request = _shhVersion.BuildRequest();
-            yield return SendRequest(request);
-        }
-    }
-
-
     public class ShhNewKeyPairUnityRequest : UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair _shhNewKeyPair;
@@ -91,6 +74,22 @@ namespace Nethereum.JsonRpc.UnityClient
         public IEnumerator SendRequest(string privateKey)
         {
             var request = _addPrivateKey.BuildRequest(privateKey);
+            yield return SendRequest(request);
+        }
+    }
+
+    public class ShhVersionUnityRequest : UnityRpcClient<System.String>
+    {
+        private readonly Nethereum.RPC.Shh.ShhVersion _shhVersion;
+
+        public ShhVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
+        {
+            _shhVersion = new Nethereum.RPC.Shh.ShhVersion(null);
+        }
+
+        public IEnumerator SendRequest()
+        {
+            var request = _shhVersion.BuildRequest();
             yield return SendRequest(request);
         }
     }
