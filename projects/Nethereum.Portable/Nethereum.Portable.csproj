@@ -289,6 +289,10 @@
 				<Link>ABI\FunctionEncoding\DecodedValue.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\ErrorFunction.cs">
+				<Link>ABI\FunctionEncoding\ErrorFunction.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\EventTopicDecoder.cs">
 				<Link>ABI\FunctionEncoding\EventTopicDecoder.cs</Link>
 		</Compile>
@@ -323,6 +327,10 @@
 		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\SignatureEncoder.cs">
 				<Link>ABI\FunctionEncoding\SignatureEncoder.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\SmartContractRevertException.cs">
+				<Link>ABI\FunctionEncoding\SmartContractRevertException.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.ABI\FunctionEncoding\AttributeEncoding\ParameterAttributeValue.cs">
@@ -1033,8 +1041,16 @@
 				<Link>RPC\Infrastructure\GenericRpcRequesteResponseHandlerNoParam.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\GenericRpcRequestResponseHandlerParamString.cs">
+				<Link>RPC\Infrastructure\GenericRpcRequestResponseHandlerParamString.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs">
 				<Link>RPC\Infrastructure\IGenericRpcRequestResponseHandlerNoParam.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Infrastructure\IGenericRpcRequestResponseHandlerParamString.cs">
+				<Link>RPC\Infrastructure\IGenericRpcRequestResponseHandlerParamString.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\ModelFactories\BlockHeaderRPCFactory.cs">
@@ -1113,20 +1129,172 @@
 				<Link>RPC\Personal\PersonalUnlockAccount.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhNewIdentity.cs">
-				<Link>RPC\Shh\IShhNewIdentity.cs</Link>
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhKeyPair.cs">
+				<Link>RPC\Shh\IShhKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhMessageFilter.cs">
+				<Link>RPC\Shh\IShhMessageFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhPost.cs">
+				<Link>RPC\Shh\IShhPost.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhSymKey.cs">
+				<Link>RPC\Shh\IShhSymKey.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Shh\IShhVersion.cs">
 				<Link>RPC\Shh\IShhVersion.cs</Link>
 		</Compile>
 		
-        <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhNewIdentity.cs">
-				<Link>RPC\Shh\ShhNewIdentity.cs</Link>
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhKeyPair.cs">
+				<Link>RPC\Shh\ShhKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhMessageFilter.cs">
+				<Link>RPC\Shh\ShhMessageFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhPost.cs">
+				<Link>RPC\Shh\ShhPost.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhSymKey.cs">
+				<Link>RPC\Shh\ShhSymKey.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\Shh\ShhVersion.cs">
 				<Link>RPC\Shh\ShhVersion.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\DTOs\MessageFilterInput.cs">
+				<Link>RPC\Shh\DTOs\MessageFilterInput.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\DTOs\MessageInput.cs">
+				<Link>RPC\Shh\DTOs\MessageInput.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\DTOs\ShhMessage.cs">
+				<Link>RPC\Shh\DTOs\ShhMessage.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhAddPrivateKey.cs">
+				<Link>RPC\Shh\KeyPair\IShhAddPrivateKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhDeleteKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\IShhDeleteKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhGetPrivateKey.cs">
+				<Link>RPC\Shh\KeyPair\IShhGetPrivateKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhGetPublicKey.cs">
+				<Link>RPC\Shh\KeyPair\IShhGetPublicKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhHasKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\IShhHasKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\IShhNewKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\IShhNewKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhAddPrivateKey.cs">
+				<Link>RPC\Shh\KeyPair\ShhAddPrivateKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhDeleteKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\ShhDeleteKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhGetPrivateKey.cs">
+				<Link>RPC\Shh\KeyPair\ShhGetPrivateKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhGetPublicKey.cs">
+				<Link>RPC\Shh\KeyPair\ShhGetPublicKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhHasKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\ShhHasKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\KeyPair\ShhNewKeyPair.cs">
+				<Link>RPC\Shh\KeyPair\ShhNewKeyPair.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\MessageFilter\IShhDeleteMessageFilter.cs">
+				<Link>RPC\Shh\MessageFilter\IShhDeleteMessageFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\MessageFilter\IShhGetFilterMessages.cs">
+				<Link>RPC\Shh\MessageFilter\IShhGetFilterMessages.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\MessageFilter\IShhNewMessageFilter.cs">
+				<Link>RPC\Shh\MessageFilter\IShhNewMessageFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\MessageFilter\ShhDeleteMessageFilter.cs">
+				<Link>RPC\Shh\MessageFilter\ShhDeleteMessageFilter.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\MessageFilter\ShhGetFilterMessages.cs">
+				<Link>RPC\Shh\MessageFilter\ShhGetFilterMessages.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhAddSymKey.cs">
+				<Link>RPC\Shh\SymKey\IShhAddSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhDeleteSymKey.cs">
+				<Link>RPC\Shh\SymKey\IShhDeleteSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhGenerateSymKeyFromPassword.cs">
+				<Link>RPC\Shh\SymKey\IShhGenerateSymKeyFromPassword.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhGetSymKey.cs">
+				<Link>RPC\Shh\SymKey\IShhGetSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhHasSymKey.cs">
+				<Link>RPC\Shh\SymKey\IShhHasSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\IShhNewSymKey.cs">
+				<Link>RPC\Shh\SymKey\IShhNewSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhAddSymKey.cs">
+				<Link>RPC\Shh\SymKey\ShhAddSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhDeleteSymKey.cs">
+				<Link>RPC\Shh\SymKey\ShhDeleteSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhGenerateSymKeyFromPassword.cs">
+				<Link>RPC\Shh\SymKey\ShhGenerateSymKeyFromPassword.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhGetSymKey.cs">
+				<Link>RPC\Shh\SymKey\ShhGetSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhHasSymKey.cs">
+				<Link>RPC\Shh\SymKey\ShhHasSymKey.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.RPC\Shh\SymKey\ShhNewSymKey.cs">
+				<Link>RPC\Shh\SymKey\ShhNewSymKey.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.RPC\TransactionManagers\EtherTransferService.cs">
@@ -1473,8 +1641,32 @@
 				<Link>Quorum\QuorumTransactionManager.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Quorum\UnlockedAccount.cs">
+				<Link>Quorum\UnlockedAccount.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\UnlockedAcountTransactionManager.cs">
+				<Link>Quorum\UnlockedAcountTransactionManager.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Quorum\Web3Quorum.cs">
 				<Link>Quorum\Web3Quorum.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\Enclave\QuorumEnclave.cs">
+				<Link>Quorum\Enclave\QuorumEnclave.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\Enclave\QuorumEnclaveRequestException.cs">
+				<Link>Quorum\Enclave\QuorumEnclaveRequestException.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\Enclave\StoreRawRequest.cs">
+				<Link>Quorum\Enclave\StoreRawRequest.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\Enclave\StoreRawResponse.cs">
+				<Link>Quorum\Enclave\StoreRawResponse.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Quorum\RPC\ApiMethods.cs">
@@ -1535,6 +1727,10 @@
 		
         <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\NodeInfo.cs">
 				<Link>Quorum\RPC\DTOs\NodeInfo.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\PrivateRawTransaction.cs">
+				<Link>Quorum\RPC\DTOs\PrivateRawTransaction.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Quorum\RPC\DTOs\PrivateTransactionInput.cs">
@@ -2161,8 +2357,16 @@
 				<Link>Contracts\Services\EthApiContractService.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Contracts\Services\EthGetTransactionErrorReason.cs">
+				<Link>Contracts\Services\EthGetTransactionErrorReason.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Contracts\Services\IEthApiContractService.cs">
 				<Link>Contracts\Services\IEthApiContractService.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Contracts\Services\IEthGetTransactionErrorReason.cs">
+				<Link>Contracts\Services\IEthGetTransactionErrorReason.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Contracts\TransactionHandlers\ITransactionEstimatorHandler.cs">
@@ -2213,6 +2417,10 @@
 				<Link>Util\BigDecimal.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Util\BigDecimal.Formatter.cs">
+				<Link>Util\BigDecimal.Formatter.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Util\BigIntegerExtensions.cs">
 				<Link>Util\BigIntegerExtensions.cs</Link>
 		</Compile>
@@ -2225,8 +2433,16 @@
 				<Link>Util\ContractUtils.cs</Link>
 		</Compile>
 		
+        <Compile Include="..\..\src\Nethereum.Util\FormattingExtensions.cs">
+				<Link>Util\FormattingExtensions.cs</Link>
+		</Compile>
+		
         <Compile Include="..\..\src\Nethereum.Util\IWaitStrategy.cs">
 				<Link>Util\IWaitStrategy.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.Util\NumberFormatting.cs">
+				<Link>Util\NumberFormatting.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.Util\PredicateBuilder.cs">
@@ -2927,6 +3143,10 @@
 		
         <Compile Include="..\..\src\Nethereum.BlockchainProcessing\ProgressRepositories\InMemoryBlockchainProgressRepository.cs">
 				<Link>BlockchainProcessing\ProgressRepositories\InMemoryBlockchainProgressRepository.cs</Link>
+		</Compile>
+		
+        <Compile Include="..\..\src\Nethereum.BlockchainProcessing\ProgressRepositories\JsonBlockProgressRepository.cs">
+				<Link>BlockchainProcessing\ProgressRepositories\JsonBlockProgressRepository.cs</Link>
 		</Compile>
 		
         <Compile Include="..\..\src\Nethereum.BlockchainProcessing\Services\BlockchainBlockProcessingService.cs">
