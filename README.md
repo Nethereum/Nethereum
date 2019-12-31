@@ -12,9 +12,13 @@ CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vp
 
 Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, [Parity](https://www.parity.io/) or [Quorum](https://www.jpmorgan.com/global/Quorum).
 
-Nethereum is developed targeting netstandard 1.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, Xbox, hololens and windows IoT.
+Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 2.1, netcore 3.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, Xbox, hololens and windows IoT.
 
-Upcoming releases will include functionalities such as [DevP2P](https://github.com/ethereum/devp2p), [Plasma](https://plasma.io/plasma.pdf) and Micro-Payments.
+# Nethereum Playground. Try Nethereum now in your browser.
+Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
+The same version is hosted in IPFS https://gateway.pinata.cloud/ipfs/QmXCN2Yc4mTZuWHWZH2ZDiN6SMFH23uEvLMF2mhZ5T2sgg/ 
+
+[![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
 ## Issues, Requests and help
 
