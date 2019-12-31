@@ -12,7 +12,7 @@ using System.Collections;
 namespace Nethereum.JsonRpc.UnityClient
 {
 
-    public class Web3ClientVersionUnityRequest:UnityRpcClient<System.String>
+     public class Web3ClientVersionUnityRequest:UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Web3.Web3ClientVersion _web3ClientVersion;
 
@@ -44,30 +44,45 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
+                             
 
-    public class ShhNewIdentityUnityRequest:UnityRpcClient<System.String>
+    public class ShhNewKeyPairUnityRequest : UnityRpcClient<System.String>
     {
-        private readonly Nethereum.RPC.Shh.ShhNewIdentity _shhNewIdentity;
+        private readonly Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair _shhNewKeyPair;
 
-        public ShhNewIdentityUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
+        public ShhNewKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
         {
-            _shhNewIdentity = new Nethereum.RPC.Shh.ShhNewIdentity(null);
+            _shhNewKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair(null);
         }
 
         public IEnumerator SendRequest()
         {
-            var request = _shhNewIdentity.BuildRequest();
+            var request = _shhNewKeyPair.BuildRequest();
             yield return SendRequest(request);
         }
     }
-                
 
-    public class ShhVersionUnityRequest:UnityRpcClient<System.String>
+    public class ShhAddPrivateKeyUnityRequest : UnityRpcClient<System.String>
+    {
+        private readonly Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey _addPrivateKey;
+
+        public ShhAddPrivateKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
+        {
+            _addPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey(null);
+        }
+
+        public IEnumerator SendRequest(string privateKey)
+        {
+            var request = _addPrivateKey.BuildRequest(privateKey);
+            yield return SendRequest(request);
+        }
+    }
+
+    public class ShhVersionUnityRequest : UnityRpcClient<System.String>
     {
         private readonly Nethereum.RPC.Shh.ShhVersion _shhVersion;
 
-        public ShhVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
+        public ShhVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
         {
             _shhVersion = new Nethereum.RPC.Shh.ShhVersion(null);
         }
@@ -78,8 +93,7 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
-
+    
     public class PersonalListAccountsUnityRequest:UnityRpcClient<System.String[]>
     {
         private readonly Nethereum.RPC.Personal.PersonalListAccounts _personalListAccounts;
