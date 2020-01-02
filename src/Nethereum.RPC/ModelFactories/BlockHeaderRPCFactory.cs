@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System.Linq;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -25,8 +26,8 @@ namespace Nethereum.RPC.ModelFactories
 
             if (mixHasAndhNonceInSealFields && rpcBlock.SealFields != null && rpcBlock.SealFields.Length >= 2)
             {
-                blockHeader.MixHash = rpcBlock.SealFields[0].HexToByteArray();
-                blockHeader.Nonce = rpcBlock.SealFields[1].HexToByteArray();
+                blockHeader.MixHash = EnsureMixHashWithoutRLPSizePrefix(rpcBlock.SealFields[0].HexToByteArray());
+                blockHeader.Nonce = EnsureNonceWithoutRLPSizePrefix(rpcBlock.SealFields[1].HexToByteArray());
             }
             else
             {
@@ -34,6 +35,18 @@ namespace Nethereum.RPC.ModelFactories
                 blockHeader.Nonce = rpcBlock.Nonce.HexToByteArray();
             }
             return blockHeader;
+        }
+
+        public static byte[] EnsureMixHashWithoutRLPSizePrefix(byte[] mixHash)
+        {
+            if (mixHash.Length == 33 && mixHash[0] == 0xA0) return mixHash.Skip(1).ToArray();
+            return mixHash;
+        }
+
+        public static byte[] EnsureNonceWithoutRLPSizePrefix(byte[] nonce)
+        {
+            if (nonce.Length == 9 && nonce[0] == 0x88) return nonce.Skip(1).ToArray();
+            return nonce;
         }
     }
 }
