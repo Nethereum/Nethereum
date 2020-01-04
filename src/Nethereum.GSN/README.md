@@ -1,9 +1,9 @@
-﻿# Nethereum.GSN
+# Nethereum.GSN
 Gas Station Network is the ultimate solution for Ethereum decentralized applications. It removes the barrier between users and dApps but increases the complexity of dApps.
 
 ## Pre-requirements
 1. [Contract should be GSN-capable](https://docs.openzeppelin.com/contracts/2.x/gsn)
-2. Contract should have positive balance in RelayHub. It can be done via [cli](https://github.com/OpenZeppelin/openzeppelin-gsn-helpers) or `RelayHubHelper` in the project
+2. Contract should have positive balance in RelayHub. It can be done via [CLI](https://github.com/OpenZeppelin/openzeppelin-gsn-helpers) or `RelayHubHelper` in the project
     ```
     RelayHubHelper.DepositRelayHub(
         "ED3...",                                           // Private key of sender
@@ -17,7 +17,7 @@ Gas Station Network is the ultimate solution for Ethereum decentralized applicat
 ## Getting started
 In order to add GSN support to Nethereum `Web3` instance, follow the next steps:
 
-1. Initialize Web3 with RpcClient paramenter only
+1. Initialize Web3 with `RpcClient` paramenter only
     ```
     var client = new RpcClient(new Uri("https://rinkeby.infura.io/v3/..."));
     web3 = new Web3(client);
