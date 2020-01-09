@@ -30,6 +30,7 @@ namespace Nethereum.GSN
         private readonly string _privateKey;
         private readonly string _contractAddress;
 
+        // TODO: Remove contractAddress parameter (replace by `To` paramenter of `TransactionInput`)
         public GSNTransactionManager(
             GSNOptions options,
             IRelayHubManager relayHubManager,
