@@ -23,8 +23,8 @@ namespace Nethereum.Quorum
     {
         public string PrivateUrl { get; set; }
         private readonly AccountOfflineTransactionSigner _transactionSigner;
-        public List<string> PrivateFor { get; set; }
-        public string PrivateFrom { get; set; }
+        internal List<string> PrivateFor { get; set; }
+        internal string PrivateFrom { get; set; }
 
         public QuorumTransactionManager(IClient rpcClient, string privateUrl, QuorumAccount account)
         {
