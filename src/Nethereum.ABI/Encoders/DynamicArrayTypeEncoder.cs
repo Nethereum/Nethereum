@@ -47,7 +47,7 @@ namespace Nethereum.ABI.Encoders
         {
             var elems = new byte[l.Count][];
             for (var i = 0; i < l.Count; i++)
-                elems[i] = _elementType.EncodePacked(l[i]);
+                elems[i] = _elementType.Encode(l[i]);
             return ByteUtil.Merge(elems);
         }
     }
