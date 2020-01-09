@@ -8,7 +8,8 @@ namespace Nethereum.ABI
         public DynamicArrayType(string name) : base(name)
         {
             Decoder = new DynamicArrayTypeDecoder(ElementType);
-            Encoder = new DynamicArrayTypeEncoder(ElementType);
+            //check AddressType
+            Encoder = "address".Equals(ElementType.CanonicalName) ? new DynamicAddressArrayTypeEncoder(ElementType) : new DynamicAddressArrayTypeEncoder(ElementType);
         }
 
         public override string CanonicalName => ElementType.CanonicalName + "[]";

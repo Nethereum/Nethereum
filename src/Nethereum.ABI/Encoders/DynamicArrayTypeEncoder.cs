@@ -51,4 +51,22 @@ namespace Nethereum.ABI.Encoders
             return ByteUtil.Merge(elems);
         }
     }
+
+    public class DynamicAddressArrayTypeEncoder : DynamicArrayTypeEncoder
+    {
+        readonly ABIType _elementType;
+
+        public DynamicAddressArrayTypeEncoder(ABIType elementType) : base(elementType)
+        {
+            _elementType = elementType;
+        }
+
+        public override byte[] EncodeListPacked(IList l)
+        {
+            var elems = new byte[l.Count][];
+            for (var i = 0; i < l.Count; i++)
+                elems[i] = _elementType.Encode(l[i]);
+            return ByteUtil.Merge(elems);
+        }
+    }
 }
