@@ -26,6 +26,17 @@ namespace Nethereum.ABI.UnitTests
                 soliditySha3.GetABIEncodedPacked(new ABIValue("address", "0x12890D2cce102216644c59daE5baed380d84830c"))
                     .ToHex(true).ConvertToEthereumChecksumAddress());
         }
+         
+        [Fact]
+        public virtual void ShouldEncodePackedArrayAddress()
+        {
+            var paramsEncoded = "0x0000000000000000000000007dd31bc2ffa37ab492a8d60f9c7170b78f12e1c50000000000000000000000000efa8015fcec7039feb656a4830aa6518bf46010";
+
+            var addreses = new string[] { "0x7Dd31bc2ffA37Ab492a8d60F9C7170B78f12E1c5", "0x0efa8015fcec7039feb656a4830aa6518bf46010" };
+            var abiEncode = new ABIEncode();
+            var result = abiEncode.GetABIEncodedPacked(new ABIValue("address[]", addreses)); 
+            Assert.Equal(paramsEncoded, result.ToHex(true));
+        }
 
         [Theory]
         [InlineData(42, "uint8", "2a")]
