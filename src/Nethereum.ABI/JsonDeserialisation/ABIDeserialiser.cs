@@ -67,7 +67,19 @@ namespace Nethereum.ABI.JsonDeserialisation
 
         public FunctionABI BuildFunction(IDictionary<string, object> function)
         {
-            var functionABI = new FunctionABI((string) function["name"], (bool) function["constant"],
+            bool constant = false;
+            if (function.ContainsKey("constant"))
+            {
+                constant = (bool)function["constant"];
+            }
+            else
+            {
+                // for solidity >=0.6.0
+                if (function.ContainsKey("stateMutability") && ((string)function["stateMutability"] == "view" || (string)function["stateMutability"] == "pure"))
+                    constant = true;
+            }
+
+            var functionABI = new FunctionABI((string) function["name"], constant,
                 TryGetSerpentValue(function));
             functionABI.InputParameters = BuildFunctionParameters((List<object>) function["inputs"]);
             functionABI.OutputParameters = BuildFunctionParameters((List<object>) function["outputs"]);
