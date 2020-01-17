@@ -159,6 +159,8 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ClassGeneratorBase<TClassTemplate, TClassModel>
             export interface ClassGeneratorBase$2<TClassTemplate, TClassModel> extends System.Object, IFileGenerator, IGenerator, IClassGenerator {
+                get_ClassModel(): TClassModel;
+                set_ClassModel(value: TClassModel): void;
                 GenerateFileContent$1(outputPath: string): GeneratedFile;
                 GenerateFileContent(): string;
                 GetFileName(): string;

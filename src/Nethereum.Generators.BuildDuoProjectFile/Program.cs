@@ -32,6 +32,7 @@ namespace Nethereum.Generators.BuildDuoProjectFile
     <RootNamespace>Nethereum.Generators.DuoCode</RootNamespace>
     <AssemblyName>Nethereum.Generators.DuoCode</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <LangVersion>6</LangVersion>
     <FileAlignment>512</FileAlignment>
     <DisableHandlePackageFileConflicts>true</DisableHandlePackageFileConflicts>
     <NuGetPackageImportStamp>

@@ -15,7 +15,18 @@ function buildConstructor(item: any): Nethereum.Generators.Model.ConstructorABI 
 }
 
 function buildFunction(item: any): Nethereum.Generators.Model.FunctionABI {
-    var functionItem = new functionAbi(item.name, item.constant, false);
+
+    var constant = false;
+    if (item.constant !== undefined) {
+        constant = item.constant;
+    }
+    else {
+        // for solidity >=0.6.0
+        if (item.stateMutability !== undefined && (item.stateMutability === "view" || item.stateMutability === "pure"))
+        constant = true;
+    }
+
+    var functionItem = new functionAbi(item.name, constant, false);
     functionItem.set_InputParameters(buildFunctionParameters(item.inputs));
     functionItem.set_OutputParameters(buildFunctionParameters(item.outputs));
     return functionItem;
@@ -26,6 +37,20 @@ function buildEvent(item: any): Nethereum.Generators.Model.EventABI {
     eventItem.set_InputParameters(buildEventParameters(item.inputs));
     return eventItem;
 }
+
+function getStructTypeName(item: any) {
+    if (item.internalType !== undefined && item.internalType.startsWith("struct")) {
+        var internalType = item.internalType;
+        var structName = internalType.substring(internalType.lastIndexOf(".") + 1);
+        if (structName.indexOf("[") > 0) {
+            structName = structName.substring(0, structName.indexOf("["));
+        }
+        return structName;
+    }
+    // simple hack until 0.5.8 type name is the same as the parameter name
+    return item.name;
+}
+
 
 function buildStructsFromParameters(items: any): Nethereum.Generators.Model.StructABI[] {
     var structs = [];
@@ -41,15 +66,15 @@ function buildStructsFromParameters(items: any): Nethereum.Generators.Model.Stru
 
 function buildStructsFromTuple(item: any): Nethereum.Generators.Model.StructABI[] {
     var structs = [];
-    var struct = new structAbi(item.name);
+    var struct = new structAbi(getStructTypeName(item));
     var parameterOrder = 0;
     var parameters = [];
     for (var x = 0, len = item.components.length; x < len; x++) {
         var component = item.components[x];
         parameterOrder = parameterOrder + 1;
         if (component.type.startsWith("tuple")) {
-            // simple hack until 0.5.8 type name is the same as the parameter name
-            var parameter = new parameterAbi.ctor$1(component.type, component.name, parameterOrder, component.name);
+
+            var parameter = new parameterAbi.ctor$1(component.type, component.name, parameterOrder, getStructTypeName(component));
             structs = structs.concat(buildStructsFromTuple(component));
         } else {
             var parameter = new parameterAbi.ctor$1(component.type, component.name, parameterOrder);
@@ -68,8 +93,7 @@ function buildFunctionParameters(items: any): Nethereum.Generators.Model.Paramet
     for (var i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
-            // simple hack until 0.5.8 type name is the same as the parameter name
-            var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, items[i].name);
+            var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, getStructTypeName(items[i]));
         } else {
             var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder);
         }
@@ -84,8 +108,8 @@ function buildEventParameters(items: any): Nethereum.Generators.Model.ParameterA
     for (var i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
-            // simple hack until 0.5.8 type name is the same as the parameter name
-            var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, items[i].name);
+           
+            var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, getStructTypeName(items[i]));
         } else {
             var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder);
         }
