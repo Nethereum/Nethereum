@@ -1,5 +1,4 @@
 ﻿
-using Nethereum.ABI.JsonDeserialisation;
 
 namespace Nethereum.Generators.Net.ContractLibrary
 {

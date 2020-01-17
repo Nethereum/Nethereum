@@ -29,7 +29,7 @@ namespace Nethereum.ABI.JsonDeserialisation
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder)
+                var parameter = new Parameter((string)input["type"], (string)input["name"], parameterOrder, TryGetInternalType(input))
                 {
                     Indexed = (bool)input["indexed"]
                 };
@@ -93,7 +93,7 @@ namespace Nethereum.ABI.JsonDeserialisation
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder,
+                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder, TryGetInternalType(input),
                     TryGetSignatureValue(input));
 
                 InitialiseTupleComponents(input, parameter);
@@ -149,6 +149,19 @@ namespace Nethereum.ABI.JsonDeserialisation
             catch
             {
                 return false;
+            }
+        }
+
+        public string TryGetInternalType(IDictionary<string, object> parameter)
+        {
+            try
+            {
+                if (parameter.ContainsKey("internalType")) return (string)parameter["internalType"];
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
 

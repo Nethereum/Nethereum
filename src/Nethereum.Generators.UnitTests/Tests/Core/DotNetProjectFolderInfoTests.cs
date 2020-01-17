@@ -5,6 +5,8 @@ using Xunit;
 
 namespace Nethereum.Generators.UnitTests.Tests.Core
 {
+
+
     public class DotNetProjectFolderInfoTests
     {
         [Fact]

@@ -22,7 +22,8 @@ namespace Nethereum.Accounts.IntegrationTests
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        //Ignore due to bug in geth 1.9.1 [Fact]
+        //Ignore due to bug in geth 1.9.1
+        [Fact]
         public async void ShouldDecodeCliqueAuthor()
         {
             if (_ethereumClientIntegrationFixture.Geth)
@@ -30,16 +31,16 @@ namespace Nethereum.Accounts.IntegrationTests
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =
                     await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
-                var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
+                var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
                 var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
                 Assert.True(AccountFactory.Address.IsTheSameAddress(account));
-
             }
 
         }
 
 
-        //Ignore due to bug in geth 1.9.1 [Fact]
+        //Ignore due to bug in geth 1.9.1
+        [Fact]
         public async void ShouldEncodeDecode()
         {
             if (_ethereumClientIntegrationFixture.Geth)
