@@ -18,7 +18,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        [Fact]
+        //[Fact] Ignoring as Infura does not support this old block
         public async void ShouldRetrieveErrorReason()
         {
             var web3 = new Web3.Web3("https://ropsten.infura.io/v3/7238211010344719ad14a89db874158c");
@@ -40,7 +40,6 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
          */
 
         [Fact]
-        
         public async void ShouldThrowErrorDecodingCall()
         {
             //Parity does throw an RPC exception if the call is reverted, no info included
@@ -107,6 +106,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                     await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
             }
         }
+
+
 
         public partial class ErrorThrowDeployment : ErrorThrowDeploymentBase
         {
