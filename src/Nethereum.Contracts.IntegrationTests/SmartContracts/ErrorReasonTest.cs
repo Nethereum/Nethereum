@@ -73,6 +73,41 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             }
         }
 
+
+        [Fact]
+
+        public async void ShouldThrowErrorOnEstimation()
+        {
+            //Parity does throw an RPC exception if the call is reverted, no info included
+            if (_ethereumClientIntegrationFixture.Geth)
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var errorThrowDeployment = new ErrorThrowDeployment();
+
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                var contractAddress = transactionReceiptDeployment.ContractAddress;
+
+                var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
+                Assert.Equal("Smart contract error: An error message", error.Message);
+            }
+            else // parity throws Rpc exception : "VM execution error."
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var errorThrowDeployment = new ErrorThrowDeployment();
+
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                var contractAddress = transactionReceiptDeployment.ContractAddress;
+
+                var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
+            }
+        }
+
         public partial class ErrorThrowDeployment : ErrorThrowDeploymentBase
         {
             public ErrorThrowDeployment() : base(BYTECODE) { }
@@ -81,7 +116,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 
         public class ErrorThrowDeploymentBase : ContractDeploymentMessage
         {
-            public static string BYTECODE = "6080604052348015600f57600080fd5b5060fe8061001e6000396000f3fe608060405260043610603e5763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663ab5c4ce581146043575b600080fd5b348015604e57600080fd5b5060556069565b604080519115158252519081900360200190f35b6000604080517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601060248201527f416e206572726f72206d65737361676500000000000000000000000000000000604482015290519081900360640190fdfea165627a7a72305820bf00b5d54a30109fad275cdd6ce90448af11d84cbbf82abae1476b0b79f188830029";
+            public static string BYTECODE = "6080604052348015600f57600080fd5b5060bf8061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063ab5c4ce514602d575b600080fd5b60336047565b604080519115158252519081900360200190f35b60006040805162461bcd60e51b815260206004820152601060248201526f416e206572726f72206d65737361676560801b604482015290519081900360640190fdfea2646970667358221220b8416f2f906bcee46dace86def6ec94c1f60821a9a5badffc0c374e542112d2564736f6c63430006010033";
             public ErrorThrowDeploymentBase() : base(BYTECODE) { }
             public ErrorThrowDeploymentBase(string byteCode) : base(byteCode) { }
 

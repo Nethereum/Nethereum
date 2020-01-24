@@ -67,7 +67,7 @@ namespace Nethereum.ABI.JsonDeserialisation
 
         public FunctionABI BuildFunction(IDictionary<string, object> function)
         {
-            bool constant = false;
+            var constant = false;
             if (function.ContainsKey("constant"))
             {
                 constant = (bool)function["constant"];

@@ -130,10 +130,20 @@ namespace Nethereum.Contracts
 
         protected async Task<HexBigInteger> EstimateGasFromEncAsync(CallInput callInput)
         {
-            return
-                await
-                    TransactionManager.EstimateGasAsync(callInput)
-                        .ConfigureAwait(false);
+            try
+            {
+                return
+                    await
+                        TransactionManager.EstimateGasAsync(callInput)
+                            .ConfigureAwait(false);
+            }
+            catch
+            {
+                var result = await EthCall.SendRequestAsync(callInput).ConfigureAwait(false);
+                new FunctionCallDecoder().ThrowIfErrorOnOutput(result);
+                throw;
+                
+            }
         }
 #endif
         public List<ParameterOutput> DecodeInput(string data)
