@@ -82,7 +82,7 @@ namespace Nethereum.Generators.Net
             var dictionaryList = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, expandoObjectConverter);
             var functionAbiList = new List<FunctionABI>();
             var eventAbiList = new List<EventABI>();
-            var constructorAbi = (ConstructorABI)null;
+            var constructorAbi = new ConstructorABI();
             foreach (IDictionary<string, object> dictionary in dictionaryList)
             {
                 if ((string)dictionary["type"] == "function")
