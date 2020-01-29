@@ -70,5 +70,24 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
         [JsonProperty(PropertyName = "nonce")]
         public HexBigInteger Nonce { get; set; }
+
+        /// <summary>
+        ///     QUANTITY - r signature.
+        /// </summary>
+        [JsonProperty(PropertyName = "r")]
+        public string R { get; set; }
+
+
+        /// <summary>
+        ///     QUANTITY - s signature.
+        /// </summary>
+        [JsonProperty(PropertyName = "s")]
+        public string S { get; set; }
+
+        /// <summary>
+        ///     QUANTITY - v signature.
+        /// </summary>
+        [JsonProperty(PropertyName = "v")]
+        public string V { get; set; }
     }
 }
