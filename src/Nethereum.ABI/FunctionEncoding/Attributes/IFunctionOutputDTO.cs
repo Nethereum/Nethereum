@@ -10,9 +10,9 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
     }
 
     /// <summary>
-    /// Class to extend a class as a FunctionOuput to enable the decoding extensions (Simplification for FSharp)
+    /// Class to extend a class as a FunctionOutput to enable the decoding extensions (Simplification for FSharp)
     /// </summary>
-    public class FunctionOuputDTO : IFunctionOutputDTO
+    public class FunctionOutputDTO : IFunctionOutputDTO
     {
 
     }
