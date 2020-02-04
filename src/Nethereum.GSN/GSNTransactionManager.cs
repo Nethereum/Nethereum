@@ -28,9 +28,7 @@ namespace Nethereum.GSN
         private readonly IRelayClient _relayClient;
         private readonly IRelayPolicy _relayPolicy;
         private readonly string _privateKey;
-        private readonly string _contractAddress;
 
-        // TODO: Remove contractAddress parameter (replace by `To` paramenter of `TransactionInput`)
         public GSNTransactionManager(
             GSNOptions options,
             IRelayHubManager relayHubManager,
@@ -38,8 +36,7 @@ namespace Nethereum.GSN
             IClient client,
             IRelayClient relayClient,
             IRelayPolicy policy,
-            string privateKey,
-            string contractAddress)
+            string privateKey)
         {
             _options = options;
             _relayHubManager = relayHubManager;
@@ -48,7 +45,6 @@ namespace Nethereum.GSN
             _relayClient = relayClient;
             _relayPolicy = policy;
             _privateKey = privateKey;
-            _contractAddress = contractAddress;
         }
 
         public async Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -66,7 +62,7 @@ namespace Nethereum.GSN
                 throw new Exception("Cannot send funds via the GSN");
 
             var relayHubAddress = await _relayHubManager
-                .GetHubAddressAsync(_contractAddress)
+                .GetHubAddressAsync(transactionInput.To)
                 .ConfigureAwait(false);
 
             await ValidateRecipientBalance(
