@@ -71,19 +71,8 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
             var commitment = await ethTLSService.CalculateCommitmentAsync(ourName, owner, secret);
             Assert.Equal("0x546d078db03381f4a33a33600cf1b91e00815b572c944f4a19624c8d9aaa9c14", commitment.ToHex(true));
-
         }
 
-
-        [Fact]
-        public async void ShouldResolveOwnerFromMainnet()
-        {
-            var web3 = new Web3.Web3("https://mainnet.infura.io");
-            var fullNameNode = new EnsUtil().GetNameHash("juanblanco.eth");
-            var ensRegistryService = new ENSRegistryService(web3, "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e");
-            var owner = await ensRegistryService.OwnerQueryAsync(fullNameNode.HexToByteArray());
-            Assert.Equal("0x24ecd23096fcf03a15ee8a6fe63f24345cc4ba46", owner);
-        }
 
         [Fact]
         public async void ShouldFindEthControllerFromMainnet()
