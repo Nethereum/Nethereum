@@ -1,116 +1,136 @@
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Web3;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
+using System.Threading;
 
 namespace Nethereum.ENS.ReverseRegistrar.ContractDefinition
 {
-    
-    
-    public partial class ReverseRegistrarDeployment:ReverseRegistrarDeploymentBase
+
+    public partial class ReverseRegistrarDeployment : ReverseRegistrarDeploymentBase
     {
-        public ReverseRegistrarDeployment():base(BYTECODE) { }
-        
-        public ReverseRegistrarDeployment(string byteCode):base(byteCode) { }
+        public ReverseRegistrarDeployment() : base(BYTECODE) { }
+        public ReverseRegistrarDeployment(string byteCode) : base(byteCode) { }
     }
 
-    public class ReverseRegistrarDeploymentBase:ContractDeploymentMessage
+    public class ReverseRegistrarDeploymentBase : ContractDeploymentMessage
     {
-        
-        public static string BYTECODE = "608060405234801561001057600080fd5b506040516040806108c7833981016040818152825160209384015160008054600160a060020a03808516600160a060020a031992831617808455600180548387169416939093179092557f02571be30000000000000000000000000000000000000000000000000000000087527f91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e26004880152945193969295919416926302571be39260248084019391929182900301818787803b1580156100d157600080fd5b505af11580156100e5573d6000803e3d6000fd5b505050506040513d60208110156100fb57600080fd5b50519050600160a060020a0381161561019c57604080517f1e83409a0000000000000000000000000000000000000000000000000000000081523360048201529051600160a060020a03831691631e83409a9160248083019260209291908290030181600087803b15801561016f57600080fd5b505af1158015610183573d6000803e3d6000fd5b505050506040513d602081101561019957600080fd5b50505b505050610719806101ae6000396000f3006080604052600436106100775763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416630f5a5466811461007c5780631e83409a146100b55780633f15457f146100d6578063828eab0e14610107578063bffbe61c1461011c578063c47f00271461013d575b600080fd5b34801561008857600080fd5b506100a3600160a060020a0360043581169060243516610196565b60408051918252519081900360200190f35b3480156100c157600080fd5b506100a3600160a060020a03600435166104f9565b3480156100e257600080fd5b506100eb61050c565b60408051600160a060020a039092168252519081900360200190f35b34801561011357600080fd5b506100eb61051b565b34801561012857600080fd5b506100a3600160a060020a036004351661052a565b34801561014957600080fd5b506040805160206004803580820135601f81018490048402850184019095528484526100a39436949293602493928401919081908401838280828437509497506105629650505050505050565b6000806000806101a53361066f565b604080516000805160206106ce8339815191528152602080820184905282519182900383018220600080547f02571be3000000000000000000000000000000000000000000000000000000008552600485018390529451959850909650600160a060020a03909316936302571be3936024808501948390030190829087803b15801561023057600080fd5b505af1158015610244573d6000803e3d6000fd5b505050506040513d602081101561025a57600080fd5b50519050600160a060020a03851615801590610315575060008054604080517f0178b8bf000000000000000000000000000000000000000000000000000000008152600481018690529051600160a060020a0390921692630178b8bf926024808401936020939083900390910190829087803b1580156102d957600080fd5b505af11580156102ed573d6000803e3d6000fd5b505050506040513d602081101561030357600080fd5b5051600160a060020a03868116911614155b1561044557600160a060020a03811630146103c15760008054604080517f06ab59230000000000000000000000000000000000000000000000000000000081526000805160206106ce8339815191526004820152602481018790523060448201529051600160a060020a03909216926306ab59239260648084019382900301818387803b1580156103a557600080fd5b505af11580156103b9573d6000803e3d6000fd5b505050503090505b60008054604080517f1896f70a00000000000000000000000000000000000000000000000000000000815260048101869052600160a060020a03898116602483015291519190921692631896f70a926044808201939182900301818387803b15801561042c57600080fd5b505af1158015610440573d6000803e3d6000fd5b505050505b600160a060020a03818116908716146104f05760008054604080517f06ab59230000000000000000000000000000000000000000000000000000000081526000805160206106ce833981519152600482015260248101879052600160a060020a038a81166044830152915191909216926306ab5923926064808201939182900301818387803b1580156104d757600080fd5b505af11580156104eb573d6000803e3d6000fd5b505050505b50949350505050565b6000610506826000610196565b92915050565b600054600160a060020a031681565b600154600160a060020a031681565b60006000805160206106ce8339815191526105448361066f565b60408051928352602083019190915280519182900301902092915050565b600154600090819061057e903090600160a060020a0316610196565b600154604080517f773722130000000000000000000000000000000000000000000000000000000081526004810184815260248201928352875160448301528751949550600160a060020a0390931693637737221393869389939192909160640190602085019080838360005b838110156106035781810151838201526020016105eb565b50505050905090810190601f1680156106305780820380516001836020036101000a031916815260200191505b509350505050600060405180830381600087803b15801561065057600080fd5b505af1158015610664573d6000803e3d6000fd5b509295945050505050565b60007f303132333435363738396162636465660000000000000000000000000000000060285b60001901600f841682901a815360109093049260001901600f841682901a815360108404935080610695575050602860002092915050560091d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2a165627a7a723058208d7023481093ae7cdc144ce467266d8851b1e761c013d4b5473dafbd6cd7b4c50029";
-        
-        public ReverseRegistrarDeploymentBase():base(BYTECODE) { }
-        
-        public ReverseRegistrarDeploymentBase(string byteCode):base(byteCode) { }
-        
+        public static string BYTECODE = "0x";
+        public ReverseRegistrarDeploymentBase() : base(BYTECODE) { }
+        public ReverseRegistrarDeploymentBase(string byteCode) : base(byteCode) { }
         [Parameter("address", "ensAddr", 1)]
-        public virtual string EnsAddr {get; set;}
+        public virtual string EnsAddr { get; set; }
         [Parameter("address", "resolverAddr", 2)]
-        public virtual string ResolverAddr {get; set;}
-    }    
-    
-    public partial class ClaimWithResolverFunction:ClaimWithResolverFunctionBase{}
+        public virtual string ResolverAddr { get; set; }
+    }
 
-    [Function("claimWithResolver", "bytes32")]
-    public class ClaimWithResolverFunctionBase:FunctionMessage
+    public partial class ADDR_REVERSE_NODEFunction : ADDR_REVERSE_NODEFunctionBase { }
+
+    [Function("ADDR_REVERSE_NODE", "bytes32")]
+    public class ADDR_REVERSE_NODEFunctionBase : FunctionMessage
     {
-        [Parameter("address", "owner", 1)]
-        public virtual string Owner {get; set;}
-        [Parameter("address", "resolver", 2)]
-        public virtual string Resolver {get; set;}
-    }    
-    
-    public partial class ClaimFunction:ClaimFunctionBase{}
+
+    }
+
+    public partial class ClaimFunction : ClaimFunctionBase { }
 
     [Function("claim", "bytes32")]
-    public class ClaimFunctionBase:FunctionMessage
+    public class ClaimFunctionBase : FunctionMessage
     {
         [Parameter("address", "owner", 1)]
-        public virtual string Owner {get; set;}
-    }    
-    
-    public partial class EnsFunction:EnsFunctionBase{}
+        public virtual string Owner { get; set; }
+    }
 
-    [Function("ens", "address")]
-    public class EnsFunctionBase:FunctionMessage
+    public partial class ClaimWithResolverFunction : ClaimWithResolverFunctionBase { }
+
+    [Function("claimWithResolver", "bytes32")]
+    public class ClaimWithResolverFunctionBase : FunctionMessage
     {
+        [Parameter("address", "owner", 1)]
+        public virtual string Owner { get; set; }
+        [Parameter("address", "resolver", 2)]
+        public virtual string Resolver { get; set; }
+    }
 
-    }    
-    
-    public partial class DefaultResolverFunction:DefaultResolverFunctionBase{}
+    public partial class DefaultResolverFunction : DefaultResolverFunctionBase { }
 
     [Function("defaultResolver", "address")]
-    public class DefaultResolverFunctionBase:FunctionMessage
+    public class DefaultResolverFunctionBase : FunctionMessage
     {
 
-    }    
-    
-    public partial class NodeFunction:NodeFunctionBase{}
+    }
+
+    public partial class EnsFunction : EnsFunctionBase { }
+
+    [Function("ens", "address")]
+    public class EnsFunctionBase : FunctionMessage
+    {
+
+    }
+
+    public partial class NodeFunction : NodeFunctionBase { }
 
     [Function("node", "bytes32")]
-    public class NodeFunctionBase:FunctionMessage
+    public class NodeFunctionBase : FunctionMessage
     {
         [Parameter("address", "addr", 1)]
-        public virtual string Addr {get; set;}
-    }    
-    
-    public partial class SetNameFunction:SetNameFunctionBase{}
+        public virtual string Addr { get; set; }
+    }
+
+    public partial class SetNameFunction : SetNameFunctionBase { }
 
     [Function("setName", "bytes32")]
-    public class SetNameFunctionBase:FunctionMessage
+    public class SetNameFunctionBase : FunctionMessage
     {
         [Parameter("string", "name", 1)]
-        public virtual string Name {get; set;}
-    }    
-    
-    
-    
-    
-    
-    public partial class EnsOutputDTO:EnsOutputDTOBase{}
+        public virtual string Name { get; set; }
+    }
+
+    public partial class ADDR_REVERSE_NODEOutputDTO : ADDR_REVERSE_NODEOutputDTOBase { }
 
     [FunctionOutput]
-    public class EnsOutputDTOBase :IFunctionOutputDTO 
-    {
-        [Parameter("address", "", 1)]
-        public virtual string ReturnValue1 {get; set;}
-    }    
-    
-    public partial class DefaultResolverOutputDTO:DefaultResolverOutputDTOBase{}
-
-    [FunctionOutput]
-    public class DefaultResolverOutputDTOBase :IFunctionOutputDTO 
-    {
-        [Parameter("address", "", 1)]
-        public virtual string ReturnValue1 {get; set;}
-    }    
-    
-    public partial class NodeOutputDTO:NodeOutputDTOBase{}
-
-    [FunctionOutput]
-    public class NodeOutputDTOBase :IFunctionOutputDTO 
+    public class ADDR_REVERSE_NODEOutputDTOBase : IFunctionOutputDTO 
     {
         [Parameter("bytes32", "", 1)]
-        public virtual byte[] ReturnValue1 {get; set;}
-    }    
-    
+        public virtual byte[] ReturnValue1 { get; set; }
+    }
+
+
+
+
+
+    public partial class DefaultResolverOutputDTO : DefaultResolverOutputDTOBase { }
+
+    [FunctionOutput]
+    public class DefaultResolverOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("address", "", 1)]
+        public virtual string ReturnValue1 { get; set; }
+    }
+
+    public partial class EnsOutputDTO : EnsOutputDTOBase { }
+
+    [FunctionOutput]
+    public class EnsOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("address", "", 1)]
+        public virtual string ReturnValue1 { get; set; }
+    }
+
+    public partial class NodeOutputDTO : NodeOutputDTOBase { }
+
+    [FunctionOutput]
+    public class NodeOutputDTOBase : IFunctionOutputDTO 
+    {
+        [Parameter("bytes32", "", 1)]
+        public virtual byte[] ReturnValue1 { get; set; }
+    }
+
 
 }
