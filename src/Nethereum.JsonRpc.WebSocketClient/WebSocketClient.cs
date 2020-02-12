@@ -94,7 +94,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                 memoryStream.Write(buffer, 0, bytesRead);
                 var lastByte = buffer[bytesRead - 1];
 
-                if (lastByte == 10 || bytesRead < 512 || receivedResult.EndOfMessage)  //return signaled with a line feed / or just less than the full message
+                if (lastByte == 10 || receivedResult.EndOfMessage)  //return signaled with a line feed / or just less than the full message
                 {
                     bytesRead = 0;
                 }
