@@ -196,6 +196,8 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             var currentIndex = 0;
 
+            Array.Sort(outputParameters, (x, y) => x.Parameter.Order.CompareTo(y.Parameter.Order));
+
             foreach (var outputParam in outputParameters)
             {
                 var param = outputParam.Parameter;
