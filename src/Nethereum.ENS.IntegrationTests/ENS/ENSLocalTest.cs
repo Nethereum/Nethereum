@@ -107,6 +107,14 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         }
 
         //[Fact]
+        public async void ShouldSetSubnodeExample()
+        {
+            var web3 = new Web3.Web3(new Account(""),"https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var ensService = new ENSService(web3);
+            var txn = await ensService.SetSubnodeOwnerRequestAsync("yoursupername.eth", "subdomainName", "addressOwner");
+        }
+
+        //[Fact]
         public async void ShouldReverseResolveAddressFromMainnet()
         {
             var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");

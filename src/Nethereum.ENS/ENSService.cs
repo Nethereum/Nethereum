@@ -41,6 +41,20 @@ namespace Nethereum.ENS
             return await resolverService.ABIQueryAsync(fullNameNode, (int)abiTypeContentType);
         }
 
+        public Task<string> SetSubnodeOwnerRequestAsync(string fullName, string label, string owner)
+        {
+            var fullNameHash = _ensUtil.GetNameHash(fullName).HexToByteArray();
+            var labelHash = _ensUtil.GetLabelHash(label).HexToByteArray();
+            return ENSRegistryService.SetSubnodeOwnerRequestAsync(fullNameHash, labelHash, owner);
+        }
+
+        public Task<TransactionReceipt> SetSubnodeOwnerRequestAndWaitForReceiptAsync(string fullName, string label, string owner)
+        {
+            var fullNameHash = _ensUtil.GetNameHash(fullName).HexToByteArray();
+            var labelHash = _ensUtil.GetLabelHash(label).HexToByteArray();
+            return ENSRegistryService.SetSubnodeOwnerRequestAndWaitForReceiptAsync(fullNameHash, labelHash, owner);
+        }
+
         public async Task<string> ResolveTextAsync(string fullName, TextDataKey textDataKey)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
