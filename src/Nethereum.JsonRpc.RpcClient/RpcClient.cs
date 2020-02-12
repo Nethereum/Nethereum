@@ -14,7 +14,7 @@ namespace Nethereum.JsonRpc.Client
     public class RpcClient : ClientBase
     {
         private const int NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT = 60;
-        private const int MAXIMUM_CONNECTIONS_PER_SERVER = 20;
+        public static int MaximumConnectionsPerServer { get; set; } = 20;
         private readonly AuthenticationHeaderValue _authHeaderValue;
         private readonly Uri _baseUrl;
         private readonly HttpClientHandler _httpClientHandler;
@@ -57,16 +57,23 @@ namespace Nethereum.JsonRpc.Client
         private static HttpMessageHandler GetDefaultHandler()
         {
 #if NETSTANDARD2_0
-            return new HttpClientHandler
+            try
             {
-                MaxConnectionsPerServer = MAXIMUM_CONNECTIONS_PER_SERVER
-            };
+                return new HttpClientHandler
+                {
+                    MaxConnectionsPerServer = MaximumConnectionsPerServer
+                };
+            }
+            catch
+            {
+                return new HttpClientHandler();
+            }
 #elif NETCOREAPP2_1 || NETCOREAPP3_1
             return new SocketsHttpHandler
             {
                 PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
                 PooledConnectionIdleTimeout = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
-                MaxConnectionsPerServer = MAXIMUM_CONNECTIONS_PER_SERVER
+                MaxConnectionsPerServer = MaximumConnectionsPerServer
             };
 #else
             return new HttpClientHandler();
