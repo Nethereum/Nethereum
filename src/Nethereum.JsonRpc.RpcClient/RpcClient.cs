@@ -56,28 +56,29 @@ namespace Nethereum.JsonRpc.Client
 
         private static HttpMessageHandler GetDefaultHandler()
         {
-#if NETSTANDARD2_0
             try
             {
+#if NETSTANDARD2_0
                 return new HttpClientHandler
                 {
                     MaxConnectionsPerServer = MaximumConnectionsPerServer
                 };
+           
+#elif NETCOREAPP2_1 || NETCOREAPP3_1
+                return new SocketsHttpHandler
+                {
+                    PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
+                    PooledConnectionIdleTimeout = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
+                    MaxConnectionsPerServer = MaximumConnectionsPerServer
+                };
+#else
+                return null;
+#endif
             }
             catch
             {
-                return new HttpClientHandler();
+                return null;
             }
-#elif NETCOREAPP2_1 || NETCOREAPP3_1
-            return new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
-                PooledConnectionIdleTimeout = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
-                MaxConnectionsPerServer = MaximumConnectionsPerServer
-            };
-#else
-            return new HttpClientHandler();
-#endif
         }
 
         public RpcClient(Uri baseUrl, HttpClient httpClient, AuthenticationHeaderValue authHeaderValue = null,
@@ -201,7 +202,21 @@ namespace Nethereum.JsonRpc.Client
 
         private HttpClient CreateNewHttpClient()
         {
-            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient(GetDefaultHandler());
+            HttpClient httpClient = new HttpClient();
+            
+            if (_httpClientHandler != null)
+            {
+                httpClient = new HttpClient(_httpClientHandler);
+            }
+            else
+            {
+                var handler = GetDefaultHandler();
+                if(handler != null)
+                {
+                    httpClient = new HttpClient(handler);
+                }
+            }
+
             InitialiseHttpClient(httpClient);
             return httpClient;
         }
