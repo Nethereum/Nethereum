@@ -103,8 +103,8 @@ namespace Nethereum.WebSocketsStreamingTest
 
             pendingTransactionsSubscription.SubscribeAsync().Wait();
             
-            ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
-
+            ethGetBalance.SendRequestAsync("", BlockParameter.CreateLatest()).Wait();
+0x45a2fdfed7f7a2c791fb1bdf6075b83fad821dde
             ethBlockNumber.SendRequestAsync().Wait();
 
             ethLogs.SubscribeAsync().Wait();
