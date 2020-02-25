@@ -4,7 +4,7 @@
     <Description>Nethereum.ENS Ethereum Name service library</Description>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard1.3;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.ENS</AssemblyName>
     <PackageId>Nethereum.ENS</PackageId>
   </PropertyGroup>

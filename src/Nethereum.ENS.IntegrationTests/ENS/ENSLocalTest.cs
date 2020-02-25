@@ -1,3 +1,5 @@
+using Multiformats.Codec;
+using Multiformats.Hash;
 using Nethereum.ENS.ENSRegistry.ContractDefinition;
 using Nethereum.ENS.FIFSRegistrar.ContractDefinition;
 using Nethereum.ENS.PublicResolver.ContractDefinition;
@@ -9,6 +11,7 @@ using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 using Nethereum.XUnitEthereumClients;
+using System.Linq;
 using Xunit;
 
 namespace Nethereum.ENS.IntegrationTests.ENS
@@ -93,6 +96,39 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var theAddress = await ensService.ResolveAddressAsync("nick.eth");     
             var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
             Assert.True(expectedAddress.IsTheSameAddress(theAddress));   
+        }
+
+        //Food for thought, a simple CID just using IPFS Base58 Defaulting all other values / Swarm
+        [Fact]
+        public async void ShouldRetrieveTheContentHashAndDecodeIt()
+        {
+            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var ensService = new ENSService(web3);
+            var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth");
+            var storage = content[0];
+            //This depends on IPLD.ContentIdentifier, Multiformats Hash and Codec
+            if (storage == 0xe3) // if storage is IPFS 
+            {
+                //We skip 2 storage ++
+                var cid = IPLD.ContentIdentifier.Cid.Cast(content.Skip(2).ToArray());
+                var decoded = cid.Hash.B58String();
+                Assert.Equal("QmRZiL8WbAVQMF1715fhG3b4x9tfGS6hgBLPQ6KYfKzcYL", decoded);
+            }
+          
+        }
+
+        [Fact]
+        public async void ShouldCreateContentIPFSHash()
+        {
+            var multihash = Multihash.FromB58String("QmRZiL8WbAVQMF1715fhG3b4x9tfGS6hgBLPQ6KYfKzcYL");
+            var cid = new IPLD.ContentIdentifier.Cid(MulticodecCode.MerkleDAGProtobuf, multihash);
+            var ipfsStoragePrefix = new byte[] { 0xe3, 0x01 };
+            var fullContentHash = ipfsStoragePrefix.Concat(cid.ToBytes()).ToArray();
+            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var ensService = new ENSService(web3);
+            var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth");
+            //e301017012202febb4a7c84c8079f78844e50150d97ad33e2a3a0d680d54e7211e30ef13f08d
+            Assert.Equal(content.ToHex(), fullContentHash.ToHex());
         }
 
         //[Fact]
