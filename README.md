@@ -16,7 +16,7 @@ Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 2.1, 
 
 # Nethereum Playground. Try Nethereum now in your browser.
 Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
-The same version is hosted in IPFS https://gateway.pinata.cloud/ipfs/QmXCN2Yc4mTZuWHWZH2ZDiN6SMFH23uEvLMF2mhZ5T2sgg/ 
+The same version is hosted in IPFS at http://playground.nethereum.eth.link/ or the same https://gateway.pinata.cloud/ipfs/QmPgWmX3HsxCBCDVv8adEhLzeJd2VstcyGh1T9ipKrvU4Y/
 
 [![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
