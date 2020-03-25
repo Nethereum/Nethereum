@@ -1,8 +1,7 @@
-﻿using Nethereum.GSN.Policies;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Threading.Tasks;
 
-namespace Nethereum.GSN
+namespace Nethereum.GSN.Interfaces
 {
     public interface IRelayHubManager
     {

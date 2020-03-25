@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.GSN
+namespace Nethereum.GSN.Interfaces
 {
     public interface IGSNTransactionManager
     {
