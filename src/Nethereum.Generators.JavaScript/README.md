@@ -19,7 +19,8 @@ var baseNamespace = "StandardToken";
 var basePath = "codeGenNodeTests";
 var projectName = "StandardToken.csproj";
 
-codegen.generateNetStandardClassLibrary(projectName, basePath);
+//CSharp 0, Vb.Net 1, FSharp 3
+codegen.generateNetStandardClassLibrary(projectName, basePath, 0);
 
 //CSharp 0, Vb.Net 1, FSharp 3
 codegen.generateAllClasses(abi,
