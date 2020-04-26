@@ -11,5 +11,10 @@ namespace Nethereum.HdWallet
         {
             SecureRandomInstance.NextBytes(output);
         }
+
+        public void GetBytes(Span<byte> output)
+        {
+            SecureRandomInstance.NextBytes(output);
+        }
     }
 }
