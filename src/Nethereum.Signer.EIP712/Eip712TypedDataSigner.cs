@@ -32,7 +32,7 @@ namespace Nethereum.Signer.EIP712
         public string SignTypedData<T>(T data, Domain domain, string primaryTypeName, EthECKey key)
         {
             var typedData = GenerateTypedData(data, domain, primaryTypeName);
-            
+
             return SignTypedData(typedData, key);
         }
 
@@ -63,11 +63,13 @@ namespace Nethereum.Signer.EIP712
         public byte[] EncodeTypedData(TypedData typedData)
         {
             using (var memoryStream = new MemoryStream())
+            using (var writer = new BinaryWriter(memoryStream))
             {
-                memoryStream.Write("1901".HexToByteArray());
-                memoryStream.Write(HashStruct(typedData.Types, "EIP712Domain", ParseDomain(typedData.Domain).Select(x => x.Item2)));
-                memoryStream.Write(HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message));
+                writer.Write("1901".HexToByteArray());
+                writer.Write(HashStruct(typedData.Types, "EIP712Domain", ParseDomain(typedData.Domain).Select(x => x.Item2)));
+                writer.Write(HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message));
 
+                writer.Flush();
                 var result = memoryStream.ToArray();
                 return result;
             }
@@ -76,13 +78,15 @@ namespace Nethereum.Signer.EIP712
         private byte[] HashStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
         {
             using (var memoryStream = new MemoryStream())
+            using (var writer = new BinaryWriter(memoryStream))
             {
                 var encodedType = EncodeType(types, primaryType);
                 var typeHash = Sha3Keccack.Current.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
-                memoryStream.Write(typeHash);
+                writer.Write(typeHash);
 
-                EncodeData(memoryStream, types, message);
+                EncodeData(writer, types, message);
 
+                writer.Flush();
                 return Sha3Keccack.Current.CalculateHash(memoryStream.ToArray());
             }
         }
@@ -104,7 +108,7 @@ namespace Nethereum.Signer.EIP712
             var currentTypeMembersEncoded = currentTypeMembers.Select(x => x.Type + " " + x.Name);
             var result = new List<KeyValuePair<string, string>>
             {
-                KeyValuePair.Create<string, string>(currentTypeName, currentTypeName + "(" + string.Join(',', currentTypeMembersEncoded) + ")")
+                new KeyValuePair<string, string>(currentTypeName, currentTypeName + "(" + string.Join(",", currentTypeMembersEncoded) + ")")
             };
 
             result.AddRange(currentTypeMembers.Select(x => x.Type).Distinct().Where(IsReferenceType).SelectMany(x => EncodeTypes(types, x)));
@@ -125,14 +129,14 @@ namespace Nethereum.Signer.EIP712
                 case "bool":
                 case "address":
                     return false;
-                case var array when array.Contains('['):
+                case var array when array.Contains("["):
                     throw new NotImplementedException("Array types are not supported");
                 default:
                     return true;
             }
         }
 
-        private void EncodeData(MemoryStream memoryStream, IDictionary<string, MemberDescription[]> types, IEnumerable<MemberValue> memberValues)
+        private void EncodeData(BinaryWriter writer, IDictionary<string, MemberDescription[]> types, IEnumerable<MemberValue> memberValues)
         {
             foreach (var memberValue in memberValues)
             {
@@ -140,41 +144,41 @@ namespace Nethereum.Signer.EIP712
                 {
                     case var refType when IsReferenceType(refType):
                     {
-                        memoryStream.Write(HashStruct(types, memberValue.TypeName, (IEnumerable<MemberValue>) memberValue.Value));
+                        writer.Write(HashStruct(types, memberValue.TypeName, (IEnumerable<MemberValue>) memberValue.Value));
                         break;
                     }
                     case "string":
                     {
                         var value = Encoding.UTF8.GetBytes((string) memberValue.Value);
                         var abiValueEncoded = Sha3Keccack.Current.CalculateHash(value);
-                        memoryStream.Write(abiValueEncoded);
+                        writer.Write(abiValueEncoded);
                         break;
                     }
                     case "bytes":
                     {
                         var value = (byte[]) memberValue.Value;
                         var abiValueEncoded = Sha3Keccack.Current.CalculateHash(value);
-                        memoryStream.Write(abiValueEncoded);
+                        writer.Write(abiValueEncoded);
                         break;
                     }
                     default:
                     {
                         var abiValue = new ABIValue(memberValue.TypeName, memberValue.Value);
                         var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
-                        memoryStream.Write(abiValueEncoded);
+                        writer.Write(abiValueEncoded);
                         break;
                     }
                 }
             }
         }
 
-        private static IEnumerable<(MemberDescription, MemberValue)> ParseDomain(Domain domain)
+        private static IEnumerable<Tuple<MemberDescription, MemberValue>> ParseDomain(Domain domain)
         {
-            var result = new List<(MemberDescription, MemberValue)>();
+            var result = new List<Tuple<MemberDescription, MemberValue>>();
 
             if (domain.Name != null)
             {
-                result.Add((
+                result.Add(Tuple.Create(
                     new MemberDescription {Type = "string", Name = "name"},
                     new MemberValue {TypeName = "string", Value = domain.Name}
                 ));
@@ -182,7 +186,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.Version != null)
             {
-                result.Add((
+                result.Add(Tuple.Create(
                     new MemberDescription {Type = "string", Name = "version"},
                     new MemberValue {TypeName = "string", Value = domain.Version}
                 ));
@@ -190,7 +194,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.ChainId.HasValue)
             {
-                result.Add((
+                result.Add(Tuple.Create(
                     new MemberDescription {Type = "uint256", Name = "chainId"},
                     new MemberValue {TypeName = "uint256", Value = domain.ChainId.Value}
                 ));
@@ -198,7 +202,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.VerifyingContract != null)
             {
-                result.Add((
+                result.Add(Tuple.Create(
                     new MemberDescription {Type = "address", Name = "verifyingContract"},
                     new MemberValue {TypeName = "address", Value = domain.VerifyingContract}
                 ));
@@ -206,7 +210,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.Salt != null)
             {
-                result.Add((
+                result.Add(Tuple.Create(
                     new MemberDescription {Type = "bytes32", Name = "salt"},
                     new MemberValue {TypeName = "bytes32", Value = domain.Salt}
                 ));
