@@ -15,56 +15,56 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void ComplexMessageTypedDataEncodingShouldBeCorrect()
         {
-            var typedData = new Eip712TypedDataSigner.TypedData
+            var typedData = new TypedData
             {
-                Domain = new Eip712TypedDataSigner.Domain
+                Domain = new Domain
                 {
                     Name = "Ether Mail",
                     Version = "1",
                     ChainId = 1,
                     VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
                 },
-                Types = new Dictionary<string, Eip712TypedDataSigner.MemberDescription[]>
+                Types = new Dictionary<string, MemberDescription[]>
                 {
                     ["EIP712Domain"] = new[]
                     {
-                        new Eip712TypedDataSigner.MemberDescription {Name = "name", Type = "string"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "version", Type = "string"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "chainId", Type = "uint256"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "verifyingContract", Type = "address"},
+                        new MemberDescription {Name = "name", Type = "string"},
+                        new MemberDescription {Name = "version", Type = "string"},
+                        new MemberDescription {Name = "chainId", Type = "uint256"},
+                        new MemberDescription {Name = "verifyingContract", Type = "address"},
                     },
                     ["Person"] = new[]
                     {
-                        new Eip712TypedDataSigner.MemberDescription {Name = "name", Type = "string"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "wallet", Type = "address"},
+                        new MemberDescription {Name = "name", Type = "string"},
+                        new MemberDescription {Name = "wallet", Type = "address"},
                     },
                     ["Mail"] = new[]
                     {
-                        new Eip712TypedDataSigner.MemberDescription {Name = "from", Type = "Person"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "to", Type = "Person"},
-                        new Eip712TypedDataSigner.MemberDescription {Name = "contents", Type = "string"},
+                        new MemberDescription {Name = "from", Type = "Person"},
+                        new MemberDescription {Name = "to", Type = "Person"},
+                        new MemberDescription {Name = "contents", Type = "string"},
                     }
                 },
                 PrimaryType = "Mail",
                 Message = new[]
                 {
-                    new Eip712TypedDataSigner.MemberValue
+                    new MemberValue
                     {
                         TypeName = "Person", Value = new[]
                         {
-                            new Eip712TypedDataSigner.MemberValue {TypeName = "string", Value = "Cow"},
-                            new Eip712TypedDataSigner.MemberValue {TypeName = "address", Value = "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"},
+                            new MemberValue {TypeName = "string", Value = "Cow"},
+                            new MemberValue {TypeName = "address", Value = "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"},
                         }
                     },
-                    new Eip712TypedDataSigner.MemberValue
+                    new MemberValue
                     {
                         TypeName = "Person", Value = new[]
                         {
-                            new Eip712TypedDataSigner.MemberValue {TypeName = "string", Value = "Bob"},
-                            new Eip712TypedDataSigner.MemberValue {TypeName = "address", Value = "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"},
+                            new MemberValue {TypeName = "string", Value = "Bob"},
+                            new MemberValue {TypeName = "address", Value = "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"},
                         }
                     },
-                    new Eip712TypedDataSigner.MemberValue {TypeName = "string", Value = "Hello, Bob!"},
+                    new MemberValue {TypeName = "string", Value = "Hello, Bob!"},
                 }
             };
 
@@ -76,7 +76,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void FlatMessageObjectEncodingShouldBeCorrect()
         {
-            var domain = new Eip712TypedDataSigner.Domain
+            var domain = new Domain
             {
                 VerifyingContract = "0x0fced4cc7788ede6d93e23e0b54bb56a98114ce2"
             };

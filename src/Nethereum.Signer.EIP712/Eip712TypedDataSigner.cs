@@ -254,43 +254,5 @@ namespace Nethereum.Signer.EIP712
 
             return result;
         }
-
-        public class TypedData
-        {
-            public IDictionary<string, MemberDescription[]> Types { get; set; }
-
-            public string PrimaryType { get; set; }
-
-            public Domain Domain { get; set; }
-
-            public MemberValue[] Message { get; set; }
-        }
-
-        public class MemberDescription
-        {
-            public string Name { get; set; }
-
-            public string Type { get; set; }
-        }
-
-        public class MemberValue
-        {
-            public string TypeName { get; set; }
-
-            public object Value { get; set; }
-        }
-
-        public class Domain
-        {
-            public string Name { get; set; }
-
-            public string Version { get; set; }
-
-            public BigInteger? ChainId { get; set; }
-
-            public string VerifyingContract { get; set; }
-
-            public byte[] Salt { get; set; }
-        }
     }
 }
