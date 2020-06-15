@@ -12,9 +12,12 @@ namespace Nethereum.HdWallet
             SecureRandomInstance.NextBytes(output);
         }
 
-        public void GetBytes(Span<byte> output)
+#if NETCOREAPP2_1 || NETCOREAPP3_1
+        public void GetBytes(System.Span<byte> output)
         {
             SecureRandomInstance.NextBytes(output);
         }
+#endif
+
     }
 }
