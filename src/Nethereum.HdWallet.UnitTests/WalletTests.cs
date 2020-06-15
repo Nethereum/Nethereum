@@ -126,7 +126,6 @@ namespace Nethereum.HdWallet.UnitTests
             var wallet = new Wallet(Words, Password);
             var bytes = wallet.GetMasterExtPubKey().ToBytes();
             var hex = bytes.ToHex();
-            //var extPubKey = ExtPubKey.Parse(wif, Network.Main);
             Console.WriteLine(hex);
             var publicWallet = new PublicWallet(hex);
 
