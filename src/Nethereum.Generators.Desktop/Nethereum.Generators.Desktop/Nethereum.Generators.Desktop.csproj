@@ -7,7 +7,15 @@
     <Title>Nethereum.Generators.Desktop</Title>
     <Copyright>Copyright © 2018</Copyright>
     <Description>Description of Nethereum.Generators.Desktop</Description>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
   
   <ItemGroup>
     <PackageReference Include="Eto.Forms" Version="2.4.1" />
