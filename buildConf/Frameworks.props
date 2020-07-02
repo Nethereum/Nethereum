@@ -14,6 +14,11 @@
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
+    <ENSFrameworks>net451;netstandard2.0;netcoreapp2.1;netcoreapp3.1</ENSFrameworks>
+    <ENSFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</ENSFrameworks>
+    <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1</ENSFrameworks>
+    <ENSFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</ENSFrameworks>
+    
     <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;netcoreapp2.1;netcoreapp3.1</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1</HdWalletFrameworks>
