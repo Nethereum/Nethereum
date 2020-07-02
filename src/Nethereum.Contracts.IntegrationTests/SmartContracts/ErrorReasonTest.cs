@@ -53,7 +53,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
                     await contractHandler.QueryAsync<ThrowItFunction, bool>());
                 Assert.Equal("execution reverted: An error message", error.Message);
             }
@@ -88,7 +88,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
                     await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
                 Assert.Equal("execution reverted: An error message", error.Message);
             }
