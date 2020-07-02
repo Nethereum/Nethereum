@@ -4,7 +4,7 @@
         <Description>Nethereum signer library to sign and encode messages according to EIP-712</Description>
         <AssemblyTitle>Nethereum.Signer.EIP712</AssemblyTitle>
         <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-        <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+        <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
         <AssemblyName>Nethereum.Signer.EIP712</AssemblyName>
         <PackageId>Nethereum.Signer.EIP712</PackageId>
         <PackageTags>Netherum;Ethereum;Blockchain;EIP-712;Signer</PackageTags>
