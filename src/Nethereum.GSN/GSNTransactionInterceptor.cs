@@ -1,4 +1,5 @@
-﻿using Nethereum.JsonRpc.Client;
+﻿using Nethereum.GSN.Interfaces;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using System;
 using System.Threading.Tasks;
@@ -24,6 +25,11 @@ namespace Nethereum.GSN
                 var transaction = (TransactionInput)request.RawParameters[0];
                 return await _transactionManager.SendTransactionAsync(transaction)
                     .ConfigureAwait(false);
+            }
+
+            if (request.Method == "eth_sendRawTransaction")
+            {
+                // TODO: Implement logic to handle signed transactions in gsn
             }
 
             return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route)

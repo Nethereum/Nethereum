@@ -1,4 +1,5 @@
-﻿using Nethereum.GSN.Models;
+﻿using Nethereum.GSN.Interfaces;
+using Nethereum.GSN.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;

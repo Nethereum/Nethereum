@@ -1,7 +1,7 @@
 ﻿using Nethereum.GSN.Models;
 using System.Collections.Generic;
 
-namespace Nethereum.GSN
+namespace Nethereum.GSN.Queries
 {
     internal class RelayEventComparer : IEqualityComparer<RelayEvent>
     {

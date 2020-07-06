@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Nethereum.GSN.Models;
 
-namespace Nethereum.GSN
+namespace Nethereum.GSN.Interfaces
 {
     public interface IRelayClient
     {
