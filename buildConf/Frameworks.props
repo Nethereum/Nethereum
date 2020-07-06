@@ -34,15 +34,19 @@
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</IpcWebSocketsFrameworks>
 	
-	<ReactiveFrameworks>net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1</ReactiveFrameworks>
+    <ReactiveFrameworks>net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ReactiveFrameworks>
 	
-	
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-
+  
+  <ItemGroup>
+     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>	
    <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(MSBuildProjectName)' != 'Nethereum.HdWallet'">
     <PackageReference Include="Newtonsoft.Json" Version="[10.0.3,13)" />
   </ItemGroup>
