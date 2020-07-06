@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <VersionMajor>3</VersionMajor>
-    <VersionMinor>7</VersionMinor>
-    <VersionPatch>1</VersionPatch>
+    <VersionMinor>8</VersionMinor>
+    <VersionPatch>0</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>

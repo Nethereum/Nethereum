@@ -217,5 +217,12 @@ namespace Nethereum.HdWallet.UnitTests
             Assert.Equal("0xD6D7a427d6fd40B4109ACD5a5AF455E7c02a3310", addresses[3]);
             Assert.Equal("0xd94C2F0Ae3E5cc074668a4D220801C0Ab96082E1", addresses[4]);
         }
+
+        [Fact]
+        public void ShouldMeeeeew()
+        {
+            var wallet = new Wallet("stem true medal chronic lion machine mask road rabbit process movie account", null, "m/44'/60'/0'/0'/x");
+            var account = wallet.GetAccount(0);
+        }
     }
 }

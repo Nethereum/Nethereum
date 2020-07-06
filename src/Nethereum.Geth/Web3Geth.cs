@@ -31,6 +31,8 @@ namespace Nethereum.Geth
 
         public IGethEthApiService GethEth { get; private set; }
 
+        public ITxnPoolApiService TxnPool { get; private set; }
+
         protected override void InitialiseInnerServices()
         {
             base.InitialiseInnerServices();
@@ -38,6 +40,7 @@ namespace Nethereum.Geth
             Debug = new DebugApiService(Client);
             Admin = new AdminApiService(Client);
             GethEth = new GethEthApiService(Client);
+            TxnPool = new TxnPoolApiService(Client);
         }
     }
 }
