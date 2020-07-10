@@ -217,7 +217,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     var buffer = new byte[readBufferSize];
                     var bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
-                    if (bytesRead == 0) completedNextMessage = true;
+                   // if (bytesRead == 0) completedNextMessage = true;
                    
                     completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, bytesRead);
                 }
