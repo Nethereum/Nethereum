@@ -5,6 +5,7 @@ using Nethereum.Signer.EIP712;
 using Nethereum.Util;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Xunit;
+using System.Text;
 
 namespace Nethereum.Signer.UnitTests
 {
@@ -71,6 +72,10 @@ namespace Nethereum.Signer.UnitTests
             var result = _signer.EncodeTypedData(typedData);
 
             Assert.Equal(Sha3Keccack.Current.CalculateHash(result).ToHex(true), "0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2", ignoreCase: true);
+            var key = new EthECKey(Sha3Keccack.Current.CalculateHash("cow"));
+            var signature = _signer.SignTypedData(typedData, key);
+            var addressRecovered = new EthereumMessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(result), signature);
+            var address = key.GetPublicAddress();
         }
 
         [Fact]
