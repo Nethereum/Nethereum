@@ -419,37 +419,4 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         }
     }
 
-    internal struct NewStruct
-    {
-        public int Count;
-        public bool EndOfMessage;
-
-        public NewStruct(int count, bool endOfMessage)
-        {
-            Count = count;
-            EndOfMessage = endOfMessage;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is NewStruct other &&
-                   Count == other.Count &&
-                   EndOfMessage == other.EndOfMessage;
-        }
-
-        public override int GetHashCode()
-        {
-            var hashCode = 1079400022;
-            hashCode = hashCode * -1521134295 + Count.GetHashCode();
-            hashCode = hashCode * -1521134295 + EndOfMessage.GetHashCode();
-            return hashCode;
-        }
-
-        public void Deconstruct(out int count, out bool endOfMessage)
-        {
-            count = Count;
-            endOfMessage = EndOfMessage;
-        }
-
-    }
 }
