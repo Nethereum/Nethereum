@@ -50,7 +50,7 @@ namespace Nethereum.JsonRpc.Client
 
             if (HasError(responseMessage) && IsLogErrorEnabled())
             {
-                if (!IsLogTraceEnabled())
+                if (IsLogTraceEnabled())
                 {
                     Log.Trace(GetRPCResponseLogMessage());
                 }
