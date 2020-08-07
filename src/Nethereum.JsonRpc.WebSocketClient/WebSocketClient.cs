@@ -86,22 +86,21 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var memoryStream = new MemoryStream();
 
             var buffer = new byte[readBufferSize];
-            var receivedResult = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
-            var bytesRead = receivedResult.Count;
+            var completedMessage = false;
 
-            while (bytesRead > 0)
+            while (!completedMessage)
             {
-                memoryStream.Write(buffer, 0, bytesRead);
-                var lastByte = buffer[bytesRead - 1];
+                var receivedResult = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+                var bytesRead = receivedResult.Count;
+                if (bytesRead > 0)
+                {
+                    memoryStream.Write(buffer, 0, bytesRead);
+                    var lastByte = buffer[bytesRead - 1];
 
-                if (lastByte == 10 || receivedResult.EndOfMessage)  //return signaled with a line feed / or just less than the full message
-                {
-                    bytesRead = 0;
-                }
-                else
-                {
-                    receivedResult = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
-                    bytesRead = receivedResult.Count;
+                    if (lastByte == 10 || receivedResult.EndOfMessage)  //return signaled with a line feed / or just less than the full message
+                    {
+                        completedMessage = true;
+                    }
                 }
             }
             return memoryStream;
