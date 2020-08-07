@@ -102,7 +102,17 @@ namespace Nethereum.JsonRpc.WebSocketClient
                         completedMessage = true;
                     }
                 }
+                else
+                {
+                    // We have had a response already and EndOfMessage
+                    if(receivedResult.EndOfMessage)
+                    {
+                        completedMessage = true;
+                    }
+                }
             }
+
+            if (memoryStream.Length == 0) return await ReceiveFullResponseAsync(client); //empty response
             return memoryStream;
         }
 
