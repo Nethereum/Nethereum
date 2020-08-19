@@ -119,14 +119,14 @@ namespace Nethereum.Signer
             return GetPrivateKeyAsBytes().ToHex(true);
         }
 
-        public byte[] GetPubKey()
+        public byte[] GetPubKey(bool compressed = false)
         {
-            return _ecKey.GetPubKey(false);
+            return _ecKey.GetPubKey(compressed);
         }
 
-        public byte[] GetPubKeyNoPrefix()
+        public byte[] GetPubKeyNoPrefix(bool compressed = false)
         {
-            var pubKey = _ecKey.GetPubKey(false);
+            var pubKey = _ecKey.GetPubKey(compressed);
             var arr = new byte[pubKey.Length - 1];
             //remove the prefix
             Array.Copy(pubKey, 1, arr, 0, arr.Length);
