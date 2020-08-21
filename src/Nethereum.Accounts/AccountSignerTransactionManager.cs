@@ -21,14 +21,13 @@ namespace Nethereum.Web3.Accounts
         private readonly AccountOfflineTransactionSigner _transactionSigner;
         public BigInteger? ChainId { get; private set; }
 
-        public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
+        public AccountSignerTransactionManager(IClient rpcClient, IAccount account, BigInteger? chainId = null)
         {
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
             _transactionSigner = new AccountOfflineTransactionSigner();
         }
-
 
         public AccountSignerTransactionManager(IClient rpcClient, string privateKey, BigInteger? chainId = null)
         {
