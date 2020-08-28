@@ -21,10 +21,13 @@ namespace Nethereum.Signer
         public static byte DEFAULT_PREFIX = 0x04;
         private readonly ECKey _ecKey;
         private byte[] _publicKey;
+        private byte[] _publicKeyCompressed;
         private byte[] _publicKeyNoPrefix;
+        private byte[] _publicKeyNoPrefixCompressed;
         private string _ethereumAddress;
         private byte[] _privateKey;
         private string _privateKeyHex;
+        
 
         public EthECKey(string privateKey)
         {
@@ -116,26 +119,54 @@ namespace Nethereum.Signer
             return _privateKeyHex;
         }
 
-        public byte[] GetPubKey()
+        public byte[] GetPubKey(bool compresseed = false)
         {
-            if (_publicKey == null)
+            if (!compresseed)
             {
-                _publicKey = _ecKey.GetPubKey(false);
+                if (_publicKey == null)
+                {
+                    _publicKey = _ecKey.GetPubKey(false);
+                }
+                return _publicKey;
             }
-            return _publicKey;
+            else
+            {
+                if (_publicKeyCompressed == null)
+                {
+                    _publicKeyCompressed = _ecKey.GetPubKey(true);
+                }
+                return _publicKeyCompressed;
+
+            }
         }
 
-        public byte[] GetPubKeyNoPrefix()
+        public byte[] GetPubKeyNoPrefix(bool compressed = false)
         {
-            if (_publicKeyNoPrefix == null)
+            if (!compressed)
             {
-                var pubKey = _ecKey.GetPubKey(false);
-                var arr = new byte[pubKey.Length - 1];
-                //remove the prefix
-                Array.Copy(pubKey, 1, arr, 0, arr.Length);
-               _publicKeyNoPrefix =  arr;
+                if (_publicKeyNoPrefix == null)
+                {
+                    var pubKey = _ecKey.GetPubKey(false);
+                    var arr = new byte[pubKey.Length - 1];
+                    //remove the prefix
+                    Array.Copy(pubKey, 1, arr, 0, arr.Length);
+                    _publicKeyNoPrefix = arr;
+                }
+                return _publicKeyNoPrefix;
             }
-            return _publicKeyNoPrefix;
+            else
+            {
+                if (_publicKeyNoPrefixCompressed == null)
+                {
+                    var pubKey = _ecKey.GetPubKey(true);
+                    var arr = new byte[pubKey.Length - 1];
+                    //remove the prefix
+                    Array.Copy(pubKey, 1, arr, 0, arr.Length);
+                    _publicKeyNoPrefixCompressed = arr;
+                }
+                return _publicKeyNoPrefixCompressed;
+
+            }
         }
 
         public string GetPublicAddress()
