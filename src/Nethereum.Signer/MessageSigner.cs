@@ -57,6 +57,11 @@ namespace Nethereum.Signer
             return new EthECKey(privateKey.HexToByteArray(), true).SignAndCalculateV(message);
         }
 
+        public virtual EthECDSASignature SignAndCalculateV(byte[] message, EthECKey key)
+        {
+            return key.SignAndCalculateV(message);
+        }
+
         private static string CreateStringSignature(EthECDSASignature signature)
         {
             return EthECDSASignature.CreateStringSignature(signature);
