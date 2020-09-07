@@ -214,6 +214,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer.Performanc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Signer.Performance.Current", "src\Nethereum.Signer.Performance.Current\Nethereum.Signer.Performance.Current.csproj", "{6951E035-E6E5-42BB-8A2C-4D2EA3CCE0BD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nethereum.hdwallet.blazortest", "nethereum.hdwallet.blazortest\nethereum.hdwallet.blazortest.csproj", "{0DAFB546-8909-4025-9554-57AFA4A78483}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1394,6 +1396,22 @@ Global
 		{6951E035-E6E5-42BB-8A2C-4D2EA3CCE0BD}.Release|x64.Build.0 = Release|Any CPU
 		{6951E035-E6E5-42BB-8A2C-4D2EA3CCE0BD}.Release|x86.ActiveCfg = Release|Any CPU
 		{6951E035-E6E5-42BB-8A2C-4D2EA3CCE0BD}.Release|x86.Build.0 = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|ARM.Build.0 = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|x64.Build.0 = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Debug|x86.Build.0 = Debug|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|ARM.ActiveCfg = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|ARM.Build.0 = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|x64.ActiveCfg = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|x64.Build.0 = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|x86.ActiveCfg = Release|Any CPU
+		{0DAFB546-8909-4025-9554-57AFA4A78483}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1502,6 +1520,7 @@ Global
 		{4A92CDF4-DDFB-41F4-A318-3099B17D15C7} = {0A8F020C-D361-407A-A126-B85E971E1F96}
 		{56DC10B8-1AC2-4062-ABD8-E45AAC9D3535} = {A635472A-99CA-4964-B320-536EF5C8BED7}
 		{6951E035-E6E5-42BB-8A2C-4D2EA3CCE0BD} = {A635472A-99CA-4964-B320-536EF5C8BED7}
+		{0DAFB546-8909-4025-9554-57AFA4A78483} = {2CFDB0C0-5201-412B-8EB5-1EF8872B5FEA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

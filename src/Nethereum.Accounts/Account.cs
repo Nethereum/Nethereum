@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.KeyStore;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.NonceServices;
@@ -27,6 +28,8 @@ namespace Nethereum.Web3.Accounts
         }
 
         public string PrivateKey { get; private set; }
+        public string PublicKey { get; private set; }
+
 
         public Account(EthECKey key, BigInteger? chainId = null)
         {
@@ -62,6 +65,7 @@ namespace Nethereum.Web3.Accounts
         {
             PrivateKey = key.GetPrivateKey();
             Address = key.GetPublicAddress();
+            PublicKey = key.GetPubKey().ToHex();
             InitialiseDefaultTransactionManager();
         }
 
