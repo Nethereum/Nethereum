@@ -74,6 +74,12 @@ or
 dotnet add package Nethereum.Portable
 ```
 
+
+## Simple Code generation of Contract definitions
+If you are working with smart contracts, you can quickly code generate contract definitions using the vscode solidity extension (please check the documentation for other options)
+
+[![Code generation of Contract Definitions](https://github.com/juanfranblanco/vscode-solidity/raw/master/screenshots/compile-codegnerate-nethereum.png)](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
+
 ## Main Libraries
 
 |  Project Source | Nuget_Package |  Description |
