@@ -7,8 +7,6 @@ Azure DevOps CI [![CI Build / Test Status](https://dev.azure.com/nethereumprojec
 Azure DevOps CI Code Gen: [![CI Code gen Build / Test Status](https://dev.azure.com/nethereumproject/Nethereum/_apis/build/status/nethereum%20ci%20codegen)](https://dev.azure.com/nethereumproject/Nethereum/_build/latest?definitionId=3)
 CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vpre/nethereum.web3.svg?style=plastic)](https://www.myget.org/feed/nethereum/package/nuget/Nethereum.Web3)
 
-# Do you need support, want to have a chat, or want to help?
-Please join the Discord server using this link: https://discord.gg/ASBu8p
 
 # What is Nethereum ?
 
@@ -22,11 +20,10 @@ The same version is hosted in IPFS at http://playground.nethereum.eth.link/ or t
 
 [![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
-## Issues, Requests and help
-
-Please join the chat at:  [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-We should be able to answer there any simple queries, general comments or requests, everyone is welcome. In a similar feel free to raise any issue or pull request.
+# Do you need support, want to have a chat, or want to help?
+Please join the Discord server using this link: https://discord.gg/ASBu8p
+We should be able to answer there any simple queries, general comments or requests, everyone is welcome.
+If you want to help or have any ideas for a pull request just come and chat.
 
 ## Documentation
 The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). 
