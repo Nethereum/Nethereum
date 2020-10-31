@@ -34,8 +34,7 @@ In order to add GSN support to Nethereum `Web3` instance, follow the next steps:
         web3.Client,
         relayClient,
         new DefaultRelayPolicy(),
-        "ED3...",                                           // Private key of sender
-        "0x..."                                             // Contract address
+        "ED3..."                                            // Private key of sender
     );
     ```
 3. Set Interceptor of Web3 instance

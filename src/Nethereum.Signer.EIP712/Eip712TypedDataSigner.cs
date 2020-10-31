@@ -66,7 +66,7 @@ namespace Nethereum.Signer.EIP712
             using (var writer = new BinaryWriter(memoryStream))
             {
                 writer.Write("1901".HexToByteArray());
-                writer.Write(HashStruct(typedData.Types, "EIP712Domain", ParseDomain(typedData.Domain).Select(x => x.Item2)));
+                writer.Write(HashStruct(typedData.Types, "EIP712Domain", ParseDomain(typedData.Domain).Select(x => x.MemberValue)));
                 writer.Write(HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message));
 
                 writer.Flush();
@@ -172,21 +172,20 @@ namespace Nethereum.Signer.EIP712
             }
         }
 
-        private static IEnumerable<Tuple<MemberDescription, MemberValue>> ParseDomain(Domain domain)
+        private static IEnumerable<Member> ParseDomain(Domain domain)
         {
-            var result = new List<Tuple<MemberDescription, MemberValue>>();
+            var result = new List<Member>();
 
             if (domain.Name != null)
             {
-                result.Add(Tuple.Create(
-                    new MemberDescription {Type = "string", Name = "name"},
+                result.Add(new Member( new MemberDescription {Type = "string", Name = "name"},
                     new MemberValue {TypeName = "string", Value = domain.Name}
                 ));
             }
 
             if (domain.Version != null)
             {
-                result.Add(Tuple.Create(
+                result.Add(new Member(
                     new MemberDescription {Type = "string", Name = "version"},
                     new MemberValue {TypeName = "string", Value = domain.Version}
                 ));
@@ -194,7 +193,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.ChainId.HasValue)
             {
-                result.Add(Tuple.Create(
+                result.Add(new Member(
                     new MemberDescription {Type = "uint256", Name = "chainId"},
                     new MemberValue {TypeName = "uint256", Value = domain.ChainId.Value}
                 ));
@@ -202,7 +201,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.VerifyingContract != null)
             {
-                result.Add(Tuple.Create(
+                result.Add(new Member(
                     new MemberDescription {Type = "address", Name = "verifyingContract"},
                     new MemberValue {TypeName = "address", Value = domain.VerifyingContract}
                 ));
@@ -210,7 +209,7 @@ namespace Nethereum.Signer.EIP712
 
             if (domain.Salt != null)
             {
-                result.Add(Tuple.Create(
+                result.Add(new Member(
                     new MemberDescription {Type = "bytes32", Name = "salt"},
                     new MemberValue {TypeName = "bytes32", Value = domain.Salt}
                 ));
@@ -246,7 +245,7 @@ namespace Nethereum.Signer.EIP712
                 Types = new Dictionary<string, MemberDescription[]>
                 {
                     [primaryTypeName] = typeMembers.ToArray(),
-                    ["EIP712Domain"] = ParseDomain(domain).Select(x => x.Item1).ToArray()
+                    ["EIP712Domain"] = ParseDomain(domain).Select(x => x.MemberDescription).ToArray()
                 },
                 Message = typeValues.ToArray(),
                 Domain = domain

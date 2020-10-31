@@ -169,7 +169,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             CloseDisposeAndClearRequestsAsync().Wait();
         }
 
-        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
+        public async Task<Tuple<int, bool>> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
         {
             CancellationTokenSource timeoutTokenSource = null;
             CancellationTokenSource tokenSource = null;
@@ -178,12 +178,12 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 timeoutTokenSource = new CancellationTokenSource(ForceCompleteReadTotalMilliseconds);
                 tokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token, timeoutTokenSource.Token);
 
-                if (client == null) return 0;
+                if (client == null) return new Tuple<int, bool>(0, true);
                 var segmentBuffer = new ArraySegment<byte>(buffer);
                 var result = await client
                     .ReceiveAsync(segmentBuffer, tokenSource.Token)
                     .ConfigureAwait(false);
-                return result.Count;
+                return new Tuple<int, bool>(result.Count, result.EndOfMessage);
             }
             catch (TaskCanceledException ex)
             {
@@ -216,33 +216,27 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 else
                 {
                     var buffer = new byte[readBufferSize];
-                    var bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
-                    if (bytesRead == 0) completedNextMessage = true;
-                   
-                    completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, bytesRead);
+                    var response = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+                    
+                    completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, response.Item1, response.Item2);
                 }
             }
 
             return memoryStream;
         }
 
-        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead=-1)
+        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead=-1, bool endOfMessage = false)
         {
             int currentIndex = 0;
-            //bytesRead == -1 used to signal cached previous buffer
-            bool finishedReading = bytesRead != -1 && bytesRead != buffer.Length;
-            int bufferToRead = buffer.Length;
-
-            if (finishedReading)
+            //if bytes read is 0 we don't care as streaming might continue regardless and message split.. 
+            int bufferToRead = bytesRead;
+            if (bytesRead == -1) bufferToRead = buffer.Length; //old data from previous buffer
+           
+            while (currentIndex < bufferToRead)
             {
-                bufferToRead = bytesRead;
-            }
-
-            while(currentIndex < bufferToRead)
-            {
-                if(buffer[currentIndex] == 10)
+                if(buffer[currentIndex] == 10 ) //finish reading message
                 {
-                    if (currentIndex + 1 < bufferToRead) // bytes remaining
+                    if (currentIndex + 1 < bufferToRead) // bytes remaining for next message add them to last buffer to be read next message.
                     {
                         lastBuffer = new byte[bytesRead - currentIndex];
                         Array.Copy(buffer, currentIndex + 1, lastBuffer, 0, bytesRead - currentIndex);
@@ -261,7 +255,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 }
             }
 
-            if (finishedReading)
+            if (endOfMessage) // somehow the ethereum end of message was not signaled use the end of message of the websocket
             {
                 return true;
             }
@@ -424,4 +418,5 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
              await SendRequestAsync(reqMsg, requestResponseHandler, route).ConfigureAwait(false);
         }
     }
+
 }

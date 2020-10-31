@@ -4,6 +4,7 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using System;
+using System.Collections.Generic;
 using KeyPath = NBitcoin.KeyPath;
 
 namespace Nethereum.HdWallet
@@ -12,6 +13,9 @@ namespace Nethereum.HdWallet
     {
         public const string DEFAULT_PATH = "m/44'/60'/0'/0/x";
         public const string ELECTRUM_LEDGER_PATH = "m/44'/60'/0'/x";
+        private Dictionary<int, ExtKey> nonHardenedKeys = new Dictionary<int, ExtKey>();
+        private Dictionary<int, ExtKey> hardenedKeys = new Dictionary<int, ExtKey>();
+        private Dictionary<int, EthECKey> ethereumKeys =  new Dictionary<int, EthECKey>();
 
         public Wallet(Wordlist wordList, WordCount wordCount, string seedPassword = null, string path = DEFAULT_PATH,
             IRandom random = null) : this(path, random)
@@ -35,7 +39,11 @@ namespace Nethereum.HdWallet
         private Wallet(string path = DEFAULT_PATH, IRandom random = null)
         {
             Path = path;
+#if NETCOREAPP2_1 || NETCOREAPP3_1 || NETSTANDARD2_0 
+            if (random == null) random = new RandomNumberGeneratorRandom();
+#else
             if (random == null) random = new SecureRandom();
+#endif
             Random = random;
         }
 
@@ -101,19 +109,34 @@ namespace Nethereum.HdWallet
 
         public ExtKey GetExtKey(int index, bool hardened = false)
         {
-            return _masterKey.Derive(index, hardened);
+            if (!hardened && nonHardenedKeys.ContainsKey(index)) return nonHardenedKeys[index];
+            if (hardened && hardenedKeys.ContainsKey(index)) return hardenedKeys[index];
+            if (hardened)
+            {
+                hardenedKeys.Add(index,_masterKey.Derive(index, true));
+                return hardenedKeys[index];
+            }
+            else
+            {
+                nonHardenedKeys.Add(index,_masterKey.Derive(index, false));
+                return nonHardenedKeys[index];
+            }
+            
         }
 
         public ExtPubKey GetExtPubKey(int index, bool hardened = false)
         {
+          
             var key = GetExtKey(index, hardened);
             return key.Neuter();
         }
 
-        private EthECKey GetEthereumKey(int index)
+        public EthECKey GetEthereumKey(int index)
         {
+            if (ethereumKeys.ContainsKey(index)) return ethereumKeys[index];
             var privateKey = GetPrivateKey(index);
-            return new EthECKey(privateKey, true);
+            ethereumKeys.Add(index, new EthECKey(privateKey, true));
+            return ethereumKeys[index];
         }
 
         public byte[] GetPrivateKey(int index)
@@ -166,9 +189,9 @@ namespace Nethereum.HdWallet
 
         public Account GetAccount(int index)
         {
-            var privateyKey = GetPrivateKey(index);
-            if (privateyKey != null)
-                return new Account(privateyKey);
+            var key = GetEthereumKey(index);
+            if (key != null)
+                return new Account(key);
             return null;
         }
     }

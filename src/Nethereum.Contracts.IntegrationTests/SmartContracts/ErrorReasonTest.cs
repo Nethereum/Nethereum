@@ -53,9 +53,9 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
                     await contractHandler.QueryAsync<ThrowItFunction, bool>());
-                Assert.Equal("Smart contract error: An error message", error.Message);
+                Assert.Equal("execution reverted: An error message", error.Message);
             }
             else // parity throws Rpc exception : "VM execution error."
             {
@@ -88,9 +88,9 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
                     await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
-                Assert.Equal("Smart contract error: An error message", error.Message);
+                Assert.Equal("execution reverted: An error message", error.Message);
             }
             else // parity throws Rpc exception : "VM execution error."
             {

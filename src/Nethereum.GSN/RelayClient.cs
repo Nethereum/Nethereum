@@ -1,4 +1,5 @@
-﻿using Nethereum.GSN.Models;
+﻿using Nethereum.GSN.Interfaces;
+using Nethereum.GSN.Models;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;

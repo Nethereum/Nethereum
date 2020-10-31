@@ -128,6 +128,9 @@ cd Nethereum.BlockchainProcessing
 CALL :restorepack
 cd..
 
+cd Nethereum.Signer.EIP712
+CALL :restorepack
+cd.
 
 setlocal
 set DIR=%~dp0

@@ -1,0 +1,59 @@
+﻿@page "/"
+
+<h1>Hd Wallet</h1>
+<EditForm Model=@WalletViewModel OnSubmit=@GetAccounts>
+    <InputTextArea @bind-Value=WalletViewModel.Words />
+    <input type="submit" value="Submit" class="btn btn-primary" />
+</EditForm>
+
+@if (WalletViewModel.Accounts != null && WalletViewModel.Accounts.Count > 0)
+{
+    <table>
+        <thead>
+            <tr>Account</tr>
+            <tr>Private Key</tr>
+        </thead>
+        <tbody>
+            @foreach (var account in WalletViewModel.Accounts)
+            {
+              <tr>
+                <td>@account.Address</td>
+                <td> @account.PrivateKey</td>
+               </tr>
+            }
+        </tbody>
+
+    </table>
+}
+
+
+@code {
+
+    public class WalletVM
+    {
+        public string Words { get; set; } = "ripple scissors kick mammal hire column oak again sun offer wealth tomorrow wagon turn fatal";
+        public List<Nethereum.Web3.Accounts.Account> Accounts = new List<Nethereum.Web3.Accounts.Account>();
+
+    }
+
+    public WalletVM WalletViewModel = new WalletVM();
+
+    private void GetAccounts()
+    {
+        var secureRandom = new Org.BouncyCastle.Security.SecureRandom();
+        Console.WriteLine("balls11");
+        var random = new NBitcoin.RandomNumberGeneratorRandom();
+        Console.WriteLine("balls1");
+        var wallet = new Nethereum.HdWallet.Wallet(WalletViewModel.Words, null);
+        WalletViewModel.Accounts.Clear();
+
+        for (int i = 0; i < 10; i++)
+        {
+            WalletViewModel.Accounts.Add(wallet.GetAccount(i));
+            this.StateHasChanged();
+        }
+
+    }
+}
+
+
