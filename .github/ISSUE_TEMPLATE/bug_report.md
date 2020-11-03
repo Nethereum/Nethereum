@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Issue tracker should be used only for reporting bugs. New features, questions
-  and support should be discussed on our gitter channel first, thanks. https://gitter.im/Nethereum/Nethereum
+  and support should be discussed on our discord channel first, thanks. https://discord.gg/jQPrR58FxX
 title: ''
 labels: ''
 assignees: ''
