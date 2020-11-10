@@ -6,6 +6,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.Util;
 using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts.Managed
@@ -55,7 +56,7 @@ namespace Nethereum.Web3.Accounts.Managed
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            if (transactionInput.From != Account.Address) throw new Exception("Invalid account used");
+            if (!transactionInput.From.IsTheSameAddress(Account.Address)) throw new Exception("Invalid account used");
             var gasPrice = await GetGasPriceAsync(transactionInput).ConfigureAwait(false);
             transactionInput.GasPrice = gasPrice;
 
@@ -69,7 +70,7 @@ namespace Nethereum.Web3.Accounts.Managed
 
         public override Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount)
         {
-            if (from != Account.Address) throw new Exception("Invalid account used");
+            if (!from.IsTheSameAddress(Account.Address)) throw new Exception("Invalid account used");
             var transactionInput = new TransactionInput(null, to, from, null, null, amount);
             return SendTransactionAsync(transactionInput);
         }
