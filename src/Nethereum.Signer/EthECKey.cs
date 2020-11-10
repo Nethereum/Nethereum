@@ -89,13 +89,32 @@ namespace Nethereum.Signer
             return recId;
         }
 
+        public static EthECKey GenerateKey(byte[] seed = null)
+        {
+            var secureRandom = SecureRandom;
+            if (seed != null)
+            {
+                secureRandom = new SecureRandom();
+                secureRandom.SetSeed(seed);
+            }
+
+            var gen = new ECKeyPairGenerator("EC");
+            var keyGenParam = new KeyGenerationParameters(secureRandom, 256);
+            gen.Init(keyGenParam);
+            var keyPair = gen.GenerateKeyPair();
+            var privateBytes = ((ECPrivateKeyParameters) keyPair.Private).D.ToByteArray();
+            if (privateBytes.Length != 32)
+                return GenerateKey();
+            return new EthECKey(privateBytes, true);
+        }
+
         public static EthECKey GenerateKey()
         {
             var gen = new ECKeyPairGenerator("EC");
             var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
-            var privateBytes = ((ECPrivateKeyParameters) keyPair.Private).D.ToByteArray();
+            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArray();
             if (privateBytes.Length != 32)
                 return GenerateKey();
             return new EthECKey(privateBytes, true);
