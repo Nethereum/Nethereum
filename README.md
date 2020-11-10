@@ -1,5 +1,5 @@
 # Nethereum
-[![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
+ [![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
 
 Azure DevOps CI [![CI Build / Test Status](https://dev.azure.com/nethereumproject/Nethereum/_apis/build/status/nethereum-CI)](https://dev.azure.com/nethereumproject/Nethereum/_build/latest?definitionId=2)
 
@@ -7,6 +7,7 @@ Azure DevOps CI [![CI Build / Test Status](https://dev.azure.com/nethereumprojec
 Azure DevOps CI Code Gen: [![CI Code gen Build / Test Status](https://dev.azure.com/nethereumproject/Nethereum/_apis/build/status/nethereum%20ci%20codegen)](https://dev.azure.com/nethereumproject/Nethereum/_build/latest?definitionId=3)
 CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vpre/nethereum.web3.svg?style=plastic)](https://www.myget.org/feed/nethereum/package/nuget/Nethereum.Web3)
 
+Technical support, chat and collaboration at Discord: https://discord.gg/jQPrR58FxX.
 
 # What is Nethereum ?
 
@@ -20,11 +21,10 @@ The same version is hosted in IPFS at http://playground.nethereum.eth.link/ or t
 
 [![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
-## Issues, Requests and help
-
-Please join the chat at:  [![Join the chat at https://gitter.im/juanfranblanco/Ethereum.RPC](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juanfranblanco/Ethereum.RPC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-We should be able to answer there any simple queries, general comments or requests, everyone is welcome. In a similar feel free to raise any issue or pull request.
+# Do you need support, want to have a chat, or want to help?
+Please join the Discord server using this link: https://discord.gg/jQPrR58FxX.
+We should be able to answer there any simple queries, general comments or requests, everyone is welcome.
+If you want to help or have any ideas for a pull request just come and chat.
 
 ## Documentation
 The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). 
@@ -74,6 +74,12 @@ or
 ```
 dotnet add package Nethereum.Portable
 ```
+
+
+## Simple Code generation of Contract definitions
+If you are working with smart contracts, you can quickly code generate contract definitions using the vscode solidity extension (please check the documentation for other options)
+
+[![Code generation of Contract Definitions](https://github.com/juanfranblanco/vscode-solidity/raw/master/screenshots/compile-codegnerate-nethereum.png)](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
 
 ## Main Libraries
 
