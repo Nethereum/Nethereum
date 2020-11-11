@@ -110,7 +110,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             Assert.Equal(1, message.StarterId);
             Assert.False(message.IsBusy);
             Assert.Equal("juan", message.UserName);
-            Assert.Equal("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae", message.Owner);
+            Assert.Equal("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe", message.Owner);
         }
     }
 }

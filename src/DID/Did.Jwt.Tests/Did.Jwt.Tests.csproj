@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\did-jwt-net\Did.Jwt.csproj" />
     <ProjectReference Include="..\..\Nethereum.Signer\Nethereum.Signer.csproj" />
   </ItemGroup>
 

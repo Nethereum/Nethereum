@@ -33,14 +33,14 @@ namespace Nethereum.Signer.UnitTests
 
             var account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
 
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix().ToLower());
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
 
             signature = signer.Sign(hashPrefix2.HexToByteArray(),
                 "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
 
             account = signer.EcRecover(hashPrefix2.HexToByteArray(), signature);
 
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
         }
 
         [Fact]

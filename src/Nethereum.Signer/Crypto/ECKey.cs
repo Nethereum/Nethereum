@@ -13,7 +13,6 @@ namespace Nethereum.Signer.Crypto
 {
     /// <summary>
     ///     ECKey based on the implementation of bitcoinj, NBitcoin
-
     /// </summary>
     public class ECKey
     {

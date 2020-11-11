@@ -61,7 +61,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var durationInDays = 365;
             var ourName = "supersillynameformonkeys";
             var tls = "eth";
-            var owner = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var owner = "0x12890D2cce102216644c59daE5baed380d84830c";
             var secret = "animals in the forest";
 
 
@@ -170,10 +170,10 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             if (_ethereumClientIntegrationFixture.Geth)
             {
                 //The address we want to resolve when using "test.eth"
-                var addressToResolve = "0x12890d2cce102216644c59dae5baed380d84830c";
+                var addressToResolve = "0x12890D2cce102216644c59daE5baed380d84830c";
 
 
-                var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
+                var addressFrom = "0x12890D2cce102216644c59daE5baed380d84830c";
 
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 

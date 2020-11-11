@@ -12,6 +12,9 @@ using Nethereum.RPC.Eth.Subscriptions;
 using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.RPC.Reactive.Extensions;
+using Nethereum.JsonRpc.WebSocketClient;
+using Nethereum.RPC.Web3;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.WebSocketsStreamingTest
 {
@@ -19,7 +22,11 @@ namespace Nethereum.WebSocketsStreamingTest
     {
         static void Main(string[] args)
         {
-            var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws");
+            var client2 = new WebSocketClient("wss://mainnet.infura.io/ws/v3/7238211010344719ad14a89db874158c");
+            var block1 = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(client2).SendRequestAsync(new HexBigInteger(10613813)).Result;
+            var block2 = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(client2).SendRequestAsync(new HexBigInteger(10613813)).Result;
+
+            var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/7238211010344719ad14a89db874158c");
 
             // var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
             var blockHeaderSubscription = new EthNewBlockHeadersObservableSubscription(client);
@@ -102,23 +109,24 @@ namespace Nethereum.WebSocketsStreamingTest
             blockHeaderSubscription2.SubscribeAsync().Wait();
 
             pendingTransactionsSubscription.SubscribeAsync().Wait();
-            
-            ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
 
-            ethBlockNumber.SendRequestAsync().Wait();
+            //ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
 
-            ethLogs.SubscribeAsync().Wait();
+            //ethBlockNumber.SendRequestAsync().Wait();
 
-            ethLogsTokenTransfer.SubscribeAsync(filterTransfers).Wait();
+            //ethLogs.SubscribeAsync().Wait();
 
-            Thread.Sleep(30000);
-            pendingTransactionsSubscription.UnsubscribeAsync().Wait();
+            //ethLogsTokenTransfer.SubscribeAsync(filterTransfers).Wait();
 
-            Thread.Sleep(20000);
+            //Thread.Sleep(30000);
+            //pendingTransactionsSubscription.UnsubscribeAsync().Wait();
 
-            blockHeaderSubscription.UnsubscribeAsync().Wait();
+            //Thread.Sleep(20000);
 
-            Thread.Sleep(20000);
+            //blockHeaderSubscription.UnsubscribeAsync().Wait();
+
+            //Thread.Sleep(20000);
+            Console.ReadLine();
         }
 
 

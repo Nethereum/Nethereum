@@ -3,7 +3,7 @@
     "rpcUrl": "https://mainnet.infura.io"
   },
   "testSettings": {
-    "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
+    "defaultAccount": "0x12890D2cce102216644c59daE5baed380d84830c",
     "defaultAccountPassword": "password",
     "rpcUrl": "http://localhost:8545/",
     "debugLogLocation": "I:\\JuanFran\\Documents\\Source\\Repos\\Nethereum\\testchain\\log.txt",

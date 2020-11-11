@@ -25,7 +25,7 @@ namespace Nethereum.Uport.IntegrationTests
             var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
                     var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
-                    var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
+                    var previousVersionAddress = "0x12890D2cce102216644c59daE5baed380d84830c";
                     var registrySevice = await UportRegistryService.DeployContractAndGetServiceAsync(transactionService,
                         web3,
                         addressFrom,
@@ -42,7 +42,7 @@ namespace Nethereum.Uport.IntegrationTests
             var addressFrom = (await web3.Eth.Accounts.SendRequestAsync())[0];
 
             var transactionService = new TransactionReceiptPollingService(web3.TransactionManager);
-            var previousVersionAddress = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var previousVersionAddress = "0x12890D2cce102216644c59daE5baed380d84830c";
             var registrySevice = await UportRegistryService.DeployContractAndGetServiceAsync(transactionService,
                 web3,
                 addressFrom,

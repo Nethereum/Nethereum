@@ -1,5 +1,6 @@
 using System;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.Decoders
 {
@@ -17,7 +18,7 @@ namespace Nethereum.ABI.Decoders
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
             var output = new byte[20];
             Array.Copy(encoded, 12, output, 0, 20);
-            return output.ToHex(true);
+            return output.ToHex(true).ConvertToEthereumChecksumAddress();
         }
 
         public override Type GetDefaultDecodingType()

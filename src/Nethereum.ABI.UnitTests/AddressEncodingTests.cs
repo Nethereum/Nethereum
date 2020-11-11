@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text;
 using Nethereum.ABI.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -18,7 +19,7 @@ namespace Nethereum.ABI.UnitTests
             var result2 =
                 addressType.Decode("0000000000000000000000001234567890abcdef1234567890abcdef12345678".HexToByteArray(),
                     typeof(string));
-            Assert.Equal("0x1234567890abcdef1234567890abcdef12345678", result2);
+            Assert.True("0x1234567890abcdef1234567890abcdef12345678".IsTheSameAddress(result2.ToString()));
         }
 
         [Fact]
@@ -36,7 +37,7 @@ namespace Nethereum.ABI.UnitTests
             var addressType = new AddressType();
             var result2 = addressType.Encode("0034567890abcdef1234567890abcdef12345678").ToHex();
             var result3 = addressType.Decode(result2, typeof(string));
-            Assert.Equal("0x0034567890abcdef1234567890abcdef12345678", result3);
+            Assert.True("0x0034567890abcdef1234567890abcdef12345678".IsTheSameAddress(result3.ToString()));
         }
     }
 }

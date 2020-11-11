@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Util;
 using System;
 using System.Numerics;
 using Xunit;
@@ -50,8 +51,8 @@ namespace Nethereum.ABI.UnitTests
             var transferDto = new TransferEvent();
             new EventTopicDecoder().DecodeTopics(transferDto, topics, data);
 
-            Assert.Equal("0x0000000000000000000000000000000000000000", transferDto.From);
-            Assert.Equal("0xc14934679e71ef4d18b6ae927fe2b953c7fd9b91", transferDto.To);
+            Assert.True("0x0000000000000000000000000000000000000000".IsTheSameAddress(transferDto.From));
+            Assert.True("0xc14934679e71ef4d18b6ae927fe2b953c7fd9b91".IsTheSameAddress(transferDto.To));
             Assert.Equal("1180591691223594434561", transferDto.Value.ToString());
         }
 

@@ -11,6 +11,7 @@ using Nethereum.ABI.Model;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
@@ -319,7 +320,7 @@ contract TestV2
 
             var eventUntyped = new Event(web3.Client, deploymentReceipt.ContractAddress, eventStorage.EventABI);
             var eventOutputs2 = eventUntyped.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", eventOutputs2[0].Event[0].Result);
+            Assert.True("0x12890D2cce102216644c59daE5baed380d84830c".IsTheSameAddress(eventOutputs2[0].Event[0].Result.ToString()));
             Assert.Equal("sender", eventOutputs2[0].Event[0].Parameter.Name);
 
         }

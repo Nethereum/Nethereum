@@ -3,7 +3,7 @@
     "rpcUrl": "https://mainnet.infura.io"
   },
   "testSettings": {
-    "defaultAccount": "0x12890d2cce102216644c59dae5baed380d84830c",
+    "defaultAccount": "0x12890D2cce102216644c59daE5baed380d84830c",
     "defaultAccountPassword": "password",
     "defaultNodeIrl": "enode://8c87ddc14f0f373b9444a5fd940168b7e99371a8b5793b7ed7b9694480fb2706e91e6b84cf794720d221e6f6a9fafea9ed033e8f9910c1e6a6b7d4accea88fcb@127.0.0.1:30306",
     "rpcUrl": "http://localhost:8545/",
