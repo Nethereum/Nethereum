@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RazorLangVersion>3.0</RazorLangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.0-*" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0-*" PrivateAssets="all" />
+
+	  <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0-*" />
+	  <PackageReference Include="System.Threading.Channels" Version="5.0.0-*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.HDWallet\Nethereum.HdWallet.csproj" />
+  </ItemGroup>
+
+</Project>

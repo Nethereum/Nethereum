@@ -16,14 +16,14 @@ namespace Nethereum.Signer.UnitTests
             var hash = hasher.CalculateHash(text);
             var signer = new EthereumMessageSigner();
             var account = signer.EcRecover(hash.HexToByteArray(), signature);
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix().ToLower());
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
 
             signature = signer.Sign(hash.HexToByteArray(),
                 "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
 
             account = signer.EcRecover(hash.HexToByteArray(), signature);
 
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
         }
 
         //[Fact]
@@ -47,26 +47,25 @@ namespace Nethereum.Signer.UnitTests
             var text = "test";
             var signer = new EthereumMessageSigner();
             var account = signer.HashAndEcRecover(text, signature);
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c", account.EnsureHexPrefix().ToLower());
+            Assert.True("0x12890D2cce102216644c59daE5baed380d84830c".IsTheSameAddress(account.EnsureHexPrefix()));
 
             signature = signer.HashAndSign(text,
                 "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
 
             account = signer.HashAndEcRecover(text, signature);
-
-            Assert.Equal("0x12890d2cce102216644c59dae5baed380d84830c".ToLower(), account.EnsureHexPrefix().ToLower());
+            Assert.True("0x12890D2cce102216644c59daE5baed380d84830c".IsTheSameAddress(account.EnsureHexPrefix()));
         }
 
         [Fact]
         public void ShouldSignAndVerifyEncodingMessageAsUTF8()
         {
-            var address = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var address = "0x12890D2cce102216644c59daE5baed380d84830c";
             var msg = "wee test message 18/09/2017 02:55PM";
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var signer = new EthereumMessageSigner();
             var signature = signer.EncodeUTF8AndSign(msg, new EthECKey(privateKey));
             var addressRec = signer.EncodeUTF8AndEcRecover(msg, signature);
-            Assert.Equal(address.ToLower(), addressRec.ToLower());
+            Assert.Equal(address, addressRec);
         }
 
         [Fact]
@@ -79,13 +78,13 @@ namespace Nethereum.Signer.UnitTests
 
             var signer = new EthereumMessageSigner();
             var addressRec = signer.EncodeUTF8AndEcRecover(msg, sig);
-            Assert.Equal(address.ToLower(), addressRec.ToLower());
+            Assert.True(address.IsTheSameAddress(addressRec));
         }
 
         [Fact]
         public void ShouldVerifySignatureEncodingMessageAsUTF8()
         {
-            var address = "0x12890d2cce102216644c59dae5baed380d84830c";
+            var address = "0x12890D2cce102216644c59daE5baed380d84830c";
             var msg = "Hello from Nethereum";
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
 
@@ -99,7 +98,7 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(signatureExpected, signature);
 
             var addressRec = signer.EncodeUTF8AndEcRecover(msg, signatureExpected);
-            Assert.Equal(address.ToLower(), addressRec.ToLower());
+            Assert.Equal(address, addressRec);
         }
     }
 }
