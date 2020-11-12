@@ -61,7 +61,7 @@ namespace Nethereum.RPC.TransactionReceipts
             var receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             while (receipt == null)
             {
-                await Task.Delay(_retryMiliseconds).ConfigureAwait(false);
+                await Task.Delay(_retryMiliseconds, tokenSource.Token).ConfigureAwait(false);
                 tokenSource?.Token.ThrowIfCancellationRequested();
                 receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             }
