@@ -39,7 +39,7 @@ namespace Nethereum.HdWallet
         private Wallet(string path = DEFAULT_PATH, IRandom random = null)
         {
             Path = path;
-#if NETCOREAPP2_1 || NETCOREAPP3_1 || NETSTANDARD2_0 
+#if NETCOREAPP2_1 || NETCOREAPP3_1 || NETSTANDARD2_0 || NET5_0
             if (random == null) random = new RandomNumberGeneratorRandom();
 #else
             if (random == null) random = new SecureRandom();
