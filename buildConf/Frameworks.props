@@ -5,12 +5,12 @@
     <TargetNetCore>false</TargetNetCore>
     <TargetNetStandard>false</TargetNetStandard>
     <TargetUnityNet461AOT>false</TargetUnityNet461AOT>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;netcoreapp2.1;netcoreapp3.1</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;netcoreapp2.1;netcoreapp3.1</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetStandard)'== 'true'">netstandard2.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>netstandard1.1;net451;netstandard2.0;netcoreapp2.1;netcoreapp3.1</DefaultFrameworks>
+    <DefaultFrameworks>netstandard1.1;net451;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
@@ -19,10 +19,10 @@
     <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</ENSFrameworks>
     
-    <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;netcoreapp2.1;netcoreapp3.1</HdWalletFrameworks>
+    <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</HdWalletFrameworks>
-    <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</HdWalletFrameworks>
-    <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</HdWalletFrameworks>
+    <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netstandard2.0</HdWalletFrameworks>
+    <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</HdWalletFrameworks>
     <ExternalSignerFrameworks>netstandard2.0;net452;netcoreapp2.1</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ExternalSignerFrameworks>
