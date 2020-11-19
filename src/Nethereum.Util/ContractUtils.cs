@@ -8,10 +8,36 @@ namespace Nethereum.Util
     {
         public static string CalculateContractAddress(string address, BigInteger nonce)
         {
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new System.ArgumentException($"'{nameof(address)}' cannot be null or empty.", nameof(address));
+            }
+
             var sha3 = new Sha3Keccack();
             return  
                 sha3.CalculateHash(RLP.RLP.EncodeList(RLP.RLP.EncodeElement(address.HexToByteArray()),
-                    RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24);
+                    RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24).ConvertToEthereumChecksumAddress();
+        }
+
+        public static string CalculateCreate2Address(string address, string saltHex, string byteCodeHex)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new System.ArgumentException($"'{nameof(address)}' cannot be null or empty.", nameof(address));
+            }
+
+            if (string.IsNullOrEmpty(saltHex))
+            {
+                throw new System.ArgumentException($"'{nameof(saltHex)}' cannot be null or empty.", nameof(saltHex));
+            }
+
+            if(saltHex.EnsureHexPrefix().Length != 66)
+            {
+                throw new System.ArgumentException($"'{nameof(saltHex)}' needs to be 32 bytes", nameof(saltHex));
+            }
+
+            var sha3 = new Sha3Keccack();
+            return sha3.CalculateHashFromHex("0xff", address, saltHex, sha3.CalculateHashFromHex(byteCodeHex)).Substring(24).ConvertToEthereumChecksumAddress();
         }
     }
 }
