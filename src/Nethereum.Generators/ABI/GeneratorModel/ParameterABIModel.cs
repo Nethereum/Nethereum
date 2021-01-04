@@ -41,7 +41,7 @@ namespace Nethereum.Generators.Core
 
         public string GetVariableName(string name, int order)
         {
-            return $"{_variableAndPropertyPrefix?.Invoke() ?? ""}{CommonGenerators.GenerateVariableName(NameOrDefault(name, order))}";
+            return $"{_variableAndPropertyPrefix?.Invoke() ?? string.Empty}{CommonGenerators.GenerateVariableName(NameOrDefault(name, order))}";
         }
 
         public string GetPropertyName(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
@@ -51,7 +51,7 @@ namespace Nethereum.Generators.Core
                 name = NameOrDefault(name, order, parameterDirection);
             }
 
-            return $"{_variableAndPropertyPrefix?.Invoke() ?? ""}{CommonGenerators.GeneratePropertyName(name)}";
+            return $"{_variableAndPropertyPrefix?.Invoke() ?? string.Empty}{CommonGenerators.GeneratePropertyName(name)}";
         }
 
         public virtual string GetStructTypeClassName()
