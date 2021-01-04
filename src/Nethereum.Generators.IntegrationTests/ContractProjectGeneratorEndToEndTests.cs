@@ -137,9 +137,9 @@ namespace Nethereum.Generators.IntegrationTests
                     "ReservedWordsContract",
                     contractMetaData.ByteCode,
                     context.ProjectName,
-                    "StandardContract.Service",
-                    "StandardContract.CQS",
-                    "StandardContract.DTO",
+                    "ReservedWordsContract.Service",
+                    "ReservedWordsContract.CQS",
+                    "ReservedWordsContract.DTO",
                     context.TargetProjectFolder,
                     Path.DirectorySeparatorChar.ToString(),
                     codeGenLanguage)
