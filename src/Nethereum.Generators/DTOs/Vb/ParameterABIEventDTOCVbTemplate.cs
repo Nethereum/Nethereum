@@ -24,7 +24,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateProperty(ParameterABI parameter)
         {
-            var parameterModel = new ParameterABIModel(parameter, () => "_");
+            var parameterModel = new ParameterABIModel(parameter, "_");
             return
                 $@"{SpaceUtils.TwoTabs}<[Parameter](""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order}, {utils.GetBooleanAsString(parameter.Indexed)})>
 {SpaceUtils.TwoTabs}Public Overridable Property [{parameterModel.GetPropertyName()}] As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
