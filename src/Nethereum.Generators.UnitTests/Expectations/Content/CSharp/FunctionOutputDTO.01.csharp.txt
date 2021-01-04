@@ -13,8 +13,8 @@ namespace DefaultNamespace
     public class GetCarOutputDTOBase : IFunctionOutputDTO 
     {
         [Parameter("uint", "", 1)]
-        public virtual BigInteger ReturnValue1 { get; set; }
+        public virtual BigInteger @ReturnValue1 { get; set; }
         [Parameter("string", "", 2)]
-        public virtual string ReturnValue2 { get; set; }
+        public virtual string @ReturnValue2 { get; set; }
     }
 }

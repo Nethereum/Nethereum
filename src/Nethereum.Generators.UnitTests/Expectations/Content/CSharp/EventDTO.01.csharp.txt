@@ -13,6 +13,6 @@ namespace DefaultNamespace
     public class ItemAddedEventDTOBase : IEventDTO
     {
         [Parameter("uint256", "itemId", 1, false )]
-        public virtual BigInteger ItemId { get; set; }
+        public virtual BigInteger @ItemId { get; set; }
     }
 }

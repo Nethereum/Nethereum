@@ -1,5 +1,8 @@
+
+using System;
 using System.Collections.Generic;
 using Nethereum.Generators.Model;
+
 
 namespace Nethereum.Generators.Core
 {
@@ -9,12 +12,16 @@ namespace Nethereum.Generators.Core
         public const string AnonymousInputParameterPrefix = "ParamValue";
         public const string AnonymousOutputParameterPrefix = "ReturnValue";
 
-        public ParameterABIModel(ParameterABI parameter) : base(parameter)
+        private Func<string> _variableAndPropertyPrefix;
+
+        public ParameterABIModel(ParameterABI parameter, Func<string> variableAndPropertyPrefix = null) : base(parameter)
         {
+            _variableAndPropertyPrefix = variableAndPropertyPrefix;
         }
 
-        public ParameterABIModel() : base()
+        public ParameterABIModel(Func<string> variableAndPropertyPrefix = null) : base()
         {
+            _variableAndPropertyPrefix = variableAndPropertyPrefix;
         }
 
         public override string GetVariableName()
@@ -34,7 +41,7 @@ namespace Nethereum.Generators.Core
 
         public string GetVariableName(string name, int order)
         {
-            return CommonGenerators.GenerateVariableName(NameOrDefault(name, order));
+            return $"{_variableAndPropertyPrefix?.Invoke() ?? ""}{CommonGenerators.GenerateVariableName(NameOrDefault(name, order))}";
         }
 
         public string GetPropertyName(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
@@ -44,7 +51,7 @@ namespace Nethereum.Generators.Core
                 name = NameOrDefault(name, order, parameterDirection);
             }
 
-            return CommonGenerators.GeneratePropertyName(name);
+            return $"{_variableAndPropertyPrefix?.Invoke() ?? ""}{CommonGenerators.GeneratePropertyName(name)}";
         }
 
         public virtual string GetStructTypeClassName()

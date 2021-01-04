@@ -20,6 +20,6 @@ namespace DefaultNamespace
         public StandardContractDeploymentBase() : base(BYTECODE) { }
         public StandardContractDeploymentBase(string byteCode) : base(byteCode) { }
         [Parameter("uint256", "totalSupply", 1)]
-        public virtual BigInteger TotalSupply { get; set; }
+        public virtual BigInteger @TotalSupply { get; set; }
     }
 }

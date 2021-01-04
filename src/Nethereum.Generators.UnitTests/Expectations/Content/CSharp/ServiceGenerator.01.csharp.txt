@@ -53,18 +53,18 @@ namespace DefaultNamespace
              return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
         }
 
-        public Task<string> AddAdministratorRequestAsync(byte[] administratorId)
+        public Task<string> AddAdministratorRequestAsync(byte[] @administratorId)
         {
             var addAdministratorFunction = new AddAdministratorFunction();
-                addAdministratorFunction.AdministratorId = administratorId;
+                addAdministratorFunction.@AdministratorId = @administratorId;
             
              return ContractHandler.SendRequestAsync(addAdministratorFunction);
         }
 
-        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] administratorId, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] @administratorId, CancellationTokenSource cancellationToken = null)
         {
             var addAdministratorFunction = new AddAdministratorFunction();
-                addAdministratorFunction.AdministratorId = administratorId;
+                addAdministratorFunction.@AdministratorId = @administratorId;
             
              return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
         }

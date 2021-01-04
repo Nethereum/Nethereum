@@ -110,5 +110,54 @@ namespace Nethereum.Generators.IntegrationTests
                 context.CleanUp();
             }
         }
+
+        [Theory]
+        [InlineData(CodeGenLanguage.CSharp)]
+        [InlineData(CodeGenLanguage.FSharp)]
+        [InlineData(CodeGenLanguage.Vb)]
+        public void With_Reserved_Words_Generated_Code_Builds(CodeGenLanguage codeGenLanguage)
+        {
+            //given
+            var context = new ProjectTestContext(BaseName,
+                $"{MethodBase.GetCurrentMethod().Name}{codeGenLanguage}");
+
+            try
+            {
+                context.CreateProject(codeGenLanguage, new[]
+                {
+                    new Tuple<string, string>("Nethereum.Web3", Constants.NethereumWeb3Version)
+                });
+
+                var contractMetaData = TestContracts.ReservedWordsContract;
+                var contractABI = new GeneratorModelABIDeserialiser().DeserialiseABI(contractMetaData.ABI);
+
+                //when
+                var contractProjectGenerator = new ContractProjectGenerator(
+                    contractABI,
+                    "ReservedWordsContract",
+                    contractMetaData.ByteCode,
+                    context.ProjectName,
+                    "StandardContract.Service",
+                    "StandardContract.CQS",
+                    "StandardContract.DTO",
+                    context.TargetProjectFolder,
+                    Path.DirectorySeparatorChar.ToString(),
+                    codeGenLanguage)
+                {
+                    AddRootNamespaceOnVbProjectsToImportStatements = true
+                };
+
+                var generatedFiles = contractProjectGenerator.GenerateAll();
+                GeneratedFileWriter.WriteFilesToDisk(generatedFiles);
+                context.BuildProject();
+
+                //then
+                Assert.True(context.BuildHasSucceeded());
+            }
+            finally
+            {
+                context.CleanUp();
+            }
+        }
     }
 }
