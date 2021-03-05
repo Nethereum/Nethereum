@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Issue tracker should be used only for reporting bugs. New features, questions
-  and support should be discussed on our discord channel first, thanks. https://discord.gg/jQPrR58FxX
+  and support should be discussed on our discord channel first, thanks. https://discord.gg/u3Ej2BReNn
 title: ''
 labels: ''
 assignees: ''
