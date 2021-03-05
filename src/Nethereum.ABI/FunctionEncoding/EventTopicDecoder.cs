@@ -108,7 +108,7 @@ namespace Nethereum.ABI.FunctionEncoding
                     if (property.PropertyType != typeof(string))
                         throw new Exception(
                             "Indexed Dynamic Types (string, arrays) value is the Keccak SHA3 of the value, the property type of " +
-                            property.Name + "should be a string");
+                            property.Name + " should be a string");
 #if DOTNET35
                         property.SetValue(eventDTO, topic.ToString(), null);
 #else
