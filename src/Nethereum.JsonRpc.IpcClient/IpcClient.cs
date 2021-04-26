@@ -2,7 +2,6 @@
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
@@ -11,80 +10,137 @@ using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
-    public class IpcClient : ClientBase
+    public class IpcClient : IpcClientBase
     {
+        private readonly object _lockingObject = new object();
         private readonly ILog _log;
-        protected readonly string IpcPath;
-        public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
-        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null)
+        private NamedPipeClientStream _pipeClient;
+      
+
+        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : base(ipcPath, jsonSerializerSettings)
         {
-            if (jsonSerializerSettings == null)
-                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
-
-            IpcPath = ipcPath;
-            JsonSerializerSettings = jsonSerializerSettings;
             _log = log;
         }
 
-        public async Task<int> ReceiveBufferedResponseAsync(NamedPipeClientStream client, byte[] buffer, CancellationToken cancellationToken)
+        private NamedPipeClientStream GetPipeClient()
         {
-            return await client.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+            try
+            {
+                if (_pipeClient == null || !_pipeClient.IsConnected)
+                {
+                    _pipeClient = new NamedPipeClientStream(IpcPath);
+                    _pipeClient.Connect((int)ConnectionTimeout.TotalMilliseconds);
+                }
+            }
+            catch (TimeoutException ex)
+            {
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+            }
+            catch
+            {
+                //Connection error we want to allow to retry.
+                _pipeClient = null;
+                throw;
+            }
+            return _pipeClient;
         }
 
-        public async Task<MemoryStream> ReceiveFullResponseAsync(NamedPipeClientStream client, CancellationToken cancellationToken)
+
+        public int ReceiveBufferedResponse(NamedPipeClientStream client, byte[] buffer)
         {
-            MemoryStream memoryStream = new MemoryStream();
-            byte[] buffer = new byte[512];
-            for (int count = await ReceiveBufferedResponseAsync(client, buffer, cancellationToken); count > 0; count = buffer[count - 1] != 10 ? await ReceiveBufferedResponseAsync(client, buffer, cancellationToken) : 0)
-                await memoryStream.WriteAsync(buffer, 0, count, cancellationToken);
+            int bytesRead = 0;
+            if (Task.Run(async () =>
+                    bytesRead = await client.ReadAsync(buffer, 0, buffer.Length)
+                ).Wait(ForceCompleteReadTotalMiliseconds))
+            {
+                return bytesRead;
+            }
+            else
+            {
+                return bytesRead;
+            }
+        }
+
+        public MemoryStream ReceiveFullResponse(NamedPipeClientStream client)
+        {
+            var readBufferSize = 512;
+            var memoryStream = new MemoryStream();
+
+            int bytesRead = 0;
+            byte[] buffer = new byte[readBufferSize];
+            bytesRead = ReceiveBufferedResponse(client, buffer);
+            while (bytesRead > 0)
+            {
+                memoryStream.Write(buffer, 0, bytesRead);
+                var lastByte = buffer[bytesRead - 1];
+
+                if (lastByte == 10)  //return signalled with a line feed
+                {
+                    bytesRead = 0;
+                }
+                else
+                {
+                    bytesRead = ReceiveBufferedResponse(client, buffer);
+                }
+            }
             return memoryStream;
         }
 
         protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
-            RpcLogger rpcLogger = new RpcLogger(_log);
-            RpcResponseMessage rpcResponseMessage;
+            var logger = new RpcLogger(_log);
             try
             {
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
-
-                using (var pipeStream = new NamedPipeClientStream(IpcPath))
+                lock (_lockingObject)
                 {
-                    await pipeStream.ConnectAsync(cancellationTokenSource.Token);
-                    string str = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                    byte[] bytes = Encoding.UTF8.GetBytes(str);
-                    rpcLogger.LogRequest(str);
-                    await pipeStream.WriteAsync(bytes, 0, bytes.Length, cancellationTokenSource.Token);
-                    using (MemoryStream fullResponse = await ReceiveFullResponseAsync(pipeStream, cancellationTokenSource.Token))
+                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                    var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+                    logger.LogRequest(rpcRequestJson);
+                    GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
+
+                    using (var memoryData = ReceiveFullResponse(GetPipeClient()))
                     {
-                        fullResponse.Position = 0L;
-                        using (StreamReader streamReader = new StreamReader(fullResponse))
+                        memoryData.Position = 0;
+                        using (StreamReader streamReader = new StreamReader(memoryData))
+                        using (JsonTextReader reader = new JsonTextReader(streamReader))
                         {
-                            using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
-                            {
-                                RpcResponseMessage responseMessage = JsonSerializer.Create(JsonSerializerSettings).Deserialize<RpcResponseMessage>(jsonTextReader);
-                                rpcLogger.LogResponse(responseMessage);
-                                rpcResponseMessage = responseMessage;
-                            }
+                            var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                            var message = serializer.Deserialize<RpcResponseMessage>(reader);
+                            logger.LogResponse(message);
+                            return message;
                         }
                     }
                 }
             }
-            catch (TaskCanceledException ex)
-            {
-                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
-                rpcLogger.LogException(exception);
-                throw exception;
-            }
             catch (Exception ex)
             {
-                var unknownException = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
-                rpcLogger.LogException(unknownException);
-                throw unknownException;
+                var exception = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
             }
-            return rpcResponseMessage;
         }
+
+        #region IDisposable Support
+
+        private bool disposedValue;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                    if (_pipeClient != null)
+                    {
+#if NET462
+                        _pipeClient.Close();
+#endif
+                        _pipeClient.Dispose();
+                    }
+
+                disposedValue = true;
+            }
+        }
+#endregion
     }
 }
