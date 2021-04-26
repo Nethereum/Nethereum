@@ -144,8 +144,8 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         {
             var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
             var ensService = new ENSService(web3);
-            var name = await ensService.ReverseResolveAsync("0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5");
-            var expectedName = "nick.eth";
+            var name = await ensService.ReverseResolveAsync("0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb");
+            var expectedName = "alex.vandesande.eth";
             Assert.Equal(expectedName, name);
         }
 
