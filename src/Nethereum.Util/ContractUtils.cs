@@ -19,6 +19,17 @@ namespace Nethereum.Util
                     RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24).ConvertToEthereumChecksumAddress();
         }
 
+        public static string CalcualteCreate2AddressMinimalProxy(string address, string saltHex, string deploymentAddress)
+        {
+            if (string.IsNullOrEmpty(deploymentAddress))
+            {
+                throw new System.ArgumentException($"'{nameof(deploymentAddress)}' cannot be null or empty.", nameof(deploymentAddress));
+            }
+
+            var bytecode = "363d3d373d3d3d363d73" + deploymentAddress.RemoveHexPrefix() + "5af43d82803e903d91602b57fd5bf3";
+            return CalculateCreate2Address(address, saltHex, bytecode);
+        }
+
         public static string CalculateCreate2Address(string address, string saltHex, string byteCodeHex)
         {
             if (string.IsNullOrEmpty(address))

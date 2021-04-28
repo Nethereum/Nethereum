@@ -167,7 +167,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldCreateEnsRegistarResolverAndRegiterandResolveANewAddress()
         {
             //Ignoring parity due to https://github.com/paritytech/parity-ethereum/issues/8675
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 //The address we want to resolve when using "test.eth"
                 var addressToResolve = "0x12890D2cce102216644c59daE5baed380d84830c";

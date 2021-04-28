@@ -11,20 +11,19 @@
 	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0-*" PrivateAssets="all" />
 
 	  <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0-*" />
+	  
 	  <PackageReference Include="System.Threading.Channels" Version="5.0.0-*" />
 	 <!--https://duanenewman.net/blog/post/a-better-way-to-override-references-with-packagereference/-->
-	  <PackageReference Include="NBitcoin" ExcludeAssets="Compile" GeneratePathProperty="true">
-		  <Version>5.0.54</Version>
-	  </PackageReference>
+	  
 	  <Reference Include="NBitcoin">
 		  <HintPath>$(NuGetPackageRoot)nbitcoin\5.0.54\lib\netstandard2.0\NBitcoin.dll</HintPath>
 	  </Reference>
+
+	  <PackageReference Include="Nethereum.HdWallet" Version="3.8.0" />
+	  
   </ItemGroup>
 
-	
-  <ItemGroup>
-    <ProjectReference Include="..\Nethereum.HDWallet\Nethereum.HdWallet.csproj" />
-  </ItemGroup>
+
 
 
 </Project>

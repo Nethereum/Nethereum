@@ -120,7 +120,7 @@ contract TheOther
         [Fact]
         public async void ShouldCallDifferentContractsUsingDataBytesArraysFixedAndVariable()
         {
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
@@ -196,7 +196,7 @@ contract TheOther
         [Fact]
         public async void ShouldDecodeFixedWithVariableElementsAndVariableElements()
         {
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 //also should be able to call another contract and get the output as bytes and bytes arrays
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();

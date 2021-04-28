@@ -26,7 +26,7 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldDecodeCliqueAuthor()
         {
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =
@@ -43,7 +43,7 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldEncodeDecode()
         {
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =

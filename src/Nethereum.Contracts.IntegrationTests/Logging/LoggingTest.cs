@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
         [Fact]
         public async void TestLogging()
         {
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient)
             {
                 var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
                 LogManager.Adapter = capturingLoggerAdapter;

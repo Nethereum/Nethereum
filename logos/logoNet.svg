@@ -13,7 +13,10 @@
    version="1.1"
    id="svg362"
    inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
-   sodipodi:docname="logoNet.svg">
+   sodipodi:docname="logoNet.svg"
+   inkscape:export-filename="G:\JuanFran\Documents\Source\Repos\Nethereum\logos\logoNet511x314.png"
+   inkscape:export-xdpi="112.53011"
+   inkscape:export-ydpi="112.53011">
   <defs
      id="defs356">
     <linearGradient
@@ -523,7 +526,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="3.959798"
-     inkscape:cx="276.26263"
+     inkscape:cx="233.20488"
      inkscape:cy="358.55023"
      inkscape:document-units="mm"
      inkscape:current-layer="g252"
@@ -542,7 +545,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>

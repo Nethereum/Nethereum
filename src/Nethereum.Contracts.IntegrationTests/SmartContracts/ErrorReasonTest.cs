@@ -43,7 +43,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         public async void ShouldThrowErrorDecodingCall()
         {
             //Parity does throw an RPC exception if the call is reverted, no info included
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var errorThrowDeployment = new ErrorThrowDeployment();
@@ -78,7 +78,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         public async void ShouldThrowErrorOnEstimation()
         {
             //Parity does throw an RPC exception if the call is reverted, no info included
-            if (_ethereumClientIntegrationFixture.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var errorThrowDeployment = new ErrorThrowDeployment();
