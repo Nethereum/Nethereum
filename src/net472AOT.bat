@@ -1,5 +1,5 @@
 rem packing web3 and dependencies
-del /S compiledlibraries\net461dllsAOT\*.dll
+del /S compiledlibraries\net472dllsAOT\*.dll
 SET releaseSuffix=
 SET targetNet35=false
 
@@ -91,8 +91,8 @@ cd ..
 EXIT /B %ERRORLEVEL%
 
 :build
-rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet461=true /property:TargetNet35=false /property:TargetUnityNet461AOT=true
-rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet461=true /property:TargetNet35=false /property:TargetUnityNet461AOT=true
-dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet461=true /property:TargetNet35=false /property:TargetUnityNet461AOT=true
-xcopy bin\Release\net461\*.dll "..\compiledlibraries\net461dllsAOT" /s /y
+rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=true /property:TargetNet35=false /property:TargetUnityNet472AOT=true
+rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=true /property:TargetNet35=false /property:TargetUnityNet472AOT=true
+dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=true /property:TargetNet35=false /property:TargetUnityNet472AOT=true
+xcopy bin\Release\net472\*.dll "..\compiledlibraries\net472dllsAOT" /s /y
 EXIT /B 0

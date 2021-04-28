@@ -30,7 +30,9 @@ testchain/clique/devChain/geth
 testchain/devChain/geth
 testchain/parity poa/parity0/chains
 src/compiledlibraries/net461dlls/
+src/compiledlibraries/net472dlls/
 src/compiledlibraries/net461dllsAOT/
+src/compiledlibraries/net472dllsAOT/
 src/compiledlibraries/unitynet35dlls/
 
 

@@ -34,11 +34,11 @@ cd Nethereum.RLP*
 CALL :build
 cd ..
 
-cd Nethereum.Signer*
+cd Nethereum.Signer
 CALL :build
 cd ..
 
-cd Nethereum.Util*
+cd Nethereum.Util
 CALL :build
 cd ..
 

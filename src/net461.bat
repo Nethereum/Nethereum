@@ -59,11 +59,11 @@ cd Nethereum.RLP*
 CALL :build
 cd ..
 
-cd Nethereum.Signer*
+cd Nethereum.Signer
 CALL :build
 cd ..
 
-cd Nethereum.Util*
+cd Nethereum.Util
 CALL :build
 cd ..
 
@@ -83,14 +83,10 @@ cd Nethereum.Unity*
 CALL :build
 cd ..
 
-
-cd Nethereum.Parity.Reactive
-CALL :restorepack
-cd..
-
 cd Nethereum.RPC.Reactive
-CALL :restorepack
-cd..
+CALL :build
+cd ..
+
 
 EXIT /B %ERRORLEVEL%
 
