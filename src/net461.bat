@@ -87,6 +87,10 @@ cd Nethereum.RPC.Reactive
 CALL :build
 cd ..
 
+cd Nethereum.Pantheon
+CALL :build
+cd ..
+
 
 EXIT /B %ERRORLEVEL%
 
