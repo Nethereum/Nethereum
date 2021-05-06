@@ -46,7 +46,7 @@ namespace Nethereum.Generators.Core
                     return GetLongType();
                 }
                 //ints are in 8 bits
-                if (length == 32)
+                if (length <= 32 && length > 16)
                 {
                     return GetIntType();
                 }
@@ -77,7 +77,7 @@ namespace Nethereum.Generators.Core
                     return GetULongType();
                 }
                 //uints are in 8 bits steps
-                if (length == 32)
+                if (length <= 32 && length > 16)
                 {
                     return GetUIntType();
                 }
