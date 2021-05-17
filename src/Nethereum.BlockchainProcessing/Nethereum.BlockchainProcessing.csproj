@@ -15,10 +15,8 @@
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
-    <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
-    <ProjectReference Include="..\Nethereum.KeyStore\Nethereum.KeyStore.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">

@@ -58,15 +58,11 @@
      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>	
    <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true' And '$(MSBuildProjectName)' != 'Nethereum.HdWallet'">
-    <PackageReference Include="Newtonsoft.Json" Version="[10.0.3,13)" />
+    <PackageReference Include="Newtonsoft.Json" Version="[10.0.3,14)" />
   </ItemGroup>
   
    <ItemGroup Condition="'$(MSBuildProjectName)' == 'Nethereum.HdWallet'">
-    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,13)" />
-  </ItemGroup>
-  
- <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -84,7 +80,7 @@
     <Reference Include="System" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
-    <PackageReference Include="BouncyCastle" Version="1.8.2" />
+    <PackageReference Include="BouncyCastle" Version="[1.8.2,1.9)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
