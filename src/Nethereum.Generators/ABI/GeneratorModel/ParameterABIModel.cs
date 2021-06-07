@@ -9,11 +9,12 @@ namespace Nethereum.Generators.Core
         public const string AnonymousInputParameterPrefix = "ParamValue";
         public const string AnonymousOutputParameterPrefix = "ReturnValue";
 
-        public ParameterABIModel(ParameterABI parameter) : base(parameter)
+        public ParameterABIModel(ParameterABI parameter, CodeGenLanguage codeGenLanguage) : base(parameter, codeGenLanguage)
         {
+            
         }
 
-        public ParameterABIModel() : base()
+        public ParameterABIModel(CodeGenLanguage codeGenLanguage) : base(codeGenLanguage)
         {
         }
 
@@ -34,7 +35,7 @@ namespace Nethereum.Generators.Core
 
         public string GetVariableName(string name, int order)
         {
-            return CommonGenerators.GenerateVariableName(NameOrDefault(name, order));
+            return CommonGenerators.GenerateVariableName(NameOrDefault(name, order), CodeGenLanguage);
         }
 
         public string GetPropertyName(string name, int order, ParameterDirection parameterDirection = ParameterDirection.Output)
@@ -44,7 +45,7 @@ namespace Nethereum.Generators.Core
                 name = NameOrDefault(name, order, parameterDirection);
             }
 
-            return CommonGenerators.GeneratePropertyName(name);
+            return CommonGenerators.GeneratePropertyName(name, CodeGenLanguage);
         }
 
         public virtual string GetStructTypeClassName()

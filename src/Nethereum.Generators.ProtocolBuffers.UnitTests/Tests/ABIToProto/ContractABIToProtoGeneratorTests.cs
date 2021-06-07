@@ -10,6 +10,8 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
         [Fact]
         public void GeneratesExpectedProtoBufferContent()
         {
+            var contractABI = new ContractABI();
+
             var constructorAbi = new ConstructorABI()
             {
                 InputParameters = new[]
@@ -18,7 +20,7 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
                 }
             };
 
-            var functionAbi1 = new FunctionABI("recordHousePurchase", false)
+            var functionAbi1 = new FunctionABI("recordHousePurchase", false, contractABI)
             {
                 InputParameters = new[]
                 {
@@ -33,7 +35,7 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
                 }
             };
 
-            var eventAbi1 = new EventABI("HousePurchased")
+            var eventAbi1 = new EventABI("HousePurchased", contractABI)
             {
                 InputParameters = new[]
                 {
@@ -45,12 +47,11 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
                 }
             };
 
-            var contractABI = new ContractABI
-            {
-                Constructor = constructorAbi,
-                Functions = new[] {functionAbi1},
-                Events = new[] {eventAbi1}
-            };
+
+            contractABI.Constructor = constructorAbi;
+            contractABI.Functions = new[] {functionAbi1};
+            contractABI.Events = new[] {eventAbi1};
+            
 
             var generator = new ContractABIToProtoGenerator(contractABI, "Proxy.Ethereum.Samples.HousePurchase", "HousePurchase");
             var actualProtoFileContent = generator.GenerateFileContent();

@@ -14,7 +14,7 @@ function buildConstructor(item: any): Nethereum.Generators.Model.ConstructorABI 
     return constructorItem;
 }
 
-function buildFunction(item: any): Nethereum.Generators.Model.FunctionABI {
+function buildFunction(item: any, contractAbi: Nethereum.Generators.Model.ContractABI ): Nethereum.Generators.Model.FunctionABI {
 
     var constant = false;
     if (item.constant !== undefined) {
@@ -26,14 +26,14 @@ function buildFunction(item: any): Nethereum.Generators.Model.FunctionABI {
         constant = true;
     }
 
-    var functionItem = new functionAbi(item.name, constant, false);
+    var functionItem = new functionAbi(item.name, constant, contractAbi, false);
     functionItem.set_InputParameters(buildFunctionParameters(item.inputs));
     functionItem.set_OutputParameters(buildFunctionParameters(item.outputs));
     return functionItem;
 }
 
-function buildEvent(item: any): Nethereum.Generators.Model.EventABI {
-    var eventItem = new eventAbi(item.name);
+function buildEvent(item: any, contractAbi: Nethereum.Generators.Model.ContractABI ): Nethereum.Generators.Model.EventABI {
+    var eventItem = new eventAbi(item.name, contractAbi);
     eventItem.set_InputParameters(buildEventParameters(item.inputs));
     return eventItem;
 }
@@ -125,10 +125,11 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
     let events = [];
     let structs :Nethereum.Generators.Model.StructABI[] = [];
     let constructor = new constructorAbi();
+    let contract = new contractAbi();
 
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
-            functions.push(buildFunction(abi[i]));
+            functions.push(buildFunction(abi[i], contract));
 
             var temp = buildStructsFromParameters(abi[i].outputs);
             for (const item of temp) {
@@ -139,7 +140,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
         }
 
         if (abi[i].type === "event") {
-            events.push(buildEvent(abi[i]));
+            events.push(buildEvent(abi[i], contract));
         }
 
         if (abi[i].type === "constructor") {
@@ -154,7 +155,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
         }
     }
 
-    let contract = new contractAbi();
+   
     contract.set_Constructor(constructor);
     contract.set_Functions(functions);
     contract.set_Events(events);

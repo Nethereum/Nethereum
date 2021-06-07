@@ -31,7 +31,7 @@ namespace Nethereum.Generators.Service
 
             var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, _model.CQSNamespace);
             var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, _model.FunctionOutputNamespace);
-            var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor);
+            var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor, CodeGenLanguage.FSharp);
 
             var messageType = functionCQSMessageModel.GetTypeName();
             var messageVariableName = functionCQSMessageModel.GetVariableName();

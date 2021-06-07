@@ -28,165 +28,138 @@ namespace Nethereum.Structs.StructSample.ContractDefinition
 
     }
 
-    public partial class GetTestFunction : GetTestFunctionBase { }
+    public partial class CreatePoolFunction : CreatePoolFunctionBase { }
 
-    [Function("GetTest", typeof(GetTestOutputDTO))]
-    public class GetTestFunctionBase : FunctionMessage
+    [Function("createPool", "address")]
+    public class CreatePoolFunctionBase : FunctionMessage
+    {
+        [Parameter("address", "tokenA", 1)]
+        public virtual string TokenA { get; set; }
+        [Parameter("address", "tokenB", 2)]
+        public virtual string TokenB { get; set; }
+        [Parameter("uint24", "fee", 3)]
+        public virtual uint Fee { get; set; }
+    }
+
+    public partial class EnableFeeAmountFunction : EnableFeeAmountFunctionBase { }
+
+    [Function("enableFeeAmount")]
+    public class EnableFeeAmountFunctionBase : FunctionMessage
+    {
+        [Parameter("uint24", "fee", 1)]
+        public virtual uint Fee { get; set; }
+        [Parameter("int24", "tickSpacing", 2)]
+        public virtual int TickSpacing { get; set; }
+    }
+
+    public partial class FeeAmountTickSpacingFunction : FeeAmountTickSpacingFunctionBase { }
+
+    [Function("feeAmountTickSpacing", "int24")]
+    public class FeeAmountTickSpacingFunctionBase : FunctionMessage
+    {
+        [Parameter("uint24", "fee", 1)]
+        public virtual uint Fee { get; set; }
+    }
+
+    public partial class GetPoolFunction : GetPoolFunctionBase { }
+
+    [Function("getPool", "address")]
+    public class GetPoolFunctionBase : FunctionMessage
+    {
+        [Parameter("address", "tokenA", 1)]
+        public virtual string TokenA { get; set; }
+        [Parameter("address", "tokenB", 2)]
+        public virtual string TokenB { get; set; }
+        [Parameter("uint24", "fee", 3)]
+        public virtual uint Fee { get; set; }
+    }
+
+    public partial class OwnerFunction : OwnerFunctionBase { }
+
+    [Function("owner", "address")]
+    public class OwnerFunctionBase : FunctionMessage
     {
 
     }
 
-    public partial class SetStorageStructFunction : SetStorageStructFunctionBase { }
+    public partial class SetOwnerFunction : SetOwnerFunctionBase { }
 
-    [Function("SetStorageStruct")]
-    public class SetStorageStructFunctionBase : FunctionMessage
+    [Function("setOwner")]
+    public class SetOwnerFunctionBase : FunctionMessage
     {
-        [Parameter("tuple", "testStruct", 1)]
-        public virtual TestStruct TestStruct { get; set; }
+        [Parameter("address", "_owner", 1)]
+        public virtual string Owner { get; set; }
     }
 
-    public partial class TestFunction : TestFunctionBase { }
+    public partial class FeeAmountEnabledEventDTO : FeeAmountEnabledEventDTOBase { }
 
-    [Function("Test")]
-    public class TestFunctionBase : FunctionMessage
+    [Event("FeeAmountEnabled")]
+    public class FeeAmountEnabledEventDTOBase : IEventDTO
     {
-        [Parameter("tuple", "testScrut", 1)]
-        public virtual TestStruct TestScrut { get; set; }
+        [Parameter("uint24", "fee", 1, true )]
+        public virtual uint Fee { get; set; }
+        [Parameter("int24", "tickSpacing", 2, true )]
+        public virtual int TickSpacing { get; set; }
     }
 
-    public partial class TestArrayFunction : TestArrayFunctionBase { }
+    public partial class OwnerChangedEventDTO : OwnerChangedEventDTOBase { }
 
-    [Function("TestArray", typeof(TestArrayOutputDTO))]
-    public class TestArrayFunctionBase : FunctionMessage
+    [Event("OwnerChanged")]
+    public class OwnerChangedEventDTOBase : IEventDTO
     {
-
+        [Parameter("address", "oldOwner", 1, true )]
+        public virtual string OldOwner { get; set; }
+        [Parameter("address", "newOwner", 2, true )]
+        public virtual string NewOwner { get; set; }
     }
 
-    public partial class Id1Function : Id1FunctionBase { }
+    public partial class PoolCreatedEventDTO : PoolCreatedEventDTOBase { }
 
-    [Function("id1", "uint256")]
-    public class Id1FunctionBase : FunctionMessage
+    [Event("PoolCreated")]
+    public class PoolCreatedEventDTOBase : IEventDTO
     {
-
+        [Parameter("address", "token0", 1, true )]
+        public virtual string Token0 { get; set; }
+        [Parameter("address", "token1", 2, true )]
+        public virtual string Token1 { get; set; }
+        [Parameter("uint24", "fee", 3, true )]
+        public virtual uint Fee { get; set; }
+        [Parameter("int24", "tickSpacing", 4, false )]
+        public virtual int TickSpacing { get; set; }
+        [Parameter("address", "pool", 5, false )]
+        public virtual string Pool { get; set; }
     }
 
-    public partial class Id2Function : Id2FunctionBase { }
 
-    [Function("id2", "uint256")]
-    public class Id2FunctionBase : FunctionMessage
-    {
 
-    }
 
-    public partial class Id3Function : Id3FunctionBase { }
 
-    [Function("id3", "uint256")]
-    public class Id3FunctionBase : FunctionMessage
-    {
-
-    }
-
-    public partial class Id4Function : Id4FunctionBase { }
-
-    [Function("id4", "string")]
-    public class Id4FunctionBase : FunctionMessage
-    {
-
-    }
-
-    public partial class TestStructStorageFunction : TestStructStorageFunctionBase { }
-
-    [Function("testStructStorage", typeof(TestStructStorageOutputDTO))]
-    public class TestStructStorageFunctionBase : FunctionMessage
-    {
-
-    }
-
-    public partial class TestStructStorageChangedEventDTO : TestStructStorageChangedEventDTOBase { }
-
-    [Event("TestStructStorageChanged")]
-    public class TestStructStorageChangedEventDTOBase : IEventDTO
-    {
-        [Parameter("address", "sender", 1, false )]
-        public virtual string Sender { get; set; }
-        [Parameter("tuple", "testStruct", 2, false )]
-        public virtual TestStruct TestStruct { get; set; }
-    }
-
-    public partial class GetTestOutputDTO : GetTestOutputDTOBase { }
+    public partial class FeeAmountTickSpacingOutputDTO : FeeAmountTickSpacingOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetTestOutputDTOBase : IFunctionOutputDTO 
+    public class FeeAmountTickSpacingOutputDTOBase : IFunctionOutputDTO 
     {
-        [Parameter("tuple", "testStruct", 1)]
-        public virtual TestStruct TestStruct { get; set; }
-        [Parameter("int256", "test1", 2)]
-        public virtual BigInteger Test1 { get; set; }
-        [Parameter("int256", "test2", 3)]
-        public virtual BigInteger Test2 { get; set; }
+        [Parameter("int24", "", 1)]
+        public virtual int ReturnValue1 { get; set; }
     }
 
-
-
-
-
-    public partial class TestArrayOutputDTO : TestArrayOutputDTOBase { }
+    public partial class GetPoolOutputDTO : GetPoolOutputDTOBase { }
 
     [FunctionOutput]
-    public class TestArrayOutputDTOBase : IFunctionOutputDTO 
+    public class GetPoolOutputDTOBase : IFunctionOutputDTO 
     {
-        [Parameter("tuple[2]", "structArray", 1)]
-        public virtual List<SimpleStruct> StructArray { get; set; }
+        [Parameter("address", "pool", 1)]
+        public virtual string Pool { get; set; }
     }
 
-    public partial class Id1OutputDTO : Id1OutputDTOBase { }
+    public partial class OwnerOutputDTO : OwnerOutputDTOBase { }
 
     [FunctionOutput]
-    public class Id1OutputDTOBase : IFunctionOutputDTO 
+    public class OwnerOutputDTOBase : IFunctionOutputDTO 
     {
-        [Parameter("uint256", "", 1)]
-        public virtual BigInteger ReturnValue1 { get; set; }
-    }
-
-    public partial class Id2OutputDTO : Id2OutputDTOBase { }
-
-    [FunctionOutput]
-    public class Id2OutputDTOBase : IFunctionOutputDTO 
-    {
-        [Parameter("uint256", "", 1)]
-        public virtual BigInteger ReturnValue1 { get; set; }
-    }
-
-    public partial class Id3OutputDTO : Id3OutputDTOBase { }
-
-    [FunctionOutput]
-    public class Id3OutputDTOBase : IFunctionOutputDTO 
-    {
-        [Parameter("uint256", "", 1)]
-        public virtual BigInteger ReturnValue1 { get; set; }
-    }
-
-    public partial class Id4OutputDTO : Id4OutputDTOBase { }
-
-    [FunctionOutput]
-    public class Id4OutputDTOBase : IFunctionOutputDTO 
-    {
-        [Parameter("string", "", 1)]
+        [Parameter("address", "", 1)]
         public virtual string ReturnValue1 { get; set; }
     }
 
-    public partial class TestStructStorageOutputDTO : TestStructStorageOutputDTOBase { }
 
-    [FunctionOutput]
-    public class TestStructStorageOutputDTOBase : IFunctionOutputDTO 
-    {
-        [Parameter("uint256", "id", 1)]
-        public virtual BigInteger Id { get; set; }
-        [Parameter("tuple", "subStruct1", 2)]
-        public virtual SubStruct SubStruct1 { get; set; }
-        [Parameter("tuple", "subStruct2", 3)]
-        public virtual SubStruct SubStruct2 { get; set; }
-        [Parameter("string", "id2", 4)]
-        public virtual string Id2 { get; set; }
-    }
 }

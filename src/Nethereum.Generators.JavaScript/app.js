@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateAllClasses = exports.generateNetStandardClassLibrary = void 0;
 var fs = require("fs");
 var path = require("path");
 var fsex = require("fs-extra");

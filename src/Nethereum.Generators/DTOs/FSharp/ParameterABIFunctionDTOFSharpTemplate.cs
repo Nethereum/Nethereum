@@ -13,7 +13,7 @@ namespace Nethereum.Generators.DTOs
         public ParameterABIFunctionDTOFSharpTemplate()
         {
             var typeMapper = new ABITypeToFSharpType();
-            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);
+            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper, CodeGenLanguage.FSharp);
         }
 
         public string GenerateAllProperties(ParameterABI[] parameters)
@@ -23,7 +23,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateProperty(ParameterABI parameter)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.FSharp);
             return
                 $@"{SpaceUtils.ThreeTabs}[<Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})>]
 {SpaceUtils.ThreeTabs}member val public {parameterModel.GetPropertyName()} = Unchecked.defaultof<{parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}> with get, set";
@@ -37,7 +37,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateFunctionParameter(ParameterABI parameter)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.FSharp);
             return $@"{parameterModel.GetVariableName()}: {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
         }
 
@@ -48,7 +48,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateAssigmentFunctionParameterToProperty(ParameterABI parameter, string objectName, string spacing)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.FSharp);
             return $@"{spacing}{objectName}.{parameterModel.GetPropertyName()} <- {parameterModel.GetVariableName()}";
         }
     }

@@ -13,7 +13,7 @@ namespace Nethereum.Generators.DTOs
         public ParameterABIFunctionDTOVbTemplate()
         {
             var typeMapper = new ABITypeToVBType();
-            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper);
+            parameterAbiModelTypeMap = new ParameterABIModelTypeMap(typeMapper, CodeGenLanguage.Vb);
 
         }
 
@@ -24,7 +24,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateProperty(ParameterABI parameter)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.Vb);
             return
                 $@"{SpaceUtils.TwoTabs}<[Parameter](""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})>
 {SpaceUtils.TwoTabs}Public Overridable Property [{parameterModel.GetPropertyName()}] As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
@@ -37,7 +37,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateFunctionParameter(ParameterABI parameter)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.Vb);
             return $@"ByVal [{parameterModel.GetVariableName()}] As {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}";
         }
 
@@ -48,7 +48,7 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateAssigmentFunctionParameterToProperty(ParameterABI parameter, string objectName, string spacing)
         {
-            var parameterModel = new ParameterABIModel(parameter);
+            var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.Vb);
             return $@"{spacing}{objectName}.{parameterModel.GetPropertyName()} = [{parameterModel.GetVariableName()}]";
         }
     }

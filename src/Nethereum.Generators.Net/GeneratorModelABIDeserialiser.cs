@@ -18,9 +18,9 @@ namespace Nethereum.Generators.Net
             };
         }
 
-        public EventABI BuildEvent(IDictionary<string, object> eventobject)
+        public EventABI BuildEvent(IDictionary<string, object> eventobject, ContractABI contractAbi)
         {
-            return new EventABI((string)eventobject["name"])
+            return new EventABI((string)eventobject["name"], contractAbi)
             {
                 InputParameters = this.BuildEventParameters((List<object>)eventobject["inputs"])
             };
@@ -42,7 +42,7 @@ namespace Nethereum.Generators.Net
             return parameterList.ToArray();
         }
 
-        public FunctionABI BuildFunction(IDictionary<string, object> function)
+        public FunctionABI BuildFunction(IDictionary<string, object> function, ContractABI contractAbi)
         {
             var constant = false;
             if (function.ContainsKey("constant"))
@@ -56,7 +56,7 @@ namespace Nethereum.Generators.Net
                     constant = true;
             }
 
-            return new FunctionABI((string)function["name"], constant)
+            return new FunctionABI((string)function["name"], constant, contractAbi)
             {
                 InputParameters = this.BuildFunctionParameters((List<object>)function["inputs"]),
                 OutputParameters = this.BuildFunctionParameters((List<object>)function["outputs"])
@@ -83,21 +83,21 @@ namespace Nethereum.Generators.Net
             var functionAbiList = new List<FunctionABI>();
             var eventAbiList = new List<EventABI>();
             var constructorAbi = new ConstructorABI();
+            var contractAbi = new ContractABI();
             foreach (IDictionary<string, object> dictionary in dictionaryList)
             {
                 if ((string)dictionary["type"] == "function")
-                    functionAbiList.Add(this.BuildFunction(dictionary));
+                    functionAbiList.Add(this.BuildFunction(dictionary, contractAbi));
                 if ((string)dictionary["type"] == "event")
-                    eventAbiList.Add(this.BuildEvent(dictionary));
+                    eventAbiList.Add(this.BuildEvent(dictionary, contractAbi));
                 if ((string)dictionary["type"] == "constructor")
                     constructorAbi = this.BuildConstructor(dictionary);
             }
-            var contractAbi = new ContractABI()
-            {
-                Functions = functionAbiList.ToArray(),
-                Constructor = constructorAbi,
-                Events = eventAbiList.ToArray()
-            };
+
+            contractAbi.Functions = functionAbiList.ToArray();
+            contractAbi.Constructor = constructorAbi;
+            contractAbi.Events = eventAbiList.ToArray();
+        
 
            
             var structs = _structDeserialiser.GetStructsFromAbi(abi);

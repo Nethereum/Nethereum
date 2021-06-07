@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildContract = void 0;
 var n = require('./Nethereum.Generators.DuoCode.js');
 var functionAbi = Nethereum.Generators.Model.FunctionABI;
 var eventAbi = Nethereum.Generators.Model.EventABI;
@@ -12,7 +13,7 @@ function buildConstructor(item) {
     constructorItem.set_InputParameters(buildFunctionParameters(item.inputs));
     return constructorItem;
 }
-function buildFunction(item) {
+function buildFunction(item, contractAbi) {
     var constant = false;
     if (item.constant !== undefined) {
         constant = item.constant;
@@ -22,13 +23,13 @@ function buildFunction(item) {
         if (item.stateMutability !== undefined && (item.stateMutability === "view" || item.stateMutability === "pure"))
             constant = true;
     }
-    var functionItem = new functionAbi(item.name, constant, false);
+    var functionItem = new functionAbi(item.name, constant, contractAbi, false);
     functionItem.set_InputParameters(buildFunctionParameters(item.inputs));
     functionItem.set_OutputParameters(buildFunctionParameters(item.outputs));
     return functionItem;
 }
-function buildEvent(item) {
-    var eventItem = new eventAbi(item.name);
+function buildEvent(item, contractAbi) {
+    var eventItem = new eventAbi(item.name, contractAbi);
     eventItem.set_InputParameters(buildEventParameters(item.inputs));
     return eventItem;
 }
@@ -113,9 +114,10 @@ function buildContract(abiStr) {
     var events = [];
     var structs = [];
     var constructor = new constructorAbi();
+    var contract = new contractAbi();
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
-            functions.push(buildFunction(abi[i]));
+            functions.push(buildFunction(abi[i], contract));
             var temp = buildStructsFromParameters(abi[i].outputs);
             var _loop_1 = function (item) {
                 if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
@@ -128,7 +130,7 @@ function buildContract(abiStr) {
             }
         }
         if (abi[i].type === "event") {
-            events.push(buildEvent(abi[i]));
+            events.push(buildEvent(abi[i], contract));
         }
         if (abi[i].type === "constructor") {
             constructor = buildConstructor(abi[i]);
@@ -144,7 +146,6 @@ function buildContract(abiStr) {
             _loop_2(item);
         }
     }
-    var contract = new contractAbi();
     contract.set_Constructor(constructor);
     contract.set_Functions(functions);
     contract.set_Events(events);

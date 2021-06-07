@@ -20,7 +20,7 @@ namespace Nethereum.Generators.ProtocolBuffers.ABIToProto.Models
             }
         }
 
-        public string EventName => CommonGenerators.GeneratePropertyName(_eventABI.Name);
+        public string EventName => CommonGenerators.GeneratePropertyName(_eventABI.Name, CodeGenLanguage.Proto);
 
         public EventABIToProtoModel(EventABI eventABI, string @namespace) : base(
             @namespace, eventABI.Name, "EventMessage")

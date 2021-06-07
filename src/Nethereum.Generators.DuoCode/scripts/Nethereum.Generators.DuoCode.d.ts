@@ -67,6 +67,7 @@ declare module Nethereum {
             // Nethereum.Generators.Core.FunctionABIModel
             export interface FunctionABIModel extends System.Object {
                 get_FunctionABI(): Model.FunctionABI;
+                get_CodeGenLanguage(): CodeGenLanguage;
                 GetSingleOutputReturnType(): string;
                 GetSingleAbiReturnType(): string;
                 IsMultipleOutput(): boolean;
@@ -78,8 +79,8 @@ declare module Nethereum {
             export interface FunctionABIModelTypeFunc extends TypeFunction {
                 (): FunctionABIModelTypeFunc;
                 prototype: FunctionABIModel;
-                new (functionABI: Model.FunctionABI, abiTypeToDotnetTypeConvertor: ITypeConvertor): FunctionABIModel;
-                ctor: { new (functionABI: Model.FunctionABI, abiTypeToDotnetTypeConvertor: ITypeConvertor): FunctionABIModel; };
+                new (functionABI: Model.FunctionABI, abiTypeToDotnetTypeConvertor: ITypeConvertor, codeGenLanguage: CodeGenLanguage): FunctionABIModel;
+                ctor: { new (functionABI: Model.FunctionABI, abiTypeToDotnetTypeConvertor: ITypeConvertor, codeGenLanguage: CodeGenLanguage): FunctionABIModel; };
             }
             const FunctionABIModel: FunctionABIModelTypeFunc;
 
@@ -95,22 +96,23 @@ declare module Nethereum {
                 prototype: ParameterABIModel;
                 AnonymousInputParameterPrefix: string;
                 AnonymousOutputParameterPrefix: string;
-                ctor$1: { new (parameter: Model.ParameterABI): ParameterABIModel; };
-                new (): ParameterABIModel;
-                ctor: { new (): ParameterABIModel; };
+                ctor$1: { new (parameter: Model.ParameterABI, codeGenLanguage: CodeGenLanguage): ParameterABIModel; };
+                new (codeGenLanguage: CodeGenLanguage): ParameterABIModel;
+                ctor: { new (codeGenLanguage: CodeGenLanguage): ParameterABIModel; };
             }
             const ParameterABIModel: ParameterABIModelTypeFunc;
 
             // Nethereum.Generators.Core.ParameterABIModelTypeMap
             export interface ParameterABIModelTypeMap extends System.Object {
+                get_CodeGenLanguage(): CodeGenLanguage;
                 GetParameterDotNetOutputMapType(parameter: Model.ParameterABI): string;
                 GetParameterDotNetInputMapType(parameter: Model.ParameterABI): string;
             }
             export interface ParameterABIModelTypeMapTypeFunc extends TypeFunction {
                 (): ParameterABIModelTypeMapTypeFunc;
                 prototype: ParameterABIModelTypeMap;
-                new (typeConvertor: ITypeConvertor): ParameterABIModelTypeMap;
-                ctor: { new (typeConvertor: ITypeConvertor): ParameterABIModelTypeMap; };
+                new (typeConvertor: ITypeConvertor, codeGenLanguage: CodeGenLanguage): ParameterABIModelTypeMap;
+                ctor: { new (typeConvertor: ITypeConvertor, codeGenLanguage: CodeGenLanguage): ParameterABIModelTypeMap; };
             }
             const ParameterABIModelTypeMap: ParameterABIModelTypeMapTypeFunc;
 
@@ -200,8 +202,8 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.CommonGenerators
             export interface CommonGenerators extends System.Object {
-                GenerateVariableName(value: string): string;
-                GeneratePropertyName(value: string): string;
+                GenerateVariableName(value: string, codeGenLanguage: CodeGenLanguage): string;
+                GeneratePropertyName(value: string, codeGenLanguage: CodeGenLanguage): string;
                 GenerateClassName(value: string): string;
             }
             export interface CommonGeneratorsTypeFunc extends TypeFunction {
@@ -211,6 +213,17 @@ declare module Nethereum {
                 ctor: { new (): CommonGenerators; };
             }
             const CommonGenerators: CommonGeneratorsTypeFunc;
+
+            // Nethereum.Generators.Core.Keywords
+            export interface KeywordsTypeFunc extends TypeFunction {
+                (): KeywordsTypeFunc;
+                CSharp: string[];
+                VbNet: string[];
+                FSharp: string[];
+                EscapeKeywordMatch(value: string, codeGenLanguage: CodeGenLanguage): string;
+                IsMatch(value: string, list: string[]): boolean;
+            }
+            const Keywords: KeywordsTypeFunc;
 
             // Nethereum.Generators.Core.FileModel
             export interface FileModel extends System.Object, IFileModel {
@@ -405,6 +418,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ParameterModel<TParameter>
             export interface ParameterModel$1<TParameter> extends System.Object {
+                get_CodeGenLanguage(): CodeGenLanguage;
                 get_Parameter(): TParameter;
                 set_Parameter(value: TParameter): void;
                 GetVariableName(): string;
@@ -413,9 +427,9 @@ declare module Nethereum {
             export interface ParameterModel$1TypeFunc<TParameter> extends TypeFunction {
                 (): ParameterModel$1TypeFunc<TParameter>;
                 prototype: ParameterModel$1<TParameter>;
-                new (): ParameterModel$1<TParameter>;
-                ctor: { new (): ParameterModel$1<TParameter>; };
-                ctor$1: { new (parameter: TParameter): ParameterModel$1<TParameter>; };
+                new (codeGenLanguage: CodeGenLanguage): ParameterModel$1<TParameter>;
+                ctor: { new (codeGenLanguage: CodeGenLanguage): ParameterModel$1<TParameter>; };
+                ctor$1: { new (parameter: TParameter, codeGenLanguage: CodeGenLanguage): ParameterModel$1<TParameter>; };
             }
             export function ParameterModel$1<TParameter>(TParameter: TypeArg<TParameter>): ParameterModel$1TypeFunc<TParameter>;
 
@@ -513,6 +527,8 @@ declare module Nethereum {
                 set_Events(value: EventABI[]): void;
                 get_Structs(): StructABI[];
                 set_Structs(value: StructABI[]): void;
+                GetAllFunctionsWithSameName(name: string): System.Collections.Generic.List$1<FunctionABI>;
+                GetAllEventsWithSameName(name: string): System.Collections.Generic.List$1<EventABI>;
             }
             export interface ContractABITypeFunc extends TypeFunction {
                 (): ContractABITypeFunc;
@@ -527,12 +543,13 @@ declare module Nethereum {
                 get_Name(): string;
                 get_InputParameters(): ParameterABI[];
                 set_InputParameters(value: ParameterABI[]): void;
+                get_ContractAbi(): ContractABI;
             }
             export interface EventABITypeFunc extends TypeFunction {
                 (): EventABITypeFunc;
                 prototype: EventABI;
-                new (name: string): EventABI;
-                ctor: { new (name: string): EventABI; };
+                new (name: string, contract: ContractABI): EventABI;
+                ctor: { new (name: string, contract: ContractABI): EventABI; };
             }
             const EventABI: EventABITypeFunc;
 
@@ -546,14 +563,23 @@ declare module Nethereum {
                 set_InputParameters(value: ParameterABI[]): void;
                 get_OutputParameters(): ParameterABI[];
                 set_OutputParameters(value: ParameterABI[]): void;
+                get_ContractAbi(): ContractABI;
             }
             export interface FunctionABITypeFunc extends TypeFunction {
                 (): FunctionABITypeFunc;
                 prototype: FunctionABI;
-                new (name: string, constant: boolean, serpent?: boolean): FunctionABI;
-                ctor: { new (name: string, constant: boolean, serpent?: boolean): FunctionABI; };
+                new (name: string, constant: boolean, contract: ContractABI, serpent?: boolean): FunctionABI;
+                ctor: { new (name: string, constant: boolean, contract: ContractABI, serpent?: boolean): FunctionABI; };
             }
             const FunctionABI: FunctionABITypeFunc;
+
+            // Nethereum.Generators.Model.FunctionEventOverloadTypeNameBuilder
+            export interface FunctionEventOverloadTypeNameBuilderTypeFunc extends TypeFunction {
+                (): FunctionEventOverloadTypeNameBuilderTypeFunc;
+                GetFunctionTypeNameBasedOnOverloads(functionAbi: FunctionABI): string;
+                GetEventTypeNameBasedOnOverloads(eventAbi: EventABI): string;
+            }
+            const FunctionEventOverloadTypeNameBuilder: FunctionEventOverloadTypeNameBuilderTypeFunc;
 
             // Nethereum.Generators.Model.ParameterABI
             export interface ParameterABI extends Core.Parameter {
@@ -746,6 +772,109 @@ declare module Nethereum {
                 ctor: { new (model: ServiceModel): ServiceVbTemplate; };
             }
             const ServiceVbTemplate: ServiceVbTemplateTypeFunc;
+        }
+        module Console {
+            // Nethereum.Generators.Console.ConsoleGenerator
+            export interface ConsoleGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<ConsoleModel>, ConsoleModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface ConsoleGeneratorTypeFunc extends TypeFunction {
+                (): ConsoleGeneratorTypeFunc;
+                prototype: ConsoleGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ConsoleGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ConsoleGenerator; };
+            }
+            const ConsoleGenerator: ConsoleGeneratorTypeFunc;
+
+            // Nethereum.Generators.Console.ConsoleModel
+            export interface ConsoleModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+                get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
+            }
+            export interface ConsoleModelTypeFunc extends TypeFunction {
+                (): ConsoleModelTypeFunc;
+                prototype: ConsoleModel;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): ConsoleModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): ConsoleModel; };
+            }
+            const ConsoleModel: ConsoleModelTypeFunc;
+            module CSharp {
+                // Nethereum.Generators.Console.CSharp.ConsoleCSharpTemplate
+                export interface ConsoleCSharpTemplate extends CQS.ClassTemplateBase$1<ConsoleModel>, Core.IClassTemplate {
+                }
+                export interface ConsoleCSharpTemplateTypeFunc extends TypeFunction {
+                    (): ConsoleCSharpTemplateTypeFunc;
+                    prototype: ConsoleCSharpTemplate;
+                    new (model: ConsoleModel): ConsoleCSharpTemplate;
+                    ctor: { new (model: ConsoleModel): ConsoleCSharpTemplate; };
+                }
+                const ConsoleCSharpTemplate: ConsoleCSharpTemplateTypeFunc;
+
+                // Nethereum.Generators.Console.CSharp.ContractDeploymentMockUpMethodCSharpTemplate
+                export interface ContractDeploymentMockUpMethodCSharpTemplate extends System.Object {
+                    GenerateMethods(): string;
+                }
+                export interface ContractDeploymentMockUpMethodCSharpTemplateTypeFunc extends TypeFunction {
+                    (): ContractDeploymentMockUpMethodCSharpTemplateTypeFunc;
+                    prototype: ContractDeploymentMockUpMethodCSharpTemplate;
+                    new (contractDeploymentCQSMessageModel: CQS.ContractDeploymentCQSMessageModel): ContractDeploymentMockUpMethodCSharpTemplate;
+                    ctor: { new (contractDeploymentCQSMessageModel: CQS.ContractDeploymentCQSMessageModel): ContractDeploymentMockUpMethodCSharpTemplate; };
+                }
+                const ContractDeploymentMockUpMethodCSharpTemplate: ContractDeploymentMockUpMethodCSharpTemplateTypeFunc;
+
+                // Nethereum.Generators.Console.CSharp.FunctionMockupMethodCSharpTemplate
+                export interface FunctionMockupMethodCSharpTemplate extends System.Object {
+                    GenerateMethods(): string;
+                    GenerateMethod(functionABI: Model.FunctionABI): string;
+                }
+                export interface FunctionMockupMethodCSharpTemplateTypeFunc extends TypeFunction {
+                    (): FunctionMockupMethodCSharpTemplateTypeFunc;
+                    prototype: FunctionMockupMethodCSharpTemplate;
+                    new (contractAbi: Model.ContractABI): FunctionMockupMethodCSharpTemplate;
+                    ctor: { new (contractAbi: Model.ContractABI): FunctionMockupMethodCSharpTemplate; };
+                }
+                const FunctionMockupMethodCSharpTemplate: FunctionMockupMethodCSharpTemplateTypeFunc;
+            }
+            module Vb {
+                // Nethereum.Generators.Console.Vb.ConsoleVbTemplate
+                export interface ConsoleVbTemplate extends CQS.ClassTemplateBase$1<ConsoleModel>, Core.IClassTemplate {
+                }
+                export interface ConsoleVbTemplateTypeFunc extends TypeFunction {
+                    (): ConsoleVbTemplateTypeFunc;
+                    prototype: ConsoleVbTemplate;
+                    new (model: ConsoleModel): ConsoleVbTemplate;
+                    ctor: { new (model: ConsoleModel): ConsoleVbTemplate; };
+                }
+                const ConsoleVbTemplate: ConsoleVbTemplateTypeFunc;
+
+                // Nethereum.Generators.Console.Vb.ContractDeploymentMockUpMethodVbTemplate
+                export interface ContractDeploymentMockUpMethodVbTemplate extends System.Object {
+                    GenerateMethods(): string;
+                }
+                export interface ContractDeploymentMockUpMethodVbTemplateTypeFunc extends TypeFunction {
+                    (): ContractDeploymentMockUpMethodVbTemplateTypeFunc;
+                    prototype: ContractDeploymentMockUpMethodVbTemplate;
+                    new (contractDeploymentCQSMessageModel: CQS.ContractDeploymentCQSMessageModel): ContractDeploymentMockUpMethodVbTemplate;
+                    ctor: { new (contractDeploymentCQSMessageModel: CQS.ContractDeploymentCQSMessageModel): ContractDeploymentMockUpMethodVbTemplate; };
+                }
+                const ContractDeploymentMockUpMethodVbTemplate: ContractDeploymentMockUpMethodVbTemplateTypeFunc;
+
+                // Nethereum.Generators.Console.Vb.FunctionMockupMethodVbTemplate
+                export interface FunctionMockupMethodVbTemplate extends System.Object {
+                    GenerateMethods(): string;
+                    GenerateMethod(functionABI: Model.FunctionABI): string;
+                }
+                export interface FunctionMockupMethodVbTemplateTypeFunc extends TypeFunction {
+                    (): FunctionMockupMethodVbTemplateTypeFunc;
+                    prototype: FunctionMockupMethodVbTemplate;
+                    new (contractAbi: Model.ContractABI): FunctionMockupMethodVbTemplate;
+                    ctor: { new (contractAbi: Model.ContractABI): FunctionMockupMethodVbTemplate; };
+                }
+                const FunctionMockupMethodVbTemplate: FunctionMockupMethodVbTemplateTypeFunc;
+            }
         }
         module CQS {
             // Nethereum.Generators.CQS.ClassFileTemplate

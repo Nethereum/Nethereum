@@ -42,130 +42,129 @@ namespace Nethereum.Structs.StructSample
             ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
 
-        public Task<GetTestOutputDTO> GetTestQueryAsync(GetTestFunction getTestFunction, BlockParameter blockParameter = null)
+        public Task<string> CreatePoolRequestAsync(CreatePoolFunction createPoolFunction)
         {
-            return ContractHandler.QueryDeserializingToObjectAsync<GetTestFunction, GetTestOutputDTO>(getTestFunction, blockParameter);
+             return ContractHandler.SendRequestAsync(createPoolFunction);
         }
 
-        public Task<GetTestOutputDTO> GetTestQueryAsync(BlockParameter blockParameter = null)
+        public Task<TransactionReceipt> CreatePoolRequestAndWaitForReceiptAsync(CreatePoolFunction createPoolFunction, CancellationTokenSource cancellationToken = null)
         {
-            return ContractHandler.QueryDeserializingToObjectAsync<GetTestFunction, GetTestOutputDTO>(null, blockParameter);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(createPoolFunction, cancellationToken);
         }
 
-        public Task<string> SetStorageStructRequestAsync(SetStorageStructFunction setStorageStructFunction)
+        public Task<string> CreatePoolRequestAsync(string tokenA, string tokenB, uint fee)
         {
-             return ContractHandler.SendRequestAsync(setStorageStructFunction);
-        }
-
-        public Task<TransactionReceipt> SetStorageStructRequestAndWaitForReceiptAsync(SetStorageStructFunction setStorageStructFunction, CancellationTokenSource cancellationToken = null)
-        {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setStorageStructFunction, cancellationToken);
-        }
-
-        public Task<string> SetStorageStructRequestAsync(TestStruct testStruct)
-        {
-            var setStorageStructFunction = new SetStorageStructFunction();
-                setStorageStructFunction.TestStruct = testStruct;
+            var createPoolFunction = new CreatePoolFunction();
+                createPoolFunction.TokenA = tokenA;
+                createPoolFunction.TokenB = tokenB;
+                createPoolFunction.Fee = fee;
             
-             return ContractHandler.SendRequestAsync(setStorageStructFunction);
+             return ContractHandler.SendRequestAsync(createPoolFunction);
         }
 
-        public Task<TransactionReceipt> SetStorageStructRequestAndWaitForReceiptAsync(TestStruct testStruct, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> CreatePoolRequestAndWaitForReceiptAsync(string tokenA, string tokenB, uint fee, CancellationTokenSource cancellationToken = null)
         {
-            var setStorageStructFunction = new SetStorageStructFunction();
-                setStorageStructFunction.TestStruct = testStruct;
+            var createPoolFunction = new CreatePoolFunction();
+                createPoolFunction.TokenA = tokenA;
+                createPoolFunction.TokenB = tokenB;
+                createPoolFunction.Fee = fee;
             
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setStorageStructFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(createPoolFunction, cancellationToken);
         }
 
-        public Task<string> TestRequestAsync(TestFunction testFunction)
+        public Task<string> EnableFeeAmountRequestAsync(EnableFeeAmountFunction enableFeeAmountFunction)
         {
-             return ContractHandler.SendRequestAsync(testFunction);
+             return ContractHandler.SendRequestAsync(enableFeeAmountFunction);
         }
 
-        public Task<TransactionReceipt> TestRequestAndWaitForReceiptAsync(TestFunction testFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> EnableFeeAmountRequestAndWaitForReceiptAsync(EnableFeeAmountFunction enableFeeAmountFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(testFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(enableFeeAmountFunction, cancellationToken);
         }
 
-        public Task<string> TestRequestAsync(TestStruct testScrut)
+        public Task<string> EnableFeeAmountRequestAsync(uint fee, int tickSpacing)
         {
-            var testFunction = new TestFunction();
-                testFunction.TestScrut = testScrut;
+            var enableFeeAmountFunction = new EnableFeeAmountFunction();
+                enableFeeAmountFunction.Fee = fee;
+                enableFeeAmountFunction.TickSpacing = tickSpacing;
             
-             return ContractHandler.SendRequestAsync(testFunction);
+             return ContractHandler.SendRequestAsync(enableFeeAmountFunction);
         }
 
-        public Task<TransactionReceipt> TestRequestAndWaitForReceiptAsync(TestStruct testScrut, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> EnableFeeAmountRequestAndWaitForReceiptAsync(uint fee, int tickSpacing, CancellationTokenSource cancellationToken = null)
         {
-            var testFunction = new TestFunction();
-                testFunction.TestScrut = testScrut;
+            var enableFeeAmountFunction = new EnableFeeAmountFunction();
+                enableFeeAmountFunction.Fee = fee;
+                enableFeeAmountFunction.TickSpacing = tickSpacing;
             
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(testFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(enableFeeAmountFunction, cancellationToken);
         }
 
-        public Task<TestArrayOutputDTO> TestArrayQueryAsync(TestArrayFunction testArrayFunction, BlockParameter blockParameter = null)
+        public Task<int> FeeAmountTickSpacingQueryAsync(FeeAmountTickSpacingFunction feeAmountTickSpacingFunction, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryDeserializingToObjectAsync<TestArrayFunction, TestArrayOutputDTO>(testArrayFunction, blockParameter);
-        }
-
-        public Task<TestArrayOutputDTO> TestArrayQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryDeserializingToObjectAsync<TestArrayFunction, TestArrayOutputDTO>(null, blockParameter);
-        }
-
-        public Task<BigInteger> Id1QueryAsync(Id1Function id1Function, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<Id1Function, BigInteger>(id1Function, blockParameter);
+            return ContractHandler.QueryAsync<FeeAmountTickSpacingFunction, int>(feeAmountTickSpacingFunction, blockParameter);
         }
 
         
-        public Task<BigInteger> Id1QueryAsync(BlockParameter blockParameter = null)
+        public Task<int> FeeAmountTickSpacingQueryAsync(uint fee, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<Id1Function, BigInteger>(null, blockParameter);
+            var feeAmountTickSpacingFunction = new FeeAmountTickSpacingFunction();
+                feeAmountTickSpacingFunction.Fee = fee;
+            
+            return ContractHandler.QueryAsync<FeeAmountTickSpacingFunction, int>(feeAmountTickSpacingFunction, blockParameter);
         }
 
-        public Task<BigInteger> Id2QueryAsync(Id2Function id2Function, BlockParameter blockParameter = null)
+        public Task<string> GetPoolQueryAsync(GetPoolFunction getPoolFunction, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<Id2Function, BigInteger>(id2Function, blockParameter);
-        }
-
-        
-        public Task<BigInteger> Id2QueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<Id2Function, BigInteger>(null, blockParameter);
-        }
-
-        public Task<BigInteger> Id3QueryAsync(Id3Function id3Function, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<Id3Function, BigInteger>(id3Function, blockParameter);
+            return ContractHandler.QueryAsync<GetPoolFunction, string>(getPoolFunction, blockParameter);
         }
 
         
-        public Task<BigInteger> Id3QueryAsync(BlockParameter blockParameter = null)
+        public Task<string> GetPoolQueryAsync(string tokenA, string tokenB, uint fee, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<Id3Function, BigInteger>(null, blockParameter);
+            var getPoolFunction = new GetPoolFunction();
+                getPoolFunction.TokenA = tokenA;
+                getPoolFunction.TokenB = tokenB;
+                getPoolFunction.Fee = fee;
+            
+            return ContractHandler.QueryAsync<GetPoolFunction, string>(getPoolFunction, blockParameter);
         }
 
-        public Task<string> Id4QueryAsync(Id4Function id4Function, BlockParameter blockParameter = null)
+        public Task<string> OwnerQueryAsync(OwnerFunction ownerFunction, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<Id4Function, string>(id4Function, blockParameter);
+            return ContractHandler.QueryAsync<OwnerFunction, string>(ownerFunction, blockParameter);
         }
 
         
-        public Task<string> Id4QueryAsync(BlockParameter blockParameter = null)
+        public Task<string> OwnerQueryAsync(BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<Id4Function, string>(null, blockParameter);
+            return ContractHandler.QueryAsync<OwnerFunction, string>(null, blockParameter);
         }
 
-        public Task<TestStructStorageOutputDTO> TestStructStorageQueryAsync(TestStructStorageFunction testStructStorageFunction, BlockParameter blockParameter = null)
+        public Task<string> SetOwnerRequestAsync(SetOwnerFunction setOwnerFunction)
         {
-            return ContractHandler.QueryDeserializingToObjectAsync<TestStructStorageFunction, TestStructStorageOutputDTO>(testStructStorageFunction, blockParameter);
+             return ContractHandler.SendRequestAsync(setOwnerFunction);
         }
 
-        public Task<TestStructStorageOutputDTO> TestStructStorageQueryAsync(BlockParameter blockParameter = null)
+        public Task<TransactionReceipt> SetOwnerRequestAndWaitForReceiptAsync(SetOwnerFunction setOwnerFunction, CancellationTokenSource cancellationToken = null)
         {
-            return ContractHandler.QueryDeserializingToObjectAsync<TestStructStorageFunction, TestStructStorageOutputDTO>(null, blockParameter);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setOwnerFunction, cancellationToken);
+        }
+
+        public Task<string> SetOwnerRequestAsync(string owner)
+        {
+            var setOwnerFunction = new SetOwnerFunction();
+                setOwnerFunction.Owner = owner;
+            
+             return ContractHandler.SendRequestAsync(setOwnerFunction);
+        }
+
+        public Task<TransactionReceipt> SetOwnerRequestAndWaitForReceiptAsync(string owner, CancellationTokenSource cancellationToken = null)
+        {
+            var setOwnerFunction = new SetOwnerFunction();
+                setOwnerFunction.Owner = owner;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(setOwnerFunction, cancellationToken);
         }
     }
 }

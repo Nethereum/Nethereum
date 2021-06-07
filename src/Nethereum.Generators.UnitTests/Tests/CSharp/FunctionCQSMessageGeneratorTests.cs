@@ -10,14 +10,17 @@ namespace Nethereum.Generators.Tests.CSharp
     {
         static FunctionCQSMessageGenerator CreateGenerator()
         {
-            var functionAbi = new FunctionABI("BaseStats", constant: true)
+            var contractAbi = new ContractABI();
+            var functionAbi = new FunctionABI("BaseStats", constant: true, contractAbi)
             {
                 InputParameters = new[] { new ParameterABI("uint256", "_number") },
                 OutputParameters = new[] { new ParameterABI("uint256") }
             };
+            contractAbi.Functions = new FunctionABI[] {functionAbi};
 
             return new FunctionCQSMessageGenerator(functionAbi, "DefaultNamespace", "FunctionOutput", CodeGenLanguage.CSharp);
         }
+
 
         public FunctionCQSMessageGeneratorTests():base(CreateGenerator(), "CSharp")
         {

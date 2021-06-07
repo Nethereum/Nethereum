@@ -16,17 +16,24 @@ namespace Nethereum.Generators.Tests.CSharp
                 {
                     InputParameters = new[] {new ParameterABI("byte32", "owner")}
                 },
-                Functions = new []{new FunctionABI("addAdministrator", false)
-                {
-                    InputParameters = new [] {new ParameterABI("bytes32", "administratorId", 1) },
-                    OutputParameters = new [] {new ParameterABI("bool", 1) }
-                } },
-                Events = new[] {new EventABI("AdministratorAdded")
-                {
-                    InputParameters = new [] {new ParameterABI("bytes32", "administratorId", 1) }
-                } }
-
             };
+            contractABI.Functions = new[]
+            {
+                new FunctionABI("addAdministrator", false, contractABI)
+                {
+                    InputParameters = new[] {new ParameterABI("bytes32", "administratorId", 1)},
+                    OutputParameters = new[] {new ParameterABI("bool", 1)}
+                }
+            };
+            contractABI.Events = new[]
+            {
+                new EventABI("AdministratorAdded", contractABI)
+                {
+                    InputParameters = new[] {new ParameterABI("bytes32", "administratorId", 1)}
+                }
+            };
+
+
             return new ServiceGenerator(contractABI, "StandardContract", "0x123456", "DefaultNamespace", "CQS", "Functions",  CodeGenLanguage.CSharp);
         }
 

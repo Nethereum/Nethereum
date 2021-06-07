@@ -26,17 +26,17 @@ namespace Nethereum.Generators.CQS
             {
                 case CodeGenLanguage.CSharp:
                     var csharpMapper = new ABITypeToCSharpType();
-                    var functionCsharpABIModel = new FunctionABIModel(ClassModel.FunctionABI, csharpMapper);
+                    var functionCsharpABIModel = new FunctionABIModel(ClassModel.FunctionABI, csharpMapper, CodeGenLanguage.CSharp);
                     ClassTemplate = new FunctionCQSMessageCSharpTemplate(ClassModel, functionOutputDTOModel, functionCsharpABIModel);
                     break;
                 case CodeGenLanguage.Vb:
                     var vbMapper = new ABITypeToVBType();
-                    var functionVBABIModel = new FunctionABIModel(ClassModel.FunctionABI, vbMapper);
+                    var functionVBABIModel = new FunctionABIModel(ClassModel.FunctionABI, vbMapper, CodeGenLanguage.Vb);
                     ClassTemplate = new FunctionCQSMessageVbTemplate(ClassModel, functionOutputDTOModel, functionVBABIModel);
                     break;
                 case CodeGenLanguage.FSharp:
                     var fsMapper = new ABITypeToFSharpType();;
-                    var functionfsABIModel = new FunctionABIModel(ClassModel.FunctionABI, fsMapper);
+                    var functionfsABIModel = new FunctionABIModel(ClassModel.FunctionABI, fsMapper, CodeGenLanguage.FSharp);
                     ClassTemplate = new FunctionCQSMessageFSharpTemplate(ClassModel, functionOutputDTOModel, functionfsABIModel);
                     break;
                 default:

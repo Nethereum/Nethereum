@@ -42,7 +42,7 @@ namespace Nethereum.Generators.Console.Vb
         {
             var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, null);
             var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, null);
-            var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor);
+            var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor, CodeGenLanguage.Vb);
 
             var messageType = functionCQSMessageModel.GetTypeName();
             var messageVariableName = functionCQSMessageModel.GetVariableName();

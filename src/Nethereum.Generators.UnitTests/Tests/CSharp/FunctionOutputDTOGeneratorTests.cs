@@ -9,12 +9,14 @@ namespace Nethereum.Generators.Tests.CSharp
     {
         static FunctionOutputDTOGenerator CreateGenerator()
         {
-            var functionAbi = new FunctionABI("GetCar", true)
+            var contractAbi = new ContractABI();
+            var functionAbi = new FunctionABI("GetCar", true, contractAbi)
             {
                 OutputParameters = new[] {
                     new ParameterABI("uint", order: 1),
                     new ParameterABI("string", order: 2)}
             };
+            contractAbi.Functions = new FunctionABI[] { functionAbi };
 
             return new FunctionOutputDTOGenerator(functionAbi, "DefaultNamespace", CodeGenLanguage.CSharp);
         }

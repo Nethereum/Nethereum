@@ -6,11 +6,13 @@ namespace Nethereum.Generators.Core
     public class FunctionABIModel
     {
         public FunctionABI FunctionABI { get; }
+        public CodeGenLanguage CodeGenLanguage { get; }
         private ITypeConvertor _abiTypeToDotnetTypeConvertor;
 
-        public FunctionABIModel(FunctionABI functionABI, ITypeConvertor abiTypeToDotnetTypeConvertor)
+        public FunctionABIModel(FunctionABI functionABI, ITypeConvertor abiTypeToDotnetTypeConvertor, CodeGenLanguage codeGenLanguage)
         {
             FunctionABI = functionABI;
+            CodeGenLanguage = codeGenLanguage;
             this._abiTypeToDotnetTypeConvertor = abiTypeToDotnetTypeConvertor;
             
         }
@@ -19,7 +21,7 @@ namespace Nethereum.Generators.Core
         {
             if (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length == 1)
             {
-                var parameterModel = new ParameterABIModel(FunctionABI.OutputParameters[0]);
+                var parameterModel = new ParameterABIModel(FunctionABI.OutputParameters[0], CodeGenLanguage);
                 
                 return _abiTypeToDotnetTypeConvertor.Convert(parameterModel.Parameter.Type,  
                     parameterModel.GetStructTypeClassName(), true);

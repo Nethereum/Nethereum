@@ -30,7 +30,7 @@ namespace Nethereum.Generators.ProtocolBuffers.ABIToProto.Models
             }
         }
 
-        public string FunctionName => CommonGenerators.GeneratePropertyName(_functionAbi.Name);
+        public string FunctionName => CommonGenerators.GeneratePropertyName(_functionAbi.Name, CodeGenLanguage.Proto);
 
         public FunctionABIToProtoModel(FunctionABI functionAbi, string @namespace) : base(
             @namespace, functionAbi.Name, "Messages")

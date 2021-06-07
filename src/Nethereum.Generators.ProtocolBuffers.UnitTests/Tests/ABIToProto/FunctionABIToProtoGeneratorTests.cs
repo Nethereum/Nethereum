@@ -10,7 +10,8 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
         [Fact]
         public void GeneratesExpectedProtoBufferContent()
         {
-            var abi = new FunctionABI("recordHousePurchase", false)
+            var contractAbi = new ContractABI();
+            var abi = new FunctionABI("recordHousePurchase", false, contractAbi)
             {
                 InputParameters = new[]
                 {
@@ -24,6 +25,7 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
                     new ParameterABI("uint"),
                 }
             };
+            contractAbi.Functions = new FunctionABI[] {abi};
 
             var generator = new FunctionABIToProtoGenerator(abi);
             var actualProtoFileContent = generator.GenerateFileContent();
@@ -36,13 +38,15 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
         [Fact]
         public void CanGenerateProtoContentWhenAbiHasNoReturnParameters()
         {
-            var abi = new FunctionABI("recordHousePurchase", false)
+            var contractAbi = new ContractABI();
+            var abi = new FunctionABI("recordHousePurchase", false, contractAbi)
             {
                 InputParameters = new[]
                 {
                     new ParameterABI("bytes32", "propertyId", 1)
                 }
             };
+            contractAbi.Functions = new FunctionABI[] { abi };
 
             var generator = new FunctionABIToProtoGenerator(abi);
             var actualProtoFileContent = generator.GenerateFileContent();
@@ -55,7 +59,9 @@ namespace Nethereum.Generators.ProtocolBuffers.UnitTests.Tests.ABIToProto
         [Fact]
         public void GeneratesExpectedFileName()
         {
-            var abi = new FunctionABI("recordHousePurchase", false){};
+            var contractAbi = new ContractABI();
+            var abi = new FunctionABI("recordHousePurchase", false, contractAbi){};
+            contractAbi.Functions = new FunctionABI[] { abi };
 
             var generator = new FunctionABIToProtoGenerator(abi);
             var actualFileName = generator.GetFileName();

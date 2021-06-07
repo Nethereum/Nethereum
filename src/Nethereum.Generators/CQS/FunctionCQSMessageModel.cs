@@ -8,7 +8,7 @@ namespace Nethereum.Generators.CQS
         public FunctionABI FunctionABI { get; }
         
         public FunctionCQSMessageModel(FunctionABI functionABI, string @namespace):
-            base(@namespace, functionABI.Name, "Function")
+            base(@namespace, functionABI.GetFunctionTypeNameBasedOnOverloads(), "Function")
         {
             FunctionABI = functionABI;
             InitisialiseNamespaceDependencies();

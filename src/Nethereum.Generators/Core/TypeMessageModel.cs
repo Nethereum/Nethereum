@@ -35,7 +35,7 @@ namespace Nethereum.Generators.Core
 
         public string GetVariableName(string name)
         {
-            return $"{CommonGenerators.GenerateVariableName(name)}{ClassNameSuffix}";
+            return $"{CommonGenerators.GenerateVariableName(name, CodeGenLanguage)}{ClassNameSuffix}";
         }
 
         public string GetTypeName()

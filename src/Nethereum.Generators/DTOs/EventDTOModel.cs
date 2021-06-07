@@ -8,7 +8,7 @@ namespace Nethereum.Generators.DTOs
         public EventABI EventABI { get; }
        
         public EventDTOModel(EventABI eventABI, string @namespace)
-            :base(@namespace, eventABI.Name, "EventDTO")
+            :base(@namespace, eventABI.GetEventTypeNameBasedOnOverloads(), "EventDTO")
         {
             EventABI = eventABI;
             InitisialiseNamespaceDependencies();

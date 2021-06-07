@@ -8,7 +8,7 @@ namespace Nethereum.Generators.DTOs
         public FunctionABI FunctionABI { get; }
 
         public FunctionOutputDTOModel(FunctionABI functionABI, string @namespace)
-            :base(@namespace, functionABI.Name, "OutputDTO")
+            :base(@namespace, functionABI.GetFunctionTypeNameBasedOnOverloads(), "OutputDTO")
         {
             FunctionABI = functionABI;
             InitisialiseNamespaceDependencies();
@@ -23,7 +23,7 @@ namespace Nethereum.Generators.DTOs
         {
             return (FunctionABI.OutputParameters != null && FunctionABI.OutputParameters.Length > 0 &&
                    FunctionABI.Constant) ||
-                   (new FunctionABIModel(FunctionABI, null).IsMultipleOutput());
+                   (new FunctionABIModel(FunctionABI, null, CodeGenLanguage).IsMultipleOutput());
         }
     }
 }
