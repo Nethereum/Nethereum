@@ -15,7 +15,6 @@ using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Quorum
 {
@@ -51,7 +50,7 @@ namespace Nethereum.Quorum
 
         }
 
-        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)

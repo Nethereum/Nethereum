@@ -9,7 +9,7 @@ namespace Nethereum.Quorum
 {
     public class UnlockedAcountTransactionManager : TransactionManager
     {
-        public override BigInteger DefaultGas { get; set; } = Nethereum.Signer.SignedTransactionBase.DEFAULT_GAS_LIMIT;
+        public override BigInteger DefaultGas { get; set; } = Nethereum.Signer.SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
         public BigInteger DefaultGasIncrement { get; set; } = 90000000;
 
         public UnlockedAcountTransactionManager(IClient client, string accountAddress) : base(client)

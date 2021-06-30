@@ -9,7 +9,6 @@ using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 {
@@ -39,7 +38,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
             var signer = new TransactionSigner();
             var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(senderAddress);
             var signedTransaction = signer.SignTransaction(privateKey, transactionInput.To, 0, nonce.Value,
-                Transaction.DEFAULT_GAS_PRICE, 900000,
+                LegacyTransaction.DEFAULT_GAS_PRICE, 900000,
                 transactionInput.Data);
 
             var traceTransaction = new TraceRawTransaction(client);
