@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
@@ -81,7 +82,7 @@ namespace Nethereum.RLP
         ///     of the RLP encodings of the items. The range of the first byte is thus
         ///     [0xc0, 0xf7].
         /// </summary>
-        private const byte OFFSET_SHORT_LIST = 0xc0;
+        public const byte OFFSET_SHORT_LIST = 0xc0;
 
         /// <summary>
         ///     [0xf7]
@@ -109,6 +110,13 @@ namespace Nethereum.RLP
             var rlpCollection = new RLPCollection();
             Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
             return rlpCollection[0];
+        }
+
+        public static IRLPElement DecodeCollection(byte[] msgData)
+        {
+            var rlpCollection = new RLPCollection();
+            Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
+            return rlpCollection;
         }
 
         /// <summary>
@@ -370,14 +378,32 @@ namespace Nethereum.RLP
             }
         }
 
-        public static byte[] EncodeElementsAndList(params byte[][] dataItems)
+        public static byte[] EncodeDataItemsAsElementOrListAndCombineAsList(byte[][] dataItems, int[] indexOfListDataItems = null)
         {
+            if(indexOfListDataItems == null)
             return EncodeList(dataItems.Select(EncodeElement).ToArray());
+            
+            var encodedData = new List<byte[]>();
+
+            for (var i = 0; i < dataItems.Length; i++)
+            {
+                if (indexOfListDataItems.Contains(i))
+                {
+                    var item = dataItems[i];
+                    encodedData.Add(EncodeList(item));
+                }
+                else
+                {
+                    encodedData.Add(EncodeElement(dataItems[i]));
+                }
+            }
+
+            return EncodeList(encodedData.ToArray());
         }
 
         public static byte[] EncodeList(params byte[][] items)
         {
-            if (items == null)
+            if (items == null || (items.Length == 1 && items[0] == null))
                 return new[] {OFFSET_SHORT_LIST};
 
             var totalLength = 0;

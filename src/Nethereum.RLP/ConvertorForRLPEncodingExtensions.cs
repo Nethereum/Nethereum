@@ -65,11 +65,16 @@ namespace Nethereum.RLP
             return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
         }
 
-        private static byte[] ToBytesFromNumber(byte[] bytes)
+        public static byte[] ToBytesFromNumber(byte[] bytes)
         {
             if (BitConverter.IsLittleEndian)
                 bytes = bytes.Reverse().ToArray();
 
+            return TrimZeroBytes(bytes);
+        }
+
+        public static byte[] TrimZeroBytes(this byte[] bytes)
+        {
             var trimmed = new List<byte>();
             var previousByteWasZero = true;
 
