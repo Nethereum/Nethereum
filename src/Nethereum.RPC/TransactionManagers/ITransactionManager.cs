@@ -5,6 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 using System.Numerics;
 using System.Threading;
 using Nethereum.RPC.Accounts;
+using Nethereum.RPC.Fee1559Calculators;
 using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -15,9 +16,10 @@ namespace Nethereum.RPC.TransactionManagers
         BigInteger DefaultGasPrice { get; set; }
         BigInteger DefaultGas { get; set; }
         IAccount Account { get; }
-
+        bool UseLegacyAsDefault { get; set; }
 #if !DOTNET35
-        
+        IFee1559CalculationStrategy Fee1559CalculationStrategy { get; set; }
+
         Task<string> SendTransactionAsync(TransactionInput transactionInput);
         Task<HexBigInteger> EstimateGasAsync(CallInput callInput);
         Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);

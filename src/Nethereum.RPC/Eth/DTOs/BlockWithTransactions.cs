@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     Array - Array of transaction objects
         /// </summary>
-        [JsonProperty(PropertyName = "transactions")]
+        [DataMember(Name = "transactions")]
         public Transaction[] Transactions { get; set; }
     }
 }

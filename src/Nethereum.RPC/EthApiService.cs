@@ -54,19 +54,47 @@ namespace Nethereum.RPC
             }
         }
 
+        /// <summary>
+        /// Returns the currently configured chain id, a value used in replay-protected transaction signing as introduced by [EIP-155](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md).
+        /// </summary>
         public IEthChainId ChainId { get; private set; }
+
         public IEthAccounts Accounts { get; private set; }
 
+        /// <summary>
+        /// The address owned by the client that is used as default for things like the mining reward"
+        /// </summary>
         public IEthCoinBase CoinBase { get; private set; }
 
+        /// <summary>
+        /// Returns the current price per gas in wei
+        /// </summary>
         public IEthGasPrice GasPrice { get; private set; }
+
+        /// <summary>
+        /// Returns Ether balance of a given or account or contract
+        /// </summary>
         public IEthGetBalance GetBalance { get; }
 
+        /// <summary>
+        /// Returns code at a given contract address
+        /// </summary>
         public IEthGetCode GetCode { get; }
 
+        /// <summary>
+        /// Gets a storage value from a contract address, a position, and an optional blockNumber
+        /// </summary>
         public IEthGetStorageAt GetStorageAt { get; }
 
+        /// <summary>
+        /// The current ethereum protocol version
+        /// </summary>
         public IEthProtocolVersion ProtocolVersion { get; private set; }
+
+        /// <summary>
+        ///     Signs data with a given address.
+        ///     Note the address to sign must be unlocked.
+        /// </summary>
         public IEthSign Sign { get; private set; }
 
         public IEthSyncing Syncing { get; private set; }

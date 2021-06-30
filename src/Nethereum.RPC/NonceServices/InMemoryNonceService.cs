@@ -10,6 +10,7 @@ using Nethereum.RPC.Eth.Transactions;
 namespace Nethereum.RPC.NonceServices
 {
 #if !DOTNET35
+
     public class InMemoryNonceService: INonceService
     {
         public BigInteger CurrentNonce { get; set; } = -1;

@@ -1,12 +1,13 @@
-﻿using Nethereum.Hex.HexTypes;
-using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Object - The transaction object
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
+   [DataContract]
     public class TransactionInput : CallInput
     {
         public TransactionInput()
@@ -40,11 +41,24 @@ namespace Nethereum.RPC.Eth.DTOs
         {
         }
 
+        public TransactionInput(HexBigInteger type, string data, string addressTo, string addressFrom, HexBigInteger gas, HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+            :base(data, addressTo, addressFrom, gas, value, type, maxFeePerGas, maxPriorityFeePerGas)
+        {
+
+        }
+
+
         /// <summary>
         ///     nonce: QUANTITY - (optional) Integer of a nonce. This allows to overwrite your own pending transactions that use
         ///     the same nonce.
         /// </summary>
-        [JsonProperty(PropertyName = "nonce")]
+        [DataMember(Name = "nonce")]
         public HexBigInteger Nonce { get; set; }
+
+        /// <summary>
+        ///   Access list
+        /// </summary>
+        [DataMember(Name = "accessList")]
+        public List<AccessList> AccessList { get; set; }
     }
 }

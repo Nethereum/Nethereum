@@ -9,6 +9,11 @@ namespace Nethereum.RPC.Eth.DTOs
 
     public static class TransactionExtensions
     {
+        public static bool Is1559(this Transaction txn)
+        {
+            return txn.Type != null && txn.Type.Value == 0x02;
+        }
+
         public static bool IsToAnEmptyAddress(this Transaction txn)
         {
             return txn.To.IsAnEmptyAddress();
@@ -64,7 +69,12 @@ namespace Nethereum.RPC.Eth.DTOs
                 Nonce = txn.Nonce,
                 Value = txn.Value,
                 From = txn.From,
-                To = txn.To
+                To = txn.To,
+                Type = txn.Type,
+                AccessList = txn.AccessList,
+                MaxFeePerGas = txn.MaxFeePerGas,
+                MaxPriorityFeePerGas = txn.MaxPriorityFeePerGas
+                
             };
             return txnInput;
         }
