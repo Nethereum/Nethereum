@@ -19,7 +19,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Fact]
         public async Task TestEvent()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new TestAnonymousEventContractDeployment {FromAddress = senderAddress};

@@ -54,7 +54,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         public async void ShouldBeParsedInAnyOrder()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var receipt =
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(BYTE_CODE, senderAddress,
@@ -79,7 +79,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         public async void ShouldBeParsedInAnyOrderUsingExtensions()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var receipt =
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(BYTE_CODE, senderAddress,

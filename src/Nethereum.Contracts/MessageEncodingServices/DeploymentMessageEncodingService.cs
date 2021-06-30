@@ -31,6 +31,13 @@ namespace Nethereum.Contracts.MessageEncodingServices
                 contractMessage.GetHexValue(),
                 contractMessage.GetHexNonce(),
                 contractMessage);
+
+            transactionInput.Type = contractMessage.GetHexTransactionType();
+            transactionInput.MaxFeePerGas = contractMessage.GetHexMaxFeePerGas();
+            transactionInput.MaxPriorityFeePerGas = contractMessage.GetMaxPriorityFeePerGas();
+            transactionInput.AccessList = contractMessage.AccessList;
+            transactionInput.Nonce = contractMessage.GetHexNonce();
+
             return transactionInput;
         }
 
@@ -54,6 +61,13 @@ namespace Nethereum.Contracts.MessageEncodingServices
                 contractMessage.GetHexGasPrice(),
                 contractMessage.GetHexValue(),
                 contractMessage);
+
+            transactionInput.Type = contractMessage.GetHexTransactionType();
+            transactionInput.MaxFeePerGas = contractMessage.GetHexMaxFeePerGas();
+            transactionInput.MaxPriorityFeePerGas = contractMessage.GetMaxPriorityFeePerGas();
+            transactionInput.AccessList = contractMessage.AccessList;
+            transactionInput.Nonce = contractMessage.GetHexNonce();
+
             return transactionInput;
         }
 
@@ -79,6 +93,22 @@ namespace Nethereum.Contracts.MessageEncodingServices
             contractMessageOuput.Gas = transactionInput.Gas?.Value;
             contractMessageOuput.FromAddress = transactionInput.From;
             contractMessageOuput = DecodeInput(contractMessageOuput, transactionInput.Input);
+
+            contractMessageOuput.FromAddress = transactionInput.From;
+            contractMessageOuput.MaxFeePerGas = transactionInput.MaxFeePerGas?.Value;
+            contractMessageOuput.MaxPriorityFeePerGas = transactionInput.MaxPriorityFeePerGas?.Value;
+
+            if (transactionInput.Type == null)
+            {
+                contractMessageOuput.TransactionType = null;
+            }
+            else
+            {
+                contractMessageOuput.TransactionType = (byte)(transactionInput.Type.Value);
+            }
+
+            contractMessageOuput.AccessList = transactionInput.AccessList;
+
             return contractMessageOuput;
         }
 

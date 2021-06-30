@@ -38,7 +38,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var hash = "0x1c21348936d43dc62d853ff6238cff94e361f8dcee9fde6fd5fbfed9ff663150";
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var sha3Hello = Web3.Web3.Sha3(text);
             Assert.Equal(hash, "0x" + sha3Hello);

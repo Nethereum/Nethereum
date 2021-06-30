@@ -46,7 +46,7 @@ contract Test {
         [Fact]
         public async void ShouldReturnMultiDimensionalArray()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestDeployment>();
             var transactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();

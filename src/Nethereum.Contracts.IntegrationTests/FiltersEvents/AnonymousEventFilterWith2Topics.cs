@@ -28,7 +28,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                 @"[{""constant"":false,""inputs"":[{""name"":""id"",""type"":""uint256""},{""name"":""price"",""type"":""uint256""}],""name"":""newItem"",""outputs"":[],""payable"":false,""stateMutability"":""nonpayable"",""type"":""function""},{""inputs"":[],""payable"":false,""stateMutability"":""nonpayable"",""type"":""constructor""},{""anonymous"":true,""inputs"":[{""indexed"":true,""name"":""itemId"",""type"":""uint256""},{""indexed"":true,""name"":""price"",""type"":""uint256""},{""indexed"":false,""name"":""result"",""type"":""address""}],""name"":""ItemCreated"",""type"":""event""}]";
             
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var addressFrom = AccountFactory.Address;
+            var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
             var deploymentTransactionReceipt = await DoTransactionAndWaitForReceiptAsync(web3,
                 () => web3.Eth.DeployContract.SendRequestAsync(abi, bytecode, addressFrom, new HexBigInteger(900000)));
 

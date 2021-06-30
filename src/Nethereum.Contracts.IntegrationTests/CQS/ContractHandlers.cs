@@ -23,7 +23,8 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
         public async void ShouldDecodeTransactionDeployment()
         {
-            var senderAddress = AccountFactory.Address;
+            //EthereumClientIntegrationFixture.AccountAddress
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new StandardTokenDeployment
@@ -51,7 +52,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
         public async void ShouldDecodeTransactionInput()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new StandardTokenDeployment
@@ -92,7 +93,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         [Fact]
         public async void Test()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new StandardTokenDeployment

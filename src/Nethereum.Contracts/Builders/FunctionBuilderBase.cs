@@ -68,6 +68,12 @@ namespace Nethereum.Contracts
             return new TransactionInput(encodedInput, from, gas, value);
         }
 
+        public TransactionInput CreateTransactionInput(HexBigInteger type, string from, HexBigInteger gas, HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            var encodedInput = FunctionCallEncoder.EncodeRequest(FunctionABI.Sha3Signature);
+            return new TransactionInput(type, encodedInput, ContractAddress, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
+
         protected CallInput CreateCallInput(string encodedFunctionCall)
         {
             return new CallInput(encodedFunctionCall, ContractAddress);
@@ -97,6 +103,12 @@ namespace Nethereum.Contracts
         {
             return new TransactionInput(encodedFunctionCall, ContractAddress, from, gas, gasPrice, value);
         }
+
+        protected TransactionInput CreateTransactionInput(HexBigInteger type, string encodedFunctionCall, string from, HexBigInteger gas, HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            return new TransactionInput(type, encodedFunctionCall, ContractAddress, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
+
 
         protected TransactionInput CreateTransactionInput(string encodedFunctionCall,
             TransactionInput input)

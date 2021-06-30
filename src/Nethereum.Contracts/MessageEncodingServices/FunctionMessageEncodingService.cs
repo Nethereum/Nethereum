@@ -49,6 +49,11 @@ namespace Nethereum.Contracts.MessageEncodingServices
                 contractMessage.GetHexMaximumGas(),
                 contractMessage.GetHexGasPrice(),
                 contractMessage.GetHexValue());
+            
+            transactionInput.Type = contractMessage.GetHexTransactionType();
+            transactionInput.MaxFeePerGas = contractMessage.GetHexMaxFeePerGas();
+            transactionInput.MaxPriorityFeePerGas = contractMessage.GetMaxPriorityFeePerGas();
+            transactionInput.AccessList = contractMessage.AccessList;   
             transactionInput.Nonce = contractMessage.GetHexNonce();
             return transactionInput;
         }
@@ -70,6 +75,21 @@ namespace Nethereum.Contracts.MessageEncodingServices
             contractMessageOuput.AmountToSend = transaction.Value == null ? 0 : transaction.Value.Value;
             contractMessageOuput.Gas = transaction.Gas?.Value;
             contractMessageOuput.FromAddress = transaction.From;
+            contractMessageOuput.MaxFeePerGas = transaction.MaxFeePerGas?.Value;
+            contractMessageOuput.MaxPriorityFeePerGas = transaction.MaxPriorityFeePerGas?.Value;    
+
+            if(transaction.Type == null)
+            {
+                contractMessageOuput.TransactionType = null;
+            }
+            else
+            {
+                contractMessageOuput.TransactionType = (byte)(transaction.Type.Value);
+            }
+
+            contractMessageOuput.AccessList = transaction.AccessList;
+            
+                 
             return contractMessageOuput;
         }
 
@@ -85,7 +105,6 @@ namespace Nethereum.Contracts.MessageEncodingServices
 
         public TContractFunction DecodeInput(TContractFunction function, string data)
         {
-            
             return FunctionBuilder.DecodeFunctionInput(function, data);
         }
 

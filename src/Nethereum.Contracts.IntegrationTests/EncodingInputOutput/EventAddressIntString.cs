@@ -211,17 +211,17 @@ contract Coin {
         public async void Test()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var account = AccountFactory.GetAccount();
+            var accountAddresss = EthereumClientIntegrationFixture.AccountAddress;
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
-                CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
+                CoinService.DeployContractAsync(web3, accountAddresss, new HexBigInteger(4000000)));
             var coinService = new CoinService(web3, contractAddress);
-            var txn = await coinService.MintAsync(account.Address, account.Address, 100, new HexBigInteger(4000000));
+            var txn = await coinService.MintAsync(accountAddresss, accountAddresss, 100, new HexBigInteger(4000000));
             var receipt = await pollingService.PollForReceiptAsync(txn);
             var eventSent = coinService.GetEventSent();
             var sent = await eventSent.GetAllChanges<SentEventDTO>(eventSent.CreateFilterInput());
 
-            txn = await coinService.RaiseEventMetadataAsync(account.Address, account.Address, 100, "Description",
+            txn = await coinService.RaiseEventMetadataAsync(accountAddresss, accountAddresss, 100, "Description",
                 "The metadata created here blah blah blah", new HexBigInteger(4000000));
             receipt = await pollingService.PollForReceiptAsync(txn);
 
@@ -230,7 +230,7 @@ contract Coin {
                 await metadataEvent.GetAllChanges<MetadataEventEventDTO>(
                     metadataEvent.CreateFilterInput(new BlockParameter(receipt.BlockNumber), null));
             var result = metadata[0].Event;
-            Assert.Equal(result.Creator.ToLower(), account.Address.ToLower());
+            Assert.Equal(result.Creator.ToLower(), accountAddresss.ToLower());
             Assert.Equal(100, result.Id);
             Assert.Equal("The metadata created here blah blah blah", result.Metadata);
             Assert.Equal("Description", result.Description);
@@ -240,27 +240,27 @@ contract Coin {
         public async void TestChinese()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var account = AccountFactory.GetAccount();
+            var accountAddresss = EthereumClientIntegrationFixture.AccountAddress;
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
             var contractAddress = await pollingService.DeployContractAndGetAddressAsync(() =>
-                CoinService.DeployContractAsync(web3, account.Address, new HexBigInteger(4000000)));
+                CoinService.DeployContractAsync(web3, accountAddresss, new HexBigInteger(4000000)));
             var coinService = new CoinService(web3, contractAddress);
 
             var input = new RaiseEventMetadataInput
             {
-                Creator = account.Address,
+                Creator = accountAddresss,
                 Id = 101,
                 Description = @"中国，China",
                 Metadata = @"中国，China"
             };
 
-            var txn = await coinService.RaiseEventMetadataAsync(account.Address, input, new HexBigInteger(4000000));
+            var txn = await coinService.RaiseEventMetadataAsync(accountAddresss, input, new HexBigInteger(4000000));
             var receipt = await pollingService.PollForReceiptAsync(txn);
 
             var metadataEvent = coinService.GetEventMetadataEvent();
             var metadata = await metadataEvent.GetAllChanges<MetadataEventEventDTO>(metadataEvent.CreateFilterInput());
             var result = metadata[0].Event;
-            Assert.Equal(result.Creator.ToLower(), account.Address.ToLower());
+            Assert.Equal(result.Creator.ToLower(), accountAddresss.ToLower());
             Assert.Equal(101, result.Id);
             Assert.Equal(@"中国，China", result.Metadata);
             Assert.Equal(@"中国，China", result.Description);

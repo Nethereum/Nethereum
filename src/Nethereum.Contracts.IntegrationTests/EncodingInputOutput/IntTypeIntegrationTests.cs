@@ -70,7 +70,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
                 @"[{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test5"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test3"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test2"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[],""name"":""test1"",""outputs"":[{""name"":"""",""type"":""int256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test4"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test6"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test8"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""d"",""type"":""int256""}],""name"":""test7"",""outputs"":[{""name"":"""",""type"":""bool""}],""type"":""function""}]";
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash =

@@ -135,7 +135,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         public async Task Test()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var addressFrom = AccountFactory.Address;
+            var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
             var receipt = await web3.Eth.GetContractDeploymentHandler<TestEventDeployment>()
                 .SendRequestAndWaitForReceiptAsync(new TestEventDeployment(){FromAddress = addressFrom});
 

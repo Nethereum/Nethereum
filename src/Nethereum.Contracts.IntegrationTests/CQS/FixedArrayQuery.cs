@@ -19,7 +19,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         [Fact]
         public async void TestCQS()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new TestContractDeployment() {FromAddress = senderAddress};

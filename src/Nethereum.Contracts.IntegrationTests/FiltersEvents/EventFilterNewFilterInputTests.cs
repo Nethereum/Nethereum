@@ -49,7 +49,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Fact]
         public async void Test()
         {
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var deploymentMessage = new EIP20Deployment

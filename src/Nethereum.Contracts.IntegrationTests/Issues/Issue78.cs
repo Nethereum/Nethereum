@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
                 @"[{""constant"":false,""inputs"":[{""name"":""nextOwner"",""type"":""address""}],""name"":""setNextOwner"",""outputs"":[{""name"":""set"",""type"":""bool""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getProduct"",""outputs"":[{""name"":""product"",""type"":""string""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getOwner"",""outputs"":[{""name"":""owner"",""type"":""address""}],""payable"":false,""type"":""function""},{""constant"":true,""inputs"":[],""name"":""getOwners"",""outputs"":[{""name"":""owners"",""type"":""address[]""}],""payable"":false,""type"":""function""},{""constant"":false,""inputs"":[],""name"":""confirmOwnership"",""outputs"":[{""name"":""confirmed"",""type"":""bool""}],""payable"":false,""type"":""function""},{""inputs"":[{""name"":""productDigest"",""type"":""string""}],""type"":""constructor""}]";
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var account = AccountFactory.Address;
+            var account = EthereumClientIntegrationFixture.AccountAddress;
 
             var contractHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, account,
                 new HexBigInteger(900 * 1000), "My product");

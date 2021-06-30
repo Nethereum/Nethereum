@@ -26,7 +26,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCode,
@@ -51,7 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var abi =
                 "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
 
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var transaction =
@@ -177,7 +177,7 @@ contract Purchase {
                 "[{'constant':true,'inputs':[],'name':'seller','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'abort','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'value','outputs':[{'name':'','type':'uint256'}],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'buyer','outputs':[{'name':'','type':'address'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmReceived','outputs':[],'payable':false,'type':'function'},{'constant':true,'inputs':[],'name':'state','outputs':[{'name':'','type':'uint8'}],'payable':false,'type':'function'},{'constant':false,'inputs':[],'name':'confirmPurchase','outputs':[],'payable':true,'type':'function'},{'inputs':[],'type':'constructor'},{'anonymous':false,'inputs':[],'name':'aborted','type':'event'},{'anonymous':false,'inputs':[],'name':'purchaseConfirmed','type':'event'},{'anonymous':false,'inputs':[],'name':'itemReceived','type':'event'}]";
 
 
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var transaction =
@@ -216,7 +216,7 @@ contract Purchase {
             var abi =
                 @"[{'constant':false,'inputs':[{'name':'a','type':'int256'}],'name':'multiply','outputs':[{'name':'r','type':'int256'}],'payable':false,'type':'function'},{'inputs':[{'name':'multiplier','type':'int256'},{'name':'another','type':'int256'}],'type':'constructor'},{'anonymous':false,'inputs':[{'indexed':true,'name':'a','type':'int256'},{'indexed':true,'name':'sender','type':'address'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
 
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt =

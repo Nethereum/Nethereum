@@ -131,5 +131,13 @@ namespace Nethereum.Contracts
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
         }
+
+
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, HexBigInteger type, string from, HexBigInteger gas,
+             HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(type, encodedInput, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
     }
 }

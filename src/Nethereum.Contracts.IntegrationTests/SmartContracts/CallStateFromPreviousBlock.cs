@@ -25,7 +25,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             ulong totalSupply = 1000000;
-            var address = AccountFactory.Address;
+            var address = EthereumClientIntegrationFixture.AccountAddress;
             var newAddress = "0x12890d2cce102216644c59dae5baed380d848301";
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode,

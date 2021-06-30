@@ -99,7 +99,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         public async void ShouldReturnFunctionOutputDTO()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var senderAddress = AccountFactory.Address;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var contractReceipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(TestOutputService.ABI,
                 TestOutputService.BYTE_CODE, senderAddress, new HexBigInteger(900000));

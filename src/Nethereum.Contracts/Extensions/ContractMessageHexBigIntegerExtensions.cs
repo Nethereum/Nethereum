@@ -7,6 +7,27 @@ namespace Nethereum.Contracts
 {
     public static class ContractMessageHexBigIntegerExtensions
     {
+
+        public static void SetTransactionType1559(this ContractMessageBase contractMessage)
+        {
+            contractMessage.TransactionType = 0x02;
+        }
+
+        public static HexBigInteger GetHexTransactionType(this ContractMessageBase contractMessage)
+        {
+            return GetDefaultValue(contractMessage.TransactionType);
+        }
+
+        public static HexBigInteger GetHexMaxFeePerGas(this ContractMessageBase contractMessage)
+        {
+            return GetDefaultValue(contractMessage.MaxFeePerGas);
+        }
+
+        public static HexBigInteger GetMaxPriorityFeePerGas(this ContractMessageBase contractMessage)
+        {
+            return GetDefaultValue(contractMessage.MaxPriorityFeePerGas);
+        }
+
         public static HexBigInteger GetHexMaximumGas(this ContractMessageBase contractMessage)
         {
             return GetDefaultValue(contractMessage.Gas);

@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
         [Fact]
         public async void TestLogging()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient)
+            if (_ethereumClientIntegrationFixture.EthereumClient  == EthereumClient.Geth)
             {
                 var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
                 LogManager.Adapter = capturingLoggerAdapter;
@@ -35,7 +35,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 var abi =
                     @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
-                var senderAddress = AccountFactory.Address;
+                var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
                 var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
                     client: new RpcClient(
                         new Uri("http://localhost:8545"), authHeaderValue: null, null, null, LogManager.GetLogger<ILog>()));
@@ -55,7 +55,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 {
                     var transactionHash2 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         senderAddress, // lower gas
-                        new HexBigInteger(90000), 7);
+                        new HexBigInteger(900), 7);
                 }
                 catch (Exception ex)
                 {
@@ -76,7 +76,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 Assert.Contains("eth_getTransactionCount",
                     capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());
                 Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
-                Assert.Contains("eth_gasPrice", capturingLoggerAdapter.LoggerEvents[9].MessageObject.ToString());
+               // Assert.Contains("eth_gasPrice", capturingLoggerAdapter.LoggerEvents[9].MessageObject.ToString()); // we are nto doing legacy now
                 Assert.Contains("RPC Response:", capturingLoggerAdapter.LoggerEvents[10].MessageObject.ToString());
                 Assert.Contains("eth_sendRawTransaction",
                     capturingLoggerAdapter.LoggerEvents[11].MessageObject.ToString());

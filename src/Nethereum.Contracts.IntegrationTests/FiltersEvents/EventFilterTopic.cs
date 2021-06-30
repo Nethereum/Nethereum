@@ -87,7 +87,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var smartContractByteCode =
                 "6060604052341561000f57600080fd5b604051602080610149833981016040528080516000555050610113806100366000396000f300606060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416631df4f14481146043575b600080fd5b3415604d57600080fd5b60566004356068565b60405190815260200160405180910390f35b6000805482027fd01bc414178a5d1578a8b9611adebfeda577e53e89287df879d5ab2c29dfa56a338483604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001838152602001828152602001935050505060405180910390a1929150505600a165627a7a723058201bd2fbd3fb58686ed61df3e636dc4cc7c95b864aa1654bc02b0136e6eca9e9ef0029";
 
-            var account = AccountFactory.GetAccount();
+            var accountAddresss = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var multiplier = 2;
@@ -96,7 +96,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
                     abi,
                     smartContractByteCode,
-                    account.Address,
+                    accountAddresss,
                     new HexBigInteger(900000),
                     null,
                     multiplier);
@@ -111,8 +111,8 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 5);
-            var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(estimatedGas.Value), null, null, 7);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 7);
 
             Assert.Equal(1, receipt1.Status.Value);
             Assert.Equal(1, receipt2.Status.Value);
@@ -173,7 +173,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 ";
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var addressFrom = AccountFactory.Address;
+            var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
