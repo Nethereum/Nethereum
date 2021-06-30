@@ -7,15 +7,17 @@ using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
-    public class Transaction : SignedTransactionBase
+    public class LegacyTransaction : SignedLegacyTransaction
     {
-        public Transaction(byte[] rawData)
+        public override TransactionType TransactionType => TransactionType.LegacyTransaction;
+
+        public LegacyTransaction(byte[] rawData)
         {
             SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
             ValidateValidV(SimpleRlpSigner);
         }
 
-        public Transaction(RLPSigner rlpSigner)
+        public LegacyTransaction(RLPSigner rlpSigner)
         {
             ValidateValidV(rlpSigner);
             SimpleRlpSigner = rlpSigner;
@@ -27,35 +29,35 @@ namespace Nethereum.Signer
                 throw new Exception("TransactionChainId should be used instead of Transaction");
         }
 
-        public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
+        public LegacyTransaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data)
         {
             SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
         }
 
-        public Transaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
+        public LegacyTransaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] r, byte[] s, byte v)
         {
             SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
                 r, s, v);
         }
 
-        public Transaction(string to, BigInteger amount, BigInteger nonce)
+        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT)
         {
         }
 
-        public Transaction(string to, BigInteger amount, BigInteger nonce, string data)
+        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, string data)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, data)
         {
         }
 
-        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice, BigInteger gasLimit)
+        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice, BigInteger gasLimit)
             : this(to, amount, nonce, gasPrice, gasLimit, "")
         {
         }
 
-        public Transaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
             gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray()
         )

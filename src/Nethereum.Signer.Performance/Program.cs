@@ -51,7 +51,7 @@ namespace Nethereum.Signer.Performance
         public EthECDSASignature MessageSigning() => key.SignAndCalculateV(message);
 
         [Benchmark]
-        public EthECDSASignature OldMessageSigning() => key.SignAndCalculateVOld(message);
+        public EthECDSASignature OldMessageSigning() => key.SignAndCalculateV(message);
     }
 
 }

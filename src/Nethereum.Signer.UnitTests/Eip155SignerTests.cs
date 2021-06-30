@@ -26,7 +26,7 @@ namespace Nethereum.Signer.UnitTests
             var chainId = ((int)chain).ToBytesForRLPEncoding();
 
             //Create a transaction from scratch
-            var tx = new TransactionChainId(nonce, gasPrice, gasLimit, to, amount, data ,chainId);
+            var tx = new LegacyTransactionChainId(nonce, gasPrice, gasLimit, to, amount, data ,chainId);
 
             Assert.Equal(chainId, tx.ChainId);
             Assert.Equal(ZERO_BYTE_ARRAY, tx.RHash);
@@ -59,7 +59,7 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(expectedSignedTx.Length, tx.GetRLPEncoded().ToHex().Length);
             Assert.Equal(expectedSignedTx, tx.GetRLPEncoded().ToHex());
 
-            var recoveryTransaction = new TransactionChainId(tx.GetRLPEncoded());
+            var recoveryTransaction = new LegacyTransactionChainId(tx.GetRLPEncoded());
             Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
 
             Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());
@@ -81,13 +81,13 @@ namespace Nethereum.Signer.UnitTests
             var chainId = ((int)Chain.ClassicMainNet).ToBytesForRLPEncoding();
 
             //Create a transaction from scratch
-            var tx = new TransactionChainId(nonce, gasPrice, gasLimit, to, amount, data, chainId);
+            var tx = new LegacyTransactionChainId(nonce, gasPrice, gasLimit, to, amount, data, chainId);
 
             var privateKey = "4646464646464646464646464646464646464646464646464646464646464646";
             var key = new EthECKey(privateKey);
             tx.Sign(key);
 
-            var recoveryTransaction = new TransactionChainId(tx.GetRLPEncoded());
+            var recoveryTransaction = new LegacyTransactionChainId(tx.GetRLPEncoded());
             Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
 
             Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());

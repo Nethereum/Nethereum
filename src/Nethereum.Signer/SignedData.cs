@@ -1,5 +1,6 @@
 namespace Nethereum.Signer
 {
+
     public class SignedData
     {
         public byte[][] Data { get; set; }

@@ -28,10 +28,10 @@ namespace Nethereum.Signer.IntegrationTests
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
 
-            var privateKey = AccountFactory.PrivateKey;
-            var senderAddress = AccountFactory.Address;
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
-            var web3 = new Web3.Web3(new Account(privateKey, 444444444500));
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,

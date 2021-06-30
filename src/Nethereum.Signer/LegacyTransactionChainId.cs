@@ -7,13 +7,14 @@ using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
-    public class TransactionChainId : SignedTransactionBase
-    {  
+    public class LegacyTransactionChainId : SignedLegacyTransaction
+    {
+        public override TransactionType TransactionType => TransactionType.LegacyChainTransaction;
         //The R and S Hashing values
         private static readonly byte[] RHASH_DEFAULT = 0.ToBytesForRLPEncoding();
         private static readonly byte[] SHASH_DEFAULT = 0.ToBytesForRLPEncoding();
 
-        public TransactionChainId(byte[] rawData, BigInteger chainId)
+        public LegacyTransactionChainId(byte[] rawData, BigInteger chainId)
         {
             //Instantiate and decode
             SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
@@ -21,7 +22,7 @@ namespace Nethereum.Signer
             AppendDataForHashRecovery(chainId);
         }
 
-        public TransactionChainId(RLPSigner rlpSigner)
+        public LegacyTransactionChainId(RLPSigner rlpSigner)
         {
             SimpleRlpSigner = rlpSigner;
             ValidateValidV(SimpleRlpSigner);
@@ -47,7 +48,7 @@ namespace Nethereum.Signer
                 SHASH_DEFAULT);
         }
 
-        public TransactionChainId(byte[] rawData)
+        public LegacyTransactionChainId(byte[] rawData)
         {
             //Instantiate and decode
             SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
@@ -60,7 +61,7 @@ namespace Nethereum.Signer
             return EthECKey.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
         }
 
-        public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
+        public LegacyTransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId)
         {
             SimpleRlpSigner =
@@ -68,7 +69,7 @@ namespace Nethereum.Signer
                     NUMBER_ENCODING_ELEMENTS);
         }
 
-        public TransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
+        public LegacyTransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId, byte[] r, byte[] s, byte[] v)
         {
             SimpleRlpSigner = new RLPSigner(
@@ -76,23 +77,23 @@ namespace Nethereum.Signer
                 r, s, v, NUMBER_ENCODING_ELEMENTS);
         }
 
-        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger chainId)
+        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger chainId)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, chainId)
         {
         }
 
-        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, string data, BigInteger chainId)
+        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, string data, BigInteger chainId)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, data, chainId)
         {
         }
 
-        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, BigInteger chainId)
             : this(to, amount, nonce, gasPrice, gasLimit, "", chainId)
         {
         }
 
-        public TransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data, BigInteger chainId) : this(nonce.ToBytesForRLPEncoding(),
             gasPrice.ToBytesForRLPEncoding(),
             gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(),
@@ -131,7 +132,7 @@ namespace Nethereum.Signer
 
         public override void Sign(EthECKey key)
         {
-            SimpleRlpSigner.Sign(key, GetChainIdAsBigInteger());
+            SimpleRlpSigner.SignLegacy(key, GetChainIdAsBigInteger());
         }
 
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,

@@ -10,7 +10,6 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
 using Xunit;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Ledger.IntegrationTests
 {
@@ -106,8 +105,8 @@ namespace Nethereum.Ledger.IntegrationTests
             {
                 From = addressFrom,
                 GasPrice
-                    = new HexBigInteger(Transaction.DEFAULT_GAS_PRICE),
-                Gas = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT),
+                    = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_PRICE),
+                Gas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_LIMIT),
                 Nonce = new HexBigInteger(1),
                 To = "0x12890d2cce102216644c59daE5baed380d848301",
                 Value = new HexBigInteger(100)

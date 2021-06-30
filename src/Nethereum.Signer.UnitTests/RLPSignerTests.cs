@@ -42,7 +42,7 @@ namespace Nethereum.Signer.UnitTests
 
             //Create a transaction from scratch
             var tx = new RLPSigner(new[] {nonce, gasPrice, gasLimit, to, amount, data});
-            tx.Sign(new EthECKey(privateKey.HexToByteArray(), true));
+            tx.SignLegacy(new EthECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
             var rlp =
@@ -58,7 +58,7 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(tx.Data[5], tx3.Data[5] ?? new byte[] { });
 
 
-            var tx2 = new Transaction(tx.GetRLPEncoded());
+            var tx2 = new LegacyTransaction(tx.GetRLPEncoded());
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx2.Key.GetPublicAddress());
             //gas limit order 3
             Assert.Equal(tx.Data[2].ToHex(), tx3.Data[2].ToHex());
@@ -98,7 +98,7 @@ namespace Nethereum.Signer.UnitTests
             var account = "12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var signedValue = new RLPSigner(new[] {"hello".ToBytesForRLPEncoding()});
-            signedValue.Sign(new EthECKey(privateKey.HexToByteArray(), true));
+            signedValue.SignLegacy(new EthECKey(privateKey.HexToByteArray(), true));
             var encoded = signedValue.GetRLPEncoded();
             var hexEncoded = encoded.ToHex();
             var signedRecovery = new RLPSigner(encoded, 1);

@@ -12,8 +12,8 @@ namespace Nethereum.Signer
     {
         protected abstract Task<byte[]> GetPublicKeyAsync();
         protected abstract Task<ECDSASignature> SignExternallyAsync(byte[] bytes);
-        public abstract Task SignAsync(TransactionChainId transaction);
-        public abstract Task SignAsync(Transaction transaction);
+        public abstract Task SignAsync(LegacyTransactionChainId transaction);
+        public abstract Task SignAsync(LegacyTransaction transaction);
         public abstract ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; }
         public abstract bool CalculatesV { get; protected set; }
 
@@ -46,7 +46,7 @@ namespace Nethereum.Signer
             return new EthECDSASignature(signature);
         }
 
-        protected async Task SignHashTransactionAsync(Transaction transaction)
+        protected async Task SignHashTransactionAsync(LegacyTransaction transaction)
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
             {
@@ -55,7 +55,7 @@ namespace Nethereum.Signer
             }
         }
 
-        protected async Task SignRLPTransactionAsync(Transaction transaction)
+        protected async Task SignRLPTransactionAsync(LegacyTransaction transaction)
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
@@ -64,7 +64,7 @@ namespace Nethereum.Signer
             }
         }
 
-        protected async Task SignHashTransactionAsync(TransactionChainId transaction)
+        protected async Task SignHashTransactionAsync(LegacyTransactionChainId transaction)
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
             {
@@ -73,7 +73,7 @@ namespace Nethereum.Signer
             }
         }
 
-        protected async Task SignRLPTransactionAsync(TransactionChainId transaction)
+        protected async Task SignRLPTransactionAsync(LegacyTransactionChainId transaction)
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {

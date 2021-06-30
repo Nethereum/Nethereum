@@ -41,7 +41,7 @@ namespace Nethereum.Signer.UnitTests
             Debug.WriteLine(new HexBigInteger(21000).HexValue);
 
             //Create a transaction from scratch
-            var tx = new Transaction("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 10000, 324, 10000000000000, 21000);
+            var tx = new LegacyTransaction("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 10000, 324, 10000000000000, 21000);
             tx.Sign(new EthECKey(privateKey.HexToByteArray(), true));
 
             var encoded = tx.GetRLPEncoded();
@@ -54,12 +54,12 @@ namespace Nethereum.Signer.UnitTests
 
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx.Key.GetPublicAddress());
 
-            var tx3 = new Transaction(rlp.HexToByteArray());
+            var tx3 = new LegacyTransaction(rlp.HexToByteArray());
             Assert.Equal(tx.Data, tx3.Data ?? new byte[] { });
 
             Debug.WriteLine(tx.ToJsonHex());
 
-            var tx2 = new Transaction(tx.GetRLPEncoded());
+            var tx2 = new LegacyTransaction(tx.GetRLPEncoded());
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx2.Key.GetPublicAddress());
 
             Assert.Equal(tx.GasLimit.ToHex(), tx3.GasLimit.ToHex());
@@ -100,12 +100,12 @@ namespace Nethereum.Signer.UnitTests
             //data from https://github.com/ethereum/go-ethereum/blob/506c9277911746dfbab0a585aee736bd3095f206/tests/files/TransactionTests/Homestead/ttTransactionTest.json
             var rlp =
                 "0xf87c80018261a894095e7baea6a6c7c4c2dfeb977efac326af552d870a9d00000000000000000000000000010000000000000000000000000000001ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
-            var tx = new Transaction(rlp.HexToByteArray());
+            var tx = new LegacyTransaction(rlp.HexToByteArray());
             Assert.Equal("67719a47cf3e3fe77b89c994d85395ad0f899d86".EnsureHexPrefix().ToLower(),
                 tx.Key.GetPublicAddress().EnsureHexPrefix().ToLower());
             rlp =
                 "0xf85f800182520894095e7baea6a6c7c4c2dfeb977efac326af552d870a801ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
-            tx = new Transaction(rlp.HexToByteArray());
+            tx = new LegacyTransaction(rlp.HexToByteArray());
             Assert.Equal("0x963f4a0d8a11b758de8d5b99ab4ac898d6438ea6".EnsureHexPrefix().ToLower(),
                 tx.Key.GetPublicAddress().EnsureHexPrefix().ToLower());
         }
@@ -130,7 +130,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void TestTransactionFromSignedRLP()
         {
-            var tx = new Transaction(RLP_ENCODED_SIGNED_TX.HexToByteArray());
+            var tx = new LegacyTransaction(RLP_ENCODED_SIGNED_TX.HexToByteArray());
 
             Assert.Equal(HASH_TX, tx.RawHash.ToHex());
             Assert.Equal(RLP_ENCODED_SIGNED_TX, tx.GetRLPEncoded().ToHex());
@@ -155,7 +155,7 @@ namespace Nethereum.Signer.UnitTests
         public void TestTransactionFromUnSignedRLP()
         {
             Exception ex = Assert.Throws<Exception>(() =>
-                new Transaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray()));
+                new LegacyTransaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray()));
             Assert.Equal("Signature not initiated or calculated", ex.Message);
         }
     }

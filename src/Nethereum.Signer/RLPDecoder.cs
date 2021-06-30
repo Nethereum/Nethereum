@@ -10,19 +10,34 @@ namespace Nethereum.Signer
             var decodedList = RLP.RLP.Decode(rawdata);
             var decodedData = new List<byte[]>();
             var decodedElements = (RLPCollection)decodedList;
-            EthECDSASignature signature = null;
+            
             for (var i = 0; i < numberOfEncodingElements; i++)
                 decodedData.Add(decodedElements[i].RLPData);
             // only parse signature in case is signed
-            if (decodedElements[numberOfEncodingElements].RLPData != null)
+            EthECDSASignature signature = DecodeSignature(decodedElements, numberOfEncodingElements);
+            return new SignedData(decodedData.ToArray(), signature);
+        }
+
+        public static EthECDSASignature DecodeSignature(RLPCollection decodedElements, int numberOfEncodingElements)
+        {
+            EthECDSASignature signature = null;
+            if (decodedElements.Count > numberOfEncodingElements && decodedElements[numberOfEncodingElements + 1].RLPData != null)
             {
+                var v = new byte[] {0};
                 //Decode Signature
-                var v = decodedElements[numberOfEncodingElements].RLPData;
+                if (decodedElements[numberOfEncodingElements].RLPData != null)
+                {
+                    v = decodedElements[numberOfEncodingElements].RLPData;
+                }
+
                 var r = decodedElements[numberOfEncodingElements + 1].RLPData;
                 var s = decodedElements[numberOfEncodingElements + 2].RLPData;
                 signature = EthECDSASignatureFactory.FromComponents(r, s, v);
             }
-            return new SignedData(decodedData.ToArray(), signature);
+
+            return signature;
         }
     }
 }
+
+

@@ -39,12 +39,12 @@ namespace Nethereum.Signer.AzureKeyVault
             return ECDSASignatureFactory.FromComponents(signature).MakeCanonical();
         }
 
-        public override async Task SignAsync(Transaction transaction)
+        public override async Task SignAsync(LegacyTransaction transaction)
         {
             await SignHashTransactionAsync(transaction).ConfigureAwait(false);
         }
 
-        public override async Task SignAsync(TransactionChainId transaction)
+        public override async Task SignAsync(LegacyTransactionChainId transaction)
         {
             await SignHashTransactionAsync(transaction).ConfigureAwait(false);
         }

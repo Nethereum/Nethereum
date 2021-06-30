@@ -82,7 +82,7 @@ namespace Nethereum.Signer
 
         public byte[] GetRLPEncodedRaw()
         {
-            rlpRawWitNoSignature = RLP.RLP.EncodeElementsAndList(Data);
+            rlpRawWitNoSignature = RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(Data);
             return rlpRawWitNoSignature;
         }
 
@@ -94,13 +94,13 @@ namespace Nethereum.Signer
             Data = fullData.ToArray();
         }
 
-        public void Sign(EthECKey key)
+        public void SignLegacy(EthECKey key)
         {
             Signature = key.SignAndCalculateV(RawHash);
             rlpSignedEncoded = null;
         }
 
-        public void Sign(EthECKey key, BigInteger chainId)
+        public void SignLegacy(EthECKey key, BigInteger chainId)
         {
             Signature = key.SignAndCalculateV(RawHash, chainId);
             rlpSignedEncoded = null;

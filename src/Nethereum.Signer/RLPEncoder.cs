@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.Model;
+using Nethereum.RLP;
 
 namespace Nethereum.Signer
 {
@@ -12,13 +13,29 @@ namespace Nethereum.Signer
             for (var i = 0; i < numberOfElements; i++)
                 encodedData.Add(RLP.RLP.EncodeElement(signedData.Data[i]));
 
+            AddSignatureToEncodedData(signedData.GetSignature(), encodedData);
+
+            return RLP.RLP.EncodeList(encodedData.ToArray());
+        }
+
+
+        public static void AddSignatureToEncodedData(EthECDSASignature signature, List<byte[]> encodedData)
+        {
             byte[] v, r, s;
 
-            if (signedData.IsSigned())
+            if (signature != null && signature.V != null)
             {
-                v = RLP.RLP.EncodeElement(signedData.V);
-                r = RLP.RLP.EncodeElement(signedData.R);
-                s = RLP.RLP.EncodeElement(signedData.S);
+                if (signature.V[0] == 0)
+                {
+                    v = DefaultValues.EMPTY_BYTE_ARRAY;
+                }
+                else
+                {
+                    v = signature.V;
+                }
+                v = RLP.RLP.EncodeElement(v);
+                r = RLP.RLP.EncodeElement(signature.R.TrimZeroBytes());
+                s = RLP.RLP.EncodeElement(signature.S.TrimZeroBytes());
             }
             else
             {
@@ -30,8 +47,6 @@ namespace Nethereum.Signer
             encodedData.Add(v);
             encodedData.Add(r);
             encodedData.Add(s);
-
-            return RLP.RLP.EncodeList(encodedData.ToArray());
         }
 
     }

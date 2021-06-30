@@ -71,6 +71,18 @@ namespace Nethereum.Signer
             return V.ToBigIntegerFromRLPDecoded() >= 35;
         }
 
+        public bool IsVSignedForLegacy()
+        {
+            var v = V.ToBigIntegerFromRLPDecoded();
+            return v >= 27;
+        }
+
+        public bool IsVSignedForYParity()
+        {
+            var v = V.ToBigIntegerFromRLPDecoded();
+            return v == 0 || v == 1;
+        }
+
         public byte[] To64ByteArray()
         {
             var rsigPad = new byte[32];
@@ -95,7 +107,6 @@ namespace Nethereum.Signer
             }
             catch (Exception)
             {
-                //	Utils.error("Unexpected exception in ECDSASignature.IsValidDER " + ex.Message);
                 return false;
             }
         }

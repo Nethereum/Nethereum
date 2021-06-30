@@ -68,12 +68,12 @@ namespace Nethereum.Ledger
             return signature;
         }
 
-        public override async Task SignAsync(TransactionChainId transaction)
+        public override async Task SignAsync(LegacyTransactionChainId transaction)
         {
             await SignRLPTransactionAsync(transaction).ConfigureAwait(false);
         }
 
-        public override async Task SignAsync(Transaction transaction)
+        public override async Task SignAsync(LegacyTransaction transaction)
         {
             await SignRLPTransactionAsync(transaction).ConfigureAwait(false);
         }

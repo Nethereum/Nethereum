@@ -4,58 +4,8 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Signer
 {
-    public class TransactionSigner
+    public class LegacyTransactionSigner
     {
-        public byte[] GetPublicKey(string rlp)
-        {
-            var transaction = TransactionFactory.CreateTransaction(rlp);
-            return transaction.Key.GetPubKey();
-        }
-
-        public string GetSenderAddress(string rlp)
-        {
-            var transaction = TransactionFactory.CreateTransaction(rlp);
-            return transaction.Key.GetPublicAddress();
-        }
-
-        public bool VerifyTransaction(string rlp)
-        {
-            var transaction = TransactionFactory.CreateTransaction(rlp);
-            return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
-        }
-
-        public byte[] GetPublicKey(string rlp, Chain chain)
-        {
-            return GetPublicKey(rlp, (int)chain);
-        }
-
-        public byte[] GetPublicKey(string rlp, BigInteger chainId)
-        {
-            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
-            return transaction.Key.GetPubKey();
-        }
-
-        public string GetSenderAddress(string rlp, Chain chain)
-        {
-            return GetSenderAddress(rlp, (int)chain);
-        }
-
-        public string GetSenderAddress(string rlp, BigInteger chainId)
-        {
-            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
-            return transaction.Key.GetPublicAddress();
-        }
-
-        public bool VerifyTransaction(string rlp, Chain chain)
-        {
-            return VerifyTransaction(rlp, (int)chain);
-        }
-
-        public bool VerifyTransaction(string rlp, BigInteger chainId)
-        {
-            var transaction = new TransactionChainId(rlp.HexToByteArray(), chainId);
-            return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
-        }
 
         public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
         {
@@ -83,13 +33,13 @@ namespace Nethereum.Signer
 
         public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce)
         {
-            var transaction = new Transaction(to, amount, nonce);
+            var transaction = new LegacyTransaction(to, amount, nonce);
             return SignTransaction(privateKey, transaction);
         }
 
         public string SignTransaction(byte[] privateKey, string to, BigInteger amount, BigInteger nonce, string data)
         {
-            var transaction = new Transaction(to, amount, nonce, data);
+            var transaction = new LegacyTransaction(to, amount, nonce, data);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -97,7 +47,7 @@ namespace Nethereum.Signer
             BigInteger gasPrice,
             BigInteger gasLimit)
         {
-            var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
+            var transaction = new LegacyTransaction(to, amount, nonce, gasPrice, gasLimit);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -105,7 +55,7 @@ namespace Nethereum.Signer
             BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
-            var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
+            var transaction = new LegacyTransaction(to, amount, nonce, gasPrice, gasLimit, data);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -170,7 +120,7 @@ namespace Nethereum.Signer
         public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
             BigInteger nonce)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -183,7 +133,7 @@ namespace Nethereum.Signer
         public string SignTransaction(byte[] privateKey, BigInteger chainId, string to, BigInteger amount,
             BigInteger nonce, string data)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, data, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, data, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -198,7 +148,7 @@ namespace Nethereum.Signer
             BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, gasPrice, gasLimit, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
@@ -213,30 +163,30 @@ namespace Nethereum.Signer
             BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
             return SignTransaction(privateKey, transaction);
         }
 
-        private string SignTransaction(byte[] privateKey, Transaction transaction)
+        private string SignTransaction(byte[] privateKey, LegacyTransaction transaction)
         {
             transaction.Sign(new EthECKey(privateKey, true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
-        private string SignTransaction(byte[] privateKey, TransactionChainId transaction)
+        private string SignTransaction(byte[] privateKey, LegacyTransactionChainId transaction)
         {
             transaction.Sign(new EthECKey(privateKey, true));
             return transaction.GetRLPEncoded().ToHex();
         }
 
 #if !DOTNET35
-        private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, Transaction transaction)
+        private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, LegacyTransaction transaction)
         {
             await transaction.SignExternallyAsync(externalSigner).ConfigureAwait(false);
             return transaction.GetRLPEncoded().ToHex();
         }
 
-        private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, TransactionChainId transaction)
+        private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, LegacyTransactionChainId transaction)
         {
             await transaction.SignExternallyAsync(externalSigner).ConfigureAwait(false);
             return transaction.GetRLPEncoded().ToHex();
@@ -245,13 +195,13 @@ namespace Nethereum.Signer
 
         public Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, string to, BigInteger amount, BigInteger nonce)
         {
-            var transaction = new Transaction(to, amount, nonce);
+            var transaction = new LegacyTransaction(to, amount, nonce);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
         public Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, string to, BigInteger amount, BigInteger nonce, string data)
         {
-            var transaction = new Transaction(to, amount, nonce, data);
+            var transaction = new LegacyTransaction(to, amount, nonce, data);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -259,7 +209,7 @@ namespace Nethereum.Signer
             BigInteger gasPrice,
             BigInteger gasLimit)
         {
-            var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit);
+            var transaction = new LegacyTransaction(to, amount, nonce, gasPrice, gasLimit);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -267,7 +217,7 @@ namespace Nethereum.Signer
             BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
-            var transaction = new Transaction(to, amount, nonce, gasPrice, gasLimit, data);
+            var transaction = new LegacyTransaction(to, amount, nonce, gasPrice, gasLimit, data);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -280,7 +230,7 @@ namespace Nethereum.Signer
         public Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, BigInteger chainId, string to, BigInteger amount,
             BigInteger nonce)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, chainId);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -293,7 +243,7 @@ namespace Nethereum.Signer
         public Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, BigInteger chainId, string to, BigInteger amount,
             BigInteger nonce, string data)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, data, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, data, chainId);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -308,7 +258,7 @@ namespace Nethereum.Signer
             BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, gasPrice, gasLimit, chainId);
             return SignTransactionAsync(externalSigner, transaction);
         }
 
@@ -323,7 +273,7 @@ namespace Nethereum.Signer
             BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string data)
         {
-            var transaction = new TransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
+            var transaction = new LegacyTransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
             return SignTransactionAsync(externalSigner, transaction);
         }
 #endif

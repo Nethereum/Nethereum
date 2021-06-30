@@ -61,7 +61,7 @@ namespace Nethereum.Signer.Trezor
             return ECDSASignatureFactory.ExtractECDSASignature(messageSignature.Signature);
         }
 
-        public override async Task SignAsync(TransactionChainId transaction)
+        public override async Task SignAsync(LegacyTransactionChainId transaction)
         {
             var txMessage = new EthereumSignTx
             {
@@ -85,7 +85,7 @@ namespace Nethereum.Signer.Trezor
             transaction.SetSignature(EthECDSASignatureFactory.FromComponents(signature.SignatureR, signature.SignatureS, (byte)signature.SignatureV));
         }
 
-        public override async Task SignAsync(Transaction transaction)
+        public override async Task SignAsync(LegacyTransaction transaction)
         {
             var txMessage = new EthereumSignTx
             {
