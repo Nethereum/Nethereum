@@ -84,7 +84,7 @@ namespace Nethereum.JsonRpc.IpcClient
             }
             catch (Exception ex)
             {
-                var unknownException = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+                var unknownException = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s): " + request.Method, ex);
                 rpcLogger.LogException(unknownException);
                 throw unknownException;
             }

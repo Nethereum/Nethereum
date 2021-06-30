@@ -54,7 +54,7 @@ namespace Nethereum.JsonRpc.Client
             }
             catch (Exception ex)
             {
-                throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s): " + request.Method, ex);
             }
         }
     }
