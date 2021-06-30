@@ -8,7 +8,9 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.TransactionManagers;
+#if !LITE
 using Nethereum.Signer;
+#endif
 using Nethereum.Util;
 
 namespace Nethereum.Web3
@@ -51,8 +53,9 @@ namespace Nethereum.Web3
         }
 
         public static UnitConversion Convert { get; } = new UnitConversion();
-
-        public static TransactionSigner OfflineTransactionSigner { get; } = new TransactionSigner();
+#if !LITE
+        public static LegacyTransactionSigner OfflineTransactionSigner { get; } = new LegacyTransactionSigner();
+#endif
 
         public IClient Client { get; private set; }
 
@@ -64,14 +67,20 @@ namespace Nethereum.Web3
 
         private void IntialiseDefaultGasAndGasPrice()
         {
-            TransactionManager.DefaultGas = Transaction.DEFAULT_GAS_LIMIT;
-            TransactionManager.DefaultGasPrice = Transaction.DEFAULT_GAS_PRICE;
+#if !LITE
+            TransactionManager.DefaultGas = LegacyTransaction.DEFAULT_GAS_LIMIT;
+            TransactionManager.DefaultGasPrice = LegacyTransaction.DEFAULT_GAS_PRICE;
+#endif
         }
 
+#if !LITE
         public static string GetAddressFromPrivateKey(string privateKey)
         {
+
             return EthECKey.GetPublicAddress(privateKey);
+
         }
+#endif
 
         public static bool IsChecksumAddress(string address)
         {
