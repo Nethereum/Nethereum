@@ -26,14 +26,14 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldDecodeCliqueAuthor()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =
                     await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
                 var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
                 var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
-                Assert.True(AccountFactory.Address.IsTheSameAddress(account));
+                Assert.True(EthereumClientIntegrationFixture.AccountAddress.IsTheSameAddress(account));
             }
 
         }
@@ -43,7 +43,7 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldEncodeDecode()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =

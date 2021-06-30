@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -9,9 +10,9 @@ namespace Nethereum.Web3.Accounts
     {
         private readonly AccountSignerTransactionManager signer;
 
-        public AccountTransactionSigningInterceptor(string privateKey, IClient client)
+        public AccountTransactionSigningInterceptor(string privateKey, BigInteger chainId, IClient client)
         {
-            signer = new AccountSignerTransactionManager(client, privateKey);
+            signer = new AccountSignerTransactionManager(client, privateKey, chainId);
         }
 
         public override async Task<object> InterceptSendRequestAsync<TResponse>(

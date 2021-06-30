@@ -14,11 +14,19 @@ namespace Nethereum.Accounts.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class NonceTests
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public NonceTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public async void ShouldBeAbleToHandleNoncesOfMultipleTxnMultipleWeb3sMultithreaded()
         {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
@@ -26,7 +34,7 @@ namespace Nethereum.Accounts.IntegrationTests
             JsonRpc.Client.RpcClient.ConnectionTimeout = TimeSpan.FromSeconds(30.0);
             var multiplier = 7;
 
-            var client = ClientFactory.GetClient();
+            var client = _ethereumClientIntegrationFixture.GetClient();
             var nonceProvider = new InMemoryNonceService(senderAddress, client);
             //tested with 1000
             var listTasks = 10;
@@ -41,7 +49,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             Parallel.ForEach(taskItems, (item, state) =>
             {
-                var account = new Account(privateKey);
+                var account = new Account(privateKey, EthereumClientIntegrationFixture.ChainId);
                 account.NonceService = nonceProvider;
                 var web3 = new Web3.Web3(account, client);
                 // Wait for task completion synchronously in order to Parallel.ForEach work correctly
@@ -66,8 +74,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldBeAbleToHandleNoncesOfMultipleTxnMultipleWeb3sSingleThreaded()
         {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
+
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
@@ -75,9 +84,9 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplier = 7;
 
-            var client = ClientFactory.GetClient();
+            var client = _ethereumClientIntegrationFixture.GetClient();
             var nonceProvider = new InMemoryNonceService(senderAddress, client);
-            var account = new Account(privateKey) {NonceService = nonceProvider};
+            var account = new Account(privateKey, EthereumClientIntegrationFixture.ChainId) {NonceService = nonceProvider};
             var web31 = new Web3.Web3(account, client);
 
             var txn1 = await
@@ -112,8 +121,8 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async void ShouldBeAbleToHandleNoncesOfMultipleTxnSingleWeb3SingleThreaded()
         {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
@@ -121,7 +130,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplier = 7;
 
-            var web3 = new Web3.Web3(new Account(privateKey), ClientFactory.GetClient());
+            var web3 = new Web3.Web3(new Account(privateKey, EthereumClientIntegrationFixture.ChainId), _ethereumClientIntegrationFixture.GetClient());
 
             var txn1 = await
                 web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,

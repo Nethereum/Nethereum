@@ -10,13 +10,12 @@ using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
     public class ExternalAccountSignerTransactionManager : TransactionManagerBase
     {
-        private readonly TransactionSigner _transactionSigner;
+        private readonly LegacyTransactionSigner _transactionSigner;
         public BigInteger? ChainId { get; private set; }
 
         public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account, BigInteger? chainId = null)
@@ -24,11 +23,11 @@ namespace Nethereum.Web3.Accounts
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
-            _transactionSigner = new TransactionSigner();
+            _transactionSigner = new LegacyTransactionSigner();
         }
 
 
-        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -47,6 +46,7 @@ namespace Nethereum.Web3.Accounts
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (!transaction.From.IsTheSameAddress(Account.Address))
                 throw new Exception("Invalid account used signing");
+            
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
             var nonce = transaction.Nonce;

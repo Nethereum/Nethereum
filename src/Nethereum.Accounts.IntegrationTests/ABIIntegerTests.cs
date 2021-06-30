@@ -66,7 +66,7 @@ namespace Nethereum.Accounts.IntegrationTests
 */
 
 
-    private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public ABIIntegerTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {
@@ -304,7 +304,7 @@ namespace Nethereum.Accounts.IntegrationTests
         public Web3.Web3 GetWeb3()
         {
             var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
-                "http://localhost:8545", LogManager.GetLogger<ILog>());
+                _ethereumClientIntegrationFixture.GetHttpUrl(), LogManager.GetLogger<ILog>());
             return web3;
         }
        

@@ -36,7 +36,7 @@ namespace Nethereum.Accounts.IntegrationTests
             var transactionRpc = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txnHash);
             
             //Using the transanction from RPC to build a txn for signing / signed
-            var transaction = TransactionFactory.CreateTransaction(transactionRpc.To, transactionRpc.Gas, transactionRpc.GasPrice, transactionRpc.Value, transactionRpc.Input, transactionRpc.Nonce,
+            var transaction = TransactionFactory.CreateLegacyTransaction(transactionRpc.To, transactionRpc.Gas, transactionRpc.GasPrice, transactionRpc.Value, transactionRpc.Input, transactionRpc.Nonce,
                 transactionRpc.R, transactionRpc.S, transactionRpc.V);
             
             //Get the raw signed rlp recovered
@@ -44,9 +44,9 @@ namespace Nethereum.Accounts.IntegrationTests
             
             //Get the account sender recovered
             var accountSenderRecovered = string.Empty;
-            if (transaction is TransactionChainId)
+            if (transaction is LegacyTransactionChainId)
             {
-                var txnChainId = transaction as TransactionChainId;
+                var txnChainId = transaction as LegacyTransactionChainId;
                 accountSenderRecovered = EthECKey.RecoverFromSignature(transaction.Signature, transaction.RawHash, txnChainId.GetChainIdAsBigInteger()).GetPublicAddress();
             }
             else

@@ -27,7 +27,7 @@ namespace Nethereum.Accounts.IntegrationTests
             var balanceOriginal = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
             var balanceOriginalEther = Web3.Web3.Convert.FromWei(balanceOriginal.Value);
             var receipt = await web3.Eth.GetEtherTransferService()
-                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, 2);
+                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, gasPriceGwei:2);
 
             var balance = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
             Assert.Equal(balanceOriginalEther + 1.11m, Web3.Web3.Convert.FromWei(balance));
@@ -57,7 +57,7 @@ namespace Nethereum.Accounts.IntegrationTests
             var balanceOriginalEther = Web3.Web3.Convert.FromWei(balanceOriginal.Value);
 
             var receipt = await web3.Eth.GetEtherTransferService()
-                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, 2, new BigInteger(25000));
+                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, gasPriceGwei: 2, new BigInteger(25000));
 
             var balance = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
             Assert.Equal(balanceOriginalEther + 1.11m, Web3.Web3.Convert.FromWei(balance));
@@ -73,7 +73,7 @@ namespace Nethereum.Accounts.IntegrationTests
             var transferService = web3.Eth.GetEtherTransferService();
             var estimate = await transferService.EstimateGasAsync(toAddress, 1.11m);
             var receipt = await transferService
-                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, 2, estimate);
+                .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, gasPriceGwei: 2, estimate);
 
             var balance = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
             Assert.Equal(balanceOriginalEther + 1.11m, Web3.Web3.Convert.FromWei(balance));
@@ -84,22 +84,54 @@ namespace Nethereum.Accounts.IntegrationTests
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var privateKey = EthECKey.GenerateKey();
-            var newAccount = new Account(privateKey.GetPrivateKey());
+            var newAccount = new Account(privateKey.GetPrivateKey(), EthereumClientIntegrationFixture.ChainId);
             var toAddress = newAccount.Address;
             var transferService = web3.Eth.GetEtherTransferService();
 
             var receipt = await web3.Eth.GetEtherTransferService()
-                .TransferEtherAndWaitForReceiptAsync(toAddress, 1000, 2);
+                .TransferEtherAndWaitForReceiptAsync(toAddress, 0.1m, gasPriceGwei: 2);
 
             var balance = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
-            Assert.Equal(1000, Web3.Web3.Convert.FromWei(balance));
+            Assert.Equal(0.1m, Web3.Web3.Convert.FromWei(balance));
 
             var totalAmountBack =
-                await transferService.CalculateTotalAmountToTransferWholeBalanceInEther(toAddress, 2);
+                await transferService.CalculateTotalAmountToTransferWholeBalanceInEther(toAddress, 2m);
 
             var web32 = new Web3.Web3(newAccount, web3.Client);
             var receiptBack = await web32.Eth.GetEtherTransferService()
-                .TransferEtherAndWaitForReceiptAsync(AccountFactory.Address, totalAmountBack, 2);
+                .TransferEtherAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, totalAmountBack, gasPriceGwei: 2);
+
+            var balanceFrom = await web32.Eth.GetBalance.SendRequestAsync(toAddress);
+            Assert.Equal(0, Web3.Web3.Convert.FromWei(balanceFrom));
+        }
+
+        [Fact]
+        public async void ShouldTransferWholeBalanceInEtherEIP1599()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var privateKey = EthECKey.GenerateKey();
+            var newAccount = new Account(privateKey.GetPrivateKey(), EthereumClientIntegrationFixture.ChainId);
+            var toAddress = newAccount.Address;
+            var transferService = web3.Eth.GetEtherTransferService();
+
+            var maxFee = await transferService.CalculateMaxFeePerGasToTransferWholeBalanceInEther();
+            var receipt = await transferService
+                .TransferEtherAndWaitForReceiptAsync(toAddress, 0.1m, maxFee);
+
+            var balance = await web3.Eth.GetBalance.SendRequestAsync(toAddress);
+            Assert.Equal(0.1m, Web3.Web3.Convert.FromWei(balance));
+
+
+            var web32 = new Web3.Web3(newAccount, web3.Client);
+
+            var maxFeeTransferEtherBack =
+                  await web32.Eth.GetEtherTransferService().CalculateMaxFeePerGasToTransferWholeBalanceInEther();
+            
+            var amount = await web32.Eth.GetEtherTransferService()
+                .CalculateTotalAmountToTransferWholeBalanceInEther(toAddress, maxFeeTransferEtherBack);
+            
+            var receiptBack = await web32.Eth.GetEtherTransferService()
+                .TransferEtherAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, amount, maxFeeTransferEtherBack);
 
             var balanceFrom = await web32.Eth.GetBalance.SendRequestAsync(toAddress);
             Assert.Equal(0, Web3.Web3.Convert.FromWei(balanceFrom));

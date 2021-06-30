@@ -21,11 +21,11 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task ShouldIntereceptAndSendRawTransaction()
         {
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, web3.Client);
+            var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, EthereumClientIntegrationFixture.ChainId ,web3.Client);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
             var txId = await web3.Eth.Transactions.SendTransaction.SendRequestAsync(
@@ -50,11 +50,11 @@ namespace Nethereum.Accounts.IntegrationTests
                 @"[{""constant"":true,""inputs"":[],""name"":""getMultiplier"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""contractName"",""outputs"":[{""name"":"""",""type"":""string""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""uint256""}],""type"":""constructor""}]";
 
 
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, web3.Client);
+            var transactionInterceptor = new AccountTransactionSigningInterceptor(privateKey, EthereumClientIntegrationFixture.ChainId, web3.Client);
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
             var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,

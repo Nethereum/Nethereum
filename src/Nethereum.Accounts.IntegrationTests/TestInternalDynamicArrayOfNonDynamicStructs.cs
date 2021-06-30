@@ -14,7 +14,7 @@ namespace Nethereum.Accounts.IntegrationTests
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class TestInternalDynamicArrayOfNonDynamicStructs
     {
-        
+
         /*
 pragma solidity "0.5.7";
 pragma experimental ABIEncoderV2;
@@ -97,6 +97,13 @@ contract StructsSample
 
 */
 
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public TestInternalDynamicArrayOfNonDynamicStructs(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
         [Fact]
         public void ShouldEncodeSignatureWithStructArrays()
         {
@@ -111,9 +118,7 @@ contract StructsSample
         [Fact]
         public async void ShouldEncodeDecodeStructContainingStructsArray()
         {
-            var address = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var web3 = new Web3.Web3(new Account(privateKey));
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSampleDeployment>()
                 .SendRequestAndWaitForReceiptAsync();
 

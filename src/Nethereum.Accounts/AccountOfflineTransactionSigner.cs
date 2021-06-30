@@ -10,16 +10,18 @@ namespace Nethereum.Web3.Accounts
 {
     public class AccountOfflineTransactionSigner
     {
-        private readonly TransactionSigner _transactionSigner;
+        private readonly LegacyTransactionSigner _legacyTransactionSigner;
 
-        public AccountOfflineTransactionSigner(TransactionSigner transactionSigner)
+        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner)
         {
-            _transactionSigner = transactionSigner;
+            _legacyTransactionSigner = legacyTransactionSigner;
+            
         }
 
         public AccountOfflineTransactionSigner()
         {
-            _transactionSigner = new TransactionSigner();
+            _legacyTransactionSigner = new LegacyTransactionSigner();
+
         }
 
         public string SignTransaction(Account account, TransactionInput transaction, BigInteger? chainId = null)
@@ -37,26 +39,39 @@ namespace Nethereum.Web3.Accounts
             var nonce = transaction.Nonce;
             if (nonce == null) throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
 
-            var gasPrice = transaction.GasPrice;
             var gasLimit = transaction.Gas;
-
             var value = transaction.Value ?? new HexBigInteger(0);
-
             string signedTransaction;
 
-            if (chainId == null)
+            if (transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte())
             {
-                signedTransaction = _transactionSigner.SignTransaction(account.PrivateKey,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
+                var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
+                var maxFeePerGas = transaction.MaxFeePerGas.Value;
+                if (chainId == null) throw new ArgumentException("ChainId required for TransactionType 0X02 EIP1559");
+                //TODO:Convert access list and extract this to a new signer;
+                //TODO:Extract to a generic typed signer
+                var transaction1559 = new Transaction1559(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, transaction.To, value, transaction.Data, null);
+                transaction1559.Sign(new EthECKey(account.PrivateKey));
+                signedTransaction = transaction1559.GetRLPEncoded().ToHex();
             }
             else
             {
-                signedTransaction = _transactionSigner.SignTransaction(account.PrivateKey, chainId.Value,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
+                var gasPrice = transaction.GasPrice;
+
+                if (chainId == null)
+                {
+                    signedTransaction = _legacyTransactionSigner.SignTransaction(account.PrivateKey,
+                        transaction.To,
+                        value.Value, nonce,
+                        gasPrice.Value, gasLimit.Value, transaction.Data);
+                }
+                else
+                {
+                    signedTransaction = _legacyTransactionSigner.SignTransaction(account.PrivateKey, chainId.Value,
+                        transaction.To,
+                        value.Value, nonce,
+                        gasPrice.Value, gasLimit.Value, transaction.Data);
+                }
             }
 
             return signedTransaction;

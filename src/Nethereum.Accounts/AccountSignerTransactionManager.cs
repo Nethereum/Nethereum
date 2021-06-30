@@ -8,11 +8,11 @@ using Nethereum.KeyStore;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Fee1559Calculators;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
@@ -20,6 +20,8 @@ namespace Nethereum.Web3.Accounts
     {
         private readonly AccountOfflineTransactionSigner _transactionSigner;
         public BigInteger? ChainId { get; private set; }
+
+       
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
         {
@@ -45,7 +47,7 @@ namespace Nethereum.Web3.Accounts
 
         }
 
-        public override BigInteger DefaultGas { get; set; } = Transaction.DEFAULT_GAS_LIMIT;
+        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -62,7 +64,8 @@ namespace Nethereum.Web3.Accounts
         public string SignTransaction(TransactionInput transaction)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
-            SetDefaultGasPriceAndCostIfNotSet(transaction);
+            SetDefaultGasIfNotSet(transaction);
+            
             return _transactionSigner.SignTransaction((Account) Account, transaction, ChainId);
         }
 
@@ -73,8 +76,9 @@ namespace Nethereum.Web3.Accounts
                 throw new Exception("Invalid account used signing");
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
-            var gasPrice = await GetGasPriceAsync(transaction).ConfigureAwait(false);
-            transaction.GasPrice = gasPrice;
+
+            await SetTransactionFeesOrPricing(transaction);
+
             return SignTransaction(transaction);
         }
 

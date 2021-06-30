@@ -8,7 +8,6 @@ using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -68,9 +67,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task ShouldBeAbleToDeployAContractUsingPersonalUnlock()
         {
-            
-            var senderAddress = AccountFactory.Address;
-            var password = AccountFactory.Password;
+
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var password = EthereumClientIntegrationFixture.ManagedAccountPassword;
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
@@ -78,7 +77,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplier = 7;
 
-            var web3 = Web3Factory.GetWeb3Managed();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3Managed();
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
@@ -98,8 +97,7 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task ShouldBeAbleToDeployAContractUsingPrivateKey()
         {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""val"",""type"":""int256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""int256""}],""type"":""function""},{""inputs"":[{""name"":""multiplier"",""type"":""int256""}],""type"":""constructor""}]";
             var byteCode =
@@ -127,12 +125,13 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task ShouldBeAbleToTransferBetweenAccountsUsingManagedAccount()
         {
-            var senderAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var password = EthereumClientIntegrationFixture.ManagedAccountPassword;
+            
             var addressTo = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
-            var password = "password";
+
             // A managed account is an account which is maintained by the client (Geth / Parity)
-            var account = new ManagedAccount(senderAddress, password);
-            var web3 = new Web3.Web3(account);
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3Managed();
 
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
             var transactionPolling = (TransactionReceiptPollingService)web3.TransactionManager.TransactionReceiptService;
@@ -143,7 +142,7 @@ namespace Nethereum.Accounts.IntegrationTests
             //When sending the transaction using the transaction manager for a managed account, personal_sendTransaction is used.
 
             var txnHash =
-                await web3.TransactionManager.SendTransactionAsync(account.Address, addressTo, new HexBigInteger(20));
+                await web3.TransactionManager.SendTransactionAsync(senderAddress, addressTo, new HexBigInteger(20));
             var receipt = await transactionPolling.PollForReceiptAsync(txnHash);         
 
             var newBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);

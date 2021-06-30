@@ -10,7 +10,6 @@ using Nethereum.RPC.Personal;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Web3.Accounts.Managed;
-using Transaction = Nethereum.Signer.Transaction;
 
 namespace Nethereum.Web3.Accounts
 {
