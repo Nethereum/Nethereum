@@ -11,11 +11,11 @@ namespace Nethereum.Model
 
         public byte[] Encode(Account account)
         {
-            return RLP.RLP.EncodeElementsAndList(
+            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][] {
                 account.Nonce.ToBytesForRLPEncoding(),
                 account.Balance.ToBytesForRLPEncoding(),
                 account.StateRoot,
-                account.CodeHash);
+                account.CodeHash });
         }
 
 

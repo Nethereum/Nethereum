@@ -15,11 +15,9 @@ namespace Nethereum.Model
             return new Util.Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header));
         }
 
-       
-
         public byte[] EncodeCliqueSigHeader(BlockHeader header)
         {
-            return RLP.RLP.EncodeElementsAndList(
+            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][] {
                 header.ParentHash,
                 header.UnclesHash,
                 header.Coinbase.HexToByteArray(),
@@ -34,13 +32,13 @@ namespace Nethereum.Model
                 header.Timestamp.ToBytesForRLPEncoding(),
                 header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
                 header.MixHash,
-                header.Nonce
+                header.Nonce }
             );
         }
 
         public byte[] Encode(BlockHeader header)
         {
-            return RLP.RLP.EncodeElementsAndList(
+            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList( new byte[][] {
                 header.ParentHash,
                 header.UnclesHash,
                 header.Coinbase.HexToByteArray(),
@@ -55,7 +53,7 @@ namespace Nethereum.Model
                 header.Timestamp.ToBytesForRLPEncoding(),
                 header.ExtraData,
                 header.MixHash,
-                header.Nonce
+                header.Nonce }
             );
         }
 
