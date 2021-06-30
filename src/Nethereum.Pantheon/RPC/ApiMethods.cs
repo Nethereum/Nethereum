@@ -1,3 +1,0 @@
-﻿namespace Nethereum.Pantheon.RPC
-{
-}

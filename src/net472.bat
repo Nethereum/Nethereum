@@ -87,7 +87,7 @@ cd Nethereum.RPC.Reactive
 CALL :build
 cd ..
 
-cd Nethereum.Pantheon
+cd Nethereum.Besu
 CALL :build
 cd ..
 

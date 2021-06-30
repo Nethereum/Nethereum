@@ -84,10 +84,6 @@ cd Nethereum.Util*
 CALL :restorepack
 cd ..
 
-cd Nethereum.Uport*
-CALL :restorepack
-cd ..
-
 cd Nethereum.HDWallet
 CALL :restorepack
 cd ..
@@ -116,7 +112,7 @@ cd Nethereum.StandardNonFungibleTokenERC721
 CALL :restorepack
 cd..
 
-cd Nethereum.Pantheon
+cd Nethereum.Besu
 CALL :restorepack
 cd..
 
