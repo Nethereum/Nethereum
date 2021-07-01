@@ -26,5 +26,6 @@ namespace Nethereum.Model
         public byte[] MixHash { get; set; }
         public byte[] ExtraData { get; set; }
         public byte[] Nonce { get; set; }
+        public BigInteger BaseFee { get; set; }
     }
 }

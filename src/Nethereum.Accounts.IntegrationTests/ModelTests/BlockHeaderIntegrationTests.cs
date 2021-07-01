@@ -22,43 +22,37 @@ namespace Nethereum.Accounts.IntegrationTests
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        //Ignore due to bug in geth 1.9.1
         [Fact]
         public async void ShouldDecodeCliqueAuthor()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
-            {
-                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-                var block =
-                    await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
-                var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
-                var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
-                Assert.True(EthereumClientIntegrationFixture.AccountAddress.IsTheSameAddress(account));
-            }
-
+     
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var block =
+                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
+            var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
+            var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
+            Assert.True(EthereumClientIntegrationFixture.AccountAddress.IsTheSameAddress(account));
+            
         }
 
 
-        //Ignore due to bug in geth 1.9.1
         [Fact]
         public async void ShouldEncodeDecode()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
-            {
-                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =
                     await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
-                var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
+            var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
 
-                var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);
-                var decoded = BlockHeaderEncoder.Current.Decode(encoded);
+            var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);
+            var decoded = BlockHeaderEncoder.Current.Decode(encoded);
 
-                Assert.Equal(blockHeader.StateRoot.ToHex(), decoded.StateRoot.ToHex());
-                Assert.Equal(blockHeader.LogsBloom.ToHex(), decoded.LogsBloom.ToHex());
-                Assert.Equal(blockHeader.MixHash.ToHex(), decoded.MixHash.ToHex());
-                Assert.Equal(blockHeader.ReceiptHash.ToHex(), decoded.ReceiptHash.ToHex());
-                Assert.Equal(blockHeader.Difficulty, decoded.Difficulty);
-            }
+            Assert.Equal(blockHeader.StateRoot.ToHex(), decoded.StateRoot.ToHex());
+            Assert.Equal(blockHeader.LogsBloom.ToHex(), decoded.LogsBloom.ToHex());
+            Assert.Equal(blockHeader.MixHash.ToHex(), decoded.MixHash.ToHex());
+            Assert.Equal(blockHeader.ReceiptHash.ToHex(), decoded.ReceiptHash.ToHex());
+            Assert.Equal(blockHeader.Difficulty, decoded.Difficulty);
+            Assert.Equal(blockHeader.BaseFee, decoded.BaseFee);
         }
 
     }

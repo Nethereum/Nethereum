@@ -7,7 +7,7 @@ namespace Nethereum.RPC.ModelFactories
 {
     public class BlockHeaderRPCFactory
     {
-        public static BlockHeader FromRPC(Block rpcBlock, bool mixHasAndhNonceInSealFields = false)
+        public static BlockHeader FromRPC(Block rpcBlock, bool mixHashAndNonceInSealFields = false)
         {
             var blockHeader = new BlockHeader();
             blockHeader.BlockNumber = rpcBlock.Number;
@@ -23,8 +23,9 @@ namespace Nethereum.RPC.ModelFactories
             blockHeader.Timestamp = (long)rpcBlock.Timestamp.Value;
             blockHeader.TransactionsHash = rpcBlock.TransactionsRoot.HexToByteArray();
             blockHeader.UnclesHash = rpcBlock.Sha3Uncles.HexToByteArray();
+            blockHeader.BaseFee = rpcBlock.BaseFeePerGas.Value;
 
-            if (mixHasAndhNonceInSealFields && rpcBlock.SealFields != null && rpcBlock.SealFields.Length >= 2)
+            if (mixHashAndNonceInSealFields && rpcBlock.SealFields != null && rpcBlock.SealFields.Length >= 2)
             {
                 blockHeader.MixHash = EnsureMixHashWithoutRLPSizePrefix(rpcBlock.SealFields[0].HexToByteArray());
                 blockHeader.Nonce = EnsureNonceWithoutRLPSizePrefix(rpcBlock.SealFields[1].HexToByteArray());
