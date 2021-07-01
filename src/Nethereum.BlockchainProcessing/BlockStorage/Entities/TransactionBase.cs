@@ -23,5 +23,7 @@
         public bool HasVmStack { get; set; }
         public string NewContractAddress { get; set; }
         public bool FailedCreateContract { get; set; }
+        public string MaxFeePerGas { get; internal set; }
+        public string MaxPriorityFeePerGas { get; internal set; }
     }
 }

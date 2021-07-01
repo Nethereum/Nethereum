@@ -24,6 +24,9 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             to.GasPrice = @from.GasPrice?.Value.ToString();
             to.Input = @from.Input ?? string.Empty;
             to.Nonce = @from.Nonce?.Value.ToString();
+            to.MaxFeePerGas = @from.MaxFeePerGas?.Value.ToString();
+            to.MaxPriorityFeePerGas = @from.MaxPriorityFeePerGas?.Value.ToString();
+
         }
 
         public static Transaction MapToStorageEntityForUpsert(this TransactionReceiptVO transactionReceiptVO)

@@ -18,5 +18,6 @@
         public string TimeStamp => Timestamp;
 
         public long TransactionCount { get;set; }
+        public string BaseFeePerGas { get; set; }
     }
 }
