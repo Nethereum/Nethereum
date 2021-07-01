@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Nethereum.Utils
+namespace Nethereum.Util
 {
     public interface IWaitStrategy
     {

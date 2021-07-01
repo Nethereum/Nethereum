@@ -1,7 +1,7 @@
 ﻿#if !NET35
 using Common.Logging;
 using Nethereum.Hex.HexTypes;
-using Nethereum.Utils;
+using Nethereum.Util;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
