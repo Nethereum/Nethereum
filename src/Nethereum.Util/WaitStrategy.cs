@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 
-namespace Nethereum.Utils
+namespace Nethereum.Util
 {
 #if !NET35
     public class WaitStrategy : IWaitStrategy
