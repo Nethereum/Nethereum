@@ -71,6 +71,39 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
             Assert.Equal(0, mockRpcResponses.ReceiptRequestCount);
         }
 
+
+        [Fact]
+        public async Task Should_Not_Retrieve_Receipt_When_Disabled()
+        {
+
+            var blockToCrawl = new BigInteger(1);
+
+            var mockRpcResponses = new BlockProcessingRpcMock(Web3Mock);
+            mockRpcResponses.AddToGetBlockNumberRequestQueue(100);
+            mockRpcResponses.SetupTransactionsWithReceipts(blockNumber: blockToCrawl, numberOfTransactions: 2, logsPerTransaction: 2);
+
+            var processedData = new ProcessedBlockchainData();
+
+            var blockProcessor = Web3.Processing.Blocks.CreateBlockProcessor(steps =>
+            {
+                steps.BlockStep.AddSynchronousProcessorHandler((block) => processedData.Blocks.Add(block));
+                steps.TransactionStep.AddSynchronousProcessorHandler((tx) => processedData.Transactions.Add(tx));
+                steps.TransactionReceiptStep.AddSynchronousProcessorHandler((tx) => processedData.TransactionsWithReceipt.Add(tx));
+                steps.ContractCreationStep.AddSynchronousProcessorHandler((c) => processedData.ContractCreations.Add(c));
+                steps.FilterLogStep.AddSynchronousProcessorHandler((filterLog) => processedData.FilterLogs.Add(filterLog));
+            });
+
+            blockProcessor.Orchestrator.TransactionWithReceiptCrawlerStep.Enabled = false;
+
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            await blockProcessor.ExecuteAsync(blockToCrawl, cancellationTokenSource.Token, blockToCrawl);
+
+            Assert.Single(processedData.Blocks);
+            Assert.Equal(2, processedData.Transactions.Count);
+            Assert.Equal(0, processedData.TransactionsWithReceipt.Count);
+            Assert.Equal(0, processedData.FilterLogs.Count);
+        }
         [Fact]
         public async Task Should_Retrieve_Receipt_When_There_Is_No_Tx_Criteria()
         {

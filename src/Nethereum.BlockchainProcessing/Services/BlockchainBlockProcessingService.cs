@@ -20,7 +20,7 @@ namespace Nethereum.BlockchainProcessing.Services
 
 #if !DOTNET35
 
-        public BlockchainProcessor CreateBlockProcessor(
+        public BlockchainCrawlingProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration, 
             uint minimumBlockConfirmations, 
             ILog log = null) => CreateBlockProcessor(
@@ -29,7 +29,7 @@ namespace Nethereum.BlockchainProcessing.Services
                 minimumBlockConfirmations, 
                 log);
 
-        public BlockchainProcessor CreateBlockProcessor(
+        public BlockchainCrawlingProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
             uint minimumBlockConfirmations,
@@ -41,10 +41,10 @@ namespace Nethereum.BlockchainProcessing.Services
 
             stepsConfiguration?.Invoke(processingSteps);
 
-            return new BlockchainProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
+            return new BlockchainCrawlingProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
         }
 
-        public BlockchainProcessor CreateBlockStorageProcessor(
+        public BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory, 
             uint minimumBlockConfirmations, 
             Action<BlockProcessingSteps> configureSteps = null, 
@@ -56,7 +56,7 @@ namespace Nethereum.BlockchainProcessing.Services
                 log);
 
 
-        public BlockchainProcessor CreateBlockStorageProcessor(
+        public BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
             uint minimumBlockConfirmations,
@@ -76,7 +76,7 @@ namespace Nethereum.BlockchainProcessing.Services
 
             configureSteps?.Invoke(processingSteps);
 
-            return new BlockchainProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
+            return new BlockchainCrawlingProcessor(orchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log);
 
         }
 

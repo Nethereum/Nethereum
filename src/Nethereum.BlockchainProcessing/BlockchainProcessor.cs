@@ -10,7 +10,7 @@ namespace Nethereum.BlockchainProcessing
 {
     public class BlockchainProcessor
     {
-        private IBlockchainProcessingOrchestrator _blockchainProcessingOrchestrator;
+        protected IBlockchainProcessingOrchestrator _blockchainProcessingOrchestrator;
         private IBlockProgressRepository _blockProgressRepository;
         private ILastConfirmedBlockNumberService _lastConfirmedBlockNumberService;
         private ILog _log;

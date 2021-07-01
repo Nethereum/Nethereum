@@ -16,25 +16,25 @@ namespace Nethereum.BlockchainProcessing.Services
     public interface IBlockchainBlockProcessingService
     {
 
-        BlockchainProcessor CreateBlockProcessor(
+        BlockchainCrawlingProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null);
 
-        BlockchainProcessor CreateBlockProcessor(
+        BlockchainCrawlingProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             ILog log = null);
 
 
-        BlockchainProcessor CreateBlockStorageProcessor(
+        BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
             ILog log = null);
 
-        BlockchainProcessor CreateBlockStorageProcessor(
+        BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,

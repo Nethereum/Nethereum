@@ -63,7 +63,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             var currentStepCompleted = await TransactionWithBlockCrawlerStep.ExecuteStepAsync(
                 new TransactionVO(txn, completedStep.StepData), completedStep.ExecutedStepsCollection);
 
-            if(currentStepCompleted.ExecutedStepsCollection.Any())
+            if(currentStepCompleted.ExecutedStepsCollection.Any() && TransactionWithReceiptCrawlerStep.Enabled)
             { 
                 await CrawlTransactionReceipt(currentStepCompleted);
             }
@@ -71,20 +71,26 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         protected virtual async Task CrawlTransactionReceipt(CrawlerStepCompleted<TransactionVO> completedStep)
         {
-           var currentStepCompleted = await TransactionWithReceiptCrawlerStep.ExecuteStepAsync(completedStep.StepData,
-                completedStep.ExecutedStepsCollection);
-            if(currentStepCompleted != null && currentStepCompleted.StepData.IsForContractCreation())
+            if (TransactionWithReceiptCrawlerStep.Enabled)
             {
-                await ContractCreatedCrawlerStep.ExecuteStepAsync(currentStepCompleted.StepData, completedStep.ExecutedStepsCollection);
-            }
+                var currentStepCompleted = await TransactionWithReceiptCrawlerStep.ExecuteStepAsync(
+                    completedStep.StepData,
+                    completedStep.ExecutedStepsCollection);
+                if (currentStepCompleted != null && currentStepCompleted.StepData.IsForContractCreation() &&
+                    ContractCreatedCrawlerStep.Enabled)
+                {
+                    await ContractCreatedCrawlerStep.ExecuteStepAsync(currentStepCompleted.StepData,
+                        completedStep.ExecutedStepsCollection);
+                }
 
-            await CrawlFilterLogs(currentStepCompleted);
+                await CrawlFilterLogs(currentStepCompleted);
+            }
         }
 
 
         protected virtual async Task CrawlFilterLogs(CrawlerStepCompleted<TransactionReceiptVO> completedStep)
         {
-            if (completedStep != null)
+            if (completedStep != null && FilterLogCrawlerStep.Enabled)
             {
                 foreach (var log in completedStep.StepData.TransactionReceipt.Logs.ConvertToFilterLog())
                 {
@@ -95,8 +101,12 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         protected virtual async Task CrawlFilterLog(CrawlerStepCompleted<TransactionReceiptVO> completedStep, FilterLog filterLog)
         {
-            var currentStepCompleted = await FilterLogCrawlerStep.ExecuteStepAsync(
-                new FilterLogVO(completedStep.StepData.Transaction, completedStep.StepData.TransactionReceipt, filterLog), completedStep.ExecutedStepsCollection);
+            if (FilterLogCrawlerStep.Enabled)
+            {
+                var currentStepCompleted = await FilterLogCrawlerStep.ExecuteStepAsync(
+                    new FilterLogVO(completedStep.StepData.Transaction, completedStep.StepData.TransactionReceipt,
+                        filterLog), completedStep.ExecutedStepsCollection);
+            }
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken = default(CancellationToken))
