@@ -32,8 +32,23 @@ namespace Nethereum.Accounts.IntegrationTests
             var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
             var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
             Assert.True(EthereumClientIntegrationFixture.AccountAddress.IsTheSameAddress(account));
-            
+
         }
+
+        [Fact]
+        public async void ShouldDecodeGoerliCliqueAuthor()
+        {
+
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Goerli);
+            var block =
+                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(5062828));
+            var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
+            var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
+            Assert.True("0x8b24eb4e6aae906058242d83e51fb077370c4720".IsTheSameAddress(account));
+
+        }
+
+        
 
 
         [Fact]

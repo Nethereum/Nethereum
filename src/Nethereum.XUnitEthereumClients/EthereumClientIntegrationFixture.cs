@@ -27,7 +27,8 @@ namespace Nethereum.XUnitEthereumClients
         Ropsten, //faucet https://faucet.dimensions.network/
         Rinkeby,
         Kovan,
-        Mainnet
+        Mainnet,
+        Goerli,
     }
 
     public enum ClientType
