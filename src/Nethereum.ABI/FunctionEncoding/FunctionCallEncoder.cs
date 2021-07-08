@@ -8,6 +8,17 @@ namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionCallEncoder : ParametersEncoder
     {
+        public string EncodeRequest(object functionInput, Type functionInputType, string sha3Signature)
+        {
+            var function = functionInputType.GetTypeInfo().GetCustomAttribute<FunctionAttribute>(true);
+            if (function == null)
+                throw new ArgumentException("Function Attribute is required", nameof(functionInput));
+
+            var encodedParameters = EncodeParametersFromTypeAttributes(functionInputType, functionInput);
+
+            return EncodeRequest(sha3Signature, encodedParameters.ToHex());
+        }
+
         public string EncodeRequest<T>(T functionInput, string sha3Signature)
         {
             var type = typeof(T);
