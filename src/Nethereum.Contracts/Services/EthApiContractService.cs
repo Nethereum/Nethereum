@@ -2,6 +2,7 @@ using System;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
@@ -73,6 +74,12 @@ namespace Nethereum.Contracts.Services
             where TContractFunctionMessage : FunctionMessage, new()
         {
             return new ContractTransactionHandler<TContractFunctionMessage>(this.TransactionManager);
+        }
+
+        public MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441")
+        {
+            return new MultiQueryHandler(Client, multiContractAdress, TransactionManager?.Account?.Address,
+                DefaultBlock);
         }
 
         public IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }
