@@ -15,7 +15,6 @@ namespace Nethereum.Web3.Accounts
         public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner)
         {
             _legacyTransactionSigner = legacyTransactionSigner;
-            
         }
 
         public AccountOfflineTransactionSigner()
@@ -48,9 +47,8 @@ namespace Nethereum.Web3.Accounts
                 var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
                 var maxFeePerGas = transaction.MaxFeePerGas.Value;
                 if (chainId == null) throw new ArgumentException("ChainId required for TransactionType 0X02 EIP1559");
-                //TODO:Convert access list and extract this to a new signer;
-                //TODO:Extract to a generic typed signer
-                var transaction1559 = new Transaction1559(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, transaction.To, value, transaction.Data, null);
+                
+                var transaction1559 = new Transaction1559(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, transaction.To, value, transaction.Data, transaction.AccessList.ToSignerAccessListItemArray());
                 transaction1559.Sign(new EthECKey(account.PrivateKey));
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
             }
