@@ -60,8 +60,7 @@ namespace Nethereum.Signer.AzureKeyVault.Console
             externalAccount.InitialiseAsync().Wait();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
             var signature2 = externalAccount.TransactionManager.SignTransactionAsync(transactionInput).Result;
-            var transactionSigner = new TransactionSigner();
-            var publicKeyRecovered2 =  transactionSigner.GetPublicKey(signature2, 1);
+            var publicKeyRecovered2 = TransactionVerificationAndRecovery.GetPublicKey(signature2);
 
             System.Console.WriteLine(publicKeyRecovered2.ToHex());
             System.Console.ReadLine();
