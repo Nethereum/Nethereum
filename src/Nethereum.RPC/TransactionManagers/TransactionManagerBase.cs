@@ -60,8 +60,25 @@ namespace Nethereum.RPC.TransactionManagers
                 else
                 {
                     var fee1559 = await CalculateFee1559();
-                    transaction.MaxFeePerGas = new HexBigInteger(fee1559.MaxFeePerGas.Value);
-                    transaction.MaxPriorityFeePerGas = new HexBigInteger(fee1559.MaxPriorityFeePerGas.Value);
+                    if (transaction.MaxFeePerGas == null)
+                    {
+                        transaction.MaxFeePerGas =
+                            new HexBigInteger(fee1559.MaxFeePerGas.Value);
+
+                        transaction.MaxPriorityFeePerGas =
+                            new HexBigInteger(fee1559.MaxPriorityFeePerGas.Value);
+                    }
+                    else
+                    {
+                        if (transaction.MaxFeePerGas < fee1559.MaxPriorityFeePerGas)
+                        {
+                            transaction.MaxPriorityFeePerGas = transaction.MaxFeePerGas;
+                        }
+                        else
+                        {
+                            transaction.MaxPriorityFeePerGas = new HexBigInteger(fee1559.MaxPriorityFeePerGas.Value);
+                        }
+                    }
                 }
             }
             else
