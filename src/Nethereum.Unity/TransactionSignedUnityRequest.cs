@@ -1,15 +1,18 @@
 using Nethereum.Signer;
-using Transaction = Nethereum.Signer.Transaction;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Hex.HexTypes;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Util;
 
 namespace Nethereum.JsonRpc.UnityClient
@@ -20,25 +23,33 @@ namespace Nethereum.JsonRpc.UnityClient
         private readonly string _privateKey;
         private readonly string _account;
         private readonly BigInteger? _chainId;
-        private readonly TransactionSigner _transactionSigner;
+        private readonly LegacyTransactionSigner _transactionSigner;
         private readonly EthGetTransactionCountUnityRequest _transactionCountRequest;
         private readonly EthSendRawTransactionUnityRequest _ethSendTransactionRequest;
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
         private readonly EthGasPriceUnityRequest _ethGasPriceUnityRequest;
+        public IFee1559CalculationUnityRequestStrategy Fee1559CalculationStrategy { get; set; }
         public bool EstimateGas { get; set; } = true;
-        
+        public bool UseLegacyAsDefault { get; set; } = false;
 
-        public TransactionSignedUnityRequest(string url, string privateKey, BigInteger? chainId = null)
+        public TransactionSignedUnityRequest(string url, string privateKey, BigInteger? chainId = null, Dictionary<string, string> requestHeaders = null)
         {
             _chainId = chainId;
             _url = url;
             _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
-            _transactionSigner = new TransactionSigner(); 
+            _transactionSigner = new LegacyTransactionSigner();
             _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(_url);
+            _ethSendTransactionRequest.RequestHeaders = requestHeaders;
             _transactionCountRequest = new EthGetTransactionCountUnityRequest(_url);
+            _transactionCountRequest.RequestHeaders = requestHeaders;
             _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(_url);
+            _ethEstimateGasUnityRequest.RequestHeaders = requestHeaders;
             _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(_url);
+            _ethGasPriceUnityRequest.RequestHeaders = requestHeaders;
+            Fee1559CalculationStrategy = new DefaultFeeCalculationUnityRequestStrategy(url, _account, requestHeaders);
+
+
         }
 
         public IEnumerator SignAndSendTransaction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage
@@ -91,25 +102,82 @@ namespace Nethereum.JsonRpc.UnityClient
                 }
                 else
                 {
-                    transactionInput.Gas = new HexBigInteger(Transaction.DEFAULT_GAS_LIMIT);
+                    transactionInput.Gas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_LIMIT);
                 }
             }
 
-            if (transactionInput.GasPrice == null)
+            if (IsTransactionToBeSendAsEIP1559(transactionInput))
             {
-                yield return _ethGasPriceUnityRequest.SendRequest();
-
-                if (_ethGasPriceUnityRequest.Exception == null)
+                transactionInput.Type = new HexBigInteger(TransactionType.EIP1559.AsByte());
+                if (transactionInput.MaxPriorityFeePerGas != null)
                 {
-                    var gasPrice = _ethGasPriceUnityRequest.Result;
-                    transactionInput.GasPrice = gasPrice;
+                    if (transactionInput.MaxFeePerGas == null)
+                    {
+                        yield return Fee1559CalculationStrategy.CalculateFee(transactionInput.MaxPriorityFeePerGas.Value);
+                        if (Fee1559CalculationStrategy.Exception != null)
+                        {
+                            transactionInput.MaxFeePerGas = new HexBigInteger(Fee1559CalculationStrategy.Result.MaxFeePerGas.Value);
+                        }
+                        else
+                        {
+                            this.Exception = Fee1559CalculationStrategy.Exception;
+                            yield break;
+                        }
+                    }
                 }
                 else
                 {
-                    this.Exception = _ethGasPriceUnityRequest.Exception;
-                    yield break;
+                
+                    yield return Fee1559CalculationStrategy.CalculateFee();
+                    if (Fee1559CalculationStrategy.Exception != null)
+                    {
+                        if (transactionInput.MaxFeePerGas == null)
+                        {
+                            transactionInput.MaxFeePerGas =
+                                new HexBigInteger(Fee1559CalculationStrategy.Result.MaxFeePerGas.Value);
+
+                            transactionInput.MaxPriorityFeePerGas =
+                                new HexBigInteger(Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas.Value);
+                        }
+                        else
+                        {
+                            if (transactionInput.MaxFeePerGas < Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas)
+                            {
+                                transactionInput.MaxPriorityFeePerGas = transactionInput.MaxFeePerGas;
+                            }
+                            else
+                            {
+                                transactionInput.MaxPriorityFeePerGas = new HexBigInteger(Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas.Value);
+                            }
+                        }
+ 
+                    }
+                    else
+                    {
+                        this.Exception = Fee1559CalculationStrategy.Exception;
+                        yield break;
+                    }
                 }
             }
+            else
+            {
+                if (transactionInput.GasPrice == null)
+                {
+                    yield return _ethGasPriceUnityRequest.SendRequest();
+
+                    if (_ethGasPriceUnityRequest.Exception == null)
+                    {
+                        var gasPrice = _ethGasPriceUnityRequest.Result;
+                        transactionInput.GasPrice = gasPrice;
+                    }
+                    else
+                    {
+                        this.Exception = _ethGasPriceUnityRequest.Exception;
+                        yield break;
+                    }
+                }
+            }
+            
 
             var nonce = transactionInput.Nonce;
             
@@ -159,6 +227,11 @@ namespace Nethereum.JsonRpc.UnityClient
                 this.Exception = _ethSendTransactionRequest.Exception;
                 yield break;
             }
+        }
+
+        public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
+        {
+            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte());
         }
     }
 }

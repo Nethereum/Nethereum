@@ -8,6 +8,7 @@ using System.Text;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Collections;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
@@ -1024,6 +1025,12 @@ namespace Nethereum.JsonRpc.UnityClient
         public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger number)
         {
             var request = _ethGetBlockWithTransactionsHashesByNumber.BuildRequest(number);
+            yield return SendRequest(request);
+        }
+
+        public IEnumerator SendRequest(BlockParameter blockParameter)
+        {
+            var request = _ethGetBlockWithTransactionsHashesByNumber.BuildRequest(blockParameter);
             yield return SendRequest(request);
         }
     }

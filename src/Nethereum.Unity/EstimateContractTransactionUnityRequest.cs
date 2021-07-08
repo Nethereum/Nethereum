@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
@@ -13,10 +14,13 @@ namespace Nethereum.JsonRpc.UnityClient
         private string _url;
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
 
-        public EstimateContractTransactionUnityRequest(string url, string privateKey, string account)
+        public EstimateContractTransactionUnityRequest(string url, string privateKey, string account, Dictionary<string, string> requestHeaders = null)
         {
             _url = url;
-            _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(url);
+            _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(url)
+            {
+                RequestHeaders = requestHeaders
+            };
         }
 
         public IEnumerator EstimateContractFunction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage
