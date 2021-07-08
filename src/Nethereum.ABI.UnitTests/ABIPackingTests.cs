@@ -4,7 +4,7 @@ using System.Text;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
-using Org.BouncyCastle.Crypto.Digests;
+
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
