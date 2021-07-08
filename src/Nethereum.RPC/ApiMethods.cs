@@ -3,6 +3,8 @@
     public enum ApiMethods
     {
         net_listening,
+        net_version,
+        net_peerCount,
         eth_chainId,
         eth_protocolVersion,
         eth_syncing,
@@ -10,6 +12,7 @@
         eth_mining,
         eth_hashrate,
         eth_gasPrice,
+        eth_feeHistory,
         eth_accounts,
         eth_blockNumber,
         eth_getBalance,
@@ -74,8 +77,6 @@
         shh_post,
         web3_clientVersion,
         web3_sha3,
-        net_version,
-        net_peerCount,
         personal_listAccounts,
         personal_newAccount,
         personal_unlockAccount,
