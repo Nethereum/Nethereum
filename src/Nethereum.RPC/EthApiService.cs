@@ -4,6 +4,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.TransactionManagers;
 using System;
+using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC
 {
@@ -38,6 +39,7 @@ namespace Nethereum.RPC
             Uncles = new EthApiUncleService(client);
             Mining = new EthApiMiningService(client);
             Compile = new EthApiCompilerService(client);
+            FeeHistory = new EthFeeHistory(Client);
 
             DefaultBlock = BlockParameter.CreateLatest();
             TransactionManager = transactionManager;
@@ -106,6 +108,8 @@ namespace Nethereum.RPC
         public IEthApiBlockService Blocks { get; private set; }
 
         public IEthApiFilterService Filters { get; private set; }
+
+        public IEthFeeHistory FeeHistory { get; private set; }
 
         public IEthApiCompilerService Compile { get; private set; }
 #if !DOTNET35

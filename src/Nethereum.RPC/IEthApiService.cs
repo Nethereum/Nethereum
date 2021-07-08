@@ -1,6 +1,7 @@
 ﻿using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
+using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.RPC
@@ -25,6 +26,7 @@ namespace Nethereum.RPC
         ITransactionManager TransactionManager { get; set; }
         IEthApiTransactionsService Transactions { get; }
         IEthApiUncleService Uncles { get; }
+        IEthFeeHistory FeeHistory { get; }
 #if !DOTNET35
         IEtherTransferService GetEtherTransferService();
 #endif
