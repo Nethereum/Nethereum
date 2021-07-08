@@ -1,5 +1,6 @@
 ﻿using Nethereum.RPC.Eth.DTOs;
 using System.Collections;
+using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
@@ -16,11 +17,14 @@ namespace Nethereum.JsonRpc.UnityClient
         private readonly EthCallUnityRequest _ethCallUnityRequest;
         public string DefaultAccount { get; set; }
 
-        public QueryUnityRequest(string url, string defaultAccount)
+        public QueryUnityRequest(string url, string defaultAccount, Dictionary<string, string> requestHeaders = null)
         {
             _url = url;
             DefaultAccount = defaultAccount;
-            _ethCallUnityRequest = new EthCallUnityRequest(_url);
+            _ethCallUnityRequest = new EthCallUnityRequest(_url)
+            {
+                RequestHeaders = requestHeaders
+            };
         }
 
         public IEnumerator Query(TFunctionMessage functionMessage, string contractAddress,

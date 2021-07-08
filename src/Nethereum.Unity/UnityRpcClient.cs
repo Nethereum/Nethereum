@@ -4,6 +4,7 @@ using Nethereum.Unity.RpcModel;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using RpcError = Nethereum.JsonRpc.Client.RpcError;
@@ -16,6 +17,8 @@ namespace Nethereum.JsonRpc.UnityClient
     public class UnityRpcClient<TResult>:UnityRequest<TResult>
     {
         private readonly string _url;
+
+        public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
         
         public UnityRpcClient(string url, JsonSerializerSettings jsonSerializerSettings = null)
         {
@@ -44,12 +47,21 @@ namespace Nethereum.JsonRpc.UnityClient
             var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
             var unityRequest = new UnityWebRequest(_url, "POST");
             var uploadHandler = new UploadHandlerRaw(requestBytes);
+            
             unityRequest.SetRequestHeader("Content-Type", "application/json");
             uploadHandler.contentType= "application/json";
             unityRequest.uploadHandler = uploadHandler;
 
             unityRequest.downloadHandler = new DownloadHandlerBuffer();
-                
+
+            if (RequestHeaders != null)
+            {
+                foreach (var requestHeader in RequestHeaders)
+                {
+                    unityRequest.SetRequestHeader(requestHeader.Key, requestHeader.Value);
+                }
+            }
+
             yield return unityRequest.SendWebRequest();
             
             if(unityRequest.error != null) 
