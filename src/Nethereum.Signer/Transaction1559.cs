@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Util;
 
 namespace Nethereum.Signer
@@ -54,5 +55,12 @@ namespace Nethereum.Signer
         {
             return Transaction1559Encoder.Current.EncodeRaw(this);
         }
+
+#if !DOTNET35
+        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
+        {
+           await  externalSigner.SignAsync(this).ConfigureAwait(false);
+        }
+#endif
     }
 }

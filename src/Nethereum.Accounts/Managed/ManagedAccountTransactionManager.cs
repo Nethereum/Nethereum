@@ -59,7 +59,7 @@ namespace Nethereum.Web3.Accounts.Managed
             if (!transactionInput.From.IsTheSameAddress(Account.Address)) throw new Exception("Invalid account used");
             
             await SetTransactionFeesOrPricing(transactionInput);
-            SetDefaultGasPriceAndCostIfNotSet(transactionInput);
+            SetDefaultGasIfNotSet(transactionInput);
 
             var nonce = await GetNonceAsync(transactionInput).ConfigureAwait(false);
             if (nonce != null) transactionInput.Nonce = nonce;

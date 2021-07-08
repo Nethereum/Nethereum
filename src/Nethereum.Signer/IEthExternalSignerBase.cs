@@ -13,6 +13,8 @@ namespace Nethereum.Signer
         Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId);
         Task SignAsync(LegacyTransaction transaction);
         Task SignAsync(LegacyTransactionChainId transaction);
+        Task SignAsync(Transaction1559 transaction);
+        bool Supported1559 { get; }
     }
 #endif
 }

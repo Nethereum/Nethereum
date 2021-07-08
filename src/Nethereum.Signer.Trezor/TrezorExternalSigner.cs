@@ -85,6 +85,13 @@ namespace Nethereum.Signer.Trezor
             transaction.SetSignature(EthECDSASignatureFactory.FromComponents(signature.SignatureR, signature.SignatureS, (byte)signature.SignatureV));
         }
 
+        public override Task SignAsync(Transaction1559 transaction)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override bool Supported1559 { get; } = false;
+
         public override async Task SignAsync(LegacyTransaction transaction)
         {
             var txMessage = new EthereumSignTx

@@ -14,6 +14,8 @@ namespace Nethereum.Signer
         protected abstract Task<ECDSASignature> SignExternallyAsync(byte[] bytes);
         public abstract Task SignAsync(LegacyTransactionChainId transaction);
         public abstract Task SignAsync(LegacyTransaction transaction);
+        public abstract Task SignAsync(Transaction1559 transaction);
+        public abstract bool Supported1559 { get; }
         public abstract ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; }
         public abstract bool CalculatesV { get; protected set; }
 
@@ -43,6 +45,17 @@ namespace Nethereum.Signer
             var publicKey = await GetPublicKeyAsync();
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             signature.V = new[] {(byte) (recId + 27)};
+            return new EthECDSASignature(signature);
+        }
+
+        public async Task<EthECDSASignature> SignAndCalculateYParityV(byte[] rawBytes)
+        {
+            var signature = await SignExternallyAsync(rawBytes);
+            if (CalculatesV) return new EthECDSASignature(signature);
+
+            var publicKey = await GetPublicKeyAsync();
+            var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
+            signature.V = new[] { (byte)(recId) };
             return new EthECDSASignature(signature);
         }
 
@@ -77,7 +90,26 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
-                var signature = await SignAsync(transaction.RawHash, transaction.GetChainIdAsBigInteger());
+                var signature = await SignAsync(transaction.GetRLPEncodedRaw(), transaction.GetChainIdAsBigInteger());
+                transaction.SetSignature(signature);
+            }
+        }
+
+
+        protected async Task SignHashTransactionAsync(Transaction1559 transaction)
+        {
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
+            {
+                var signature = await SignAndCalculateYParityV(transaction.RawHash);
+                transaction.SetSignature(signature);
+            }
+        }
+
+        protected async Task SignRLPTransactionAsync(Transaction1559 transaction)
+        {
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
+            {
+                var signature = await SignAndCalculateYParityV(transaction.GetRLPEncodedRaw());
                 transaction.SetSignature(signature);
             }
         }

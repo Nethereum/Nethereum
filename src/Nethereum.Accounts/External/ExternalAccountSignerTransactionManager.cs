@@ -60,19 +60,35 @@ namespace Nethereum.Web3.Accounts
             string signedTransaction;
 
             var externalSigner = ((ExternalAccount) Account).ExternalSigner;
-            if (ChainId == null)
+
+            if (externalSigner.Supported1559 && transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte())
             {
-                signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
+                var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
+                var maxFeePerGas = transaction.MaxFeePerGas.Value;
+                if (ChainId == null) throw new ArgumentException("ChainId required for TransactionType 0X02 EIP1559");
+
+                var transaction1559 = new Transaction1559(ChainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, transaction.To, value, transaction.Data, transaction.AccessList.ToSignerAccessListItemArray());
+                await transaction1559.SignExternallyAsync(externalSigner);
+                signedTransaction = transaction1559.GetRLPEncoded().ToHex();
+                
+
             }
             else
             {
-                signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
-                    transaction.To,
-                    value.Value, nonce,
-                    gasPrice.Value, gasLimit.Value, transaction.Data);
+                if (ChainId == null)
+                {
+                    signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner,
+                        transaction.To,
+                        value.Value, nonce,
+                        gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
+                }
+                else
+                {
+                    signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
+                        transaction.To,
+                        value.Value, nonce,
+                        gasPrice.Value, gasLimit.Value, transaction.Data);
+                }
             }
 
             return signedTransaction;
@@ -91,8 +107,18 @@ namespace Nethereum.Web3.Accounts
                 throw new Exception("Invalid account used signing");
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
-            var gasPrice = await GetGasPriceAsync(transaction).ConfigureAwait(false);
-            transaction.GasPrice = gasPrice;
+
+            var externalSigner = ((ExternalAccount)Account).ExternalSigner;
+            if (externalSigner.Supported1559)
+            {
+                await SetTransactionFeesOrPricing(transaction);
+            }
+            else
+            {
+                var gasPrice = await GetGasPriceAsync(transaction).ConfigureAwait(false);
+                transaction.GasPrice = gasPrice;
+            }
+
             return await SignTransactionExternallyAsync(transaction).ConfigureAwait(false);
         }
 

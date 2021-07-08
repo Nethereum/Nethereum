@@ -48,5 +48,12 @@ namespace Nethereum.Signer.AzureKeyVault
         {
             await SignHashTransactionAsync(transaction).ConfigureAwait(false);
         }
+
+        public override async Task SignAsync(Transaction1559 transaction)
+        {
+            await SignHashTransactionAsync(transaction).ConfigureAwait(false);
+        }
+
+        public override bool Supported1559 { get; } = true;
     }
 }

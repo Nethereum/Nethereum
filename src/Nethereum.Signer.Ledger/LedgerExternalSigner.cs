@@ -78,6 +78,12 @@ namespace Nethereum.Ledger
             await SignRLPTransactionAsync(transaction).ConfigureAwait(false);
         }
 
+        public override Task SignAsync(Transaction1559 transaction)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override bool Supported1559 { get; } = false;
         public byte[] GetPath()
         {
             if (!string.IsNullOrEmpty(_customPath))
