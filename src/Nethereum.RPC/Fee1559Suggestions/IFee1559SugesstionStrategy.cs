@@ -6,7 +6,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
 #if !DOTNET35
     public interface IFee1559SugesstionStrategy
     {
-        Task<Fee1559> SuggestFee(BigInteger? maxPriorityFeePerGas = null);
+        Task<Fee1559> SuggestFeeAsync(BigInteger? maxPriorityFeePerGas = null);
     }
 #endif
 }

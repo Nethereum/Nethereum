@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Numerics;
+using System.Runtime.Serialization;
 using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.Eth.DTOs
@@ -13,7 +14,7 @@ namespace Nethereum.RPC.Eth.DTOs
         /// Lowest number block of the returned range.   
         /// </summary>
         [DataMember(Name = "oldestBlock")]
-        public HexBigInteger OldestBlock { get; set; }
+        public BigInteger OldestBlock { get; set; }
 
         /// <summary>
         ///   An array of block base fees per gas. This includes the next block after the newest of the returned range, because this value can be derived from the newest block. Zeroes are returned for pre-EIP-1559 blocks
@@ -31,8 +32,8 @@ namespace Nethereum.RPC.Eth.DTOs
         ///  A two-dimensional array of effective priority fees per gas at the requested block percentiles.
         ///  A given percentile sample of effective priority fees per gas from a single block in ascending order, weighted by gas used. Zeroes are returned if the block is empty.
         /// </summary>
-        [DataMember(Name = "rewardArray")]
-        public HexBigInteger[][] RewardArray { get; set; }
+        [DataMember(Name = "reward")]
+        public HexBigInteger[][] Reward { get; set; }
 
     }
 }
