@@ -15,7 +15,7 @@ namespace Nethereum.Signer
 
         public static bool IsTypeTransaction(this byte[] bytes)
         {
-            if (Enum.IsDefined(typeof(TransactionType), bytes[0]) && (bytes[0] >= 0 && bytes[0] <= 127))
+            if (Enum.IsDefined(typeof(TransactionType),(int)bytes[0]) && (bytes[0] >= 0 && bytes[0] <= 127))
             {
                 return true;
             }
