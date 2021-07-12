@@ -16,7 +16,6 @@ namespace Nethereum.Signer
         public abstract void Sign(EthECKey key);
         public abstract EthECKey Key { get; }
 
-        public abstract Task SignExternallyAsync(IEthExternalSigner externalSigner);
         
         public virtual byte[] RawHash
         {
@@ -39,5 +38,9 @@ namespace Nethereum.Signer
         public abstract byte[] GetRLPEncoded();
 
         public abstract byte[] GetRLPEncodedRaw();
+
+#if !DOTNET35
+        public abstract Task SignExternallyAsync(IEthExternalSigner externalSigner);
+#endif
     }
 }

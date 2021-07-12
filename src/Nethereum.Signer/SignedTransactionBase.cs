@@ -39,7 +39,7 @@ namespace Nethereum.Signer
             return x.ToHex();
         }
 #if !DOTNET35
-        public abstract Task SignExternallyAsync(IEthExternalSigner externalSigner);
+        public abstract override Task SignExternallyAsync(IEthExternalSigner externalSigner);
 #endif
     }
 }
