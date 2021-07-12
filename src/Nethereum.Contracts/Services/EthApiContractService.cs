@@ -76,6 +76,11 @@ namespace Nethereum.Contracts.Services
             return new ContractTransactionHandler<TContractFunctionMessage>(this.TransactionManager);
         }
 
+        /// <summary>
+        /// Multicall using the contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+        /// </summary>
+        /// <param name="multiContractAdress">The contracts address of the deployed contract</param>
+        /// <returns></returns>
         public MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441")
         {
             return new MultiQueryHandler(Client, multiContractAdress, TransactionManager?.Account?.Address,

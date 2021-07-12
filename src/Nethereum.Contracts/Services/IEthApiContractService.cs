@@ -21,11 +21,10 @@ namespace Nethereum.Contracts.Services
         IContractQueryHandler<TContractFunctionMessage> GetContractQueryHandler<TContractFunctionMessage>() where TContractFunctionMessage : FunctionMessage, new();
 
         /// <summary>
-        /// Creates a multi quey handler, to enable execute a single request combining multiple queries to multiple contracts using the multicall contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+        /// Creates a multi query handler, to enable execute a single request combining multiple queries to multiple contracts using the multicall contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
         /// This is deployed at https://etherscan.io/address/0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441#code
         /// </summary>
-        /// <param name="multiContractAdress"></param>
-        /// <returns></returns>
+        /// <param name="multiContractAdress">The address of the deployed multicall contract</param>
         MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441");
         IContractTransactionHandler<TContractFunctionMessage> GetContractTransactionHandler<TContractFunctionMessage>() where TContractFunctionMessage : FunctionMessage, new();
         IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }

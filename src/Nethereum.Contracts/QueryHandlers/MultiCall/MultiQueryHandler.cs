@@ -38,6 +38,11 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
     }
 
 #if !DOTNET35
+    /// <summary>
+    /// Creates a multi query handler, to enable execute a single request combining multiple queries to multiple contracts using the multicall contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
+    /// This is deployed at https://etherscan.io/address/0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441#code
+    /// </summary>
+    /// <param name="multiContractAdress">The address of the deployed multicall contract</param>
     public class MultiQueryHandler
     {
         public string ContractAddress { get; set; }

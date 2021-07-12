@@ -137,7 +137,7 @@ namespace Nethereum.RPC.TransactionManagers
             if (maxPriorityFeePerGas == null) maxPriorityFeePerGas = DefaultMaxPriorityFeePerGas;
             if (Client == null) throw new NullReferenceException("Client not configured");
            
-            return Fee1559SugesstionStrategy.SuggestFee(maxPriorityFeePerGas);
+            return Fee1559SugesstionStrategy.SuggestFeeAsync(maxPriorityFeePerGas);
         }
 
         public async Task<HexBigInteger> GetGasPriceAsync(TransactionInput transactionInput)
