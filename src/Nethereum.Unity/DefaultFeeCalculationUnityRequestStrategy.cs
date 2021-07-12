@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Fee1559Calculators;
 
 namespace Nethereum.JsonRpc.UnityClient
 {

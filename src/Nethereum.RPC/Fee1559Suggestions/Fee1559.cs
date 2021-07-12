@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Nethereum.RPC.Fee1559Calculators
+namespace Nethereum.RPC.Fee1559Suggestions
 {
     public class Fee1559
     {

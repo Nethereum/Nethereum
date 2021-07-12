@@ -8,7 +8,6 @@ using Nethereum.KeyStore;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Fee1559Calculators;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;

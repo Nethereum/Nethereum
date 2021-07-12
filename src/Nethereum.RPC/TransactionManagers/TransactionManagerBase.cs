@@ -8,7 +8,7 @@ using System.Numerics;
 using System.Threading;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth;
-using Nethereum.RPC.Fee1559Calculators;
+using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.TransactionTypes;
 
@@ -28,18 +28,18 @@ namespace Nethereum.RPC.TransactionManagers
         }
 
 #if !DOTNET35
-        public BigInteger DefaultMaxPriorityFeePerGas { get; set; } = DefaultFeeCalculationStrategy.DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
+        public BigInteger DefaultMaxPriorityFeePerGas { get; set; } = SimpleFeeSuggestionStrategy.DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
 
-        private IFee1559CalculationStrategy _fee1559CalculationStrategy;
-        public IFee1559CalculationStrategy Fee1559CalculationStrategy
+        private IFee1559SugesstionStrategy _fee1559SugesstionStrategy;
+        public IFee1559SugesstionStrategy Fee1559SugesstionStrategy
         {
             get
             {
-                if (_fee1559CalculationStrategy == null)
-                    _fee1559CalculationStrategy = new DefaultFeeCalculationStrategy(Client);
-                return _fee1559CalculationStrategy;
+                if (_fee1559SugesstionStrategy == null)
+                    _fee1559SugesstionStrategy = new SimpleFeeSuggestionStrategy(Client);
+                return _fee1559SugesstionStrategy;
             }
-            set => _fee1559CalculationStrategy = value;
+            set => _fee1559SugesstionStrategy = value;
         }
 
         public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
@@ -137,7 +137,7 @@ namespace Nethereum.RPC.TransactionManagers
             if (maxPriorityFeePerGas == null) maxPriorityFeePerGas = DefaultMaxPriorityFeePerGas;
             if (Client == null) throw new NullReferenceException("Client not configured");
            
-            return Fee1559CalculationStrategy.CalculateFee(maxPriorityFeePerGas);
+            return Fee1559SugesstionStrategy.SuggestFee(maxPriorityFeePerGas);
         }
 
         public async Task<HexBigInteger> GetGasPriceAsync(TransactionInput transactionInput)
