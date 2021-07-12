@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Numerics;
+using Nethereum.RPC.Fee1559Suggestions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
