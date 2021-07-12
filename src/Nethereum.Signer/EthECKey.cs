@@ -2,6 +2,9 @@
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+#if NETCOREAPP3_1 || NET5_0
+using NBitcoin.Secp256k1;
+#endif
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
@@ -18,6 +21,13 @@ namespace Nethereum.Signer
     public class EthECKey
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
+
+#if NETCOREAPP3_1 || NET5_0
+        /// <summary>
+        /// Enables / Disables whilst signing creating a recoverable id, as opposed to afterward. When enabled this uses NBitcoin.Secp256k1 as opposed to BouncyCastle to create the signature.
+        /// </summary>
+        public static bool SignRecoverable { get; set; } = false;
+#endif
         public static byte DEFAULT_PREFIX = 0x04;
         private readonly ECKey _ecKey;
         private byte[] _publicKey;
@@ -268,40 +278,49 @@ namespace Nethereum.Signer
         public EthECDSASignature SignAndCalculateV(byte[] hash, BigInteger chainId)
         {
 #if NETCOREAPP3_1 || NET5_0
-            var privKey = NBitcoin.Secp256k1.Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
-            NBitcoin.Secp256k1.SecpRecoverableECDSASignature recSignature;
-            privKey.TrySignRecoverable(hash, out recSignature);
-            NBitcoin.Secp256k1.Scalar r;
-            NBitcoin.Secp256k1.Scalar s;
-            int recId;
-            recSignature.Deconstruct(out r, out s, out recId);
-            var vChain = CalculateV(chainId, recId);
-            return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(), vChain.ToBytesForRLPEncoding());
-#else
-            var signature = _ecKey.Sign(hash);
-            var recId = CalculateRecId(signature, hash);
-            var vChain = CalculateV(chainId, recId);
-            signature.V = vChain.ToBytesForRLPEncoding();
-            return new EthECDSASignature(signature);
+            if (SignRecoverable)
+            {
+                var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
+                privKey.TrySignRecoverable(hash, out var recSignature);
+                recSignature.Deconstruct(out Scalar r, out var s, out var recId);
+                var vChain = CalculateV(chainId, recId);
+                return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(),
+                    vChain.ToBytesForRLPEncoding());
+            }
+            else
+            {
+#endif
+                var signature = _ecKey.Sign(hash);
+                var recId = CalculateRecId(signature, hash);
+                var vChain = CalculateV(chainId, recId);
+                signature.V = vChain.ToBytesForRLPEncoding();
+                return new EthECDSASignature(signature);
+
+#if NETCOREAPP3_1 || NET5_0
+            }
 #endif
         }
 
         public EthECDSASignature SignAndCalculateYParityV(byte[] hash)
         {
 #if NETCOREAPP3_1 || NET5_0
-            var privKey = NBitcoin.Secp256k1.Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
-            NBitcoin.Secp256k1.SecpRecoverableECDSASignature recSignature;
-            privKey.TrySignRecoverable(hash, out recSignature);
-            NBitcoin.Secp256k1.Scalar r;
-            NBitcoin.Secp256k1.Scalar s;
-            int recId;
-            recSignature.Deconstruct(out r, out s, out recId);
-            return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(), new[] { (byte)(recId) });
-#else
-            var signature = _ecKey.Sign(hash);
-            var recId = CalculateRecId(signature, hash);
-            signature.V = new[] {(byte) (recId)};
-            return new EthECDSASignature(signature);
+            if (SignRecoverable)
+            {
+                var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
+                privKey.TrySignRecoverable(hash, out var recSignature);
+                recSignature.Deconstruct(out Scalar r, out var s, out var recId);
+                return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(), new[] { (byte)(recId) });
+            }
+            else
+            {
+#endif
+                var signature = _ecKey.Sign(hash);
+                var recId = CalculateRecId(signature, hash);
+                signature.V = new[] {(byte) (recId)};
+                return new EthECDSASignature(signature);
+
+#if NETCOREAPP3_1 || NET5_0
+            }
 #endif
         }
 
@@ -314,19 +333,22 @@ namespace Nethereum.Signer
         public EthECDSASignature SignAndCalculateV(byte[] hash)
         {
 #if NETCOREAPP3_1 || NET5_0
-            var privKey = NBitcoin.Secp256k1.Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
-            NBitcoin.Secp256k1.SecpRecoverableECDSASignature recSignature;
-            privKey.TrySignRecoverable(hash, out recSignature);
-            NBitcoin.Secp256k1.Scalar r;
-            NBitcoin.Secp256k1.Scalar s;
-            int recId;
-            recSignature.Deconstruct(out r, out s, out recId);
-            return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(), new[] { (byte)(recId + 27) });
-#else
-            var signature = _ecKey.Sign(hash);
-            var recId = CalculateRecId(signature, hash);
-            signature.V = new[] {(byte) (recId + 27)};
-            return new EthECDSASignature(signature);
+            if (SignRecoverable)
+            {
+                var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
+                privKey.TrySignRecoverable(hash, out var recSignature);
+                recSignature.Deconstruct(out Scalar r, out var s, out var recId);
+                return EthECDSASignatureFactory.FromComponents(r.ToBytes(), s.ToBytes(), new[] { (byte)(recId + 27) });
+            }
+            else
+            {
+#endif
+                var signature = _ecKey.Sign(hash);
+                var recId = CalculateRecId(signature, hash);
+                signature.V = new[] {(byte) (recId + 27)};
+                return new EthECDSASignature(signature);
+#if NETCOREAPP3_1 || NET5_0
+            }
 #endif
         }
 
