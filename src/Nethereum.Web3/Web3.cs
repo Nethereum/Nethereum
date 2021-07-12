@@ -53,9 +53,6 @@ namespace Nethereum.Web3
         }
 
         public static UnitConversion Convert { get; } = new UnitConversion();
-#if !LITE
-        public static LegacyTransactionSigner OfflineTransactionSigner { get; } = new LegacyTransactionSigner();
-#endif
 
         public IClient Client { get; private set; }
 
