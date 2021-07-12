@@ -338,6 +338,7 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
         
         public static ECKey RecoverFromSignature(int recId, ECDSASignature sig, byte[] message, bool compressed)
         {
+
             if (recId < 0)
                 throw new ArgumentException("recId should be positive");
             if (sig.R.SignValue < 0)
@@ -346,7 +347,6 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
                 throw new ArgumentException("s should be positive");
             if (message == null)
                 throw new ArgumentNullException("message");
-
 
             var curve = Secp256k1;
 

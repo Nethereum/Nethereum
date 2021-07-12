@@ -26,6 +26,30 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
         }
 
+#if NETCOREAPP3_1
+
+        [Fact]
+        public void ShouldRecoverSignedRec()
+        {
+            EthECKey.SignRecoverable = true;
+            var signature =
+                "0x0976a177078198a261faf206287b8bb93ebb233347ab09a57c8691733f5772f67f398084b30fc6379ffee2cc72d510fd0f8a7ac2ee0162b95dc5d61146b40ffa1c";
+            var text = "test";
+            var hasher = new Sha3Keccack();
+            var hash = hasher.CalculateHash(text);
+            var signer = new EthereumMessageSigner();
+            var account = signer.EcRecover(hash.HexToByteArray(), signature);
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
+
+            signature = signer.Sign(hash.HexToByteArray(),
+                "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
+
+            account = signer.EcRecover(hash.HexToByteArray(), signature);
+
+            Assert.Equal("0x12890D2cce102216644c59daE5baed380d84830c", account.EnsureHexPrefix());
+        }
+
+#endif
         //[Fact]
         //public void ShouldRecoverTrezor()
         //{
