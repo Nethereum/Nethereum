@@ -58,7 +58,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
 
 
         /// <summary>
-        ///SuggestFees returns a series of maxFeePerGas / maxPriorityFeePerGas values suggested for different time preferences.The first element corresponds to the highest time preference(most urgent transaction).
+        /// SuggestFees returns a series of maxFeePerGas / maxPriorityFeePerGas values suggested for different time preferences.The first element corresponds to the highest time preference(most urgent transaction).
         /// The basic idea behind the algorithm is similar to the old "gas price oracle" used in Geth; it takes the prices of recent blocks and makes a suggestion based on a low percentile of those prices.With EIP-1559 though the base fee of each block provides a less noisy and more reliable price signal.
         /// This allows for more sophisticated suggestions with a variable width(exponentially weighted) base fee time window.
         /// The window width corresponds to the time preference of the user.
@@ -114,7 +114,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
             for (var timeFactor = MaxTimeFactor; timeFactor >= 0; timeFactor--)
             {
                 var bf = SuggestBaseFee(baseFee, order, timeFactor);
-                BigDecimal t = new BigDecimal(tip, 0);
+                var t = new BigDecimal(tip, 0);
                 if (bf > maxBaseFee)
                 {
                     maxBaseFee = bf;
