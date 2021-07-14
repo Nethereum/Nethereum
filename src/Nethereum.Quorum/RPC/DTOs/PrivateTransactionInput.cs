@@ -1,5 +1,5 @@
-﻿using Nethereum.RPC.Eth.DTOs;
-using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
@@ -22,10 +22,10 @@ namespace Nethereum.Quorum.RPC.DTOs
             Value = transaction.Value;
         }
 
-        [JsonProperty(PropertyName = "privateFrom")]
+        [DataMember(Name =  "privateFrom")]
         public string PrivateFrom { get; set; }
 
-        [JsonProperty(PropertyName = "privateFor")]
+        [DataMember(Name =  "privateFor")]
         public string[] PrivateFor { get; set; }
     }
 }

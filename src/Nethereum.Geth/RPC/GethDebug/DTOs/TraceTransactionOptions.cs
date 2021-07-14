@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Geth.RPC.Debug.DTOs
 {
@@ -7,19 +8,19 @@ namespace Nethereum.Geth.RPC.Debug.DTOs
         /// <summary>
         ///     Setting this to true will disable storage capture (default = false).
         /// </summary>
-        [JsonProperty(PropertyName = "disableStorage")]
+        [DataMember(Name="disableStorage")]
         public bool DisableStorage { get; set; }
 
         /// <summary>
         ///     Setting this to true will disable memory capture (default = false).
         /// </summary>
-        [JsonProperty(PropertyName = "disableMemory")]
+        [DataMember(Name = "disableMemory")]
         public bool DisableMemory { get; set; }
 
         /// <summary>
         ///     Setting this to true will disable stack capture (default = false).
         /// </summary>
-        [JsonProperty(PropertyName = "disableStack")]
+        [DataMember(Name = "disableStack")]
         public bool DisableStack { get; set; }
 
         /// <summary>
@@ -27,7 +28,7 @@ namespace Nethereum.Geth.RPC.Debug.DTOs
         ///     This is a slow process and is therefor defaulted to false. By default it will only ever give you the changed
         ///     storage values.
         /// </summary>
-        [JsonProperty(PropertyName = "fullStorage")]
+        [DataMember(Name = "fullStorage")]
         public bool FullStorage { get; set; }
     }
 }

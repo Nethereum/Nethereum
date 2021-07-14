@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
+﻿using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Quorum.RPC

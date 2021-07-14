@@ -2,18 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Numerics;
-using System.Threading.Tasks;
 using Common.Logging;
-using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Quorum.RPC.Interceptors;
 using Nethereum.Quorum.RPC.Services;
-using Nethereum.RPC.Accounts;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.NonceServices;
-using Nethereum.RPC.TransactionManagers;
-using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Quorum
 {

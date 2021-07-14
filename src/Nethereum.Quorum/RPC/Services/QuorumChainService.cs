@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Nethereum.JsonRpc.Client;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
-using Nethereum.RPC.Eth.Filters;
-using Nethereum.Web3;
 
 namespace Nethereum.Quorum.RPC.Services
 {

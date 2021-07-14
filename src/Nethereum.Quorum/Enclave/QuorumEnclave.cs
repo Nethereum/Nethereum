@@ -18,7 +18,7 @@ namespace Nethereum.Quorum.Enclave
             _privateEndPoint = privateEndPoint;
             if (authHeaderValue == null)
             {
-                authHeaderValue = UserAuthentication.FromUrl(privateEndPoint)?.GetBasicAuthenticationHeaderValue();
+                authHeaderValue = BasicAuthenticationHeaderHelper.GetBasicAuthenticationHeaderValueFromUri(new Uri(privateEndPoint));
             }
             _authHeaderValue = authHeaderValue;
 
