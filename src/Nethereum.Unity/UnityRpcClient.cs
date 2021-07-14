@@ -14,7 +14,7 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class UnityRpcClient<TResult>:UnityRequest<TResult>
+    public class UnityRpcClient<TResult>:UnityRequest<TResult>, IClientRequestHeaderSupport
     {
         private readonly string _url;
 
@@ -25,6 +25,7 @@ namespace Nethereum.JsonRpc.UnityClient
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
             this._url = url;
+            this.SetBasicAuthenticationHeaderFromUri(new Uri(url));
             //check for nulls
             JsonSerializerSettings = jsonSerializerSettings;
         }

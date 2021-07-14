@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.WebSocketClient
 {
-    public class WebSocketClient : ClientBase, IDisposable
+    public class WebSocketClient : ClientBase, IDisposable, IClientRequestHeaderSupport
     {
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -22,6 +22,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
 
         private WebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
+            this.SetBasicAuthenticationHeaderFromUri(new Uri(path));
             if (jsonSerializerSettings == null)
             {
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();

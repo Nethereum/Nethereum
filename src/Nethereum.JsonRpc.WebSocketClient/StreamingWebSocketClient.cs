@@ -16,7 +16,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
     public delegate void WebSocketStreamingErrorEventHandler(object sender, Exception ex);
 
-    public class StreamingWebSocketClient : IStreamingClient, IDisposable
+    public class StreamingWebSocketClient : IStreamingClient, IDisposable, IClientRequestHeaderSupport
     {
         public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
 
@@ -39,6 +39,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
             this._path = path;
+            this.SetBasicAuthenticationHeaderFromUri(new Uri(path));
             JsonSerializerSettings = jsonSerializerSettings;
             _cancellationTokenSource = new CancellationTokenSource();
         }
