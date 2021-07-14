@@ -5,6 +5,7 @@ using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using KeyPath = NBitcoin.KeyPath;
 
 namespace Nethereum.HdWallet
@@ -179,19 +180,19 @@ namespace Nethereum.HdWallet
             return addresses;
         }
 
-        public Account GetAccount(string address, int maxIndexSearch = 20)
+        public Account GetAccount(string address, int maxIndexSearch = 20, BigInteger? chainId = null)
         {
             var privateyKey = GetPrivateKey(address, maxIndexSearch);
             if (privateyKey != null)
-                return new Account(privateyKey);
+                return new Account(privateyKey, chainId);
             return null;
         }
 
-        public Account GetAccount(int index)
+        public Account GetAccount(int index, BigInteger? chainId = null)
         {
             var key = GetEthereumKey(index);
             if (key != null)
-                return new Account(key);
+                return new Account(key, chainId);
             return null;
         }
     }
