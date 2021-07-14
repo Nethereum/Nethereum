@@ -11,7 +11,6 @@ using Nethereum.Util;
 
 namespace Nethereum.RPC.Fee1559Suggestions
 {
-#if !DOTNET35
 
     /// <summary>
     /// SuggestFees returns a series of maxFeePerGas / maxPriorityFeePerGas values suggested for different time preferences.The first element corresponds to the highest time preference(most urgent transaction).
@@ -21,7 +20,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
     /// The underlying assumption is that price fluctuations over a given past time period indicate the probability of similar price levels being re-tested by the market over a similar length future time period.
     /// This is a port of Felfodi Zsolt example https://github.com/zsfelfoldi/ethereum-docs/blob/master/eip1559/feeHistory_example.js
     /// </summary>
-    public class TimePreferenceSuggestionStrategy:IFee1559SugesstionStrategy
+    public class TimePreferenceSuggestionStrategy:IFee1559SuggestionStrategy
     {
         public double SampleMin { get; set; } = 0.1;
         public double SampleMax { get; set; }  = 0.3;
@@ -29,9 +28,10 @@ namespace Nethereum.RPC.Fee1559Suggestions
         public double ExtraTipRatio { get; set; } = 0.25;
         public BigInteger FallbackTip { get; set; } = 5000000000;
 
-        public IClient Client { get; set; }
+#if !DOTNET35
         private EthFeeHistory ethFeeHistory;
 
+        public IClient Client { get; set; }
         public TimePreferenceSuggestionStrategy(IClient client)
         {
             ethFeeHistory = new EthFeeHistory(client);
@@ -56,6 +56,38 @@ namespace Nethereum.RPC.Fee1559Suggestions
             return returnFee;
         }
 
+        private async Task<BigInteger> SuggestTip(BigInteger firstBlock, decimal[] gasUsedRatio)
+        {
+            var ptr = gasUsedRatio.Length - 1;
+            var needBlocks = 5;
+            var rewards = new List<BigInteger>();
+            while (needBlocks > 0 && ptr >= 0)
+            {
+                var blockCount = MaxBlockCount(gasUsedRatio, ptr, needBlocks);
+                if (blockCount > 0)
+                {
+                    // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
+                    var feeHistory = await ethFeeHistory.SendRequestAsync((uint)blockCount, new BlockParameter(new HexBigInteger(firstBlock + ptr)), new int[] { 10 }).ConfigureAwait(false);
+                    for (var i = 0; i < feeHistory.Reward.Length; i++)
+                    {
+                        rewards.Add(feeHistory.Reward[i][0]);
+                    }
+                    if (feeHistory.Reward.Length < blockCount)
+                    {
+                        break;
+                    }
+                    needBlocks -= blockCount;
+                }
+                ptr -= blockCount + 1;
+            }
+
+            if (rewards.Count == 0)
+            {
+                return FallbackTip;
+            }
+            rewards.Sort();
+            return rewards[(int)Math.Truncate((double)(rewards.Count / 2))];
+        }
 
         /// <summary>
         /// SuggestFees returns a series of maxFeePerGas / maxPriorityFeePerGas values suggested for different time preferences.The first element corresponds to the highest time preference(most urgent transaction).
@@ -69,7 +101,15 @@ namespace Nethereum.RPC.Fee1559Suggestions
             // feeHistory API call without a reward percentile specified is cheap even with a light client backend because it only needs block headers.
             // Therefore we can afford to fetch a hundred blocks of base fee history in order to make meaningful estimates on variable time scales.
             var feeHistory = await ethFeeHistory.SendRequestAsync(100, BlockParameter.CreateLatest()).ConfigureAwait(false);
-            var baseFee = feeHistory.BaseFeePerGas.Select( x => x.Value).ToArray();
+            var gasUsedRatio = feeHistory.GasUsedRatio;
+            var tip = await SuggestTip(feeHistory.OldestBlock, gasUsedRatio).ConfigureAwait(false);
+            return SuggestFees(feeHistory, tip);
+        }
+
+#endif
+        public Fee1559[] SuggestFees(FeeHistoryResult feeHistory, BigInteger tip)
+        {
+            var baseFee = feeHistory.BaseFeePerGas.Select(x => x.Value).ToArray();
             var gasUsedRatio = feeHistory.GasUsedRatio;
 
 
@@ -78,7 +118,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
             baseFee[baseFee.Length - 1] *= 9 / 8;
             for (var i = gasUsedRatio.Length - 1; i >= 0; i--)
             {
-                if (gasUsedRatio[i] > (decimal) 0.9)
+                if (gasUsedRatio[i] > (decimal)0.9)
                 {
                     baseFee[i] = baseFee[i + 1];
                 }
@@ -107,8 +147,6 @@ namespace Nethereum.RPC.Fee1559Suggestions
             }));
 
 
-            var tip = await SuggestTip(feeHistory.OldestBlock, gasUsedRatio).ConfigureAwait(false);
-         
             var result = new List<Fee1559>();
             BigDecimal maxBaseFee = 0;
             for (var timeFactor = MaxTimeFactor; timeFactor >= 0; timeFactor--)
@@ -127,8 +165,9 @@ namespace Nethereum.RPC.Fee1559Suggestions
                     t += (maxBaseFee - bf) * ExtraTipRatio;
                     bf = maxBaseFee;
                 }
-                result.Add(new Fee1559() {
-                    BaseFee =  bf.Floor().Mantissa,
+                result.Add(new Fee1559()
+                {
+                    BaseFee = bf.Floor().Mantissa,
                     MaxFeePerGas = (bf + t).Floor().Mantissa,
                     MaxPriorityFeePerGas = t.Floor().Mantissa
                 });
@@ -141,7 +180,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         /// <summary>
         /// // suggestBaseFee calculates an average of base fees in the sampleMin to sampleMax percentile range of recent base fee history, each block weighted with an exponential time function based on timeFactor.
         /// </summary>
-        private BigDecimal SuggestBaseFee(BigInteger[] baseFee, int[] order, int timeFactor)
+        protected BigDecimal SuggestBaseFee(BigInteger[] baseFee, int[] order, int timeFactor)
         { 
             if (timeFactor < 1e-6)
             {
@@ -167,7 +206,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         }
 
         // samplingCurve is a helper function for the base fee percentile range calculation.
-        private double SamplingCurve(double sumWeight)
+        protected double SamplingCurve(double sumWeight)
         {
             if (sumWeight <= SampleMin)
             {
@@ -180,42 +219,10 @@ namespace Nethereum.RPC.Fee1559Suggestions
             return (1 - Math.Cos((sumWeight - SampleMin) * 2 * Math.PI / (SampleMax - SampleMin))) / 2;
         }
 
-        private async Task<BigInteger> SuggestTip(BigInteger firstBlock, decimal[] gasUsedRatio)
-        {
-            var ptr = gasUsedRatio.Length - 1;
-            var needBlocks = 5;
-            var rewards = new List<BigInteger>();
-            while (needBlocks > 0 && ptr >= 0)
-            {
-                var blockCount = MaxBlockCount(gasUsedRatio, ptr, needBlocks);
-                if (blockCount > 0)
-                {
-                    // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
-                    var feeHistory = await ethFeeHistory.SendRequestAsync((uint)blockCount, new BlockParameter(new HexBigInteger(firstBlock + ptr)), new int[]{10}).ConfigureAwait(false);
-                    for (var i = 0; i < feeHistory.Reward.Length; i++)
-                    {
-                        rewards.Add(feeHistory.Reward[i][0]);
-                    }
-                    if (feeHistory.Reward.Length < blockCount)
-                    {
-                        break;
-                    }
-                    needBlocks -= blockCount;
-                }
-                ptr -= blockCount + 1;
-            }
-
-            if (rewards.Count == 0)
-            {
-                return FallbackTip;
-            }
-            rewards.Sort();
-            return rewards[(int) Math.Truncate((double) (rewards.Count / 2))];
-        }
 
 
         // maxBlockCount returns the number of consecutive blocks suitable for tip suggestion (gasUsedRatio between 0.1 and 0.9).
-        public int MaxBlockCount(decimal[] gasUsedRatio, int ptr, int needBlocks)
+        public static int MaxBlockCount(decimal[] gasUsedRatio, int ptr, int needBlocks)
         {
             int blockCount = 0;
             while (needBlocks > 0 && ptr >= 0)
@@ -232,5 +239,5 @@ namespace Nethereum.RPC.Fee1559Suggestions
         }
     }
 
-#endif
+
 }

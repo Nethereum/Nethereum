@@ -28,7 +28,7 @@ namespace Nethereum.JsonRpc.UnityClient
         private readonly EthSendRawTransactionUnityRequest _ethSendTransactionRequest;
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
         private readonly EthGasPriceUnityRequest _ethGasPriceUnityRequest;
-        public IFee1559CalculationUnityRequestStrategy Fee1559CalculationStrategy { get; set; }
+        public IFee1559SuggestionUnityRequestStrategy Fee1559SuggestionStrategy { get; set; }
         public bool EstimateGas { get; set; } = true;
         public bool UseLegacyAsDefault { get; set; } = false;
 
@@ -47,7 +47,7 @@ namespace Nethereum.JsonRpc.UnityClient
             _ethEstimateGasUnityRequest.RequestHeaders = requestHeaders;
             _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(_url);
             _ethGasPriceUnityRequest.RequestHeaders = requestHeaders;
-            Fee1559CalculationStrategy = new DefaultFeeCalculationUnityRequestStrategy(url, _account, requestHeaders);
+            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(url, _account, requestHeaders);
 
 
         }
@@ -113,14 +113,14 @@ namespace Nethereum.JsonRpc.UnityClient
                 {
                     if (transactionInput.MaxFeePerGas == null)
                     {
-                        yield return Fee1559CalculationStrategy.CalculateFee(transactionInput.MaxPriorityFeePerGas.Value);
-                        if (Fee1559CalculationStrategy.Exception != null)
+                        yield return Fee1559SuggestionStrategy.SuggestFee(transactionInput.MaxPriorityFeePerGas.Value);
+                        if (Fee1559SuggestionStrategy.Exception != null)
                         {
-                            transactionInput.MaxFeePerGas = new HexBigInteger(Fee1559CalculationStrategy.Result.MaxFeePerGas.Value);
+                            transactionInput.MaxFeePerGas = new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxFeePerGas.Value);
                         }
                         else
                         {
-                            this.Exception = Fee1559CalculationStrategy.Exception;
+                            this.Exception = Fee1559SuggestionStrategy.Exception;
                             yield break;
                         }
                     }
@@ -128,33 +128,33 @@ namespace Nethereum.JsonRpc.UnityClient
                 else
                 {
                 
-                    yield return Fee1559CalculationStrategy.CalculateFee();
-                    if (Fee1559CalculationStrategy.Exception != null)
+                    yield return Fee1559SuggestionStrategy.SuggestFee();
+                    if (Fee1559SuggestionStrategy.Exception != null)
                     {
                         if (transactionInput.MaxFeePerGas == null)
                         {
                             transactionInput.MaxFeePerGas =
-                                new HexBigInteger(Fee1559CalculationStrategy.Result.MaxFeePerGas.Value);
+                                new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxFeePerGas.Value);
 
                             transactionInput.MaxPriorityFeePerGas =
-                                new HexBigInteger(Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas.Value);
+                                new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxPriorityFeePerGas.Value);
                         }
                         else
                         {
-                            if (transactionInput.MaxFeePerGas < Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas)
+                            if (transactionInput.MaxFeePerGas < Fee1559SuggestionStrategy.Result.MaxPriorityFeePerGas)
                             {
                                 transactionInput.MaxPriorityFeePerGas = transactionInput.MaxFeePerGas;
                             }
                             else
                             {
-                                transactionInput.MaxPriorityFeePerGas = new HexBigInteger(Fee1559CalculationStrategy.Result.MaxPriorityFeePerGas.Value);
+                                transactionInput.MaxPriorityFeePerGas = new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxPriorityFeePerGas.Value);
                             }
                         }
  
                     }
                     else
                     {
-                        this.Exception = Fee1559CalculationStrategy.Exception;
+                        this.Exception = Fee1559SuggestionStrategy.Exception;
                         yield break;
                     }
                 }

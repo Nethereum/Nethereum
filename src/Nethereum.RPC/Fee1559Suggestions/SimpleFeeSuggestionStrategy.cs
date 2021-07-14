@@ -9,7 +9,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
 
 #if !DOTNET35
 
-    public class SimpleFeeSuggestionStrategy : IFee1559SugesstionStrategy
+    public class SimpleFeeSuggestionStrategy : IFee1559SuggestionStrategy
     {
         public IClient Client { get; set; }
         private EthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashes;

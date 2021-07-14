@@ -1034,4 +1034,21 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
+
+
+    public class EthFeeHistoryUnityRequest : UnityRpcClient<Nethereum.RPC.Eth.DTOs.FeeHistoryResult>
+    {
+        private readonly Nethereum.RPC.Eth.Transactions.EthFeeHistory _ethFeeHistory;
+
+        public EthFeeHistoryUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
+        {
+            _ethFeeHistory = new Nethereum.RPC.Eth.Transactions.EthFeeHistory(null);
+        }
+
+        public IEnumerator SendRequest(uint blockCount, BlockParameter highestBlockNumber, int[] rewardPercentiles = null)
+        {
+            var request = _ethFeeHistory.BuildRequest(blockCount, highestBlockNumber, rewardPercentiles);
+            yield return SendRequest(request);
+        }
+    }
 }

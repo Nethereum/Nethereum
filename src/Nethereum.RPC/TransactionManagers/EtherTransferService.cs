@@ -66,7 +66,7 @@ namespace Nethereum.RPC.TransactionManagers
         public async Task<BigInteger> CalculateMaxFeePerGasToTransferWholeBalanceInEther(
             BigInteger? maxPriorityFeePerGas = null)
         {
-            var fee1559 = await _transactionManager.Fee1559SugesstionStrategy.SuggestFeeAsync(maxPriorityFeePerGas).ConfigureAwait(false);
+            var fee1559 = await _transactionManager.Fee1559SuggestionStrategy.SuggestFeeAsync(maxPriorityFeePerGas).ConfigureAwait(false);
             if (fee1559.MaxFeePerGas != null) return fee1559.MaxFeePerGas.Value;
             return 0;
         }

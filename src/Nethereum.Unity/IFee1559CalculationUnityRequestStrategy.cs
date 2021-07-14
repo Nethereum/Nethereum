@@ -5,9 +5,9 @@ using Nethereum.RPC.Fee1559Suggestions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public interface IFee1559CalculationUnityRequestStrategy
+    public interface IFee1559SuggestionUnityRequestStrategy
     {
-        IEnumerator CalculateFee(BigInteger? maxPriorityFeePerGas = null);
+        IEnumerator SuggestFee(BigInteger? maxPriorityFeePerGas = null);
         Fee1559 Result { get; set; }
         Exception Exception { get; set; }
     }
