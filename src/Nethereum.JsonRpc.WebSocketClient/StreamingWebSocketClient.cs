@@ -4,6 +4,7 @@ using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -13,15 +14,12 @@ using Nethereum.JsonRpc.Client.Streaming;
 
 namespace Nethereum.JsonRpc.WebSocketStreamingClient
 {
-    /// <summary>
-    /// TODO: 
-    /// * Interceptor support and other generic stuff, interceptors need response handler support?
-    /// </summary>
-    ///
     public delegate void WebSocketStreamingErrorEventHandler(object sender, Exception ex);
 
     public class StreamingWebSocketClient : IStreamingClient, IDisposable
     {
+        public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
+
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
         private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -138,6 +136,14 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     tokenSource = new CancellationTokenSource(ConnectionTimeout);
                     _clientWebSocket = new ClientWebSocket();
+                    if (RequestHeaders != null)
+                    {
+                        foreach (var requestHeader in RequestHeaders)
+                        {
+                            _clientWebSocket.Options.SetRequestHeader(requestHeader.Key, requestHeader.Value);
+                        }
+                    }
+
                     await _clientWebSocket.ConnectAsync(new Uri(_path), tokenSource.Token).ConfigureAwait(false);
 
                 }

@@ -3,6 +3,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -14,6 +15,8 @@ namespace Nethereum.JsonRpc.WebSocketClient
     public class WebSocketClient : ClientBase, IDisposable
     {
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+
+        public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
         protected string Path { get; set; }
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 2000;
 
@@ -47,6 +50,13 @@ namespace Nethereum.JsonRpc.WebSocketClient
                 if (_clientWebSocket == null || _clientWebSocket.State != WebSocketState.Open)
                 {
                     _clientWebSocket = new ClientWebSocket();
+                    if (RequestHeaders != null)
+                    {
+                        foreach (var requestHeader in RequestHeaders)
+                        {
+                            _clientWebSocket.Options.SetRequestHeader(requestHeader.Key, requestHeader.Value);
+                        }
+                    }
                     await _clientWebSocket.ConnectAsync(new Uri(Path), new CancellationTokenSource(ConnectionTimeout).Token).ConfigureAwait(false);
 
                 }
