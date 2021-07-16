@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.TransactionTypes
 {
@@ -13,6 +14,14 @@ namespace Nethereum.RPC.TransactionTypes
     {
         public static byte AsByte(this TransactionType transactionType) => (byte)transactionType;
 
+        public static HexBigInteger AsHexBigInteger(this TransactionType transactionType) =>
+            new HexBigInteger((int) transactionType);
+
+        public static TransactionType ToTransactionType(this HexBigInteger value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            return ToTypedTransaction((byte) value.Value);
+        }
         /// <summary>
         /// Converts to a valid Typed transaction (ie 0x02 for 1559), if not throws an exception (ie legacy or not in range)
         /// </summary>

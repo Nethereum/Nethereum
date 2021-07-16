@@ -62,6 +62,8 @@ namespace Nethereum.Web3
         public IPersonalApiService Personal { get; private set; }
         public IBlockchainProcessingService Processing { get; private set; }
 
+        public FeeSuggestionService FeeSuggestion { get; private set; }
+
         private void IntialiseDefaultGasAndGasPrice()
         {
 #if !LITE
@@ -106,6 +108,7 @@ namespace Nethereum.Web3
             Shh = new ShhApiService(Client);
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);
+            FeeSuggestion = new FeeSuggestionService(Client);
         }
 
         private void IntialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)

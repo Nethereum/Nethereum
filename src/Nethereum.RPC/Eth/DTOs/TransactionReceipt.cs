@@ -44,6 +44,12 @@ namespace Nethereum.RPC.Eth.DTOs
         public HexBigInteger GasUsed { get; set; }
 
         /// <summary>
+        /// The actual value per gas deducted from the senders account. Before EIP-1559, this is equal to the transaction's gas price. After, it is equal to baseFeePerGas + min(maxFeePerGas - baseFeePerGas, maxPriorityFeePerGas). Legacy transactions and EIP-2930 transactions are coerced into the EIP-1559 format by setting both maxFeePerGas and maxPriorityFeePerGas as the transaction's gas price.
+        /// </summary>
+        [DataMember(Name = "effectiveGasPrice")]
+        public HexBigInteger EffectiveGasPrice { get; set; }
+
+        /// <summary>
         ///     DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
         /// </summary>
        [DataMember(Name = "contractAddress")]

@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
     /// The underlying assumption is that price fluctuations over a given past time period indicate the probability of similar price levels being re-tested by the market over a similar length future time period.
     /// This is a port of Felfodi Zsolt example https://github.com/zsfelfoldi/ethereum-docs/blob/master/eip1559/feeHistory_example.js
     /// </summary>
-    public class TimePreferenceSuggestionStrategy:IFee1559SuggestionStrategy
+    public class TimePreferenceFeeSuggestionStrategy:IFee1559SuggestionStrategy
     {
         public double SampleMin { get; set; } = 0.1;
         public double SampleMax { get; set; }  = 0.3;
@@ -28,11 +28,16 @@ namespace Nethereum.RPC.Fee1559Suggestions
         public double ExtraTipRatio { get; set; } = 0.25;
         public BigInteger FallbackTip { get; set; } = 5000000000;
 
+        public TimePreferenceFeeSuggestionStrategy()
+        {
+
+        }
+
 #if !DOTNET35
         private EthFeeHistory ethFeeHistory;
 
         public IClient Client { get; set; }
-        public TimePreferenceSuggestionStrategy(IClient client)
+        public TimePreferenceFeeSuggestionStrategy(IClient client)
         {
             ethFeeHistory = new EthFeeHistory(client);
         }
@@ -107,6 +112,32 @@ namespace Nethereum.RPC.Fee1559Suggestions
         }
 
 #endif
+
+#if DOTNET35
+
+public static class Comparer
+{
+    public static Comparer<T> Create<T>(Comparison<T> comparison)
+    {
+        if (comparison == null) throw new ArgumentNullException("comparison");
+        return new ComparisonComparer<T>(comparison);
+    }
+    private sealed class ComparisonComparer<T> : Comparer<T>
+    {
+        private readonly Comparison<T> comparison;
+        public ComparisonComparer(Comparison<T> comparison)
+        {
+            this.comparison = comparison;
+        }
+        public override int Compare(T x, T y)
+        {
+            return comparison(x, y);
+        }
+    }
+}
+
+#endif
+
         public Fee1559[] SuggestFees(FeeHistoryResult feeHistory, BigInteger tip)
         {
             var baseFee = feeHistory.BaseFeePerGas.Select(x => x.Value).ToArray();
@@ -130,7 +161,12 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 order[i] = i;
             }
 
-            Array.Sort(order, Comparer<int>.Create((int x, int y) =>
+#if DOTNET35
+            var comparer = Comparer.Create<int>
+#else
+            var comparer = Comparer<int>.Create
+#endif
+            ((int x, int y) =>
             {
                 var aa = baseFee[x];
                 var bb = baseFee[y];
@@ -138,13 +174,17 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 {
                     return -1;
                 }
+
                 if (aa > bb)
                 {
                     return 1;
                 }
+
                 return 0;
 
-            }));
+            });
+
+            Array.Sort(order, comparer);
 
 
             var result = new List<Fee1559>();
@@ -222,7 +262,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
 
 
         // maxBlockCount returns the number of consecutive blocks suitable for tip suggestion (gasUsedRatio between 0.1 and 0.9).
-        public static int MaxBlockCount(decimal[] gasUsedRatio, int ptr, int needBlocks)
+        public int MaxBlockCount(decimal[] gasUsedRatio, int ptr, int needBlocks)
         {
             int blockCount = 0;
             while (needBlocks > 0 && ptr >= 0)

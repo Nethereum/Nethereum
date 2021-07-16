@@ -93,7 +93,7 @@ namespace Nethereum.ABI.JsonDeserialisation
             foreach (IDictionary<string, object> input in inputs)
             {
                 parameterOrder = parameterOrder + 1;
-                var parameter = new Parameter((string) input["type"], (string) input["name"], parameterOrder, TryGetInternalType(input),
+                var parameter = new Parameter((string) input["type"], TryGetName(input), parameterOrder, TryGetInternalType(input),
                     TryGetSignatureValue(input));
 
                 InitialiseTupleComponents(input, parameter);
@@ -157,6 +157,19 @@ namespace Nethereum.ABI.JsonDeserialisation
             try
             {
                 if (parameter.ContainsKey("internalType")) return (string)parameter["internalType"];
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public string TryGetName(IDictionary<string, object> parameter)
+        {
+            try
+            {
+                if (parameter.ContainsKey("name")) return (string)parameter["name"];
                 return null;
             }
             catch

@@ -11,14 +11,14 @@ namespace Nethereum.JsonRpc.UnityClient
     public class SuggestTipUnityRequestStrategy : UnityRequest<BigInteger>
     {
         private readonly EthFeeHistoryUnityRequest _ethFeeHistory;
-        private readonly TimePreferenceSuggestionStrategy _timePreferenceSuggestionStrategy;
+        private readonly TimePreferenceFeeSuggestionStrategy _timePreferenceFeeSuggestionStrategy;
         public BigInteger FallbackTip { get; set; }
         
         public SuggestTipUnityRequestStrategy(string url, string account, Dictionary<string, string> requestHeaders = null)
         {
             _ethFeeHistory = new EthFeeHistoryUnityRequest(url);
             _ethFeeHistory.RequestHeaders = requestHeaders;
-            _timePreferenceSuggestionStrategy = new TimePreferenceSuggestionStrategy();
+            _timePreferenceFeeSuggestionStrategy = new TimePreferenceFeeSuggestionStrategy();
         }
 
         public IEnumerator SuggestTip(BigInteger firstBlock, decimal[] gasUsedRatio)
@@ -28,7 +28,7 @@ namespace Nethereum.JsonRpc.UnityClient
             var rewards = new List<BigInteger>();
             while (needBlocks > 0 && ptr >= 0)
             {
-                var blockCount = _timePreferenceSuggestionStrategy.MaxBlockCount(gasUsedRatio, ptr, needBlocks);
+                var blockCount = _timePreferenceFeeSuggestionStrategy.MaxBlockCount(gasUsedRatio, ptr, needBlocks);
                 if (blockCount > 0)
                 {
                     // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.

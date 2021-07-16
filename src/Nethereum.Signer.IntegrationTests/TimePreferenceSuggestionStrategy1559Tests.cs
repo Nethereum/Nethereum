@@ -22,7 +22,7 @@ namespace Nethereum.Signer.IntegrationTests
         {
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var feeStrategy = new TimePreferenceSuggestionStrategy(web3.Client);
+            var feeStrategy = new TimePreferenceFeeSuggestionStrategy(web3.Client);
             for (var x = 0; x < 100; x++)
             {
                 Thread.Sleep(200);

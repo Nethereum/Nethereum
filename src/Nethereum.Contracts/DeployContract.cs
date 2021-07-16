@@ -4,6 +4,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.RPC.TransactionTypes;
 
 namespace Nethereum.Contracts
 {
@@ -110,6 +111,21 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
+        public Task<string> SendRequestAsync(string abi, string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, params object[] values)
+        {
+        
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(abi, contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce, values);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
+
+        public Task<string> SendRequestAsync(HexBigInteger type, string abi, string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, params object[] values)
+        {
+            var transaction = _deployContractTransactionBuilder.BuildTransaction(type, abi, contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce, values);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
+
         public Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas)
         {
             return TransactionManager.SendTransactionAsync(new TransactionInput(contractByteCode, gas, from));
@@ -120,6 +136,20 @@ namespace Nethereum.Contracts
         {
             return TransactionManager.SendTransactionAsync(new TransactionInput(contractByteCode, null, from, gas,
                 gasPrice, value));
+        }
+
+        public Task<string> SendRequestAsync(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce)
+        {
+            return TransactionManager.SendTransactionAsync(new TransactionInput(TransactionType.EIP1559.AsHexBigInteger(), contractByteCode, null, from, gas,
+                value, maxFeePerGas, maxPriorityFeePerGas));
+        }
+
+        public Task<string> SendRequestAsync(HexBigInteger type, string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce)
+        {
+            return TransactionManager.SendTransactionAsync(new TransactionInput(type, contractByteCode, null, from, gas,
+                value, maxFeePerGas, maxPriorityFeePerGas));
         }
 
         public Task<string> SendRequestAsync(string contractByteCode, string from, HexBigInteger gas,
@@ -167,6 +197,23 @@ namespace Nethereum.Contracts
             return TransactionManager.SendTransactionAsync(transaction);
         }
 
+        public Task<string> SendRequestAsync<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams)
+        {
+            var transaction =
+                _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce,
+                    inputParams);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
+
+        public Task<string> SendRequestAsync<TConstructorParams>(HexBigInteger type, string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams)
+        {
+            var transaction =
+                _deployContractTransactionBuilder.BuildTransaction(type, contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce,
+                    inputParams);
+            return TransactionManager.SendTransactionAsync(transaction);
+        }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string abi, string contractByteCode,
             string from, HexBigInteger gas, CancellationTokenSource receiptRequestCancellationToken = null,
@@ -283,6 +330,26 @@ namespace Nethereum.Contracts
         {
             var transaction =
                 _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, gasPrice, value, nonce,
+                    inputParams);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction,
+                receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            var transaction =
+                _deployContractTransactionBuilder.BuildTransaction(contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce,
+                    inputParams);
+            return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction,
+                receiptRequestCancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TConstructorParams>(HexBigInteger type, string contractByteCode, string from,
+            HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams, CancellationTokenSource receiptRequestCancellationToken = null)
+        {
+            var transaction =
+                _deployContractTransactionBuilder.BuildTransaction(type, contractByteCode, from, gas, maxFeePerGas, maxPriorityFeePerGas, value, nonce,
                     inputParams);
             return TransactionManager.TransactionReceiptService.DeployContractAndWaitForReceiptAsync(transaction,
                 receiptRequestCancellationToken);

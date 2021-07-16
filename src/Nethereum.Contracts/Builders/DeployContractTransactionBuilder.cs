@@ -3,6 +3,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.TransactionTypes;
 
 namespace Nethereum.Contracts
 {
@@ -71,6 +72,24 @@ namespace Nethereum.Contracts
             return transaction;
         }
 
+        public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas,
+            HexBigInteger value, HexBigInteger nonce, object[] values)
+        {
+            var encodedData = BuildEncodedData(abi, contractByteCode, values);
+            var transaction = new TransactionInput(TransactionType.EIP1559.AsHexBigInteger(), encodedData, null, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+            transaction.Nonce = nonce;
+            return transaction;
+        }
+
+        public TransactionInput BuildTransaction(HexBigInteger type, string abi, string contractByteCode, string from, HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas,
+            HexBigInteger value, HexBigInteger nonce, object[] values)
+        {
+            var encodedData = BuildEncodedData(abi, contractByteCode, values);
+            var transaction = new TransactionInput(type, encodedData, null, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+            transaction.Nonce = nonce;
+            return transaction;
+        }
+
 
         public TransactionInput BuildTransaction(string abi, string contractByteCode, string from, HexBigInteger gas,
             HexBigInteger value, object[] values)
@@ -124,6 +143,24 @@ namespace Nethereum.Contracts
         {
             var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
             var transaction = new TransactionInput(encodedData, null, from, gas, gasPrice, value);
+            transaction.Nonce = nonce;
+            return transaction;
+        }
+
+        public TransactionInput BuildTransaction<TConstructorParams>(string contractByteCode, string from, HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas,
+            HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams)
+        {
+            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
+            var transaction = new TransactionInput(TransactionType.EIP1559.AsHexBigInteger(), encodedData, null, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+            transaction.Nonce = nonce;
+            return transaction;
+        }
+
+        public TransactionInput BuildTransaction<TConstructorParams>(HexBigInteger type, string contractByteCode, string from, HexBigInteger gas, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas,
+            HexBigInteger value, HexBigInteger nonce, TConstructorParams inputParams)
+        {
+            var encodedData = _constructorCallEncoder.EncodeRequest(inputParams, contractByteCode);
+            var transaction = new TransactionInput(type, encodedData, null, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
             transaction.Nonce = nonce;
             return transaction;
         }

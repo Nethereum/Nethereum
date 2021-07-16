@@ -73,8 +73,8 @@ namespace Nethereum.RPC.Eth.DTOs
                 Type = txn.Type,
                 AccessList = txn.AccessList,
                 MaxFeePerGas = txn.MaxFeePerGas,
-                MaxPriorityFeePerGas = txn.MaxPriorityFeePerGas
-                
+                MaxPriorityFeePerGas = txn.MaxPriorityFeePerGas,
+
             };
             return txnInput;
         }

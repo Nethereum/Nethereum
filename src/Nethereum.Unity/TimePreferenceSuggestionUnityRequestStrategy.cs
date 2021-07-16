@@ -6,33 +6,33 @@ using Nethereum.RPC.Fee1559Suggestions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class TimePreferenceSuggestionUnityRequestStrategy : UnityRequest<Fee1559[]>
+    public class TimePreferenceFeeSuggestionUnityRequestStrategy : UnityRequest<Fee1559[]>
     {
         private readonly EthFeeHistoryUnityRequest _ethFeeHistory;
-        private readonly TimePreferenceSuggestionStrategy _timePreferenceSuggestionStrategy;
+        private readonly TimePreferenceFeeSuggestionStrategy _timePreferenceFeeSuggestionStrategy;
         private readonly SuggestTipUnityRequestStrategy _suggestTipUnityRequest;
         public double SampleMin
         {
-            get => _timePreferenceSuggestionStrategy.SampleMin;
-            set => _timePreferenceSuggestionStrategy.SampleMin = value;
+            get => _timePreferenceFeeSuggestionStrategy.SampleMin;
+            set => _timePreferenceFeeSuggestionStrategy.SampleMin = value;
         }
 
         public double SampleMax
         {
-            get => _timePreferenceSuggestionStrategy.SampleMax;
-            set => _timePreferenceSuggestionStrategy.SampleMax = value;
+            get => _timePreferenceFeeSuggestionStrategy.SampleMax;
+            set => _timePreferenceFeeSuggestionStrategy.SampleMax = value;
         }
 
         public int MaxTimeFactor
         {
-            get => _timePreferenceSuggestionStrategy.MaxTimeFactor;
-            set => _timePreferenceSuggestionStrategy.MaxTimeFactor = value;
+            get => _timePreferenceFeeSuggestionStrategy.MaxTimeFactor;
+            set => _timePreferenceFeeSuggestionStrategy.MaxTimeFactor = value;
         }
 
         public double ExtraTipRatio
         {
-            get => _timePreferenceSuggestionStrategy.ExtraTipRatio;
-            set => _timePreferenceSuggestionStrategy.ExtraTipRatio = value;
+            get => _timePreferenceFeeSuggestionStrategy.ExtraTipRatio;
+            set => _timePreferenceFeeSuggestionStrategy.ExtraTipRatio = value;
         }
 
         public BigInteger FallbackTip
@@ -41,11 +41,11 @@ namespace Nethereum.JsonRpc.UnityClient
             set => _suggestTipUnityRequest.FallbackTip = value;
         }
 
-        public TimePreferenceSuggestionUnityRequestStrategy(string url, string account, Dictionary<string, string> requestHeaders = null)
+        public TimePreferenceFeeSuggestionUnityRequestStrategy(string url, string account, Dictionary<string, string> requestHeaders = null)
         {
             _ethFeeHistory = new EthFeeHistoryUnityRequest(url);
             _ethFeeHistory.RequestHeaders = requestHeaders;
-            _timePreferenceSuggestionStrategy = new TimePreferenceSuggestionStrategy();
+            _timePreferenceFeeSuggestionStrategy = new TimePreferenceFeeSuggestionStrategy();
             _suggestTipUnityRequest = new SuggestTipUnityRequestStrategy(url, account, requestHeaders);
         }
 
@@ -62,7 +62,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 if (_suggestTipUnityRequest.Exception != null)
                 {
                     this.Result =
-                        _timePreferenceSuggestionStrategy.SuggestFees(_ethFeeHistory.Result,
+                        _timePreferenceFeeSuggestionStrategy.SuggestFees(_ethFeeHistory.Result,
                             _suggestTipUnityRequest.Result);
                 }
                 else

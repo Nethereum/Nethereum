@@ -18,6 +18,7 @@
         public string ReceiptHash { get; set; }
         public string GasUsed { get;set; }
         public string CumulativeGasUsed { get; set; }
+        public string EffectiveGasPrice { get; set; }
         public bool HasLog { get;set; }
         public string Error { get; set; }
         public bool HasVmStack { get; set; }
