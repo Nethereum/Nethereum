@@ -21,7 +21,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        [Fact]
+        //[Fact]
         public async void TestLogging()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient  == EthereumClient.Geth)
