@@ -48,7 +48,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             tx.TimeStamp = transactionReceiptVO.BlockTimestamp?.Value.ToString();
             tx.Error = transactionReceiptVO.Error ?? string.Empty;
             tx.HasVmStack = transactionReceiptVO.HasVmStack;
-            tx.EffectiveGasPrice = transactionReceiptVO.TransactionReceipt.EffectiveGasPrice.Value.ToString();
+            tx.EffectiveGasPrice = transactionReceiptVO.TransactionReceipt.EffectiveGasPrice?.Value.ToString();
             tx.UpdateRowDates();
 
             return tx;
