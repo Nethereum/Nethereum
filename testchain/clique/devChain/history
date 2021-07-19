@@ -1,5 +1,3 @@
+
 eth
-miner.start()
-eth
-miner.start()
-eth
+txpool

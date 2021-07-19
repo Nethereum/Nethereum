@@ -64,7 +64,7 @@ namespace Nethereum.XUnitEthereumClients
             "--fork https://eth-mainnet.alchemyapi.io/v2/{apikey} --fork-block-number 11998887";
 
         public static string ManagedAccountPassword { get; set; } = "password";
-        public static string InfuraId { get; set; } = "7238211010344719ad14a89db874158c";
+        public static string InfuraId { get; set; } = "206cfadcef274b49a3a15c45c285211c";
         public static InfuraNetwork InfuraNetwork { get; set; } = InfuraNetwork.Ropsten;
         public static string HttpUrl { get; set; } = "http://localhost:8545";
       

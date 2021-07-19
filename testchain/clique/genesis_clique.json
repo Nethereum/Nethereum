@@ -10,6 +10,14 @@
 	"constantinopleBlock": 0,
 	"petersburgBlock": 0,
     "daoForkSupport": true,
+   "eip155Block": 0,
+  "eip158Block": 0,
+  "byzantiumBlock": 0,
+  "constantinopleBlock": 0,
+  "petersburgBlock": 0,
+  "istanbulBlock": 0,
+  "berlinBlock": 0,
+  "londonBlock": 0,
     "clique": {
       "period": 1,
       "epoch": 30000
@@ -1032,7 +1040,7 @@
 "dC4E0c3350Fe2d06ac028539B1253fe61BA2182F": { "balance": "0x900000000000000000000000000000000"},
 "FAD10764cf116004571036570B4C24E12ABe46d8": { "balance": "0x900000000000000000000000000000000"},
 "eBd4Dc38B3A878Df9C8EbbBfE604611B149CB2C3": { "balance": "0x900000000000000000000000000000000"},
-"B7924BC973E3864854382cCe6871a1c32043f177": { "balance": "0x900000000000000000000000000000000"}
-
+"B7924BC973E3864854382cCe6871a1c32043f177": { "balance": "0x900000000000000000000000000000000"},
+"0x9d8A62f656a8d1615C1294fd71e9CFb3E4855A4F": { "balance": "0x900000000000000000000000000000000"}
   }
 }
