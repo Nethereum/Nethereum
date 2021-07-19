@@ -35,7 +35,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 
             var function = contract.GetFunction("multiply");
             var transactionInput = function.CreateTransactionInput(senderAddress, null, null, 7);
-            var signer = new TransactionSigner();
+            var signer = new LegacyTransactionSigner();
             var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(senderAddress);
             var signedTransaction = signer.SignTransaction(privateKey, transactionInput.To, 0, nonce.Value,
                 LegacyTransaction.DEFAULT_GAS_PRICE, 900000,
