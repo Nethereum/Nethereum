@@ -39,7 +39,7 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
         [Fact]
         public async void ShouldGetTheDaiFromMainnet()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var contractHandler = web3.Eth.GetContractHandler("0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359");
             var stringBytes32Decoder = new StringBytes32Decoder();
             var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>();
@@ -71,7 +71,7 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
         [Fact]
         public async void Test()
         {
-            var addressOwner = AccountFactory.Address;
+            var addressOwner = EthereumClientIntegrationFixture.AccountAddress;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
      
             ulong totalSupply = 1000000;

@@ -16,8 +16,16 @@ using Xunit;
 
 namespace Nethereum.ENS.IntegrationTests.ENS
 {
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ENSMainNetTest
     {
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+
+        public ENSMainNetTest(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
         public async void ShouldBeAbleToRegisterExample()
         {
             var durationInDays = 365;
@@ -27,7 +35,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var secret = "Today is gonna be the day That theyre gonna throw it back to you"; //make your own
 
 
-            var web3 = new Web3.Web3(new Account(""), "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ethTLSService = new EthTLSService(web3);
             await ethTLSService.InitialiseAsync();
 
@@ -41,7 +49,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
         public async void ShouldBeAbleToSetTextExample()
         {
-            var web3 = new Web3.Web3(new Account(""), "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var txn = await ensService.SetTextRequestAsync("nethereum.eth", TextDataKey.url, "https://nethereum.com");
         }
@@ -49,7 +57,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         [Fact]
         public async void ShouldBeAbleToResolveText()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var url = await ensService.ResolveTextAsync("nethereum.eth", TextDataKey.url);
             Assert.Equal("https://nethereum.com", url);
@@ -65,7 +73,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var secret = "animals in the forest";
 
 
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ethTLSService = new EthTLSService(web3);
             await ethTLSService.InitialiseAsync();
 
@@ -80,7 +88,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         [Fact]
         public async void ShouldFindEthControllerFromMainnet()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ethTLSService = new EthTLSService(web3);
             await ethTLSService.InitialiseAsync();
             var controllerAddress = ethTLSService.TLSControllerAddress;
@@ -91,7 +99,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         [Fact]
         public async void ShouldResolveAddressFromMainnet()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var theAddress = await ensService.ResolveAddressAsync("nick.eth");     
             var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
@@ -102,7 +110,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         [Fact]
         public async void ShouldRetrieveTheContentHashAndDecodeIt()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth");
             var storage = content[0];
@@ -124,7 +132,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var cid = new IPLD.ContentIdentifier.Cid(MulticodecCode.MerkleDAGProtobuf, multihash);
             var ipfsStoragePrefix = new byte[] { 0xe3, 0x01 };
             var fullContentHash = ipfsStoragePrefix.Concat(cid.ToBytes()).ToArray();
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth");
             //e301017012202febb4a7c84c8079f78844e50150d97ad33e2a3a0d680d54e7211e30ef13f08d
@@ -134,7 +142,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         //[Fact]
         public async void ShouldSetSubnodeExample()
         {
-            var web3 = new Web3.Web3(new Account(""),"https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var txn = await ensService.SetSubnodeOwnerRequestAsync("yoursupername.eth", "subdomainName", "addressOwner");
         }
@@ -142,7 +150,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         //[Fact]
         public async void ShouldReverseResolveAddressFromMainnet()
         {
-            var web3 = new Web3.Web3("https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c");
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3);
             var name = await ensService.ReverseResolveAsync("0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb");
             var expectedName = "alex.vandesande.eth";
