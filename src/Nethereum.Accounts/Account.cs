@@ -10,6 +10,7 @@ namespace Nethereum.Web3.Accounts
 {
     public class Account : IAccount
     {
+        private INonceService _nonceService;
         public BigInteger? ChainId { get; }
 
 #if !PCL
@@ -76,6 +77,14 @@ namespace Nethereum.Web3.Accounts
 
         public string Address { get; protected set; }
         public ITransactionManager TransactionManager { get; protected set; }
-        public INonceService NonceService { get; set; }
+
+        public INonceService NonceService
+        {
+            get
+            {
+                return _nonceService ?? (_nonceService = new InMemoryNonceService(this.Address, TransactionManager.Client));
+            }
+            set => _nonceService = value;
+        }
     }
 }

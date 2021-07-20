@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.RPC.Web3;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
@@ -21,6 +23,24 @@ public class EIP1559Test
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
+
+        //[Fact]
+        //public async void ShouldCheckFeeHistory()
+        //{
+        //    //besu
+        //    // var web3 = new Nethereum.Web3.Web3("http://18.116.30.130:8545/");
+        //    var web3 = new Nethereum.Web3.Web3();
+        //    //var version = new Web3ClientVersion(web3.Client).SendRequestAsync();
+
+        //    var x = new TimePreferenceFeeSuggestionStrategy(web3.Client);
+        //    var fees = await x.SuggestFeesAsync();
+
+        //    //var block =
+        //    //    await web3.Eth.FeeHistory.SendRequestAsync(7, new BlockParameter(10), new []{10,20, 30}
+        //    //         );
+        //    var count = fees.Length;
+
+        //}
 
         [Fact]
         public async void ShouldSendTransactionWithAccessLists()
@@ -44,8 +64,7 @@ public class EIP1559Test
             ));
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(
-                EthereumClientIntegrationFixture.AccountAddress);
+            var nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync();
             var lastBlock =
                 await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(
                     BlockParameter.CreateLatest());
@@ -53,7 +72,7 @@ public class EIP1559Test
             var maxPriorityFeePerGas = 2000000000;
             var maxFeePerGas = baseFee.Value * 2 + 2000000000;
 
-            var transaction1559 = new Transaction1559(chainId, nonce.Value, maxPriorityFeePerGas, maxFeePerGas, 45000,
+            var transaction1559 = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, 45000,
                 "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", 10, "", accessLists);
             transaction1559.Sign(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey));
 
@@ -75,8 +94,7 @@ public class EIP1559Test
         {
             var chainId = 444444444500;
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(
-                EthereumClientIntegrationFixture.AccountAddress);
+            var nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync();
             var lastBlock =
                 await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(
                     BlockParameter.CreateLatest());

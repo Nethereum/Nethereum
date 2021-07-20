@@ -27,7 +27,7 @@ namespace Nethereum.Signer.IntegrationTests
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
-            var txCount = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(web3.TransactionManager.Account.Address);
+           
             
             var feeStrategy = new SimpleFeeSuggestionStrategy(web3.Client);
          
@@ -39,7 +39,7 @@ namespace Nethereum.Signer.IntegrationTests
                     From = web3.TransactionManager.Account.Address,
                     MaxFeePerGas = new HexBigInteger(fee.MaxFeePerGas.Value),
                     MaxPriorityFeePerGas = new HexBigInteger(fee.MaxPriorityFeePerGas.Value),
-                    Nonce = new HexBigInteger(txCount.Value),
+                    Nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync(),
                     To = receiveAddress,
                     Value = new HexBigInteger(10)
                 });

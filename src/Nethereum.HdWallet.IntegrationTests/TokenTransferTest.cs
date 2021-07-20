@@ -25,7 +25,7 @@ namespace Nethereum.HdWallet.IntegrationTests
         public async void ShouldBeAbleTransferTokensUsingTheHdWallet()
         {
             var wallet = new Wallet(Words, Password);
-            var account = wallet.GetAccount(0);
+            var account = wallet.GetAccount(0, EthereumClientIntegrationFixture.ChainId);
             
             var web3 = new Web3.Web3(account, _ethereumClientIntegrationFixture.GetWeb3().Client);
 
