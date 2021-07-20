@@ -92,7 +92,9 @@ namespace Nethereum.Generators.Core
                 case CodeGenLanguage.Vb:
                     if (IsMatch(value, VbNet))
                     {
-                        return "[" + value + "]";
+                        //vb is already escaped
+                        // return "[" + value + "]";
+                        return value;
                     }
                     return value;
                 case CodeGenLanguage.FSharp:

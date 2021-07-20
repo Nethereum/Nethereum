@@ -1924,7 +1924,9 @@ $d.define(Nethereum.Generators.Core.Keywords, null, function($t, $p) {
                 return value;
             case 1 /* CodeGenLanguage.Vb */:
                 if ($t.IsMatch(value, $t().VbNet)) {
-                    return "[" + value + "]";
+                    //vb is already escaped
+                    // return "[" + value + "]";
+                    return value;
                 }
                 return value;
             case 3 /* CodeGenLanguage.FSharp */:
