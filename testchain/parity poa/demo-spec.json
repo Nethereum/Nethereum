@@ -15,13 +15,45 @@
         "minGasLimit": "0x1388",
         "networkID" : "0x677AF40754",
         "gasLimitBoundDivisor": "0x400",
-		"eip140Transition": 0,
+	
+	"eip140Transition": 0,
+	"eip145Transition": 0,
         "eip211Transition": 0,
         "eip214Transition": 0,
         "eip658Transition": 0,
-		"eip145Transition": 0,
-		"eip1014Transition":0,
-		"eip1052Transition":0
+	"eip1014Transition":0,
+	"eip1052Transition":0,
+    "eip1283DisableTransition": "0",
+    "eip1283ReenableTransition": "0",
+    "eip1283Transition": "0",
+    "eip1344Transition": "0",
+    "eip150Transition": "0",
+    
+    "eip155Transition": "0",
+    "eip160Transition": "0",
+    "eip161abcTransition": "0",
+    "eip161dTransition": "0",
+
+
+    
+    
+    "eip1706Transition": "0",
+    "eip1884Transition": "0",
+    "eip2028Transition": "0",
+    "eip2315Transition": "0",
+    "eip2929Transition": "0",
+    "eip2930Transition": "0",
+  
+
+    	"eip1559Transition": "10000",
+		"eip3198Transition": "0x5",
+		"eip3541Transition": "0x5",
+		"eip3529Transition": "0x5",
+		"eip1559BaseFeeMaxChangeDenominator": "0x8",
+		"eip1559ElasticityMultiplier": "0x2",
+		"eip1559BaseFeeInitialValue": "0x3B9ACA00"
+   
+		
     },
     "genesis": {
         "seal": {

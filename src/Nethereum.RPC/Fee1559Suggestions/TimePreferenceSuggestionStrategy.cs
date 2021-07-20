@@ -140,7 +140,7 @@ public static class Comparer
 
         public Fee1559[] SuggestFees(FeeHistoryResult feeHistory, BigInteger tip)
         {
-            var baseFee = feeHistory.BaseFeePerGas.Select(x => x.Value).ToArray();
+            var baseFee = feeHistory.BaseFeePerGas.Select(x => x == null? 0 : x.Value).ToArray();
             var gasUsedRatio = feeHistory.GasUsedRatio;
 
 

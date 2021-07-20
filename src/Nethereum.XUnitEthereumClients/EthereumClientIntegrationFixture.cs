@@ -114,6 +114,10 @@ namespace Nethereum.XUnitEthereumClients
                 _web3 = new Web3.Web3(GetAccount(), GetClient());
             }
 
+            if(EthereumClient == EthereumClient.OpenEthereum)
+            {
+                _web3.TransactionManager.UseLegacyAsDefault = true;
+            }
             return _web3;
         }
 

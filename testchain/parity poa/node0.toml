@@ -1,27 +1,31 @@
 [parity]
 chain = "demo-spec.json"
 base_path = "parity0"
+
 [network]
 port = 30300
+
 [rpc]
 port = 8545
-apis = ["web3", "eth", "net", "personal", "parity", "parity_set", "traces", "rpc", "parity_accounts"]
+apis = ["web3", "eth", "net", "personal", "parity", "parity_set", "traces", "parity_accounts"]
 cors = ["all"]
 hosts = ["all"]
+
 [ipc]
 disable = false
-apis = ["web3", "eth", "net", "parity", "parity_accounts", "personal", "traces", "rpc", "secretstore"]
+apis = ["web3", "eth", "net", "parity", "parity_accounts", "personal", "traces", "secretstore"]
+
 [websockets]
 disable = false
 port = 8546
 interface = "local"
 origins = ["all"]
-apis = ["web3", "eth", "personal", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub"]
+apis = ["web3", "eth", "personal", "pubsub", "net", "parity", "parity_pubsub", "traces"]
 hosts = ["all"]
-[ui]
-port = 8180
+
 [account]
 password = ["node.pwds"]
+
 [mining]
 engine_signer = "0x12890d2cce102216644c59dae5baed380d84830c"
 reseal_on_txs = "none"

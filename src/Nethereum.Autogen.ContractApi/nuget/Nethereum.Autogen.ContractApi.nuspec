@@ -2,9 +2,9 @@
 <package>
   <metadata>
     <id>Nethereum.Autogen.ContractApi</id>
-    <version>3.6.2</version>
-    <authors>Dave Whiffin, Juan Blanco</authors>
-    <owners>Dave Whiffin, Juan Blanco</owners>
+    <version>4.0.0</version>
+    <authors>Juan Blanco, Dave Whiffin</authors>
+    <owners>Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
 	<license type="file">LICENSE.md</license>
 	<iconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</iconUrl>

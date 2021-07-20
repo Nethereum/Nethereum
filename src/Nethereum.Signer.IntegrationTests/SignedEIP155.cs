@@ -31,7 +31,12 @@ namespace Nethereum.Signer.IntegrationTests
             var privateKey = EthereumClientIntegrationFixture.AccountPrivateKey;
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
 
+
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            //GetWeb3 includes the chain Id
+
+            var x = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            web3.Eth.TransactionManager.UseLegacyAsDefault = true;
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
@@ -57,6 +62,8 @@ namespace Nethereum.Signer.IntegrationTests
                     .SendRequestsAndWaitForReceiptAsync(transactions);
 
             Assert.Equal(4, transactionsReceipts.Count);
+
+            web3.Eth.TransactionManager.UseLegacyAsDefault = false;
         }
     }
 }

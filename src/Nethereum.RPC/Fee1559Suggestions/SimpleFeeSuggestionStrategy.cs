@@ -26,8 +26,8 @@ namespace Nethereum.RPC.Fee1559Suggestions
             if (maxPriorityFeePerGas == null) maxPriorityFeePerGas = DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
             var lastBlock = await _ethGetBlockWithTransactionsHashes.SendRequestAsync(BlockParameter.CreateLatest());
                 
-            var baseFee = lastBlock.BaseFeePerGas;
-            var maxFeePerGas = baseFee.Value * 2 + maxPriorityFeePerGas;
+            var baseFee = lastBlock.BaseFeePerGas == null ? 100 : lastBlock.BaseFeePerGas.Value;
+            var maxFeePerGas = baseFee * 2 + maxPriorityFeePerGas;
             return new Fee1559()
             {
                 BaseFee = baseFee,
