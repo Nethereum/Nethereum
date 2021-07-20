@@ -21,13 +21,17 @@ namespace Nethereum.Signer.IntegrationTests
         public async void ShouldBeAbleToCalculateHistoryAndSend1000sOfTransactions()
         {
             var receiveAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
+
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+#if NETCOREAPP3_1_OR_GREATER || NET50
+            EthECKey.SignRecoverable = true;
+#endif
             var feeStrategy = new TimePreferenceFeeSuggestionStrategy(web3.Client);
-            for (var x = 0; x < 1; x++)
+            for (var x = 0; x < 10; x++)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(500);
                 var fee = await feeStrategy.SuggestFeesAsync();
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < 50; i++)
                 {
                     var encoded = await web3.TransactionManager.SendTransactionAsync(
                         new TransactionInput()

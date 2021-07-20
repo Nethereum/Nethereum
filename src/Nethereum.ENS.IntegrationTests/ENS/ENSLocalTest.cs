@@ -184,6 +184,9 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                 var addressFrom = "0x12890D2cce102216644c59daE5baed380d84830c";
 
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                //CI: slowing polling for CI
+                web3.TransactionManager.TransactionReceiptService =
+                    new TransactionReceiptPollingService(web3.TransactionManager, 500);
 
 
                 //deploy ENS contract

@@ -52,7 +52,7 @@ namespace Nethereum.XUnitEthereumClients
         //public static string AccountAddress { get; set; } = "0xe612205919814b1995D861Bdf6C2fE2f20cDBd68";
         //public static System.Numerics.BigInteger ChainId { get; set; } = 3;
 
-        public EthereumClient EthereumClient { get; private set; } = EthereumClient.Geth;
+        public EthereumClient EthereumClient { get; private set; } = EthereumClient.OpenEthereum;
         public static string AccountAddress { get; set; } = "0x12890d2cce102216644c59daE5baed380d84830c";
         public static string AccountPrivateKey { get; set; } = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
         public static System.Numerics.BigInteger ChainId { get; set; } = 444444444500;

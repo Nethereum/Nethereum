@@ -46,7 +46,8 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var tx = await addChargeFunction.SendTransactionAsync(senderAddress, gas, null, 20);
             tx = await addChargeFunction.SendTransactionAsync(senderAddress, gas, null, 30);
             var pollingService = (TransactionReceiptPollingService) web3.TransactionManager.TransactionReceiptService;
-            receipt = await pollingService.PollForReceiptAsync(tx, new CancellationTokenSource(10000));
+            //CI is too slow
+            receipt = await pollingService.PollForReceiptAsync(tx, new CancellationTokenSource(30000));
 
             var chargers = contract.GetFunction("getChargers");
 
