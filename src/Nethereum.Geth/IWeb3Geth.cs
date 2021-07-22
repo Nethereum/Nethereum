@@ -8,5 +8,6 @@ namespace Nethereum.Geth
         IDebugApiService Debug { get; }
         IGethEthApiService GethEth { get; }
         IMinerApiService Miner { get; }
+        ITxnPoolApiService TxnPool { get; }
     }
 }

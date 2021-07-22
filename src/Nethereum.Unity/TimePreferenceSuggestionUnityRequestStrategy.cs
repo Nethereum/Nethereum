@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 
@@ -53,7 +54,7 @@ namespace Nethereum.JsonRpc.UnityClient
         {
             // feeHistory API call without a reward percentile specified is cheap even with a light client backend because it only needs block headers.
             // Therefore we can afford to fetch a hundred blocks of base fee history in order to make meaningful estimates on variable time scales.
-            yield return _ethFeeHistory.SendRequest(100, BlockParameter.CreateLatest());
+            yield return _ethFeeHistory.SendRequest(100.ToHexBigInteger(), BlockParameter.CreateLatest());
             if (_ethFeeHistory.Exception != null)
             {
                 var gasUsedRatio = _ethFeeHistory.Result.GasUsedRatio;

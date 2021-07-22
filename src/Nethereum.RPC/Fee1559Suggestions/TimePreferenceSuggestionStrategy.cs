@@ -72,7 +72,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 if (blockCount > 0)
                 {
                     // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
-                    var feeHistory = await ethFeeHistory.SendRequestAsync((uint)blockCount, new BlockParameter(new HexBigInteger(firstBlock + ptr)), new int[] { 10 }).ConfigureAwait(false);
+                    var feeHistory = await ethFeeHistory.SendRequestAsync(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 10 }).ConfigureAwait(false);
                     for (var i = 0; i < feeHistory.Reward.Length; i++)
                     {
                         rewards.Add(feeHistory.Reward[i][0]);
@@ -105,7 +105,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         {
             // feeHistory API call without a reward percentile specified is cheap even with a light client backend because it only needs block headers.
             // Therefore we can afford to fetch a hundred blocks of base fee history in order to make meaningful estimates on variable time scales.
-            var feeHistory = await ethFeeHistory.SendRequestAsync(100, BlockParameter.CreateLatest()).ConfigureAwait(false);
+            var feeHistory = await ethFeeHistory.SendRequestAsync(100.ToHexBigInteger(), BlockParameter.CreateLatest()).ConfigureAwait(false);
             var gasUsedRatio = feeHistory.GasUsedRatio;
             var tip = await SuggestTip(feeHistory.OldestBlock, gasUsedRatio).ConfigureAwait(false);
             return SuggestFees(feeHistory, tip);

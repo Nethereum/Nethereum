@@ -8,6 +8,7 @@ using System.Text;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Collections;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.JsonRpc.UnityClient
@@ -1045,7 +1046,7 @@ namespace Nethereum.JsonRpc.UnityClient
             _ethFeeHistory = new Nethereum.RPC.Eth.Transactions.EthFeeHistory(null);
         }
 
-        public IEnumerator SendRequest(uint blockCount, BlockParameter highestBlockNumber, int[] rewardPercentiles = null)
+        public IEnumerator SendRequest(HexBigInteger blockCount, BlockParameter highestBlockNumber, double[] rewardPercentiles = null)
         {
             var request = _ethFeeHistory.BuildRequest(blockCount, highestBlockNumber, rewardPercentiles);
             yield return SendRequest(request);

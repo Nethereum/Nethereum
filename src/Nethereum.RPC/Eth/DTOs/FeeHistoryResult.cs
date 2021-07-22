@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Eth.DTOs
         /// Lowest number block of the returned range.   
         /// </summary>
         [DataMember(Name = "oldestBlock")]
-        public BigInteger OldestBlock { get; set; }
+        public HexBigInteger OldestBlock { get; set; }
 
         /// <summary>
         ///   An array of block base fees per gas. This includes the next block after the newest of the returned range, because this value can be derived from the newest block. Zeroes are returned for pre-EIP-1559 blocks

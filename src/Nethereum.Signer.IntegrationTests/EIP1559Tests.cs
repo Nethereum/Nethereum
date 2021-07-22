@@ -24,23 +24,25 @@ public class EIP1559Test
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        //[Fact]
-        //public async void ShouldCheckFeeHistory()
-        //{
-        //    //besu
-        //    // var web3 = new Nethereum.Web3.Web3("http://18.116.30.130:8545/");
-        //    var web3 = new Nethereum.Web3.Web3();
-        //    //var version = new Web3ClientVersion(web3.Client).SendRequestAsync();
+        [Fact]
+        public async void ShouldCheckFeeHistory()
+        {
+            //besu
+            // var web3 = new Nethereum.Web3.Web3("http://18.116.30.130:8545/");
+            //calavera
+            var web3 = new Nethereum.Web3.Web3("http://18.224.51.102:8545/");
+            //var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Goerli);
+            var version = await new Web3ClientVersion(web3.Client).SendRequestAsync();
 
-        //    var x = new TimePreferenceFeeSuggestionStrategy(web3.Client);
-        //    var fees = await x.SuggestFeesAsync();
+            var x = new TimePreferenceFeeSuggestionStrategy(web3.Client);
+            var fees = await x.SuggestFeesAsync();
 
-        //    //var block =
-        //    //    await web3.Eth.FeeHistory.SendRequestAsync(7, new BlockParameter(10), new []{10,20, 30}
-        //    //         );
-        //    var count = fees.Length;
+            //var block =
+            //    await web3.Eth.FeeHistory.SendRequestAsync(7, new BlockParameter(10), new []{10,20, 30}
+            //         );
+            var count = fees.Length;
 
-        //}
+        }
 
         [Fact]
         public async void ShouldSendTransactionWithAccessLists()
