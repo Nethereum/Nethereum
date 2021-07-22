@@ -7,7 +7,7 @@ namespace Nethereum.StandardTokenEIP20.Events.DTO
 {
     [Event("Transfer")]
     [Obsolete("Please use TransferEventDTO instead")]
-    public class Transfer:IEventDTO
+    public class Transfer : IEventDTO
     {
         [Parameter("address", "from", 1, true)]
         public string AddressFrom { get; set; }

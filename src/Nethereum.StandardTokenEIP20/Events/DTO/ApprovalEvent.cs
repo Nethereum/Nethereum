@@ -19,6 +19,5 @@ namespace Nethereum.StandardTokenEIP20.Events.DTO
 
         [Parameter("uint", "value", 3)]
         public BigInteger Value { get; set; }
-
     }
 }

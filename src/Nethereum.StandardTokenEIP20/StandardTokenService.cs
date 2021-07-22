@@ -14,18 +14,23 @@ namespace Nethereum.StandardTokenEIP20
 {
     public class StandardTokenService
     {
-
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3,
+            EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAndWaitForReceiptAsync(eIP20Deployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>()
+                .SendRequestAndWaitForReceiptAsync(eIP20Deployment, cancellationTokenSource);
         }
+
         public static Task<string> DeployContractAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment)
         {
             return web3.Eth.GetContractDeploymentHandler<EIP20Deployment>().SendRequestAsync(eIP20Deployment);
         }
-        public static async Task<StandardTokenService> DeployContractAndGetServiceAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
+
+        public static async Task<StandardTokenService> DeployContractAndGetServiceAsync(Web3.Web3 web3,
+            EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource).ConfigureAwait(false);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource)
+                .ConfigureAwait(false);
             return new StandardTokenService(web3, receipt.ContractAddress);
         }
 
@@ -45,18 +50,20 @@ namespace Nethereum.StandardTokenEIP20
         }
 
         public Event<TransferEventDTO> GetTransferEvent()
-        { 
+        {
             return ContractHandler.GetEvent<TransferEventDTO>();
         }
 
         public Task<string> NameQueryAsync(NameFunction nameFunction = null, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>(nameFunction, blockParameter);
+            return ContractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>(nameFunction,
+                blockParameter);
         }
 
         public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction = null, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>(symbolFunction, blockParameter);
+            return ContractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>(symbolFunction,
+                blockParameter);
         }
 
         public Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
@@ -64,7 +71,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(approveFunction);
         }
 
-        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction,
+            CancellationTokenSource cancellationToken = null)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
         }
@@ -78,7 +86,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(approveFunction);
         }
 
-        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(string spender, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(string spender, BigInteger value,
+            CancellationTokenSource cancellationToken = null)
         {
             var approveFunction = new ApproveFunction();
             approveFunction.Spender = spender;
@@ -87,7 +96,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
         }
 
-        public Task<BigInteger> TotalSupplyQueryAsync(TotalSupplyFunction totalSupplyFunction, BlockParameter blockParameter = null)
+        public Task<BigInteger> TotalSupplyQueryAsync(TotalSupplyFunction totalSupplyFunction,
+            BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<TotalSupplyFunction, BigInteger>(totalSupplyFunction, blockParameter);
         }
@@ -103,7 +113,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(transferFromFunction);
         }
 
-        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(
+            TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFromFunction, cancellationToken);
         }
@@ -118,7 +129,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(transferFromFunction);
         }
 
-        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(string from, string to, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(string from, string to,
+            BigInteger value, CancellationTokenSource cancellationToken = null)
         {
             var transferFromFunction = new TransferFromFunction();
             transferFromFunction.From = from;
@@ -128,7 +140,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFromFunction, cancellationToken);
         }
 
-        public Task<BigInteger> BalancesQueryAsync(BalancesFunction balancesFunction, BlockParameter blockParameter = null)
+        public Task<BigInteger> BalancesQueryAsync(BalancesFunction balancesFunction,
+            BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
         }
@@ -165,7 +178,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
         }
 
-        public Task<BigInteger> BalanceOfQueryAsync(BalanceOfFunction balanceOfFunction, BlockParameter blockParameter = null)
+        public Task<BigInteger> BalanceOfQueryAsync(BalanceOfFunction balanceOfFunction,
+            BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
         }
@@ -183,7 +197,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(transferFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction,
+            CancellationTokenSource cancellationToken = null)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
         }
@@ -197,7 +212,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAsync(transferFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger value,
+            CancellationTokenSource cancellationToken = null)
         {
             var transferFunction = new TransferFunction();
             transferFunction.To = to;
@@ -206,7 +222,8 @@ namespace Nethereum.StandardTokenEIP20
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
         }
 
-        public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction, BlockParameter blockParameter = null)
+        public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction,
+            BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);
         }
