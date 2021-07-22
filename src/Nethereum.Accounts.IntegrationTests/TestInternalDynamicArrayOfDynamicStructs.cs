@@ -217,7 +217,7 @@ contract StructsSample2
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
             var purchaseOrder = new PurchaseOrder();
             purchaseOrder.CustomerId = 1000;
@@ -228,7 +228,7 @@ contract StructsSample2
 
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
-            var receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(new SetPurchaseOrderFunction() { PurchaseOrder = purchaseOrder });
+            var receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(new SetPurchaseOrderFunction() { PurchaseOrder = purchaseOrder }).ConfigureAwait(false);
             var eventPurchaseOrder = contractHandler.GetEvent<PurchaseOrderChangedEventDTO>();
             var eventOutputs = eventPurchaseOrder.DecodeAllEventsForEvent(receiptSending.Logs);
             var purchaseOrderResult = eventOutputs[0].Event.PurchaseOrder;
@@ -245,7 +245,7 @@ contract StructsSample2
             Assert.Equal("hello2", purchaseOrderResult.LineItem[1].Description);
 
 
-            var query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 });
+            var query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
 
             purchaseOrderResult = query.PurchaseOrder;
             Assert.Equal(1, purchaseOrderResult.Id);
@@ -267,11 +267,11 @@ contract StructsSample2
             var lineItemsFunction = new AddLineItemsFunction() { Id = 1, LineItem = lineItems };
             var data = lineItemsFunction.GetCallData().ToHex();
 
-            receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(new AddLineItemsFunction() { Id = 1, LineItem = lineItems });
+            receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(new AddLineItemsFunction() { Id = 1, LineItem = lineItems }).ConfigureAwait(false);
 
             var lineItemsEvent = contractHandler.GetEvent<LineItemsAddedEventDTO>();
             var lineItemsLogs = lineItemsEvent.DecodeAllEventsForEvent(receiptSending.Logs);
-            query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 });
+            query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
             purchaseOrderResult = query.PurchaseOrder;
             Assert.Equal(1, purchaseOrderResult.Id);
             Assert.Equal(1000, purchaseOrderResult.CustomerId);
@@ -295,7 +295,7 @@ contract StructsSample2
             var listPurchaseOrder = new List<PurchaseOrder>();
             listPurchaseOrder.Add(purchaseOrder);
             var func = new SetPurchaseOrdersFunction() { PurchaseOrder = listPurchaseOrder };
-            receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(func);
+            receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(func).ConfigureAwait(false);
             var eventPurchaseOrders = contractHandler.GetEvent<PurchaseOrdersChangedEventDTO>();
             var eventPurchaseOrdersOutputs = eventPurchaseOrders.DecodeAllEventsForEvent(receiptSending.Logs);
             purchaseOrderResult = eventPurchaseOrdersOutputs[0].Event.PurchaseOrder[0];
@@ -310,7 +310,7 @@ contract StructsSample2
             Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
 
             //Stored array on constructor
-            var query2 = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrder3Function, GetPurchaseOrder3OutputDTO>();
+            var query2 = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrder3Function, GetPurchaseOrder3OutputDTO>().ConfigureAwait(false);
             /*
               constructor() public {
             _purchaseOrder.id = 1;

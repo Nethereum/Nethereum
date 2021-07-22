@@ -14,10 +14,10 @@ namespace Nethereum.Parity.RPC.Trace
         {
         }
 
-        public async Task<JObject> SendRequestAsync(CallInput callInput, TraceType[] typeOfTrace, BlockParameter block,
+        public Task<JObject> SendRequestAsync(CallInput callInput, TraceType[] typeOfTrace, BlockParameter block,
             object id = null)
         {
-            return await base.SendRequestAsync(id, callInput, typeOfTrace.ConvertToStringArray(), block);
+            return base.SendRequestAsync(id, callInput, typeOfTrace.ConvertToStringArray(), block);
         }
 
         public RpcRequest BuildRequest(CallInput callInput, TraceType[] typeOfTrace, BlockParameter block,

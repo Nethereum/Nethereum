@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 using Common.Logging;
 using Common.Logging.Simple;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.Logging
 {
@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
         //[Fact]
         public async void TestLogging()
         {
-            if (_ethereumClientIntegrationFixture.EthereumClient  == EthereumClient.Geth)
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
                 LogManager.Adapter = capturingLoggerAdapter;
@@ -38,7 +38,8 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
                 var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
                     client: new RpcClient(
-                        new Uri("http://localhost:8545"), authHeaderValue: null, null, null, LogManager.GetLogger<ILog>()));
+                        new Uri("http://localhost:8545"), authHeaderValue: null, null, null,
+                        LogManager.GetLogger<ILog>()));
 
                 ////deploy the contract, including abi and a paramter of 7. 
                 //var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
@@ -59,7 +60,6 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 }
                 catch (Exception ex)
                 {
-
                 }
 
                 //Parity is:
@@ -67,7 +67,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 Assert.Contains("RPC Response Error: intrinsic gas too low",
                     capturingLoggerAdapter.LoggerEvents[6].MessageObject.ToString());
 
-                await web3.TransactionManager.Account.NonceService.ResetNonce();
+                await web3.TransactionManager.Account.NonceService.ResetNonceAsync();
 
                 var transactionHash3 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                     senderAddress,
@@ -76,7 +76,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 Assert.Contains("eth_getTransactionCount",
                     capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());
                 Assert.Contains("RPC Response: 0x", capturingLoggerAdapter.LoggerEvents[8].MessageObject.ToString());
-               // Assert.Contains("eth_gasPrice", capturingLoggerAdapter.LoggerEvents[9].MessageObject.ToString()); // we are nto doing legacy now
+                // Assert.Contains("eth_gasPrice", capturingLoggerAdapter.LoggerEvents[9].MessageObject.ToString()); // we are nto doing legacy now
                 Assert.Contains("RPC Response:", capturingLoggerAdapter.LoggerEvents[10].MessageObject.ToString());
                 Assert.Contains("eth_sendRawTransaction",
                     capturingLoggerAdapter.LoggerEvents[11].MessageObject.ToString());

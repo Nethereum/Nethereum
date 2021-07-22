@@ -12,6 +12,7 @@ using Nethereum.Contracts;
 using System.Threading;
 using Nethereum.ENS.BaseRegistrarImplementation.ContractDefinition;
 
+
 namespace Nethereum.ENS
 {
     public partial class BaseRegistrarImplementationService
@@ -28,7 +29,7 @@ namespace Nethereum.ENS
 
         public static async Task<BaseRegistrarImplementationService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, BaseRegistrarImplementationDeployment baseRegistrarImplementationDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, baseRegistrarImplementationDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, baseRegistrarImplementationDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new BaseRegistrarImplementationService(web3, receipt.ContractAddress);
         }
 
@@ -42,9 +43,9 @@ namespace Nethereum.ENS
             ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
 
-        public Task<BigInteger> GRACE_PERIODQueryAsync(GRACE_PERIODFunction gRACE_PERIODFunction, BlockParameter blockParameter = null)
+        public Task<BigInteger> GRACE_PERIODQueryAsync(GRACE_PERIODFunction gRacePeriodFunction, BlockParameter blockParameter = null)
         {
-            return ContractHandler.QueryAsync<GRACE_PERIODFunction, BigInteger>(gRACE_PERIODFunction, blockParameter);
+            return ContractHandler.QueryAsync<GRACE_PERIODFunction, BigInteger>(gRacePeriodFunction, blockParameter);
         }
 
 

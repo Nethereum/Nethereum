@@ -15,10 +15,10 @@ namespace Nethereum.Besu.RPC.Debug
         {
         }
 
-        public async Task<JObject> SendRequestAsync(string blockHash, int txIndex, string contractAddress,
+        public Task<JObject> SendRequestAsync(string blockHash, int txIndex, string contractAddress,
             string startKeyHash, int limitStorageEntries, object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash, txIndex, contractAddress, startKeyHash,
+            return base.SendRequestAsync(id, blockHash, txIndex, contractAddress, startKeyHash,
                 limitStorageEntries);
         }
 

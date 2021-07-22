@@ -14,10 +14,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class IbftGetPendingVotesTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override Task<JObject> ExecuteAsync(IClient client)
         {
             var ibftGetPendingVotes = new IbftGetPendingVotes(client);
-            return await ibftGetPendingVotes.SendRequestAsync();
+            return ibftGetPendingVotes.SendRequestAsync();
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.Decoders;
 using Nethereum.Contracts;
-using Nethereum.Contracts.CQS;
-using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.XUnitEthereumClients;
 using SolidityCallAnotherContract.Contracts.Test.CQS;
@@ -100,9 +98,8 @@ contract TheOther
 }
 */
 
-
-        //This test, decodes a bytes fixed array [10] and a bytes array.
-        //Bytes is a dynamic byte[] so we have fixed with dynamic and bytes[] is a byte[][]
+        /// This test, decodes a bytes fixed array [10] and a bytes array.
+        ///Bytes is a dynamic byte[] so we have fixed with dynamic and bytes[] is a byte[][]
 
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
@@ -125,10 +122,10 @@ contract TheOther
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
                 var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
-                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
+                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
                 var deploymentCallerHandler = web3.Eth.GetContractDeploymentHandler<TestDeployment>();
-                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
+                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
                 var callMeFunction1 = new CallMeFunction()
                 {
@@ -202,12 +199,12 @@ contract TheOther
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
                 var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TheOtherDeployment>();
-                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync();
+                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
                 var deploymentCallerHandler =
                     web3.Eth
                         .GetContractDeploymentHandler<SolidityCallAnotherContract.Contracts.Test.CQS.TestDeployment>();
-                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync();
+                var deploymentReceiptCaller = await deploymentCallerHandler.SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
                 ;
 
                 var contracthandler = web3.Eth.GetContractHandler(deploymentReceiptCaller.ContractAddress);
@@ -222,7 +219,7 @@ contract TheOther
                     TheOther = deploymentReceipt.ContractAddress
                 };
 
-                var returnValue = await contracthandler.QueryRawAsync(callManyOthersFunctionMessage);
+                var returnValue = await contracthandler.QueryRawAsync(callManyOthersFunctionMessage).ConfigureAwait(false);
                 var inHex = returnValue.ToHex();
 
                 var expected =
@@ -230,7 +227,7 @@ contract TheOther
 
                 var returnByteArray =
                     await contracthandler.QueryAsync<CallManyOtherContractsFixedArrayReturnFunction, List<Byte[]>>(
-                        callManyOthersFunctionMessage);
+                        callManyOthersFunctionMessage).ConfigureAwait(false);
                 //var inHex = returnValue.ToHex();
                 var first = new StringTypeDecoder().Decode(returnByteArray[0]);
                 var second = new StringTypeDecoder().Decode(returnByteArray[1]);
@@ -246,7 +243,7 @@ contract TheOther
 
                 var returnVarByteArray =
                     await contracthandler.QueryAsync<CallManyOtherContractsVariableArrayReturnFunction, List<Byte[]>>(
-                        callManyOthersVariableFunctionMessage);
+                        callManyOthersVariableFunctionMessage).ConfigureAwait(false);
                 //var inHex = returnValue.ToHex();
                 var firstVar = new StringTypeDecoder().Decode(returnVarByteArray[0]);
                 var secondVar = new StringTypeDecoder().Decode(returnVarByteArray[1]);
@@ -257,7 +254,7 @@ contract TheOther
                 Assert.Equal(expected, thirdVar);
 
                 var returnValue1Call =
-                    await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage);
+                    await contracthandler.QueryAsync<CallAnotherContractFunction, byte[]>(callOtherFunctionMessage).ConfigureAwait(false);
 
                 var return1ValueString = new StringTypeDecoder().Decode(returnValue1Call);
                 Assert.Equal(expected, return1ValueString);

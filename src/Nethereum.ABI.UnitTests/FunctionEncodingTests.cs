@@ -11,12 +11,12 @@ namespace Nethereum.ABI.UnitTests
     {
         public ParameterOutput CreateParamO(string type, string name, Type decodedType)
         {
-            return new() {Parameter = CreateParam(type, name, decodedType)};
+            return new ParameterOutput() {Parameter = CreateParam(type, name, decodedType)};
         }
 
         public Parameter CreateParam(string type, string name, Type decodedType = null)
         {
-            return new(type, name) {DecodedType = decodedType};
+            return new Parameter(type, name) {DecodedType = decodedType};
         }
 
         [Fact]

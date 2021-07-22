@@ -7,7 +7,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
     public interface ITransactionVMStackRepository
     { 
         Task UpsertAsync(string transactionHash, string address, JObject stackTrace);
-        Task<ITransactionVmStackView> FindByTransactionHashAync(string hash);
-        Task<ITransactionVmStackView> FindByAddressAndTransactionHashAync(string address, string hash);
+        Task<ITransactionVmStackView> FindByTransactionHashAsync(string hash);
+        Task<ITransactionVmStackView> FindByAddressAndTransactionHashAsync(string address, string hash);
     }
 }

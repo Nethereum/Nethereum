@@ -16,9 +16,9 @@ namespace Nethereum.Besu.RPC.EEA
         {
         }
 
-        public async Task<string> SendRequestAsync(string signedTransaction, object id = null)
+        public Task<string> SendRequestAsync(string signedTransaction, object id = null)
         {
-            return await base.SendRequestAsync(id, signedTransaction);
+            return base.SendRequestAsync(id, signedTransaction);
         }
 
         public RpcRequest BuildRequest(string signedTransaction, object id = null)

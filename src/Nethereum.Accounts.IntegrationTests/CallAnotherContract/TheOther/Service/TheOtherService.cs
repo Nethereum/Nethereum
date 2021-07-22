@@ -26,7 +26,7 @@ namespace SolidityCallAnotherContract.Contracts.TheOther.Service
         }
         public static async Task<TheOtherService> DeployContractAndGetServiceAsync(Web3 web3, TheOtherDeployment theOtherDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, theOtherDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, theOtherDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new TheOtherService(web3, receipt.ContractAddress);
         }
     

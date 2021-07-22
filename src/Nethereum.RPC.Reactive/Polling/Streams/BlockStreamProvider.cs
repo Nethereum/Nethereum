@@ -13,33 +13,33 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
 {
     public sealed class BlockStreamProvider : IBlockStreamProvider
     {
-        private readonly IEthApiBlockService BlockService;
-        private readonly IEthApiFilterService FilterService;
-        private readonly IObservable<Unit> Poller;
+        private readonly IEthApiBlockService _blockService;
+        private readonly IEthApiFilterService _filterService;
+        private readonly IObservable<Unit> _poller;
 
         public BlockStreamProvider(
             IObservable<Unit> poller,
             IEthApiFilterService filterService,
             IEthApiBlockService blockService)
         {
-            Poller = poller;
-            FilterService = filterService;
-            BlockService = blockService;
+            _poller = poller;
+            _filterService = filterService;
+            _blockService = blockService;
         }
 
-        public IObservable<BlockWithTransactionHashes> GetBlocksWithTransactionHashes() => GetBlocks(BlockService.GetBlockWithTransactionsHashesByHash.SendRequestAsync);
-        public IObservable<BlockWithTransactions> GetBlocksWithTransactions() => GetBlocks(BlockService.GetBlockWithTransactionsByHash.SendRequestAsync);
+        public IObservable<BlockWithTransactionHashes> GetBlocksWithTransactionHashes() => GetBlocks(_blockService.GetBlockWithTransactionsHashesByHash.SendRequestAsync);
+        public IObservable<BlockWithTransactions> GetBlocksWithTransactions() => GetBlocks(_blockService.GetBlockWithTransactionsByHash.SendRequestAsync);
 
         private IObservable<TBlock> GetBlocks<TBlock>(Func<string, object, Task<TBlock>> blockProvider) where TBlock : Block => ObservableExtensions
             .Using(
-                async () => new DisposableFilter(await FilterService.NewBlockFilter.SendRequestAsync(), FilterService.UninstallFilter),
+                async () => new DisposableFilter(await _filterService.NewBlockFilter.SendRequestAsync().ConfigureAwait(false), _filterService.UninstallFilter),
                 filter => Observable
-                    .FromAsync(ct => FilterService.GetFilterChangesForBlockOrTransaction.SendRequestAsync(filter.ID))
+                    .FromAsync(ct => _filterService.GetFilterChangesForBlockOrTransaction.SendRequestAsync(filter.ID))
                     .SelectMany(blockHashes => blockHashes
                         .Select(hash => Observable.FromAsync(ct => blockProvider(hash, null)))
                         .ToObservable())
                     .SelectMany(x => x)
-                    .Poll(Poller))
+                    .Poll(_poller))
             .Publish()
             .RefCount();
 
@@ -56,7 +56,7 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
                     var updateStream = blockSource.Replay();
                     var updateStreamDisposable = updateStream.Connect();
 
-                    var latestBlock = await BlockService.GetBlockNumber.SendRequestAsync();
+                    var latestBlock = await _blockService.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
 
                     // If we don't defer, we have to fetch the entire old stream before we are able
                     // to detect and respond whether the `updateStream` is required or not.
@@ -107,7 +107,7 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
                 start,
                 BlockParameter.CreateLatest(),
                 newBlockSource ?? GetBlocksWithTransactionHashes(),
-                BlockService.GetBlockWithTransactionsHashesByNumber.SendRequestAsync);
+                _blockService.GetBlockWithTransactionsHashesByNumber.SendRequestAsync);
 
         public IObservable<BlockWithTransactionHashes> GetBlocksWithTransactionHashes(
             BlockParameter start,
@@ -117,7 +117,7 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
                 start,
                 end,
                 newBlockSource ?? GetBlocksWithTransactionHashes(),
-                BlockService.GetBlockWithTransactionsHashesByNumber.SendRequestAsync);
+                _blockService.GetBlockWithTransactionsHashesByNumber.SendRequestAsync);
 
         public IObservable<BlockWithTransactions> GetBlocksWithTransactions(
             BlockParameter start,
@@ -126,7 +126,7 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
                 start,
                 BlockParameter.CreateLatest(),
                 newBlockSource ?? GetBlocksWithTransactions(),
-                BlockService.GetBlockWithTransactionsByNumber.SendRequestAsync);
+                _blockService.GetBlockWithTransactionsByNumber.SendRequestAsync);
 
         public IObservable<BlockWithTransactions> GetBlocksWithTransactions(
             BlockParameter start,
@@ -136,6 +136,6 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
                 start,
                 end,
                 newBlockSource ?? GetBlocksWithTransactions(),
-                BlockService.GetBlockWithTransactionsByNumber.SendRequestAsync);
+                _blockService.GetBlockWithTransactionsByNumber.SendRequestAsync);
     }
 }

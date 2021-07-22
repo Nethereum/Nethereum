@@ -2,7 +2,12 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+
+// ReSharper disable ConsiderUsingConfigureAwait
+// ReSharper disable InconsistentNaming
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
@@ -24,11 +29,13 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var deploymentMessage = new TestAnonymousEventContractDeployment {FromAddress = senderAddress};
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestAnonymousEventContractDeployment>();
-            var deploymentTransactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+            var deploymentTransactionReceipt =
+                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
             var contractHandler = web3.Eth.GetContractHandler(deploymentTransactionReceipt.ContractAddress);
-            
+
             var itemCreatedEvent = contractHandler.GetEvent<ItemCreatedEventDTO>();
-            
+
+
             var eventFilter1__ = await itemCreatedEvent.CreateFilterAsync(1);
             var eventFilter__SenderAddress =
                 await itemCreatedEvent.CreateFilterAsync<object, object, string>(null, null, senderAddress);
@@ -45,19 +52,19 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     Id = 2,
                     Price = 100
                 });
-            
-            var logs1__Result = await itemCreatedEvent.GetAllChanges(eventFilter1__);
+
+            var logs1__Result = await itemCreatedEvent.GetAllChangesAsync(eventFilter1__);
             Assert.Single(logs1__Result);
             Assert.Equal(1, logs1__Result[0].Event.ItemId);
             Assert.Equal(100, logs1__Result[0].Event.Price);
             Assert.Equal(senderAddress.ToLower(), logs1__Result[0].Event.Result.ToLower());
 
-            var logs__SenderAddress = await itemCreatedEvent.GetAllChanges(eventFilter__SenderAddress);
+            var logs__SenderAddress = await itemCreatedEvent.GetAllChangesAsync(eventFilter__SenderAddress);
             Assert.Equal(2, logs__SenderAddress.Count);
             Assert.Contains(logs__SenderAddress, el => el.Event.ItemId == 1);
             Assert.Contains(logs__SenderAddress, el => el.Event.ItemId == 2);
         }
-        
+
         public class TestAnonymousEventContractDeployment : ContractDeploymentMessage
         {
             public static string BYTECODE =
@@ -71,7 +78,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             {
             }
         }
-        
+
         [Event("ItemCreated", true)]
         public class ItemCreatedEventDTO : IEventDTO
         {
@@ -88,13 +95,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Function("newItem")]
         public class NewItemFunction : FunctionMessage
         {
-            [Parameter("uint256", "id", 1)]
-            public BigInteger Id { get; set; }
+            [Parameter("uint256", "id", 1)] public BigInteger Id { get; set; }
 
-            [Parameter("uint256", "price", 2)]
-            public BigInteger Price { get; set; }
+            [Parameter("uint256", "price", 2)] public BigInteger Price { get; set; }
         }
-        
+
 /* Contract 
 contract TestAnonymousEventContract {
     struct Item {

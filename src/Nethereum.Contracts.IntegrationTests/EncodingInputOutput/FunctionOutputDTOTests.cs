@@ -2,14 +2,15 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class FunctionOutputDTOTests
     {
-
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public FunctionOutputDTOTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
@@ -21,12 +22,10 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         public class TestOutputService
         {
             public static string ABI =
-                    @"[{'constant':false,'inputs':[],'name':'getData','outputs':[{'name':'birthTime','type':'uint64'},{'name':'userName','type':'string'},{'name':'starterId','type':'uint16'},{'name':'currLocation','type':'uint16'},{'name':'isBusy','type':'bool'},{'name':'owner','type':'address'}],'payable':false,'stateMutability':'nonpayable','type':'function'}]"
-                ;
+                @"[{'constant':false,'inputs':[],'name':'getData','outputs':[{'name':'birthTime','type':'uint64'},{'name':'userName','type':'string'},{'name':'starterId','type':'uint16'},{'name':'currLocation','type':'uint16'},{'name':'isBusy','type':'bool'},{'name':'owner','type':'address'}],'payable':false,'stateMutability':'nonpayable','type':'function'}]";
 
             public static string BYTE_CODE =
-                    "0x6060604052341561000f57600080fd5b6101c88061001e6000396000f3006060604052600436106100405763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416633bc5de308114610045575b600080fd5b341561005057600080fd5b61005861011a565b60405167ffffffffffffffff8716815261ffff808616604083015284166060820152821515608082015273ffffffffffffffffffffffffffffffffffffffff821660a082015260c06020820181815290820187818151815260200191508051906020019080838360005b838110156100da5780820151838201526020016100c2565b50505050905090810190601f1680156101075780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390f35b600061012461018a565b6000806000806001955060408051908101604052600481527f6a75616e0000000000000000000000000000000000000000000000000000000060208201529596600195508594506000935073de0b295669a9fd93d5f28d9ec85e40f4cb697bae92509050565b602060405190810160405260008152905600a165627a7a72305820ba7625d1c6f0f2844d32ad76e28729e80979f69cbd32d0589995f24cb969a6850029"
-                ; /*
+                "0x6060604052341561000f57600080fd5b6101c88061001e6000396000f3006060604052600436106100405763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416633bc5de308114610045575b600080fd5b341561005057600080fd5b61005861011a565b60405167ffffffffffffffff8716815261ffff808616604083015284166060820152821515608082015273ffffffffffffffffffffffffffffffffffffffff821660a082015260c06020820181815290820187818151815260200191508051906020019080838360005b838110156100da5780820151838201526020016100c2565b50505050905090810190601f1680156101075780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390f35b600061012461018a565b6000806000806001955060408051908101604052600481527f6a75616e0000000000000000000000000000000000000000000000000000000060208201529596600195508594506000935073de0b295669a9fd93d5f28d9ec85e40f4cb697bae92509050565b602060405190810160405260008152905600a165627a7a72305820ba7625d1c6f0f2844d32ad76e28729e80979f69cbd32d0589995f24cb969a6850029"; /*
             pragma solidity ^0.4.19;
 
             contract TestOutput {
@@ -76,23 +75,18 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         [FunctionOutput]
         public class GetDataDTO
         {
-            [Parameter("uint64", "birthTime", 1)]
-            public ulong BirthTime { get; set; }
+            [Parameter("uint64", "birthTime", 1)] public ulong BirthTime { get; set; }
 
-            [Parameter("string", "userName", 2)]
-            public string UserName { get; set; }
+            [Parameter("string", "userName", 2)] public string UserName { get; set; }
 
-            [Parameter("uint16", "starterId", 3)]
-            public int StarterId { get; set; }
+            [Parameter("uint16", "starterId", 3)] public int StarterId { get; set; }
 
             [Parameter("uint16", "currLocation", 4)]
             public int CurrLocation { get; set; }
 
-            [Parameter("bool", "isBusy", 5)]
-            public bool IsBusy { get; set; }
+            [Parameter("bool", "isBusy", 5)] public bool IsBusy { get; set; }
 
-            [Parameter("address", "owner", 6)]
-            public string Owner { get; set; }
+            [Parameter("address", "owner", 6)] public string Owner { get; set; }
         }
 
         [Fact]

@@ -6,7 +6,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 {
     public interface IContractRepository
     {
-        Task FillCache();
+        Task FillCacheAsync();
         Task UpsertAsync(ContractCreationVO contractCreation);
         Task<bool> ExistsAsync(string contractAddress);
 

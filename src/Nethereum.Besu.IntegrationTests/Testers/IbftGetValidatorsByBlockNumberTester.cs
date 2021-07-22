@@ -15,10 +15,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class IbftGetValidatorsByBlockNumberTester : RPCRequestTester<string[]>, IRPCRequestTester
     {
-        public override async Task<string[]> ExecuteAsync(IClient client)
+        public override Task<string[]> ExecuteAsync(IClient client)
         {
             var ibftGetValidatorsByBlockNumber = new IbftGetValidatorsByBlockNumber(client);
-            return await ibftGetValidatorsByBlockNumber.SendRequestAsync(BlockParameter.CreateLatest());
+            return ibftGetValidatorsByBlockNumber.SendRequestAsync(BlockParameter.CreateLatest());
         }
 
         public override Type GetRequestType()
@@ -29,7 +29,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

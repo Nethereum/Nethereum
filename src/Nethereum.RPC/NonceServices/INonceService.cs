@@ -8,6 +8,6 @@ namespace Nethereum.RPC.NonceServices
     {
         IClient Client { get; set; }
         Task<HexBigInteger> GetNextNonceAsync();
-        Task ResetNonce();
+        Task ResetNonceAsync();
     }
 }

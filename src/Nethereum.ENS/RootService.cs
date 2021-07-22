@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<RootService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, RootDeployment rootDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, rootDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, rootDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new RootService(web3, receipt.ContractAddress);
         }
 

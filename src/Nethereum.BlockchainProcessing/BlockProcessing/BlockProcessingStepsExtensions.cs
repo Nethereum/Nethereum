@@ -12,7 +12,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         {
             foreach (var item in list)
             {
-                if (await item.GetStep<T>().IsMatchAsync(value))
+                if (await item.GetStep<T>().IsMatchAsync(value).ConfigureAwait(false))
                     return true;
             }
 
@@ -23,7 +23,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         {
             foreach (var item in list)
             {
-                if (await item.IsMatchAsync(value))
+                if (await item.IsMatchAsync(value).ConfigureAwait(false))
                     return true;
             }
 

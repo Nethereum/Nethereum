@@ -15,10 +15,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class EeaGetTransactionReceiptTester : RPCRequestTester<EeaTransactionReceipt>, IRPCRequestTester
     {
-        public override async Task<EeaTransactionReceipt> ExecuteAsync(IClient client)
+        public override Task<EeaTransactionReceipt> ExecuteAsync(IClient client)
         {
             var eeaGetTransactionReceipt = new EeaGetTransactionReceipt(client);
-            return await eeaGetTransactionReceipt.SendRequestAsync(Settings.GetTransactionHash());
+            return eeaGetTransactionReceipt.SendRequestAsync(Settings.GetTransactionHash());
         }
 
         public override Type GetRequestType()
@@ -29,7 +29,7 @@ namespace Nethereum.Besu.Tests.Testers
         //[Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

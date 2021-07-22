@@ -99,6 +99,7 @@ namespace Nethereum.Util
                     Mantissa = shortened;
                     Exponent++;
                 }
+
                 NormaliseExponentBiggerThanZero();
             }
         }
@@ -119,6 +120,7 @@ namespace Nethereum.Util
                 shortened.Mantissa /= 10;
                 shortened.Exponent++;
             }
+
             return shortened;
         }
 
@@ -126,7 +128,8 @@ namespace Nethereum.Util
         /// Rounds the number to the specified amount of significant digits.
         /// Midpoints (like 0.5 or -0.5) are rounded away from 0 (e.g. to 1 and -1 respectively).
         /// </summary>
-        public BigDecimal RoundAwayFromZero(int significantDigits) {
+        public BigDecimal RoundAwayFromZero(int significantDigits)
+        {
             if (significantDigits < 0 || significantDigits > 2_000_000_000)
                 throw new ArgumentOutOfRangeException(paramName: nameof(significantDigits));
 
@@ -136,7 +139,8 @@ namespace Nethereum.Util
             var shortened = negative ? -this : this;
             shortened.Normalize();
 
-            while (shortened.Exponent < -significantDigits) {
+            while (shortened.Exponent < -significantDigits)
+            {
                 shortened.Mantissa = BigInteger.DivRem(shortened.Mantissa, 10, out var rem);
                 shortened.Mantissa += rem >= 5 ? +1 : 0;
                 shortened.Exponent++;
@@ -174,6 +178,7 @@ namespace Nethereum.Util
                 else
                     s = s.PadRight(decimalPos, '0');
             }
+
             return s;
         }
 
@@ -219,6 +224,7 @@ namespace Nethereum.Util
                 scaleFactor *= 10;
                 mantissa = (BigInteger) (value * scaleFactor);
             }
+
             return new BigDecimal(mantissa, exponent);
         }
 
@@ -233,6 +239,7 @@ namespace Nethereum.Util
                 scaleFactor *= 10;
                 mantissa = (BigInteger) (value * scaleFactor);
             }
+
             return new BigDecimal(mantissa, exponent);
         }
 
@@ -390,6 +397,7 @@ namespace Nethereum.Util
                 tmp *= Math.Exp(diff);
                 exponent -= diff;
             }
+
             return tmp * Math.Exp(exponent);
         }
 
@@ -402,6 +410,7 @@ namespace Nethereum.Util
                 tmp *= Math.Pow(basis, diff);
                 exponent -= diff;
             }
+
             return tmp * Math.Pow(basis, exponent);
         }
 
@@ -409,7 +418,8 @@ namespace Nethereum.Util
 
         #region Formatting
 
-        public string ToString(string formatSpecifier, IFormatProvider format) {
+        public string ToString(string formatSpecifier, IFormatProvider format)
+        {
             char fmt = NumberFormatting.ParseFormatSpecifier(formatSpecifier, out int digits);
             if (fmt != 'c' && fmt != 'C')
                 throw new NotImplementedException();

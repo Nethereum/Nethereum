@@ -20,9 +20,9 @@ namespace Nethereum.Besu.RPC.Debug
         {
         }
 
-        public async Task<JObject> SendRequestAsync(string transactionHash, object id = null)
+        public Task<JObject> SendRequestAsync(string transactionHash, object id = null)
         {
-            return await base.SendRequestAsync(id, transactionHash);
+            return base.SendRequestAsync(id, transactionHash);
         }
 
         public RpcRequest BuildRequest(string transactionHash, object id = null)

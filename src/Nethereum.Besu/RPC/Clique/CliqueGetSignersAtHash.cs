@@ -18,9 +18,9 @@ namespace Nethereum.Besu.RPC.Clique
         {
         }
 
-        public async Task<string[]> SendRequestAsync(string blockHash, object id = null)
+        public Task<string[]> SendRequestAsync(string blockHash, object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash);
+            return base.SendRequestAsync(id, blockHash);
         }
 
         public RpcRequest BuildRequest(string blockHash, object id = null)

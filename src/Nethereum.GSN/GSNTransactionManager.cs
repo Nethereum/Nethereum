@@ -46,7 +46,7 @@ namespace Nethereum.GSN
             _privateKey = privateKey;
         }
 
-        public async Task<string> SendTransactionAsync(TransactionInput transactionInput)
+        public Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
 
@@ -60,7 +60,7 @@ namespace Nethereum.GSN
             if (value != "0" && value != "0x0")
                 throw new Exception("Cannot send funds via the GSN");
 
-            return await _relayer.Relay(transactionInput, RelayTransaction);
+            return _relayer.Relay(transactionInput, RelayTransaction);
         }
 
         private async Task<string> RelayTransaction(

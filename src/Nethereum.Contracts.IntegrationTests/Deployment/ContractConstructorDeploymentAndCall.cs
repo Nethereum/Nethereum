@@ -1,18 +1,18 @@
 using System.Threading;
-using NBitcoin.Secp256k1;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+// ReSharper disable ConsiderUsingConfigureAwait
 
 namespace Nethereum.Contracts.IntegrationTests.Deployment
 {
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ContractConstructorDeploymentAndCall
     {
-
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public ContractConstructorDeploymentAndCall(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
@@ -123,7 +123,8 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
 
 
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
+            var web3 = _ethereumClientIntegrationFixture
+                .GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
                 new HexBigInteger(900000), new HexBigInteger(1000), new HexBigInteger(0), 7);
@@ -195,33 +196,33 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
 
 
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
-            var web3 = _ethereumClientIntegrationFixture.GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
+            var web3 = _ethereumClientIntegrationFixture
+                .GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
 
             var feeEstimate = web3.FeeSuggestion.GeTimePreferenceFeeSuggestionStrategy();
 
             var fees = await feeEstimate.SuggestFeesAsync();
 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(
-                abi: abi, 
+                abi: abi,
                 contractByteCode: contractByteCode,
                 from: senderAddress,
-                gas: new HexBigInteger(900000), 
-                maxFeePerGas: fees[0].MaxFeePerGas.Value.ToHexBigInteger(), 
-                maxPriorityFeePerGas: fees[0].MaxPriorityFeePerGas.Value.ToHexBigInteger(), 
-                value: new HexBigInteger(1), 
-                nonce : null, 
+                gas: new HexBigInteger(900000),
+                maxFeePerGas: fees[0].MaxFeePerGas.Value.ToHexBigInteger(),
+                maxPriorityFeePerGas: fees[0].MaxPriorityFeePerGas.Value.ToHexBigInteger(),
+                value: new HexBigInteger(1),
+                nonce: null,
                 7);
 
 
-            
             Assert.NotNull(transactionHash);
 
             var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transactionHash);
             Assert.True(transaction.From.IsTheSameAddress(senderAddress));
             Assert.Equal(900000, transaction.Gas.Value);
             Assert.Equal(1, transaction.Value.Value);
-            Assert.Equal(fees[0].MaxFeePerGas,  transaction.MaxFeePerGas);
-            Assert.Equal(fees[0].MaxPriorityFeePerGas,  transaction.MaxPriorityFeePerGas);
+            Assert.Equal(fees[0].MaxFeePerGas, transaction.MaxFeePerGas);
+            Assert.Equal(fees[0].MaxPriorityFeePerGas, transaction.MaxPriorityFeePerGas);
 
 
             //get the contract address 
@@ -234,7 +235,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             }
 
             Assert.NotNull(receipt.ContractAddress);
-            
+
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 

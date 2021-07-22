@@ -4,7 +4,9 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Geth.IntegrationTests.VMStackParsing
 {

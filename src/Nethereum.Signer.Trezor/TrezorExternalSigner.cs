@@ -40,7 +40,7 @@ namespace Nethereum.Signer.Trezor
 
         public override async Task<string> GetAddressAsync()
         {
-           var addressResponse = await TrezorManager.SendMessageAsync<EthereumAddress, EthereumGetAddress>(new EthereumGetAddress { ShowDisplay = false, AddressNs = GetPath() });
+           var addressResponse = await TrezorManager.SendMessageAsync<EthereumAddress, EthereumGetAddress>(new EthereumGetAddress { ShowDisplay = false, AddressNs = GetPath() }).ConfigureAwait(false);
            return addressResponse.Address.ToHex(true).ConvertToEthereumChecksumAddress();
         }
 
@@ -57,7 +57,7 @@ namespace Nethereum.Signer.Trezor
                 Message = bytes
             };
 
-            var messageSignature = await TrezorManager.SendMessageAsync<EthereumMessageSignature, EthereumSignMessage>(message);
+            var messageSignature = await TrezorManager.SendMessageAsync<EthereumMessageSignature, EthereumSignMessage>(message).ConfigureAwait(false);
             return ECDSASignatureFactory.ExtractECDSASignature(messageSignature.Signature);
         }
 
@@ -80,7 +80,7 @@ namespace Nethereum.Signer.Trezor
                 txMessage.DataLength = (uint)transaction.Data.Length;
             }
 
-            var signature = await TrezorManager.SendMessageAsync<EthereumTxRequest, EthereumSignTx>(txMessage);
+            var signature = await TrezorManager.SendMessageAsync<EthereumTxRequest, EthereumSignTx>(txMessage).ConfigureAwait(false);
             if (signature.SignatureS == null || signature.SignatureR == null) throw new Exception("Signing failure or not accepted");
             transaction.SetSignature(EthECDSASignatureFactory.FromComponents(signature.SignatureR, signature.SignatureS, (byte)signature.SignatureV));
         }

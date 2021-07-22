@@ -14,19 +14,23 @@ namespace Nethereum.Util
             }
 
             var sha3 = new Sha3Keccack();
-            return  
+            return
                 sha3.CalculateHash(RLP.RLP.EncodeList(RLP.RLP.EncodeElement(address.HexToByteArray()),
-                    RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24).ConvertToEthereumChecksumAddress();
+                        RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24)
+                    .ConvertToEthereumChecksumAddress();
         }
 
-        public static string CalcualteCreate2AddressMinimalProxy(string address, string saltHex, string deploymentAddress)
+        public static string CalcualteCreate2AddressMinimalProxy(string address, string saltHex,
+            string deploymentAddress)
         {
             if (string.IsNullOrEmpty(deploymentAddress))
             {
-                throw new System.ArgumentException($"'{nameof(deploymentAddress)}' cannot be null or empty.", nameof(deploymentAddress));
+                throw new System.ArgumentException($"'{nameof(deploymentAddress)}' cannot be null or empty.",
+                    nameof(deploymentAddress));
             }
 
-            var bytecode = "363d3d373d3d3d363d73" + deploymentAddress.RemoveHexPrefix() + "5af43d82803e903d91602b57fd5bf3";
+            var bytecode = "363d3d373d3d3d363d73" + deploymentAddress.RemoveHexPrefix() +
+                           "5af43d82803e903d91602b57fd5bf3";
             return CalculateCreate2Address(address, saltHex, bytecode);
         }
 
@@ -42,13 +46,14 @@ namespace Nethereum.Util
                 throw new System.ArgumentException($"'{nameof(saltHex)}' cannot be null or empty.", nameof(saltHex));
             }
 
-            if(saltHex.EnsureHexPrefix().Length != 66)
+            if (saltHex.EnsureHexPrefix().Length != 66)
             {
                 throw new System.ArgumentException($"'{nameof(saltHex)}' needs to be 32 bytes", nameof(saltHex));
             }
 
             var sha3 = new Sha3Keccack();
-            return sha3.CalculateHashFromHex("0xff", address, saltHex, sha3.CalculateHashFromHex(byteCodeHex)).Substring(24).ConvertToEthereumChecksumAddress();
+            return sha3.CalculateHashFromHex("0xff", address, saltHex, sha3.CalculateHashFromHex(byteCodeHex))
+                .Substring(24).ConvertToEthereumChecksumAddress();
         }
     }
 }

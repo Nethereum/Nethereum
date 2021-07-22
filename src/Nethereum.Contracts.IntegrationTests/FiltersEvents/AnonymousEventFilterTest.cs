@@ -2,7 +2,11 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+
+// ReSharper disable ConsiderUsingConfigureAwait
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
@@ -24,7 +28,8 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var deploymentMessage = new TestAnonymousEventContractDeployment {FromAddress = senderAddress};
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestAnonymousEventContractDeployment>();
-            var deploymentTransactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+            var deploymentTransactionReceipt =
+                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
             var contractHandler = web3.Eth.GetContractHandler(deploymentTransactionReceipt.ContractAddress);
 
             var eventFilter = contractHandler.GetEvent<ItemCreatedEventDTO>();
@@ -38,7 +43,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     Price = 100
                 });
 
-            var result = await eventFilter.GetFilterChanges(filterId);
+            var result = await eventFilter.GetFilterChangesAsync(filterId);
 
             Assert.Single(result);
         }
@@ -70,13 +75,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Function("newItem")]
         public class NewItemFunction : FunctionMessage
         {
-            [Parameter("uint256", "id", 1)]
-            public BigInteger Id { get; set; }
+            [Parameter("uint256", "id", 1)] public BigInteger Id { get; set; }
 
-            [Parameter("uint256", "price", 2)]
-            public BigInteger Price { get; set; }
+            [Parameter("uint256", "price", 2)] public BigInteger Price { get; set; }
         }
-        
+
 /* Contract
 contract TestAnonymousEventContract {
     struct Item {

@@ -24,7 +24,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertBlockAsync(RPC.Eth.DTOs.Block source)
         {
-            var record = await FindByBlockNumberAsync(source.Number);
+            var record = await FindByBlockNumberAsync(source.Number).ConfigureAwait(false);
             if(record != null) Records.Remove(record);
             Records.Add(source.MapToStorageEntityForUpsert());
         }

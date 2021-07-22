@@ -9,7 +9,7 @@ namespace Nethereum.Contracts.DeploymentHandlers
     public class DeploymentTransactionSenderHandler<TContractDeploymentMessage> : DeploymentHandlerBase<TContractDeploymentMessage>, 
         IDeploymentTransactionSenderHandler<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
-        private IDeploymentEstimatorHandler<TContractDeploymentMessage> _deploymentEstimatorHandler;
+        private readonly IDeploymentEstimatorHandler<TContractDeploymentMessage> _deploymentEstimatorHandler;
 
         public DeploymentTransactionSenderHandler(ITransactionManager transactionManager):base(transactionManager)
         {

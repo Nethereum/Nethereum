@@ -9,8 +9,8 @@ namespace Nethereum.RPC.TransactionManagers
     {
         Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null, CancellationTokenSource tokenSource = null);
         Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null);
-        Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEther(string address, decimal gasPriceGwei, BigInteger? gas = null);
-        Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEther(string address,
+        Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address, decimal gasPriceGwei, BigInteger? gas = null);
+        Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address,
             BigInteger maxFeePerGas, BigInteger? gas = null);
         Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxFeePerGas, BigInteger? gas = null,
             BigInteger? nonce = null);
@@ -20,7 +20,7 @@ namespace Nethereum.RPC.TransactionManagers
             CancellationTokenSource tokenSource = null);
         Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount);
 
-        Task<BigInteger> CalculateMaxFeePerGasToTransferWholeBalanceInEther(
+        Task<BigInteger> CalculateMaxFeePerGasToTransferWholeBalanceInEtherAsync(
             BigInteger? maxPriorityFeePerGas = null);
     }
 }

@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
-using Nethereum.KeyStore;
-using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.NonceServices;
@@ -18,9 +16,7 @@ namespace Nethereum.Web3.Accounts
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly AccountOfflineTransactionSigner _transactionSigner;
-        public BigInteger? ChainId { get; private set; }
 
-       
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
         {
@@ -41,12 +37,14 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new AccountOfflineTransactionSigner();
         }
 
-        public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey, chainId)
+        public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey,
+            chainId)
         {
-
         }
 
-        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
+        public BigInteger? ChainId { get; }
+
+        public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -64,7 +62,7 @@ namespace Nethereum.Web3.Accounts
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             SetDefaultGasIfNotSet(transaction);
-            
+
             return _transactionSigner.SignTransaction((Account) Account, transaction, ChainId);
         }
 
@@ -76,7 +74,7 @@ namespace Nethereum.Web3.Accounts
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
 
-            await SetTransactionFeesOrPricing(transaction);
+            await SetTransactionFeesOrPricingAsync(transaction).ConfigureAwait(false);
 
             return SignTransaction(transaction);
         }
@@ -93,6 +91,7 @@ namespace Nethereum.Web3.Accounts
                 Account.NonceService.Client = Client;
                 nonce = await Account.NonceService.GetNextNonceAsync().ConfigureAwait(false);
             }
+
             return nonce;
         }
 

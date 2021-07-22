@@ -14,7 +14,7 @@ namespace Nethereum.Contracts.TransactionHandlers
         ITransactionSigner<TFunctionMessage>
         where TFunctionMessage : FunctionMessage, new()
     {
-        private ITransactionEstimatorHandler<TFunctionMessage> _contractTransactionEstimatorHandler;
+        private readonly ITransactionEstimatorHandler<TFunctionMessage> _contractTransactionEstimatorHandler;
 
 
         public TransactionSignerHandler(ITransactionManager transactionManager) : this(transactionManager,

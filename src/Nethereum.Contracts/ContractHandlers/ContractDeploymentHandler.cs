@@ -14,10 +14,10 @@ namespace Nethereum.Contracts.ContractHandlers
 #if !DOTNET35
     public class ContractDeploymentTransactionHandler<TContractDeploymentMessage> : ContractTransactionHandlerBase, IContractDeploymentTransactionHandler<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
-        private IDeploymentEstimatorHandler<TContractDeploymentMessage> _estimatorHandler;
-        private IDeploymentTransactionReceiptPollHandler<TContractDeploymentMessage> _receiptPollHandler;
-        private IDeploymentTransactionSenderHandler<TContractDeploymentMessage> _transactionSenderHandler;
-        private IDeploymentSigner<TContractDeploymentMessage> _transactionSigner;
+        private readonly IDeploymentEstimatorHandler<TContractDeploymentMessage> _estimatorHandler;
+        private readonly IDeploymentTransactionReceiptPollHandler<TContractDeploymentMessage> _receiptPollHandler;
+        private readonly IDeploymentTransactionSenderHandler<TContractDeploymentMessage> _transactionSenderHandler;
+        private readonly IDeploymentSigner<TContractDeploymentMessage> _transactionSigner;
   
         public ContractDeploymentTransactionHandler(ITransactionManager transactionManager) : base(transactionManager)
         {

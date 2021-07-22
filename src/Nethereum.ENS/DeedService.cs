@@ -21,7 +21,7 @@ namespace Nethereum.ENS
         }
         public static async Task<DeedService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, DeedDeployment deedDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, deedDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, deedDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new DeedService(web3, receipt.ContractAddress);
         }
     

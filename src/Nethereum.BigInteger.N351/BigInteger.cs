@@ -45,7 +45,6 @@ namespace System.Numerics
             AssertValid();
         }
 
-        [CLSCompliant(false)]
         public BigInteger(uint value)
         {
             if (value <= int.MaxValue)
@@ -103,7 +102,6 @@ namespace System.Numerics
             AssertValid();
         }
 
-        [CLSCompliant(false)]
         public BigInteger(ulong value)
         {
             if (value <= int.MaxValue)
@@ -243,7 +241,6 @@ namespace System.Numerics
         /// Creates a BigInteger from a little-endian twos-complement byte array.
         /// </summary>
         /// <param name="value"></param>
-        [CLSCompliant(false)]
         public BigInteger(byte[] value)
         {
             if (value == null)
@@ -873,7 +870,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return NumericsHelpers.MakeUlong(_bits[1], _bits[0]) == uu;
         }
 
-        [CLSCompliant(false)]
+       
         public bool Equals(ulong other)
         {
             AssertValid();
@@ -925,7 +922,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return _sign * uuTmp.CompareTo(uu);
         }
 
-        [CLSCompliant(false)]
+       
         public int CompareTo(ulong other)
         {
             AssertValid();
@@ -1251,7 +1248,6 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
         public static implicit operator BigInteger(sbyte value)
         {
             return new BigInteger(value);
@@ -1262,7 +1258,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
+       
         public static implicit operator BigInteger(ushort value)
         {
             return new BigInteger(value);
@@ -1273,7 +1269,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
+       
         public static implicit operator BigInteger(uint value)
         {
             return new BigInteger(value);
@@ -1284,7 +1280,6 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
         public static implicit operator BigInteger(ulong value)
         {
             return new BigInteger(value);
@@ -1310,7 +1305,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return checked((byte)((int)value));
         }
 
-        [CLSCompliant(false)]
+     
         public static explicit operator sbyte(BigInteger value)
         {
             return checked((sbyte)((int)value));
@@ -1321,7 +1316,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return checked((short)((int)value));
         }
 
-        [CLSCompliant(false)]
+     
         public static explicit operator ushort(BigInteger value)
         {
             return checked((ushort)((int)value));
@@ -1350,8 +1345,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             }
             return unchecked(-(int)value._bits[0]);
         }
-
-        [CLSCompliant(false)]
+        
         public static explicit operator uint(BigInteger value)
         {
             value.AssertValid();
@@ -1402,7 +1396,7 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             throw new OverflowException("Overflow_Int64");
         }
 
-        [CLSCompliant(false)]
+       
         public static explicit operator ulong(BigInteger value)
         {
             value.AssertValid();
@@ -1899,73 +1893,72 @@ trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(v
             return !right.Equals(left);
         }
 
-        [CLSCompliant(false)]
         public static bool operator <(BigInteger left, ulong right)
         {
             return left.CompareTo(right) < 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <=(BigInteger left, ulong right)
         {
             return left.CompareTo(right) <= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >(BigInteger left, ulong right)
         {
             return left.CompareTo(right) > 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >=(BigInteger left, ulong right)
         {
             return left.CompareTo(right) >= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator ==(BigInteger left, ulong right)
         {
             return left.Equals(right);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator !=(BigInteger left, ulong right)
         {
             return !left.Equals(right);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <(ulong left, BigInteger right)
         {
             return right.CompareTo(left) > 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <=(ulong left, BigInteger right)
         {
             return right.CompareTo(left) >= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >(ulong left, BigInteger right)
         {
             return right.CompareTo(left) < 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >=(ulong left, BigInteger right)
         {
             return right.CompareTo(left) <= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator ==(ulong left, BigInteger right)
         {
             return right.Equals(left);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator !=(ulong left, BigInteger right)
         {
             return !right.Equals(left);

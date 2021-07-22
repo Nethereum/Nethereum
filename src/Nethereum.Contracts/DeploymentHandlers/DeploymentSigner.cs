@@ -12,8 +12,8 @@ namespace Nethereum.Contracts.DeploymentHandlers
     public class DeploymentSigner<TContractDeploymentMessage> : DeploymentHandlerBase<TContractDeploymentMessage>, 
         IDeploymentSigner<TContractDeploymentMessage> where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
-        private IDeploymentEstimatorHandler<TContractDeploymentMessage> _deploymentEstimatorHandler;
-        private ITransactionManager transactionManager;
+        private readonly IDeploymentEstimatorHandler<TContractDeploymentMessage> _deploymentEstimatorHandler;
+        private ITransactionManager _transactionManager;
 
        
         public DeploymentSigner(ITransactionManager transactionManager) : this(transactionManager,

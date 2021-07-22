@@ -115,7 +115,7 @@ contract TestV2
         [Fact]
         public async Task StructTests()
         {
-            await SolidityV2StructTests();
+            await SolidityV2StructTests().ConfigureAwait(false);
         }
 
 
@@ -265,7 +265,7 @@ contract TestV2
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestContractDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             
             var functionTest = new TestFunction();
             var input = new TestStructStrings()
@@ -297,30 +297,30 @@ contract TestV2
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
             var testStructArrayResult =
-                await contractHandler.QueryDeserializingToObjectAsync<TestArray, TestArrayOuputDTO>();
+                await contractHandler.QueryDeserializingToObjectAsync<TestArray, TestArrayOuputDTO>().ConfigureAwait(false);
 
             Assert.Equal(1, testStructArrayResult.SimpleStructs[0].Id1);
             Assert.Equal(2, testStructArrayResult.SimpleStructs[1].Id1);
 
-            var id1Before = await contractHandler.QueryAsync<Id1Function, BigInteger>();
+            var id1Before = await contractHandler.QueryAsync<Id1Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(1, id1Before);
 
-            var receiptTransaction = await contractHandler.SendRequestAndWaitForReceiptAsync(functionTest);
+            var receiptTransaction = await contractHandler.SendRequestAndWaitForReceiptAsync(functionTest).ConfigureAwait(false);
 
-            var id1After = await contractHandler.QueryAsync<Id1Function, BigInteger>();
+            var id1After = await contractHandler.QueryAsync<Id1Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(1, id1After);
-            var id2After = await contractHandler.QueryAsync<Id2Function, BigInteger>();
+            var id2After = await contractHandler.QueryAsync<Id2Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(200, id2After);
-            var id3After = await contractHandler.QueryAsync<Id3Function, BigInteger>();
+            var id3After = await contractHandler.QueryAsync<Id3Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(30000, id3After);
-            var id4After = await contractHandler.QueryAsync<Id4Function, string>();
+            var id4After = await contractHandler.QueryAsync<Id4Function, string>().ConfigureAwait(false);
             Assert.Equal("Elephant", id4After);
-            var testDataFromContract = await contractHandler.QueryDeserializingToObjectAsync<GetTestFunction, GetTestFunctionOuptputDTO>();
+            var testDataFromContract = await contractHandler.QueryDeserializingToObjectAsync<GetTestFunction, GetTestFunctionOuptputDTO>().ConfigureAwait(false);
             Assert.Equal(5, testDataFromContract.Test1);
             var functionStorage = new SetStorageStructFunction {TestStruct = input};
-            var receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(functionStorage);
+            var receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(functionStorage).ConfigureAwait(false);
 
-            var storageData =  await contractHandler.QueryDeserializingToObjectAsync<GetTestStructStorageFunction, TestStructStrings>();
+            var storageData =  await contractHandler.QueryDeserializingToObjectAsync<GetTestStructStorageFunction, TestStructStrings>().ConfigureAwait(false);
             Assert.Equal("hello", storageData.Id2);
             var eventStorage = contractHandler.GetEvent<TestStructStorageChangedEvent>();
             var eventOutputs = eventStorage.DecodeAllEventsForEvent(receiptSending.Logs);

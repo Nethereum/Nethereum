@@ -14,10 +14,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class TxpoolBesuTransactionsTester : RPCRequestTester<JArray>, IRPCRequestTester
     {
-        public override async Task<JArray> ExecuteAsync(IClient client)
+        public override Task<JArray> ExecuteAsync(IClient client)
         {
             var txpoolBesuTransactions = new TxpoolBesuTransactions(client);
-            return await txpoolBesuTransactions.SendRequestAsync();
+            return txpoolBesuTransactions.SendRequestAsync();
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

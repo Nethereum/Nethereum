@@ -29,6 +29,5 @@ namespace Nethereum.Besu
         public IIbftGetPendingVotes GetPendingVotes { get; }
         public IIbftGetValidatorsByBlockNumber GetValidatorsByBlockNumber { get; }
         public IIbftProposeValidatorVote ProposeValidatorVote { get; }
-    
     }
 }

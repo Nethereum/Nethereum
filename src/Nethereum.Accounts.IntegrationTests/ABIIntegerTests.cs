@@ -138,9 +138,9 @@ namespace Nethereum.Accounts.IntegrationTests
             
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
-            var result = await contractHandler.QueryAsync<MinInt256Function, BigInteger>();
+            var result = await contractHandler.QueryAsync<MinInt256Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(result, BigInteger.Parse("-57896044618658097711785492504343953926634992332820282019728792003956564819968"));
             Assert.Equal("RPC Response: 0x8000000000000000000000000000000000000000000000000000000000000000", 
                 capturingLoggerAdapter.LastEvent.MessageObject.ToString());
@@ -155,10 +155,10 @@ namespace Nethereum.Accounts.IntegrationTests
             
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
-            var result = await contractHandler.QueryAsync<MaxInt256Function, BigInteger>();
+            var result = await contractHandler.QueryAsync<MaxInt256Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(result, BigInteger.Parse("57896044618658097711785492504343953926634992332820282019728792003956564819967"));
             Assert.Equal("RPC Response: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 capturingLoggerAdapter.LastEvent.MessageObject.ToString());
@@ -179,7 +179,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
@@ -214,7 +214,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
@@ -258,7 +258,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
@@ -291,9 +291,9 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var web3 = GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
-                .SendRequestAndWaitForReceiptAsync();
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
-            var result = await contractHandler.QueryAsync<MaxFunction, BigInteger>();
+            var result = await contractHandler.QueryAsync<MaxFunction, BigInteger>().ConfigureAwait(false);
             
             Assert.Equal("RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 capturingLoggerAdapter.LastEvent.MessageObject.ToString());

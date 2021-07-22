@@ -8,9 +8,13 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Personal;
 using Nethereum.RPC.Tests.Testers;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
-namespace Nethereum.RPC.Tests.ContractTest
+namespace Nethereum.Geth.IntegrationTests.ContractTest
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 {
     public class DeployContractCallFunctionTester : RPCRequestTester<string>, IRPCRequestTester
     {

@@ -24,7 +24,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertAsync(FilterLogVO log)
         {
-            var record = await FindByTransactionHashAndLogIndexAsync(log.Transaction.TransactionHash, log.Log.LogIndex);
+            var record = await FindByTransactionHashAndLogIndexAsync(log.Transaction.TransactionHash, log.Log.LogIndex).ConfigureAwait(false);
             if(record != null) Records.Remove(record);
             Records.Add(log.MapToStorageEntityForUpsert());
         }

@@ -61,7 +61,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
             return returnFee;
         }
 
-        private async Task<BigInteger> SuggestTip(BigInteger firstBlock, decimal[] gasUsedRatio)
+        private async Task<BigInteger> SuggestTipAsync(BigInteger firstBlock, decimal[] gasUsedRatio)
         {
             var ptr = gasUsedRatio.Length - 1;
             var needBlocks = 5;
@@ -107,7 +107,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
             // Therefore we can afford to fetch a hundred blocks of base fee history in order to make meaningful estimates on variable time scales.
             var feeHistory = await ethFeeHistory.SendRequestAsync(100.ToHexBigInteger(), BlockParameter.CreateLatest()).ConfigureAwait(false);
             var gasUsedRatio = feeHistory.GasUsedRatio;
-            var tip = await SuggestTip(feeHistory.OldestBlock, gasUsedRatio).ConfigureAwait(false);
+            var tip = await SuggestTipAsync(feeHistory.OldestBlock, gasUsedRatio).ConfigureAwait(false);
             return SuggestFees(feeHistory, tip);
         }
 

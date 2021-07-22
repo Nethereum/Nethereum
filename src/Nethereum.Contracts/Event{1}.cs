@@ -56,7 +56,7 @@ namespace Nethereum.Contracts
         }
 
 #if !DOTNET35
-        public async Task<List<EventLog<TEventMessage>>> GetAllChanges(NewFilterInput filterInput)
+        public async Task<List<EventLog<TEventMessage>>> GetAllChangesAsync(NewFilterInput filterInput)
         {
             if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput))
                 throw new FilterInputNotForEventException();
@@ -64,13 +64,13 @@ namespace Nethereum.Contracts
             return DecodeAllEvents<TEventMessage>(logs);
         }
 
-        public async Task<List<EventLog<TEventMessage>>> GetAllChanges(HexBigInteger filterId)
+        public async Task<List<EventLog<TEventMessage>>> GetAllChangesAsync(HexBigInteger filterId)
         {
             var logs = await EthFilterLogs.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<TEventMessage>(logs);
         }
 
-        public async Task<List<EventLog<TEventMessage>>> GetFilterChanges(HexBigInteger filterId)
+        public async Task<List<EventLog<TEventMessage>>> GetFilterChangesAsync(HexBigInteger filterId)
         {
             var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<TEventMessage>(logs);

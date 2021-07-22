@@ -14,10 +14,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class DebugTraceTransactionTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override Task<JObject> ExecuteAsync(IClient client)
         {
             var debugTraceTransaction = new DebugTraceTransaction(client);
-            return await debugTraceTransaction.SendRequestAsync(Settings.GetTransactionHash());
+            return debugTraceTransaction.SendRequestAsync(Settings.GetTransactionHash());
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

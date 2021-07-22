@@ -4,6 +4,6 @@ namespace Nethereum.Util
 {
     public interface IWaitStrategy
     {
-        Task Apply(uint retryCount);
+        Task ApplyAsync(uint retryCount);
     }
 }

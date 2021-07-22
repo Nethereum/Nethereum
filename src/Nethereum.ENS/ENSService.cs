@@ -31,14 +31,14 @@ namespace Nethereum.ENS
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.AddrQueryAsync(fullNameNode);
+            return await resolverService.AddrQueryAsync(fullNameNode).ConfigureAwait(false);
         }
 
         public async Task<ABIOutputDTO> ResolveABIAsync(string fullName, AbiTypeContentType abiTypeContentType)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.ABIQueryAsync(fullNameNode, (int)abiTypeContentType);
+            return await resolverService.ABIQueryAsync(fullNameNode, (int)abiTypeContentType).ConfigureAwait(false);
         }
 
         public Task<string> SetSubnodeOwnerRequestAsync(string fullName, string label, string owner)
@@ -59,42 +59,42 @@ namespace Nethereum.ENS
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.TextQueryAsync(fullNameNode, textDataKey.GetDataKeyAsString());
+            return await resolverService.TextQueryAsync(fullNameNode, textDataKey.GetDataKeyAsString()).ConfigureAwait(false);
         }
 
         public async Task<string> SetTextRequestAsync(string fullName, TextDataKey textDataKey, string value)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.SetTextRequestAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value);
+            return await resolverService.SetTextRequestAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value).ConfigureAwait(false);
         }
 
         public async Task<string> SetAddressRequestAsync(string fullName, string address)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.SetAddrRequestAsync(fullNameNode, address);
+            return await resolverService.SetAddrRequestAsync(fullNameNode, address).ConfigureAwait(false);
         }
 
         public async Task<string> SetContentHashRequestAsync(string fullName, string contentHashInHex)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.SetContenthashRequestAsync(fullNameNode, contentHashInHex.HexToByteArray());
+            return await resolverService.SetContenthashRequestAsync(fullNameNode, contentHashInHex.HexToByteArray()).ConfigureAwait(false);
         }
 
         public async Task<byte[]> GetContentHashAsync(string fullName)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.ContenthashQueryAsync(fullNameNode);
+            return await resolverService.ContenthashQueryAsync(fullNameNode).ConfigureAwait(false);
         }
 
-        public async Task<TransactionReceipt> SetTextRequestAndWaitForReceipt(string fullName, TextDataKey textDataKey, string value)
+        public async Task<TransactionReceipt> SetTextRequestAndWaitForReceiptAsync(string fullName, TextDataKey textDataKey, string value)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.SetTextRequestAndWaitForReceiptAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value);
+            return await resolverService.SetTextRequestAndWaitForReceiptAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value).ConfigureAwait(false);
         }
 
         public Task<PublicResolverService> GetResolverAsync(string fullNameNode)
@@ -108,7 +108,7 @@ namespace Nethereum.ENS
            var addressReverse = address.RemoveHexPrefix().ToLower() + REVERSE_NAME_SUFFIX;
            var fullNameNode = _ensUtil.GetNameHash(addressReverse).HexToByteArray();
            var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-           return await resolverService.NameQueryAsync(fullNameNode);
+           return await resolverService.NameQueryAsync(fullNameNode).ConfigureAwait(false);
         }
 
         public async Task<PublicResolverService> GetResolverAsync(byte[] fullNameNode)

@@ -53,9 +53,9 @@ namespace Nethereum.Ledger
         };
 
 
-        private static readonly UsageSpecification[] _UsageSpecification = new[] { new UsageSpecification(0xffa0, 0x01) };
+        private static readonly UsageSpecification[] _usageSpecification = new[] { new UsageSpecification(0xffa0, 0x01) };
 
-        public static async Task<IHidDevice> GetWindowsConnectedLedgerHidDevice()
+        public static async Task<IHidDevice> GetWindowsConnectedLedgerHidDeviceAsync()
         {
             var devices = new List<DeviceInformation>();
 
@@ -75,18 +75,18 @@ namespace Nethereum.Ledger
 
             var deviceFound = devices
                 .FirstOrDefault(d =>
-                    _UsageSpecification == null ||
-                    _UsageSpecification.Length == 0 ||
-                    _UsageSpecification.Any(u => d.UsagePage == u.UsagePage && d.Usage == u.Usage));
+                    _usageSpecification == null ||
+                    _usageSpecification.Length == 0 ||
+                    _usageSpecification.Any(u => d.UsagePage == u.UsagePage && d.Usage == u.Usage));
 
             var ledgerHidDevice = new WindowsHidDevice(deviceFound);
-            await ledgerHidDevice.InitializeAsync();
+            await ledgerHidDevice.InitializeAsync().ConfigureAwait(false);
             return ledgerHidDevice;
         }
 
-        public static async Task<LedgerManager> GetWindowsConnectedLedgerManager()
+        public static async Task<LedgerManager> GetWindowsConnectedLedgerManagerAsync()
         {
-            var ledgerHidDevice = await GetWindowsConnectedLedgerHidDevice();
+            var ledgerHidDevice = await GetWindowsConnectedLedgerHidDeviceAsync().ConfigureAwait(false);
             return new LedgerManager(ledgerHidDevice);
         }
     }

@@ -19,7 +19,7 @@ namespace Nethereum.StandardNonFungibleTokenERC721
         }
         public static async Task<ERC721Service> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ERC721Deployment eRC721Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eRC721Deployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eRC721Deployment, cancellationTokenSource).ConfigureAwait(false);
             return new ERC721Service(web3, receipt.ContractAddress);
         }
 

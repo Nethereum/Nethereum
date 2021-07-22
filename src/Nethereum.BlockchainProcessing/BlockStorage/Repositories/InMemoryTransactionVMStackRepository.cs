@@ -17,7 +17,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
             Records = records;
         }
 
-        public Task<ITransactionVmStackView> FindByAddressAndTransactionHashAync(string address, string hash)
+        public Task<ITransactionVmStackView> FindByAddressAndTransactionHashAsync(string address, string hash)
         {
             return Task.FromResult(
                 Records
@@ -25,7 +25,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
                     && r.TransactionHash == hash));
         }
 
-        public Task<ITransactionVmStackView> FindByTransactionHashAync(string hash)
+        public Task<ITransactionVmStackView> FindByTransactionHashAsync(string hash)
         {
             return Task.FromResult(
                 Records
@@ -34,7 +34,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertAsync(string transactionHash, string address, JObject stackTrace)
         {
-            var record = await FindByAddressAndTransactionHashAync(address, transactionHash);
+            var record = await FindByAddressAndTransactionHashAsync(address, transactionHash).ConfigureAwait(false);
             if(record != null) Records.Remove(record);
             Records.Add(stackTrace.MapToStorageEntityForUpsert<TransactionVmStack>(transactionHash, address));
         }

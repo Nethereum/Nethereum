@@ -4,7 +4,7 @@
     {
         public static string ConvertToEthereumChecksumAddress(this string address)
         {
-           return AddressUtil.Current.ConvertToChecksumAddress(address);
+            return AddressUtil.Current.ConvertToChecksumAddress(address);
         }
 
         public static bool IsEthereumChecksumAddress(this string address)

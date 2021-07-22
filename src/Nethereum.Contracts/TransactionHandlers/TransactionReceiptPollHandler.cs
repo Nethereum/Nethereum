@@ -9,7 +9,7 @@ namespace Nethereum.Contracts.TransactionHandlers
     public class TransactionReceiptPollHandler<TFunctionMessage> :
         TransactionHandlerBase<TFunctionMessage>, ITransactionReceiptPollHandler<TFunctionMessage> where TFunctionMessage : FunctionMessage, new()
     {
-        private ITransactionSenderHandler<TFunctionMessage> _contractTransactionSender;
+        private readonly ITransactionSenderHandler<TFunctionMessage> _contractTransactionSender;
 
         public TransactionReceiptPollHandler(ITransactionManager transactionManager) : this(transactionManager,
             new TransactionSenderHandler<TFunctionMessage>(transactionManager))

@@ -11,12 +11,12 @@ namespace Nethereum.Web3.Accounts
         {
             if (accessLists == null) return null;
             var accessListsReturn = new List<AccessListItem>();
-            foreach (var sourceAccesListItem in accessLists)
+            foreach (var sourceAccessListItem in accessLists)
             {
                 var accessListItem = new AccessListItem();
-                accessListItem.Address = sourceAccesListItem.Address;
+                accessListItem.Address = sourceAccessListItem.Address;
                 accessListItem.StorageKeys = new List<byte[]>();
-                foreach (var storageKey in sourceAccesListItem.StorageKeys)
+                foreach (var storageKey in sourceAccessListItem.StorageKeys)
                 {
                     accessListItem.StorageKeys.Add(storageKey.HexToByteArray());
                 }

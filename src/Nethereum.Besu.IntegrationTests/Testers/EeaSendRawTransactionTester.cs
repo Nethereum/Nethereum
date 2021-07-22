@@ -15,11 +15,11 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class EeaSendRawTransactionTester : RPCRequestTester<string>, IRPCRequestTester
     {
-        public override async Task<string> ExecuteAsync(IClient client)
+        public override Task<string> ExecuteAsync(IClient client)
         {
             var eeaSendRawTransaction = new EeaSendRawTransaction(client);
             var signedTransaction = "0x";  //TODO
-            return await eeaSendRawTransaction.SendRequestAsync(signedTransaction);
+            return eeaSendRawTransaction.SendRequestAsync(signedTransaction);
         }
 
         public override Type GetRequestType()
@@ -30,7 +30,7 @@ namespace Nethereum.Besu.Tests.Testers
         //[Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

@@ -14,7 +14,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
 {
     public class WebSocketClient : ClientBase, IDisposable, IClientRequestHeaderSupport
     {
-        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
         public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
         protected string Path { get; set; }
@@ -132,7 +132,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             var logger = new RpcLogger(_log);
             try
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
                 var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                 var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
                 logger.LogRequest(rpcRequestJson);
@@ -164,7 +164,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             }
             finally
             {
-                semaphoreSlim.Release();
+                _semaphoreSlim.Release();
             }
         }
 

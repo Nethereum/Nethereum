@@ -6,7 +6,11 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+
+// ReSharper disable ConsiderUsingConfigureAwait
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
@@ -23,21 +27,17 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Event("Multiplied")]
         public class EventMultiplied
         {
-            [Parameter("uint", "a", 1, true)]
-            public int A { get; set; }
+            [Parameter("uint", "a", 1, true)] public int A { get; set; }
 
-            [Parameter("uint", "result", 2, true)]
-            public int Result { get; set; }
+            [Parameter("uint", "result", 2, true)] public int Result { get; set; }
         }
 
         [Event("MultipliedLog")]
         public class EventMultipliedSenderLog
         {
-            [Parameter("uint", "a", 1, true)]
-            public int A { get; set; }
+            [Parameter("uint", "a", 1, true)] public int A { get; set; }
 
-            [Parameter("uint", "result", 2, true)]
-            public int Result { get; set; }
+            [Parameter("uint", "result", 2, true)] public int Result { get; set; }
 
             [Parameter("address", "sender", 4, false)]
             public string Sender { get; set; }
@@ -124,11 +124,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var filter69 = await multipliedEvent.CreateFilterAsync(69);
 
             HexBigInteger filter49 = null;
-           
-          
-               //filter on the second indexed parameter
-               filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
-            
+
+
+            //filter on the second indexed parameter
+            filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
+
 
             //filter OR on the first indexed parameter
             var filter69And18 = await multipliedEvent.CreateFilterAsync(new[] {69, 18});
@@ -157,19 +157,19 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             }
 
             var logs = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract);
-            var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);
-            var eventLogs69 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69);
-
-            
-                //Parity does not accept null values for filter
-                var eventLogsResult49 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter49);
-
-            
-
-            var eventLogsFor69and18 = await multipliedEvent.GetFilterChanges<EventMultiplied>(filter69And18);
+            var eventLogsAll = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filterAll);
+            var eventLogs69 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69);
 
 
-            var multipliedLogEvents = await multipliedEventLog.GetFilterChanges<EventMultipliedSenderLog>(filterAllLog);
+            //Parity does not accept null values for filter
+            var eventLogsResult49 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter49);
+
+
+            var eventLogsFor69And18 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69And18);
+
+
+            var multipliedLogEvents =
+                await multipliedEventLog.GetFilterChangesAsync<EventMultipliedSenderLog>(filterAllLog);
 
             Assert.Equal(483, eventLogs69.First().Event.Result);
             Assert.Equal("0xed6c11b0b5b808960df26f5bfc471d04c1995b0ffd2055925ad1be28d6baadfd",

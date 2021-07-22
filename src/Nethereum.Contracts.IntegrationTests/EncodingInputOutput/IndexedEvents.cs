@@ -1,9 +1,10 @@
 ﻿using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
@@ -27,15 +28,13 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         }
 
         public static string ABI =
-                @"[{'constant':false,'inputs':[],'name':'sendEvent','outputs':[],'payable':false,'type':'function'},{'anonymous':false,'inputs':[{'indexed':false,'name':'first','type':'uint256'},{'indexed':true,'name':'second','type':'uint256'},{'indexed':false,'name':'third','type':'uint256'},{'indexed':true,'name':'fourth','type':'uint256'}],'name':'Event','type':'event'}]"
-            ;
+            @"[{'constant':false,'inputs':[],'name':'sendEvent','outputs':[],'payable':false,'type':'function'},{'anonymous':false,'inputs':[{'indexed':false,'name':'first','type':'uint256'},{'indexed':true,'name':'second','type':'uint256'},{'indexed':false,'name':'third','type':'uint256'},{'indexed':true,'name':'fourth','type':'uint256'}],'name':'Event','type':'event'}]";
 
         public static string BYTE_CODE =
-                "0x6060604052341561000f57600080fd5b5b60bd8061001e6000396000f300606060405263ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166332b7a7618114603c575b600080fd5b3415604657600080fd5b604c604e565b005b600460027f07392b89121f4d481601a3db92f2daf8c73cc086a942b4522c58abcbdeac4d016001600360405191825260208201526040908101905180910390a35b5600a165627a7a723058202af7567cbbe622cac1fcce7d7f4aa0be6c879974474c7f7580a9fea9d4dfa5850029"
-            ;
+            "0x6060604052341561000f57600080fd5b5b60bd8061001e6000396000f300606060405263ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166332b7a7618114603c575b600080fd5b3415604657600080fd5b604c604e565b005b600460027f07392b89121f4d481601a3db92f2daf8c73cc086a942b4522c58abcbdeac4d016001600360405191825260208201526040908101905180910390a35b5600a165627a7a723058202af7567cbbe622cac1fcce7d7f4aa0be6c879974474c7f7580a9fea9d4dfa5850029";
 
         [Event("Event")]
-        public class EventEventDTO: IEventDTO
+        public class EventEventDTO : IEventDTO
         {
             [Parameter("uint256", "first", 1, false)]
             public BigInteger First { get; set; }
@@ -91,7 +90,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
                 null, null);
 
             var events = receipt.Logs.DecodeAllEvents<EventEventDTO>();
-                
+
             Assert.Equal(1, events[0].Event.First);
             Assert.Equal(2, events[0].Event.Second);
             Assert.Equal(3, events[0].Event.Third);

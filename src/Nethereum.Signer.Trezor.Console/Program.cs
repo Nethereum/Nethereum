@@ -11,6 +11,7 @@ using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
 using Trezor.Net.Contracts.Ethereum;
+// ReSharper disable AsyncConverter.AsyncWait
 
 namespace Nethereum.Signer.Trezor.Console
 {

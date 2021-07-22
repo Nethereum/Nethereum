@@ -4,7 +4,9 @@ using System.Threading;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {

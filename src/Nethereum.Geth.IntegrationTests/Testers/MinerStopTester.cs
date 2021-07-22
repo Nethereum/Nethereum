@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using Nethereum.Geth.RPC.Miner;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Geth.Tests.Testers
 {

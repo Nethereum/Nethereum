@@ -8,11 +8,11 @@ namespace Nethereum.Web3.Accounts
 {
     public class AccountTransactionSigningInterceptor : RequestInterceptor
     {
-        private readonly AccountSignerTransactionManager signer;
+        private readonly AccountSignerTransactionManager _signer;
 
         public AccountTransactionSigningInterceptor(string privateKey, BigInteger chainId, IClient client)
         {
-            signer = new AccountSignerTransactionManager(client, privateKey, chainId);
+            _signer = new AccountSignerTransactionManager(client, privateKey, chainId);
         }
 
         public override async Task<object> InterceptSendRequestAsync<TResponse>(
@@ -22,8 +22,9 @@ namespace Nethereum.Web3.Accounts
             if (request.Method == "eth_sendTransaction")
             {
                 var transaction = (TransactionInput) request.RawParameters[0];
-                return await SignAndSendTransaction(transaction).ConfigureAwait(false);
+                return await SignAndSendTransactionAsync(transaction).ConfigureAwait(false);
             }
+
             return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, request, route)
                 .ConfigureAwait(false);
         }
@@ -35,15 +36,16 @@ namespace Nethereum.Web3.Accounts
             if (method == "eth_sendTransaction")
             {
                 var transaction = (TransactionInput) paramList[0];
-                return await SignAndSendTransaction(transaction).ConfigureAwait(false);
+                return await SignAndSendTransactionAsync(transaction).ConfigureAwait(false);
             }
+
             return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList)
                 .ConfigureAwait(false);
         }
 
-        private async Task<string> SignAndSendTransaction(TransactionInput transaction)
+        private Task<string> SignAndSendTransactionAsync(TransactionInput transaction)
         {
-            return await signer.SendTransactionAsync(transaction).ConfigureAwait(false);
+            return _signer.SendTransactionAsync(transaction);
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Nethereum.Accounts.IntegrationTests
      
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var block =
-                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
+                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1)).ConfigureAwait(false);
             var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
             var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
             Assert.True(EthereumClientIntegrationFixture.AccountAddress.IsTheSameAddress(account));
@@ -41,7 +41,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Goerli);
             var block =
-                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(5062828));
+                await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(5062828)).ConfigureAwait(false);
             var blockHeader = BlockHeaderRPCFactory.FromRPC(block, true);
             var account = new CliqueBlockHeaderRecovery().RecoverCliqueSigner(blockHeader);
             Assert.True("0x8b24eb4e6aae906058242d83e51fb077370c4720".IsTheSameAddress(account));
@@ -56,7 +56,7 @@ namespace Nethereum.Accounts.IntegrationTests
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var block =
-                    await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
+                    await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1)).ConfigureAwait(false);
             var blockHeader = BlockHeaderRPCFactory.FromRPC(block);
 
             var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);

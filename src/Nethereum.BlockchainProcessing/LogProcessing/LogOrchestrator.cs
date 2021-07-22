@@ -52,7 +52,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
                 {
                     logs = logs.Sort();
-                    await InvokeLogProcessors(logs).ConfigureAwait(false);
+                    await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                     progress.BlockNumberProcessTo = getLogsResponse.Value.To;
                 }
 
@@ -62,14 +62,14 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         }
 
-        private async Task InvokeLogProcessors(FilterLog[] logs)
+        private async Task InvokeLogProcessorsAsync(FilterLog[] logs)
         {
             //TODO: Add parallel execution strategy
             foreach (var logProcessor in _logProcessors)
             {
                 foreach (var log in logs)
                 {
-                    await logProcessor.ExecuteAsync(log);
+                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
                 }
             }
         }

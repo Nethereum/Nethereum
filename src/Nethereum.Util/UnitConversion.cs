@@ -33,14 +33,14 @@ namespace Nethereum.Util
             Tether
         }
 
-        private static UnitConversion convert;
+        private static UnitConversion _convert;
 
         public static UnitConversion Convert
         {
             get
             {
-                if (convert == null) convert = new UnitConversion();
-                return convert;
+                if (_convert == null) _convert = new UnitConversion();
+                return _convert;
             }
         }
 
@@ -142,6 +142,7 @@ namespace Nethereum.Util
                 case EthUnit.Tether:
                     return BigIntegerExtensions.ParseInvariant("1000000000000000000000000000000");
             }
+
             throw new NotImplementedException();
         }
 
@@ -241,6 +242,7 @@ namespace Nethereum.Util
                 if (value.ToStringInvariant() == Math.Round(value).ToStringInvariant()) return 0;
                 currentNumberOfDecimals = 1;
             }
+
             if (currentNumberOfDecimals == maxNumberOfDecimals) return maxNumberOfDecimals;
             var multiplied = value * (decimal) BigInteger.Pow(10, currentNumberOfDecimals);
             if (Math.Round(multiplied) == multiplied)

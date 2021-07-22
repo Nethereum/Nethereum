@@ -29,13 +29,13 @@ namespace Nethereum.Accounts.IntegrationTests
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
             var txId = await web3.Eth.Transactions.SendTransaction.SendRequestAsync(
-                new TransactionInput {From = senderAddress, To = receiveAddress, Value = new HexBigInteger(10)});
+                new TransactionInput {From = senderAddress, To = receiveAddress, Value = new HexBigInteger(10)}).ConfigureAwait(false);
 
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             }
             Assert.Equal(txId, receipt.TransactionHash);
         }
@@ -58,13 +58,13 @@ namespace Nethereum.Accounts.IntegrationTests
             web3.Client.OverridingRequestInterceptor = transactionInterceptor;
 
             var txId = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, senderAddress,
-                new HexBigInteger(900000), 7);
+                new HexBigInteger(900000), 7).ConfigureAwait(false);
 
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             }
 
             Assert.Equal(txId, receipt.TransactionHash);
@@ -74,13 +74,13 @@ namespace Nethereum.Accounts.IntegrationTests
             var multiplyFunction = contract.GetFunction("multiply");
 
             txId = await multiplyFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000),
-                new HexBigInteger(0), 69);
+                new HexBigInteger(0), 69).ConfigureAwait(false);
 
-            receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+            receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             }
 
             Assert.Equal(txId, receipt.TransactionHash);

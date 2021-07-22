@@ -14,10 +14,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class PermGetNodesWhitelistTester : RPCRequestTester<string[]>, IRPCRequestTester
     {
-        public override async Task<string[]> ExecuteAsync(IClient client)
+        public override Task<string[]> ExecuteAsync(IClient client)
         {
             var permGetNodesWhitelist = new PermGetNodesWhitelist(client);
-            return await permGetNodesWhitelist.SendRequestAsync();
+            return permGetNodesWhitelist.SendRequestAsync();
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<ShortNameClaimsService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ShortNameClaimsDeployment shortNameClaimsDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, shortNameClaimsDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, shortNameClaimsDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new ShortNameClaimsService(web3, receipt.ContractAddress);
         }
 

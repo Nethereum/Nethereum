@@ -12,10 +12,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class CliqueGetSignersAtHashTester : RPCRequestTester<string[]>, IRPCRequestTester
     {
-        public override async Task<string[]> ExecuteAsync(IClient client)
+        public override Task<string[]> ExecuteAsync(IClient client)
         {
             var cliqueGetSignersAtHash = new CliqueGetSignersAtHash(client);
-            return await cliqueGetSignersAtHash.SendRequestAsync(Settings.GetBlockHash());
+            return cliqueGetSignersAtHash.SendRequestAsync(Settings.GetBlockHash());
         }
 
         public override Type GetRequestType()
@@ -26,7 +26,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

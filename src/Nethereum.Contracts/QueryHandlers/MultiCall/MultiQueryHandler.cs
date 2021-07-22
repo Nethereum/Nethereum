@@ -46,7 +46,7 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
     public class MultiQueryHandler
     {
         public string ContractAddress { get; set; }
-        private QueryToDTOHandler<AggregateFunction, AggregateOutputDTO> _multiQueryToDtoHandler;
+        private readonly QueryToDTOHandler<AggregateFunction, AggregateOutputDTO> _multiQueryToDtoHandler;
         public MultiQueryHandler(IClient client, string multiCallContractAdress = "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441", string defaultAddressFrom = null, BlockParameter defaultBlockParameter = null)
         {
             ContractAddress = multiCallContractAdress;

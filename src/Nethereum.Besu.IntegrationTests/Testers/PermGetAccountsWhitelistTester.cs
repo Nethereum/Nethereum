@@ -17,7 +17,7 @@ namespace Nethereum.Besu.Tests.Testers
         public override async Task<string[]> ExecuteAsync(IClient client)
         {
             var permGetAccountsWhitelist = new PermGetAccountsWhitelist(client);
-            return await permGetAccountsWhitelist.SendRequestAsync();
+            return await permGetAccountsWhitelist.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

@@ -1,8 +1,9 @@
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests
 {
@@ -20,8 +21,7 @@ namespace Nethereum.Contracts.IntegrationTests
         [Fact]
         public async Task ShouldReportNoErrorsWhenValid()
         {
-
-           var abi =
+            var abi =
                 @"[{'constant':false,'inputs':[{'name':'val','type':'int256'}],'name':'multiply','outputs':[{'name':'','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[{'name':'multiplier','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'from','type':'address'},{'indexed':false,'name':'val','type':'int256'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
 
             var smartContractByteCode =
@@ -49,7 +49,8 @@ namespace Nethereum.Contracts.IntegrationTests
             //correct gas estimation with a parameter
             var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
+                new HexBigInteger(estimatedGas.Value), null, null, 5);
 
             Assert.Equal(1, receipt1.Status.Value);
 
@@ -60,8 +61,7 @@ namespace Nethereum.Contracts.IntegrationTests
         [Fact]
         public async Task ShouldReportErrorsWhenInValid()
         {
-
-          var abi =
+            var abi =
                 @"[{'constant':false,'inputs':[{'name':'val','type':'int256'}],'name':'multiply','outputs':[{'name':'','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[{'name':'multiplier','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'from','type':'address'},{'indexed':false,'name':'val','type':'int256'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
 
             var smartContractByteCode =
@@ -91,7 +91,8 @@ namespace Nethereum.Contracts.IntegrationTests
             //it will ran out of gas
             var estimatedGas = await multiplyFunction.EstimateGasAsync();
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
+                new HexBigInteger(estimatedGas.Value), null, null, 5);
 
             Assert.Equal(0, receipt1.Status.Value);
 

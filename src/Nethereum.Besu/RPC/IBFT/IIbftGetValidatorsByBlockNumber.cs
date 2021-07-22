@@ -9,5 +9,4 @@ namespace Nethereum.Besu.RPC.IBFT
         Task<string[]> SendRequestAsync(BlockParameter block, object id = null);
         RpcRequest BuildRequest(BlockParameter block, object id = null);
     }
-
 }

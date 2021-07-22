@@ -205,7 +205,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
         }
 
-        private byte[] lastBuffer;
+        private byte[] _lastBuffer;
 
         //this could be moved to AsycEnumerator
         public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client)
@@ -216,9 +216,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             while (!completedNextMessage && !_cancellationTokenSource.IsCancellationRequested)
             {
-                if (lastBuffer != null && lastBuffer.Length > 0)
+                if (_lastBuffer != null && _lastBuffer.Length > 0)
                 {
-                    completedNextMessage = ProcessNextMessageBytes(lastBuffer, memoryStream);
+                    completedNextMessage = ProcessNextMessageBytes(_lastBuffer, memoryStream);
                 }
                 else
                 {
@@ -245,12 +245,12 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     if (currentIndex + 1 < bufferToRead) // bytes remaining for next message add them to last buffer to be read next message.
                     {
-                        lastBuffer = new byte[bytesRead - currentIndex];
-                        Array.Copy(buffer, currentIndex + 1, lastBuffer, 0, bytesRead - currentIndex);
+                        _lastBuffer = new byte[bytesRead - currentIndex];
+                        Array.Copy(buffer, currentIndex + 1, _lastBuffer, 0, bytesRead - currentIndex);
                     }
                     else
                     {
-                        lastBuffer = null;
+                        _lastBuffer = null;
                     }
                     currentIndex = buffer.Length;
                     return true;

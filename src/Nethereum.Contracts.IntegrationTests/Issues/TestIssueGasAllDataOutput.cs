@@ -6,7 +6,9 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.Issues
 {
@@ -36,8 +38,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
         [FunctionOutput]
         public class CustomerData
         {
-            [Parameter("int256", "mobile", 1)]
-            public int mobile { get; set; }
+            [Parameter("int256", "mobile", 1)] public int mobile { get; set; }
 
             [Parameter("bytes32", "customerName", 2)]
             public string customerName { get; set; }
@@ -49,8 +50,7 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
         [FunctionOutput]
         public class AllCustomerData
         {
-            [Parameter("int256[]", "mobile", 1)]
-            public List<BigInteger> mobile { get; set; }
+            [Parameter("int256[]", "mobile", 1)] public List<BigInteger> mobile { get; set; }
 
             [Parameter("bytes32[]", "customerName", 2)]
             public List<string> customerName { get; set; }

@@ -9,26 +9,26 @@ namespace Nethereum.Quorum.RPC.Interceptors
 {
     public class PrivateForInterceptor : RequestInterceptor
     {
-        private readonly List<string> privateFor;
-        private readonly string privateFrom;
+        private readonly List<string> _privateFor;
+        private readonly string _privateFrom;
 
         public PrivateForInterceptor(List<string> privateFor, string privateFrom)
         {
-            this.privateFor = privateFor;
-            this.privateFrom = privateFrom;
+            this._privateFor = privateFor;
+            this._privateFrom = privateFrom;
         }
 
         public override async Task<object> InterceptSendRequestAsync<T>(
             Func<RpcRequest, string, Task<T>> interceptedSendRequestAsync, RpcRequest request,
             string route = null)
         {
-            if (privateFor != null && privateFor.Count > 0)
+            if (_privateFor != null && _privateFor.Count > 0)
             {
                 if (request.Method == "eth_sendTransaction")
                 {
                     var transaction = (TransactionInput) request.RawParameters[0];
                     var privateTransaction =
-                        new PrivateTransactionInput(transaction, privateFor.ToArray(), privateFrom);
+                        new PrivateTransactionInput(transaction, _privateFor.ToArray(), _privateFrom);
                     return await interceptedSendRequestAsync(
                         new RpcRequest(request.Id, request.Method, privateTransaction), route).ConfigureAwait(false);
                 }
@@ -39,7 +39,7 @@ namespace Nethereum.Quorum.RPC.Interceptors
 
                     return await interceptedSendRequestAsync(
                         new RpcRequest(request.Id, "eth_sendRawPrivateTransaction", rawTrasaction,
-                            new PrivateRawTransaction(privateFor.ToArray())), route).ConfigureAwait(false);
+                            new PrivateRawTransaction(_privateFor.ToArray())), route).ConfigureAwait(false);
                 }
             }
 
@@ -50,13 +50,13 @@ namespace Nethereum.Quorum.RPC.Interceptors
             Func<string, string, object[], Task<T>> interceptedSendRequestAsync, string method,
             string route = null, params object[] paramList)
         {
-            if (privateFor != null && privateFor.Count > 0)
+            if (_privateFor != null && _privateFor.Count > 0)
             {
                 if (method == "eth_sendTransaction")
                 {
                     var transaction = (TransactionInput) paramList[0];
                     var privateTransaction =
-                        new PrivateTransactionInput(transaction, privateFor.ToArray(), privateFrom);
+                        new PrivateTransactionInput(transaction, _privateFor.ToArray(), _privateFrom);
                     paramList[0] = privateTransaction;
                     return await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);
                 }
@@ -65,7 +65,7 @@ namespace Nethereum.Quorum.RPC.Interceptors
                 {
                     var rawTrasaction = paramList[0];
                     return await interceptedSendRequestAsync("eth_sendRawPrivateTransaction", route,
-                            new object[] {rawTrasaction, new PrivateRawTransaction(privateFor.ToArray())})
+                            new object[] {rawTrasaction, new PrivateRawTransaction(_privateFor.ToArray())})
                         .ConfigureAwait(false);
                 }
             }

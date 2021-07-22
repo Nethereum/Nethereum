@@ -14,11 +14,11 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class CliqueDiscardTester : RPCRequestTester<bool>, IRPCRequestTester
     {
-        public override async Task<bool> ExecuteAsync(IClient client)
+        public override Task<bool> ExecuteAsync(IClient client)
         {
             var address = Settings.GetDefaultAccount();
             var cliqueDiscard = new CliqueDiscard(client);
-            return await cliqueDiscard.SendRequestAsync(address);
+            return cliqueDiscard.SendRequestAsync(address);
         }
 
         public override Type GetRequestType()
@@ -29,7 +29,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.False(true);
         }
     }

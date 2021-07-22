@@ -44,7 +44,7 @@ namespace Nethereum.RPC.TransactionManagers
 
         public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
 
-        protected async Task SetTransactionFeesOrPricing(TransactionInput transaction)
+        protected async Task SetTransactionFeesOrPricingAsync(TransactionInput transaction)
         {
             if (IsTransactionToBeSendAsEIP1559(transaction))
             {
@@ -53,13 +53,13 @@ namespace Nethereum.RPC.TransactionManagers
                 {
                     if (transaction.MaxFeePerGas == null)
                     {
-                        var fee1559 = await CalculateFee1559(transaction.MaxPriorityFeePerGas.Value);
+                        var fee1559 = await CalculateFee1559Async(transaction.MaxPriorityFeePerGas.Value).ConfigureAwait(false);
                         transaction.MaxFeePerGas = new HexBigInteger(fee1559.MaxFeePerGas.Value);
                     }
                 }
                 else
                 {
-                    var fee1559 = await CalculateFee1559();
+                    var fee1559 = await CalculateFee1559Async().ConfigureAwait(false);
                     if (transaction.MaxFeePerGas == null)
                     {
                         transaction.MaxFeePerGas =
@@ -132,7 +132,7 @@ namespace Nethereum.RPC.TransactionManagers
             return SendTransactionAsync(new TransactionInput() { From = from, To = to, Value = amount});
         }
 
-        public Task<Fee1559> CalculateFee1559(BigInteger? maxPriorityFeePerGas = null)
+        public Task<Fee1559> CalculateFee1559Async(BigInteger? maxPriorityFeePerGas = null)
         {
             if (maxPriorityFeePerGas == null) maxPriorityFeePerGas = DefaultMaxPriorityFeePerGas;
             if (Client == null) throw new NullReferenceException("Client not configured");

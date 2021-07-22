@@ -80,10 +80,7 @@ namespace Nethereum.Web3.Accounts
 
         public INonceService NonceService
         {
-            get
-            {
-                return _nonceService ?? (_nonceService = new InMemoryNonceService(this.Address, TransactionManager.Client));
-            }
+            get => _nonceService ?? (_nonceService = new InMemoryNonceService(Address, TransactionManager.Client));
             set => _nonceService = value;
         }
     }

@@ -30,7 +30,7 @@ namespace Nethereum.Web3.Accounts.Managed
         {
         }
 
-        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
+        public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 
         public void SetAccount(ManagedAccount account)
         {
@@ -48,6 +48,7 @@ namespace Nethereum.Web3.Accounts.Managed
                     Account.NonceService.Client = Client;
                     nonce = await Account.NonceService.GetNextNonceAsync().ConfigureAwait(false);
                 }
+
             return nonce;
         }
 
@@ -57,8 +58,8 @@ namespace Nethereum.Web3.Accounts.Managed
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
             if (!transactionInput.From.IsTheSameAddress(Account.Address)) throw new Exception("Invalid account used");
-            
-            await SetTransactionFeesOrPricing(transactionInput);
+
+            await SetTransactionFeesOrPricingAsync(transactionInput).ConfigureAwait(false);
             SetDefaultGasIfNotSet(transactionInput);
 
             var nonce = await GetNonceAsync(transactionInput).ConfigureAwait(false);
@@ -79,6 +80,5 @@ namespace Nethereum.Web3.Accounts.Managed
         {
             throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
         }
-
     }
 }

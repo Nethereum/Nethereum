@@ -17,14 +17,14 @@ namespace Nethereum.Web3
 {
     public class Web3 : IWeb3
     {
-        private static readonly AddressUtil addressUtil = new AddressUtil();
-        private static readonly Sha3Keccack sha3Keccack = new Sha3Keccack();
+        private static readonly AddressUtil AddressUtil = new AddressUtil();
+        private static readonly Sha3Keccack Sha3Keccack = new Sha3Keccack();
 
         public Web3(IClient client)
         {
             Client = client;
             InitialiseInnerServices();
-            IntialiseDefaultGasAndGasPrice();
+            InitialiseDefaultGasAndGasPrice();
         }
 
         public Web3(IAccount account, IClient client) : this(client)
@@ -35,9 +35,9 @@ namespace Nethereum.Web3
 
         public Web3(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null)
         {
-            IntialiseDefaultRpcClient(url, log, authenticationHeader);
+            InitialiseDefaultRpcClient(url, log, authenticationHeader);
             InitialiseInnerServices();
-            IntialiseDefaultGasAndGasPrice();
+            InitialiseDefaultGasAndGasPrice();
         }
 
         public Web3(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : this(url, log, authenticationHeader)
@@ -64,7 +64,7 @@ namespace Nethereum.Web3
 
         public FeeSuggestionService FeeSuggestion { get; private set; }
 
-        private void IntialiseDefaultGasAndGasPrice()
+        private void InitialiseDefaultGasAndGasPrice()
         {
 #if !LITE
             TransactionManager.DefaultGas = LegacyTransaction.DEFAULT_GAS_LIMIT;
@@ -83,25 +83,25 @@ namespace Nethereum.Web3
 
         public static bool IsChecksumAddress(string address)
         {
-            return addressUtil.IsChecksumAddress(address);
+            return AddressUtil.IsChecksumAddress(address);
         }
 
         public static string Sha3(string value)
         {
-            return sha3Keccack.CalculateHash(value);
+            return Sha3Keccack.CalculateHash(value);
         }
 
         public static string ToChecksumAddress(string address)
         {
-            return addressUtil.ConvertToChecksumAddress(address);
+            return AddressUtil.ConvertToChecksumAddress(address);
         }
 
         public static string ToValid20ByteAddress(string address)
         {
-            return addressUtil.ConvertToValid20ByteAddress(address);
+            return AddressUtil.ConvertToValid20ByteAddress(address);
         }
 
-        protected virtual void InitialiseInnerServices()
+        private void InitialiseInnerServices()
         {
             Eth = new EthApiContractService(Client);
             Processing = new BlockchainProcessingService(Eth);
@@ -111,7 +111,7 @@ namespace Nethereum.Web3
             FeeSuggestion = new FeeSuggestionService(Client);
         }
 
-        private void IntialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)
+        private void InitialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)
         {
             Client = new RpcClient(new Uri(url), authenticationHeader, null, null, log);
         }

@@ -15,13 +15,13 @@ namespace Nethereum.Signer.Trezor
             var trezorDeviceInformation = trezorDevices.FirstOrDefault(t => t.Product == TrezorManager.USBOneName);
 
             var trezorHidDevice = new WindowsHidDevice(trezorDeviceInformation);
-            await trezorHidDevice.InitializeAsync();
+            await trezorHidDevice.InitializeAsync().ConfigureAwait(false);
             return trezorHidDevice;
         }
 
         public static async Task<TrezorManager> GetWindowsConnectedLedgerManagerAsync(EnterPinArgs enterPinCallback)
         {
-            var trezorHidDevice = await GetWindowsConnectedLedgerHidDeviceAsync();
+            var trezorHidDevice = await GetWindowsConnectedLedgerHidDeviceAsync().ConfigureAwait(false);
             return new TrezorManager(enterPinCallback, trezorHidDevice);
         }
     }

@@ -11,7 +11,8 @@ namespace Nethereum.Besu
         {
         }
 
-        public Web3Besu(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
+        public Web3Besu(string url = @"http://localhost:8545/", ILog log = null,
+            AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
         }
 
@@ -19,7 +20,8 @@ namespace Nethereum.Besu
         {
         }
 
-        public Web3Besu(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
+        public Web3Besu(IAccount account, string url = @"http://localhost:8545/", ILog log = null,
+            AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
         {
         }
 
@@ -39,7 +41,6 @@ namespace Nethereum.Besu
 
         public ITxPoolApiService TxPool { get; private set; }
 
- 
 
         protected override void InitialiseInnerServices()
         {

@@ -22,14 +22,14 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing.CrawlerSteps
         public virtual async Task<CrawlerStepCompleted<TProcessStep>> ExecuteStepAsync(TParentStep parentStep, IEnumerable<BlockProcessingSteps> executionStepsCollection)
         {
             if (!Enabled) throw new Exception("Crawler step is not enabled");
-            var processStepValue = await GetStepDataAsync(parentStep);
+            var processStepValue = await GetStepDataAsync(parentStep).ConfigureAwait(false);
             if (processStepValue == null) return null;
             var stepsToProcesss =
                 await executionStepsCollection.FilterMatchingStepAsync(processStepValue).ConfigureAwait(false);
 
             if (stepsToProcesss.Any())
             {
-                await stepsToProcesss.ExecuteCurrentStepAsync(processStepValue);
+                await stepsToProcesss.ExecuteCurrentStepAsync(processStepValue).ConfigureAwait(false);
             }
             return new CrawlerStepCompleted<TProcessStep>(stepsToProcesss, processStepValue);
 

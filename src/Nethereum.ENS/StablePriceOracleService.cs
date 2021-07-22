@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<StablePriceOracleService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, StablePriceOracleDeployment stablePriceOracleDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, stablePriceOracleDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, stablePriceOracleDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new StablePriceOracleService(web3, receipt.ContractAddress);
         }
 

@@ -12,10 +12,10 @@ namespace Nethereum.Contracts.ContractHandlers
 #if !DOTNET35
     public class ContractTransactionHandler<TContractMessage> : ContractTransactionHandlerBase, IContractTransactionHandler<TContractMessage> where TContractMessage : FunctionMessage, new()
     {
-        private ITransactionEstimatorHandler<TContractMessage> _estimatorHandler;
-        private ITransactionReceiptPollHandler<TContractMessage> _receiptPollHandler;
-        private ITransactionSenderHandler<TContractMessage> _transactionSenderHandler;
-        private ITransactionSigner<TContractMessage> _transactionSigner;
+        private readonly ITransactionEstimatorHandler<TContractMessage> _estimatorHandler;
+        private readonly ITransactionReceiptPollHandler<TContractMessage> _receiptPollHandler;
+        private readonly ITransactionSenderHandler<TContractMessage> _transactionSenderHandler;
+        private readonly ITransactionSigner<TContractMessage> _transactionSigner;
 
 
         public ContractTransactionHandler(ITransactionManager transactionManager) : base(transactionManager)

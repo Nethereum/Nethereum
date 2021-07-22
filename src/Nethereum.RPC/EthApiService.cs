@@ -10,7 +10,7 @@ namespace Nethereum.RPC
 {
     public class EthApiService : RpcClientWrapper, IEthApiService
     {
-        private BlockParameter defaultBlock;
+        private BlockParameter _defaultBlock;
         private ITransactionManager _transactionManager;
 
         public EthApiService(IClient client) : this(client, 
@@ -48,10 +48,10 @@ namespace Nethereum.RPC
 
         public BlockParameter DefaultBlock
         {
-            get { return defaultBlock; }
+            get { return _defaultBlock; }
             set
             {
-                defaultBlock = value;
+                _defaultBlock = value;
                 SetDefaultBlock();
             }
         }
@@ -129,7 +129,7 @@ namespace Nethereum.RPC
             GetBalance.DefaultBlock = DefaultBlock;
             GetCode.DefaultBlock = DefaultBlock;
             GetStorageAt.DefaultBlock = DefaultBlock;
-            Transactions.SetDefaultBlock(defaultBlock);
+            Transactions.SetDefaultBlock(_defaultBlock);
         }
     }
 }

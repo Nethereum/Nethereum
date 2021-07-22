@@ -70,9 +70,9 @@ namespace Nethereum.Contracts
             return transactionWithReceipt.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
         }
 
-        public static bool IsTransactionForFunctionMessage<TFunctionMessage>(this TransactionVO transactionVO) where TFunctionMessage : FunctionMessage, new()
+        public static bool IsTransactionForFunctionMessage<TFunctionMessage>(this TransactionVO transactionVo) where TFunctionMessage : FunctionMessage, new()
         {
-            return transactionVO.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
+            return transactionVo.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
         }
     }
 }

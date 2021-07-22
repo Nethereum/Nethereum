@@ -7,11 +7,11 @@ namespace Nethereum.Contracts
 {
     public class EventTopicBuilder
     {
-        private readonly EventABI eventABI;
+        private readonly EventABI _eventABI;
 
         public EventTopicBuilder(EventABI eventABI)
         {
-            this.eventABI = eventABI;
+            this._eventABI = eventABI;
         }
 
         public object[] GetSignatureTopicAsTheOnlyTopic()
@@ -21,12 +21,12 @@ namespace Nethereum.Contracts
 
         public object GetSignatureTopic()
         {
-            return eventABI.Sha3Signature.EnsureHexPrefix();
+            return _eventABI.Sha3Signature.EnsureHexPrefix();
         }
 
         public object[] GetTopics(object[] firstTopic)
         {
-            if (eventABI.IsAnonymous)
+            if (_eventABI.IsAnonymous)
             {
                 return new[] { GetValueTopic(firstTopic, 1) };
             }
@@ -36,7 +36,7 @@ namespace Nethereum.Contracts
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic)
         {
-            if (eventABI.IsAnonymous)
+            if (_eventABI.IsAnonymous)
             {
                 return new[] { GetValueTopic(firstTopic, 1), GetValueTopic(secondTopic, 2) };
             }
@@ -46,7 +46,7 @@ namespace Nethereum.Contracts
 
         public object[] GetTopics(object[] firstTopic, object[] secondTopic, object[] thirdTopic)
         {
-            if (eventABI.IsAnonymous)
+            if (_eventABI.IsAnonymous)
             {
                 return new[]
                 {
@@ -116,7 +116,7 @@ namespace Nethereum.Contracts
         {
             if (values == null) return null;
             var encoded = new object[values.Length];
-            var parameter = eventABI.InputParameters.FirstOrDefault(x => x.Order == paramNumber);
+            var parameter = _eventABI.InputParameters.FirstOrDefault(x => x.Order == paramNumber);
             if (parameter == null) throw new Exception("Event parameter not found at " + paramNumber);
 
             for (var i = 0; i < values.Length; i++)

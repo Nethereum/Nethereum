@@ -14,9 +14,9 @@ namespace Nethereum.Parity.RPC.Trace
         {
         }
 
-        public async Task<JArray> SendRequestAsync(TraceFilterDTO traceFilter, object id = null)
+        public Task<JArray> SendRequestAsync(TraceFilterDTO traceFilter, object id = null)
         {
-            return await base.SendRequestAsync(id, traceFilter);
+            return base.SendRequestAsync(id, traceFilter);
         }
 
         public RpcRequest BuildRequest(TraceFilterDTO traceFilter, object id = null)

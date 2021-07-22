@@ -21,40 +21,40 @@ namespace Nethereum.Contracts
         {
         }
 #if !DOTNET35
-        public async Task<List<EventLog<T>>> GetAllChanges<T>(NewFilterInput filterInput) where T : new()
+        public async Task<List<EventLog<T>>> GetAllChangesAsync<T>(NewFilterInput filterInput) where T : new()
         {
             if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new Exception("Invalid filter input for current event, the filter input does not belong to this contract");
             var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
 
-        public async Task<List<EventLog<T>>> GetAllChanges<T>(HexBigInteger filterId) where T : new()
+        public async Task<List<EventLog<T>>> GetAllChangesAsync<T>(HexBigInteger filterId) where T : new()
         {
             var logs = await EthFilterLogs.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
 
-        public async Task<List<EventLog<T>>> GetFilterChanges<T>(HexBigInteger filterId) where T : new()
+        public async Task<List<EventLog<T>>> GetFilterChangesAsync<T>(HexBigInteger filterId) where T : new()
         {
             var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return DecodeAllEvents<T>(logs);
         }
 
 
-        public async Task<List<EventLog<List<ParameterOutput>>>> GetAllChangesDefault(NewFilterInput filterInput)
+        public async Task<List<EventLog<List<ParameterOutput>>>> GetAllChangesDefaultAsync(NewFilterInput filterInput)
         {
             if (!EventABI.IsFilterInputForEvent(ContractAddress, filterInput)) throw new FilterInputNotForEventException();
             var logs = await EthGetLogs.SendRequestAsync(filterInput).ConfigureAwait(false);
             return EventABI.DecodeAllEventsDefaultTopics(logs);
         }
 
-        public async Task<List<EventLog<List<ParameterOutput>>>> GetAllChangesDefault(HexBigInteger filterId)
+        public async Task<List<EventLog<List<ParameterOutput>>>> GetAllChangesDefaultAsync(HexBigInteger filterId)
         {
             var logs = await EthFilterLogs.SendRequestAsync(filterId).ConfigureAwait(false);
             return EventABI.DecodeAllEventsDefaultTopics(logs);
         }
 
-        public async Task<List<EventLog<List<ParameterOutput>>>> GetFilterChangeDefault(HexBigInteger filterId)
+        public async Task<List<EventLog<List<ParameterOutput>>>> GetFilterChangeDefaultAsync(HexBigInteger filterId)
         {
             var logs = await EthGetFilterChanges.SendRequestAsync(filterId).ConfigureAwait(false);
             return EventABI.DecodeAllEventsDefaultTopics(logs);

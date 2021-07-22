@@ -16,9 +16,9 @@ namespace Nethereum.Web3.Accounts
     public class ExternalAccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly LegacyTransactionSigner _transactionSigner;
-        public BigInteger? ChainId { get; private set; }
 
-        public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account, BigInteger? chainId = null)
+        public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account,
+            BigInteger? chainId = null)
         {
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
@@ -26,8 +26,10 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new LegacyTransactionSigner();
         }
 
+        public BigInteger? ChainId { get; }
 
-        public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
+
+        public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
         public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
@@ -46,11 +48,12 @@ namespace Nethereum.Web3.Accounts
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (!transaction.From.IsTheSameAddress(Account.Address))
                 throw new Exception("Invalid account used signing");
-            
+
             SetDefaultGasPriceAndCostIfNotSet(transaction);
 
             var nonce = transaction.Nonce;
-            if (nonce == null) throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
+            if (nonce == null)
+                throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");
 
             var gasPrice = transaction.GasPrice;
             var gasLimit = transaction.Gas;
@@ -61,34 +64,31 @@ namespace Nethereum.Web3.Accounts
 
             var externalSigner = ((ExternalAccount) Account).ExternalSigner;
 
-            if (externalSigner.Supported1559 && transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte())
+            if (externalSigner.Supported1559 && transaction.Type != null &&
+                transaction.Type.Value == TransactionType.EIP1559.AsByte())
             {
                 var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
                 var maxFeePerGas = transaction.MaxFeePerGas.Value;
                 if (ChainId == null) throw new ArgumentException("ChainId required for TransactionType 0X02 EIP1559");
 
-                var transaction1559 = new Transaction1559(ChainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, transaction.To, value, transaction.Data, transaction.AccessList.ToSignerAccessListItemArray());
-                await transaction1559.SignExternallyAsync(externalSigner);
+                var transaction1559 = new Transaction1559(ChainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
+                    gasLimit, transaction.To, value, transaction.Data,
+                    transaction.AccessList.ToSignerAccessListItemArray());
+                await transaction1559.SignExternallyAsync(externalSigner).ConfigureAwait(false);
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
-                
-
             }
             else
             {
                 if (ChainId == null)
-                {
                     signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner,
                         transaction.To,
                         value.Value, nonce,
                         gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
-                }
                 else
-                {
                     signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
                         transaction.To,
                         value.Value, nonce,
-                        gasPrice.Value, gasLimit.Value, transaction.Data);
-                }
+                        gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
             }
 
             return signedTransaction;
@@ -108,10 +108,10 @@ namespace Nethereum.Web3.Accounts
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
 
-            var externalSigner = ((ExternalAccount)Account).ExternalSigner;
+            var externalSigner = ((ExternalAccount) Account).ExternalSigner;
             if (externalSigner.Supported1559)
             {
-                await SetTransactionFeesOrPricing(transaction);
+                await SetTransactionFeesOrPricingAsync(transaction).ConfigureAwait(false);
             }
             else
             {
@@ -134,6 +134,7 @@ namespace Nethereum.Web3.Accounts
                 Account.NonceService.Client = Client;
                 nonce = await Account.NonceService.GetNextNonceAsync().ConfigureAwait(false);
             }
+
             return nonce;
         }
 

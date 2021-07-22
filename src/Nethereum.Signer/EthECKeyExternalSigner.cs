@@ -21,16 +21,16 @@ namespace Nethereum.Signer
 
         public virtual async Task<string> GetAddressAsync()
         {
-            var publicKey = await GetPublicKeyAsync();
+            var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             return new EthECKey(publicKey, false).GetPublicAddress();
         }
 
         public async Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId)
         {
-            var signature = await SignExternallyAsync(rawBytes);
+            var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
 
-            var publicKey = await GetPublicKeyAsync();
+            var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             var vChain = EthECKey.CalculateV(chainId, recId);
             signature.V = vChain.ToBytesForRLPEncoding();
@@ -39,21 +39,21 @@ namespace Nethereum.Signer
 
         public async Task<EthECDSASignature> SignAsync(byte[] rawBytes)
         {
-            var signature = await SignExternallyAsync(rawBytes);
+            var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
 
-            var publicKey = await GetPublicKeyAsync();
+            var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             signature.V = new[] {(byte) (recId + 27)};
             return new EthECDSASignature(signature);
         }
 
-        public async Task<EthECDSASignature> SignAndCalculateYParityV(byte[] rawBytes)
+        public async Task<EthECDSASignature> SignAndCalculateYParityVAsync(byte[] rawBytes)
         {
-            var signature = await SignExternallyAsync(rawBytes);
+            var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
 
-            var publicKey = await GetPublicKeyAsync();
+            var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             signature.V = new[] { (byte)(recId) };
             return new EthECDSASignature(signature);
@@ -63,7 +63,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
             {
-                var signature = await SignAsync(transaction.RawHash);
+                var signature = await SignAsync(transaction.RawHash).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }
@@ -72,7 +72,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
-                var signature = await SignAsync(transaction.GetRLPEncodedRaw());
+                var signature = await SignAsync(transaction.GetRLPEncodedRaw()).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }
@@ -81,7 +81,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
             {
-                var signature = await SignAsync(transaction.RawHash, transaction.GetChainIdAsBigInteger());
+                var signature = await SignAsync(transaction.RawHash, transaction.GetChainIdAsBigInteger()).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }
@@ -90,7 +90,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
-                var signature = await SignAsync(transaction.GetRLPEncodedRaw(), transaction.GetChainIdAsBigInteger());
+                var signature = await SignAsync(transaction.GetRLPEncodedRaw(), transaction.GetChainIdAsBigInteger()).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }
@@ -100,7 +100,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
             {
-                var signature = await SignAndCalculateYParityV(transaction.RawHash);
+                var signature = await SignAndCalculateYParityVAsync(transaction.RawHash).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }
@@ -109,7 +109,7 @@ namespace Nethereum.Signer
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
-                var signature = await SignAndCalculateYParityV(transaction.GetRLPEncodedRaw());
+                var signature = await SignAndCalculateYParityVAsync(transaction.GetRLPEncodedRaw()).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
         }

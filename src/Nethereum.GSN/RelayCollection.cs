@@ -13,7 +13,7 @@ namespace Nethereum.GSN
         private readonly IRelayClient _relayClient;
         private Lazy<Relay>[] _relays;
 
-        int position = -1;
+        int _position = -1;
 
         public Relay Current
         {
@@ -21,7 +21,7 @@ namespace Nethereum.GSN
             {
                 try
                 {
-                    return _relays[position].Value;
+                    return _relays[_position].Value;
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -59,13 +59,13 @@ namespace Nethereum.GSN
 
         public bool MoveNext()
         {
-            position++;
-            return position < _relays.Length;
+            _position++;
+            return _position < _relays.Length;
         }
 
         public void Reset()
         {
-            position = -1;
+            _position = -1;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -75,7 +75,7 @@ namespace Nethereum.GSN
 
         private Relay Get(Relay relay)
         {
-            return relay.IsLoaded ? relay : Load(relay).Result;
+            return relay.IsLoaded ? relay :  Load(relay).Result;
         }
 
         private async Task<Relay> Load(Relay relay)
@@ -83,7 +83,7 @@ namespace Nethereum.GSN
             try
             {
                 var relayUrl = new Uri(relay.Url);
-                var response = await _relayClient.GetAddrAsync(relayUrl);
+                var response = await _relayClient.GetAddrAsync(relayUrl).ConfigureAwait(false);
 
                 return new Relay(relay)
                 {

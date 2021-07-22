@@ -51,7 +51,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), null, multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -59,7 +59,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplyFunction = contract.GetFunction("multiply");
 
-            var result = await multiplyFunction.CallAsync<int>(7);
+            var result = await multiplyFunction.CallAsync<int>(7).ConfigureAwait(false);
 
             Assert.Equal(49, result);
         }
@@ -81,7 +81,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), null, multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -89,7 +89,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplyFunction = contract.GetFunction("multiply");
 
-            var result = await multiplyFunction.CallAsync<int>(7);
+            var result = await multiplyFunction.CallAsync<int>(7).ConfigureAwait(false);
 
             Assert.Equal(49, result);
         }
@@ -109,7 +109,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), null, multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -117,7 +117,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var multiplyFunction = contract.GetFunction("multiply");
 
-            var result = await multiplyFunction.CallAsync<int>(7);
+            var result = await multiplyFunction.CallAsync<int>(7).ConfigureAwait(false);
 
             Assert.Equal(49, result);
         }
@@ -136,16 +136,16 @@ namespace Nethereum.Accounts.IntegrationTests
             //The transaction receipt polling service is a simple utility service to poll for receipts until mined
             var transactionPolling = (TransactionReceiptPollingService)web3.TransactionManager.TransactionReceiptService;
 
-            var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
+            var currentBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo).ConfigureAwait(false);
             //assumed client is mining already
 
             //When sending the transaction using the transaction manager for a managed account, personal_sendTransaction is used.
 
             var txnHash =
-                await web3.TransactionManager.SendTransactionAsync(senderAddress, addressTo, new HexBigInteger(20));
-            var receipt = await transactionPolling.PollForReceiptAsync(txnHash);         
+                await web3.TransactionManager.SendTransactionAsync(senderAddress, addressTo, new HexBigInteger(20)).ConfigureAwait(false);
+            var receipt = await transactionPolling.PollForReceiptAsync(txnHash).ConfigureAwait(false);         
 
-            var newBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo);
+            var newBalance = await web3.Eth.GetBalance.SendRequestAsync(addressTo).ConfigureAwait(false);
 
             Assert.Equal(currentBalance.Value + 20, newBalance.Value);
         }

@@ -5,7 +5,12 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+
+// ReSharper disable ConsiderUsingConfigureAwait
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
@@ -24,7 +29,6 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         [Fact]
         public async Task StoreAndRetrieveStructs()
         {
-
             var abi =
                 @"[{'constant':true,'inputs':[{'name':'','type':'bytes32'},{'name':'','type':'uint256'}],'name':'documents','outputs':[{'name':'name','type':'string'},{'name':'description','type':'string'},{'name':'sender','type':'address'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'key','type':'bytes32'},{'name':'name','type':'string'},{'name':'description','type':'string'}],'name':'storeDocument','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'}]";
 
@@ -50,9 +54,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var storeDocumentFunction = contract.GetFunction("storeDocument");
 
-            var receipt1 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1");
+            var receipt1 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address,
+                new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1");
             Assert.Equal(1, receipt1.Status?.Value);
-            var receipt2 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address, new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2");
+            var receipt2 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address,
+                new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2");
             Assert.Equal(1, receipt2.Status?.Value);
 
             var documentsFunction = contract.GetFunction("documents");
@@ -61,27 +67,23 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             Assert.Equal("doc1", document1.Name);
             Assert.Equal("doc2", document2.Name);
-
         }
 
         [FunctionOutput]
         public class Document
         {
-            [Parameter("string", "name", 1)]
-            public string Name { get; set; }
+            [Parameter("string", "name", 1)] public string Name { get; set; }
 
             [Parameter("string", "description", 2)]
             public string Description { get; set; }
 
-            [Parameter("address", "sender", 3)]
-            public string Sender { get; set; }
-
+            [Parameter("address", "sender", 3)] public string Sender { get; set; }
         }
-      
+
         [Fact]
         public async Task DeployAndCallContract_WithEvents()
         {
-                   var abi =
+            var abi =
                 @"[{'constant':false,'inputs':[{'name':'val','type':'int256'}],'name':'multiply','outputs':[{'name':'','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[{'name':'multiplier','type':'int256'}],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'from','type':'address'},{'indexed':false,'name':'val','type':'int256'},{'indexed':false,'name':'result','type':'int256'}],'name':'Multiplied','type':'event'}]";
 
             var smartContractByteCode =
@@ -111,8 +113,10 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
 
-            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 5);
-            var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss, new HexBigInteger(estimatedGas.Value), null, null, 7);
+            var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
+                new HexBigInteger(estimatedGas.Value), null, null, 5);
+            var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
+                new HexBigInteger(estimatedGas.Value), null, null, 7);
 
             Assert.Equal(1, receipt1.Status.Value);
             Assert.Equal(1, receipt2.Status.Value);
@@ -120,23 +124,19 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             Assert.False(receipt1.HasErrors());
             Assert.False(receipt2.HasErrors());
 
-            var logsForAll = await multipliedEvent.GetFilterChanges<MultipliedEvent>(filterForAll);
+            var logsForAll = await multipliedEvent.GetFilterChangesAsync<MultipliedEvent>(filterForAll);
 
             Assert.Equal(2, logsForAll.Count());
-
         }
 
         [Event("Multiplied")]
         public class MultipliedEvent
         {
-            [Parameter("address", "from", 1)]
-            public string Sender { get; set; }
+            [Parameter("address", "from", 1)] public string Sender { get; set; }
 
-            [Parameter("int", "val", 2)]
-            public int InputValue { get; set; }
+            [Parameter("int", "val", 2)] public int InputValue { get; set; }
 
-            [Parameter("int", "result", 3)]
-            public int Result { get; set; }
+            [Parameter("int", "result", 3)] public int Result { get; set; }
         }
 
         public async Task<string> Test()
@@ -176,7 +176,8 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
 
             //deploy the contract, including abi and a paramter of 7. 
-            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7);
+            var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom, 7)
+                .ConfigureAwait(false);
 
 
             //the contract should be mining now

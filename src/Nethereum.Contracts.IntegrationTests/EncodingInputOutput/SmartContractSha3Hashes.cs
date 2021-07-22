@@ -1,14 +1,15 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 {
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class SmartContractSha3Hashes
     {
-
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public SmartContractSha3Hashes(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)

@@ -8,9 +8,9 @@ namespace Nethereum.Contracts
 {
     public static class ABITypedRegistry
     {
-        private static ConcurrentDictionary<Type, FunctionABI> _functionAbiRegistry = new ConcurrentDictionary<Type, FunctionABI>();
-        private static ConcurrentDictionary<Type, EventABI> _eventAbiRegistry = new ConcurrentDictionary<Type, EventABI>();
-        private static AttributesToABIExtractor _abiExtractor = new AttributesToABIExtractor();
+        private static readonly ConcurrentDictionary<Type, FunctionABI> _functionAbiRegistry = new ConcurrentDictionary<Type, FunctionABI>();
+        private static readonly ConcurrentDictionary<Type, EventABI> _eventAbiRegistry = new ConcurrentDictionary<Type, EventABI>();
+        private static readonly AttributesToABIExtractor _abiExtractor = new AttributesToABIExtractor();
 
         public static FunctionABI GetFunctionABI<TFunctionMessage>()
         {

@@ -14,12 +14,12 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class DebugStorageRangeAtTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override Task<JObject> ExecuteAsync(IClient client)
         {
             var debugStorageRangeAt = new DebugStorageRangeAt(client);
             string blockHash = Settings.GetBlockHash();
             string contractAddress = Settings.GetContractAddress();
-            return await debugStorageRangeAt.SendRequestAsync(blockHash, 0, contractAddress, "0x0000000000000000000000000000000000000000000000000000000000000000", 1);
+            return debugStorageRangeAt.SendRequestAsync(blockHash, 0, contractAddress, "0x0000000000000000000000000000000000000000000000000000000000000000", 1);
         }
 
         public override Type GetRequestType()
@@ -30,7 +30,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

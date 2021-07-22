@@ -12,9 +12,9 @@ namespace Nethereum.Besu.RPC.IBFT
         {
         }
 
-        public async Task<bool> SendRequestAsync(string validatorAddress, object id = null)
+        public Task<bool> SendRequestAsync(string validatorAddress, object id = null)
         {
-            return await base.SendRequestAsync(id, validatorAddress);
+            return base.SendRequestAsync(id, validatorAddress);
         }
 
         public RpcRequest BuildRequest(string validatorAddress, object id = null)

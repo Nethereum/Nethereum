@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -37,7 +36,6 @@ namespace Nethereum.Util.Keccak
                     {
                         LFSRState ^= 0x71;
                     }
-
                 }
             }
 
@@ -114,7 +112,7 @@ namespace Nethereum.Util.Keccak
 
         public virtual void Update(byte input)
         {
-            Absorb(new byte[] { input }, 0, 1);
+            Absorb(new byte[] {input}, 0, 1);
         }
 
         public virtual void BlockUpdate(byte[] input, int inOff, int len)
@@ -187,7 +185,7 @@ namespace Nethereum.Util.Keccak
 
             this.rate = rate;
             Array.Clear(state, 0, state.Length);
-            Arrays.Fill(this.dataQueue, (byte)0);
+            Arrays.Fill(this.dataQueue, (byte) 0);
             this.bitsInQueue = 0;
             this.squeezing = false;
             this.bitsAvailableForSqueezing = 0;
@@ -213,8 +211,7 @@ namespace Nethereum.Util.Keccak
                     {
                         KeccakAbsorb(data, off + count);
                         count += rateBytes;
-                    }
-                    while (count <= (len - rateBytes));
+                    } while (count <= (len - rateBytes));
                 }
                 else
                 {
@@ -245,7 +242,7 @@ namespace Nethereum.Util.Keccak
                 throw new InvalidOperationException("attempt to absorb while squeezing");
 
             int mask = (1 << bits) - 1;
-            dataQueue[bitsInQueue >> 3] = (byte)(data & mask);
+            dataQueue[bitsInQueue >> 3] = (byte) (data & mask);
 
             // NOTE: After this, bitsInQueue is no longer a multiple of 8, so no more absorbs will work
             bitsInQueue += bits;
@@ -255,7 +252,7 @@ namespace Nethereum.Util.Keccak
         {
             Debug.Assert(bitsInQueue < rate);
 
-            dataQueue[bitsInQueue >> 3] |= (byte)(1U << (bitsInQueue & 7));
+            dataQueue[bitsInQueue >> 3] |= (byte) (1U << (bitsInQueue & 7));
 
             if (++bitsInQueue == rate)
             {
@@ -271,11 +268,13 @@ namespace Nethereum.Util.Keccak
                     state[i] ^= Pack.LE_To_UInt64(dataQueue, off);
                     off += 8;
                 }
+
                 if (partial > 0)
                 {
                     ulong mask = (1UL << partial) - 1UL;
                     state[full] ^= Pack.LE_To_UInt64(dataQueue, off) & mask;
                 }
+
                 state[(rate - 1) >> 6] ^= (1UL << 63);
             }
 
@@ -294,7 +293,7 @@ namespace Nethereum.Util.Keccak
                 PadAndSwitchToSqueezingPhase();
             }
 
-            long outputLength = (long)len << 3;
+            long outputLength = (long) len << 3;
             long i = 0;
             while (i < outputLength)
             {
@@ -305,8 +304,9 @@ namespace Nethereum.Util.Keccak
                     bitsAvailableForSqueezing = rate;
                 }
 
-                int partialBlock = (int)System.Math.Min((long)bitsAvailableForSqueezing, outputLength - i);
-                Array.Copy(dataQueue, (rate - bitsAvailableForSqueezing) >> 3, output, off + (int)(i >> 3), partialBlock >> 3);
+                int partialBlock = (int) System.Math.Min((long) bitsAvailableForSqueezing, outputLength - i);
+                Array.Copy(dataQueue, (rate - bitsAvailableForSqueezing) >> 3, output, off + (int) (i >> 3),
+                    partialBlock >> 3);
                 bitsAvailableForSqueezing -= partialBlock;
                 i += partialBlock;
             }
@@ -457,8 +457,8 @@ namespace Nethereum.Util.Keccak
         {
             A[0] ^= KeccakRoundConstants[indexRound];
         }
-
     }
+
     internal sealed class Pack
     {
         private Pack()
@@ -467,28 +467,28 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt16_To_BE(ushort n, byte[] bs)
         {
-            bs[0] = (byte)(n >> 8);
-            bs[1] = (byte)(n);
+            bs[0] = (byte) (n >> 8);
+            bs[1] = (byte) (n);
         }
 
         internal static void UInt16_To_BE(ushort n, byte[] bs, int off)
         {
-            bs[off] = (byte)(n >> 8);
-            bs[off + 1] = (byte)(n);
+            bs[off] = (byte) (n >> 8);
+            bs[off + 1] = (byte) (n);
         }
 
         internal static ushort BE_To_UInt16(byte[] bs)
         {
-            uint n = (uint)bs[0] << 8
-                | (uint)bs[1];
-            return (ushort)n;
+            uint n = (uint) bs[0] << 8
+                     | (uint) bs[1];
+            return (ushort) n;
         }
 
         internal static ushort BE_To_UInt16(byte[] bs, int off)
         {
-            uint n = (uint)bs[off] << 8
-                | (uint)bs[off + 1];
-            return (ushort)n;
+            uint n = (uint) bs[off] << 8
+                     | (uint) bs[off + 1];
+            return (ushort) n;
         }
 
         internal static byte[] UInt32_To_BE(uint n)
@@ -500,18 +500,18 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt32_To_BE(uint n, byte[] bs)
         {
-            bs[0] = (byte)(n >> 24);
-            bs[1] = (byte)(n >> 16);
-            bs[2] = (byte)(n >> 8);
-            bs[3] = (byte)(n);
+            bs[0] = (byte) (n >> 24);
+            bs[1] = (byte) (n >> 16);
+            bs[2] = (byte) (n >> 8);
+            bs[3] = (byte) (n);
         }
 
         internal static void UInt32_To_BE(uint n, byte[] bs, int off)
         {
-            bs[off] = (byte)(n >> 24);
-            bs[off + 1] = (byte)(n >> 16);
-            bs[off + 2] = (byte)(n >> 8);
-            bs[off + 3] = (byte)(n);
+            bs[off] = (byte) (n >> 24);
+            bs[off + 1] = (byte) (n >> 16);
+            bs[off + 2] = (byte) (n >> 8);
+            bs[off + 3] = (byte) (n);
         }
 
         internal static byte[] UInt32_To_BE(uint[] ns)
@@ -532,18 +532,18 @@ namespace Nethereum.Util.Keccak
 
         internal static uint BE_To_UInt32(byte[] bs)
         {
-            return (uint)bs[0] << 24
-                | (uint)bs[1] << 16
-                | (uint)bs[2] << 8
-                | (uint)bs[3];
+            return (uint) bs[0] << 24
+                   | (uint) bs[1] << 16
+                   | (uint) bs[2] << 8
+                   | (uint) bs[3];
         }
 
         internal static uint BE_To_UInt32(byte[] bs, int off)
         {
-            return (uint)bs[off] << 24
-                | (uint)bs[off + 1] << 16
-                | (uint)bs[off + 2] << 8
-                | (uint)bs[off + 3];
+            return (uint) bs[off] << 24
+                   | (uint) bs[off + 1] << 16
+                   | (uint) bs[off + 2] << 8
+                   | (uint) bs[off + 3];
         }
 
         internal static void BE_To_UInt32(byte[] bs, int off, uint[] ns)
@@ -564,14 +564,14 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt64_To_BE(ulong n, byte[] bs)
         {
-            UInt32_To_BE((uint)(n >> 32), bs);
-            UInt32_To_BE((uint)(n), bs, 4);
+            UInt32_To_BE((uint) (n >> 32), bs);
+            UInt32_To_BE((uint) (n), bs, 4);
         }
 
         internal static void UInt64_To_BE(ulong n, byte[] bs, int off)
         {
-            UInt32_To_BE((uint)(n >> 32), bs, off);
-            UInt32_To_BE((uint)(n), bs, off + 4);
+            UInt32_To_BE((uint) (n >> 32), bs, off);
+            UInt32_To_BE((uint) (n), bs, off + 4);
         }
 
         internal static byte[] UInt64_To_BE(ulong[] ns)
@@ -594,14 +594,14 @@ namespace Nethereum.Util.Keccak
         {
             uint hi = BE_To_UInt32(bs);
             uint lo = BE_To_UInt32(bs, 4);
-            return ((ulong)hi << 32) | (ulong)lo;
+            return ((ulong) hi << 32) | (ulong) lo;
         }
 
         internal static ulong BE_To_UInt64(byte[] bs, int off)
         {
             uint hi = BE_To_UInt32(bs, off);
             uint lo = BE_To_UInt32(bs, off + 4);
-            return ((ulong)hi << 32) | (ulong)lo;
+            return ((ulong) hi << 32) | (ulong) lo;
         }
 
         internal static void BE_To_UInt64(byte[] bs, int off, ulong[] ns)
@@ -615,28 +615,28 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt16_To_LE(ushort n, byte[] bs)
         {
-            bs[0] = (byte)(n);
-            bs[1] = (byte)(n >> 8);
+            bs[0] = (byte) (n);
+            bs[1] = (byte) (n >> 8);
         }
 
         internal static void UInt16_To_LE(ushort n, byte[] bs, int off)
         {
-            bs[off] = (byte)(n);
-            bs[off + 1] = (byte)(n >> 8);
+            bs[off] = (byte) (n);
+            bs[off + 1] = (byte) (n >> 8);
         }
 
         internal static ushort LE_To_UInt16(byte[] bs)
         {
-            uint n = (uint)bs[0]
-                | (uint)bs[1] << 8;
-            return (ushort)n;
+            uint n = (uint) bs[0]
+                     | (uint) bs[1] << 8;
+            return (ushort) n;
         }
 
         internal static ushort LE_To_UInt16(byte[] bs, int off)
         {
-            uint n = (uint)bs[off]
-                | (uint)bs[off + 1] << 8;
-            return (ushort)n;
+            uint n = (uint) bs[off]
+                     | (uint) bs[off + 1] << 8;
+            return (ushort) n;
         }
 
         internal static byte[] UInt32_To_LE(uint n)
@@ -648,18 +648,18 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt32_To_LE(uint n, byte[] bs)
         {
-            bs[0] = (byte)(n);
-            bs[1] = (byte)(n >> 8);
-            bs[2] = (byte)(n >> 16);
-            bs[3] = (byte)(n >> 24);
+            bs[0] = (byte) (n);
+            bs[1] = (byte) (n >> 8);
+            bs[2] = (byte) (n >> 16);
+            bs[3] = (byte) (n >> 24);
         }
 
         internal static void UInt32_To_LE(uint n, byte[] bs, int off)
         {
-            bs[off] = (byte)(n);
-            bs[off + 1] = (byte)(n >> 8);
-            bs[off + 2] = (byte)(n >> 16);
-            bs[off + 3] = (byte)(n >> 24);
+            bs[off] = (byte) (n);
+            bs[off + 1] = (byte) (n >> 8);
+            bs[off + 2] = (byte) (n >> 16);
+            bs[off + 3] = (byte) (n >> 24);
         }
 
         internal static byte[] UInt32_To_LE(uint[] ns)
@@ -680,18 +680,18 @@ namespace Nethereum.Util.Keccak
 
         internal static uint LE_To_UInt32(byte[] bs)
         {
-            return (uint)bs[0]
-                | (uint)bs[1] << 8
-                | (uint)bs[2] << 16
-                | (uint)bs[3] << 24;
+            return (uint) bs[0]
+                   | (uint) bs[1] << 8
+                   | (uint) bs[2] << 16
+                   | (uint) bs[3] << 24;
         }
 
         internal static uint LE_To_UInt32(byte[] bs, int off)
         {
-            return (uint)bs[off]
-                | (uint)bs[off + 1] << 8
-                | (uint)bs[off + 2] << 16
-                | (uint)bs[off + 3] << 24;
+            return (uint) bs[off]
+                   | (uint) bs[off + 1] << 8
+                   | (uint) bs[off + 2] << 16
+                   | (uint) bs[off + 3] << 24;
         }
 
         internal static void LE_To_UInt32(byte[] bs, int off, uint[] ns)
@@ -720,6 +720,7 @@ namespace Nethereum.Util.Keccak
                 ns[i] = LE_To_UInt32(bs, off);
                 off += 4;
             }
+
             return ns;
         }
 
@@ -732,14 +733,14 @@ namespace Nethereum.Util.Keccak
 
         internal static void UInt64_To_LE(ulong n, byte[] bs)
         {
-            UInt32_To_LE((uint)(n), bs);
-            UInt32_To_LE((uint)(n >> 32), bs, 4);
+            UInt32_To_LE((uint) (n), bs);
+            UInt32_To_LE((uint) (n >> 32), bs, 4);
         }
 
         internal static void UInt64_To_LE(ulong n, byte[] bs, int off)
         {
-            UInt32_To_LE((uint)(n), bs, off);
-            UInt32_To_LE((uint)(n >> 32), bs, off + 4);
+            UInt32_To_LE((uint) (n), bs, off);
+            UInt32_To_LE((uint) (n >> 32), bs, off + 4);
         }
 
         internal static byte[] UInt64_To_LE(ulong[] ns)
@@ -771,14 +772,14 @@ namespace Nethereum.Util.Keccak
         {
             uint lo = LE_To_UInt32(bs);
             uint hi = LE_To_UInt32(bs, 4);
-            return ((ulong)hi << 32) | (ulong)lo;
+            return ((ulong) hi << 32) | (ulong) lo;
         }
 
         internal static ulong LE_To_UInt64(byte[] bs, int off)
         {
             uint lo = LE_To_UInt32(bs, off);
             uint hi = LE_To_UInt32(bs, off + 4);
-            return ((ulong)hi << 32) | (ulong)lo;
+            return ((ulong) hi << 32) | (ulong) lo;
         }
 
         internal static void LE_To_UInt64(byte[] bs, int off, ulong[] ns)
@@ -876,6 +877,7 @@ namespace Nethereum.Util.Keccak
                 --i;
                 cmp |= (a[i] ^ b[i]);
             }
+
             return cmp == 0;
         }
 
@@ -917,6 +919,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] != b[i])
                     return false;
             }
+
             return true;
         }
 
@@ -933,6 +936,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] != b[i])
                     return false;
             }
+
             return true;
         }
 
@@ -949,6 +953,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] != b[i])
                     return false;
             }
+
             return true;
         }
 
@@ -965,6 +970,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] != b[i])
                     return false;
             }
+
             return true;
         }
 
@@ -979,6 +985,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] != b[i])
                     return false;
             }
+
             return true;
         }
 
@@ -994,6 +1001,7 @@ namespace Nethereum.Util.Keccak
                     sb.Append(", ").Append(a[index]);
                 }
             }
+
             sb.Append(']');
             return sb.ToString();
         }
@@ -1082,7 +1090,7 @@ namespace Nethereum.Util.Keccak
             while (--i >= 0)
             {
                 hc *= 257;
-                hc ^= (int)data[i];
+                hc ^= (int) data[i];
             }
 
             return hc;
@@ -1100,7 +1108,7 @@ namespace Nethereum.Util.Keccak
             while (--i >= 0)
             {
                 hc *= 257;
-                hc ^= (int)data[off + i];
+                hc ^= (int) data[off + i];
             }
 
             return hc;
@@ -1119,9 +1127,9 @@ namespace Nethereum.Util.Keccak
             {
                 ulong di = data[i];
                 hc *= 257;
-                hc ^= (int)di;
+                hc ^= (int) di;
                 hc *= 257;
-                hc ^= (int)(di >> 32);
+                hc ^= (int) (di >> 32);
             }
 
             return hc;
@@ -1140,9 +1148,9 @@ namespace Nethereum.Util.Keccak
             {
                 ulong di = data[off + i];
                 hc *= 257;
-                hc ^= (int)di;
+                hc ^= (int) di;
                 hc *= 257;
-                hc ^= (int)(di >> 32);
+                hc ^= (int) (di >> 32);
             }
 
             return hc;
@@ -1151,7 +1159,7 @@ namespace Nethereum.Util.Keccak
         public static byte[] Clone(
             byte[] data)
         {
-            return data == null ? null : (byte[])data.Clone();
+            return data == null ? null : (byte[]) data.Clone();
         }
 
         public static byte[] Clone(
@@ -1162,10 +1170,12 @@ namespace Nethereum.Util.Keccak
             {
                 return null;
             }
+
             if ((existing == null) || (existing.Length != data.Length))
             {
                 return Clone(data);
             }
+
             Array.Copy(data, 0, existing, 0, existing.Length);
             return existing;
         }
@@ -1173,24 +1183,24 @@ namespace Nethereum.Util.Keccak
         public static int[] Clone(
             int[] data)
         {
-            return data == null ? null : (int[])data.Clone();
+            return data == null ? null : (int[]) data.Clone();
         }
 
         internal static uint[] Clone(uint[] data)
         {
-            return data == null ? null : (uint[])data.Clone();
+            return data == null ? null : (uint[]) data.Clone();
         }
 
         public static long[] Clone(long[] data)
         {
-            return data == null ? null : (long[])data.Clone();
+            return data == null ? null : (long[]) data.Clone();
         }
 
         [CLSCompliantAttribute(false)]
         public static ulong[] Clone(
             ulong[] data)
         {
-            return data == null ? null : (ulong[])data.Clone();
+            return data == null ? null : (ulong[]) data.Clone();
         }
 
         [CLSCompliantAttribute(false)]
@@ -1202,10 +1212,12 @@ namespace Nethereum.Util.Keccak
             {
                 return null;
             }
+
             if ((existing == null) || (existing.Length != data.Length))
             {
                 return Clone(data);
             }
+
             Array.Copy(data, 0, existing, 0, existing.Length);
             return existing;
         }
@@ -1217,6 +1229,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] == n)
                     return true;
             }
+
             return false;
         }
 
@@ -1227,6 +1240,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] == n)
                     return true;
             }
+
             return false;
         }
 
@@ -1237,6 +1251,7 @@ namespace Nethereum.Util.Keccak
                 if (a[i] == n)
                     return true;
             }
+
             return false;
         }
 
@@ -1280,7 +1295,6 @@ namespace Nethereum.Util.Keccak
         }
 
 
-
         /**
          * Make a copy of a range of bytes from the passed in data array. The range can
          * extend beyond the end of the input array, in which case the return array will
@@ -1317,7 +1331,6 @@ namespace Nethereum.Util.Keccak
         }
 
 
-
         private static int GetLength(int from, int to)
         {
             int newLength = to - from;
@@ -1329,7 +1342,7 @@ namespace Nethereum.Util.Keccak
         public static byte[] Append(byte[] a, byte b)
         {
             if (a == null)
-                return new byte[] { b };
+                return new byte[] {b};
 
             int length = a.Length;
             byte[] result = new byte[length + 1];
@@ -1341,7 +1354,7 @@ namespace Nethereum.Util.Keccak
         public static short[] Append(short[] a, short b)
         {
             if (a == null)
-                return new short[] { b };
+                return new short[] {b};
 
             int length = a.Length;
             short[] result = new short[length + 1];
@@ -1353,7 +1366,7 @@ namespace Nethereum.Util.Keccak
         public static int[] Append(int[] a, int b)
         {
             if (a == null)
-                return new int[] { b };
+                return new int[] {b};
 
             int length = a.Length;
             int[] result = new int[length + 1];
@@ -1420,7 +1433,7 @@ namespace Nethereum.Util.Keccak
         public static byte[] Prepend(byte[] a, byte b)
         {
             if (a == null)
-                return new byte[] { b };
+                return new byte[] {b};
 
             int length = a.Length;
             byte[] result = new byte[length + 1];
@@ -1432,7 +1445,7 @@ namespace Nethereum.Util.Keccak
         public static short[] Prepend(short[] a, short b)
         {
             if (a == null)
-                return new short[] { b };
+                return new short[] {b};
 
             int length = a.Length;
             short[] result = new short[length + 1];
@@ -1444,7 +1457,7 @@ namespace Nethereum.Util.Keccak
         public static int[] Prepend(int[] a, int b)
         {
             if (a == null)
-                return new int[] { b };
+                return new int[] {b};
 
             int length = a.Length;
             int[] result = new int[length + 1];
@@ -1485,5 +1498,4 @@ namespace Nethereum.Util.Keccak
             return result;
         }
     }
-
 }

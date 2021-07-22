@@ -30,10 +30,10 @@ namespace Nethereum.Accounts.IntegrationTests
             //Sending transaction
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, 1.11m, 2);
             //Raw transaction signed
-            var rawTransaction = await transactionManager.SignTransactionAsync(transactionInput);
-            var txnHash = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(rawTransaction);
+            var rawTransaction = await transactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
+            var txnHash = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(rawTransaction).ConfigureAwait(false);
             //Getting the transaction from the chain
-            var transactionRpc = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txnHash);
+            var transactionRpc = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txnHash).ConfigureAwait(false);
             
             //Using the transanction from RPC to build a txn for signing / signed
             var transaction = TransactionFactory.CreateLegacyTransaction(transactionRpc.To, transactionRpc.Gas, transactionRpc.GasPrice, transactionRpc.Value, transactionRpc.Input, transactionRpc.Nonce,

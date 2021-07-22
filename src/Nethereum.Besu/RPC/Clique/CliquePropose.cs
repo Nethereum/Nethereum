@@ -12,9 +12,9 @@ namespace Nethereum.Besu.RPC.Clique
         {
         }
 
-        public async Task<bool> SendRequestAsync(string address, bool addSigner, object id = null)
+        public Task<bool> SendRequestAsync(string address, bool addSigner, object id = null)
         {
-            return await base.SendRequestAsync(id, address, addSigner);
+            return base.SendRequestAsync(id, address, addSigner);
         }
 
         public RpcRequest BuildRequest(string address, bool addSigner, object id = null)

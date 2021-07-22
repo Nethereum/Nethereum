@@ -32,7 +32,7 @@ namespace Nethereum.GSN.Queries
 
         public async Task<RelayCollection> GetAsync(string hubAddress, IRelayPriorityPolicy policy)
         {
-            var relays = await GetRelaysFromEvents(hubAddress);
+            var relays = await GetRelaysFromEvents(hubAddress).ConfigureAwait(false);
 
             if (relays.Count == 0)
             {
@@ -45,12 +45,12 @@ namespace Nethereum.GSN.Queries
 
         private async Task<IList<RelayOnChain>> GetRelaysFromEvents(string hubAddress)
         {
-            var blockFrom = await GetFromBlock();
+            var blockFrom = await GetFromBlock().ConfigureAwait(false);
 
-            var relayAddedEvents = await GetEvents<RelayAddedEvent>(hubAddress, blockFrom)
+            var relayAddedEvents = await GetEventsAsync<RelayAddedEvent>(hubAddress, blockFrom)
                 .ConfigureAwait(false);
 
-            var relayRemovedEvents = await GetEvents<RelayRemovedEvent>(hubAddress, blockFrom)
+            var relayRemovedEvents = await GetEventsAsync<RelayRemovedEvent>(hubAddress, blockFrom)
                 .ConfigureAwait(false);
 
             var events = relayAddedEvents
@@ -101,12 +101,12 @@ namespace Nethereum.GSN.Queries
             return new HexBigInteger(blockFrom);
         }
 
-        private Task<List<EventLog<T>>> GetEvents<T>(string hubAddress, HexBigInteger fromBlock)
+        private Task<List<EventLog<T>>> GetEventsAsync<T>(string hubAddress, HexBigInteger fromBlock)
             where T : IEventDTO, new()
         {
             var eventHandler = _ethApiContractService.GetEvent<T>(hubAddress);
             var filterInput = eventHandler.CreateFilterInput(fromBlock: new BlockParameter(fromBlock));
-            return eventHandler.GetAllChanges(filterInput);
+            return eventHandler.GetAllChangesAsync(filterInput);
         }
     }
 }

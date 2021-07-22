@@ -3,7 +3,8 @@ using System.Threading.Tasks;
 using Nethereum.Geth.RPC.Debug;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
-using Xunit;
+using Xunit; 
+// ReSharper disable AsyncConverter.AsyncAwaitMayBeElidedHighlighting
 
 namespace Nethereum.Geth.Tests.Testers
 {
@@ -12,6 +13,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugBlockProfile = new DebugBlockProfile(client);
+            
             return await debugBlockProfile.SendRequestAsync(Settings.GetDefaultLogLocation(), 30);
         }
 

@@ -14,10 +14,10 @@ namespace Nethereum.Besu.Tests.Testers
 
     public class IbftProposeValidatorVoteTester : RPCRequestTester<bool>, IRPCRequestTester
     {
-        public override async Task<bool> ExecuteAsync(IClient client)
+        public override Task<bool> ExecuteAsync(IClient client)
         {
             var ibftProposeValidatorVote = new IbftProposeValidatorVote(client);
-            return await ibftProposeValidatorVote.SendRequestAsync(Settings.GetDefaultAccount() , true);
+            return ibftProposeValidatorVote.SendRequestAsync(Settings.GetDefaultAccount() , true);
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Besu.Tests.Testers
         [Fact]
         public async void ShouldReturnNotNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

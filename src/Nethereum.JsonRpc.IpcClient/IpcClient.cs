@@ -87,7 +87,7 @@ namespace Nethereum.JsonRpc.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             var logger = new RpcLogger(_log);
             try
@@ -108,7 +108,7 @@ namespace Nethereum.JsonRpc.IpcClient
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
                             var message = serializer.Deserialize<RpcResponseMessage>(reader);
                             logger.LogResponse(message);
-                            return message;
+                            return Task.FromResult(message);
                         }
                     }
                 }
@@ -123,11 +123,11 @@ namespace Nethereum.JsonRpc.IpcClient
 
         #region IDisposable Support
 
-        private bool disposedValue;
+        private bool _disposedValue;
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                     if (_pipeClient != null)
@@ -138,7 +138,7 @@ namespace Nethereum.JsonRpc.IpcClient
                         _pipeClient.Dispose();
                     }
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 #endregion

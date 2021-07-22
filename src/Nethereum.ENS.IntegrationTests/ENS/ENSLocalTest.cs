@@ -13,6 +13,8 @@ using Nethereum.Web3.Accounts.Managed;
 using Nethereum.XUnitEthereumClients;
 using System.Linq;
 using Xunit;
+// ReSharper disable ConsiderUsingConfigureAwait
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.ENS.IntegrationTests.ENS
 {

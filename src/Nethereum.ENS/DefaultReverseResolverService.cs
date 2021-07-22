@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<DefaultReverseResolverService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, DefaultReverseResolverDeployment defaultReverseResolverDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, defaultReverseResolverDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, defaultReverseResolverDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new DefaultReverseResolverService(web3, receipt.ContractAddress);
         }
 

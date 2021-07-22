@@ -14,9 +14,9 @@ namespace Nethereum.Besu.RPC.IBFT
         {
         }
 
-        public async Task<string[]> SendRequestAsync(BlockParameter block, object id = null)
+        public Task<string[]> SendRequestAsync(BlockParameter block, object id = null)
         {
-            return await base.SendRequestAsync(id, block);
+            return base.SendRequestAsync(id, block);
         }
 
         public RpcRequest BuildRequest(BlockParameter block, object id = null)

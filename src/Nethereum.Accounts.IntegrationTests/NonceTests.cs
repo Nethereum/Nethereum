@@ -65,7 +65,7 @@ namespace Nethereum.Accounts.IntegrationTests
             {
                 string txn = null;
                 concurrentDictionary.TryGetValue(i, out txn);
-                var receipt = await pollService.PollForReceiptAsync(txn);
+                var receipt = await pollService.PollForReceiptAsync(txn).ConfigureAwait(false);
                 Assert.NotNull(receipt);
             }
         }
@@ -91,26 +91,26 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var txn1 = await
                 web31.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var web32 = new Web3.Web3(account, client);
 
 
             var txn2 = await
                 web32.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var web33 = new Web3.Web3(account, client);
 
             var txn3 = await
                 web33.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var pollService = new TransactionReceiptPollingService(web31.TransactionManager);
 
-            var receipt1 = await pollService.PollForReceiptAsync(txn1);
-            var receipt2 = await pollService.PollForReceiptAsync(txn2);
-            var receipt3 = await pollService.PollForReceiptAsync(txn3);
+            var receipt1 = await pollService.PollForReceiptAsync(txn1).ConfigureAwait(false);
+            var receipt2 = await pollService.PollForReceiptAsync(txn2).ConfigureAwait(false);
+            var receipt3 = await pollService.PollForReceiptAsync(txn3).ConfigureAwait(false);
 
             Assert.NotNull(receipt1);
             Assert.NotNull(receipt2);
@@ -134,21 +134,21 @@ namespace Nethereum.Accounts.IntegrationTests
 
             var txn1 = await
                 web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var txn2 = await
                 web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var txn3 = await
                 web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress, new HexBigInteger(900000), null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var pollService = new TransactionReceiptPollingService(web3.TransactionManager);
 
-            var receipt1 = await pollService.PollForReceiptAsync(txn1);
-            var receipt2 = await pollService.PollForReceiptAsync(txn2);
-            var receipt3 = await pollService.PollForReceiptAsync(txn3);
+            var receipt1 = await pollService.PollForReceiptAsync(txn1).ConfigureAwait(false);
+            var receipt2 = await pollService.PollForReceiptAsync(txn2).ConfigureAwait(false);
+            var receipt3 = await pollService.PollForReceiptAsync(txn3).ConfigureAwait(false);
 
             Assert.NotNull(receipt1);
             Assert.NotNull(receipt2);

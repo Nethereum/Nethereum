@@ -1,7 +1,9 @@
 ﻿using Nethereum.Hex.HexTypes;
 using System;
 using System.Numerics;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 {
@@ -31,6 +33,5 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         {
             Assert.Throws<ArgumentNullException>(() => new BlockRange(new HexBigInteger(BigInteger.One), null));
         }
-
     }
 }

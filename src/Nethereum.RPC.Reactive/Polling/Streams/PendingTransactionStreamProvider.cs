@@ -10,30 +10,30 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
 {
     public sealed class PendingTransactionStreamProvider : IPendingTransactionStreamProvider
     {
-        private readonly IEthApiFilterService FilterService;
-        private readonly IObservable<Unit> Poller;
-        private readonly IEthApiTransactionsService TransactionsService;
+        private readonly IEthApiFilterService _filterService;
+        private readonly IObservable<Unit> _poller;
+        private readonly IEthApiTransactionsService _transactionsService;
 
         public PendingTransactionStreamProvider(
             IObservable<Unit> poller,
             IEthApiFilterService filterService,
             IEthApiTransactionsService transactionsService)
         {
-            Poller = poller;
-            FilterService = filterService;
-            TransactionsService = transactionsService;
+            _poller = poller;
+            _filterService = filterService;
+            _transactionsService = transactionsService;
         }
 
         public IObservable<Transaction> GetPendingTransactions() => ObservableExtensions
             .Using(
-                async () => new DisposableFilter(await FilterService.NewPendingTransactionFilter.SendRequestAsync(), FilterService.UninstallFilter),
+                async () => new DisposableFilter(await _filterService.NewPendingTransactionFilter.SendRequestAsync().ConfigureAwait(false), _filterService.UninstallFilter),
                 filter => Observable
-                    .FromAsync(ct => FilterService.GetFilterChangesForBlockOrTransaction.SendRequestAsync(filter.ID))
+                    .FromAsync(ct => _filterService.GetFilterChangesForBlockOrTransaction.SendRequestAsync(filter.ID))
                     .SelectMany(transactionHashes => transactionHashes
-                        .Select(hash => Observable.FromAsync(ct => TransactionsService.GetTransactionByHash.SendRequestAsync(hash)))
+                        .Select(hash => Observable.FromAsync(ct => _transactionsService.GetTransactionByHash.SendRequestAsync(hash)))
                         .ToObservable())
                     .SelectMany(x => x)
-                    .Poll(Poller))
+                    .Poll(_poller))
             .Publish()
             .RefCount();
     }

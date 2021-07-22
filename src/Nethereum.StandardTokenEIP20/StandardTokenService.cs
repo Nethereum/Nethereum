@@ -25,7 +25,7 @@ namespace Nethereum.StandardTokenEIP20
         }
         public static async Task<StandardTokenService> DeployContractAndGetServiceAsync(Web3.Web3 web3, EIP20Deployment eIP20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eIP20Deployment, cancellationTokenSource).ConfigureAwait(false);
             return new StandardTokenService(web3, receipt.ContractAddress);
         }
 

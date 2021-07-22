@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text;
 using System;
 
 namespace Nethereum.Util
@@ -15,6 +14,8 @@ namespace Nethereum.Util
 
     public class UniqueTransactionHashList : HashSet<string>
     {
-        public UniqueTransactionHashList() : base(StringComparer.OrdinalIgnoreCase) { }
+        public UniqueTransactionHashList() : base(StringComparer.OrdinalIgnoreCase)
+        {
+        }
     }
 }

@@ -143,13 +143,13 @@ namespace Nethereum.JsonRpc.IpcClient
 
 #region IDisposable Support
 
-        private bool disposedValue;
+        private bool _disposedValue;
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

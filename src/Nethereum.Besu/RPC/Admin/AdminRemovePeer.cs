@@ -12,9 +12,9 @@ namespace Nethereum.Besu.RPC.Admin
         {
         }
 
-        public async Task<bool> SendRequestAsync(string enodeUrl, object id = null)
+        public Task<bool> SendRequestAsync(string enodeUrl, object id = null)
         {
-            return await base.SendRequestAsync(id, enodeUrl);
+            return base.SendRequestAsync(id, enodeUrl);
         }
 
         public RpcRequest BuildRequest(string enodeUrl, object id = null)

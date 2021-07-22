@@ -21,13 +21,13 @@ namespace Nethereum.Signer.UnitTests
         private readonly string RLP_ENCODED_UNSIGNED_TX =
             "eb8085e8d4a510008227109413978aee95f38490e9769c39b2773ed763d9cd5f872386f26fc1000080808080";
 
-        private byte[] testData = "".ToBytesForRLPEncoding();
-        private readonly byte[] testGasLimit = new BigInteger(10000).ToBytesForRLPEncoding();
-        private readonly byte[] testGasPrice = new BigInteger(1000000000000L).ToBytesForRLPEncoding();
-        private byte[] testInit = "".ToBytesForRLPEncoding();
-        private byte[] testNonce = 0.ToBytesForRLPEncoding();
-        private readonly byte[] testReceiveAddress = "13978aee95f38490e9769c39b2773ed763d9cd5f".HexToByteArray();
-        private readonly byte[] testValue = new BigInteger(10000000000000000L).ToBytesForRLPEncoding();
+        private byte[] _testData = "".ToBytesForRLPEncoding();
+        private readonly byte[] _testGasLimit = new BigInteger(10000).ToBytesForRLPEncoding();
+        private readonly byte[] _testGasPrice = new BigInteger(1000000000000L).ToBytesForRLPEncoding();
+        private byte[] _testInit = "".ToBytesForRLPEncoding();
+        private byte[] _testNonce = 0.ToBytesForRLPEncoding();
+        private readonly byte[] _testReceiveAddress = "13978aee95f38490e9769c39b2773ed763d9cd5f".HexToByteArray();
+        private readonly byte[] _testValue = new BigInteger(10000000000000000L).ToBytesForRLPEncoding();
 
         [Fact]
         public void ShouldCreateASignedTransaction()
@@ -136,10 +136,10 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(RLP_ENCODED_SIGNED_TX, tx.GetRLPEncoded().ToHex());
 
             Assert.Equal(BigInteger.Zero, tx.Nonce.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testGasPrice.ToBigIntegerFromRLPDecoded(), tx.GasPrice.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testGasLimit.ToBigIntegerFromRLPDecoded(), tx.GasLimit.ToBigIntegerFromRLPDecoded());
-            Assert.Equal(testReceiveAddress.ToHex(), tx.ReceiveAddress.ToHex());
-            Assert.Equal(testValue.ToBigIntegerFromRLPDecoded(), tx.Value.ToBigIntegerFromRLPDecoded());
+            Assert.Equal(_testGasPrice.ToBigIntegerFromRLPDecoded(), tx.GasPrice.ToBigIntegerFromRLPDecoded());
+            Assert.Equal(_testGasLimit.ToBigIntegerFromRLPDecoded(), tx.GasLimit.ToBigIntegerFromRLPDecoded());
+            Assert.Equal(_testReceiveAddress.ToHex(), tx.ReceiveAddress.ToHex());
+            Assert.Equal(_testValue.ToBigIntegerFromRLPDecoded(), tx.Value.ToBigIntegerFromRLPDecoded());
 
             Assert.Null(tx.Data);
             Assert.Equal(27, tx.Signature.V[0]);

@@ -14,6 +14,5 @@ namespace Nethereum.Besu
 
         public ITxpoolBesuStatistics BesuStatistics { get; }
         public ITxpoolBesuTransactions BesuTransactions { get; }
-
     }
 }

@@ -91,7 +91,7 @@ namespace Nethereum.Ledger.IntegrationTests
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput);
 
-            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManager();
+            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManagerAsync();
             var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), 1);
             await externalAccount.InitialiseAsync();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);

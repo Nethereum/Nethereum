@@ -9,6 +9,7 @@ using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.StandardTokenEIP20.Events.DTO;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+// ReSharper disable once ConsiderUsingConfigureAwait
 
 namespace Nethereum.StandardTokenEIP20.IntegrationTests
 {
@@ -111,7 +112,7 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
 
             var allTransfersFilter =
                 await transfersEvent.CreateFilterAsync(new BlockParameter(transferReceipt.BlockNumber));
-            var eventLogsAll = await transfersEvent.GetAllChanges(allTransfersFilter);
+            var eventLogsAll = await transfersEvent.GetAllChangesAsync(allTransfersFilter);
             Assert.Single(eventLogsAll);
             var transferLog = eventLogsAll.First();
             Assert.Equal(transferLog.Log.TransactionIndex.HexValue, transferReceipt.TransactionIndex.HexValue);

@@ -24,14 +24,14 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertAsync(TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract)
         {
-            var record = await FindByBlockNumberAndHashAsync(transactionReceiptVO.BlockNumber, transactionReceiptVO.TransactionHash);
+            var record = await FindByBlockNumberAndHashAsync(transactionReceiptVO.BlockNumber, transactionReceiptVO.TransactionHash).ConfigureAwait(false);
             if(record != null ) Records.Remove(record);
             Records.Add(transactionReceiptVO.MapToStorageEntityForUpsert(code, failedCreatingContract));
         }
 
         public async Task UpsertAsync(TransactionReceiptVO transactionReceiptVO)
         {
-            var record = await FindByBlockNumberAndHashAsync(transactionReceiptVO.BlockNumber, transactionReceiptVO.TransactionHash);
+            var record = await FindByBlockNumberAndHashAsync(transactionReceiptVO.BlockNumber, transactionReceiptVO.TransactionHash).ConfigureAwait(false);
             if (record != null) Records.Remove(record);
             Records.Add(transactionReceiptVO.MapToStorageEntityForUpsert());
         }

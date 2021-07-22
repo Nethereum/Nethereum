@@ -12,14 +12,14 @@ namespace Nethereum.Besu.RPC.Permissioning
         {
         }
 
-        public async Task<string> SendRequestAsync(string[] addresses, object id = null)
+        public Task<string> SendRequestAsync(string[] addresses, object id = null)
         {
-            return await base.SendRequestAsync(id, new object[] { addresses });
+            return base.SendRequestAsync(id, new object[] {addresses});
         }
 
         public RpcRequest BuildRequest(string[] addresses, object id = null)
         {
-            return base.BuildRequest(id, new object[] { addresses });
+            return base.BuildRequest(id, new object[] {addresses});
         }
     }
 }

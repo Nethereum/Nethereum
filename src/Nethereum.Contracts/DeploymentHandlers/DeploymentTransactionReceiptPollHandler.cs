@@ -12,7 +12,7 @@ namespace Nethereum.Contracts.DeploymentHandlers
             IDeploymentTransactionReceiptPollHandler<TContractDeploymentMessage>
         where TContractDeploymentMessage : ContractDeploymentMessage, new()
     {
-        private IDeploymentTransactionSenderHandler<TContractDeploymentMessage>
+        private readonly IDeploymentTransactionSenderHandler<TContractDeploymentMessage>
             _deploymentTransactionHandler;
 
 

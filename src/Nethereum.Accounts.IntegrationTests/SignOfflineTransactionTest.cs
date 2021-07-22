@@ -38,7 +38,7 @@ namespace Nethereum.Accounts.IntegrationTests
             
 
             var signedMessage = await web3.Eth.GetContractHandler("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe")
-                .SignTransactionAsync(transfer);
+                .SignTransactionAsync(transfer).ConfigureAwait(false);
 
             Assert.Equal("f8a201646494de0b295669a9fd93d5f28d9ec85e40f4cb697bae80b844a9059cbb00000000000000000000000012890d2cce102216644c59dae5baed380d84830c000000000000000000000000000000000000000000000000000000000000000a1ca0a928719a67ff346732bfacd82d8c3d5f50490f57a9edd0c92438714bd6815cd4a0713e0577939049551bf0d4f66bacd2cf4ac371daa16f904f57d804101dcc6ee7", signedMessage);
         }

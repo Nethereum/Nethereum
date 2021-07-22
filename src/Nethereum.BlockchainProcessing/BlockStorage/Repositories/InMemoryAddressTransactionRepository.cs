@@ -30,7 +30,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertAsync(TransactionReceiptVO transactionReceiptVO, string address, string error = null, string newContractAddress = null)
         {
-            var entity = await FindAsync(address, transactionReceiptVO.Transaction.BlockNumber, transactionReceiptVO.TransactionHash);
+            var entity = await FindAsync(address, transactionReceiptVO.Transaction.BlockNumber, transactionReceiptVO.TransactionHash).ConfigureAwait(false);
             if(entity != null) Records.Remove(entity);
             Records.Add(transactionReceiptVO.MapToStorageEntityForUpsert(address));
         }

@@ -13,7 +13,6 @@ namespace Nethereum.Besu
             GetSignersAtHash = new CliqueGetSignersAtHash(client);
             Proposals = new CliqueProposals(client);
             Propose = new CliquePropose(client);
-
         }
 
         public ICliqueDiscard Discard { get; }

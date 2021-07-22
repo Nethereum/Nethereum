@@ -33,19 +33,19 @@ namespace Nethereum.BlockchainProcessing.ProgressRepositories
 
         public async Task<BigInteger?> GetLastBlockNumberProcessedAsync()
         {
-            await Initialise().ConfigureAwait(false);
+            await InitialiseAsync().ConfigureAwait(false);
             return _progress.To;
         }
 
         public async Task UpsertProgressAsync(BigInteger blockNumber)
         {
-            await Initialise().ConfigureAwait(false);
+            await InitialiseAsync().ConfigureAwait(false);
             _progress.LastUpdatedUTC = DateTimeOffset.UtcNow;
             _progress.To = blockNumber;
             await PersistAsync().ConfigureAwait(false);
         }
 
-        private async Task Initialise()
+        private async Task InitialiseAsync()
         {
             if (_progress != null) return;
 

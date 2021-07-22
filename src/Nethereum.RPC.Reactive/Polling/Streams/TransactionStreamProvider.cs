@@ -7,25 +7,25 @@ namespace Nethereum.RPC.Reactive.Polling.Streams
 {
     public sealed class TransactionStreamProvider : ITransactionStreamProvider
     {
-        private readonly IBlockStreamProvider BlockStreamProvider;
+        private readonly IBlockStreamProvider _blockStreamProvider;
 
         public TransactionStreamProvider(
             IBlockStreamProvider blockStreamProvider) =>
-            BlockStreamProvider = blockStreamProvider;
+            _blockStreamProvider = blockStreamProvider;
 
-        public IObservable<Transaction> GetTransactions() => BlockStreamProvider
+        public IObservable<Transaction> GetTransactions() => _blockStreamProvider
             .GetBlocksWithTransactions()
             .SelectMany(block => block.Transactions)
             .Publish()
             .RefCount();
 
-        public IObservable<Transaction> GetTransactions(BlockParameter start) => BlockStreamProvider
+        public IObservable<Transaction> GetTransactions(BlockParameter start) => _blockStreamProvider
             .GetBlocksWithTransactions(start)
             .SelectMany(block => block.Transactions)
             .Publish()
             .RefCount();
 
-        public IObservable<Transaction> GetTransactions(BlockParameter start, BlockParameter end) => BlockStreamProvider
+        public IObservable<Transaction> GetTransactions(BlockParameter start, BlockParameter end) => _blockStreamProvider
             .GetBlocksWithTransactions(start, end)
             .SelectMany(block => block.Transactions)
             .Publish()

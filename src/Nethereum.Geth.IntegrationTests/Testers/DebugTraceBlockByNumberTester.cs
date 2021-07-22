@@ -4,16 +4,18 @@ using Nethereum.Geth.RPC.Debug;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
 using Newtonsoft.Json.Linq;
-using Xunit;
+using Xunit; 
+ // ReSharper disable ConsiderUsingConfigureAwait  
+ // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Geth.Tests.Testers
 {
     public class DebugTraceBlockByNumberTester : RPCRequestTester<JObject>, IRPCRequestTester
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override Task<JObject> ExecuteAsync(IClient client)
         {
             var debugTraceBlockByNumber = new DebugTraceBlockByNumber(client);
-            return await debugTraceBlockByNumber.SendRequestAsync(Settings.GetBlockNumber());
+            return debugTraceBlockByNumber.SendRequestAsync(Settings.GetBlockNumber());
         }
 
         public override Type GetRequestType()

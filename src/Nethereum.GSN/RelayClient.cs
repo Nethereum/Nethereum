@@ -24,10 +24,10 @@ namespace Nethereum.GSN
                 client.BaseAddress = relayUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(_httpTimeout);
 
-                var result = await client.PostAsync("/getaddr", new StringContent("{}"));
+                var result = await client.PostAsync("/getaddr", new StringContent("{}")).ConfigureAwait(false);
                 result.EnsureSuccessStatusCode();
 
-                string content = await result.Content.ReadAsStringAsync();
+                string content = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                 return JsonConvert.DeserializeObject<GetAddrResponse>(content);
             }
         }
@@ -42,10 +42,10 @@ namespace Nethereum.GSN
                 var content = JsonConvert.SerializeObject(request);
                 var stringContent = new StringContent(content, Encoding.UTF8, "application/json");
 
-                var result = await client.PostAsync("/relay", stringContent);
+                var result = await client.PostAsync("/relay", stringContent).ConfigureAwait(false);
                 result.EnsureSuccessStatusCode();
 
-                string contentResult = await result.Content.ReadAsStringAsync();
+                string contentResult = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                 return JsonConvert.DeserializeObject<RelayResponse>(contentResult);
             }
         }
