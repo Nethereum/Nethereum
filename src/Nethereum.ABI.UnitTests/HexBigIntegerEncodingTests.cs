@@ -1,5 +1,4 @@
 using System;
-using System.CodeDom;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Xunit;
@@ -91,15 +90,15 @@ namespace Nethereum.ABI.UnitTests
         [Fact]
         public void HexBigIntergerTest()
         {
-            HexBigInteger TestValue = new HexBigInteger("0x100");
+            var TestValue = new HexBigInteger("0x100");
 
             Assert.Equal(TestValue.HexValue, "0x100");
             Assert.Equal(TestValue.Value, 256);
 
             TestValue.Value = 1024;
-            Assert.Equal(TestValue.Value, 1024);      
+            Assert.Equal(TestValue.Value, 1024);
 
-            TestValue.HexValue = "0x200";            
+            TestValue.HexValue = "0x200";
             Assert.Equal(TestValue.HexValue, "0x200");
         }
 

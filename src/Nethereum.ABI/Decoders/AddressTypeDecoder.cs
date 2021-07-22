@@ -28,7 +28,7 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(string)) || (type == typeof(object));
+            return type == typeof(string) || type == typeof(object);
         }
     }
 }

@@ -9,11 +9,18 @@ namespace Nethereum.ABI.UnitTests
 {
     public class IntEncodingTests
     {
+        public enum TestEnum
+        {
+            Monkey,
+            Elephant,
+            Lion
+        }
+
         public BigInteger ToTwosComplement(BigInteger value)
         {
             if (value.Sign < 0)
                 return new BigInteger("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-                           .HexToByteArray()) + value + 1;
+                    .HexToByteArray()) + value + 1;
             return value;
         }
 
@@ -113,13 +120,6 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(byte.MaxValue, intresult);
         }
 
-        public enum TestEnum
-        {
-            Monkey,
-            Elephant,
-            Lion
-        }
-
         [Fact]
         public virtual void ShouldEncodeDecodeEnum()
         {
@@ -135,7 +135,6 @@ namespace Nethereum.ABI.UnitTests
             var result3 = intType.Encode(TestEnum.Lion).ToHex();
             var decresult3 = intType.Decode<TestEnum>(result3);
             Assert.Equal(TestEnum.Lion, decresult3);
-
         }
 
 
@@ -232,7 +231,7 @@ namespace Nethereum.ABI.UnitTests
             var intType = new IntType("uint");
             var given = IntType.MAX_UINT256_VALUE + 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
-            Assert.StartsWith($"Unsigned SmartContract integer must not exceed maximum value for uint256", ex.Message);
+            Assert.StartsWith("Unsigned SmartContract integer must not exceed maximum value for uint256", ex.Message);
         }
 
         [Fact]
@@ -241,7 +240,8 @@ namespace Nethereum.ABI.UnitTests
             var intType = new IntType("uint");
             var given = IntType.MIN_UINT_VALUE - 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
-            Assert.StartsWith($"Unsigned SmartContract integer must not be less than the minimum value of uint:", ex.Message);
+            Assert.StartsWith("Unsigned SmartContract integer must not be less than the minimum value of uint:",
+                ex.Message);
         }
 
         [Fact]
@@ -250,7 +250,7 @@ namespace Nethereum.ABI.UnitTests
             var intType = new IntType("int");
             var given = IntType.MAX_INT256_VALUE + 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
-            Assert.StartsWith($"Signed SmartContract integer must not exceed maximum value for int256", ex.Message);
+            Assert.StartsWith("Signed SmartContract integer must not exceed maximum value for int256", ex.Message);
         }
 
         [Fact]
@@ -259,7 +259,8 @@ namespace Nethereum.ABI.UnitTests
             var intType = new IntType("int");
             var given = IntType.MIN_INT256_VALUE - 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
-            Assert.StartsWith($"Signed SmartContract integer must not be less than the minimum value for int256", ex.Message);
+            Assert.StartsWith("Signed SmartContract integer must not be less than the minimum value for int256",
+                ex.Message);
         }
 
         [Fact]
@@ -268,7 +269,8 @@ namespace Nethereum.ABI.UnitTests
             var intType = new IntType("int");
             object given = null;
             var ex = Assert.Throws<Exception>(() => intType.Encode(given));
-            Assert.Equal($"Invalid value for type 'Nethereum.ABI.Encoders.IntTypeEncoder'. Value: null, ValueType: ()", ex.Message);
+            Assert.Equal("Invalid value for type 'Nethereum.ABI.Encoders.IntTypeEncoder'. Value: null, ValueType: ()",
+                ex.Message);
         }
 
         [Fact]

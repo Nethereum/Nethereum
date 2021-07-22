@@ -11,12 +11,12 @@ namespace Nethereum.ABI.UnitTests
     {
         public ParameterOutput CreateParamO(string type, string name, Type decodedType)
         {
-            return new ParameterOutput {Parameter = CreateParam(type, name,  decodedType)};
+            return new() {Parameter = CreateParam(type, name, decodedType)};
         }
 
         public Parameter CreateParam(string type, string name, Type decodedType = null)
         {
-            return new Parameter(type, name) {DecodedType = decodedType};
+            return new(type, name) {DecodedType = decodedType};
         }
 
         [Fact]
@@ -165,7 +165,8 @@ namespace Nethereum.ABI.UnitTests
             var inputsParameters = new[] {CreateParam("address", "_address1")};
             var parameterValues = new object[] {null};
 
-            var ex = Assert.Throws<AbiEncodingException>(() => functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, parameterValues));
+            var ex = Assert.Throws<AbiEncodingException>(() =>
+                functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, parameterValues));
 
             const string ExpectedError =
                 "An error occurred encoding abi value. Order: '1', Type: 'address', Value: 'null'.  Ensure the value is valid for the abi type.";

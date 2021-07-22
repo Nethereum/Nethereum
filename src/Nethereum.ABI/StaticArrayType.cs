@@ -17,7 +17,7 @@ namespace Nethereum.ABI
 
         public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";
 
-        public override int FixedSize => ElementType.FixedSize*Size;
+        public override int FixedSize => ElementType.FixedSize * Size;
 
         private void IntialiseSize(string name)
         {

@@ -11,11 +11,9 @@ namespace Nethereum.ABI.Decoders
 
         public override object Decode(byte[] encoded, Type type)
         {
-           
             var size = new IntTypeDecoder().DecodeInt(encoded.Take(32).ToArray());
             //Skip the length of the array, just pass the array values
             return Decode(encoded.Skip(32).ToArray(), type, size);
-         
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(bool)) || (type == typeof(object));
+            return type == typeof(bool) || type == typeof(object);
         }
     }
 }

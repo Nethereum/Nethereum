@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -16,9 +15,8 @@ namespace Nethereum.ABI.Decoders
             _signed = signed;
         }
 
-        public IntTypeDecoder():this(false)
+        public IntTypeDecoder() : this(false)
         {
-            
         }
 
         public override object Decode(byte[] encoded, Type type)
@@ -53,7 +51,7 @@ namespace Nethereum.ABI.Decoders
             if (type == typeof(ulong))
                 return DecodeULong(encoded);
 
-            if ((type == typeof(BigInteger)) || (type == typeof(object)))
+            if (type == typeof(BigInteger) || type == typeof(object))
                 return DecodeBigInteger(encoded);
 
             throw new NotSupportedException(type + " is not a supported decoding type for IntType");
@@ -75,7 +73,7 @@ namespace Nethereum.ABI.Decoders
             if (!_signed)
             {
                 var listEncoded = encoded.ToList();
-                listEncoded.Insert(0,0x00);
+                listEncoded.Insert(0, 0x00);
                 encoded = listEncoded.ToArray();
             }
 
@@ -92,22 +90,22 @@ namespace Nethereum.ABI.Decoders
 
         public byte DecodeByte(byte[] encoded)
         {
-            return (byte)DecodeBigInteger(encoded);
+            return (byte) DecodeBigInteger(encoded);
         }
 
         public sbyte DecodeSbyte(byte[] encoded)
         {
-            return (sbyte)DecodeBigInteger(encoded);
+            return (sbyte) DecodeBigInteger(encoded);
         }
 
         public short DecodeShort(byte[] encoded)
         {
-            return (short)DecodeBigInteger(encoded);
+            return (short) DecodeBigInteger(encoded);
         }
 
         public ushort DecodeUShort(byte[] encoded)
         {
-            return (ushort)DecodeBigInteger(encoded);
+            return (ushort) DecodeBigInteger(encoded);
         }
 
         public int DecodeInt(byte[] encoded)
@@ -137,11 +135,11 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(int)) || (type == typeof(uint)) || 
-                   (type == typeof(ulong)) || (type == typeof(long))  ||
-                   (type == typeof(short)) || (type == typeof(ushort)) ||
-                   (type == typeof(byte)) || (type == typeof(sbyte)) ||
-                   (type == typeof(BigInteger)) || (type == typeof(object))
+            return type == typeof(int) || type == typeof(uint) ||
+                   type == typeof(ulong) || type == typeof(long) ||
+                   type == typeof(short) || type == typeof(ushort) ||
+                   type == typeof(byte) || type == typeof(sbyte) ||
+                   type == typeof(BigInteger) || type == typeof(object)
                    || type.GetTypeInfo().IsEnum;
         }
     }

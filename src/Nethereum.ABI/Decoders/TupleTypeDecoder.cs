@@ -8,14 +8,14 @@ namespace Nethereum.ABI
 {
     public class TupleTypeDecoder : TypeDecoder
     {
-        public Parameter[] Components { get; set; }
-
         private readonly ParameterDecoder parameterDecoder;
 
         public TupleTypeDecoder()
         {
             parameterDecoder = new ParameterDecoder();
         }
+
+        public Parameter[] Components { get; set; }
 
         public override object Decode(byte[] encoded, Type type)
         {
@@ -36,6 +36,7 @@ namespace Nethereum.ABI
                     parameterOutput.Parameter.DecodedType = component.ABIType.GetDefaultDecodingType();
                 decodingDefaultComponents.Add(parameterOutput);
             }
+
             return decodingDefaultComponents.ToArray();
         }
 
@@ -51,7 +52,7 @@ namespace Nethereum.ABI
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(List<ParameterOutput>));
+            return type == typeof(List<ParameterOutput>);
         }
     }
 }

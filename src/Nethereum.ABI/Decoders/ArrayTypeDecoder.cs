@@ -5,14 +5,12 @@ using System.Linq;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI.Decoders
 {
     public class ArrayTypeDecoder : TypeDecoder
     {
-        private AttributesToABIExtractor _attributesToABIExtractor;
-        public int Size { get; protected set; }
+        private readonly AttributesToABIExtractor _attributesToABIExtractor;
 
         public ArrayTypeDecoder(ABIType elementType, int size)
         {
@@ -20,6 +18,8 @@ namespace Nethereum.ABI.Decoders
             ElementType = elementType;
             _attributesToABIExtractor = new AttributesToABIExtractor();
         }
+
+        public int Size { get; protected set; }
 
         protected ABIType ElementType { get; set; }
 
@@ -32,8 +32,7 @@ namespace Nethereum.ABI.Decoders
         {
             if (ElementType.IsDynamic())
                 return DecodeDynamicElementType(encoded, type, size);
-            else
-                return DecodeStaticElementType(encoded, type, size);
+            return DecodeStaticElementType(encoded, type, size);
         }
 
         public override Type GetDefaultDecodingType()
@@ -48,7 +47,7 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeDynamicElementType(byte[] encoded, Type type, int size)
         {
-            var decodedListOutput = (IList)Activator.CreateInstance(type);
+            var decodedListOutput = (IList) Activator.CreateInstance(type);
 
             if (decodedListOutput == null)
                 throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
@@ -60,9 +59,9 @@ namespace Nethereum.ABI.Decoders
 
             var intDecoder = new IntTypeDecoder();
             var dataIndexes = new List<int>();
-            
+
             var currentIndex = 0;
-            
+
             while (currentIndex < size)
             {
                 dataIndexes.Add(intDecoder.DecodeInt(encoded.Skip(currentIndex * 32).Take(32).ToArray()));
@@ -75,17 +74,15 @@ namespace Nethereum.ABI.Decoders
             {
                 var currentDataIndex = dataIndexes[currentIndex];
                 var nextDataIndex = encoded.Length;
-                if (currentIndex + 1 < dataIndexes.Count)
-                {
-                    nextDataIndex = dataIndexes[currentIndex + 1];
-                }   
+                if (currentIndex + 1 < dataIndexes.Count) nextDataIndex = dataIndexes[currentIndex + 1];
                 var encodedElement =
                     encoded.Skip(currentDataIndex).Take(nextDataIndex - currentDataIndex).ToArray();
 
                 DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
-                
+
                 currentIndex++;
             }
+
             return decodedListOutput;
         }
 
@@ -105,10 +102,8 @@ namespace Nethereum.ABI.Decoders
         protected void InitTupleElementComponents(Type elementType, TupleType tupleTypeElement)
         {
             if (tupleTypeElement.Components == null)
-            {
                 _attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(elementType,
                     tupleTypeElement);
-            }
         }
 
         protected virtual object DecodeStaticElementType(byte[] encoded, Type type, int size)
@@ -145,8 +140,8 @@ namespace Nethereum.ABI.Decoders
             return enumType?.GenericTypeArguments()[0];
 #else
             var enumType = listType.GetTypeInfo().ImplementedInterfaces
-            .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments.Length == 1))
-            .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+                .Where(i => i.GetTypeInfo().IsGenericType && i.GenericTypeArguments.Length == 1)
+                .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return enumType?.GenericTypeArguments[0];
 #endif
         }

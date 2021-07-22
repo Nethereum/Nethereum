@@ -1,6 +1,6 @@
+using System;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
-using System;
 
 namespace Nethereum.ABI
 {
@@ -53,9 +53,9 @@ namespace Nethereum.ABI
                 var size = Convert.ToInt32(typeName.Substring(5));
                 if (size == 32)
                     return new Bytes32Type(typeName);
-                else
-                    return new BytesElementaryType(typeName, size);
+                return new BytesElementaryType(typeName, size);
             }
+
             throw new ArgumentException("Unknown type: " + typeName);
         }
 

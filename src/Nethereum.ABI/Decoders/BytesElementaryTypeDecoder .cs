@@ -9,7 +9,7 @@ namespace Nethereum.ABI.Decoders
 
         public BytesElementaryTypeDecoder(int size)
         {
-            this._size = size;
+            _size = size;
         }
 
         public override object Decode(byte[] encoded, Type type)
@@ -18,15 +18,9 @@ namespace Nethereum.ABI.Decoders
 
             var returnArray = encoded.Take(_size).ToArray();
 
-            if (_size == 1 && type == typeof(byte))
-            {
-                return returnArray[0];
-            }
+            if (_size == 1 && type == typeof(byte)) return returnArray[0];
 
-            if (_size == 16 && type == typeof(Guid))
-            {
-                return new Guid(returnArray);
-            }
+            if (_size == 16 && type == typeof(Guid)) return new Guid(returnArray);
 
             return returnArray;
         }
@@ -38,9 +32,9 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            if (_size == 1) return (type == typeof(byte[]) || type == typeof(byte));
-            if (_size == 16) return (type == typeof(byte[]) || type == typeof(Guid));
-            return (type == typeof(byte[]));
+            if (_size == 1) return type == typeof(byte[]) || type == typeof(byte);
+            if (_size == 16) return type == typeof(byte[]) || type == typeof(Guid);
+            return type == typeof(byte[]);
         }
     }
 }

@@ -142,7 +142,7 @@ namespace Nethereum.ABI.UnitTests
             var bytesType = ABIType.CreateABIType("bytes16");
             var guid = Guid.NewGuid();
             var result = bytesType.Encode(guid);
-            Assert.Equal("0x"+guid.ToByteArray().ToHex() + "00000000000000000000000000000000", result.ToHex(true));
+            Assert.Equal("0x" + guid.ToByteArray().ToHex() + "00000000000000000000000000000000", result.ToHex(true));
         }
 
         [Fact]

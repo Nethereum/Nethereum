@@ -31,28 +31,6 @@ namespace Nethereum.ABI.UnitTests
 
     public class FunctionAttributeEncodingTests
     {
-        [Function("test")]
-        public class FunctionIntInput
-        {
-            [Parameter("int")]
-            public int A { get; set; }
-        }
-
-        [Function("test")]
-        [FunctionOutput]
-        public class FunctionMultipleInputOutput
-        {
-            [Parameter("string")]
-            public string A { get; set; }
-
-            [Parameter("uint[20]", "b", 2)]
-            public List<BigInteger> B { get; set; }
-
-            [Parameter("string", 3)]
-            public string C { get; set; }
-        }
-
-
         [Fact]
         public virtual void ShouldDecodeMultipleTypesIncludingDynamicStringAndIntArray()
         {
@@ -100,6 +78,23 @@ namespace Nethereum.ABI.UnitTests
             var result = new FunctionCallEncoder().EncodeRequest(function, "c6888fa1");
 
             Assert.Equal("0x" + "c6888fa1" + paramsEncoded, result);
+        }
+
+        [Function("test")]
+        public class FunctionIntInput
+        {
+            [Parameter("int")] public int A { get; set; }
+        }
+
+        [Function("test")]
+        [FunctionOutput]
+        public class FunctionMultipleInputOutput
+        {
+            [Parameter("string")] public string A { get; set; }
+
+            [Parameter("uint[20]", "b", 2)] public List<BigInteger> B { get; set; }
+
+            [Parameter("string", 3)] public string C { get; set; }
         }
     }
 }
