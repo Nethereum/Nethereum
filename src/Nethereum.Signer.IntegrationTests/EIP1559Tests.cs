@@ -24,7 +24,7 @@ public class EIP1559Test
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        [Fact]
+        //[Fact]
         public async void ShouldCheckFeeHistory()
         {
             //besu
@@ -32,7 +32,7 @@ public class EIP1559Test
             //calavera
             var web3 = new Nethereum.Web3.Web3("http://18.224.51.102:8545/");
             //var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Goerli);
-            var version = await new Web3ClientVersion(web3.Client).SendRequestAsync();
+            var version = await new Web3ClientVersion(web3.Client).SendRequestAsync().ConfigureAwait(false);
 
             var x = new TimePreferenceFeeSuggestionStrategy(web3.Client);
             var fees = await x.SuggestFeesAsync();

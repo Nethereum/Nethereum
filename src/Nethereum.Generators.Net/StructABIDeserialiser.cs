@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Nethereum.ABI.JsonDeserialisation;
 
-
 namespace Nethereum.Generators.Net
 {
     public class StructABIDeserialiser

@@ -4,6 +4,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+// ReSharper disable ConsiderUsingConfigureAwait
 
 namespace Nethereum.Signer.IntegrationTests
 {
