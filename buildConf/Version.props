@@ -6,7 +6,7 @@
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
-    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' ">beta1</RelSuffix>
+    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
     
     <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
     

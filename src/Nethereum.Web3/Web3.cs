@@ -101,7 +101,7 @@ namespace Nethereum.Web3
             return AddressUtil.ConvertToValid20ByteAddress(address);
         }
 
-        private void InitialiseInnerServices()
+        protected virtual void InitialiseInnerServices()
         {
             Eth = new EthApiContractService(Client);
             Processing = new BlockchainProcessingService(Eth);

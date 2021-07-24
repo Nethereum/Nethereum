@@ -3,6 +3,15 @@ del /S *.*.nupkg
 del /S *.*.snupkg
 SET releaseSuffix=
 SET targetNet35=false
+SET projectName=
+
+cd Nethereum.Web3
+SET projectName=Nethereum.Web3.csproj
+CALL :restorepack
+SET projectName=Nethereum.Web3Lite.csproj
+CALL :restorepack
+SET projectName=
+cd ..
 
 cd Nethereum.Hex
 CALL :restorepack
@@ -20,9 +29,6 @@ cd Nethereum.RPC
 CALL :restorepack
 cd ..
 
-cd Nethereum.Web3
-CALL :restorepack
-cd ..
 
 cd Nethereum.StandardToken*
 CALL :restorepack
@@ -140,7 +146,7 @@ xcopy *.snupkg packages /s /y
 EXIT /B %ERRORLEVEL%
 
 :restorepack
-dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
-dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
-dotnet pack -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
+dotnet restore %projectName% /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet build %projectName% -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
+dotnet pack %projectName% -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
 EXIT /B 0

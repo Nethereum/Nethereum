@@ -2,8 +2,8 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Pantheon is the extended Web3 library for Pantheon. including the non-generic RPC API client methods to interact with the Java Ethereum Client (Pantheon) Admin, Debug, Miner, EEA, Clique, IBFT.. </Description>
-    <AssemblyTitle>Nethereum.Pantheon</AssemblyTitle>
+    <Description>Netherum.Besu is the extended Web3 library for Besu. including the non-generic RPC API client methods to interact with the Java Ethereum Client (Besu) Admin, Debug, Miner, EEA, Clique, IBFT.. </Description>
+    <AssemblyTitle>Nethereum.Besu</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Pantheon</AssemblyName>
