@@ -54,19 +54,19 @@ namespace Nethereum.JsonRpc.Client
             }
         }
 
-        protected virtual async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
+        protected virtual Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
         {
             var reqMsg = new RpcRequestMessage(request.Id,
                                                request.Method,
                                                request.RawParameters);
-            return await SendInnerRequestAsync<T>(reqMsg, route).ConfigureAwait(false);
+            return SendInnerRequestAsync<T>(reqMsg, route);
         }
 
-        protected virtual async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
+        protected virtual Task<T> SendInnerRequestAsync<T>(string method, string route = null,
             params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            return await SendInnerRequestAsync<T>(request, route);
+            return SendInnerRequestAsync<T>(request, route);
         }
 
         public virtual async Task SendRequestAsync(RpcRequest request, string route = null)

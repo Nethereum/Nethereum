@@ -8,7 +8,6 @@ namespace Nethereum.Geth
         IAdminDatadir Datadir { get; }
         IAdminNodeInfo NodeInfo { get; }
         IAdminPeers Peers { get; }
-        IAdminSetSolc SetSolc { get; }
         IAdminStartRPC StartRPC { get; }
         IAdminStartWS StartWS { get; }
         IAdminStopRPC StopRPC { get; }

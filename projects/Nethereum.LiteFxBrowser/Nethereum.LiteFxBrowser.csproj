@@ -1,0 +1,77 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);LITE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <PackageReference Include="Common.Logging.Core">
+      <Version>3.4.1</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+  <Compile Include="..\..\src\Nethereum.Hex\**\*.cs" Exclude="..\..\src\Nethereum.Hex\Properties\**; ..\..\src\Nethereum.Hex\bin\**; ..\..\src\Nethereum.Hex\obj\**">
+    <Link>Hex\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.ABI\**\*.cs" Exclude="..\..\src\Nethereum.ABI\Properties\**; ..\..\src\Nethereum.ABI\bin\**; ..\..\src\Nethereum.ABI\obj\**">
+    <Link>ABI\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.RPC\**\*.cs" Exclude="..\..\src\Nethereum.RPC\Properties\**; ..\..\src\Nethereum.RPC\bin\**; ..\..\src\Nethereum.RPC\obj\**">
+    <Link>RPC\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.Web3\**\*.cs" Exclude="..\..\src\Nethereum.Web3\Properties\**; ..\..\src\Nethereum.Web3\bin\**; ..\..\src\Nethereum.Web3\obj\**">
+    <Link>Web3\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.Model\**\*.cs" Exclude="..\..\src\Nethereum.Model\Properties\**; ..\..\src\Nethereum.Model\bin\**; ..\..\src\Nethereum.Model\obj\**">
+    <Link>Model\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\**\*.cs" Exclude="..\..\src\Nethereum.StandardTokenEIP20\Properties\**; ..\..\src\Nethereum.StandardTokenEIP20\bin\**; ..\..\src\Nethereum.StandardTokenEIP20\obj\**">
+    <Link>EIP20\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.ENS\**\*.cs" Exclude="..\..\src\Nethereum.ENS\Properties\**; ..\..\src\Nethereum.ENS\bin\**; ..\..\src\Nethereum.ENS\obj\**">
+    <Link>ENS\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.StandardNonFungibleTokenERC721\**\*.cs" Exclude="..\..\src\Nethereum.StandardNonFungibleTokenERC721\Properties\**; ..\..\src\Nethereum.StandardNonFungibleTokenERC721\bin\**; ..\..\src\Nethereum.StandardNonFungibleTokenERC721\obj\**">
+    <Link>ERC721\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.JsonRpc.Client\**\*.cs" Exclude="..\..\src\Nethereum.JsonRpc.Client\Properties\**; ..\..\src\Nethereum.JsonRpc.Client\bin\**; ..\..\src\Nethereum.JsonRpc.Client\obj\**">
+    <Link>NethereumJsonRpc\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.JsonRpc.RpcClient\**\*.cs" Exclude="..\..\src\Nethereum.JsonRpc.RpcClient\Properties\**; ..\..\src\Nethereum.JsonRpc.RpcClient\bin\**; ..\..\src\Nethereum.JsonRpc.RpcClient\obj\**">
+    <Link>NethereumJsonRpcClient\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.Contracts\**\*.cs" Exclude="..\..\src\Nethereum.Contracts\Properties\**; ..\..\src\Nethereum.Contracts\bin\**; ..\..\src\Nethereum.Contracts\obj\**">
+    <Link>Contracts\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.Util\**\*.cs" Exclude="..\..\src\Nethereum.Util\Properties\**; ..\..\src\Nethereum.Util\bin\**; ..\..\src\Nethereum.Util\obj\**">
+    <Link>Util\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.RLP\**\*.cs" Exclude="..\..\src\Nethereum.RLP\Properties\**; ..\..\src\Nethereum.RLP\bin\**; ..\..\src\Nethereum.RLP\obj\**">
+    <Link>RLP\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+
+  <Compile Include="..\..\src\Nethereum.BlockchainProcessing\**\*.cs" Exclude="..\..\src\Nethereum.BlockchainProcessing\Properties\**; ..\..\src\Nethereum.BlockchainProcessing\bin\**; ..\..\src\Nethereum.BlockchainProcessing\obj\**">
+    <Link>BlockchainProcessing\%(RecursiveDir)%(FileName)%(Extension)</Link>
+  </Compile>
+</ItemGroup>
+</Project>

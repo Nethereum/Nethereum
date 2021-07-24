@@ -894,7 +894,6 @@ namespace Nethereum.Util.Keccak
             return HaveSameContents(a, b);
         }
 
-        [CLSCompliantAttribute(false)]
         public static bool AreEqual(uint[] a, uint[] b)
         {
             if (a == b)

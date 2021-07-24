@@ -25,11 +25,10 @@ namespace BuildProjectFile
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Util", "Util"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Signer", "Signer"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
-            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Uport", "Uport"));
-		    stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Parity", "Parity"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Parity", "Parity"));
 		    stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Accounts", "Accounts"));
 			stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.BlockchainProcessing", "BlockchainProcessing"));
-			stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Pantheon", "Pantheon"));
+			stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Besu", "Besu"));
 			stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RSK", "RSK"));
             GenerateFile("Nethereum.Portable\\Nethereum.Portable.csproj", fileTemplatePortable1, fileTemplatePortable2, stringBuilder.ToString());
         }

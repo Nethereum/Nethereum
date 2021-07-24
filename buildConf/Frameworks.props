@@ -37,13 +37,13 @@
     <UnityFrameworks>net461;net35;net472</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
-    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1;netcoreapp3.1</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</IpcWebSocketsFrameworks>
 	
-    <ReactiveFrameworks>net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1</ReactiveFrameworks>
+    <ReactiveFrameworks>net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ReactiveFrameworks>

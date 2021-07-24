@@ -1,0 +1,160 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\liteFxOutput\Nethereum.LiteFxTests\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+    <PackageReference Include="Moq" Version="4.10.0" />
+    <PackageReference Include="IPLD.ContentIdentifier" Version="1.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="Multiformats.Codec" Version="1.1.2" />
+    <PackageReference Include="Multiformats.Hash" Version="1.5.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+    <PackageReference Include="Microsoft.Reactive.Testing" Version="4.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+  
+    <Compile Remove="Nethereum.Besu.IntegrationTests\**" />
+    <Compile Remove="Nethereum.EVM.UnitTests\**" />
+    <Compile Remove="Nethereum.Geth.IntegrationTests\**" />
+    <Compile Remove="Nethereum.Geth.Tests\**" />
+    <Compile Remove="Nethereum.GSN.UnitTests\**" />
+    <Compile Remove="Nethereum.Parity.IntegrationTests\**" />
+    <Compile Remove="Nethereum.Quorum.Tests\**" />
+    <Compile Remove="Nethereum.RPC.IntegrationTests\**" />
+    <Compile Remove="Nethereum.RPC.Sample\**" />
+    <Compile Remove="Nethereum.Signer.Ledger.IntegrationTests\**" />
+    <None Remove="Nethereum.Besu.IntegrationTests\**" />
+    
+    <None Remove="Nethereum.EVM.UnitTests\**" />
+
+    <None Remove="Nethereum.Geth.IntegrationTests\**" />
+
+    <None Remove="Nethereum.Geth.Tests\**" />
+
+    <None Remove="Nethereum.GSN.UnitTests\**" />
+  
+
+    <None Remove="Nethereum.Parity.IntegrationTests\**" />
+
+    <None Remove="Nethereum.Quorum.Tests\**" />
+
+    <None Remove="Nethereum.RPC.IntegrationTests\**" />
+
+    <None Remove="Nethereum.RPC.Sample\**" />
+
+    <EmbeddedResource Remove="Nethereum.Besu.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.EVM.UnitTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.Geth.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.Geth.Tests\**" />
+
+    <EmbeddedResource Remove="Nethereum.GSN.UnitTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.Parity.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.Quorum.Tests\**" />
+
+    <EmbeddedResource Remove="Nethereum.RPC.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.RPC.Sample\**" />
+
+    <EmbeddedResource Remove="Nethereum.Signer.Ledger.IntegrationTests\**" />
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+   
+    <Compile Remove="Nethereum.ABI.UnitTests\Properties\**;Nethereum.ABI.UnitTests\bin\**;Nethereum.ABI.UnitTests\obj\**" />
+    <None Remove="Nethereum.ABI.UnitTests\Properties\**;Nethereum.ABI.UnitTests\bin\**;Nethereum.ABI.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.Accounts.IntegrationTests\Properties\**;Nethereum.Accounts.IntegrationTests\bin\**;Nethereum.Accounts.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.Accounts.IntegrationTests\Properties\**;Nethereum.Accounts.IntegrationTests\bin\**;Nethereum.Accounts.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.Contracts.IntegrationTests\Properties\**;Nethereum.Contracts.IntegrationTests\bin\**;Nethereum.Contracts.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.Contracts.IntegrationTests\Properties\**;Nethereum.Contracts.IntegrationTests\bin\**;Nethereum.Contracts.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.Contracts.UnitTests\Properties\**;Nethereum.Contracts.UnitTests\bin\**;Nethereum.Contracts.UnitTests\obj\**" />
+    <None Remove="Nethereum.Contracts.UnitTests\Properties\**;Nethereum.Contracts.UnitTests\bin\**;Nethereum.Contracts.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.HdWallet.IntegrationTests\Properties\**;Nethereum.HdWallet.IntegrationTests\bin\**;Nethereum.HdWallet.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.HdWallet.IntegrationTests\Properties\**;Nethereum.HdWallet.IntegrationTests\bin\**;Nethereum.HdWallet.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.HdWallet.UnitTests\Properties\**;Nethereum.HdWallet.UnitTests\bin\**;Nethereum.HdWallet.UnitTests\obj\**" />
+    <None Remove="Nethereum.HdWallet.UnitTests\Properties\**;Nethereum.HdWallet.UnitTests\bin\**;Nethereum.HdWallet.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.KeyStore.UnitTests\Properties\**;Nethereum.KeyStore.UnitTests\bin\**;Nethereum.KeyStore.UnitTests\obj\**" />
+    <None Remove="Nethereum.KeyStore.UnitTests\Properties\**;Nethereum.KeyStore.UnitTests\bin\**;Nethereum.KeyStore.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.BlockchainProcessing.UnitTests\Properties\**;Nethereum.BlockchainProcessing.UnitTests\bin\**;Nethereum.BlockchainProcessing.UnitTests\obj\**" />
+    <None Remove="Nethereum.BlockchainProcessing.UnitTests\Properties\**;Nethereum.BlockchainProcessing.UnitTests\bin\**;Nethereum.BlockchainProcessing.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.RLP.UnitTests\Properties\**;Nethereum.RLP.UnitTests\bin\**;Nethereum.RLP.UnitTests\obj\**" />
+    <None Remove="Nethereum.RLP.UnitTests\Properties\**;Nethereum.RLP.UnitTests\bin\**;Nethereum.RLP.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.RPC.UnitTests\Properties\**;Nethereum.RPC.UnitTests\bin\**;Nethereum.RPC.UnitTests\obj\**" />
+    <None Remove="Nethereum.RPC.UnitTests\Properties\**;Nethereum.RPC.UnitTests\bin\**;Nethereum.RPC.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.Rsk.IntegrationTests\Properties\**;Nethereum.Rsk.IntegrationTests\bin\**;Nethereum.Rsk.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.Rsk.IntegrationTests\Properties\**;Nethereum.Rsk.IntegrationTests\bin\**;Nethereum.Rsk.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.Signer.IntegrationTests\Properties\**;Nethereum.Signer.IntegrationTests\bin\**;Nethereum.Signer.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.Signer.IntegrationTests\Properties\**;Nethereum.Signer.IntegrationTests\bin\**;Nethereum.Signer.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.Signer.UnitTests\Properties\**;Nethereum.Signer.UnitTests\bin\**;Nethereum.Signer.UnitTests\obj\**" />
+    <None Remove="Nethereum.Signer.UnitTests\Properties\**;Nethereum.Signer.UnitTests\bin\**;Nethereum.Signer.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.ENS.IntegrationTests\Properties\**;Nethereum.ENS.IntegrationTests\bin\**;Nethereum.ENS.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.ENS.IntegrationTests\Properties\**;Nethereum.ENS.IntegrationTests\bin\**;Nethereum.ENS.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\Properties\**;Nethereum.StandardTokenEIP20.IntegrationTests\bin\**;Nethereum.StandardTokenEIP20.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.StandardTokenEIP20.IntegrationTests\Properties\**;Nethereum.StandardTokenEIP20.IntegrationTests\bin\**;Nethereum.StandardTokenEIP20.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.XUnitEthereumClients\Properties\**;Nethereum.XUnitEthereumClients\bin\**;Nethereum.XUnitEthereumClients\obj\**" />
+    <None Remove="Nethereum.XUnitEthereumClients\Properties\**;Nethereum.XUnitEthereumClients\bin\**;Nethereum.XUnitEthereumClients\obj\**" />
+
+    <Compile Remove=" Nethereum.RPC.Reactive.UnitTests\Properties\**; Nethereum.RPC.Reactive.UnitTests\bin\**; Nethereum.RPC.Reactive.UnitTests\obj\**" />
+    <None Remove=" Nethereum.RPC.Reactive.UnitTests\Properties\**; Nethereum.RPC.Reactive.UnitTests\bin\**; Nethereum.RPC.Reactive.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.Util.UnitTests\Properties\**;Nethereum.Util.UnitTests\bin\**;Nethereum.Util.UnitTests\obj\**" />
+    <None Remove="Nethereum.Util.UnitTests\Properties\**;Nethereum.Util.UnitTests\bin\**;Nethereum.Util.UnitTests\obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Nethereum.LiteFx.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

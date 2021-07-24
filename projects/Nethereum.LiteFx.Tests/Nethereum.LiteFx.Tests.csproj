@@ -1,0 +1,108 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="Common.Logging" Version="3.4.1" />
+    <PackageReference Include="Moq" Version="4.10.0" />
+    <PackageReference Include="IPLD.ContentIdentifier" Version="1.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="Multiformats.Codec" Version="1.1.2" />
+    <PackageReference Include="Multiformats.Hash" Version="1.5.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Nethereum.ABI.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.ABI.UnitTests\Properties\**; ..\..\src\Nethereum.ABI.UnitTests\bin\**; ..\..\src\Nethereum.ABI.UnitTests\obj\**">
+      <Link>ABIUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Accounts.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.Accounts.IntegrationTests\Properties\**; ..\..\src\Nethereum.Accounts.IntegrationTests\bin\**; ..\..\src\Nethereum.Accounts.IntegrationTests\obj\**">
+      <Link>AccountInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Contracts.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.Contracts.IntegrationTests\Properties\**; ..\..\src\Nethereum.Contracts.IntegrationTests\bin\**; ..\..\src\Nethereum.Contracts.IntegrationTests\obj\**">
+      <Link>ContractsInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Contracts.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.Contracts.UnitTests\Properties\**; ..\..\src\Nethereum.Contracts.UnitTests\bin\**; ..\..\src\Nethereum.Contracts.UnitTests\obj\**">
+      <Link>ContractsUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.HdWallet.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.HdWallet.IntegrationTests\Properties\**; ..\..\src\Nethereum.HdWallet.IntegrationTests\bin\**; ..\..\src\Nethereum.HdWallet.IntegrationTests\obj\**">
+      <Link>HdWalletInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.HdWallet.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.HdWallet.UnitTests\Properties\**; ..\..\src\Nethereum.HdWallet.UnitTests\bin\**; ..\..\src\Nethereum.HdWallet.UnitTests\obj\**">
+      <Link>HdWalletUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.KeyStore.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.KeyStore.UnitTests\Properties\**; ..\..\src\Nethereum.KeyStore.UnitTests\bin\**; ..\..\src\Nethereum.KeyStore.UnitTests\obj\**">
+      <Link>KeyStoreUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.BlockchainProcessing.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.BlockchainProcessing.UnitTests\Properties\**; ..\..\src\Nethereum.BlockchainProcessing.UnitTests\bin\**; ..\..\src\Nethereum.BlockchainProcessing.UnitTests\obj\**">
+      <Link>BlockchainProcessingUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.RLP.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.RLP.UnitTests\Properties\**; ..\..\src\Nethereum.RLP.UnitTests\bin\**; ..\..\src\Nethereum.RLP.UnitTests\obj\**">
+      <Link>RLPUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.RPC.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.RPC.UnitTests\Properties\**; ..\..\src\Nethereum.RPC.UnitTests\bin\**; ..\..\src\Nethereum.RPC.UnitTests\obj\**">
+      <Link>RPCUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Rsk.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.Rsk.IntegrationTests\Properties\**; ..\..\src\Nethereum.Rsk.IntegrationTests\bin\**; ..\..\src\Nethereum.Rsk.IntegrationTests\obj\**">
+      <Link>RSKInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Signer.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.Signer.IntegrationTests\Properties\**; ..\..\src\Nethereum.Signer.IntegrationTests\bin\**; ..\..\src\Nethereum.Signer.IntegrationTests\obj\**">
+      <Link>SignerInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Signer.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.Signer.UnitTests\Properties\**; ..\..\src\Nethereum.Signer.UnitTests\bin\**; ..\..\src\Nethereum.Signer.UnitTests\obj\**">
+      <Link>SignerUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.ENS.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.ENS.IntegrationTests\Properties\**; ..\..\src\Nethereum.ENS.IntegrationTests\bin\**; ..\..\src\Nethereum.ENS.IntegrationTests\obj\**">
+      <Link>ENSInt\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\**\*.cs" Exclude="..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\Properties\**; ..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\bin\**; ..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\obj\**">
+      <Link>ERC20Int\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.XUnitEthereumClients\**\*.cs" Exclude="..\..\src\Nethereum.XUnitEthereumClients\Properties\**; ..\..\src\Nethereum.XUnitEthereumClients\bin\**; ..\..\src\Nethereum.XUnitEthereumClients\obj\**">
+      <Link>XUnitEthereumClients\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="..\..\src\Nethereum.Util.UnitTests\**\*.cs" Exclude="..\..\src\Nethereum.Util.UnitTests\Properties\**; ..\..\src\Nethereum.Util.UnitTests\bin\**; ..\..\src\Nethereum.Util.UnitTests\obj\**">
+      <Link>UtilUnit\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\..\src\Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="..\..\src\Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="..\..\src\Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\src\Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="..\..\src\Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="..\..\src\Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
+    <None Include="..\..\src\Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.LiteFx\Nethereum.LiteFx.csproj" />
+  </ItemGroup>
+</Project>

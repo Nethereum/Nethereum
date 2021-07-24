@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1;net461;netcoreapp2.1</TargetFrameworks>
+    <AssemblyName>Nethereum.Geth.IntegrationTests</AssemblyName>
+    <PackageId>Nethereum.Geth.IntegrationTests</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="VMStackParsing\TestData\StackTrace_Calls.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_Creations.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_DelegateCalls.json" />
+    <None Remove="VMStackParsing\TestData\StackTrace_SelfDestruct.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="test-settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_Calls.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_Creations.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_DelegateCalls.json" />
+    <EmbeddedResource Include="VMStackParsing\TestData\StackTrace_SelfDestruct.json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>

@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Nethereum.ENS.PublicResolver.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Util;
 
 namespace Nethereum.ENS
 {
