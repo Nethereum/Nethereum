@@ -88,9 +88,9 @@ function buildStructsFromTuple(item: any): Nethereum.Generators.Model.StructABI[
 }
 
 function buildFunctionParameters(items: any): Nethereum.Generators.Model.ParameterABI[] {
-    var parameterOrder = 0;
-    var parameters = [];
-    for (var i = 0, len = items.length; i < len; i++) {
+    let parameterOrder = 0;
+    const parameters = [];
+    for (let i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
             var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, getStructTypeName(items[i]));
@@ -103,9 +103,9 @@ function buildFunctionParameters(items: any): Nethereum.Generators.Model.Paramet
 }
 
 function buildEventParameters(items: any): Nethereum.Generators.Model.ParameterABI[] {
-    var parameterOrder = 0;
-    var parameters = [];
-    for (var i = 0, len = items.length; i < len; i++) {
+    let parameterOrder = 0;
+    const parameters = [];
+    for (let i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
            
@@ -121,17 +121,17 @@ function buildEventParameters(items: any): Nethereum.Generators.Model.ParameterA
 
 export function buildContract(abiStr: string): Nethereum.Generators.Model.ContractABI {
     const abi = JSON.parse(abiStr);
-    let functions = [];
-    let events = [];
-    let structs :Nethereum.Generators.Model.StructABI[] = [];
+    const functions = [];
+    const events = [];
+    const structs :Nethereum.Generators.Model.StructABI[] = [];
     let constructor = new constructorAbi();
-    let contract = new contractAbi();
+    const contract = new contractAbi();
 
-    for (var i = 0, len = abi.length; i < len; i++) {
+    for (let i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
             functions.push(buildFunction(abi[i], contract));
 
-            var temp = buildStructsFromParameters(abi[i].outputs);
+            const temp = buildStructsFromParameters(abi[i].outputs);
             for (const item of temp) {
                 if (!structs.some(x => x.get_Name() === item.get_Name())) {
                     structs.push(item);
@@ -147,7 +147,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
             constructor = buildConstructor(abi[i]);
         }
 
-        var temp = buildStructsFromParameters(abi[i].inputs);
+        const temp = buildStructsFromParameters(abi[i].inputs);
         for (const item of temp) {
             if (!structs.some(x => x.get_Name() === item.get_Name())) {
                 structs.push(item);
