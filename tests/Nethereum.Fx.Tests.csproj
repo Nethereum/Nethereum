@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OutputPath>..\liteFxOutput\Nethereum.LiteFxTests\</OutputPath>
+    <OutputPath>..\FxOutput\Nethereum.Fx.Tests\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -149,7 +149,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Nethereum.LiteFx.csproj" />
+    <ProjectReference Include="..\src\Nethereum.Fx.csproj" />
   </ItemGroup>
 
   <ItemGroup>

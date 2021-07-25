@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.LiteFx", "src\Nethereum.LiteFx.csproj", "{2BC13ADC-AB5A-4DD2-9483-D4111DB5CEE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Fx", "src\Nethereum.Fx.csproj", "{2BC13ADC-AB5A-4DD2-9483-D4111DB5CEE4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.LiteFx.Tests", "tests\Nethereum.LiteFx.Tests.csproj", "{DC7E1012-91A3-408C-95E7-10D697DC3A1F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Fx.Tests", "tests\Nethereum.Fx.Tests.csproj", "{DC7E1012-91A3-408C-95E7-10D697DC3A1F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.LiteFxBrowser", "liteFxOutput\Nethereum.LiteFxBrowser\Nethereum.LiteFxBrowser.csproj", "{CB269109-AF81-4F43-BA48-CFF8C6B0A121}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.LiteFx", "FxOutput\Nethereum.LiteFx\Nethereum.LiteFx.csproj", "{CB269109-AF81-4F43-BA48-CFF8C6B0A121}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

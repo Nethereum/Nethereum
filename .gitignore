@@ -34,8 +34,8 @@ src/compiledlibraries/net472dlls/
 src/compiledlibraries/net461dllsAOT/
 src/compiledlibraries/net472dllsAOT/
 src/compiledlibraries/unitynet35dlls/
-liteFxOutput/Nethereum.LiteFx/**
-liteFxOutput/Nethereum.LiteFxTests/**
+FxOutput/Nethereum.Fx/**
+FxOutput/Nethereum.Fx.Tests/**
 
 # Visual Studio 2015 cache/options directory
 .vs/

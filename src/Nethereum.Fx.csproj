@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputPath>..\liteFxOutput\Nethereum.LiteFx\</OutputPath>
+    <OutputPath>..\FxOutput\Nethereum.Fx\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
