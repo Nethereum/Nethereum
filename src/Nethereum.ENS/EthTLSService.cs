@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 using Nethereum.ENS.ETHRegistrarController.ContractDefinition;
-using Nethereum.ENS.PublicResolver.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Web3;
 
 namespace Nethereum.ENS
 {
