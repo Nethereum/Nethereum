@@ -1,5 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
+
+
+  <PropertyGroup>
+    <Description>Nethereum Fx Lite, a single package that combining a small set of Nethereum libraries (for simple portability) not including crypto dependencies to be used with external signers (Web3, ABI, Contracts, RPC, RLP, ENS, ERC20, ERC721) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Description>
+    <Summary>Nethereum Fx Lite, a single package that combining a small set of Nethereum libraries (for simple portability) not including crypto dependencies to be used with external signers (Web3, ABI, Contracts, RPC, RLP, ERC20, ERC721) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Summary>
+    <AssemblyTitle>Nethereum.LiteFx</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <AssemblyName>Nethereum.LiteFx</AssemblyName>
+    <PackageId>Nethereum.LiteFx</PackageId>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>

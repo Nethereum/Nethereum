@@ -5,6 +5,9 @@ SET releaseSuffix=
 SET targetNet35=false
 SET projectName=
 
+SET projectName=Nethereum.Fx.csproj
+CALL :restorepack
+
 cd Nethereum.Web3
 SET projectName=Nethereum.Web3.csproj
 CALL :restorepack
@@ -132,7 +135,7 @@ cd..
 
 cd Nethereum.Signer.EIP712
 CALL :restorepack
-cd.
+cd..
 
 setlocal
 set DIR=%~dp0

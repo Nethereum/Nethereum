@@ -7,8 +7,6 @@
    <RepositoryType>git</RepositoryType>
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
    <Copyright>Nethereum.com (Juan Blanco) 2015-2021</Copyright>
-   <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-   <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.1' ">$(PackageTargetFallback);dotnet52</PackageTargetFallback>
    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -21,7 +19,7 @@
   <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 </PropertyGroup>
 <ItemGroup>
-  <None Include="..\..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+  <None Condition="Exists('..\..\LICENSE.md')" Include="..\..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
 </ItemGroup>
 
 </Project>

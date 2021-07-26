@@ -1,5 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum Fx, a single package combining most of the main Nethereum libraries (Web3, ABI, Contracts, Accounts, Signers, RPC, WebSockets, IPC, RLP, HdWallet, Geth, Parity, Besu, Quorum, KeyStore, etc) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Description>
+    <Summary>Nethereum Fx, a single package that most of the main Nethereum libraries (Web3, ABI, Contracts, Accounts, Signers, RPC, WebSockets, IPC, RLP, HdWallet, Geth, Parity, Besu, Quorum, KeyStore, etc) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Summary>
+    <AssemblyTitle>Nethereum.Fx</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <AssemblyName>Nethereum.Fx</AssemblyName>
+    <PackageId>Nethereum.Fx</PackageId>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>

@@ -1,6 +1,6 @@
 ﻿{
-  "version": "3.7.0",
-  "description": "Nethereum.Portable includes all the Nethereum libraries in a single package Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum and StardardToken",
+  "version": "4.0.0",
+  "description": "Nethereum.Portable is a NETPortable library including most of the supported libraries in a single package. Including Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum, Besu and ERC20",
   "authors": [
     "Juan Blanco"
   ],
@@ -13,7 +13,7 @@
       "Blockchain",
       "Crypto 2.0"
     ],
-    "summary": "Nethereum.Portable includes all the Nethereum libraries in a single package Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum and StardardToken",
+    "summary": "Nethereum.Portable is a NETPortable library including most of the supported libraries in a single package. Including Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum, Besu and ERC20",
     "repository": {
       "type": "git",
       "url": "https://github.com/Nethereum/Nethereum"
