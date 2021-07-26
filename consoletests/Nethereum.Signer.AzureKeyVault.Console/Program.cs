@@ -59,10 +59,39 @@ namespace Nethereum.Signer.AzureKeyVault.Console
             var externalAccount = new ExternalAccount(signer, 1);
             externalAccount.InitialiseAsync().Wait();
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
+            
+            
             var signature2 = externalAccount.TransactionManager.SignTransactionAsync(transactionInput).Result;
             var publicKeyRecovered2 = TransactionVerificationAndRecovery.GetPublicKey(signature2);
+            var transactionFromSignature = TransactionFactory.CreateTransaction(signature2);
 
+            System.Console.WriteLine("Recovered public key");
             System.Console.WriteLine(publicKeyRecovered2.ToHex());
+            System.Console.WriteLine("Recovered transaction Type");
+            System.Console.WriteLine(transactionFromSignature.TransactionType.ToString());
+           
+            
+            System.Console.WriteLine("Signing EIP1559");
+
+
+            var transferEip1559 = new TransferFunction();
+            transferEip1559.To = "0x1996a57077877D38e18A1BE44A55100D77b8fA1D";
+            transferEip1559.FromAddress = publicKeyRecovered.GetPublicAddress();
+            transferEip1559.Value = 1;
+            transferEip1559.Nonce = 1;
+            transferEip1559.MaxFeePerGas = 1000;
+            transferEip1559.MaxPriorityFeePerGas = 999;
+            transferEip1559.Gas = 1000;
+
+            var transactionInputEip1559 = transferEip1559.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
+            var signature3 = externalAccount.TransactionManager.SignTransactionAsync(transactionInputEip1559).Result;
+            var publicKeyRecovered3 = TransactionVerificationAndRecovery.GetPublicKey(signature3);
+            var transactionFromSignatureEIP1559 = TransactionFactory.CreateTransaction(signature3);
+
+            System.Console.WriteLine("Recovered public key");
+            System.Console.WriteLine(publicKeyRecovered3.ToHex());
+            System.Console.WriteLine("Recovered transaction Type");
+            System.Console.WriteLine(transactionFromSignatureEIP1559.TransactionType.ToString());
             System.Console.ReadLine();
 
         }
