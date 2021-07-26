@@ -6,9 +6,9 @@
     <AssemblyTitle>Nethereum.Besu</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
-    <AssemblyName>Nethereum.Pantheon</AssemblyName>
-    <PackageId>Nethereum.Pantheon</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Pantheon</PackageTags>
+    <AssemblyName>Nethereum.Besu</AssemblyName>
+    <PackageId>Nethereum.Besu</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Besu</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
