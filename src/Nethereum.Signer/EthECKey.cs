@@ -112,7 +112,7 @@ namespace Nethereum.Signer
             var keyGenParam = new KeyGenerationParameters(secureRandom, 256);
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
-            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArray();
+            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArrayUnsigned();
             if (privateBytes.Length != 32)
                 return GenerateKey();
             return new EthECKey(privateBytes, true);
@@ -124,7 +124,7 @@ namespace Nethereum.Signer
             var keyGenParam = new KeyGenerationParameters(SecureRandom, 256);
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
-            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArray();
+            var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArrayUnsigned();
             if (privateBytes.Length != 32)
                 return GenerateKey();
             return new EthECKey(privateBytes, true);
