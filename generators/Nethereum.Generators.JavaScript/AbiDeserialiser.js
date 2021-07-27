@@ -118,13 +118,13 @@ function buildContract(abiStr) {
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
             functions.push(buildFunction(abi[i], contract));
-            var temp = buildStructsFromParameters(abi[i].outputs);
+            var temp_3 = buildStructsFromParameters(abi[i].outputs);
             var _loop_1 = function (item) {
                 if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
                     structs.push(item);
                 }
             };
-            for (var _i = 0, temp_1 = temp; _i < temp_1.length; _i++) {
+            for (var _i = 0, temp_1 = temp_3; _i < temp_1.length; _i++) {
                 var item = temp_1[_i];
                 _loop_1(item);
             }

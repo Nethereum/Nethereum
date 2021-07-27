@@ -13,13 +13,13 @@ var basePath = "codeGenNodeTest";
 var projectName = "Nethereum.ERC721";
 
 //Csharp 0, Vb 1, Fsharp 3
-codegen.generateNetStandardClassLibrary(projectName, basePath, 0);
+codegen.generateNetStandardClassLibrary(projectName, basePath, 1);
 
 codegen.generateAllClasses(abi,
     contractByteCode,
     contractName,
     baseNamespace,
     basePath,
-    0);
+    1);
 
 

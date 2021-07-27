@@ -462,7 +462,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "3.8.0";
+        this.NethereumWeb3Version = "4.0.0";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
