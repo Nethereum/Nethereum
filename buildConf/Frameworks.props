@@ -7,6 +7,7 @@
     <TargetNetStandard>false</TargetNetStandard>
     <TargetUnityNet461AOT>false</TargetUnityNet461AOT>
     <TargetUnityNet472AOT>false</TargetUnityNet472AOT>
+    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' != 'netstandard1.1'">1.6.1</NetStandardImplicitPackageVersion>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
