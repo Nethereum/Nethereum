@@ -7,7 +7,7 @@
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
    <Description>Code generation of Nethereum integration classes using the Solidity Abi and Bin</Description>
    <Copyright>Juan Blanco</Copyright>
-   <Version>4.0.0</Version>
+   <Version>4.0.1</Version>
    <Authors>Juan Blanco,Nethereum contributors</Authors> 
 </PropertyGroup>
 <PropertyGroup>
