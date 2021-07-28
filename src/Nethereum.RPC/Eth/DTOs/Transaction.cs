@@ -4,6 +4,7 @@ using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
+    [DataContract]
     public class Transaction
     {
         /// <summary>

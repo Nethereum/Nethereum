@@ -3,6 +3,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Parity.RPC.Trace.TraceDTOs
 {
+    [DataContract]
     public class TraceFilterDTO
     {
         /// <summary>

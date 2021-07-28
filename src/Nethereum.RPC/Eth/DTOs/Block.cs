@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
+    [DataContract]
     public class Block
     {
         /// <summary>

@@ -5,6 +5,7 @@ namespace Nethereum.RPC.Eth.DTOs
     /// <summary>
     ///     Block including just the transaction hashes
     /// </summary>
+    [DataContract]
     public class BlockWithTransactionHashes : Block
     {
         /// <summary>

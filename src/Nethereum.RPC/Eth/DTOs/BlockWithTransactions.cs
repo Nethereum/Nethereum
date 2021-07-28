@@ -5,6 +5,7 @@ namespace Nethereum.RPC.Eth.DTOs
     /// <summary>
     ///     Block including transaction objects
     /// </summary>
+    [DataContract]
     public class BlockWithTransactions : Block
     {
         /// <summary>

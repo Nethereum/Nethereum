@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Besu.RPC.EEA.DTOs
 {
+    [DataContract]
     public class EeaTransactionReceipt
     {
         // <summary>
