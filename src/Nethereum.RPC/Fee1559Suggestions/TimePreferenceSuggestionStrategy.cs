@@ -18,7 +18,8 @@ namespace Nethereum.RPC.Fee1559Suggestions
     /// This allows for more sophisticated suggestions with a variable width(exponentially weighted) base fee time window.
     /// The window width corresponds to the time preference of the user.
     /// The underlying assumption is that price fluctuations over a given past time period indicate the probability of similar price levels being re-tested by the market over a similar length future time period.
-    /// This is a port of Felfodi Zsolt example https://github.com/zsfelfoldi/ethereum-docs/blob/master/eip1559/feeHistory_example.js
+    /// This is a port of Felfodi Zsolt example https://github.com/zsfelfoldi/feehistory
+    /// Original: https://github.com/zsfelfoldi/ethereum-docs/blob/master/eip1559/feeHistory_example.js
     /// </summary>
     public class TimePreferenceFeeSuggestionStrategy:IFee1559SuggestionStrategy
     {
@@ -26,7 +27,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         public double SampleMax { get; set; }  = 0.3;
         public int MaxTimeFactor { get; set; } = 15;
         public double ExtraTipRatio { get; set; } = 0.25;
-        public BigInteger FallbackTip { get; set; } = 5000000000;
+        public BigInteger FallbackTip { get; set; } = 2000000000;
 
         public TimePreferenceFeeSuggestionStrategy()
         {
@@ -72,7 +73,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 if (blockCount > 0)
                 {
                     // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
-                    var feeHistory = await ethFeeHistory.SendRequestAsync(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 10 }).ConfigureAwait(false);
+                    var feeHistory = await ethFeeHistory.SendRequestAsync(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 0 }).ConfigureAwait(false);
                     for (var i = 0; i < feeHistory.Reward.Length; i++)
                     {
                         rewards.Add(feeHistory.Reward[i][0]);
@@ -261,13 +262,13 @@ public static class Comparer
 
 
 
-        // maxBlockCount returns the number of consecutive blocks suitable for tip suggestion (gasUsedRatio between 0.1 and 0.9).
+        // maxBlockCount returns the number of consecutive blocks suitable for tip suggestion (gasUsedRatio non-zero and not higher than 0.9).
         public int MaxBlockCount(decimal[] gasUsedRatio, int ptr, int needBlocks)
         {
             int blockCount = 0;
             while (needBlocks > 0 && ptr >= 0)
             {
-                if (gasUsedRatio[ptr] < (decimal) 0.1 || gasUsedRatio[ptr] > (decimal) 0.9)
+                if (gasUsedRatio[ptr] == 0 || gasUsedRatio[ptr] > (decimal) 0.9)
                 {
                     break;
                 }

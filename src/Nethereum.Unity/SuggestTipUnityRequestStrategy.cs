@@ -32,7 +32,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 if (blockCount > 0)
                 {
                     // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
-                    yield return _ethFeeHistory.SendRequest(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 10 });
+                    yield return _ethFeeHistory.SendRequest(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 0 });
 
                     if (_ethFeeHistory.Exception == null)
                     {
