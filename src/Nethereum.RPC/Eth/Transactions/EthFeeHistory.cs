@@ -12,6 +12,8 @@ namespace Nethereum.RPC.Eth.Transactions
     /// </summary>
     public class EthFeeHistory : RpcRequestResponseHandler<FeeHistoryResult>, IEthFeeHistory
     {
+        public static bool UseBlockCountAsNumber { get; set; } = true;
+
         public EthFeeHistory(IClient client) : base(client, ApiMethods.eth_feeHistory.ToString())
         {
         }
@@ -29,7 +31,15 @@ namespace Nethereum.RPC.Eth.Transactions
             ValidateBlockCountRange(blockCount);
             if (highestBlockNumber == null) throw new ArgumentNullException(nameof(highestBlockNumber));
             ValidateRewardPercentiles(rewardPercentiles);
-            return base.SendRequestAsync(id, blockCount, highestBlockNumber, rewardPercentiles);
+            
+            if (!UseBlockCountAsNumber)
+            {
+                return base.SendRequestAsync(id, blockCount, highestBlockNumber, rewardPercentiles);
+            }
+            else
+            {
+                return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+            }
         }
 
         private static void ValidateBlockCountRange(BigInteger blockCount)
@@ -64,7 +74,16 @@ namespace Nethereum.RPC.Eth.Transactions
             ValidateBlockCountRange(blockCount);
             if (highestBlockNumber == null) throw new ArgumentNullException(nameof(highestBlockNumber));
             ValidateRewardPercentiles(rewardPercentiles);
-            return base.BuildRequest(id, blockCount, highestBlockNumber, rewardPercentiles);
+
+            if (!UseBlockCountAsNumber)
+            {
+                return base.BuildRequest(id, blockCount, highestBlockNumber, rewardPercentiles);
+            }
+            else
+            {
+                return base.BuildRequest(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+            }
+           
         }
     }
 }
