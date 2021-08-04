@@ -14,7 +14,12 @@ namespace Nethereum.Hex.HexTypes
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
             JsonSerializer serializer)
         {
-            return HexTypeFactory.CreateFromHex<TValue>((string) reader.Value);
+            if (reader.Value is string)
+            {
+                return HexTypeFactory.CreateFromHex<TValue>((string)reader.Value);
+            }
+            //fallback if we get rug numbers
+            return HexTypeFactory.CreateFromObject<TValue>(reader.Value);
         }
 
         public override bool CanConvert(Type objectType)
