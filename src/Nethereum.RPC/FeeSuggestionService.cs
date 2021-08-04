@@ -20,6 +20,11 @@ namespace Nethereum.RPC
         {
             return new TimePreferenceFeeSuggestionStrategy(Client);
         }
+
+        public MedianPriorityFeeHistorySuggestionStrategy GetMedianPriorityFeeHistorySuggestionStrategy()
+        {
+            return new MedianPriorityFeeHistorySuggestionStrategy(Client);
+        }
 #endif
     }
 }
