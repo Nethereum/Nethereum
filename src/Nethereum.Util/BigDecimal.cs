@@ -213,16 +213,21 @@ namespace Nethereum.Util
             return new BigDecimal(value, 0);
         }
 
+        public static implicit operator BigDecimal(BigInteger value)
+        {
+            return new BigDecimal(value, 0);
+        }
+
         public static implicit operator BigDecimal(double value)
         {
-            var mantissa = (BigInteger) value;
+            var mantissa = (long)value;
             var exponent = 0;
             double scaleFactor = 1;
             while (Math.Abs(value * scaleFactor - (double) mantissa) > 0)
             {
                 exponent -= 1;
                 scaleFactor *= 10;
-                mantissa = (BigInteger) (value * scaleFactor);
+                mantissa = (long)(value * scaleFactor);
             }
 
             return new BigDecimal(mantissa, exponent);
