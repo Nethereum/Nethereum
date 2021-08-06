@@ -12,6 +12,11 @@ namespace Nethereum.Signer
             return EthECKey.RecoverFromSignature(ecdaSignature, hashMessage).GetPublicAddress();
         }
 
+        public virtual string EcRecover(byte[] hashMessage, EthECDSASignature signature)
+        {
+            return EthECKey.RecoverFromSignature(signature, hashMessage).GetPublicAddress();
+        }
+
         public byte[] Hash(byte[] plainMessage)
         {
             var hash = new Sha3Keccack().CalculateHash(plainMessage);

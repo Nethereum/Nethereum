@@ -8,6 +8,10 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
+using Nethereum.RLP;
+#if NETCOREAPP3_1 || NET5_0
+using NBitcoin.Secp256k1;
+#endif
 
 namespace Nethereum.Signer.Crypto
 {
@@ -120,6 +124,8 @@ namespace Nethereum.Signer.Crypto
                 throw new ArgumentException("s should be positive");
             if (message == null)
                 throw new ArgumentNullException("message");
+
+
 
             var curve = Secp256k1;
             var pubToHex = uncompressedPublicKey.ToHex();
@@ -348,63 +354,77 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
             if (message == null)
                 throw new ArgumentNullException("message");
 
-            var curve = Secp256k1;
-
-            // 1.0 For j from 0 to h   (h == recId here and the loop is outside this function)
-            //   1.1 Let x = r + jn
-
-            var n = curve.N;
-            var i = BigInteger.ValueOf((long) recId / 2);
-            var x = sig.R.Add(i.Multiply(n));
-
-            //   1.2. Convert the integer x to an octet string X of length mlen using the conversion routine
-            //        specified in Section 2.3.7, where mlen = ⌈(log2 p)/8⌉ or mlen = ⌈m/8⌉.
-            //   1.3. Convert the octet string (16 set binary digits)||X to an elliptic curve point R using the
-            //        conversion routine specified in Section 2.3.4. If this conversion routine outputs “invalid”, then
-            //        do another iteration of Step 1.
-            //
-            // More concisely, what these points mean is to use X as a compressed public key.
-
-            //using bouncy and Q value of Point
-           
-            if (x.CompareTo(PRIME) >= 0)
-                return null;
-
-            // Compressed keys require you to know an extra bit of data about the y-coord as there are two possibilities.
-            // So it's encoded in the recId.
-            var R = DecompressKey(x, (recId & 1) == 1);
-            //   1.4. If nR != point at infinity, then do another iteration of Step 1 (callers responsibility).
-
-            if (!R.Multiply(n).IsInfinity)
-                return null;
-
-            //   1.5. Compute e from M using Steps 2 and 3 of ECDSA signature verification.
-            var e = new BigInteger(1, message);
-            //   1.6. For k from 1 to 2 do the following.   (loop is outside this function via iterating recId)
-            //   1.6.1. Compute a candidate public key as:
-            //               Q = mi(r) * (sR - eG)
-            //
-            // Where mi(x) is the modular multiplicative inverse. We transform this into the following:
-            //               Q = (mi(r) * s ** R) + (mi(r) * -e ** G)
-            // Where -e is the modular additive inverse of e, that is z such that z + e = 0 (mod n). In the above equation
-            // ** is point multiplication and + is point addition (the EC group operator).
-            //
-            // We can find the additive inverse by subtracting e from zero then taking the mod. For example the additive
-            // inverse of 3 modulo 11 is 8 because 3 + 8 mod 11 = 0, and -3 mod 11 = 8.
-
-            var eInv = BigInteger.Zero.Subtract(e).Mod(n);
-            var rInv = sig.R.ModInverse(n);
-            var srInv = rInv.Multiply(sig.S).Mod(n);
-            var eInvrInv = rInv.Multiply(eInv).Mod(n);
-            var q = ECAlgorithms.SumOfTwoMultiplies(curve.G, eInvrInv, R, srInv);
-            q = q.Normalize();
-            if (compressed)
+#if NETCOREAPP3_1 || NET5_0
+            if (EthECKey.SignRecoverable)
             {
-                q = Secp256k1.Curve.CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger());
-                return new ECKey(q.GetEncoded(true), false);
+                SecpECDSASignature.TryCreateFromDer(sig.ToDER(), out var signature);
+                var recoverable = new SecpRecoverableECDSASignature(signature, recId);
+                ECPubKey.TryRecover(Context.Instance, recoverable, message, out var pubKey);
+                return new ECKey(pubKey.ToBytes(compressed), false);
             }
-            return new ECKey(q.GetEncoded(), false);
-        }
+            else
+            {
+#endif
+                var curve = Secp256k1;
+
+                // 1.0 For j from 0 to h   (h == recId here and the loop is outside this function)
+                //   1.1 Let x = r + jn
+
+                var n = curve.N;
+                var i = BigInteger.ValueOf((long)recId / 2);
+                var x = sig.R.Add(i.Multiply(n));
+
+                //   1.2. Convert the integer x to an octet string X of length mlen using the conversion routine
+                //        specified in Section 2.3.7, where mlen = ⌈(log2 p)/8⌉ or mlen = ⌈m/8⌉.
+                //   1.3. Convert the octet string (16 set binary digits)||X to an elliptic curve point R using the
+                //        conversion routine specified in Section 2.3.4. If this conversion routine outputs “invalid”, then
+                //        do another iteration of Step 1.
+                //
+                // More concisely, what these points mean is to use X as a compressed public key.
+
+                //using bouncy and Q value of Point
+
+                if (x.CompareTo(PRIME) >= 0)
+                    return null;
+
+                // Compressed keys require you to know an extra bit of data about the y-coord as there are two possibilities.
+                // So it's encoded in the recId.
+                var R = DecompressKey(x, (recId & 1) == 1);
+                //   1.4. If nR != point at infinity, then do another iteration of Step 1 (callers responsibility).
+
+                if (!R.Multiply(n).IsInfinity)
+                    return null;
+
+                //   1.5. Compute e from M using Steps 2 and 3 of ECDSA signature verification.
+                var e = new BigInteger(1, message);
+                //   1.6. For k from 1 to 2 do the following.   (loop is outside this function via iterating recId)
+                //   1.6.1. Compute a candidate public key as:
+                //               Q = mi(r) * (sR - eG)
+                //
+                // Where mi(x) is the modular multiplicative inverse. We transform this into the following:
+                //               Q = (mi(r) * s ** R) + (mi(r) * -e ** G)
+                // Where -e is the modular additive inverse of e, that is z such that z + e = 0 (mod n). In the above equation
+                // ** is point multiplication and + is point addition (the EC group operator).
+                //
+                // We can find the additive inverse by subtracting e from zero then taking the mod. For example the additive
+                // inverse of 3 modulo 11 is 8 because 3 + 8 mod 11 = 0, and -3 mod 11 = 8.
+
+                var eInv = BigInteger.Zero.Subtract(e).Mod(n);
+                var rInv = sig.R.ModInverse(n);
+                var srInv = rInv.Multiply(sig.S).Mod(n);
+                var eInvrInv = rInv.Multiply(eInv).Mod(n);
+                var q = ECAlgorithms.SumOfTwoMultiplies(curve.G, eInvrInv, R, srInv);
+                q = q.Normalize();
+                if (compressed)
+                {
+                    q = Secp256k1.Curve.CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger());
+                    return new ECKey(q.GetEncoded(true), false);
+                }
+                return new ECKey(q.GetEncoded(), false);
+#if NETCOREAPP3_1 || NET5_0
+            }
+#endif
+            }
 
 
         public virtual ECDSASignature Sign(byte[] hash)
