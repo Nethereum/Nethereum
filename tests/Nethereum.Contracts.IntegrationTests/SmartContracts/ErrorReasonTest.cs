@@ -17,15 +17,15 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        //[Fact] Ignoring as Infura does not support this old block
-        public async void ShouldRetrieveErrorReason()
-        {
-            var web3 = new Web3.Web3("https://ropsten.infura.io/v3/7238211010344719ad14a89db874158c");
-            var errorReason =
-                await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync(
-                    "0x2b90deeeb87db3b2b83a91afc48dcc56ce46d1ad84cab1c8864d980dbdec47ec");
-            Assert.Equal("SafeMath: subtraction overflow", errorReason);
-        }
+        //[Fact] //Ignoring as Infura does not support this old block
+        //public async void ShouldRetrieveErrorReason()
+        //{
+        //    var web3 = new Web3.Web3("https://ropsten.infura.io/v3/7238211010344719ad14a89db874158c");
+        //    var errorReason =
+        //        await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync(
+        //            "0xd7138b5f004d1b15b1175d7bed25b25e7ce6f2025ba803b2f71bb1ba47f71123");
+        //    Assert.Equal("SafeMath: subtraction overflow", errorReason);
+        //}
 
 
         //Solidity 
@@ -54,7 +54,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+                RpcResponseException error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
                     await contractHandler.QueryAsync<ThrowItFunction, bool>());
                 Assert.Equal("execution reverted: An error message: eth_call", error.Message);
             }
