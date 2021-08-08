@@ -26,9 +26,8 @@ namespace Nethereum.Signer.IntegrationTests
             {
 
                 var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Goerli);
-#if NETCOREAPP3_1_OR_GREATER || NET50
 
-#endif
+               
                 var feeStrategy = new MedianPriorityFeeHistorySuggestionStrategy(web3.Client);
                 for (var x = 0; x < 10; x++)
                 {
