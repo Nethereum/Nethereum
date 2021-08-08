@@ -17,6 +17,7 @@ namespace Nethereum.Hex.HexTypes
 
         public static object CreateFromObject<T>(object value)
         {
+            if (value == null) return null; // if null
             if (typeof(BigInteger) == typeof(T))
                 return new HexBigInteger((long) value);
 
