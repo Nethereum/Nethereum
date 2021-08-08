@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.Util;
 
 namespace Nethereum.RPC.TransactionManagers
@@ -47,28 +48,29 @@ namespace Nethereum.RPC.TransactionManagers
 
     
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationTokenSource tokenSource = null)
         {
-            //Make the the maxPriorityFee and maxFeePerGas
             var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxFeePerGas, maxFeePerGas, gas, nonce);
+            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxPriorityFeePerGas, maxFeePerGas, gas, nonce);
             return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
         }
 
-        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null)
+        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null)
         {
             //Make the the maxPriorityFee and maxFeePerGas
             var fromAddress = _transactionManager?.Account?.Address;
-            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxFeePerGas, maxFeePerGas, gas, nonce);
+            var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxPriorityFeePerGas, maxFeePerGas, gas, nonce);
             return _transactionManager.SendTransactionAsync(transactionInput);
         }
 
-        public async Task<BigInteger> CalculateMaxFeePerGasToTransferWholeBalanceInEtherAsync(
+        public async Task<Fee1559> SuggestFeeToTransferWholeBalanceInEtherAsync(
             BigInteger? maxPriorityFeePerGas = null)
         {
+            
             var fee1559 = await _transactionManager.Fee1559SuggestionStrategy.SuggestFeeAsync(maxPriorityFeePerGas).ConfigureAwait(false);
-            if (fee1559.MaxFeePerGas != null) return fee1559.MaxFeePerGas.Value;
-            return 0;
+            //Match it so there are not crumbs
+            fee1559.MaxPriorityFeePerGas = fee1559.MaxFeePerGas;
+            return fee1559;
         }
 
         public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address, BigInteger maxFeePerGas, BigInteger? gas = null)

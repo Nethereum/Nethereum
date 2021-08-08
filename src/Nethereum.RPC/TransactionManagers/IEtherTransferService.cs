@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Fee1559Suggestions;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -12,15 +13,16 @@ namespace Nethereum.RPC.TransactionManagers
         Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address, decimal gasPriceGwei, BigInteger? gas = null);
         Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address,
             BigInteger maxFeePerGas, BigInteger? gas = null);
-        Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxFeePerGas, BigInteger? gas = null,
+        Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFee,
+            BigInteger maxFeePerGas, BigInteger? gas = null,
             BigInteger? nonce = null);
 
-        Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount,
+        Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFee,
             BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null,
             CancellationTokenSource tokenSource = null);
         Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount);
 
-        Task<BigInteger> CalculateMaxFeePerGasToTransferWholeBalanceInEtherAsync(
+        Task<Fee1559> SuggestFeeToTransferWholeBalanceInEtherAsync(
             BigInteger? maxPriorityFeePerGas = null);
     }
 }
