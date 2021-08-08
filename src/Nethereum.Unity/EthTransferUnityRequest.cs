@@ -8,6 +8,11 @@ namespace Nethereum.JsonRpc.UnityClient
     public class EthTransferUnityRequest : UnityRequest<string>
     {
         private readonly TransactionSignedUnityRequest _transactionSignedUnityRequest;
+        public bool UseLegacyAsDefault
+        {
+            get => _transactionSignedUnityRequest.UseLegacyAsDefault;
+            set => _transactionSignedUnityRequest.UseLegacyAsDefault = value;
+        }
 
         public EthTransferUnityRequest(string url, string privateKey, BigInteger? chainId, Dictionary<string, string> requestHeaders = null)
         {
