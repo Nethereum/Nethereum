@@ -12,9 +12,10 @@ namespace Nethereum.JsonRpc.UnityClient
     {
         private readonly EthFeeHistoryUnityRequest _ethFeeHistory;
         private readonly TimePreferenceFeeSuggestionStrategy _timePreferenceFeeSuggestionStrategy;
-        public BigInteger FallbackTip { get; set; }
-        
-        public SuggestTipUnityRequestStrategy(string url, string account, Dictionary<string, string> requestHeaders = null)
+        public BigInteger FallbackTip { get; set; } = 2000000000;
+
+
+        public SuggestTipUnityRequestStrategy(string url, Dictionary<string, string> requestHeaders = null)
         {
             _ethFeeHistory = new EthFeeHistoryUnityRequest(url);
             _ethFeeHistory.RequestHeaders = requestHeaders;
@@ -62,8 +63,11 @@ namespace Nethereum.JsonRpc.UnityClient
             {
                 this.Result = FallbackTip;
             }
-            rewards.Sort();
-            this.Result = rewards[(int)Math.Truncate((double)(rewards.Count / 2))];
+            else
+            {
+                rewards.Sort();
+                this.Result = rewards[(int)Math.Truncate((double)(rewards.Count / 2))];
+            }
         }
     }
 }

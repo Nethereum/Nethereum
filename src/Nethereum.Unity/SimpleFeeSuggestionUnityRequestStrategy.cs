@@ -6,12 +6,15 @@ using Nethereum.RPC.Fee1559Suggestions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
+
+
+
     public class SimpleFeeSuggestionUnityRequestStrategy : UnityRequest<Fee1559>, IFee1559SuggestionUnityRequestStrategy
     {
         private EthGetBlockWithTransactionsHashesByNumberUnityRequest _ethGetBlockWithTransactionsHashes;
         public static BigInteger DEFAULT_MAX_PRIORITY_FEE_PER_GAS = 2000000000;
 
-        public SimpleFeeSuggestionUnityRequestStrategy(string url, string account, Dictionary<string, string> requestHeaders = null)
+        public SimpleFeeSuggestionUnityRequestStrategy(string url, Dictionary<string, string> requestHeaders = null)
         {
             _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumberUnityRequest(url);
             _ethGetBlockWithTransactionsHashes.RequestHeaders = requestHeaders;

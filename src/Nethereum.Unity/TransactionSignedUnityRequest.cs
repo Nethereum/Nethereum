@@ -14,10 +14,11 @@ using Nethereum.Contracts.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Util;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class TransactionSignedUnityRequest:UnityRequest<string>
+    public class TransactionSignedUnityRequest : UnityRequest<string>
     {
         private string _url;
         private readonly string _privateKey;
@@ -47,7 +48,7 @@ namespace Nethereum.JsonRpc.UnityClient
             _ethEstimateGasUnityRequest.RequestHeaders = requestHeaders;
             _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(_url);
             _ethGasPriceUnityRequest.RequestHeaders = requestHeaders;
-            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(url, _account, requestHeaders);
+            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(url, requestHeaders);
 
 
         }
@@ -108,6 +109,7 @@ namespace Nethereum.JsonRpc.UnityClient
 
             if (IsTransactionToBeSendAsEIP1559(transactionInput))
             {
+
                 transactionInput.Type = new HexBigInteger(TransactionType.EIP1559.AsByte());
                 if (transactionInput.MaxPriorityFeePerGas != null)
                 {
@@ -127,7 +129,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 }
                 else
                 {
-                
+
                     yield return Fee1559SuggestionStrategy.SuggestFee();
                     if (Fee1559SuggestionStrategy.Exception != null)
                     {
@@ -150,7 +152,7 @@ namespace Nethereum.JsonRpc.UnityClient
                                 transactionInput.MaxPriorityFeePerGas = new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxPriorityFeePerGas.Value);
                             }
                         }
- 
+
                     }
                     else
                     {
@@ -177,17 +179,17 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                 }
             }
-            
+
 
             var nonce = transactionInput.Nonce;
-            
+
             if (nonce == null)
-            {   
+            {
                 yield return _transactionCountRequest.SendRequest(_account, Nethereum.RPC.Eth.DTOs.BlockParameter.CreateLatest());
-            
-                if(_transactionCountRequest.Exception == null) 
+
+                if (_transactionCountRequest.Exception == null)
                 {
-                    nonce =  _transactionCountRequest.Result;
+                    nonce = _transactionCountRequest.Result;
                 }
                 else
                 {
@@ -201,24 +203,34 @@ namespace Nethereum.JsonRpc.UnityClient
                 value = new HexBigInteger(0);
 
             string signedTransaction;
-
-            if (_chainId == null)
+            if (IsTransactionToBeSendAsEIP1559(transactionInput))
             {
-                signedTransaction = _transactionSigner.SignTransaction(_privateKey, transactionInput.To, value.Value, nonce,
-                    transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
 
+                var transaction1559 = new Transaction1559(_chainId.Value, nonce, transactionInput.MaxPriorityFeePerGas.Value, transactionInput.MaxFeePerGas.Value,
+                    transactionInput.Gas.Value, transactionInput.To, value.Value, transactionInput.Data,
+                    null);
+                transaction1559.Sign(new EthECKey(_privateKey));
+                signedTransaction = transaction1559.GetRLPEncoded().ToHex();
             }
             else
             {
-                signedTransaction = _transactionSigner.SignTransaction(_privateKey, _chainId.Value, transactionInput.To, value.Value, nonce,
-                    transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
+                if (_chainId == null)
+                {
+                    signedTransaction = _transactionSigner.SignTransaction(_privateKey, transactionInput.To, value.Value, nonce,
+                        transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
 
+                }
+                else
+                {
+                    signedTransaction = _transactionSigner.SignTransaction(_privateKey, _chainId.Value, transactionInput.To, value.Value, nonce,
+                        transactionInput.GasPrice.Value, transactionInput.Gas.Value, transactionInput.Data);
+
+                }
             }
-                 
-            
+
             yield return _ethSendTransactionRequest.SendRequest(signedTransaction);
-            
-            if(_ethSendTransactionRequest.Exception == null) 
+
+            if (_ethSendTransactionRequest.Exception == null)
             {
                 this.Result = _ethSendTransactionRequest.Result;
             }

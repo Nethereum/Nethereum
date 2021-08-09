@@ -2,7 +2,7 @@
   <PropertyGroup>
     <VersionMajor>4</VersionMajor>
     <VersionMinor>0</VersionMinor>
-    <VersionPatch>2</VersionPatch>
+    <VersionPatch>4</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>

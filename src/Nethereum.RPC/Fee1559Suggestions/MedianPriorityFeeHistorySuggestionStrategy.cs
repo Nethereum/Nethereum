@@ -20,11 +20,6 @@ namespace Nethereum.RPC.Fee1559Suggestions
     /// </summary>
     public class MedianPriorityFeeHistorySuggestionStrategy:IFee1559SuggestionStrategy
     {
-        public IClient Client { get; set; }
-        private IEthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashes;
-        private IEthFeeHistory _ethFeeHistory;
-
-
         ///<summary>
         ///How many blocks to consider for priority fee estimation
         /// </summary>
@@ -32,9 +27,9 @@ namespace Nethereum.RPC.Fee1559Suggestions
         ///<summary>
         // Which percentile of effective priority fees to include
         /// </summary>
-        public const double FEE_HISTORY_PERCENTILE = 5;
+        public static double FEE_HISTORY_PERCENTILE = 5;
         // Which base fee to trigger priority fee estimation at
-        public const int PRIORITY_FEE_ESTIMATION_TRIGGER = 100; // GWEI
+        public static long PRIORITY_FEE_ESTIMATION_TRIGGER = 100_000_000_000; // GWEI
                                                          // Returned if above trigger is not met
         public static long DefaultPriorityFee { get; set; } = 3_000_000_000;
 
@@ -45,19 +40,78 @@ namespace Nethereum.RPC.Fee1559Suggestions
             MaxPriorityFeePerGas = DefaultPriorityFee
         };
 
+        public MedianPriorityFeeHistorySuggestionStrategy() { }
+
+#if !DOTNET35
+        public IClient Client { get; set; }
+        private IEthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashes;
+        private IEthFeeHistory _ethFeeHistory;
+
+        public MedianPriorityFeeHistorySuggestionStrategy(IClient client)
+        {
+            Client = client;
+            _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumber(client);
+            _ethFeeHistory = new EthFeeHistory(client);
+        }
+
+        public async Task<BigInteger?> EstimatePriorityFeeAsync(BigInteger baseFee, HexBigInteger blockNumber)
+        {
+            if (baseFee < PRIORITY_FEE_ESTIMATION_TRIGGER)
+            {
+                return DefaultPriorityFee;
+            }
+
+            var feeHistory = await _ethFeeHistory.SendRequestAsync(new HexBigInteger(FeeHistoryNumberOfBlocks), new BlockParameter(blockNumber), new double[] {
+              FEE_HISTORY_PERCENTILE }
+            ).ConfigureAwait(false);
+
+            return EstimatePriorityFee(feeHistory);
+        }
+
+        public async Task<Fee1559> SuggestFeeAsync(BigInteger? maxPriorityFeePerGas = null)
+        {
+
+            var lastBlock = await _ethGetBlockWithTransactionsHashes.SendRequestAsync(BlockParameter.CreateLatest()).ConfigureAwait(false);
+
+            if (lastBlock.BaseFeePerGas == null)
+            {
+                return FallbackFeeSuggestion;
+            }
+
+            var baseFee = lastBlock.BaseFeePerGas;
+
+            if (maxPriorityFeePerGas == null)
+            {
+                var estimatedPriorityFee = await EstimatePriorityFeeAsync(
+                    baseFee,
+                    lastBlock.Number
+                );
+
+                if (estimatedPriorityFee == null)
+                {
+                    return FallbackFeeSuggestion;
+                }
+
+                maxPriorityFeePerGas = BigInteger.Max(estimatedPriorityFee.Value, DefaultPriorityFee);
+            }
+
+            return SuggestMaxFeeUsingMultiplier(maxPriorityFeePerGas, baseFee);
+
+        }
+#endif
         public const int PRIORITY_FEE_INCREASE_BOUNDARY = 200;
 
-        public virtual BigDecimal GetBaseFeeMultiplier(BigDecimal baseFeeGwei)
+        public virtual double GetBaseFeeMultiplier(BigInteger baseFee)
         {
-            if (baseFeeGwei < 40)
+            if (baseFee < 40_000_000_000)
             {
                 return 2.0;
             }
-            else if (baseFeeGwei < 100)
+            else if (baseFee < 100_000_000_000)
             {
                 return 1.6;
             }
-            else if (baseFeeGwei < 200)
+            else if (baseFee < 200_000_000_000)
             {
                 return 1.4;
             }
@@ -68,31 +122,14 @@ namespace Nethereum.RPC.Fee1559Suggestions
         }
 
 
-        public MedianPriorityFeeHistorySuggestionStrategy(IClient client)
+        public BigInteger? EstimatePriorityFee(FeeHistoryResult feeHistory)
         {
-            Client = client;
-            _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumber(client);
-            _ethFeeHistory = new EthFeeHistory(client);
-        }
-
-        public async Task<BigInteger?> EstimatePriorityFee(decimal baseFeeGwei, HexBigInteger blockNumber)
-        {
-            if (baseFeeGwei < PRIORITY_FEE_ESTIMATION_TRIGGER)
-            {
-                return DefaultPriorityFee;
-            }
-
-            var feeHistory = await _ethFeeHistory.SendRequestAsync(new HexBigInteger(FeeHistoryNumberOfBlocks), new BlockParameter(blockNumber), new double[] {
-              FEE_HISTORY_PERCENTILE }
-            ).ConfigureAwait(false);
-
             var rewards = feeHistory.Reward
               ?.Select((r) => r[0].Value)
               .Where((r) => r != 0)
               .ToList();
-            
-            rewards.Sort();
 
+            rewards.Sort();
 
             if (rewards == null || rewards.Count == 0)
             {
@@ -101,14 +138,14 @@ namespace Nethereum.RPC.Fee1559Suggestions
 
             var percentageIncreases = new List<BigInteger>();
 
-            for(var i=0; i < rewards.Count - 1; i++)
+            for (var i = 0; i < rewards.Count - 1; i++)
             {
                 var next = rewards[i + 1];
                 var p = ((next - rewards[i]) / rewards[i]) * 100;
                 percentageIncreases.Add(p);
             }
-            
-           
+
+
             var highestIncrease = percentageIncreases.Max();
             var highestIncreaseIndex = percentageIncreases.IndexOf(highestIncrease);
 
@@ -124,36 +161,10 @@ namespace Nethereum.RPC.Fee1559Suggestions
             return values[valuesIndex];
         }
 
-        public async Task<Fee1559> SuggestFeeAsync(BigInteger? maxPriorityFeePerGas = null)
+        
+        public Fee1559 SuggestMaxFeeUsingMultiplier(BigInteger? maxPriorityFeePerGas, HexBigInteger baseFee)
         {
-            
-            var lastBlock = await _ethGetBlockWithTransactionsHashes.SendRequestAsync(BlockParameter.CreateLatest()).ConfigureAwait(false);
-
-            if (lastBlock.BaseFeePerGas == null)
-            {
-                return FallbackFeeSuggestion;
-            }
-
-            var baseFee = lastBlock.BaseFeePerGas;
-
-            var baseFeeGwei = UnitConversion.Convert.FromWei(baseFee, UnitConversion.EthUnit.Gwei);
-
-            if (maxPriorityFeePerGas == null)
-            { 
-                var estimatedPriorityFee = await EstimatePriorityFee(
-                    baseFeeGwei,
-                    lastBlock.Number
-                );
-
-                if (estimatedPriorityFee == null)
-                {
-                    return FallbackFeeSuggestion;
-                }
-
-                maxPriorityFeePerGas = BigInteger.Max(estimatedPriorityFee.Value, DefaultPriorityFee);
-            }
-
-            var multiplier = GetBaseFeeMultiplier(baseFeeGwei);
+            var multiplier = GetBaseFeeMultiplier(baseFee);
 
             var potentialMaxFee = (BigDecimal)baseFee.Value * multiplier;
             var maxFeePerGas = maxPriorityFeePerGas > potentialMaxFee
@@ -166,7 +177,6 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 MaxPriorityFeePerGas = maxPriorityFeePerGas,
                 BaseFee = baseFee
             };
-            
         }
     }
 

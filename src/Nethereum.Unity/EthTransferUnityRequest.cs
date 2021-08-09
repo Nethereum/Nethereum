@@ -24,7 +24,7 @@ namespace Nethereum.JsonRpc.UnityClient
             var transactionInput =
                 EtherTransferTransactionInputBuilder.CreateTransactionInput(null, toAddress, etherAmount,
                     gasPriceGwei, gas, nonce);
-            yield return  _transactionSignedUnityRequest.SignAndSendTransaction(transactionInput);
+            yield return _transactionSignedUnityRequest.SignAndSendTransaction(transactionInput);
 
             if (_transactionSignedUnityRequest.Exception == null)
             {
@@ -55,5 +55,6 @@ namespace Nethereum.JsonRpc.UnityClient
                 this.Exception = _transactionSignedUnityRequest.Exception;
             }
         }
+
     }
 }
