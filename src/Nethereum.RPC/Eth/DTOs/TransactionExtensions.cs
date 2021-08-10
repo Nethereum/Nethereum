@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Nethereum.RPC.TransactionTypes;
 using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 
@@ -11,8 +12,14 @@ namespace Nethereum.RPC.Eth.DTOs
     {
         public static bool Is1559(this Transaction txn)
         {
-            return txn.Type != null && txn.Type.Value == 0x02;
+            return txn.Type != null && (byte)txn.Type.Value == (byte)TransactionType.EIP1559;
         }
+
+        public static bool IsLegacy(this Transaction txn)
+        {
+            return txn.Type != null && (byte)txn.Type.Value == (byte)TransactionType.Legacy;
+        }
+
 
         public static bool IsToAnEmptyAddress(this Transaction txn)
         {

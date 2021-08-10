@@ -21,8 +21,21 @@ namespace Nethereum.RPC.TransactionTypes
         public static TransactionType ToTransactionType(this HexBigInteger value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
-            return ToTypedTransaction((byte) value.Value);
+            var valueAsByte = (byte)value.Value;
+            if (valueAsByte == TransactionType.EIP1559.AsByte())
+            {
+                return TransactionType.EIP1559;
+            }
+
+            if(valueAsByte == TransactionType.Legacy.AsByte())
+            {
+                return TransactionType.Legacy;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(value), "Value is not a valid transaction type");
         }
+
+       
         /// <summary>
         /// Converts to a valid Typed transaction (ie 0x02 for 1559), if not throws an exception (ie legacy or not in range)
         /// </summary>
@@ -34,6 +47,7 @@ namespace Nethereum.RPC.TransactionTypes
             {
                 return (TransactionType)value;
             }
+
             throw new ArgumentOutOfRangeException(nameof(value), "Value was not a valid typed transaction");
         }
 

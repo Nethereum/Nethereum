@@ -1,4 +1,5 @@
-﻿using Nethereum.RPC.TransactionTypes;
+﻿using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.TransactionTypes;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -67,6 +68,9 @@ namespace Nethereum.Accounts.IntegrationTests
             var txnLegacy = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0x8751032c189f44478b13ca77834b6af3567ec3e014069450f17209ed0fd1a3c1");
             Assert.True(txnType2.Type.ToTransactionType() == TransactionType.EIP1559);
             Assert.True(txnLegacy.Type.ToTransactionType() == TransactionType.Legacy);
+
+            Assert.True(txnType2.Is1559());
+            Assert.True(txnLegacy.IsLegacy());
         }
 
     }
