@@ -63,7 +63,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 
                 for (var l = 0; l < logsPerTransaction; l++)
                 {
-                    logs[l] = new FilterLog();
+                    logs[l] = new FilterLog() { LogIndex = new HexBigInteger(l)};
                 }
 
                 Receipts.AddRange(new[] {new TransactionReceipt {
