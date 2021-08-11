@@ -2,7 +2,7 @@
   <PropertyGroup>
     <VersionMajor>4</VersionMajor>
     <VersionMinor>0</VersionMinor>
-    <VersionPatch>4</VersionPatch>
+    <VersionPatch>5</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
@@ -14,6 +14,6 @@
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
-    <UportVersion>0.0.20</UportVersion>
+
   </PropertyGroup>
 </Project>

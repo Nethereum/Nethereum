@@ -24,7 +24,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         public async Task<Fee1559> SuggestFeeAsync(BigInteger? maxPriorityFeePerGas = null)
         {
             if (maxPriorityFeePerGas == null) maxPriorityFeePerGas = DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
-            var lastBlock = await _ethGetBlockWithTransactionsHashes.SendRequestAsync(BlockParameter.CreateLatest());
+            var lastBlock = await _ethGetBlockWithTransactionsHashes.SendRequestAsync(BlockParameter.CreateLatest()).ConfigureAwait(false);
                 
             var baseFee = lastBlock.BaseFeePerGas == null ? 100 : lastBlock.BaseFeePerGas.Value;
             var maxFeePerGas = baseFee * 2 + maxPriorityFeePerGas;

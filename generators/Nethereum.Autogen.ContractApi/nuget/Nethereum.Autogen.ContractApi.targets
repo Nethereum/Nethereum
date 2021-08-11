@@ -5,7 +5,7 @@
   </PropertyGroup>
   
    <PropertyGroup>
-    <NugetVersion>4.0.1</NugetVersion>
+    <NugetVersion>4.0.5</NugetVersion>
   </PropertyGroup> 
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Eth.Transactions
     /// </summary>
     public class EthFeeHistory : RpcRequestResponseHandler<FeeHistoryResult>, IEthFeeHistory
     {
-        public static bool UseBlockCountAsNumber { get; set; } = true;
+        public static bool UseBlockCountAsNumber { get; set; } = false;
 
         public EthFeeHistory(IClient client) : base(client, ApiMethods.eth_feeHistory.ToString())
         {
