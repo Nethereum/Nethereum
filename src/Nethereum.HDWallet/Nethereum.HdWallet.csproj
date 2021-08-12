@@ -19,4 +19,8 @@
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net35' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net472' ">
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  
 </Project>
