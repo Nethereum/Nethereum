@@ -166,7 +166,9 @@ namespace Nethereum.Util
         public override string ToString()
         {
             Normalize();
-            var s = Mantissa.ToString();
+            bool isNegative = Mantissa < 0;
+
+            var s = BigInteger.Abs(Mantissa).ToString();
             if (Exponent != 0)
             {
                 var decimalPos = s.Length + Exponent;
@@ -179,7 +181,7 @@ namespace Nethereum.Util
                     s = s.PadRight(decimalPos, '0');
             }
 
-            return s;
+            return isNegative ? $"-{s}" : s;
         }
 
         public bool Equals(BigDecimal other)
