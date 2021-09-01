@@ -31,6 +31,8 @@ namespace Nethereum.Web3
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
+            InitialiseInnerServices();
+            InitialiseDefaultGasAndGasPrice();
         }
 
         public Web3(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null)
