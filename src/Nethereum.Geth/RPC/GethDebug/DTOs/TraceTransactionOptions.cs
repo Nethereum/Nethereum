@@ -30,5 +30,20 @@ namespace Nethereum.Geth.RPC.Debug.DTOs
         /// </summary>
         [DataMember(Name = "fullStorage")]
         public bool FullStorage { get; set; }
+        
+        /// <summary>
+        /// Setting this will enable JavaScript-based transaction tracing, described below.
+        /// If set, the previous four arguments will be ignored.
+        /// </summary>
+        [DataMember(Name = "tracer")]
+        public string Tracer { get; set; }
+
+        /// <summary>
+        /// Overrides the default timeout of 5 seconds for JavaScript-based tracing calls. Valid values are described here:
+        /// https://golang.org/pkg/time/#ParseDuration
+        /// </summary>
+        [DataMember(Name = "timeout")]
+        public string Timeout { get; set; }
+        
     }
 }
