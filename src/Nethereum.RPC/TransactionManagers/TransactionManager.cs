@@ -27,7 +27,16 @@ namespace Nethereum.RPC.TransactionManagers
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            SetDefaultGasPriceAndCostIfNotSet(transactionInput);
+            
+            if(IsTransactionToBeSendAsEIP1559(transactionInput)) 
+            {
+                SetDefaultGasIfNotSet(transactionInput);
+            }
+            else
+            {
+                SetDefaultGasPriceAndCostIfNotSet(transactionInput);
+            }
+            
             return new EthSendTransaction(Client).SendRequestAsync(transactionInput);
         }
 #endif
