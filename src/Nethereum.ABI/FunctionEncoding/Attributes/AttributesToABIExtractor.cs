@@ -42,7 +42,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
 
                 if (functionAttribute.DTOReturnType != null)
                 {
-                    functionABI.OutputParameters = ExtractParametersFromAttributes(contractMessageType);
+                    functionABI.OutputParameters = ExtractParametersFromAttributes(functionAttribute.DTOReturnType);
                 }
                 else if (functionAttribute.ReturnType != null)
                 {
