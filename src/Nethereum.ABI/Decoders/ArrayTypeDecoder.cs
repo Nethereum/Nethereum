@@ -37,7 +37,7 @@ namespace Nethereum.ABI.Decoders
 
         public override Type GetDefaultDecodingType()
         {
-            return typeof(List<object>);
+            return typeof(List<>).MakeGenericType(new[] { ElementType.GetDefaultDecodingType() });
         }
 
         public override bool IsSupportedType(Type type)
@@ -90,8 +90,15 @@ namespace Nethereum.ABI.Decoders
         {
             if (ElementType is TupleType tupleTypeElement)
             {
-                InitTupleElementComponents(elementType, tupleTypeElement);
-                decodedList.Add(new ParameterDecoder().DecodeAttributes(encodedElement, elementType));
+                if (elementType == typeof(List<ParameterOutput>))
+                {
+                    decodedList.Add(ElementType.Decode(encodedElement, elementType));
+                }
+                else
+                {
+                    InitTupleElementComponents(elementType, tupleTypeElement);
+                    decodedList.Add(new ParameterDecoder().DecodeAttributes(encodedElement, elementType));
+                }
             }
             else
             {

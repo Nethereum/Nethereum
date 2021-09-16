@@ -7,9 +7,17 @@ using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
+using Nethereum.ABI;
+using Nethereum.ABI.FunctionEncoding;
+using System.Collections;
+using System.Text;
+using System.Diagnostics;
+using System;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
+
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class TestInternalDynamicArrayOfDynamicStructs
     {
@@ -212,12 +220,18 @@ contract StructsSample2
             Assert.Equal(expected, data.ToHex().Substring(8));
         }
 
+
+
         [Fact]
         public async void ShouldEncodeDecodeStructContainingStructsArray()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
+
+
+
+
 
             var purchaseOrder = new PurchaseOrder();
             purchaseOrder.CustomerId = 1000;
@@ -327,9 +341,9 @@ contract StructsSample2
             Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
             Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
             Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
-
         }
 
+        
 
         public partial class PurchaseOrder : PurchaseOrderBase { }
 
