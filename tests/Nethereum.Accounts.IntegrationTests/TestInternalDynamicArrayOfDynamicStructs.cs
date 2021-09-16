@@ -285,6 +285,33 @@ contract StructsSample2
 
             var lineItemsEvent = contractHandler.GetEvent<LineItemsAddedEventDTO>();
             var lineItemsLogs = lineItemsEvent.DecodeAllEventsForEvent(receiptSending.Logs);
+
+            var contract = web3.Eth.GetContract("[{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'name':'SetPurchaseOrders','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder2','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'id','type':'uint256'}],'name':'GetPurchaseOrder','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder3','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'}],'name':'AddLineItems','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'name':'SetPurchaseOrder','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple'}],'name':'PurchaseOrderChanged','type':'event'},{'anonymous':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple[]'}],'name':'PurchaseOrdersChanged','type':'event'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'indexed':false,'name':'purchaseOrderId','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'indexed':false,'name':'lineItem','type':'tuple[]'}],'name':'LineItemsAdded','type':'event'}]", deploymentReceipt.ContractAddress);
+            var eventLineItemsAdded = contract.GetEvent("LineItemsAdded");
+
+            var x = eventLineItemsAdded.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
+
+            var expectedJObject = JObject.Parse(@"{
+  'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
+  'purchaseOrderId': 1,
+  'lineItem': [
+    {
+      'id': 3,
+      'productId': 300,
+      'quantity': 2,
+      'description': 'hello3'
+    },
+    {
+      'id': 4,
+      'productId': 400,
+      'quantity': 3,
+      'description': 'hello4'
+    }
+  ]
+}");
+            Assert.True(JObject.DeepEquals(expectedJObject, x[0].Event.ConvertToJObject()));
+
+
             query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
             purchaseOrderResult = query.PurchaseOrder;
             Assert.Equal(1, purchaseOrderResult.Id);
@@ -341,6 +368,10 @@ contract StructsSample2
             Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
             Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
             Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+
+           
+
+
         }
 
         
