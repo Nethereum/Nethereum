@@ -95,7 +95,7 @@ namespace Nethereum.Contracts.MessageEncodingServices
 
         public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
         {
-            return FunctionBuilder.DecodeSimpleTypeOutput<TReturn>(output);
+            return FunctionBuilder.DecodeTypeOutput<TReturn>(output);
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(string output) where TReturn : new()

@@ -454,13 +454,18 @@ namespace Nethereum.Contracts
             }
             return result;
         }
-
+        
         public static EventLog<List<ParameterOutput>> DecodeEventDefaultTopics(this EventABI eventABI, FilterLog log)
         {
             if (!IsLogForEvent(eventABI, log)) return null;
             var eventDecoder = new EventTopicDecoder();
             var eventObject = eventDecoder.DecodeDefaultTopics(eventABI, log.Topics, log.Data);
             return new EventLog<List<ParameterOutput>>(eventObject, log);
+        }
+
+        public static EventLog<List<ParameterOutput>> DecodeEventDefaultTopics(this EventABI eventABI, JToken log)
+        {
+            return DecodeEventDefaultTopics(eventABI, JsonConvert.DeserializeObject<FilterLog>(log.ToString()));
         }
 
         public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(this EventABI eventABI, FilterLog log) where TEventDTO : new()

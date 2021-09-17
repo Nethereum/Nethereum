@@ -56,7 +56,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.NotNull(tran2.TransactionHash);
             Assert.NotNull(tran2.MaxFeePerGas);
             Assert.NotNull(tran2.MaxPriorityFeePerGas);
-            Assert.Null(tran2.GasPrice);
+            Assert.NotNull(tran2.GasPrice);
 
         }
 

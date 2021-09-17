@@ -94,7 +94,7 @@ namespace Nethereum.Contracts
                         .ConfigureAwait(false);
 
 
-            return FunctionBuilderBase.DecodeSimpleTypeOutput<TReturn>(result);
+            return FunctionBuilderBase.DecodeTypeOutput<TReturn>(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput, BlockParameter block)
@@ -104,7 +104,7 @@ namespace Nethereum.Contracts
                     EthCall.SendRequestAsync(callInput, block)
                         .ConfigureAwait(false);
 
-            return FunctionBuilderBase.DecodeSimpleTypeOutput<TReturn>(result);
+            return FunctionBuilderBase.DecodeTypeOutput<TReturn>(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput)
@@ -151,9 +151,9 @@ namespace Nethereum.Contracts
             return FunctionBuilderBase.DecodeInput(data);
         }
 
-        public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
+        public TReturn DecodeTypeOutput<TReturn>(string output)
         {
-            return FunctionBuilderBase.DecodeSimpleTypeOutput<TReturn>(output);
+            return FunctionBuilderBase.DecodeTypeOutput<TReturn>(output);
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(TReturn functionOuput, string output)

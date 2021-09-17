@@ -148,10 +148,28 @@ namespace Nethereum.ABI.FunctionEncoding
                     Parameter = outputParameter
                 };
 
-                var results = DecodeOutput(output, parmeterOutput);
+                if (outputParameter.ABIType is TupleType tupleType)
+                {
+                    if (typeof(T) == typeof(List<ParameterOutput>))
+                    {
+                        var results = DecodeOutput(output, parmeterOutput);
 
-                if (results.Any())
-                    return (T) results[0].Result;
+                        if (results.Any())
+                            return (T)results[0].Result;
+                    }
+                    else
+                    {
+                        return (T) DecodeAttributes(output.HexToByteArray().Skip(32).ToArray(), typeof(T));
+                    }
+                }
+                else
+                {
+                    var results = DecodeOutput(output, parmeterOutput);
+                    if (results.Any())
+                        return (T)results[0].Result;
+                }
+
+                
             }
 
             return default(T);

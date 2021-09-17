@@ -17,7 +17,7 @@ namespace Nethereum.Model
 
         public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
         {
-            if (!legacyMode)
+            if (!legacyMode && header.BaseFee != null)
             {
                 return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
                     {
@@ -36,7 +36,7 @@ namespace Nethereum.Model
                         header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
                         header.MixHash,
                         header.Nonce,
-                        header.BaseFee.ToBytesForRLPEncoding()
+                        header.BaseFee.Value.ToBytesForRLPEncoding()
                     }
                 );
             }
@@ -63,7 +63,7 @@ namespace Nethereum.Model
 
         public byte[] Encode(BlockHeader header, bool legacyMode = false)
         {
-            if (!legacyMode)
+            if (!legacyMode && header.BaseFee != null)
             {
                 return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
                     {
@@ -82,7 +82,7 @@ namespace Nethereum.Model
                         header.ExtraData,
                         header.MixHash,
                         header.Nonce,
-                        header.BaseFee.ToBytesForRLPEncoding()
+                        header.BaseFee.Value.ToBytesForRLPEncoding()
                     }
                 );
             }

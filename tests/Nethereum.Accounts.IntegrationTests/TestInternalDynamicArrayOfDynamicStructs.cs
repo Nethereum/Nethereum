@@ -14,6 +14,7 @@ using System.Text;
 using System.Diagnostics;
 using System;
 using Newtonsoft.Json.Linq;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -221,6 +222,165 @@ contract StructsSample2
         }
 
 
+        [Fact]
+        public async void ShouldEncodeDecodeStructContainingStructsArrayOnlyUsingTypedStructs()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
+
+            var contract = web3.Eth.GetContract("[{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'name':'SetPurchaseOrders','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder2','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'id','type':'uint256'}],'name':'GetPurchaseOrder','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder3','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'}],'name':'AddLineItems','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'name':'SetPurchaseOrder','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple'}],'name':'PurchaseOrderChanged','type':'event'},{'anonymous':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple[]'}],'name':'PurchaseOrdersChanged','type':'event'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'indexed':false,'name':'purchaseOrderId','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'indexed':false,'name':'lineItem','type':'tuple[]'}],'name':'LineItemsAdded','type':'event'}]", deploymentReceipt.ContractAddress);
+
+            var purchaseOrder = new PurchaseOrder();
+            purchaseOrder.CustomerId = 1000;
+            purchaseOrder.Id = 1;
+            purchaseOrder.LineItem = new List<LineItem>();
+            purchaseOrder.LineItem.Add(new LineItem() { Id = 1, ProductId = 100, Quantity = 2, Description = "hello1" });
+            purchaseOrder.LineItem.Add(new LineItem() { Id = 2, ProductId = 200, Quantity = 3, Description = "hello2" });
+
+            var functionPurchaseOrder = contract.GetFunction("SetPurchaseOrder");
+            var receiptSending = await functionPurchaseOrder.SendTransactionAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, new HexBigInteger(900000), null, null,
+                purchaseOrder).ConfigureAwait(false);
+            
+            
+            var eventPurchaseOrder = contract.GetEvent<PurchaseOrderChangedEventDTO>();
+            var eventOutputs = eventPurchaseOrder.DecodeAllEventsForEvent(receiptSending.Logs);
+            var purchaseOrderResult = eventOutputs[0].Event.PurchaseOrder;
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+            Assert.Equal("hello1", purchaseOrderResult.LineItem[0].Description);
+
+            Assert.Equal(2, purchaseOrderResult.LineItem[1].Id);
+            Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
+            Assert.Equal("hello2", purchaseOrderResult.LineItem[1].Description);
+
+
+            var lineItems = new List<LineItem>();
+            lineItems.Add(new LineItem() { Id = 3, ProductId = 300, Quantity = 2, Description = "hello3" });
+            lineItems.Add(new LineItem() { Id = 4, ProductId = 400, Quantity = 3, Description = "hello4" });
+
+            var addLineItemsUntypedFunction = contract.GetFunction("AddLineItems");
+            
+            receiptSending = await addLineItemsUntypedFunction.SendTransactionAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, new HexBigInteger(900000), null,
+                null, 1, lineItems);
+
+            var eventLineItemsAdded = contract.GetEvent("LineItemsAdded");
+
+            var x = eventLineItemsAdded.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
+
+            var expectedJObject = JObject.Parse(@"{
+  'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
+  'purchaseOrderId': 1,
+  'lineItem': [
+    {
+      'id': 3,
+      'productId': 300,
+      'quantity': 2,
+      'description': 'hello3'
+    },
+    {
+      'id': 4,
+      'productId': 400,
+      'quantity': 3,
+      'description': 'hello4'
+    }
+  ]
+}");
+            Assert.True(JObject.DeepEquals(expectedJObject, x[0].Event.ConvertToJObject()));
+
+            Assert.True(JToken.DeepEquals(expectedJObject,
+                ABITypedRegistry.GetEvent<LineItemsAddedEventDTO>()
+                                .DecodeEventDefaultTopics(receiptSending.Logs[0])
+                                .Event.ConvertToJObject()));
+
+            var getPurchaseOrderFunction = contract.GetFunction("GetPurchaseOrder");
+            //Not deserialising to DTO so just simple CallAsync
+            purchaseOrderResult = await getPurchaseOrderFunction.CallAsync<PurchaseOrder>(1).ConfigureAwait(false);
+
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+            Assert.Equal(2, purchaseOrderResult.LineItem[1].Id);
+            Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
+            Assert.Equal(3, purchaseOrderResult.LineItem[2].Id);
+            Assert.Equal(300, purchaseOrderResult.LineItem[2].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[2].Quantity);
+            Assert.Equal(4, purchaseOrderResult.LineItem[3].Id);
+            Assert.Equal(400, purchaseOrderResult.LineItem[3].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[3].Quantity);
+
+
+            var purchaseOrderResultOutput = await getPurchaseOrderFunction.CallAsync<GetPurchaseOrderOutputDTO>(1).ConfigureAwait(false);
+
+            purchaseOrderResult = purchaseOrderResultOutput.PurchaseOrder;
+
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+            Assert.Equal(2, purchaseOrderResult.LineItem[1].Id);
+            Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
+            Assert.Equal(3, purchaseOrderResult.LineItem[2].Id);
+            Assert.Equal(300, purchaseOrderResult.LineItem[2].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[2].Quantity);
+            Assert.Equal(4, purchaseOrderResult.LineItem[3].Id);
+            Assert.Equal(400, purchaseOrderResult.LineItem[3].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[3].Quantity);
+
+
+            var listPurchaseOrder = new List<PurchaseOrder>();
+            listPurchaseOrder.Add(purchaseOrder);
+
+            var setPurchaseOrdersFunction = contract.GetFunction("SetPurchaseOrders");
+
+            receiptSending = await setPurchaseOrdersFunction.SendTransactionAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, new HexBigInteger(900000), null,
+                null, listPurchaseOrder);
+            
+
+            var eventPurchaseOrders = contract.GetEvent("PurchaseOrdersChanged");
+            var eventPurchaseOrdersOutputs = eventPurchaseOrders.DecodeAllEventsForEvent<PurchaseOrdersChangedEventDTO>(receiptSending.Logs);
+            purchaseOrderResult = eventPurchaseOrdersOutputs[0].Event.PurchaseOrder[0];
+
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+            Assert.Equal(2, purchaseOrderResult.LineItem[1].Id);
+            Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
+
+
+            //Stored array on constructor
+            var getPurchaseOrder3Function = contract.GetFunction("GetPurchaseOrder3");
+
+            //Not deserialising to DTO so just simple CallAsync
+            var purchaseOrderResults = await getPurchaseOrder3Function.CallAsync<List<PurchaseOrder>>();
+            /*
+              constructor() public {
+            _purchaseOrder.id = 1;
+            _purchaseOrder.customerId = 2;
+            LineItem memory lineItem = LineItem(1,2,3);
+            _purchaseOrder.lineItem.push(lineItem);
+            purchaseOrdersArray.push(_purchaseOrder); 
+        }
+        */
+            purchaseOrderResult = purchaseOrderResults[0];
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+        }
 
         [Fact]
         public async void ShouldEncodeDecodeStructContainingStructsArray()
@@ -228,10 +388,6 @@ contract StructsSample2
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
-
-
-
-
 
             var purchaseOrder = new PurchaseOrder();
             purchaseOrder.CustomerId = 1000;
@@ -272,8 +428,7 @@ contract StructsSample2
             Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
             Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
             Assert.Equal("hello2", purchaseOrderResult.LineItem[1].Description);
-
-
+       
             var lineItems = new List<LineItem>();
             lineItems.Add(new LineItem() { Id = 3, ProductId = 300, Quantity = 2, Description = "hello3" });
             lineItems.Add(new LineItem() { Id = 4, ProductId = 400, Quantity = 3, Description = "hello4" });
@@ -281,36 +436,14 @@ contract StructsSample2
             var lineItemsFunction = new AddLineItemsFunction() { Id = 1, LineItem = lineItems };
             var data = lineItemsFunction.GetCallData().ToHex();
 
+            
             receiptSending = await contractHandler.SendRequestAndWaitForReceiptAsync(new AddLineItemsFunction() { Id = 1, LineItem = lineItems }).ConfigureAwait(false);
 
             var lineItemsEvent = contractHandler.GetEvent<LineItemsAddedEventDTO>();
             var lineItemsLogs = lineItemsEvent.DecodeAllEventsForEvent(receiptSending.Logs);
 
-            var contract = web3.Eth.GetContract("[{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'name':'SetPurchaseOrders','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder2','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'id','type':'uint256'}],'name':'GetPurchaseOrder','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder3','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'}],'name':'AddLineItems','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'name':'SetPurchaseOrder','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple'}],'name':'PurchaseOrderChanged','type':'event'},{'anonymous':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple[]'}],'name':'PurchaseOrdersChanged','type':'event'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'indexed':false,'name':'purchaseOrderId','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'indexed':false,'name':'lineItem','type':'tuple[]'}],'name':'LineItemsAdded','type':'event'}]", deploymentReceipt.ContractAddress);
-            var eventLineItemsAdded = contract.GetEvent("LineItemsAdded");
 
-            var x = eventLineItemsAdded.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
-
-            var expectedJObject = JObject.Parse(@"{
-  'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
-  'purchaseOrderId': 1,
-  'lineItem': [
-    {
-      'id': 3,
-      'productId': 300,
-      'quantity': 2,
-      'description': 'hello3'
-    },
-    {
-      'id': 4,
-      'productId': 400,
-      'quantity': 3,
-      'description': 'hello4'
-    }
-  ]
-}");
-            Assert.True(JObject.DeepEquals(expectedJObject, x[0].Event.ConvertToJObject()));
-
+            
 
             query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
             purchaseOrderResult = query.PurchaseOrder;
@@ -370,8 +503,6 @@ contract StructsSample2
             Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
 
            
-
-
         }
 
         

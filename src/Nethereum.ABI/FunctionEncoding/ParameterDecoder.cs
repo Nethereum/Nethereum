@@ -243,5 +243,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var outputBytes = output.HexToByteArray();
             return DecodeOutput(outputBytes, outputParameters);
         }
+
+        protected void InitTupleElementComponents(Type type, TupleType tupleType)
+        {
+            if (tupleType.Components == null)
+                attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(type,
+                    tupleType);
+        }
     }
 }

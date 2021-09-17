@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -45,10 +48,20 @@ namespace Nethereum.Contracts
             return FunctionCallDecoder.DecodeDefaultData(data,
                 FunctionABI.OutputParameters);
         }
-        public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
+
+        public TReturn DecodeTypeOutput<TReturn>(string output)
         {
-            return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
+            var function = FunctionOutputAttribute.GetAttribute<TReturn>();
+            if (function != null)
+            {
+                var instance = Activator.CreateInstance(typeof(TReturn));
+                return DecodeDTOTypeOutput<TReturn>((TReturn)instance, output);
+            }
+            else
+            {
+                return FunctionCallDecoder.DecodeSimpleTypeOutput<TReturn>(
                 GetFirstParameterOrNull(FunctionABI.OutputParameters), output);
+            }
         }
 
         public TReturn DecodeDTOTypeOutput<TReturn>(TReturn functionOuput, string output)
