@@ -1,7 +1,9 @@
 using NBitcoin;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Web3.Accounts;
 using System;
 using Xunit;
+using Nethereum.Util;
 
 namespace Nethereum.HdWallet.UnitTests
 {
@@ -223,6 +225,18 @@ namespace Nethereum.HdWallet.UnitTests
         {
             var wallet = new Wallet("stem true medal chronic lion machine mask road rabbit process movie account", null, "m/44'/60'/0'/0'/x");
             var account = wallet.GetAccount(0);
+            Assert.True(account.Address.IsTheSameAddress("0xd9B924d064C8D0ECFf3307e929f5a941b6A56C2D"));
+        }
+
+        [Fact]
+        public void ShouldAllowDeriviationSeed()
+        {
+            var mnemo = new Mnemonic("stem true medal chronic lion machine mask road rabbit process movie account", Wordlist.English);
+            var seed = mnemo.DeriveSeed();
+            var ethWallet = new Wallet(seed);
+            var account = new Account(ethWallet.GetPrivateKey(0));
+            account = ethWallet.GetAccount(account.Address);
+            Assert.True(account.Address.IsTheSameAddress("0x03dd02C038e15fcFbBdc372c71D595BD241E0898"));
         }
     }
 }
