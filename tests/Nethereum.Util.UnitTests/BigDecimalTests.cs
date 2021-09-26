@@ -105,5 +105,20 @@ namespace Nethereum.Util.UnitTests
 
             Assert.Equal(expected: (BigDecimal)roundedRegular, roundedBig);
         }
+
+        [Theory]
+        [InlineData("0.5")]
+        [InlineData("-0.5")]
+        [InlineData("0.51")]
+        [InlineData("-0.512")]
+        [InlineData("-121212121423.0512")]
+        [InlineData("1")]
+        [InlineData("0")]
+        [InlineData("-1")]
+        public void BigDecimalToString(string value)
+        {
+            Assert.Equal(value,((BigDecimal)decimal.Parse(value)).ToString());
+            Assert.Equal(value,((BigDecimal)double.Parse(value)).ToString());
+        }
     }
 }
