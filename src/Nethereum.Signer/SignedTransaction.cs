@@ -8,7 +8,7 @@ namespace Nethereum.Signer
     {
         public virtual EthECDSASignature Signature { get; protected set; }
 
-        public void SetSignature(EthECDSASignature signature)
+        public virtual void SetSignature(EthECDSASignature signature)
         {
             Signature = signature;
         }

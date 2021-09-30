@@ -28,7 +28,7 @@ namespace Nethereum.Signer
             SimpleRlpSigner.SignLegacy(key);
         }
 
-        public void SetSignature(EthECDSASignature signature)
+        public override void SetSignature(EthECDSASignature signature)
         {
             SimpleRlpSigner.SetSignature(signature);
         }
