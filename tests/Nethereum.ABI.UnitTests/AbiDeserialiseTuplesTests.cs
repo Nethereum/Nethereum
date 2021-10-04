@@ -38,5 +38,16 @@ namespace Nethereum.ABI.UnitTests
             var sig = functionABI.Sha3Signature;
             Assert.Equal("0cc400bd", functionABI.Sha3Signature);
         }
+
+        [Fact]
+        public void ShouldDeserialiseAndEncodeSignatureCustomErrorsWithTuplesArrays()
+        {
+            var abi =
+                "[{\"inputs\":[],\"name\":\"ErrorWithNoParams\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"x\",\"type\":\"int256\"},{\"internalType\":\"string\",\"name\":\"errorMessage\",\"type\":\"string\"}],\"name\":\"ErrorWithParams\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CustomErrorNoParams\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CustomErrorWithParams\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"NormalRevert\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]";
+            var contractAbi = new ABIDeserialiser().DeserialiseContract(abi);
+            var errorABI = contractAbi.Errors.FirstOrDefault(e => e.Name == "ErrorWithParams");
+            var sig = errorABI.Sha3Signature;
+            Assert.Equal("650da04b", errorABI.Sha3Signature);
+        }
     }
 }
