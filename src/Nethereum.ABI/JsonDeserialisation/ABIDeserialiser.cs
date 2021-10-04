@@ -41,6 +41,14 @@ namespace Nethereum.ABI.JsonDeserialisation
             return parameters.ToArray();
         }
 
+        public ErrorABI BuildError(IDictionary<string, object> errorObject)
+        {
+            var errorABI = new ErrorABI((string)errorObject["name"]);
+            errorABI.InputParameters = BuildFunctionParameters((List<object>)errorObject["inputs"]);
+
+            return errorABI;
+        }
+
         private void InitialiseTupleComponents(IDictionary<string, object> input, Parameter parameter)
         {
             if (parameter.ABIType is TupleType tupleType)
@@ -119,6 +127,7 @@ namespace Nethereum.ABI.JsonDeserialisation
         {
             var functions = new List<FunctionABI>();
             var events = new List<EventABI>();
+            var errors = new List<ErrorABI>();
             ConstructorABI constructor = null;
 
             foreach (IDictionary<string, object> element in contract)
@@ -129,12 +138,15 @@ namespace Nethereum.ABI.JsonDeserialisation
                     events.Add(BuildEvent(element));
                 if ((string) element["type"] == "constructor")
                     constructor = BuildConstructor(element);
+                if ((string)element["type"] == "error")
+                    errors.Add(BuildError(element));
             }
 
             var contractABI = new ContractABI();
             contractABI.Functions = functions.ToArray();
             contractABI.Constructor = constructor;
             contractABI.Events = events.ToArray();
+            contractABI.Errors = errors.ToArray();
 
             return contractABI;
         }
