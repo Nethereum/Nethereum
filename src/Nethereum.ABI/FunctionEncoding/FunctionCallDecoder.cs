@@ -58,6 +58,12 @@ namespace Nethereum.ABI.FunctionEncoding
             return functionInput;
         }
 
+        public TError DecodeFunctionCustomError<TError>(TError error, string signature, string encodedErrorData)
+        {
+            return DecodeFunctionInput(error, signature, encodedErrorData);
+        }
+
+
         public ErrorFunction DecodeFunctionError(string output)
         {
             if (ErrorFunction.IsErrorData(output))
@@ -74,12 +80,12 @@ namespace Nethereum.ABI.FunctionEncoding
             return error?.Message;
         }
 
-        public void ThrowIfErrorOnOutput(string output)
+        public void ThrowIfErrorOnOutput(string output, Exception innerException = null)
         {
             var error = DecodeFunctionError(output);
             if(error != null)
             {
-                throw new SmartContractRevertException(error.Message);
+                throw new SmartContractRevertException(error.Message, output, innerException);
             }
         }
 

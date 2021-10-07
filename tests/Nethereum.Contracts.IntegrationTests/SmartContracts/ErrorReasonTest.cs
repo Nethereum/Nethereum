@@ -1,12 +1,16 @@
-﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+﻿using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
-using Xunit; 
- // ReSharper disable ConsiderUsingConfigureAwait  
- // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+using System.Numerics;
+using Xunit;
+using static Nethereum.Contracts.IntegrationTests.SmartContracts.ErrorReasonTest;
+// ReSharper disable ConsiderUsingConfigureAwait  
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 {
+
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class ErrorReasonTest
     {
@@ -20,11 +24,16 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         //[Fact] //Ignoring as Infura does not support this old block
         //public async void ShouldRetrieveErrorReason()
         //{
-        //    var web3 = new Web3.Web3("https://ropsten.infura.io/v3/7238211010344719ad14a89db874158c");
-        //    var errorReason =
-        //        await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync(
-        //            "0xd7138b5f004d1b15b1175d7bed25b25e7ce6f2025ba803b2f71bb1ba47f71123");
-        //    Assert.Equal("SafeMath: subtraction overflow", errorReason);
+        //    var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+        //    //var errorReason =
+        //    // await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync("0x9e2831c81b4e3f29a9fb420d50a288d3424b1dd53f7de6bdc423f5429e3be4fc");
+        //    // trying to call it will throw an error now
+
+        //    //RpcResponseException error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+        //    await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync("0x9e2831c81b4e3f29a9fb420d50a288d3424b1dd53f7de6bdc423f5429e3be4fc");
+        //        //);
+         
+        //  //  Assert.Equal("execution reverted: ERC20: transfer amount exceeds balance: eth_call", error.Message);
         //}
 
 
@@ -54,9 +63,9 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                RpcResponseException error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
                     await contractHandler.QueryAsync<ThrowItFunction, bool>());
-                Assert.Equal("execution reverted: An error message: eth_call", error.Message);
+                Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
             {
@@ -88,9 +97,9 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
-                var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
+                var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
                     await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
-                Assert.Equal("execution reverted: An error message: eth_call", error.Message);
+                Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
             {

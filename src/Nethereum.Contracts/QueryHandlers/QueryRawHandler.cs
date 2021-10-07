@@ -32,7 +32,7 @@ namespace Nethereum.Contracts.QueryHandlers
             FunctionMessageEncodingService.SetContractAddress(contractAddress);
             EnsureInitialiseAddress();
             var callInput = FunctionMessageEncodingService.CreateCallInput(contractFunctionMessage);
-            return EthCall.SendRequestAsync(callInput, block);
+            return CallAsync(callInput, block);
         }
     }
 #endif

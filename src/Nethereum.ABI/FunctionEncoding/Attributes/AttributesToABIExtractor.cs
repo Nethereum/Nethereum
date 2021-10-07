@@ -13,6 +13,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
             var contractABI = new ContractABI();
             var functions = new List<FunctionABI>();
             var events = new List<EventABI>();
+            var errors = new List<ErrorABI>();
 
             foreach (var contractMessageType in contractMessagesTypes)
             {
@@ -25,11 +26,29 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
                 {
                     events.Add(ExtractEventABI(contractMessageType));
                 }
+
+                if (ErrorAttribute.IsErrorType(contractMessageType))
+                {
+                    errors.Add(ExtractErrorABI(contractMessageType));
+                }
             }
 
             contractABI.Functions = functions.ToArray();
             contractABI.Events = events.ToArray();
+            contractABI.Errors = errors.ToArray();
             return contractABI;
+        }
+
+        public ErrorABI ExtractErrorABI(Type contractMessageType)
+        {
+            if (ErrorAttribute.IsErrorType(contractMessageType))
+            {
+                var errorAttribute = ErrorAttribute.GetAttribute(contractMessageType);
+                var errorABI = new ErrorABI(errorAttribute.Name);
+                errorABI.InputParameters = ExtractParametersFromAttributes(contractMessageType);
+                return errorABI;
+            }
+            return null;
         }
 
         public FunctionABI ExtractFunctionABI(Type contractMessageType)

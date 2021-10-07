@@ -16,6 +16,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
+
     public static class EventExtensions
     {
         public static bool IsLogForEvent<TEventDTO>(this JToken log)

@@ -10,6 +10,8 @@ namespace Nethereum.Contracts
     {
         private static readonly ConcurrentDictionary<Type, FunctionABI> _functionAbiRegistry = new ConcurrentDictionary<Type, FunctionABI>();
         private static readonly ConcurrentDictionary<Type, EventABI> _eventAbiRegistry = new ConcurrentDictionary<Type, EventABI>();
+        private static readonly ConcurrentDictionary<Type, ErrorABI> _errorAbiRegistry = new ConcurrentDictionary<Type, ErrorABI>();
+
         private static readonly AttributesToABIExtractor _abiExtractor = new AttributesToABIExtractor();
 
         public static FunctionABI GetFunctionABI<TFunctionMessage>()
@@ -50,6 +52,26 @@ namespace Nethereum.Contracts
                 _eventAbiRegistry[type] = eventABI;
             }
             return _eventAbiRegistry[type];
+        }
+
+        public static ErrorABI GetError<TError>()
+        {
+            return GetError(typeof(TError));
+        }
+
+        public static ErrorABI GetError(Type type)
+        {
+            if (!_errorAbiRegistry.ContainsKey(type))
+            {
+                var errorABI = _abiExtractor.ExtractErrorABI(type);
+                if (null == errorABI)
+                {
+                    throw new ArgumentException(type.ToString() + " is not a valid Error Type");
+                }
+
+                _errorAbiRegistry[type] = errorABI;
+            }
+            return _errorAbiRegistry[type];
         }
     }
 }

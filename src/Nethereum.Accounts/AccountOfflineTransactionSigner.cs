@@ -22,7 +22,7 @@ namespace Nethereum.Web3.Accounts
             _legacyTransactionSigner = new LegacyTransactionSigner();
         }
 
-        public string SignTransaction(Account account, TransactionInput transaction, BigInteger? chainId = null)
+        public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (string.IsNullOrWhiteSpace(transaction.From))
@@ -30,6 +30,12 @@ namespace Nethereum.Web3.Accounts
             else if (!transaction.From.IsTheSameAddress(account.Address))
                 throw new Exception("Invalid account used for signing, does not match the transaction input");
 
+            var chainId = overridingAccountChainId;
+            if (chainId == null)
+            {
+                chainId = account.ChainId;
+            }
+            
             var nonce = transaction.Nonce;
             if (nonce == null)
                 throw new ArgumentNullException(nameof(transaction), "Transaction nonce has not been set");

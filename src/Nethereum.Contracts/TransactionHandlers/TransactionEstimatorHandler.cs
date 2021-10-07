@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
 
@@ -26,6 +28,22 @@ namespace Nethereum.Contracts.TransactionHandlers
             try
             {
                 return await TransactionManager.EstimateGasAsync(callInput).ConfigureAwait(false);
+            }
+            catch(RpcResponseException rpcException)
+            {
+                if(rpcException.RpcError.Data != null)
+                {
+                    var encodedErrorData = rpcException.RpcError.Data.ToObject<string>();
+                    if (encodedErrorData.IsHex())
+                    {
+                        //check normal revert
+                        new FunctionCallDecoder().ThrowIfErrorOnOutput(encodedErrorData);
+                        
+                        //throw custom error
+                        throw new SmartContractCustomErrorRevertException(encodedErrorData);
+                    }
+                }
+                throw;
             }
             catch(Exception)
             {

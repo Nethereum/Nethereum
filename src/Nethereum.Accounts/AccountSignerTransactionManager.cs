@@ -18,9 +18,17 @@ namespace Nethereum.Web3.Accounts
         private readonly AccountOfflineTransactionSigner _transactionSigner;
 
 
-        public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? chainId = null)
+        public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? overridingAccountChainId = null)
         {
-            ChainId = chainId;
+            if (overridingAccountChainId == null)
+            {
+                ChainId = account.ChainId;
+            }
+            else
+            {
+                ChainId = overridingAccountChainId;
+            }
+            
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
             _transactionSigner = new AccountOfflineTransactionSigner();
@@ -32,7 +40,7 @@ namespace Nethereum.Web3.Accounts
             ChainId = chainId;
             if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
             Client = rpcClient;
-            Account = new Account(privateKey);
+            Account = new Account(privateKey, chainId);
             Account.NonceService = new InMemoryNonceService(Account.Address, rpcClient);
             _transactionSigner = new AccountOfflineTransactionSigner();
         }
