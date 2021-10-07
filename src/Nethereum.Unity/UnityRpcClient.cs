@@ -46,51 +46,52 @@ namespace Nethereum.JsonRpc.UnityClient
         
             var rpcRequestJson = JsonConvert.SerializeObject(requestFormatted, JsonSerializerSettings);
             var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-            var unityRequest = new UnityWebRequest(_url, "POST");
-            var uploadHandler = new UploadHandlerRaw(requestBytes);
-            
-            unityRequest.SetRequestHeader("Content-Type", "application/json");
-            uploadHandler.contentType= "application/json";
-            unityRequest.uploadHandler = uploadHandler;
+            using (var unityRequest = new UnityWebRequest(_url, "POST")) 
+            { 
+                var uploadHandler = new UploadHandlerRaw(requestBytes);
+                unityRequest.SetRequestHeader("Content-Type", "application/json");
+                uploadHandler.contentType= "application/json";
+                unityRequest.uploadHandler = uploadHandler;
 
-            unityRequest.downloadHandler = new DownloadHandlerBuffer();
+                unityRequest.downloadHandler = new DownloadHandlerBuffer();
 
-            if (RequestHeaders != null)
-            {
-                foreach (var requestHeader in RequestHeaders)
+                if (RequestHeaders != null)
                 {
-                    unityRequest.SetRequestHeader(requestHeader.Key, requestHeader.Value);
+                    foreach (var requestHeader in RequestHeaders)
+                    {
+                        unityRequest.SetRequestHeader(requestHeader.Key, requestHeader.Value);
+                    }
                 }
-            }
 
-            yield return unityRequest.SendWebRequest();
-            
-            if(unityRequest.error != null) 
-            {
-                this.Exception = new Exception(unityRequest.error);
-#if DEBUG
-                Debug.Log(unityRequest.error);
-#endif
-            } 
-            else 
-            {
-                try
-                {
-                    byte[] results = unityRequest.downloadHandler.data;
-                    var responseJson = Encoding.UTF8.GetString(results);
-#if DEBUG
-                    Debug.Log(responseJson);
-#endif
-                    var responseObject = JsonConvert.DeserializeObject<RpcResponse>(responseJson, JsonSerializerSettings);
-                    this.Result = responseObject.GetResult<TResult>(true, JsonSerializerSettings);
-                    this.Exception = HandleRpcError(responseObject); 
-                }
-                catch (Exception ex)
-                { 
-                    this.Exception = new Exception(ex.Message);
-#if DEBUG
-                    Debug.Log(ex.Message);
-#endif
+                yield return unityRequest.SendWebRequest();
+
+                    if (unityRequest.error != null)
+                    {
+                        this.Exception = new Exception(unityRequest.error);
+    #if DEBUG
+                        Debug.Log(unityRequest.error);
+    #endif
+                    }
+                    else
+                    {
+                        try
+                        {
+                            byte[] results = unityRequest.downloadHandler.data;
+                            var responseJson = Encoding.UTF8.GetString(results);
+    #if DEBUG
+                            Debug.Log(responseJson);
+    #endif
+                            var responseObject = JsonConvert.DeserializeObject<RpcResponse>(responseJson, JsonSerializerSettings);
+                            this.Result = responseObject.GetResult<TResult>(true, JsonSerializerSettings);
+                            this.Exception = HandleRpcError(responseObject);
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Exception = new Exception(ex.Message);
+    #if DEBUG
+                            Debug.Log(ex.Message);
+    #endif
+                        }
                 }
             }
         }
