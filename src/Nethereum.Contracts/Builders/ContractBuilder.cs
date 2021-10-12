@@ -56,6 +56,14 @@ namespace Nethereum.Contracts
             return new FunctionBuilder(Address, GetFunctionAbiBySignature(signature));
         }
 
+        public ErrorABI GetErrorAbi(string name)
+        {
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var errorAbi = ContractABI.Errors.FirstOrDefault(x => x.Name == name);
+            if (errorAbi == null) throw new Exception("Error not found");
+            return errorAbi;
+        }
+
 
         public EventABI GetEventAbi(string name)
         {

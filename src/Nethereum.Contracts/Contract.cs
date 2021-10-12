@@ -5,6 +5,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Filters;
+using System.Linq;
 
 namespace Nethereum.Contracts
 {
@@ -50,6 +51,19 @@ namespace Nethereum.Contracts
         public Event GetEvent(string name)
         {
             return new Event(this, ContractBuilder.GetEventAbi(name));
+        }
+
+        public Error GetError(string name)
+        {
+            return new Error(ContractBuilder.GetErrorAbi(name));
+        }
+
+        public Error FindError(string exceptionEncodedData)
+        {
+            var errors = ContractBuilder.ContractABI.Errors;
+            var errorAbi =  errors.FirstOrDefault(x => x.IsExceptionEncodedDataForError(exceptionEncodedData));
+            if (errorAbi == null) return null;
+            return new Error(errorAbi);
         }
 
         public Event GetEventBySignature(string signature)

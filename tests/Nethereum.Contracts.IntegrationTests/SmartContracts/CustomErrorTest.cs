@@ -1,5 +1,7 @@
-﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+﻿using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
+using Newtonsoft.Json.Linq;
 using System.Numerics;
 using Xunit;
 // ReSharper disable ConsiderUsingConfigureAwait  
@@ -117,6 +119,32 @@ contract TestToken {
                 Assert.Equal(100, insufficientBalance.Required);
                 Assert.Equal(0, insufficientBalance.Available);
 
+            }
+        }
+
+        [Fact]
+        public async void ShouldFindError()
+        {
+            if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
+            {
+                var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+                var errorThrowDeployment = new TestTokenDeployment();
+
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                var contractAddress = transactionReceiptDeployment.ContractAddress;
+                var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+
+                var customErrorException = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
+                   //random return value as it is going to error
+                   await contractHandler.QueryAsync<TransferFunction, int>(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }));
+
+                var contract = web3.Eth.GetContract("[{'inputs':[{'internalType':'uint256','name':'available','type':'uint256'},{'internalType':'uint256','name':'required','type':'uint256'}],'name':'InsufficientBalance','type':'error'},{'inputs':[{'internalType':'address','name':'to','type':'address'},{'internalType':'uint256','name':'amount','type':'uint256'}],'name':'transfer','outputs':[],'stateMutability':'nonpayable','type':'function'}]", contractAddress);
+                var error = contract.FindError(customErrorException.ExceptionEncodedData);
+                Assert.NotNull(error);
+                var errorJObject = error.DecodeExceptionEncodedDataToDefault(customErrorException.ExceptionEncodedData).ConvertToJObject();
+                var expectedJson = JToken.Parse(@"{'available': 0,'required': 100}");
+                Assert.True(JObject.DeepEquals(expectedJson, errorJObject));
             }
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -12,6 +13,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
+
     public class EventBase
     {
         protected EthGetFilterChangesForEthNewFilter EthGetFilterChanges { get; }
