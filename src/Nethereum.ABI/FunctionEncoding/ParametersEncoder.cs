@@ -91,7 +91,6 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
-
             var parameterObjects = GetParameterAttributeValues(type, instanceValue);
             var abiParameters = GetParametersInOrder(parameterObjects);
             var objectValues = GetValuesInOrder(parameterObjects);

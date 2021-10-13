@@ -8,6 +8,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
@@ -155,6 +156,16 @@ namespace Nethereum.Contracts
             HexBigInteger value)
         {
             return FunctionBuilderBase.CreateTransactionInput(from, gas, value);
+        }
+
+        public object[] ConvertJsonToObjectInputParameters(string json)
+        {
+            return FunctionBuilderBase.ConvertJsonToObjectInputParameters(json);
+        }
+
+        public object[] ConvertJsonToObjectInputParameters(JObject jObject)
+        {
+            return FunctionBuilderBase.ConvertJsonToObjectInputParameters(jObject);
         }
     }
 }

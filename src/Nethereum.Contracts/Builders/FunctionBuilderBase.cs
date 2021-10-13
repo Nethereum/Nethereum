@@ -6,6 +6,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
@@ -23,7 +24,6 @@ namespace Nethereum.Contracts
             FunctionCallEncoder = new FunctionCallEncoder();
         }
     
-
         public string ContractAddress { get; set; }
 
         protected FunctionCallDecoder FunctionCallDecoder { get; set; }
@@ -41,6 +41,22 @@ namespace Nethereum.Contracts
         {
             return FunctionCallDecoder.DecodeFunctionInput(FunctionABI.Sha3Signature, data,
                 FunctionABI.InputParameters);
+        }
+
+        public object[] ConvertJsonToObjectInputParameters(string json)
+        {
+            var jObject = JObject.Parse(json);
+            return jObject.ConvertToFunctionInputParameterValues(FunctionABI);
+        }
+
+        public object[] ConvertJsonToObjectInputParameters(JObject jObject)
+        {
+            return jObject.ConvertToFunctionInputParameterValues(FunctionABI);
+        }
+
+        public JObject DecodeOutputToJObject(string data)
+        {
+            return DecodeOutput(data).ConvertToJObject();
         }
 
         public List<ParameterOutput> DecodeOutput(string data)

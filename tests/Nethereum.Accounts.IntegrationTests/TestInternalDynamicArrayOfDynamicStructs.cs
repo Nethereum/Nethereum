@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System;
 using Newtonsoft.Json.Linq;
 using Nethereum.Hex.HexTypes;
+using System.Linq;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -219,6 +220,148 @@ contract StructsSample2
             var data = func.GetCallData();
             var expected = "00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000668656c6c6f310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000668656c6c6f3200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000012c00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000668656c6c6f330000000000000000000000000000000000000000000000000000";
             Assert.Equal(expected, data.ToHex().Substring(8));
+        }
+
+
+        [Fact]
+        public async void ShouldEncodeStructContainingArrayUsingJson()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
+
+            var contract = web3.Eth.GetContract("[{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'name':'SetPurchaseOrders','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder2','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'id','type':'uint256'}],'name':'GetPurchaseOrder','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder3','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'}],'name':'AddLineItems','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'name':'SetPurchaseOrder','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple'}],'name':'PurchaseOrderChanged','type':'event'},{'anonymous':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple[]'}],'name':'PurchaseOrdersChanged','type':'event'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'indexed':false,'name':'purchaseOrderId','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'indexed':false,'name':'lineItem','type':'tuple[]'}],'name':'LineItemsAdded','type':'event'}]", deploymentReceipt.ContractAddress);
+
+            var json = @"{'purchaseOrder':{
+  'id': 1,
+  'lineItem': [
+    {
+      'id': 1,
+      'productId': 100,
+      'quantity': 2,
+      'description': 'hello1'
+    },
+    {
+      'id': 2,
+      'productId': 200,
+      'quantity': 3,
+      'description': 'hello2'
+    }],
+    'customerId': 1000
+}}";
+            
+            var functionPurchaseOrder = contract.GetFunction("SetPurchaseOrder");
+            var values = functionPurchaseOrder.ConvertJsonToObjectInputParameters(json);
+            var receiptSending = await functionPurchaseOrder.
+                                           SendTransactionAndWaitForReceiptAsync(
+                                               EthereumClientIntegrationFixture.AccountAddress,
+                                               new HexBigInteger(900000), null, null,
+                                                values.ToArray()).ConfigureAwait(false);
+
+
+            var eventPurchaseOrder = contract.GetEvent("PurchaseOrderChanged");
+            var eventOutputs = eventPurchaseOrder.DecodeAllEventsDefaultForEvent(receiptSending.Logs);
+
+            var jObjectEvent = eventOutputs[0].Event.ConvertToJObject();
+
+            var expectedJObject = JObject.Parse(@"{
+  'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
+  'purchaseOrder':{
+  'id': 1,
+  'lineItem': [
+    {
+      'id': 1,
+      'productId': 100,
+      'quantity': 2,
+      'description': 'hello1'
+    },
+    {
+      'id': 2,
+      'productId': 200,
+      'quantity': 3,
+      'description': 'hello2'
+    }],
+    'customerId': 1000
+    }
+}");
+            Assert.True(JObject.DeepEquals(expectedJObject, jObjectEvent));
+        }
+
+        
+
+        [Fact]
+        public async void ShouldEncodeDecodeStructContainingStructsArrayOnlyUsingObjects()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSample2Deployment>()
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
+
+            var contract = web3.Eth.GetContract("[{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'name':'SetPurchaseOrders','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder2','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[{'name':'id','type':'uint256'}],'name':'GetPurchaseOrder','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':true,'inputs':[],'name':'GetPurchaseOrder3','outputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple[]'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'}],'name':'AddLineItems','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'constant':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'name':'purchaseOrder','type':'tuple'}],'name':'SetPurchaseOrder','outputs':[],'payable':false,'stateMutability':'nonpayable','type':'function'},{'inputs':[],'payable':false,'stateMutability':'nonpayable','type':'constructor'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple'}],'name':'PurchaseOrderChanged','type':'event'},{'anonymous':false,'inputs':[{'components':[{'name':'id','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'name':'lineItem','type':'tuple[]'},{'name':'customerId','type':'uint256'}],'indexed':false,'name':'purchaseOrder','type':'tuple[]'}],'name':'PurchaseOrdersChanged','type':'event'},{'anonymous':false,'inputs':[{'indexed':false,'name':'sender','type':'address'},{'indexed':false,'name':'purchaseOrderId','type':'uint256'},{'components':[{'name':'id','type':'uint256'},{'name':'productId','type':'uint256'},{'name':'quantity','type':'uint256'},{'name':'description','type':'string'}],'indexed':false,'name':'lineItem','type':'tuple[]'}],'name':'LineItemsAdded','type':'event'}]", deploymentReceipt.ContractAddress);
+
+            /*
+              struct PurchaseOrder {
+            uint256 id;
+            LineItem[] lineItem;
+            uint256 customerId;
+        }
+
+        struct LineItem {
+            uint256 id;
+            uint256 productId;
+            uint256 quantity;
+            string description;
+        }
+         
+             */
+            var purchaseOrder = new List<object>();
+            purchaseOrder.Add(1); // id
+            
+            var lineItem1 = new List<object>();
+            lineItem1.Add(1); //id
+            lineItem1.Add(100); //productId
+            lineItem1.Add(2); //quantity
+            lineItem1.Add("hello1"); //description
+
+            var lineItem2 = new List<object>();
+            lineItem2.Add(2); //id
+            lineItem2.Add(200); //productId
+            lineItem2.Add(3); //quantity
+            lineItem2.Add("hello2"); //description
+
+            var lineItems = new List<object>();
+            lineItems.Add(lineItem1.ToArray());
+            lineItems.Add(lineItem2.ToArray());
+
+            purchaseOrder.Add(lineItems); // lineItems
+
+            purchaseOrder.Add(1000); // customerId
+
+
+
+            var functionPurchaseOrder = contract.GetFunction("SetPurchaseOrder");
+            var receiptSending = await functionPurchaseOrder.
+                                            SendTransactionAndWaitForReceiptAsync(
+                                                EthereumClientIntegrationFixture.AccountAddress, 
+                                                new HexBigInteger(900000), null, null,
+                                                new object[] { purchaseOrder.ToArray() }).ConfigureAwait(false);
+
+
+            var eventPurchaseOrder = contract.GetEvent<PurchaseOrderChangedEventDTO>();
+            var eventOutputs = eventPurchaseOrder.DecodeAllEventsForEvent(receiptSending.Logs);
+            var purchaseOrderResult = eventOutputs[0].Event.PurchaseOrder;
+      
+            Assert.Equal(1, purchaseOrderResult.Id);
+            Assert.Equal(1000, purchaseOrderResult.CustomerId);
+            Assert.Equal(1, purchaseOrderResult.LineItem[0].Id);
+            Assert.Equal(100, purchaseOrderResult.LineItem[0].ProductId);
+            Assert.Equal(2, purchaseOrderResult.LineItem[0].Quantity);
+            Assert.Equal("hello1", purchaseOrderResult.LineItem[0].Description);
+
+            Assert.Equal(2, purchaseOrderResult.LineItem[1].Id);
+            Assert.Equal(200, purchaseOrderResult.LineItem[1].ProductId);
+            Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
+            Assert.Equal("hello2", purchaseOrderResult.LineItem[1].Description);
+           
         }
 
 
