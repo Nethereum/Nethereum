@@ -74,6 +74,7 @@ namespace Nethereum.Generators
             generators.Add(GetCQSMessageDeploymentGenerator());
             generators.AddRange(GetAllCQSFunctionMessageGenerators());
             generators.AddRange(GetllEventDTOGenerators());
+            generators.AddRange(GetAllErrorDTOGenerators());
             generators.AddRange(GetAllFunctionDTOsGenerators());
             //using the same namespace..
             var mainGenerator = new AllMessagesGenerator(generators, ContractName, cqsFullNamespace, CodeGenLanguage);
@@ -85,6 +86,7 @@ namespace Nethereum.Generators
             var generated = new List<GeneratedFile>();
             generated.AddRange(GenerateAllCQSMessages());
             generated.AddRange(GenerateAllEventDTOs());
+            generated.AddRange(GenerateAllErrorDTOs());
             generated.AddRange(GenerateAllFunctionDTOs());
             generated.Add(GenerateService());
             return generated.ToArray();
@@ -172,6 +174,18 @@ namespace Nethereum.Generators
             return generated;
         }
 
+        public List<GeneratedFile> GenerateAllErrorDTOs()
+        {
+            var generators = GetAllErrorDTOGenerators();
+            var dtoFullPath = GetFullPath(DTONamespace);
+            var generated = new List<GeneratedFile>();
+            foreach (var generator in generators)
+            {
+                GenerateAndAdd(generated, () => generator.GenerateFileContent(dtoFullPath));
+            }
+            return generated;
+        }
+
         public List<EventDTOGenerator> GetllEventDTOGenerators()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
@@ -179,6 +193,18 @@ namespace Nethereum.Generators
             foreach (var eventABI in ContractABI.Events)
             {
                 var generator = new EventDTOGenerator(eventABI, dtoFullNamespace, CodeGenLanguage);
+                generators.Add(generator);
+            }
+            return generators;
+        }
+
+        public List<ErrorDTOGenerator> GetAllErrorDTOGenerators()
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var generators = new List<ErrorDTOGenerator>();
+            foreach (var errorABI in ContractABI.Errors)
+            {
+                var generator = new ErrorDTOGenerator(errorABI, dtoFullNamespace, CodeGenLanguage);
                 generators.Add(generator);
             }
             return generators;

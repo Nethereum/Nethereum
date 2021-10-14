@@ -39,5 +39,23 @@ namespace Nethereum.Generators.Model
             //should never get here..
             return eventAbi.Name;
         }
+
+        public static string GetErrorTypeNameBasedOnOverloads(this ErrorABI errorABI)
+        {
+            var errorsWithSameName = errorABI.ContractAbi.GetAllErrorsWithSameName(errorABI.Name);
+            if (errorsWithSameName.Count == 1) return errorABI.Name;
+
+            var orderedList = errorsWithSameName.OrderBy(x => x.InputParameters.Length).ToArray();
+
+            for (var i = 0; i < orderedList.Count(); i++)
+            {
+                if (orderedList[i] == errorABI)
+                {
+                    if (i > 0) return errorABI.Name + i.ToString();
+                }
+            }
+            //should never get here..
+            return errorABI.Name;
+        }
     }
 }

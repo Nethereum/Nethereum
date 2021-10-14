@@ -30,7 +30,9 @@ declare module Nethereum {
             GetAllStructTypeGenerators(): System.Collections.Generic.List$1<DTOs.StructTypeGenerator>;
             GetAllFunctionDTOsGenerators(): System.Collections.Generic.List$1<DTOs.FunctionOutputDTOGenerator>;
             GenerateAllEventDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
+            GenerateAllErrorDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GetllEventDTOGenerators(): System.Collections.Generic.List$1<DTOs.EventDTOGenerator>;
+            GetAllErrorDTOGenerators(): System.Collections.Generic.List$1<DTOs.ErrorDTOGenerator>;
             GeneratCQSFunctionMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GetAllCQSFunctionMessageGenerators(): System.Collections.Generic.List$1<CQS.FunctionCQSMessageGenerator>;
             get_AddRootNamespaceOnVbProjectsToImportStatements(): boolean;
@@ -525,10 +527,13 @@ declare module Nethereum {
                 set_Constructor(value: ConstructorABI): void;
                 get_Events(): EventABI[];
                 set_Events(value: EventABI[]): void;
+                get_Errors(): ErrorABI[];
+                set_Errors(value: ErrorABI[]): void;
                 get_Structs(): StructABI[];
                 set_Structs(value: StructABI[]): void;
                 GetAllFunctionsWithSameName(name: string): System.Collections.Generic.List$1<FunctionABI>;
                 GetAllEventsWithSameName(name: string): System.Collections.Generic.List$1<EventABI>;
+                GetAllErrorsWithSameName(name: string): System.Collections.Generic.List$1<ErrorABI>;
             }
             export interface ContractABITypeFunc extends TypeFunction {
                 (): ContractABITypeFunc;
@@ -537,6 +542,21 @@ declare module Nethereum {
                 ctor: { new (): ContractABI; };
             }
             const ContractABI: ContractABITypeFunc;
+
+            // Nethereum.Generators.Model.ErrorABI
+            export interface ErrorABI extends System.Object {
+                get_ContractAbi(): ContractABI;
+                get_Name(): string;
+                get_InputParameters(): ParameterABI[];
+                set_InputParameters(value: ParameterABI[]): void;
+            }
+            export interface ErrorABITypeFunc extends TypeFunction {
+                (): ErrorABITypeFunc;
+                prototype: ErrorABI;
+                new (name: string, contract: ContractABI): ErrorABI;
+                ctor: { new (name: string, contract: ContractABI): ErrorABI; };
+            }
+            const ErrorABI: ErrorABITypeFunc;
 
             // Nethereum.Generators.Model.EventABI
             export interface EventABI extends System.Object {
@@ -578,6 +598,7 @@ declare module Nethereum {
                 (): FunctionEventOverloadTypeNameBuilderTypeFunc;
                 GetFunctionTypeNameBasedOnOverloads(functionAbi: FunctionABI): string;
                 GetEventTypeNameBasedOnOverloads(eventAbi: EventABI): string;
+                GetErrorTypeNameBasedOnOverloads(errorABI: ErrorABI): string;
             }
             const FunctionEventOverloadTypeNameBuilder: FunctionEventOverloadTypeNameBuilderTypeFunc;
 
@@ -1110,6 +1131,31 @@ declare module Nethereum {
             const FunctionCQSMessageVbTemplate: FunctionCQSMessageVbTemplateTypeFunc;
         }
         module DTOs {
+            // Nethereum.Generators.DTOs.ErrorDTOGenerator
+            export interface ErrorDTOGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<ErrorDTOModel>, ErrorDTOModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface ErrorDTOGeneratorTypeFunc extends TypeFunction {
+                (): ErrorDTOGeneratorTypeFunc;
+                prototype: ErrorDTOGenerator;
+                new (abi: Model.ErrorABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator;
+                ctor: { new (abi: Model.ErrorABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator; };
+            }
+            const ErrorDTOGenerator: ErrorDTOGeneratorTypeFunc;
+
+            // Nethereum.Generators.DTOs.ErrorDTOModel
+            export interface ErrorDTOModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ErrorABI(): Model.ErrorABI;
+                CanGenerateOutputDTO(): boolean;
+            }
+            export interface ErrorDTOModelTypeFunc extends TypeFunction {
+                (): ErrorDTOModelTypeFunc;
+                prototype: ErrorDTOModel;
+                new (errorABI: Model.ErrorABI, namespace: string): ErrorDTOModel;
+                ctor: { new (errorABI: Model.ErrorABI, namespace: string): ErrorDTOModel; };
+            }
+            const ErrorDTOModel: ErrorDTOModelTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOGenerator
             export interface EventDTOGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<EventDTOModel>, EventDTOModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
                 InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
@@ -1184,6 +1230,18 @@ declare module Nethereum {
             }
             const StructTypeModel: StructTypeModelTypeFunc;
 
+            // Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate
+            export interface ErrorDTOCSharpTemplate extends CQS.ClassTemplateBase$1<ErrorDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
+            }
+            export interface ErrorDTOCSharpTemplateTypeFunc extends TypeFunction {
+                (): ErrorDTOCSharpTemplateTypeFunc;
+                prototype: ErrorDTOCSharpTemplate;
+                new (errorDTOModel: ErrorDTOModel): ErrorDTOCSharpTemplate;
+                ctor: { new (errorDTOModel: ErrorDTOModel): ErrorDTOCSharpTemplate; };
+            }
+            const ErrorDTOCSharpTemplate: ErrorDTOCSharpTemplateTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOCSharpTemplate
             export interface EventDTOCSharpTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
                 GetPartialMainClass(): string;
@@ -1250,6 +1308,17 @@ declare module Nethereum {
             }
             const StructTypeCSharpTemplate: StructTypeCSharpTemplateTypeFunc;
 
+            // Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate
+            export interface ErrorDTOFSharpTemplate extends CQS.ClassTemplateBase$1<ErrorDTOModel>, Core.IClassTemplate {
+            }
+            export interface ErrorDTOFSharpTemplateTypeFunc extends TypeFunction {
+                (): ErrorDTOFSharpTemplateTypeFunc;
+                prototype: ErrorDTOFSharpTemplate;
+                new (errorDTOModel: ErrorDTOModel): ErrorDTOFSharpTemplate;
+                ctor: { new (errorDTOModel: ErrorDTOModel): ErrorDTOFSharpTemplate; };
+            }
+            const ErrorDTOFSharpTemplate: ErrorDTOFSharpTemplateTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOFSharpTemplate
             export interface EventDTOFSharpTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
             }
@@ -1312,6 +1381,18 @@ declare module Nethereum {
                 ctor: { new (model: StructTypeModel): StructTypeFSharpTemplate; };
             }
             const StructTypeFSharpTemplate: StructTypeFSharpTemplateTypeFunc;
+
+            // Nethereum.Generators.DTOs.ErrorDTOVbTemplate
+            export interface ErrorDTOVbTemplate extends CQS.ClassTemplateBase$1<ErrorDTOModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
+            }
+            export interface ErrorDTOVbTemplateTypeFunc extends TypeFunction {
+                (): ErrorDTOVbTemplateTypeFunc;
+                prototype: ErrorDTOVbTemplate;
+                new (errorDTOModel: ErrorDTOModel): ErrorDTOVbTemplate;
+                ctor: { new (errorDTOModel: ErrorDTOModel): ErrorDTOVbTemplate; };
+            }
+            const ErrorDTOVbTemplate: ErrorDTOVbTemplateTypeFunc;
 
             // Nethereum.Generators.DTOs.EventDTOVbTemplate
             export interface EventDTOVbTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {

@@ -26,4 +26,5 @@ namespace Nethereum.Generators.DTOs
             return null;
         }
     }
+
 }

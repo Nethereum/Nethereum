@@ -7,6 +7,7 @@ namespace Nethereum.Generators.Model
         public FunctionABI[] Functions { get; set; }
         public ConstructorABI Constructor { get; set; }
         public EventABI[] Events { get; set; }
+        public ErrorABI[] Errors { get; set; }
         public StructABI[] Structs { get; set; }
 
         public List<FunctionABI> GetAllFunctionsWithSameName(string name)
@@ -35,6 +36,19 @@ namespace Nethereum.Generators.Model
             }
 
             return allEventsMatchingName;
+        }
+
+        public List<ErrorABI> GetAllErrorsWithSameName(string name)
+        {
+            var allErrorsMatchingName = new List<ErrorABI>();
+            foreach (var errorAbi in this.Errors)
+            {
+                if (errorAbi.Name == name)
+                {
+                    allErrorsMatchingName.Add(errorAbi);
+                }
+            }
+            return allErrorsMatchingName;
         }
 
     }

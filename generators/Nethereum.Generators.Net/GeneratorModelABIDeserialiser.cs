@@ -18,6 +18,14 @@ namespace Nethereum.Generators.Net
             };
         }
 
+        public ErrorABI BuildError(IDictionary<string, object> eventobject, ContractABI contractAbi)
+        {
+            return new ErrorABI((string)eventobject["name"], contractAbi)
+            {
+                InputParameters = this.BuildFunctionParameters((List<object>)eventobject["inputs"])
+            };
+        }
+
         public EventABI BuildEvent(IDictionary<string, object> eventobject, ContractABI contractAbi)
         {
             return new EventABI((string)eventobject["name"], contractAbi)
@@ -82,6 +90,7 @@ namespace Nethereum.Generators.Net
             var dictionaryList = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, expandoObjectConverter);
             var functionAbiList = new List<FunctionABI>();
             var eventAbiList = new List<EventABI>();
+            var errorAbiList = new List<ErrorABI>();
             var constructorAbi = new ConstructorABI();
             var contractAbi = new ContractABI();
             foreach (IDictionary<string, object> dictionary in dictionaryList)
@@ -90,6 +99,8 @@ namespace Nethereum.Generators.Net
                     functionAbiList.Add(this.BuildFunction(dictionary, contractAbi));
                 if ((string)dictionary["type"] == "event")
                     eventAbiList.Add(this.BuildEvent(dictionary, contractAbi));
+                if ((string)dictionary["type"] == "error")
+                    errorAbiList.Add(this.BuildError(dictionary, contractAbi));
                 if ((string)dictionary["type"] == "constructor")
                     constructorAbi = this.BuildConstructor(dictionary);
             }
@@ -97,6 +108,7 @@ namespace Nethereum.Generators.Net
             contractAbi.Functions = functionAbiList.ToArray();
             contractAbi.Constructor = constructorAbi;
             contractAbi.Events = eventAbiList.ToArray();
+            contractAbi.Errors = errorAbiList.ToArray();
         
 
            
