@@ -1,5 +1,5 @@
 ﻿{
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Nethereum.Portable is a NETPortable library including most of the supported libraries in a single package. Including Web3, Geth, ABI, Contracts, Signing, RPC, Hex, KeyStore, Util, ENS, Quorum, Besu and ERC20",
   "authors": [
     "Juan Blanco"
