@@ -229,6 +229,11 @@ namespace Nethereum.ABI.FunctionEncoding
                         {
                             value = val.ToHex();
                         }
+                        //bigInt as string
+                        if(item.Parameter.ABIType is IntType)
+                        {
+                            value = value.ToString();
+                        }
 
                         jObject.Add(item.Parameter.Name, JToken.FromObject(value));
                         

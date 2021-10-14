@@ -267,21 +267,21 @@ contract StructsSample2
             var expectedJObject = JObject.Parse(@"{
   'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
   'purchaseOrder':{
-  'id': 1,
+  'id': '1',
   'lineItem': [
     {
-      'id': 1,
-      'productId': 100,
-      'quantity': 2,
+      'id': '1',
+      'productId': '100',
+      'quantity': '2',
       'description': 'hello1'
     },
     {
-      'id': 2,
-      'productId': 200,
-      'quantity': 3,
+      'id': '2',
+      'productId': '200',
+      'quantity': '3',
       'description': 'hello2'
     }],
-    'customerId': 1000
+    'customerId': '1000'
     }
 }");
             Assert.True(JObject.DeepEquals(expectedJObject, jObjectEvent));
@@ -417,18 +417,18 @@ contract StructsSample2
 
             var expectedJObject = JObject.Parse(@"{
   'sender': '0x12890D2cce102216644c59daE5baed380d84830c',
-  'purchaseOrderId': 1,
+  'purchaseOrderId': '1',
   'lineItem': [
     {
-      'id': 3,
-      'productId': 300,
-      'quantity': 2,
+      'id': '3',
+      'productId': '300',
+      'quantity': '2',
       'description': 'hello3'
     },
     {
-      'id': 4,
-      'productId': 400,
-      'quantity': 3,
+      'id': '4',
+      'productId': '400',
+      'quantity': '3',
       'description': 'hello4'
     }
   ]

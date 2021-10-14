@@ -81,28 +81,28 @@ namespace Nethereum.Accounts.IntegrationTests
                 @"{
   ""purchaseOrder"": [
     {
-                ""id"": 1,
+                ""id"": '1',
       ""lineItem"": [
         {
-                    ""id"": 1,
-          ""productId"": 100,
-          ""quantity"": 2,
+                    ""id"": '1',
+          ""productId"": '100',
+          ""quantity"": '2',
           ""description"": ""hello1""
         },
         {
-                    ""id"": 2,
-          ""productId"": 200,
-          ""quantity"": 3,
+                    ""id"": '2',
+          ""productId"": '200',
+          ""quantity"": '3',
           ""description"": ""hello2""
         },
         {
-                    ""id"": 3,
-          ""productId"": 300,
-          ""quantity"": 4,
+                    ""id"": '3',
+          ""productId"": '300',
+          ""quantity"": '4',
           ""description"": ""hello3""
         }
       ],
-      ""customerId"": 1000
+      ""customerId"": '1000'
     }
   ]
 }");
@@ -144,28 +144,28 @@ namespace Nethereum.Accounts.IntegrationTests
                 @"{
   'purchaseOrder': [
     {
-      'id': 1,
+      'id': '1',
       'lineItem': [
         {
-          'id': 1,
-          'productId': 100,
-          'quantity': 2,
+          'id': '1',
+          'productId': '100',
+          'quantity': '2',
           'description': 'hello1'
         },
         {
-          'id': 2,
-          'productId': 200,
-          'quantity': 3,
+          'id': '2',
+          'productId': '200',
+          'quantity': '3',
           'description': 'hello2'
         },
         {
-          'id': 3,
-          'productId': 300,
-          'quantity': 4,
+          'id': '3',
+          'productId': '300',
+          'quantity': '4',
           'description': 'hello3'
         }
       ],
-      'customerId': 1000,
+      'customerId': '1000',
       'id2': '6334445500000000000000000000000000000000000000000000000012434440',
       'id3': '0x12890D2cce102216644c59daE5baed380d84830c',
       'id5': [
