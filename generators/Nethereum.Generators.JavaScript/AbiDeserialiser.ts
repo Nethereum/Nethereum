@@ -6,6 +6,7 @@ var constructorAbi = Nethereum.Generators.Model.ConstructorABI;
 var contractAbi = Nethereum.Generators.Model.ContractABI;
 var parameterAbi = Nethereum.Generators.Model.ParameterABI;
 var structAbi = Nethereum.Generators.Model.StructABI;
+var errorAbi = Nethereum.Generators.Model.ErrorABI;
 
 
 function buildConstructor(item: any): Nethereum.Generators.Model.ConstructorABI {
@@ -36,6 +37,12 @@ function buildEvent(item: any, contractAbi: Nethereum.Generators.Model.ContractA
     var eventItem = new eventAbi(item.name, contractAbi);
     eventItem.set_InputParameters(buildEventParameters(item.inputs));
     return eventItem;
+}
+
+function buildError(item: any, contractAbi: Nethereum.Generators.Model.ContractABI): Nethereum.Generators.Model.ErrorABI {
+    var errorItem = new errorAbi(item.name, contractAbi);
+    errorItem.set_InputParameters(buildFunctionParameters(item.inputs));
+    return errorItem;
 }
 
 function getStructTypeName(item: any) {
@@ -123,6 +130,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
     const abi = JSON.parse(abiStr);
     const functions = [];
     const events = [];
+    const errors = [];
     const structs :Nethereum.Generators.Model.StructABI[] = [];
     let constructor = new constructorAbi();
     const contract = new contractAbi();
@@ -143,6 +151,10 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
             events.push(buildEvent(abi[i], contract));
         }
 
+        if (abi[i].type === "error") {
+            errors.push(buildError(abi[i], contract));
+        }
+
         if (abi[i].type === "constructor") {
             constructor = buildConstructor(abi[i]);
         }
@@ -159,6 +171,7 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
     contract.set_Constructor(constructor);
     contract.set_Functions(functions);
     contract.set_Events(events);
+    contract.set_Errors(errors);
     contract.set_Structs(structs);
     return contract;
 }   

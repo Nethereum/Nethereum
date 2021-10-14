@@ -8,6 +8,7 @@ var constructorAbi = Nethereum.Generators.Model.ConstructorABI;
 var contractAbi = Nethereum.Generators.Model.ContractABI;
 var parameterAbi = Nethereum.Generators.Model.ParameterABI;
 var structAbi = Nethereum.Generators.Model.StructABI;
+var errorAbi = Nethereum.Generators.Model.ErrorABI;
 function buildConstructor(item) {
     var constructorItem = new constructorAbi();
     constructorItem.set_InputParameters(buildFunctionParameters(item.inputs));
@@ -32,6 +33,11 @@ function buildEvent(item, contractAbi) {
     var eventItem = new eventAbi(item.name, contractAbi);
     eventItem.set_InputParameters(buildEventParameters(item.inputs));
     return eventItem;
+}
+function buildError(item, contractAbi) {
+    var errorItem = new errorAbi(item.name, contractAbi);
+    errorItem.set_InputParameters(buildFunctionParameters(item.inputs));
+    return errorItem;
 }
 function getStructTypeName(item) {
     if (item.internalType !== undefined && item.internalType.startsWith("struct")) {
@@ -112,6 +118,7 @@ function buildContract(abiStr) {
     var abi = JSON.parse(abiStr);
     var functions = [];
     var events = [];
+    var errors = [];
     var structs = [];
     var constructor = new constructorAbi();
     var contract = new contractAbi();
@@ -132,6 +139,9 @@ function buildContract(abiStr) {
         if (abi[i].type === "event") {
             events.push(buildEvent(abi[i], contract));
         }
+        if (abi[i].type === "error") {
+            errors.push(buildError(abi[i], contract));
+        }
         if (abi[i].type === "constructor") {
             constructor = buildConstructor(abi[i]);
         }
@@ -149,6 +159,7 @@ function buildContract(abiStr) {
     contract.set_Constructor(constructor);
     contract.set_Functions(functions);
     contract.set_Events(events);
+    contract.set_Errors(errors);
     contract.set_Structs(structs);
     return contract;
 }

@@ -39,6 +39,7 @@ Nethereum.Generators.Core.ParameterABIModelTypeMap = $d.declare("Nethereum.Gener
 Nethereum.Generators.Model.ConstructorABI = $d.declare("Nethereum.Generators.Model.ConstructorABI", 0, 
     $asm);
 Nethereum.Generators.Model.ContractABI = $d.declare("Nethereum.Generators.Model.ContractABI", 0, $asm);
+Nethereum.Generators.Model.ErrorABI = $d.declare("Nethereum.Generators.Model.ErrorABI", 0, $asm);
 Nethereum.Generators.Model.EventABI = $d.declare("Nethereum.Generators.Model.EventABI", 0, $asm);
 Nethereum.Generators.Model.FunctionABI = $d.declare("Nethereum.Generators.Model.FunctionABI", 0, $asm);
 Nethereum.Generators.Model.FunctionEventOverloadTypeNameBuilder = $d.declare("Nethereum.Generators.Model.FunctionEventOverloadTypeNameBuilder", 
@@ -141,6 +142,9 @@ Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate = $d.declare("Ne
     0, $asm);
 Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate = $d.declare("Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate", 
     0, $asm);
+Nethereum.Generators.DTOs.ErrorDTOGenerator = $d.declare("Nethereum.Generators.DTOs.ErrorDTOGenerator", 
+    0, $asm);
+Nethereum.Generators.DTOs.ErrorDTOModel = $d.declare("Nethereum.Generators.DTOs.ErrorDTOModel", 0, $asm);
 Nethereum.Generators.DTOs.EventDTOGenerator = $d.declare("Nethereum.Generators.DTOs.EventDTOGenerator", 
     0, $asm);
 Nethereum.Generators.DTOs.EventDTOModel = $d.declare("Nethereum.Generators.DTOs.EventDTOModel", 0, $asm);
@@ -152,6 +156,8 @@ Nethereum.Generators.DTOs.StructTypeGenerator = $d.declare("Nethereum.Generators
     0, $asm);
 Nethereum.Generators.DTOs.StructTypeModel = $d.declare("Nethereum.Generators.DTOs.StructTypeModel", 0, 
     $asm);
+Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate", 
+    0, $asm);
 Nethereum.Generators.DTOs.EventDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.EventDTOCSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate", 
@@ -162,6 +168,8 @@ Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate = $d.declare("Ne
     0, $asm);
 Nethereum.Generators.DTOs.StructTypeCSharpTemplate = $d.declare("Nethereum.Generators.DTOs.StructTypeCSharpTemplate", 
     0, $asm);
+Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate", 
+    0, $asm);
 Nethereum.Generators.DTOs.EventDTOFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.EventDTOFSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate", 
@@ -171,6 +179,8 @@ Nethereum.Generators.DTOs.ParameterABIEventDTOFSharpTemplate = $d.declare("Nethe
 Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.StructTypeFSharpTemplate = $d.declare("Nethereum.Generators.DTOs.StructTypeFSharpTemplate", 
+    0, $asm);
+Nethereum.Generators.DTOs.ErrorDTOVbTemplate = $d.declare("Nethereum.Generators.DTOs.ErrorDTOVbTemplate", 
     0, $asm);
 Nethereum.Generators.DTOs.EventDTOVbTemplate = $d.declare("Nethereum.Generators.DTOs.EventDTOVbTemplate", 
     0, $asm);
@@ -256,7 +266,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     };
     $p.GenerateAllMessagesFileAndService = function ContractProjectGenerator_GenerateAllMessagesFileAndService() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         generated.Add(this.GenerateAllMessages());
         generated.AddRange(this.GenerateAllStructs());
         generated.Add(this.GenerateService(true));
@@ -267,10 +277,11 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var cqsFullPath = this.GetFullPath(this.get_CQSNamespace());
 
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.IClassGenerator, 
-            18623).ctor)();
+            37907).ctor)();
         generators.Add(this.GetCQSMessageDeploymentGenerator());
         generators.AddRange(this.GetAllCQSFunctionMessageGenerators());
         generators.AddRange(this.GetllEventDTOGenerators());
+        generators.AddRange(this.GetAllErrorDTOGenerators());
         generators.AddRange(this.GetAllFunctionDTOsGenerators());
         //using the same namespace..
         var mainGenerator = new Nethereum.Generators.Service.AllMessagesGenerator.ctor(generators, this.get_ContractName(), 
@@ -279,9 +290,10 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     };
     $p.GenerateAll = function ContractProjectGenerator_GenerateAll() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         generated.AddRange(this.GenerateAllCQSMessages());
         generated.AddRange(this.GenerateAllEventDTOs());
+        generated.AddRange(this.GenerateAllErrorDTOs());
         generated.AddRange(this.GenerateAllFunctionDTOs());
         generated.Add(this.GenerateService(false));
         return generated.ToArray();
@@ -302,7 +314,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     };
     $p.GenerateAllCQSMessages = function ContractProjectGenerator_GenerateAllCQSMessages() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         generated.Add(this.GeneratCQSMessageDeployment());
         generated.AddRange(this.GeneratCQSFunctionMessages());
         return generated;
@@ -311,7 +323,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var generators = this.GetAllFunctionDTOsGenerators();
         var dtoFullPath = this.GetFullPath(this.get_DTONamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         var $iter = generators;
         var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
         while ($enumerator.System$Collections$IEnumerator$MoveNext())
@@ -327,7 +339,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var generators = this.GetAllStructTypeGenerators();
         var structFullPath = this.GetFullPath(this.get_DTONamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         var $iter = generators;
         var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
         while ($enumerator.System$Collections$IEnumerator$MoveNext())
@@ -342,7 +354,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GetAllStructTypeGenerators = function ContractProjectGenerator_GetAllStructTypeGenerators() {
         var structTypeNamespace = this.GetFullNamespace(this.get_DTONamespace());
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.StructTypeGenerator, 
-            21723).ctor)();
+            50623).ctor)();
         for (var $i = 0, $a = this.get_ContractABI().get_Structs(), $length = $a.length; $i < $length; $i++) {
             var structAbi = $a[$i];
             var structTypeGenerator = new Nethereum.Generators.DTOs.StructTypeGenerator.ctor(structAbi, 
@@ -354,7 +366,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GetAllFunctionDTOsGenerators = function ContractProjectGenerator_GetAllFunctionDTOsGenerators() {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.FunctionOutputDTOGenerator, 
-            29335).ctor)();
+            30473).ctor)();
         for (var $i = 0, $a = this.get_ContractABI().get_Functions(), $length = $a.length; $i < $length; $i++) {
             var functionABI = $a[$i];
             var functionOutputDTOGenerator = new Nethereum.Generators.DTOs.FunctionOutputDTOGenerator.ctor(functionABI, 
@@ -367,7 +379,23 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var generators = this.GetllEventDTOGenerators();
         var dtoFullPath = this.GetFullPath(this.get_DTONamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
+        var $iter = generators;
+        var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
+        while ($enumerator.System$Collections$IEnumerator$MoveNext())
+            (function() {
+                var generator = $enumerator.System$Collections$IEnumerator$get_Current();
+                this.GenerateAndAdd(generated, $d.delegate(function() {
+                    return generator.GenerateFileContent$1(dtoFullPath);
+                }, this));
+            }).call(this);
+        return generated;
+    };
+    $p.GenerateAllErrorDTOs = function ContractProjectGenerator_GenerateAllErrorDTOs() {
+        var generators = this.GetAllErrorDTOGenerators();
+        var dtoFullPath = this.GetFullPath(this.get_DTONamespace());
+        var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
+            35606).ctor)();
         var $iter = generators;
         var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
         while ($enumerator.System$Collections$IEnumerator$MoveNext())
@@ -382,10 +410,22 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GetllEventDTOGenerators = function ContractProjectGenerator_GetllEventDTOGenerators() {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.EventDTOGenerator, 
-            26546).ctor)();
+            6963).ctor)();
         for (var $i = 0, $a = this.get_ContractABI().get_Events(), $length = $a.length; $i < $length; $i++) {
             var eventABI = $a[$i];
             var generator = new Nethereum.Generators.DTOs.EventDTOGenerator.ctor(eventABI, dtoFullNamespace, 
+                this.get_CodeGenLanguage());
+            generators.Add(generator);
+        }
+        return generators;
+    };
+    $p.GetAllErrorDTOGenerators = function ContractProjectGenerator_GetAllErrorDTOGenerators() {
+        var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
+        var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.ErrorDTOGenerator, 
+            2045).ctor)();
+        for (var $i = 0, $a = this.get_ContractABI().get_Errors(), $length = $a.length; $i < $length; $i++) {
+            var errorABI = $a[$i];
+            var generator = new Nethereum.Generators.DTOs.ErrorDTOGenerator.ctor(errorABI, dtoFullNamespace, 
                 this.get_CodeGenLanguage());
             generators.Add(generator);
         }
@@ -395,7 +435,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var generators = this.GetAllCQSFunctionMessageGenerators();
         var cqsFullPath = this.GetFullPath(this.get_CQSNamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
-            64040).ctor)();
+            35606).ctor)();
         var $iter = generators;
         var $enumerator = $iter.System$Collections$IEnumerable$GetEnumerator();
         while ($enumerator.System$Collections$IEnumerator$MoveNext())
@@ -415,7 +455,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         dtoFullNamespace = this.FullyQualifyNamespaceFromImport(dtoFullNamespace);
 
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, 
-            48385).ctor)();
+            18052).ctor)();
         for (var $i = 0, $a = this.get_ContractABI().get_Functions(), $length = $a.length; $i < $length; $i++) {
             var functionAbi = $a[$i];
             var cqsGenerator = new Nethereum.Generators.CQS.FunctionCQSMessageGenerator.ctor(functionAbi, 
@@ -462,7 +502,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "4.0.0";
+        this.NethereumWeb3Version = "4.0.1";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
@@ -584,7 +624,7 @@ $d.define(Nethereum.Generators.Core.ParameterModel$1, null, function($t, $p, TPa
     };
 }, [$d.typeParam("TParameter", Nethereum.Generators.Core.Parameter)]);
 $d.define(Nethereum.Generators.Core.ParameterABIModel, Nethereum.Generators.Core.ParameterModel$1(Nethereum.Generators.Model.ParameterABI, 
-    38994), function($t, $p) {
+    60426), function($t, $p) {
     $t.cctor = function() {
         $t.AnonymousInputParameterPrefix = "ParamValue";
         $t.AnonymousOutputParameterPrefix = "ReturnValue";
@@ -655,7 +695,7 @@ $d.define(Nethereum.Generators.Core.ParameterABIModelTypeMap, null, function($t,
 Nethereum.Generators.Core.IMessage$1 = $d.type("Nethereum.Generators.Core.IMessage`1", 322, $asm, function($t, $p, TParameter) {
 }, [$d.typeParam("TParameter", Nethereum.Generators.Core.Parameter)]);
 $d.define(Nethereum.Generators.Model.ConstructorABI, null, function($t, $p) {
-    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 38994)]; };
+    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 60426)]; };
     $t.$ator = function() {
         this.Name = null;
         this.InputParameters = null;
@@ -677,6 +717,7 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
         this.Functions = null;
         this.Constructor = null;
         this.Events = null;
+        this.Errors = null;
         this.Structs = null;
     };
     $t.ctor = function ContractABI() {
@@ -688,11 +729,13 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
     $p.set_Constructor = function ContractABI_set_Constructor(value) { this.Constructor = value;return value; };
     $p.get_Events = function ContractABI_get_Events() { return this.Events; };
     $p.set_Events = function ContractABI_set_Events(value) { this.Events = value;return value; };
+    $p.get_Errors = function ContractABI_get_Errors() { return this.Errors; };
+    $p.set_Errors = function ContractABI_set_Errors(value) { this.Errors = value;return value; };
     $p.get_Structs = function ContractABI_get_Structs() { return this.Structs; };
     $p.set_Structs = function ContractABI_set_Structs(value) { this.Structs = value;return value; };
     $p.GetAllFunctionsWithSameName = function ContractABI_GetAllFunctionsWithSameName(name) {
         var allFunctionMatchingName = new (System.Collections.Generic.List$1(Nethereum.Generators.Model.FunctionABI, 
-            43687).ctor)();
+            53551).ctor)();
         for (var $i = 0, $a = this.get_Functions(), $length = $a.length; $i < $length; $i++) {
             var $function = $a[$i];
             if ($function.get_Name() == name) {
@@ -704,7 +747,7 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
     };
     $p.GetAllEventsWithSameName = function ContractABI_GetAllEventsWithSameName(name) {
         var allEventsMatchingName = new (System.Collections.Generic.List$1(Nethereum.Generators.Model.EventABI, 
-            55107).ctor)();
+            6390).ctor)();
         for (var $i = 0, $a = this.get_Events(), $length = $a.length; $i < $length; $i++) {
             var eventAbi = $a[$i];
             if (eventAbi.get_Name() == name) {
@@ -714,6 +757,34 @@ $d.define(Nethereum.Generators.Model.ContractABI, null, function($t, $p) {
 
         return allEventsMatchingName;
     };
+    $p.GetAllErrorsWithSameName = function ContractABI_GetAllErrorsWithSameName(name) {
+        var allErrorsMatchingName = new (System.Collections.Generic.List$1(Nethereum.Generators.Model.ErrorABI, 
+            26259).ctor)();
+        for (var $i = 0, $a = this.get_Errors(), $length = $a.length; $i < $length; $i++) {
+            var errorAbi = $a[$i];
+            if (errorAbi.get_Name() == name) {
+                allErrorsMatchingName.Add(errorAbi);
+            }
+        }
+        return allErrorsMatchingName;
+    };
+});
+$d.define(Nethereum.Generators.Model.ErrorABI, null, function($t, $p) {
+    $t.$ator = function() {
+        this.ContractAbi = null;
+        this.Name = null;
+        this.InputParameters = null;
+    };
+    $t.ctor = function ErrorABI(name, contract) {
+        $t.$baseType.ctor.call(this);
+        this.Name = name;
+        this.set_ContractAbi(contract);
+    };
+    $p.get_ContractAbi = function ErrorABI_get_ContractAbi() { return this.ContractAbi; };
+    $p.set_ContractAbi = function ErrorABI_set_ContractAbi(value) { this.ContractAbi = value;return value; };
+    $p.get_Name = function ErrorABI_get_Name() { return this.Name; };
+    $p.get_InputParameters = function ErrorABI_get_InputParameters() { return this.InputParameters; };
+    $p.set_InputParameters = function ErrorABI_set_InputParameters(value) { this.InputParameters = value;return value; };
 });
 $d.define(Nethereum.Generators.Model.EventABI, null, function($t, $p) {
     $t.$ator = function() {
@@ -733,7 +804,7 @@ $d.define(Nethereum.Generators.Model.EventABI, null, function($t, $p) {
     $p.set_ContractAbi = function EventABI_set_ContractAbi(value) { this.ContractAbi = value;return value; };
 });
 $d.define(Nethereum.Generators.Model.FunctionABI, null, function($t, $p) {
-    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 38994)]; };
+    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 60426)]; };
     $t.$ator = function() {
         this.Serpent = false;
         this.Constant = false;
@@ -804,6 +875,25 @@ $d.define(Nethereum.Generators.Model.FunctionEventOverloadTypeNameBuilder, null,
         //should never get here..
         return eventAbi.get_Name();
     };
+    $t.GetErrorTypeNameBasedOnOverloads = function FunctionEventOverloadTypeNameBuilder_GetErrorTypeNameBasedOnOverloads(errorABI) {
+        var errorsWithSameName = errorABI.get_ContractAbi().GetAllErrorsWithSameName(errorABI.get_Name());
+        if (errorsWithSameName.get_Count() == 1)
+            return errorABI.get_Name();
+
+        var orderedList = System.Linq.Enumerable.ToArray(Nethereum.Generators.Model.ErrorABI, System.Linq.Enumerable.OrderBy(Nethereum.Generators.Model.ErrorABI, 
+            System.Int32, errorsWithSameName, $d.delegate(function(x) {
+                return x.get_InputParameters().length;
+            })));
+
+        for (var i = 0; i < System.Linq.Enumerable.Count(Nethereum.Generators.Model.ErrorABI, orderedList); i++) {
+            if (orderedList[i] == errorABI) {
+                if (i > 0)
+                    return errorABI.get_Name() + i.toString();
+            }
+        }
+        //should never get here..
+        return errorABI.get_Name();
+    };
 });
 $d.define(Nethereum.Generators.Model.ParameterABI, Nethereum.Generators.Core.Parameter, function($t, $p) {
     $t.$ator = function() {
@@ -823,7 +913,7 @@ $d.define(Nethereum.Generators.Model.ParameterABI, Nethereum.Generators.Core.Par
     $p.set_Indexed = function ParameterABI_set_Indexed(value) { this.Indexed = value;return value; };
 });
 $d.define(Nethereum.Generators.Model.StructABI, null, function($t, $p) {
-    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 38994)]; };
+    $t.$intfs = function() { return [Nethereum.Generators.Core.IMessage$1(Nethereum.Generators.Model.ParameterABI, 60426)]; };
     $t.$ator = function() {
         this.InputParameters = null;
         this.Name = null;
@@ -1130,7 +1220,7 @@ $d.define(Nethereum.Generators.Core.FileModel, null, function($t, $p) {
         this.CommonGenerators = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
         this.Namespace = null;
-        this.NamespaceDependencies = new (System.Collections.Generic.List$1(String, 40320).ctor)();
+        this.NamespaceDependencies = new (System.Collections.Generic.List$1(String, 54783).ctor)();
     };
     $p.get_Name = function FileModel_get_Name() { return this.Name; };
     $p.get_CommonGenerators = function FileModel_get_CommonGenerators() { return this.CommonGenerators; };
@@ -1188,7 +1278,7 @@ $d.define(Nethereum.Generators.Core.MultipleClassGeneratorBase$2, null, function
 }, [$d.typeParam("TMultipleClassFileTemplate", Nethereum.Generators.CQS.MultipleClassFileTemplate), $d.typeParam("TMultipleClassFileModel", 
     Nethereum.Generators.Core.FileModel)]);
 $d.define(Nethereum.Generators.Service.AllMessagesGenerator, Nethereum.Generators.Core.MultipleClassGeneratorBase$2(Nethereum.Generators.CQS.MultipleClassFileTemplate, 
-    Nethereum.Generators.Service.AllMessagesModel, 9315), function($t, $p) {
+    Nethereum.Generators.Service.AllMessagesModel, 46371), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator];
     $t.$ator = function() {
         this._classGenerators = null;
@@ -1270,7 +1360,7 @@ $d.define(Nethereum.Generators.Core.TypeMessageModel, null, function($t, $p) {
         this.Name = name;
         this.set_ClassNameSuffix(classNameSuffix);
         this.set_CommonGenerators(new Nethereum.Generators.Core.CommonGenerators.ctor());
-        this.NamespaceDependencies = new (System.Collections.Generic.List$1(String, 40320).ctor)();
+        this.NamespaceDependencies = new (System.Collections.Generic.List$1(String, 54783).ctor)();
         this.set_CodeGenLanguage(0 /* CodeGenLanguage.CSharp */);
     };
     $p.GetTypeName$1 = function TypeMessageModel_GetTypeName(name) {
@@ -1333,7 +1423,7 @@ $d.define(Nethereum.Generators.Core.ClassGeneratorBase$2, null, function($t, $p,
     $p.Nethereum$Generators$Core$IClassGenerator$GenerateClass = $p.GenerateClass;
 }, [$d.typeParam("TClassTemplate"), $d.typeParam("TClassModel", Nethereum.Generators.Core.TypeMessageModel)]);
 $d.define(Nethereum.Generators.Console.ConsoleGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    49712), Nethereum.Generators.Console.ConsoleModel, 46937), function($t, $p) {
+    12205), Nethereum.Generators.Console.ConsoleModel, 26037), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -1415,7 +1505,7 @@ $d.define(Nethereum.Generators.CQS.ClassTemplateBase$1, null, function($t, $p, T
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateFullClass = $p.GenerateFullClass;
 }, [$d.typeParam("TModel")]);
 $d.define(Nethereum.Generators.Console.CSharp.ConsoleCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    49712), function($t, $p) {
+    12205), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionMockupMethodCSharp = null;
@@ -1570,7 +1660,7 @@ $d.define(Nethereum.Generators.Console.CSharp.FunctionMockupMethodCSharpTemplate
     };
 });
 $d.define(Nethereum.Generators.Console.Vb.ConsoleVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    49712), function($t, $p) {
+    12205), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionMockupMethodVb = null;
@@ -1747,7 +1837,7 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
     $t.cctor = function() {
         $t.ProjectFileExtensions = (function() {
             var $obj = new (System.Collections.Generic.Dictionary$2(Nethereum.Generators.Core.CodeGenLanguage, 
-                String, 25884).ctor)();
+                String, 9153).ctor)();
             $obj.Add$1(0 /* CodeGenLanguage.CSharp */, ".csproj");
             $obj.Add$1(3 /* CodeGenLanguage.FSharp */, ".fsproj");
             $obj.Add$1(1 /* CodeGenLanguage.Vb */, ".vbproj");
@@ -1755,7 +1845,7 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
         }).call(this);
         $t.LanguageMappings = (function() {
             var $obj = new (System.Collections.Generic.Dictionary$2(String, Nethereum.Generators.Core.CodeGenLanguage, 
-                11045).ctor$2)(new Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase.ctor());
+                42454).ctor$2)(new Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase.ctor());
             $obj.Add$1("C#", 0 /* CodeGenLanguage.CSharp */);
             $obj.Add$1("CSharp", 0 /* CodeGenLanguage.CSharp */);
             $obj.Add$1("F#", 3 /* CodeGenLanguage.FSharp */);
@@ -1765,7 +1855,7 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
         }).call(this);
         $t.DotNetCliLanguage = (function() {
             var $obj = new (System.Collections.Generic.Dictionary$2(Nethereum.Generators.Core.CodeGenLanguage, 
-                String, 25884).ctor)();
+                String, 9153).ctor)();
             $obj.Add$1(0 /* CodeGenLanguage.CSharp */, "C#");
             $obj.Add$1(3 /* CodeGenLanguage.FSharp */, "F#");
             $obj.Add$1(1 /* CodeGenLanguage.Vb */, "VB");
@@ -1840,7 +1930,7 @@ $d.define(Nethereum.Generators.Core.CodeGenLanguageExt, null, function($t, $p) {
     };
 });
 $d.define(Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase, null, function($t, $p) {
-    $t.$intfs = function() { return [System.Collections.Generic.IEqualityComparer$1(String, 40320)]; };
+    $t.$intfs = function() { return [System.Collections.Generic.IEqualityComparer$1(String, 54783)]; };
     $t.ctor = function StringComparerIgnoreCase() {
         $t.$baseType.ctor.call(this);
     };
@@ -2083,7 +2173,7 @@ $d.define(Nethereum.Generators.Core.ParameterMap$2, null, function($t, $p, T1, T
 $d.define(Nethereum.Generators.Core.ParameterMapperAssignerTemplate$4, null, function($t, $p, TParameterModelFrom, TParameterModelTo, TParameterFrom, TParameterTo) {
     $t.$ator = function() {
         this.ConversionFormatStrings = new (System.Collections.Generic.Dictionary$2(String, System.Collections.Generic.Dictionary$2(String, 
-            String, 27758), 9907).ctor)();
+            String, 21144), 14527).ctor)();
     };
     $t.ctor = function ParameterMapperAssignerTemplate$4() {
         $t.$baseType.ctor.call(this);
@@ -2139,7 +2229,7 @@ $d.define(Nethereum.Generators.Core.ParameterMapperAssignerTemplate$4, null, fun
     };
     $p.AddConversionFormatString = function ParameterMapperAssignerTemplate$4_AddConversionFormatString(fromType, toType, conversionTemplate) {
         this.ConversionFormatStrings.Add$1(toType, (function() {
-            var $obj = new (System.Collections.Generic.Dictionary$2(String, String, 27758).ctor)();
+            var $obj = new (System.Collections.Generic.Dictionary$2(String, String, 21144).ctor)();
             $obj.Add$1(fromType, conversionTemplate);
             return $obj;
         }).call(this));
@@ -2242,7 +2332,7 @@ $d.define(Nethereum.Generators.CQS.VbMultipleClassFileTemplate, Nethereum.Genera
     };
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    58005), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 56781), function($t, $p) {
+    50469), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 52769), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function ContractDeploymentCQSMessageGenerator(abi, namespaceName, byteCode, contractName, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -2290,7 +2380,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.
     };
 });
 $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    31550), Nethereum.Generators.CQS.FunctionCQSMessageModel, 56825), function($t, $p) {
+    46813), Nethereum.Generators.CQS.FunctionCQSMessageModel, 59), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.FunctionABI = null;
@@ -2358,7 +2448,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageModel, Nethereum.Generators
     };
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    58005), function($t, $p) {
+    50469), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
@@ -2387,7 +2477,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, N
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    31550), function($t, $p) {
+    46813), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
@@ -2431,7 +2521,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.G
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    58005), function($t, $p) {
+    50469), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
@@ -2453,7 +2543,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, N
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    31550), function($t, $p) {
+    46813), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
@@ -2493,7 +2583,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.G
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    58005), function($t, $p) {
+    50469), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtovbTemplate = null;
@@ -2529,7 +2619,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethe
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    31550), function($t, $p) {
+    46813), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtovbTemplate = null;
@@ -2575,8 +2665,55 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate, Nethereum.Gener
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
+$d.define(Nethereum.Generators.DTOs.ErrorDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
+    13865), Nethereum.Generators.DTOs.ErrorDTOModel, 41555), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
+    $t.ctor = function ErrorDTOGenerator(abi, namespace, codeGenLanguage) {
+        $t.$baseType.ctor.call(this);
+        this.set_ClassModel(new Nethereum.Generators.DTOs.ErrorDTOModel.ctor(abi, namespace));
+        this.get_ClassModel().set_CodeGenLanguage(codeGenLanguage);
+        this.InitialiseTemplate(codeGenLanguage);
+    };
+    $p.InitialiseTemplate = function ErrorDTOGenerator_InitialiseTemplate(codeGenLanguage) {
+        switch (codeGenLanguage) {
+            case 0 /* CodeGenLanguage.CSharp */:
+                this.set_ClassTemplate(new Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate.ctor(this.get_ClassModel()));
+                break;
+            case 1 /* CodeGenLanguage.Vb */:
+                this.set_ClassTemplate(new Nethereum.Generators.DTOs.ErrorDTOVbTemplate.ctor(this.get_ClassModel()));
+                break;
+            case 3 /* CodeGenLanguage.FSharp */:
+                this.set_ClassTemplate(new Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate.ctor(this.get_ClassModel()));
+                break;
+            default:
+                throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+                    codeGenLanguage), "Code generation not implemented for this language");
+        }
+
+    };
+});
+$d.define(Nethereum.Generators.DTOs.ErrorDTOModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
+    $t.$ator = function() {
+        this.ErrorABI = null;
+    };
+    $p.get_ErrorABI = function ErrorDTOModel_get_ErrorABI() { return this.ErrorABI; };
+    $t.ctor = function ErrorDTOModel(errorABI, namespace) {
+        $t.$baseType.ctor.call(this, namespace, Nethereum.Generators.Model.FunctionEventOverloadTypeNameBuilder.GetErrorTypeNameBasedOnOverloads(errorABI), 
+            "Error");
+        this.ErrorABI = errorABI;
+        this.InitisialiseNamespaceDependencies();
+    };
+    $p.InitisialiseNamespaceDependencies = function ErrorDTOModel_InitisialiseNamespaceDependencies() {
+        this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
+    };
+    $p.CanGenerateOutputDTO = function ErrorDTOModel_CanGenerateOutputDTO() {
+        return this.get_ErrorABI().get_InputParameters() != null && this.get_ErrorABI().get_InputParameters().length > 0;
+    };
+});
 $d.define(Nethereum.Generators.DTOs.EventDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    44939), Nethereum.Generators.DTOs.EventDTOModel, 36278), function($t, $p) {
+    57448), Nethereum.Generators.DTOs.EventDTOModel, 47392), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function EventDTOGenerator(abi, namespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -2623,7 +2760,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOModel, Nethereum.Generators.Core.Typ
     };
 });
 $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    4091), Nethereum.Generators.DTOs.FunctionOutputDTOModel, 44081), function($t, $p) {
+    2635), Nethereum.Generators.DTOs.FunctionOutputDTOModel, 4405), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function FunctionOutputDTOGenerator(functionABI, namespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -2682,7 +2819,7 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOModel, Nethereum.Generators
     };
 });
 $d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    54825), Nethereum.Generators.DTOs.StructTypeModel, 14242), function($t, $p) {
+    44706), Nethereum.Generators.DTOs.StructTypeModel, 18904), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function StructTypeGenerator(structTypeABI, namespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -2735,8 +2872,36 @@ $d.define(Nethereum.Generators.DTOs.StructTypeModel, Nethereum.Generators.Core.T
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
+$d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
+    13865), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $t.$ator = function() {
+        this._parameterAbiErrorDtocSharpTemplate = null;
+    };
+    $t.ctor = function ErrorDTOCSharpTemplate(errorDTOModel) {
+        $t.$baseType.ctor.call(this, errorDTOModel);
+        this._parameterAbiErrorDtocSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate.ctor();
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 
+            this));
+    };
+    $p.GenerateClass = function ErrorDTOCSharpTemplate_GenerateClass() {
+        if (this.get_Model().CanGenerateOutputDTO()) {
+            return String.Format("{0}\r\n\r\n{1}[Error(\"{2}\")]\r\n{3}public class {4}Base\r\n{5}{{\r\n{6}\r\n{7}}}", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                    this._parameterAbiErrorDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
+        return null;
+    };
+    $p.GetPartialMainClass = function ErrorDTOCSharpTemplate_GetPartialMainClass() {
+        return String.Format("{0}public partial class {1} : {2}Base {{ }}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), this.get_Model().GetTypeName()]);
+    };
+    $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
+});
 $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    44939), function($t, $p) {
+    57448), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtocSharpTemplate = null;
@@ -2764,7 +2929,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    4091), function($t, $p) {
+    2635), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
@@ -2858,7 +3023,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate, null,
     };
 });
 $d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    54825), function($t, $p) {
+    44706), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
@@ -2882,8 +3047,31 @@ $d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generato
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
+$d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
+    13865), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $t.$ator = function() {
+        this._parameterAbiErrorDtoFSharpTemplate = null;
+    };
+    $t.ctor = function ErrorDTOFSharpTemplate(errorDTOModel) {
+        $t.$baseType.ctor.call(this, errorDTOModel);
+        this._parameterAbiErrorDtoFSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate.ctor();
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.FSharpClassFileTemplate.ctor(this.get_Model(), 
+            this));
+    };
+    $p.GenerateClass = function ErrorDTOFSharpTemplate_GenerateClass() {
+        if (this.get_Model().CanGenerateOutputDTO()) {
+            return String.Format("{0}[<Error(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}\r\n{5}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                this.get_Model().get_ErrorABI().get_Name(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                this.get_Model().GetTypeName(), this._parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
+        return null;
+    };
+    $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
+});
 $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    44939), function($t, $p) {
+    57448), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtoFSharpTemplate = null;
@@ -2907,7 +3095,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    4091), function($t, $p) {
+    2635), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
@@ -2996,7 +3184,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate, null,
     };
 });
 $d.define(Nethereum.Generators.DTOs.StructTypeFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    54825), function($t, $p) {
+    44706), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
@@ -3015,8 +3203,38 @@ $d.define(Nethereum.Generators.DTOs.StructTypeFSharpTemplate, Nethereum.Generato
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
+$d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
+    13865), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $t.$ator = function() {
+        this._parameterAbiErrorDtoVbTemplate = null;
+    };
+    $t.ctor = function ErrorDTOVbTemplate(errorDTOModel) {
+        $t.$baseType.ctor.call(this, errorDTOModel);
+        this._parameterAbiErrorDtoVbTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate.ctor();
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.VbClassFileTemplate.ctor(this.get_Model(), 
+            this));
+    };
+    $p.GenerateClass = function ErrorDTOVbTemplate_GenerateClass() {
+        if (this.get_Model().CanGenerateOutputDTO()) {
+            return String.Format("{0}\r\n\r\n{1}<[Error](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}\r\n{6}\r\n{7}\r\n{8}End Class", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    this._parameterAbiErrorDtoVbTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
+        return null;
+    };
+    $p.GetPartialMainClass = function ErrorDTOVbTemplate_GetPartialMainClass() {
+        return String.Format("{0}Public Partial Class {1}\r\n{2}Inherits {3}Base\r\n{4}End Class", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
+            this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, this.get_Model().GetTypeName(), 
+            Nethereum.Generators.Core.SpaceUtils().OneTab]);
+
+    };
+    $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
+});
 $d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    44939), function($t, $p) {
+    57448), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtoVbTemplate = null;
@@ -3046,7 +3264,7 @@ $d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    4091), function($t, $p) {
+    2635), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoVbTemplate = null;
@@ -3142,7 +3360,7 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
     };
 });
 $d.define(Nethereum.Generators.DTOs.StructTypeVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    54825), function($t, $p) {
+    44706), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoVbTemplate = null;
@@ -3169,7 +3387,7 @@ $d.define(Nethereum.Generators.DTOs.StructTypeVbTemplate, Nethereum.Generators.C
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33063), Nethereum.Generators.Service.ServiceModel, 65116), function($t, $p) {
+    33121), Nethereum.Generators.Service.ServiceModel, 34828), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -3413,7 +3631,7 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33063), function($t, $p) {
+    33121), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodCSharpTemplate = null;
@@ -3540,7 +3758,7 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodFSharpTemplate, null
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33063), function($t, $p) {
+    33121), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodFSharpTemplate = null;
@@ -3753,7 +3971,7 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodVbTemplate, null, fu
     };
 });
 $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33063), function($t, $p) {
+    33121), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodVbTemplate = null;
@@ -3782,7 +4000,7 @@ $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.C
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
 $d.define(Nethereum.Generators.XUnit.SimpleTestGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.XUnit.SimpleTestModel, 
-    58628), Nethereum.Generators.XUnit.SimpleTestModel, 41789), function($t, $p) {
+    50434), Nethereum.Generators.XUnit.SimpleTestModel, 37075), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -3835,7 +4053,7 @@ $d.define(Nethereum.Generators.XUnit.SimpleTestModel, Nethereum.Generators.Core.
     };
 });
 $d.define(Nethereum.Generators.XUnit.SimpleTestCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.XUnit.SimpleTestModel, 
-    58628), function($t, $p) {
+    50434), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.ctor = function SimpleTestCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
