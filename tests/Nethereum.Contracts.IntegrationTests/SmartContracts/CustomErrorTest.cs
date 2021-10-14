@@ -143,7 +143,7 @@ contract TestToken {
                 var error = contract.FindError(customErrorException.ExceptionEncodedData);
                 Assert.NotNull(error);
                 var errorJObject = error.DecodeExceptionEncodedDataToDefault(customErrorException.ExceptionEncodedData).ConvertToJObject();
-                var expectedJson = JToken.Parse(@"{'available': 0,'required': 100}");
+                var expectedJson = JToken.Parse(@"{'available': '0','required': '100'}");
                 Assert.True(JObject.DeepEquals(expectedJson, errorJObject));
             }
         }

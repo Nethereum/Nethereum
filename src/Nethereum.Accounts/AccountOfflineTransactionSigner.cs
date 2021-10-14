@@ -22,7 +22,7 @@ namespace Nethereum.Web3.Accounts
             _legacyTransactionSigner = new LegacyTransactionSigner();
         }
 
-        public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId)
+        public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId = null)
         {
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (string.IsNullOrWhiteSpace(transaction.From))
