@@ -1,9 +1,10 @@
 ﻿using System;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 
 namespace Nethereum.Contracts
 {
-    public class Error<TError> : ErrorBase where TError : class, new()
+    public class Error<TError> : ErrorBase where TError : class, IErrorDTO, new()
     {
         public Error() : base(typeof(TError))
         {
@@ -38,7 +39,7 @@ namespace Nethereum.Contracts
             return ErrorABI.IsErrorABIForErrorType<TError>();
         }
 
-        public TError DecodeExceptionEncodedData<TError>(string data) where TError : class, new()
+        public TError DecodeExceptionEncodedData<TError>(string data) where TError : class, IErrorDTO, new()
         {
             if (IsErrorForErrorType<TError>())
             {

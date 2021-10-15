@@ -42,7 +42,7 @@ namespace Nethereum.ErrorTest.ErrorTest.ContractDefinition
     public partial class InsufficientBalanceError : InsufficientBalanceErrorBase { }
 
     [Error("InsufficientBalance")]
-    public class InsufficientBalanceErrorBase
+    public class InsufficientBalanceErrorBase : IErrorDTO
     {
         [Parameter("uint256", "available", 1)]
         public virtual BigInteger Available { get; set; }

@@ -25,7 +25,7 @@ namespace Nethereum.Generators
             return new GeneratedFile(template, ProjectFileName, outputPath);
         }
 
-        public string NethereumWeb3Version { get; set; } = "4.0.1";
+        public string NethereumWeb3Version { get; set; } = "4.1.0";
 
         private string CreateTemplate(string languageDependentProperty)
         {

@@ -19,6 +19,7 @@ namespace Nethereum.Generators.DTOs
                 return
                     $@"{SpaceUtils.OneTab}[<Error(""{Model.ErrorABI.Name}"")>]
 {SpaceUtils.OneTab}type {Model.GetTypeName()}() =
+{SpaceUtils.TwoTabs}inherit ErrorDTO()
 {_parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(Model.ErrorABI.InputParameters)}
 {SpaceUtils.OneTab}";
             }

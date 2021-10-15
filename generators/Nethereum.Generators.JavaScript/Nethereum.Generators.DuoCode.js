@@ -502,7 +502,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "4.0.1";
+        this.NethereumWeb3Version = "4.1.0";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
@@ -2886,7 +2886,7 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function ErrorDTOCSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}\r\n\r\n{1}[Error(\"{2}\")]\r\n{3}public class {4}Base\r\n{5}{{\r\n{6}\r\n{7}}}", 
+            return String.Format("{0}\r\n\r\n{1}[Error(\"{2}\")]\r\n{3}public class {4}Base : IErrorDTO\r\n{5}{{\r\n{6}\r\n{7}}}", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this._parameterAbiErrorDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
@@ -3061,10 +3061,11 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function ErrorDTOFSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[<Error(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}\r\n{5}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
-                this.get_Model().get_ErrorABI().get_Name(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
-                this.get_Model().GetTypeName(), this._parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
-                Nethereum.Generators.Core.SpaceUtils().OneTab]);
+            return String.Format("{0}[<Error(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}inherit ErrorDTO()\r\n{5}\r\n{6}", 
+                [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    this._parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;
     };
@@ -3217,10 +3218,10 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS
     };
     $p.GenerateClass = function ErrorDTOVbTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}\r\n\r\n{1}<[Error](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}\r\n{6}\r\n{7}\r\n{8}End Class", 
+            return String.Format("{0}\r\n\r\n{1}<[Error](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}Implements IErrorDTO\r\n{6}\r\n{7}\r\n{8}\r\n{9}End Class", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
-                    this._parameterAbiErrorDtoVbTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiErrorDtoVbTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;

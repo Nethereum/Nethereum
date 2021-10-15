@@ -20,7 +20,7 @@ namespace Nethereum.Generators.DTOs
                     $@"{GetPartialMainClass()}
 
 {SpaceUtils.OneTab}[Error(""{Model.ErrorABI.Name}"")]
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base
+{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : IErrorDTO
 {SpaceUtils.OneTab}{{
 {_parameterAbiErrorDtocSharpTemplate.GenerateAllProperties(Model.ErrorABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
