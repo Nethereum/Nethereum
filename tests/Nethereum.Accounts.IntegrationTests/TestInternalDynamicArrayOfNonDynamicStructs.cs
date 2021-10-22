@@ -146,7 +146,7 @@ contract StructsSample
 
           
 
-            var query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
+            var query = await contractHandler.QueryAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
 
             purchaseOrderResult = query.PurchaseOrder;
             Assert.Equal(1, purchaseOrderResult.Id);
@@ -171,7 +171,7 @@ contract StructsSample
 
             var lineItemsEvent = contractHandler.GetEvent<LineItemsAddedEventDTO>();
             var lineItemsLogs = lineItemsEvent.DecodeAllEventsForEvent(receiptSending.Logs);
-            query = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
+            query = await contractHandler.QueryAsync<GetPurchaseOrderFunction, GetPurchaseOrderOutputDTO>(new GetPurchaseOrderFunction() { Id = 1 }).ConfigureAwait(false);
             purchaseOrderResult = query.PurchaseOrder;
             Assert.Equal(1, purchaseOrderResult.Id);
             Assert.Equal(1000, purchaseOrderResult.CustomerId);
@@ -210,7 +210,7 @@ contract StructsSample
             Assert.Equal(3, purchaseOrderResult.LineItem[1].Quantity);
 
             //Stored array on constructor
-            var query2 = await contractHandler.QueryDeserializingToObjectAsync<GetPurchaseOrdersFunction, GetPurchaseOrdersOutputDTO>().ConfigureAwait(false);
+            var query2 = await contractHandler.QueryAsync<GetPurchaseOrdersFunction, GetPurchaseOrdersOutputDTO>().ConfigureAwait(false);
             /*
               constructor() public {
             _purchaseOrder.id = 1;
