@@ -15,6 +15,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
     public class LogOrchestrator : IBlockchainProcessingOrchestrator
     {
         public const int MaxGetLogsRetries = 10;
+        public const int MaxGetLogsNullRetries = 1;
 
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
@@ -35,28 +36,36 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         {
             var progress = new OrchestrationProgress();
             var nextBlockNumberFrom = fromNumber;
-
-            while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
+            try
             {
-                if (progress.BlockNumberProcessTo != null)
+                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
                 {
-                    nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
+                    if (progress.BlockNumberProcessTo != null)
+                    {
+                        nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
+                    }
+
+                    var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
+
+                    if (getLogsResponse == null) return progress;
+
+                    var logs = getLogsResponse.Value.Logs;
+
+                    if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
+                    {
+                        if (logs != null)
+                        {
+                            logs = logs.Sort();
+                            await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
+                        }
+                        progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                    }
                 }
 
-                var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
-
-                if (getLogsResponse == null) return progress;
-
-                var logs = getLogsResponse.Value.Logs;
-
-                if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
-                {
-                    logs = logs.Sort();
-                    await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
-                    progress.BlockNumberProcessTo = getLogsResponse.Value.To;
-                }
-
-
+            }
+            catch(Exception ex)
+            {
+                progress.Exception = ex;
             }
             return progress;
 
@@ -88,7 +97,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             public BigInteger To { get; set;}
         }
 
-        private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0)
+        private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
         {
             try 
             {
@@ -101,6 +110,13 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
 
+                //If we don't get any, lets retry in case there is an issue with the node.
+                if(logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)
+                {
+                    return await GetLogsAsync(progress, fromBlock, toBlock, 0, retryNullLogsRequestNumber + 1).ConfigureAwait(false);
+                }
+                retryRequestNumber = 0;
+                retryNullLogsRequestNumber = 0;
                 return new GetLogsResponse(fromBlock, adjustedToBlock, logs);
 
             }
