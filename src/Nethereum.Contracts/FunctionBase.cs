@@ -18,7 +18,6 @@ namespace Nethereum.Contracts
         private readonly Contract _contract;
         protected FunctionBuilderBase FunctionBuilderBase { get; set; }
         private ContractCall _contractCall;
-        private IEthCall EthCall => _contract.Eth.Transactions.Call;
         protected ITransactionManager TransactionManager => _contract.Eth.TransactionManager;
 
         public string ContractAddress => _contract.Address;
@@ -27,7 +26,10 @@ namespace Nethereum.Contracts
         {
             FunctionBuilderBase = functionBuilder;
             _contract = contract;
-            _contractCall = new ContractCall(EthCall, _contract.Eth.DefaultBlock);
+            if (contract.Eth != null) 
+            {
+                _contractCall = new ContractCall(_contract.Eth?.Transactions.Call, _contract.Eth?.DefaultBlock);
+            }
 
         }
 #if !DOTNET35
