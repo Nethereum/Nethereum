@@ -11,6 +11,7 @@ namespace Nethereum.Signer.UnitTests
 {
     public class EIP1559Test
     {
+        //Expanded RLP test cases can be found here: https://gist.github.com/juanfranblanco/4cc998247aecd822d6088e382d94a6f1
 
         [Theory]
         [InlineData(1559, 2, 3, 4, 3500, "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", 10, "")]
