@@ -127,12 +127,11 @@ namespace Nethereum.ABI.Decoders
 
             var currentIndex = 0;
 
-            while (currentIndex != encoded.Length)
+            while (currentIndex < size)
             {
-                var encodedElement = encoded.Skip(currentIndex).Take(ElementType.FixedSize).ToArray();
+                var encodedElement = encoded.Skip(currentIndex * ElementType.FixedSize).Take(ElementType.FixedSize).ToArray();
                 DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
-                var newIndex = currentIndex + ElementType.FixedSize;
-                currentIndex = newIndex;
+                currentIndex++;
             }
 
             return decodedListOutput;
