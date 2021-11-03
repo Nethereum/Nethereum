@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Nethereum.RPC Ethereum Core RPC Class Library to interact via RCP with an Ethereum client, for example geth.</Description>
+    <Description>Nethereum.RPC Ethereum Core RPC Class Library to interact via RPC with an Ethereum client, for example geth.</Description>
     <AssemblyTitle>Nethereum.RPC</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
