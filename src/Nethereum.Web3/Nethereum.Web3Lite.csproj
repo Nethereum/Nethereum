@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Description>Nethereum.Web3Lite Ethereum Web3 Class Library (light browser version, with no reference to signing crypto libraries) to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
+    <Description>Nethereum.Web3Lite Ethereum Web3 Class Library (light browser version, with no reference to signing crypto libraries) to interact via RPC with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
     <AssemblyTitle>Nethereum.Web3Lite</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
