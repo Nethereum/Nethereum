@@ -9,7 +9,7 @@ using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
 using Nethereum.RLP;
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
 using NBitcoin.Secp256k1;
 #endif
 
@@ -354,7 +354,7 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
             if (message == null)
                 throw new ArgumentNullException("message");
 
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             if (EthECKey.SignRecoverable)
             {
                 SecpECDSASignature.TryCreateFromDer(sig.ToDER(), out var signature);
@@ -365,7 +365,7 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
             else
             {
 #endif
-                var curve = Secp256k1;
+            var curve = Secp256k1;
 
                 // 1.0 For j from 0 to h   (h == recId here and the loop is outside this function)
                 //   1.1 Let x = r + jn
@@ -421,10 +421,10 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
                     return new ECKey(q.GetEncoded(true), false);
                 }
                 return new ECKey(q.GetEncoded(), false);
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
 #endif
-            }
+        }
 
 
         public virtual ECDSASignature Sign(byte[] hash)

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
 using NBitcoin.Secp256k1;
 #endif
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -22,7 +22,7 @@ namespace Nethereum.Signer
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
 
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
         /// <summary>
         /// Enables / Disables whilst signing creating a recoverable id, as opposed to afterward. When enabled this uses NBitcoin.Secp256k1 as opposed to BouncyCastle to create the signature.
         /// </summary>
@@ -277,7 +277,7 @@ namespace Nethereum.Signer
 
         public EthECDSASignature SignAndCalculateV(byte[] hash, BigInteger chainId)
         {
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             if (SignRecoverable)
             {
                 var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
@@ -290,20 +290,20 @@ namespace Nethereum.Signer
             else
             {
 #endif
-                var signature = _ecKey.Sign(hash);
+            var signature = _ecKey.Sign(hash);
                 var recId = CalculateRecId(signature, hash);
                 var vChain = CalculateV(chainId, recId);
                 signature.V = vChain.ToBytesForRLPEncoding();
                 return new EthECDSASignature(signature);
 
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
 #endif
         }
 
         public EthECDSASignature SignAndCalculateYParityV(byte[] hash)
         {
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             if (SignRecoverable)
             {
                 var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
@@ -314,12 +314,12 @@ namespace Nethereum.Signer
             else
             {
 #endif
-                var signature = _ecKey.Sign(hash);
+            var signature = _ecKey.Sign(hash);
                 var recId = CalculateRecId(signature, hash);
                 signature.V = new[] {(byte) (recId)};
                 return new EthECDSASignature(signature);
 
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
 #endif
         }
@@ -332,7 +332,7 @@ namespace Nethereum.Signer
 
         public EthECDSASignature SignAndCalculateV(byte[] hash)
         {
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             if (SignRecoverable)
             {
                 var privKey = Context.Instance.CreateECPrivKey(GetPrivateKeyAsBytes());
@@ -343,11 +343,11 @@ namespace Nethereum.Signer
             else
             {
 #endif
-                var signature = _ecKey.Sign(hash);
+            var signature = _ecKey.Sign(hash);
                 var recId = CalculateRecId(signature, hash);
                 signature.V = new[] {(byte) (recId + 27)};
                 return new EthECDSASignature(signature);
-#if NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
 #endif
         }

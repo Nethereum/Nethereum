@@ -46,7 +46,7 @@ namespace Nethereum.JsonRpc.Client
             _httpClientHandler = httpClientHandler;
             _log = log;
 
-#if NETCOREAPP2_1 || NETCOREAPP3_1
+#if NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0_OR_GREATER
             _httpClient = CreateNewHttpClient();
             _rotateHttpClients = false;
 #else
@@ -64,7 +64,7 @@ namespace Nethereum.JsonRpc.Client
                     MaxConnectionsPerServer = MaximumConnectionsPerServer
                 };
            
-#elif NETCOREAPP2_1 || NETCOREAPP3_1
+#elif NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0_OR_GREATER
                 return new SocketsHttpHandler
                 {
                     PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
