@@ -58,6 +58,17 @@ namespace Nethereum.Signer.EIP712
         }
 
         /// <summary>
+        /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
+        /// Matches the signature produced by eth_signTypedData_v4
+        /// </summary>
+        public string SignTypedDataV4(TypedData typedData, EthECKey key)
+        {
+            var encodedData = EncodeTypedData(typedData);
+            var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
+            return EthECDSASignature.CreateStringSignature(signature);
+        }
+
+        /// <summary>
         /// Encodes data according to EIP-712.
         /// </summary>
         public byte[] EncodeTypedData(TypedData typedData)
