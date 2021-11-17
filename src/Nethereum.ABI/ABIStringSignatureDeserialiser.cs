@@ -73,7 +73,7 @@ namespace Nethereum.ABI.UnitTests
         private string GetType(string type)
         {
             type = type.Trim();
-            if (type.StartsWith("tuple"))
+            if (type.StartsWith("tuple") || type.StartsWith("("))
             {
                 if (type.EndsWith("]"))
                 {
@@ -149,7 +149,7 @@ namespace Nethereum.ABI.UnitTests
             foreach(var signature in signatures)
             {
                 
-                var match = Regex.Match(signature, @"(?<scope>\w*)\s*(?<name>\w+)\s*" + paramsRegPattern);
+                var match = Regex.Match(signature, @"(?<scope>\w*)\s*(?<name>\w*)\s*" + paramsRegPattern);
                 var scope = match.Groups["scope"].Value;
                 var name = match.Groups["name"].Value;
                 var parameters = match.Groups["params"].Value;
@@ -169,7 +169,7 @@ namespace Nethereum.ABI.UnitTests
                     errors.Add(ExtractErrorABI(signature, name, parameters));
                 }
 
-                if (name == "constructor")
+                if (scope == "constructor")
                 {
                     contractABI.Constructor = ExtractConstructorABI(signature, name, parameters);
                 }
