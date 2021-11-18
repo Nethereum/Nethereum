@@ -1,6 +1,6 @@
 ﻿using System;
 using Nethereum.ABI.FunctionEncoding;
-using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionTypes;
@@ -9,18 +9,18 @@ namespace Nethereum.Contracts
 {
     public class DeployContractTransactionBuilder
     {
-        private readonly ABIDeserialiser _abiDeserialiser;
+       
         private readonly ConstructorCallEncoder _constructorCallEncoder;
 
         public DeployContractTransactionBuilder()
         {
             _constructorCallEncoder = new ConstructorCallEncoder();
-            _abiDeserialiser = new ABIDeserialiser();
+            
         }
 
         public string GetData(string contractByteCode, string abi, params object[] values)
         {
-            var contract = _abiDeserialiser.DeserialiseContract(abi);
+            var contract = ABIDeserialiserFactory.DeserialiseContractABI(abi);
             return _constructorCallEncoder.EncodeRequest(contractByteCode,
                 contract.Constructor.InputParameters, values);
         }
@@ -36,7 +36,7 @@ namespace Nethereum.Contracts
 
             if (values == null || values.Length == 0)
                 return _constructorCallEncoder.EncodeRequest(contractByteCode, "");
-            var contract = _abiDeserialiser.DeserialiseContract(abi);
+            var contract = ABIDeserialiserFactory.DeserialiseContractABI(abi);
             if (contract.Constructor == null)
                 throw new Exception(
                     "Parameters supplied for a constructor but ABI does not contain a constructor definition");

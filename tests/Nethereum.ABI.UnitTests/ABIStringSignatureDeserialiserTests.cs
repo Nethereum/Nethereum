@@ -2,7 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Nethereum.ABI.ABIDeserialisation;
 using Xunit;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using System.Numerics;
 
 namespace Nethereum.ABI.UnitTests
 {
@@ -116,6 +119,51 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal("address", function.InputParameters[1].Type);
             Assert.Equal("uint", function.OutputParameters[0].Type);
 
+        }
+
+
+        [Fact]
+        public void ShouldExtractComplexTuples()
+        {
+            var abiLineItem = "tuple(uint256 id, uint256 productId, uint256 quantity, string description)";
+            var abiPurchaseOrder = $"tuple(uint256 id,{abiLineItem}[] lineItem, uint256 customerId)";
+            var abi = $@"function SetPurchaseOrders({abiPurchaseOrder}[] purchaseOrder) public";
+            var contractAbi = ABIDeserialiserFactory.DeserialiseContractABI(abi);
+            var stringSignature = contractAbi.Functions[0].Sha3Signature;
+            var functionAbi = new AttributesToABIExtractor().ExtractFunctionABI(typeof(SetPurchaseOrdersFunction));
+            var expectedSignature = functionAbi.Sha3Signature;
+            Assert.Equal(expectedSignature, stringSignature);
+        }
+
+        
+
+        [Function("SetPurchaseOrders")]
+        public class SetPurchaseOrdersFunction
+        {
+            [Parameter("tuple[]", "purchaseOrder", 1)]
+            public virtual List<PurchaseOrder> PurchaseOrder { get; set; }
+        }
+
+        public class PurchaseOrder
+        {
+            [Parameter("uint256", "id", 1)]
+            public virtual BigInteger Id { get; set; }
+            [Parameter("tuple[]", "lineItem", 2)]
+            public virtual List<LineItem> LineItem { get; set; }
+            [Parameter("uint256", "customerId", 3)]
+            public virtual BigInteger CustomerId { get; set; }
+        }
+
+        public class LineItem
+        {
+            [Parameter("uint256", "id", 1)]
+            public virtual BigInteger Id { get; set; }
+            [Parameter("uint256", "productId", 2)]
+            public virtual BigInteger ProductId { get; set; }
+            [Parameter("uint256", "quantity", 3)]
+            public virtual BigInteger Quantity { get; set; }
+            [Parameter("string", "description", 4)]
+            public virtual string Description { get; set; }
         }
 
     }

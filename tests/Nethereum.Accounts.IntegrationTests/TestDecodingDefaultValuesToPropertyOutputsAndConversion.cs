@@ -108,9 +108,71 @@ namespace Nethereum.Accounts.IntegrationTests
 }");
             Assert.True(JObject.DeepEquals(expected, result.ConvertToJObject()));
         }
+        
+        [Fact]
+        public async void ShouldDecodeDefaultArrayAndConvertToJObjectUsingABIStringSignature()
+        {
+
+            /*
+             struct PurchaseOrder
+            {
+                uint256 id;
+                LineItem[] lineItem;
+                uint256 customerId;
+            }
+
+            struct LineItem
+            {
+                uint256 id;
+                uint256 productId;
+                uint256 quantity;
+                string description;
+            }*/
+
+        var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestInternalDynamicArrayOfDynamicStructs.StructsSample2Deployment>()
+                .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
+            var abiLineItem = "tuple(uint256 id, uint256 productId, uint256 quantity, string description)";
+            var abiPurchaseOrder = $"tuple(uint256 id,{abiLineItem}[] lineItem, uint256 customerId)";
+            var abi = $@"
+function GetPurchaseOrder3() public view returns({abiPurchaseOrder}[] purchaseOrder)";
+
+            var contract = web3.Eth.GetContract(abi, deploymentReceipt.ContractAddress);
+            var functionPO3 = contract.GetFunction("GetPurchaseOrder3");
+            var result = await functionPO3.CallDecodingToDefaultAsync().ConfigureAwait(false);
 
 
-
+            var expected = JToken.Parse(
+                @"{
+  ""purchaseOrder"": [
+    {
+                ""id"": '1',
+      ""lineItem"": [
+        {
+                    ""id"": '1',
+          ""productId"": '100',
+          ""quantity"": '2',
+          ""description"": ""hello1""
+        },
+        {
+                    ""id"": '2',
+          ""productId"": '200',
+          ""quantity"": '3',
+          ""description"": ""hello2""
+        },
+        {
+                    ""id"": '3',
+          ""productId"": '300',
+          ""quantity"": '4',
+          ""description"": ""hello3""
+        }
+      ],
+      ""customerId"": '1000'
+    }
+  ]
+}");
+            Assert.True(JObject.DeepEquals(expected, result.ConvertToJObject()));
+        }
 
         public partial class StructsSample3Deployment : StructsSample3DeploymentBase
         {
@@ -126,7 +188,7 @@ namespace Nethereum.Accounts.IntegrationTests
 
         }
 
-
+        
 
         [Fact]
         public async void ShouldDecodeDefaultArrayAndConvertToJObject2()

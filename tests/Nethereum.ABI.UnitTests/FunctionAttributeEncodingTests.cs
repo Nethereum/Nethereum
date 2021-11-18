@@ -3,7 +3,7 @@ using System.Linq;
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.ABIDeserialisation;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -16,7 +16,7 @@ namespace Nethereum.ABI.UnitTests
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""},{""name"":""to"",""type"":""address""}],""name"":""other"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
-            var des = new ABIDeserialiser();
+            var des = new ABIJsonDeserialiser();
             var contract = des.DeserialiseContract(abi);
             var function = contract.Functions.FirstOrDefault(x => x.Name == "multiply");
             Assert.NotNull(function);

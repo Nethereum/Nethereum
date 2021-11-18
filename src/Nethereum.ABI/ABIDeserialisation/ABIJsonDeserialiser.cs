@@ -3,9 +3,9 @@ using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.ABI.JsonDeserialisation
+namespace Nethereum.ABI.ABIDeserialisation
 {
-    public class ABIDeserialiser
+    public class ABIJsonDeserialiser
     {
         public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
         {

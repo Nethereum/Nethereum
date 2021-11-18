@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Nethereum.ABI.JsonDeserialisation
+namespace Nethereum.ABI.ABIDeserialisation
 {
     /// <summary>
     ///     This is a replication (copy) of Newtonsoft ExpandoObjectConverter to allow for PCL compilaton

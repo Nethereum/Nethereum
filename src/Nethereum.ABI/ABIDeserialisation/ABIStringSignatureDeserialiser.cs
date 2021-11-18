@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 
-namespace Nethereum.ABI.UnitTests
+namespace Nethereum.ABI.ABIDeserialisation
 {
+
     public class ABIStringSignatureDeserialiser
     {
         //https://stackoverflow.com/questions/546433/regular-expression-to-match-balanced-parentheses
@@ -15,7 +16,7 @@ namespace Nethereum.ABI.UnitTests
         public List<Parameter> ExtractParameters(string parameters, bool canIndex = false)
         {
 
-            var parametersArray = Regex.Split(parameters, @",(?![^(]*\))"); 
+            var parametersArray = Regex.Split(parameters, @",(?![^(](?<params>(?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))?\))"); 
             var returnParameters = new List<Parameter>();
             var parameterOrder = 0;
             foreach(var parameter in parametersArray)
@@ -23,7 +24,7 @@ namespace Nethereum.ABI.UnitTests
                 parameterOrder = parameterOrder + 1;
                 bool isIndexed = false;
                 string name = null;
-                var nameTypeIndex = Regex.Split(parameter.Trim(),@"\s+(?![^(]*\))");
+                var nameTypeIndex = Regex.Split(parameter.Trim(), @"\s+(?![^(](?<params>(?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))?\))");
                 string type = GetType(nameTypeIndex[0]);
                 if (canIndex && nameTypeIndex.Length == 3 && parameter.IndexOf("indexed") > -1)
                 {
@@ -91,6 +92,7 @@ namespace Nethereum.ABI.UnitTests
         public ErrorABI ExtractErrorABI(string signature, string name, string parameters)
         {
             var errorABI = new ErrorABI(name);
+            errorABI.InputParameters = new List<Parameter>().ToArray();
             if (!string.IsNullOrEmpty(parameters))
             {
                 errorABI.InputParameters = ExtractParameters(parameters).ToArray();
@@ -101,6 +103,7 @@ namespace Nethereum.ABI.UnitTests
         public EventABI ExtractEventABI(string signature, string name, string parameters)
         {
             var eventAbi = new EventABI(name, false);
+            eventAbi.InputParameters = new List<Parameter>().ToArray();
             if (!string.IsNullOrEmpty(parameters))
             {
                 eventAbi.InputParameters = ExtractParameters(parameters, true).ToArray();
@@ -111,6 +114,7 @@ namespace Nethereum.ABI.UnitTests
         public ConstructorABI ExtractConstructorABI(string signature, string name, string parameters)
         {
             var constructor = new ConstructorABI();
+            constructor.InputParameters = new List<Parameter>().ToArray();
             if (!string.IsNullOrEmpty(parameters))
             {
                 constructor.InputParameters = ExtractParameters(parameters).ToArray();
@@ -125,6 +129,8 @@ namespace Nethereum.ABI.UnitTests
             var matchModifier = Regex.Match(signature, @"\)\s*\w*\s+(?<modifier>view|pure|constant)");
             var modifier = matchModifier.Groups["modifier"].Value;
             var function = new FunctionABI(name, !string.IsNullOrEmpty(modifier));
+            function.InputParameters = new List<Parameter>().ToArray();
+            function.OutputParameters = new List<Parameter>().ToArray();
             if (!string.IsNullOrEmpty(parameterReturns))
             {
                 function.OutputParameters = ExtractParameters(parameterReturns).ToArray();
@@ -138,6 +144,10 @@ namespace Nethereum.ABI.UnitTests
             return function;
         }
 
+        public ContractABI ExtractContractABIWithLineBreakSplitSignatures(string signatures)
+        {
+            return ExtractContractABI(signatures.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None));
+        }
        
         public ContractABI ExtractContractABI(params string[] signatures)
         {
@@ -149,29 +159,29 @@ namespace Nethereum.ABI.UnitTests
             foreach(var signature in signatures)
             {
                 
-                var match = Regex.Match(signature, @"(?<scope>\w*)\s*(?<name>\w*)\s*" + paramsRegPattern);
+                var match = Regex.Match(signature.Trim(), @"(?<scope>\w*)\s*(?<name>\w*)\s*" + paramsRegPattern);
                 var scope = match.Groups["scope"].Value;
                 var name = match.Groups["name"].Value;
                 var parameters = match.Groups["params"].Value;
  
                 if (scope == "function")
                 {
-                    functions.Add(ExtractFunctionABI(signature, name, parameters));
+                    functions.Add(ExtractFunctionABI(signature.Trim(), name, parameters));
                 }
 
                 if (scope == "event")
                 {
-                    events.Add(ExtractEventABI(signature, name, parameters));
+                    events.Add(ExtractEventABI(signature.Trim(), name, parameters));
                 }
 
                 if (scope == "error")
                 {
-                    errors.Add(ExtractErrorABI(signature, name, parameters));
+                    errors.Add(ExtractErrorABI(signature.Trim(), name, parameters));
                 }
 
                 if (scope == "constructor")
                 {
-                    contractABI.Constructor = ExtractConstructorABI(signature, name, parameters);
+                    contractABI.Constructor = ExtractConstructorABI(signature.Trim(), name, parameters);
                 }
             }
 

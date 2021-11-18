@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.ABI.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -12,7 +12,7 @@ namespace Nethereum.Contracts
     {
         public ContractBuilder(string abi, string contractAddress)
         {
-            ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
+            ContractABI = ABIDeserialiserFactory.DeserialiseContractABI(abi);
             Address = contractAddress;
         }
 

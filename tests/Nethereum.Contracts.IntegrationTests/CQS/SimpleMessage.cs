@@ -61,6 +61,28 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             Assert.Equal(senderAddress.ToLower(), returnAddress.ToLower());
         }
 
+        [Fact]
+        public async void TestOriginalStringSignature()
+        {
+            var byteCode =
+                "0x6060604052341561000f57600080fd5b60ac8061001d6000396000f300606060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416635170a9d081146043575b600080fd5b3415604d57600080fd5b6053607c565b60405173ffffffffffffffffffffffffffffffffffffffff909116815260200160405180910390f35b33905600a165627a7a72305820ad71c73577f8423259abb92d0e9aad1a0e98ef0c93a1a1aeee4c4407c9b85c320029";
+            var abi =
+                @"function returnSender() public view returns (address)";
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
+                    new HexBigInteger(900000));
+
+            var contractAddress = receipt.ContractAddress;
+            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var function = contract.GetFunction("returnSender");
+            var returnAddress = await function.CallAsync<string>(senderAddress, new HexBigInteger(900000), null,
+                BlockParameter.CreateLatest());
+            Assert.Equal(senderAddress.ToLower(), returnAddress.ToLower());
+        }
+
         //Smart contract
         /*pragma solidity ^0.4.4;
         contract TestContract{
