@@ -15,19 +15,28 @@ using Nethereum.RPC.Reactive.Extensions;
 using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.RPC.Web3;
 using Nethereum.Hex.HexTypes;
+using System.Threading.Tasks;
 
 namespace Nethereum.WebSocketsStreamingTest
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            var client2 = new WebSocketClient("wss://mainnet.infura.io/ws/v3/7238211010344719ad14a89db874158c");
+            var client2 = new WebSocketClient("wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c");
+         
             var block1 = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(client2).SendRequestAsync(new HexBigInteger(10613813)).Result;
             var block2 = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(client2).SendRequestAsync(new HexBigInteger(10613813)).Result;
 
-            var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/7238211010344719ad14a89db874158c");
+            
+            await SubscribeAndRunAsync();
+            Console.ReadLine();
+        }
 
+        public static async Task SubscribeAndRunAsync()
+        {
+            var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c");
+            client.Error += Client_Error;
             // var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
             var blockHeaderSubscription = new EthNewBlockHeadersObservableSubscription(client);
 
@@ -66,7 +75,7 @@ namespace Nethereum.WebSocketsStreamingTest
             var ethGetBalance = new EthGetBalanceObservableHandler(client);
             var subs = ethGetBalance.GetResponseAsObservable().Subscribe(balance =>
                             Console.WriteLine("Balance xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: " + balance.Value.ToString()));
-           
+
             var ethBlockNumber = new EthBlockNumberObservableHandler(client);
             ethBlockNumber.GetResponseAsObservable().Subscribe(blockNumber =>
                                 Console.WriteLine("Block number: bbbbbbbbbbbbbb" + blockNumber.Value.ToString()));
@@ -88,27 +97,33 @@ namespace Nethereum.WebSocketsStreamingTest
                     var decoded = Event<TransferEventDTO>.DecodeEvent(log);
                     if (decoded != null)
                     {
-                        Console.WriteLine("Contract address: " + log.Address +  " Log Transfer from:" + decoded.Event.From);
+                        Console.WriteLine("Contract address: " + log.Address + " Log Transfer from:" + decoded.Event.From);
                     }
                     else
                     {
                         Console.WriteLine("Found not standard transfer log");
                     }
                 }
-                catch (Exception ex){
-                    Console.WriteLine("Log Address: "+ log.Address + " is not a standard transfer log:", ex.Message);
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Log Address: " + log.Address + " is not a standard transfer log:", ex.Message);
                 }
+            },exception =>
+            {
+                Console.WriteLine("Logs error info:" + exception.Message);
             });
 
             
 
-            client.StartAsync().Wait();
 
-            blockHeaderSubscription.SubscribeAsync().Wait();
 
-            blockHeaderSubscription2.SubscribeAsync().Wait();
+            await client.StartAsync();
 
-            pendingTransactionsSubscription.SubscribeAsync().Wait();
+            //blockHeaderSubscription.SubscribeAsync().Wait();
+
+            //blockHeaderSubscription2.SubscribeAsync().Wait();
+
+            //pendingTransactionsSubscription.SubscribeAsync().Wait();
 
             //ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
 
@@ -116,7 +131,7 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //ethLogs.SubscribeAsync().Wait();
 
-            //ethLogsTokenTransfer.SubscribeAsync(filterTransfers).Wait();
+            await ethLogsTokenTransfer.SubscribeAsync(filterTransfers);
 
             //Thread.Sleep(30000);
             //pendingTransactionsSubscription.UnsubscribeAsync().Wait();
@@ -126,9 +141,15 @@ namespace Nethereum.WebSocketsStreamingTest
             //blockHeaderSubscription.UnsubscribeAsync().Wait();
 
             //Thread.Sleep(20000);
-            Console.ReadLine();
         }
 
+        private static async void Client_Error(object sender, Exception ex)
+        {
+            Console.WriteLine("Client Error restarting...");
+            ((StreamingWebSocketClient)sender).Error -= Client_Error;
+            ((StreamingWebSocketClient)sender).Dispose();
+            await SubscribeAndRunAsync();
+        }
 
         public partial class TransferEventDTO : TransferEventDTOBase { }
 

@@ -114,6 +114,11 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 _cancellationTokenSource = new CancellationTokenSource();
             }
 
+            if(_cancellationTokenSource == null)
+            {
+                _cancellationTokenSource = new CancellationTokenSource();
+            }
+
             _listener = Task.Factory.StartNew(async () =>
             {
                 await HandleIncomingMessagesAsync();
@@ -122,42 +127,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return ConnectWebSocketAsync();
         }
 
-        public async Task StopAsync()
-        {
-            IsStarted = false;
-            CancellationTokenSource tokenSource = null;
-            try
-            {
-                if (_clientWebSocket != null && (_clientWebSocket.State == WebSocketState.Open || _clientWebSocket.State == WebSocketState.Connecting))
-                {
-                    tokenSource = new CancellationTokenSource(ConnectionTimeout);
-
-                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
-                        tokenSource.Token);
-                }
-            }
-            catch { }
-            finally
-            {
-                _clientWebSocket?.Abort();
-                tokenSource?.Dispose();
-            }
-
-            _cancellationTokenSource?.Cancel();
-
-            try
-            {
-                foreach (var rpcStreamingResponseHandler in _requests)
-                {
-                    rpcStreamingResponseHandler.Value.HandleClientDisconnection();
-                }
-            }
-            catch { }
-            finally
-            {
-                _requests.Clear();
-            }
-        }
+        
 
         private async Task ConnectWebSocketAsync()
         {
@@ -180,6 +150,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
                     await _clientWebSocket.ConnectAsync(new Uri(_path), tokenSource.Token).ConfigureAwait(false);
 
+                    //Random random = new Random();
+                    //var x = random.Next(0, 30);
+                    //if (x == 5) throw new Exception("Error");
+
                 }
             }
             catch (TaskCanceledException ex)
@@ -201,12 +175,13 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private void HandleError(Exception exception)
         {
-            StopAsync().Wait();
             foreach (var rpcStreamingResponseHandler in _requests)
             {
                 rpcStreamingResponseHandler.Value.HandleClientError(exception);
             }
+            StopAsync().Wait();
             Error?.Invoke(this, exception);
+            
         }
 
         public async Task<Tuple<int, bool>> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
@@ -305,7 +280,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private async Task HandleIncomingMessagesAsync()
         {
             var logger = new RpcLogger(_log);
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            while (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
             {
                 try
                 {
@@ -320,6 +295,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                             {
                                 var serializer = JsonSerializer.Create(JsonSerializerSettings);
                                 var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
+                                //Random random = new Random();
+                                //var x = random.Next(0, 30);
+                                //if (x == 5) throw new Exception("Error");
+
                                 HandleResponse(message);
                                 logger.LogResponse(message);
 
@@ -375,9 +354,31 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             CloseDisposeAndClearRequestsAsync().Wait();
         }
 
+        public Task StopAsync()
+        {
+            return CloseDisposeAndClearRequestsAsync();
+        }
+
         private async Task CloseDisposeAndClearRequestsAsync()
         {
-            await StopAsync();
+            IsStarted = false;
+            CancellationTokenSource tokenSource = null;
+            try
+            {
+                if (_clientWebSocket != null && (_clientWebSocket.State == WebSocketState.Open || _clientWebSocket.State == WebSocketState.Connecting))
+                {
+                    tokenSource = new CancellationTokenSource(ConnectionTimeout);
+
+                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
+                        tokenSource.Token);
+                }
+            }
+            catch { }
+            finally
+            {
+                tokenSource?.Dispose();
+            }
+
             try
             {
                 _clientWebSocket?.Dispose();
@@ -388,6 +389,23 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 _clientWebSocket = null;
             }
 
+
+            _cancellationTokenSource?.Cancel();
+
+            try
+            {
+                foreach (var rpcStreamingResponseHandler in _requests)
+                {
+                    rpcStreamingResponseHandler.Value.HandleClientDisconnection();
+                }
+            }
+            catch { }
+            finally
+            {
+                _requests.Clear();
+            }
+
+            
             try
             {
                 _cancellationTokenSource?.Dispose();
