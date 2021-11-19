@@ -23,6 +23,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
         private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _semaphoreSlimListener = new SemaphoreSlim(1, 1);
 
         private readonly string _path;
         public static int ForceCompleteReadTotalMilliseconds { get; set; } = 100000;
@@ -284,6 +285,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             {
                 try
                 {
+                    await _semaphoreSlimListener.WaitAsync().ConfigureAwait(false);
                     if (_clientWebSocket != null && _clientWebSocket.State == WebSocketState.Open && AnyQueueRequests())
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
@@ -296,7 +298,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                                 var serializer = JsonSerializer.Create(JsonSerializerSettings);
                                 var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
                                 //Random random = new Random();
-                                //var x = random.Next(0, 30);
+                                //var x = random.Next(0, 50);
                                 //if (x == 5) throw new Exception("Error");
 
                                 HandleResponse(message);
@@ -310,8 +312,19 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     //HandleError should not be called from any of the functions that are called from this function 
                     //which also rethrow the exception to avoid calling the error handlers twice for the same error.
-                    HandleError(ex);
-                    logger.LogException(ex);
+                    //if cancellation requested ignore it as we will end up in a loop
+                    if (!_cancellationTokenSource.IsCancellationRequested)
+                    {
+                       
+                        HandleError(ex);
+                        logger.LogException(ex);
+                        
+                    }
+                }
+                finally
+                {
+                    //release the semaphore for the listener so it can be disposed
+                    _semaphoreSlimListener.Release();
                 }
             }
         }
@@ -362,6 +375,45 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
         private async Task CloseDisposeAndClearRequestsAsync()
         {
             IsStarted = false;
+            //Cancel listener
+            _cancellationTokenSource?.Cancel();
+            try
+            {
+                //wait for the cancellation to be completed (or wait a second)
+                await _semaphoreSlimListener.WaitAsync(1000).ConfigureAwait(false);
+                //Dispose listener
+#if !NETSTANDARD1_3
+                try
+                {
+                    _listener?.Dispose();
+                }
+                catch { }
+                finally
+                {
+                    _listener = null;
+                }
+#else
+            _listener = null;
+#endif
+
+                try
+                {
+                    _cancellationTokenSource?.Dispose();
+                }
+                catch { }
+                finally
+                {
+                    _cancellationTokenSource = null;
+                }
+            }
+            catch { }
+            finally
+            {
+                //release the semaphore for the listener to restart if wanted
+                _semaphoreSlimListener.Release();
+            }
+
+            //Close the clientWebSocket
             CancellationTokenSource tokenSource = null;
             try
             {
@@ -389,9 +441,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 _clientWebSocket = null;
             }
 
-
-            _cancellationTokenSource?.Cancel();
-
+            //Let all the _requests the client is disconnecting and clear them
             try
             {
                 foreach (var rpcStreamingResponseHandler in _requests)
@@ -405,32 +455,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 _requests.Clear();
             }
 
-            
-            try
-            {
-                _cancellationTokenSource?.Dispose();
-            }
-            catch { }
-            finally
-            {
-                _cancellationTokenSource = null;
-            }
-
-#if !NETSTANDARD1_3
-            try
-            {
-                _listener?.Dispose();
-            }
-            catch { }
-            finally
-            {
-                _listener = null;
-            }
-#else
-            _listener = null;
-#endif
         }
-
         public async Task SendRequestAsync(RpcRequest request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)
         {
             var reqMsg = new RpcRequestMessage(request.Id,

@@ -30,13 +30,18 @@ namespace Nethereum.WebSocketsStreamingTest
 
             
             await SubscribeAndRunAsync();
+            Thread.Sleep(10000000);
             Console.ReadLine();
         }
 
+        static StreamingWebSocketClient client;
         public static async Task SubscribeAndRunAsync()
         {
-            var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c");
-            client.Error += Client_Error;
+            if (client == null)
+            {
+                client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c");
+                client.Error += Client_Error;
+            }
             // var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
             var blockHeaderSubscription = new EthNewBlockHeadersObservableSubscription(client);
 
@@ -44,7 +49,11 @@ namespace Nethereum.WebSocketsStreamingTest
                 Console.WriteLine("Block Header subscription Id: " + subscriptionId));
 
             blockHeaderSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(block =>
-                Console.WriteLine("New Block: " + block.BlockHash));
+                Console.WriteLine("New Block: " + block.BlockHash)
+                , exception =>
+                {
+                    Console.WriteLine("BlockHeaderSubscription error info:" + exception.Message);
+                });
 
             blockHeaderSubscription.GetUnsubscribeResponseAsObservable().Subscribe(response =>
                             Console.WriteLine("Block Header unsubscribe result: " + response));
@@ -66,7 +75,11 @@ namespace Nethereum.WebSocketsStreamingTest
                 Console.WriteLine("Pending transactions subscription Id: " + subscriptionId));
 
             pendingTransactionsSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(transactionHash =>
-                Console.WriteLine("New Pending TransactionHash: " + transactionHash));
+                Console.WriteLine("New Pending TransactionHash: " + transactionHash)
+                , exception =>
+                {
+                    Console.WriteLine("Pending transactions error info:" + exception.Message);
+                });
 
             pendingTransactionsSubscription.GetUnsubscribeResponseAsObservable().Subscribe(response =>
                             Console.WriteLine("Pending transactions unsubscribe result: " + response));
@@ -83,7 +96,11 @@ namespace Nethereum.WebSocketsStreamingTest
 
             var ethLogs = new EthLogsObservableSubscription(client);
             ethLogs.GetSubscriptionDataResponsesAsObservable().Subscribe(log =>
-                Console.WriteLine("Log Address:" + log.Address));
+                Console.WriteLine("Log Address:" + log.Address)
+                , exception =>
+                {
+                    Console.WriteLine("Logs error info:" + exception.Message);
+                });
 
             //no contract address
 
@@ -119,11 +136,11 @@ namespace Nethereum.WebSocketsStreamingTest
 
             await client.StartAsync();
 
-            //blockHeaderSubscription.SubscribeAsync().Wait();
+            blockHeaderSubscription.SubscribeAsync().Wait();
 
             //blockHeaderSubscription2.SubscribeAsync().Wait();
 
-            //pendingTransactionsSubscription.SubscribeAsync().Wait();
+            pendingTransactionsSubscription.SubscribeAsync().Wait();
 
             //ethGetBalance.SendRequestAsync("0x742d35cc6634c0532925a3b844bc454e4438f44e", BlockParameter.CreateLatest()).Wait();
 
@@ -131,7 +148,7 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //ethLogs.SubscribeAsync().Wait();
 
-            await ethLogsTokenTransfer.SubscribeAsync(filterTransfers);
+            //await ethLogsTokenTransfer.SubscribeAsync(filterTransfers);
 
             //Thread.Sleep(30000);
             //pendingTransactionsSubscription.UnsubscribeAsync().Wait();
@@ -140,13 +157,16 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //blockHeaderSubscription.UnsubscribeAsync().Wait();
 
-            //Thread.Sleep(20000);
+            
+
+           // await client.StopAsync();
+           // await SubscribeAndRunAsync();
         }
 
         private static async void Client_Error(object sender, Exception ex)
         {
             Console.WriteLine("Client Error restarting...");
-            ((StreamingWebSocketClient)sender).Error -= Client_Error;
+           // ((StreamingWebSocketClient)sender).Error -= Client_Error;
             ((StreamingWebSocketClient)sender).Dispose();
             await SubscribeAndRunAsync();
         }
