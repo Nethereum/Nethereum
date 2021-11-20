@@ -130,10 +130,6 @@ namespace Nethereum.WebSocketsStreamingTest
                 Console.WriteLine("Logs error info:" + exception.Message);
             });
 
-            
-
-
-
             await client.StartAsync();
 
             blockHeaderSubscription.SubscribeAsync().Wait();
@@ -150,10 +146,10 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //await ethLogsTokenTransfer.SubscribeAsync(filterTransfers);
 
-            //Thread.Sleep(30000);
+            //await Task.Delay(30000);
             //pendingTransactionsSubscription.UnsubscribeAsync().Wait();
 
-            //Thread.Sleep(20000);
+            //await Task.Delay(20000);
 
             //blockHeaderSubscription.UnsubscribeAsync().Wait();
 
@@ -166,8 +162,6 @@ namespace Nethereum.WebSocketsStreamingTest
         private static async void Client_Error(object sender, Exception ex)
         {
             Console.WriteLine("Client Error restarting...");
-           // ((StreamingWebSocketClient)sender).Error -= Client_Error;
-            ((StreamingWebSocketClient)sender).Dispose();
             await SubscribeAndRunAsync();
         }
 

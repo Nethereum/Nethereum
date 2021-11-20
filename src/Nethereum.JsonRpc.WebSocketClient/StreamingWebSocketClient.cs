@@ -19,21 +19,21 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
     public class StreamingWebSocketClient : IStreamingClient, IDisposable, IClientRequestHeaderSupport
     {
         public Dictionary<string, string> RequestHeaders { get; set; } = new Dictionary<string, string>();
-
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
+        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 100000;
+        public JsonSerializerSettings JsonSerializerSettings { get; set; }
+        public bool IsStarted { get; private set; }
+        public event WebSocketStreamingErrorEventHandler Error;
 
-        private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
-        private SemaphoreSlim _semaphoreSlimListener = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _sendRequestSemaphore = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _startStopSemaphore = new SemaphoreSlim(1, 1);
 
         private readonly string _path;
-        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 100000;
-
         private ConcurrentDictionary<string, IRpcStreamingResponseHandler> _requests = new ConcurrentDictionary<string, IRpcStreamingResponseHandler>();
-
         private Task _listener;
         private CancellationTokenSource _cancellationTokenSource;
-
-        public event WebSocketStreamingErrorEventHandler Error;
+        private readonly ILog _log;
+        private ClientWebSocket _clientWebSocket;
 
         private StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
@@ -45,13 +45,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             _cancellationTokenSource = new CancellationTokenSource();
         }
 
-        public JsonSerializerSettings JsonSerializerSettings { get; set; }
-        private readonly object _lockingObject = new object();
-        private readonly ILog _log;
-
-        public bool IsStarted { get; private set; }
-
-        private ClientWebSocket _clientWebSocket;
+        public StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : this(path, jsonSerializerSettings)
+        {
+            _log = log;
+        }
 
         private bool AnyQueueRequests()
         {
@@ -95,52 +92,23 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             }
         }
 
-        public StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : this(path, jsonSerializerSettings)
+        public async Task StartAsync()
         {
-            _log = log;
-        }
-
-        public Task StartAsync()
-        {
+            await _startStopSemaphore.WaitAsync();
             if (IsStarted)
             {
-                return Task.CompletedTask;
+                _startStopSemaphore.Release();
+                return;
             }
-
             IsStarted = true;
 
-            if (_cancellationTokenSource?.IsCancellationRequested == true)
-            {
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-            }
+            _cancellationTokenSource = new CancellationTokenSource();
+            _clientWebSocket = new ClientWebSocket();
 
-            if(_cancellationTokenSource == null)
-            {
-                _cancellationTokenSource = new CancellationTokenSource();
-            }
-
-            _listener = Task.Factory.StartNew(async () =>
-            {
-                await HandleIncomingMessagesAsync();
-            }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
-            return ConnectWebSocketAsync();
-        }
-
-        
-
-        private async Task ConnectWebSocketAsync()
-        {
-            CancellationTokenSource tokenSource = null;
             try
             {
-                if (_clientWebSocket == null || _clientWebSocket.State != WebSocketState.Open)
+                using (var tokenSource = new CancellationTokenSource(ConnectionTimeout))
                 {
-                    tokenSource = new CancellationTokenSource(ConnectionTimeout);
-
-                    _clientWebSocket?.Dispose();
-                    _clientWebSocket = new ClientWebSocket();
                     if (RequestHeaders != null)
                     {
                         foreach (var requestHeader in RequestHeaders)
@@ -150,65 +118,68 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                     }
 
                     await _clientWebSocket.ConnectAsync(new Uri(_path), tokenSource.Token).ConfigureAwait(false);
-
-                    //Random random = new Random();
-                    //var x = random.Next(0, 30);
-                    //if (x == 5) throw new Exception("Error");
-
                 }
+
+                //Listener must be started after the _clientWebSocket is connected. Check #738 for more info.
+                _listener = Task.Factory.StartNew(async () =>
+                {
+                    await HandleIncomingMessagesAsync();
+                }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current).Unwrap();
             }
             catch (TaskCanceledException ex)
             {
                 var rpcException = new RpcClientTimeoutException($"Websocket connection timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
-                HandleError(rpcException);
+                HandleError(rpcException, false);
                 throw rpcException;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                HandleError(ex);
+                HandleError(ex, false);
                 throw;
             }
             finally
             {
-                tokenSource?.Dispose();
+                _startStopSemaphore.Release();
             }
         }
 
-        private void HandleError(Exception exception)
+        private void HandleError(Exception exception, bool useStartStopSemaphore = true)
         {
             foreach (var rpcStreamingResponseHandler in _requests)
             {
                 rpcStreamingResponseHandler.Value.HandleClientError(exception);
             }
-            StopAsync().Wait();
+            CloseDisposeAndClearRequestsAsync(useStartStopSemaphore).Wait();
             Error?.Invoke(this, exception);
-            
         }
 
         public async Task<Tuple<int, bool>> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
         {
-            CancellationTokenSource timeoutTokenSource = null;
-            CancellationTokenSource tokenSource = null;
             try
             {
-                timeoutTokenSource = new CancellationTokenSource(ForceCompleteReadTotalMilliseconds);
-                tokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token, timeoutTokenSource.Token);
-
-                if (client == null) return new Tuple<int, bool>(0, true);
-                var segmentBuffer = new ArraySegment<byte>(buffer);
-                var result = await client
-                    .ReceiveAsync(segmentBuffer, tokenSource.Token)
-                    .ConfigureAwait(false);
-                return new Tuple<int, bool>(result.Count, result.EndOfMessage);
+                using (var timeoutTokenSource = new CancellationTokenSource(ForceCompleteReadTotalMilliseconds))
+                {
+                    using (var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token, timeoutTokenSource.Token))
+                    {
+                        if (client == null) return new Tuple<int, bool>(0, true);
+                        var segmentBuffer = new ArraySegment<byte>(buffer);
+                        var result = await client
+                            .ReceiveAsync(segmentBuffer, tokenSource.Token)
+                            .ConfigureAwait(false);
+                        return new Tuple<int, bool>(result.Count, result.EndOfMessage);
+                    }
+                }
             }
             catch (TaskCanceledException ex)
             {
-                throw new RpcClientTimeoutException($"Rpc timeout after {ForceCompleteReadTotalMilliseconds} milliseconds", ex);
-            }
-            finally
-            {
-                timeoutTokenSource?.Dispose();
-                tokenSource?.Dispose();
+                if (!_cancellationTokenSource.IsCancellationRequested)
+                {
+                    throw new RpcClientTimeoutException($"Rpc timeout after {ForceCompleteReadTotalMilliseconds} milliseconds", ex);
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 
@@ -231,7 +202,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     var buffer = new byte[readBufferSize];
                     var response = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
-                    
+
                     completedNextMessage = ProcessNextMessageBytes(buffer, memoryStream, response.Item1, response.Item2);
                 }
             }
@@ -239,16 +210,16 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return memoryStream;
         }
 
-        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead=-1, bool endOfMessage = false)
+        protected bool ProcessNextMessageBytes(byte[] buffer, MemoryStream memoryStream, int bytesRead = -1, bool endOfMessage = false)
         {
             int currentIndex = 0;
             //if bytes read is 0 we don't care as streaming might continue regardless and message split.. 
             int bufferToRead = bytesRead;
             if (bytesRead == -1) bufferToRead = buffer.Length; //old data from previous buffer
-           
+
             while (currentIndex < bufferToRead)
             {
-                if(buffer[currentIndex] == 10 ) //finish reading message
+                if (buffer[currentIndex] == 10) //finish reading message
                 {
                     if (currentIndex + 1 < bufferToRead) // bytes remaining for next message add them to last buffer to be read next message.
                     {
@@ -276,17 +247,15 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             return false;
         }
-            
 
         private async Task HandleIncomingMessagesAsync()
         {
             var logger = new RpcLogger(_log);
-            while (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    await _semaphoreSlimListener.WaitAsync().ConfigureAwait(false);
-                    if (_clientWebSocket != null && _clientWebSocket.State == WebSocketState.Open && AnyQueueRequests())
+                    if (AnyQueueRequests())
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
                         {
@@ -297,68 +266,61 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                             {
                                 var serializer = JsonSerializer.Create(JsonSerializerSettings);
                                 var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
-                                //Random random = new Random();
-                                //var x = random.Next(0, 50);
-                                //if (x == 5) throw new Exception("Error");
 
                                 HandleResponse(message);
                                 logger.LogResponse(message);
-
                             }
                         }
+                    }
+                    else
+                    {
+                        await Task.Yield();
                     }
                 }
                 catch (Exception ex)
                 {
                     //HandleError should not be called from any of the functions that are called from this function 
                     //which also rethrow the exception to avoid calling the error handlers twice for the same error.
-                    //if cancellation requested ignore it as we will end up in a loop
                     if (!_cancellationTokenSource.IsCancellationRequested)
                     {
-                       
-                        HandleError(ex);
-                        logger.LogException(ex);
-                        
+                        //This task must not wait for the HandleError as it will wait for this task as well
+                        _ = Task.Run(() =>
+                        {
+                            HandleError(ex);
+                            logger.LogException(ex);
+                        });
                     }
-                }
-                finally
-                {
-                    //release the semaphore for the listener so it can be disposed
-                    _semaphoreSlimListener.Release();
                 }
             }
         }
 
-        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null )
+        public async Task SendRequestAsync(RpcRequestMessage request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)
         {
-            if (_clientWebSocket == null) throw new InvalidOperationException("Websocket is null.  Ensure that StartAsync has been called to create the websocket.");
+            if (_clientWebSocket == null) throw new InvalidOperationException("Websocket is null. Ensure that StartAsync has been called to create the websocket.");
 
             var logger = new RpcLogger(_log);
-            CancellationTokenSource timeoutCancellationTokenSource = null;
-            try
+            using (var timeoutCancellationTokenSource = new CancellationTokenSource())
             {
-                await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
-                logger.LogRequest(rpcRequestJson);
-                timeoutCancellationTokenSource = new CancellationTokenSource();
-                timeoutCancellationTokenSource.CancelAfter(ConnectionTimeout);
+                try
+                {
+                    await _sendRequestSemaphore.WaitAsync().ConfigureAwait(false);
+                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                    var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
+                    logger.LogRequest(rpcRequestJson);
+                    timeoutCancellationTokenSource.CancelAfter(ConnectionTimeout);
 
-                var webSocket = _clientWebSocket;
-                await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, timeoutCancellationTokenSource.Token)
-                    .ConfigureAwait(false);
-                HandleRequest(request, requestResponseHandler);
-
-            }
-            catch (Exception ex)
-            {
-                logger.LogException(ex);
-                throw new RpcClientUnknownException("Error occurred trying to send web socket requests(s)", ex);
-            }
-            finally
-            {
-                timeoutCancellationTokenSource?.Dispose();
-                _semaphoreSlim.Release();
+                    await _clientWebSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, timeoutCancellationTokenSource.Token)
+                        .ConfigureAwait(false);
+                    HandleRequest(request, requestResponseHandler);
+                }
+                catch (Exception ex)
+                {
+                    throw new RpcClientUnknownException("Error occurred trying to send web socket requests(s)", ex);
+                }
+                finally
+                {
+                    _sendRequestSemaphore.Release();
+                }
             }
         }
 
@@ -372,74 +334,55 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             return CloseDisposeAndClearRequestsAsync();
         }
 
-        private async Task CloseDisposeAndClearRequestsAsync()
+        private async Task CloseDisposeAndClearRequestsAsync(bool waitForSemaphore = true)
         {
+            if (waitForSemaphore)
+            {
+                await _startStopSemaphore.WaitAsync();
+            }
+            if (!IsStarted)
+            {
+                if (waitForSemaphore)
+                {
+                    _startStopSemaphore.Release();
+                }
+                return;
+            }
             IsStarted = false;
+
             //Cancel listener
             _cancellationTokenSource?.Cancel();
             try
             {
-                //wait for the cancellation to be completed (or wait a second)
-                await _semaphoreSlimListener.WaitAsync(1000).ConfigureAwait(false);
+                _listener?.Wait();
+
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
+
                 //Dispose listener
 #if !NETSTANDARD1_3
-                try
-                {
-                    _listener?.Dispose();
-                }
-                catch { }
-                finally
-                {
-                    _listener = null;
-                }
-#else
-            _listener = null;
+                _listener?.Dispose();
 #endif
-
-                try
-                {
-                    _cancellationTokenSource?.Dispose();
-                }
-                catch { }
-                finally
-                {
-                    _cancellationTokenSource = null;
-                }
+                _listener = null;
             }
             catch { }
-            finally
-            {
-                //release the semaphore for the listener to restart if wanted
-                _semaphoreSlimListener.Release();
-            }
 
             //Close the clientWebSocket
-            CancellationTokenSource tokenSource = null;
-            try
+            using (var tokenSource = new CancellationTokenSource(ConnectionTimeout))
             {
-                if (_clientWebSocket != null && (_clientWebSocket.State == WebSocketState.Open || _clientWebSocket.State == WebSocketState.Connecting))
+                try
                 {
-                    tokenSource = new CancellationTokenSource(ConnectionTimeout);
-
-                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
-                        tokenSource.Token);
+                    if (_clientWebSocket != null && (_clientWebSocket.State == WebSocketState.Open || _clientWebSocket.State == WebSocketState.Connecting))
+                    {
+                        await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
+                            tokenSource.Token);
+                    }
                 }
-            }
-            catch { }
-            finally
-            {
-                tokenSource?.Dispose();
+                catch { }
             }
 
-            try
-            {
-                _clientWebSocket?.Dispose();
-            }
-            catch { }
-            finally
-            {
-                _clientWebSocket = null;
-            }
+            _clientWebSocket?.Dispose();
+            _clientWebSocket = null;
 
             //Let all the _requests the client is disconnecting and clear them
             try
@@ -450,12 +393,14 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 }
             }
             catch { }
-            finally
-            {
-                _requests.Clear();
-            }
+            _requests.Clear();
 
+            if (waitForSemaphore)
+            {
+                _startStopSemaphore.Release();
+            }
         }
+
         public async Task SendRequestAsync(RpcRequest request, IRpcStreamingResponseHandler requestResponseHandler, string route = null)
         {
             var reqMsg = new RpcRequestMessage(request.Id,
