@@ -547,7 +547,7 @@ namespace Nethereum.Contracts
         public static FilterLog[] Sort(this IEnumerable<FilterLog> logs)
         {
             var list = logs.ToList();    
-            list.Sort(new FilterLogBlockNumberTransactionIndexComparer());
+            list.Sort(new FilterLogBlockNumberTransactionIndexLogIndexComparer());
             return list.ToArray();
         }
 
