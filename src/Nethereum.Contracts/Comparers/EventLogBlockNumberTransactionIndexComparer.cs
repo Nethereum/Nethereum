@@ -10,7 +10,7 @@ namespace Nethereum.Contracts.Comparers
             var xLog = x as IEventLog;
             var yLog = y as IEventLog;
             if (xLog == null || yLog == null) throw new Exception("Both instances should implement IEventLog");
-            return new FilterLogBlockNumberTransactionIndexComparer().Compare(xLog.Log, yLog.Log);
+            return new FilterLogBlockNumberTransactionIndexLogIndexComparer().Compare(xLog.Log, yLog.Log);
         }
     }
 
@@ -22,7 +22,7 @@ namespace Nethereum.Contracts.Comparers
             var xLog = x as IEventLog;
             var yLog = y as IEventLog;
             if (xLog == null || yLog == null) throw new Exception("Both instances should implement IEventLog");
-            return new FilterLogBlockNumberTransactionIndexComparer().Compare(xLog.Log, yLog.Log);
+            return new FilterLogBlockNumberTransactionIndexLogIndexComparer().Compare(xLog.Log, yLog.Log);
         }
     }
 }
