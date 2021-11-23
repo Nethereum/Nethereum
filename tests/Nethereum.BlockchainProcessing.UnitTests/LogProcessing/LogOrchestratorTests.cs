@@ -24,7 +24,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
             _web3Mock = new Web3Mock();
             _logsHandled = new List<FilterLog>();
             _logHandler = new ProcessorHandler<FilterLog>((filterLog) => { _logsHandled.Add(filterLog); return Task.CompletedTask; });
-            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new []{ _logHandler }, null, 100, 1);
+            _logOrchestrator = new LogOrchestrator(_web3Mock.EthApiContractServiceMock.Object, new []{ _logHandler }, null);
         }
 
         [Fact]

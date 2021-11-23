@@ -19,16 +19,15 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
-        private BlockRangeRequestStrategy _blockRangeRequestStrategy;
+
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
-            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
-            _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight);
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber,
@@ -61,7 +60,6 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                         progress.BlockNumberProcessTo = getLogsResponse.Value.To;
                     }
                 }
-
             }
             catch(Exception ex)
             {
@@ -101,12 +99,8 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         {
             try 
             {
-
-                var adjustedToBlock =
-                    _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
-                        retryRequestNumber);
-
-                _filterInput.SetBlockRange(fromBlock, adjustedToBlock);
+                toBlock -= retryRequestNumber;
+                _filterInput.SetBlockRange(fromBlock, toBlock);
 
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
 
@@ -117,7 +111,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 }
                 retryRequestNumber = 0;
                 retryNullLogsRequestNumber = 0;
-                return new GetLogsResponse(fromBlock, adjustedToBlock, logs);
+                return new GetLogsResponse(fromBlock, toBlock, logs);
 
             }
             catch(Exception ex)

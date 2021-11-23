@@ -4,10 +4,13 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 {
     public class BlockRangeRequestStrategy
     {
+        private const int DefaultNumberOfBlocksPerRequest = 100;
+        private const int DefaultRetryWeight = 0;
+
         private readonly int _defaultNumberOfBlocksPerRequest;
         private readonly int _retryWeight;
 
-        public BlockRangeRequestStrategy(int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+        public BlockRangeRequestStrategy(int defaultNumberOfBlocksPerRequest = DefaultNumberOfBlocksPerRequest, int retryWeight = DefaultRetryWeight)
         {
             _defaultNumberOfBlocksPerRequest = defaultNumberOfBlocksPerRequest;
             _retryWeight = retryWeight;

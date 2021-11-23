@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Logging;
+using Nethereum.BlockchainProcessing.LogProcessing;
 using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.RPC.Eth.Blocks;
@@ -14,14 +15,20 @@ namespace Nethereum.BlockchainProcessing
         private IBlockProgressRepository _blockProgressRepository;
         private ILastConfirmedBlockNumberService _lastConfirmedBlockNumberService;
         private ILog _log;
+        private BlockRangeRequestStrategy _blockRangeRequestStrategy;
 
-        public BlockchainProcessor(IBlockchainProcessingOrchestrator blockchainProcessingOrchestrator, IBlockProgressRepository blockProgressRepository, ILastConfirmedBlockNumberService lastConfirmedBlockNumberService,  ILog log = null)
+        public BlockchainProcessor(
+            IBlockchainProcessingOrchestrator blockchainProcessingOrchestrator,
+            IBlockProgressRepository blockProgressRepository,
+            ILastConfirmedBlockNumberService lastConfirmedBlockNumberService,
+            ILog log = null,
+            BlockRangeRequestStrategy blockRangeRequestStrategy = null)
         {
             _blockchainProcessingOrchestrator = blockchainProcessingOrchestrator;
             _blockProgressRepository = blockProgressRepository;
             _lastConfirmedBlockNumberService = lastConfirmedBlockNumberService;
             _log = log;
-            
+            _blockRangeRequestStrategy = blockRangeRequestStrategy ?? new BlockRangeRequestStrategy();
         }
 
         //All scenarios have a repository (default in memory)
@@ -34,7 +41,9 @@ namespace Nethereum.BlockchainProcessing
             while (!cancellationToken.IsCancellationRequested)
             {
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken).ConfigureAwait(false);
+
+                var adjustedToBlock = _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlockNumber, blockToProcess);
+                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, adjustedToBlock, cancellationToken).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
@@ -58,7 +67,8 @@ namespace Nethereum.BlockchainProcessing
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
                 if (blockToProcess > toBlockNumber) blockToProcess = toBlockNumber;
 
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken).ConfigureAwait(false);
+                var adjustedToBlock = _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlockNumber, blockToProcess);
+                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, adjustedToBlock, cancellationToken).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
