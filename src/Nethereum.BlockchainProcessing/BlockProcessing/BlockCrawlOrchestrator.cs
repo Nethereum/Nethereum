@@ -109,7 +109,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             }
         }
 
-        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber, CancellationToken cancellationToken = default(CancellationToken), IBlockProgressRepository blockProgressRepository = null)
         {
             var progress = new OrchestrationProgress();
             try
@@ -120,6 +120,10 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
                     await CrawlBlockAsync(currentBlockNumber).ConfigureAwait(false);
                     progress.BlockNumberProcessTo = currentBlockNumber;
+                    if (blockProgressRepository != null)
+                    {
+                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                    }
                     currentBlockNumber = currentBlockNumber + 1;
                 }
             }

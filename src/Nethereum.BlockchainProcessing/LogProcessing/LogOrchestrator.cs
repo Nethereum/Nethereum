@@ -1,5 +1,6 @@
 ﻿using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.Processor;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexTypes;
@@ -20,6 +21,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
         private BlockRangeRequestStrategy _blockRangeRequestStrategy;
+
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
@@ -32,7 +34,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         }
 
         public async Task<OrchestrationProgress> ProcessAsync(BigInteger fromNumber, BigInteger toNumber,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken), IBlockProgressRepository blockProgressRepository = null)
         {
             var progress = new OrchestrationProgress();
             var nextBlockNumberFrom = fromNumber;
@@ -59,6 +61,11 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                             await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                         }
                         progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                        if (blockProgressRepository != null)
+                        {
+                            await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                        }
+
                     }
                 }
 
