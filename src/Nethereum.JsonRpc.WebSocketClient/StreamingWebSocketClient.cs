@@ -120,11 +120,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 _cancellationTokenSource = new CancellationTokenSource();
             }
 
-            _listener = Task.Factory.StartNew(async () =>
-            {
-                await HandleIncomingMessagesAsync();
-            }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
             return ConnectWebSocketAsync();
         }
 
@@ -150,6 +145,11 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                     }
 
                     await _clientWebSocket.ConnectAsync(new Uri(_path), tokenSource.Token).ConfigureAwait(false);
+                    
+                    _listener = Task.Factory.StartNew(async () =>
+                    {
+                        await HandleIncomingMessagesAsync();
+                    }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
                     //Random random = new Random();
                     //var x = random.Next(0, 30);
