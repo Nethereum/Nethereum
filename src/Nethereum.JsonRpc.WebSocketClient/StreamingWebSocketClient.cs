@@ -109,12 +109,6 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             IsStarted = true;
 
-            if (_cancellationTokenSource?.IsCancellationRequested == true)
-            {
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = new CancellationTokenSource();
-            }
-
             if(_cancellationTokenSource == null)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
@@ -124,7 +118,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             {
                 await HandleIncomingMessagesAsync();
             }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
-
+           
             return ConnectWebSocketAsync();
         }
 
@@ -176,11 +170,14 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         private void HandleError(Exception exception)
         {
+            //First send errors exceptions
             foreach (var rpcStreamingResponseHandler in _requests)
             {
                 rpcStreamingResponseHandler.Value.HandleClientError(exception);
             }
+            //Stop websocketclient and dispose everything
             StopAsync().Wait();
+            //Send event of error
             Error?.Invoke(this, exception);
             
         }
@@ -379,6 +376,9 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             _cancellationTokenSource?.Cancel();
             try
             {
+                 //We could wait but this means the websocket will be in bad state before trying to close it or dispose it
+                // _listener?.Wait();
+                
                 //wait for the cancellation to be completed (or wait a second)
                 await _semaphoreSlimListener.WaitAsync(1000).ConfigureAwait(false);
                 //Dispose listener
@@ -421,7 +421,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     tokenSource = new CancellationTokenSource(ConnectionTimeout);
 
-                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
+                   await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
                         tokenSource.Token);
                 }
             }

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.Geth.RPC.Debug;
+using Nethereum.Geth.RPC.Debug.DTOs;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
 using Newtonsoft.Json.Linq;
@@ -10,13 +11,13 @@ using Xunit;
 
 namespace Nethereum.Geth.Tests.Testers
 {
-    public class DebugTraceBlockByHashTester : RPCRequestTester<JObject>, IRPCRequestTester
+    public class DebugTraceBlockByHashTester : RPCRequestTester<JArray>, IRPCRequestTester
     {
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override async Task<JArray> ExecuteAsync(IClient client)
         {
             var debugTraceBlockByHash = new DebugTraceBlockByHash(client);
             //live block number 1700742
-            return await debugTraceBlockByHash.SendRequestAsync(Settings.GetBlockHash());
+            return await debugTraceBlockByHash.SendRequestAsync(Settings.GetBlockHash(), new TraceTransactionOptions());
         }
 
         public override Type GetRequestType()
