@@ -157,9 +157,9 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null)
+            ILog log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
-            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter);
+            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight);
 
             var progressRepository = blockProgressRepository ??
                                      new InMemoryBlockchainProgressRepository();

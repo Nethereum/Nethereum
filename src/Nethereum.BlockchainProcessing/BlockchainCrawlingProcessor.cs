@@ -7,7 +7,7 @@ namespace Nethereum.BlockchainProcessing
 {
     public class BlockchainCrawlingProcessor : BlockchainProcessor
     {
-        public BlockCrawlOrchestrator Orchestrator => (BlockCrawlOrchestrator)_blockchainProcessingOrchestrator;
+        public BlockCrawlOrchestrator Orchestrator => (BlockCrawlOrchestrator)BlockchainProcessingOrchestrator;
         public BlockchainCrawlingProcessor(BlockCrawlOrchestrator blockchainProcessingOrchestrator, IBlockProgressRepository blockProgressRepository, ILastConfirmedBlockNumberService lastConfirmedBlockNumberService, ILog log = null):base(blockchainProcessingOrchestrator, blockProgressRepository, lastConfirmedBlockNumberService, log)
         {
             

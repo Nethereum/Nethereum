@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Nethereum.Contracts.Comparers;
+using Nethereum.RPC.Eth.DTOs.Comparers;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;

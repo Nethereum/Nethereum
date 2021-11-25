@@ -19,7 +19,7 @@ namespace Nethereum.BlockchainProcessing.ProgressRepositories
 
         public Task<BigInteger?> GetLastBlockNumberProcessedAsync() => Task.FromResult(LastBlockProcessed);
 
-        public Task UpsertProgressAsync(BigInteger blockNumber)
+        public virtual Task UpsertProgressAsync(BigInteger blockNumber)
         {
             LastBlockProcessed = blockNumber;
             return Task.FromResult(0);

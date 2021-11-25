@@ -9,6 +9,7 @@ using Nethereum.Contracts.Services;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts;
 using System.Linq;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
 
 namespace Nethereum.BlockchainProcessing.BlockProcessing
 {

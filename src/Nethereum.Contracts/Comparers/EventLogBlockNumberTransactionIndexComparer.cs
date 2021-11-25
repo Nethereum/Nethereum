@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Nethereum.Contracts;
 
-namespace Nethereum.Contracts.Comparers
+namespace Nethereum.RPC.Eth.DTOs.Comparers
 {
     public class EventLogBlockNumberTransactionIndexComparer : IComparer<object>
     {

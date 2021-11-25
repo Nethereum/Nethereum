@@ -115,6 +115,6 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILog log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0);
     }
 }

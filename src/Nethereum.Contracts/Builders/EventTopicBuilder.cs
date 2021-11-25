@@ -120,8 +120,13 @@ namespace Nethereum.Contracts
             if (parameter == null) throw new Exception("Event parameter not found at " + paramNumber);
 
             for (var i = 0; i < values.Length; i++)
+            {
                 if (values[i] != null)
+                {
                     encoded[i] = EnsureHexPrefix(parameter.ABIType.Encode(values[i]).ToHex());
+                }
+            }
+
             return encoded;
         }
 

@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using Nethereum.RPC.Eth.DTOs;
 
-namespace Nethereum.Contracts.Comparers
+namespace Nethereum.RPC.Eth.DTOs.Comparers
 {
     public class FilterLogBlockNumberTransactionIndexLogIndexComparer : IComparer<FilterLog>
     {
-        //TODO: Move to Nethereum RPC
         public int Compare(FilterLog x, FilterLog y)
         {
             if (x.BlockNumber.Value != y.BlockNumber.Value)

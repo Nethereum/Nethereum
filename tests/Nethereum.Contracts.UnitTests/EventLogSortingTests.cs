@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Contracts.Comparers;
+using Nethereum.RPC.Eth.DTOs.Comparers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Contracts.Extensions;

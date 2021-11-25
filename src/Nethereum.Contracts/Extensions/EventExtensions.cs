@@ -6,7 +6,7 @@ using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
-using Nethereum.Contracts.Comparers;
+using Nethereum.RPC.Eth.DTOs.Comparers;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;

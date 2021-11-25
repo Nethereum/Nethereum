@@ -10,14 +10,14 @@ namespace Nethereum.BlockchainProcessing
 {
     public class BlockchainProcessor
     {
-        protected IBlockchainProcessingOrchestrator _blockchainProcessingOrchestrator;
+        protected IBlockchainProcessingOrchestrator BlockchainProcessingOrchestrator { get; set; }
         private IBlockProgressRepository _blockProgressRepository;
         private ILastConfirmedBlockNumberService _lastConfirmedBlockNumberService;
         private ILog _log;
 
         public BlockchainProcessor(IBlockchainProcessingOrchestrator blockchainProcessingOrchestrator, IBlockProgressRepository blockProgressRepository, ILastConfirmedBlockNumberService lastConfirmedBlockNumberService,  ILog log = null)
         {
-            _blockchainProcessingOrchestrator = blockchainProcessingOrchestrator;
+            BlockchainProcessingOrchestrator = blockchainProcessingOrchestrator;
             _blockProgressRepository = blockProgressRepository;
             _lastConfirmedBlockNumberService = lastConfirmedBlockNumberService;
             _log = log;
@@ -34,7 +34,7 @@ namespace Nethereum.BlockchainProcessing
             while (!cancellationToken.IsCancellationRequested)
             {
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken).ConfigureAwait(false);
+                var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
@@ -58,7 +58,7 @@ namespace Nethereum.BlockchainProcessing
                 var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
                 if (blockToProcess > toBlockNumber) blockToProcess = toBlockNumber;
 
-                var progress = await _blockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken).ConfigureAwait(false);
+                var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
