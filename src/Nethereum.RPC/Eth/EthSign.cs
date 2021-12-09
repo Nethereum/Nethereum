@@ -18,7 +18,7 @@ namespace Nethereum.RPC.Eth
     ///     Example
     ///     Request
     ///     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sign","params":["0xd1ade25ccd3d550a7eb532ac759cac7be09c2719",
-    ///     "Schoolbus"],"id":1}'
+    ///     "0xdeadbeef"],"id":1}'
     ///     Result
     ///     {
     ///     "id":1,
