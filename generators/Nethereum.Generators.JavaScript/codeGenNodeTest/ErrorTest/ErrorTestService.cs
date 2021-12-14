@@ -42,32 +42,84 @@ namespace Nethereum.ErrorTest.ErrorTest
             ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
 
-        public Task<string> TransferRequestAsync(TransferFunction transferFunction)
+        public Task<string> AddOwnerWithThresholdRequestAsync(AddOwnerWithThresholdFunction addOwnerWithThresholdFunction)
         {
-             return ContractHandler.SendRequestAsync(transferFunction);
+             return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> AddOwnerWithThresholdRequestAndWaitForReceiptAsync(AddOwnerWithThresholdFunction addOwnerWithThresholdFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
         }
 
-        public Task<string> TransferRequestAsync(string to, BigInteger amount)
+        public Task<string> AddOwnerWithThresholdRequestAsync(string owner, BigInteger threshold)
         {
-            var transferFunction = new TransferFunction();
-                transferFunction.To = to;
-                transferFunction.Amount = amount;
+            var addOwnerWithThresholdFunction = new AddOwnerWithThresholdFunction();
+                addOwnerWithThresholdFunction.Owner = owner;
+                addOwnerWithThresholdFunction.Threshold = threshold;
             
-             return ContractHandler.SendRequestAsync(transferFunction);
+             return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger amount, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> AddOwnerWithThresholdRequestAndWaitForReceiptAsync(string owner, BigInteger threshold, CancellationTokenSource cancellationToken = null)
         {
-            var transferFunction = new TransferFunction();
-                transferFunction.To = to;
-                transferFunction.Amount = amount;
+            var addOwnerWithThresholdFunction = new AddOwnerWithThresholdFunction();
+                addOwnerWithThresholdFunction.Owner = owner;
+                addOwnerWithThresholdFunction.Threshold = threshold;
             
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
+        }
+
+        public Task<string> ApproveHashRequestAsync(ApproveHashFunction approveHashFunction)
+        {
+             return ContractHandler.SendRequestAsync(approveHashFunction);
+        }
+
+        public Task<TransactionReceipt> ApproveHashRequestAndWaitForReceiptAsync(ApproveHashFunction approveHashFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
+        }
+
+        public Task<string> ApproveHashRequestAsync(byte[] hashToApprove)
+        {
+            var approveHashFunction = new ApproveHashFunction();
+                approveHashFunction.HashToApprove = hashToApprove;
+            
+             return ContractHandler.SendRequestAsync(approveHashFunction);
+        }
+
+        public Task<TransactionReceipt> ApproveHashRequestAndWaitForReceiptAsync(byte[] hashToApprove, CancellationTokenSource cancellationToken = null)
+        {
+            var approveHashFunction = new ApproveHashFunction();
+                approveHashFunction.HashToApprove = hashToApprove;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
+        }
+
+        public Task<string> ChangeThresholdRequestAsync(ChangeThresholdFunction changeThresholdFunction)
+        {
+             return ContractHandler.SendRequestAsync(changeThresholdFunction);
+        }
+
+        public Task<TransactionReceipt> ChangeThresholdRequestAndWaitForReceiptAsync(ChangeThresholdFunction changeThresholdFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
+        }
+
+        public Task<string> ChangeThresholdRequestAsync(BigInteger threshold)
+        {
+            var changeThresholdFunction = new ChangeThresholdFunction();
+                changeThresholdFunction.Threshold = threshold;
+            
+             return ContractHandler.SendRequestAsync(changeThresholdFunction);
+        }
+
+        public Task<TransactionReceipt> ChangeThresholdRequestAndWaitForReceiptAsync(BigInteger threshold, CancellationTokenSource cancellationToken = null)
+        {
+            var changeThresholdFunction = new ChangeThresholdFunction();
+                changeThresholdFunction.Threshold = threshold;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
         }
     }
 }

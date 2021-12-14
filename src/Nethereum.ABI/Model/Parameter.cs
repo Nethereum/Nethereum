@@ -27,6 +27,8 @@ namespace Nethereum.ABI.Model
         public Type DecodedType { get; set; }
         public bool Indexed { get; set; }
         public string SerpentSignature { get; private set; }
+
+        public string StructTypeName {get; set;}
     }
 
 }

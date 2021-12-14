@@ -23,7 +23,7 @@ function buildFunction(item: any, contractAbi: Nethereum.Generators.Model.Contra
     }
     else {
         // for solidity >=0.6.0
-        if (item.stateMutability !== undefined && (item.stateMutability === "view" || item.stateMutability === "pure"))
+        if (item.stateMutability !== undefined && (item.stateMutability === "view" || item.stateMutability === "pure") )
         constant = true;
     }
 
@@ -137,12 +137,20 @@ export function buildContract(abiStr: string): Nethereum.Generators.Model.Contra
 
     for (let i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
-            functions.push(buildFunction(abi[i], contract));
+            let functionItem = buildFunction(abi[i], contract);
+            if (functionItem.get_Name() == "nonce") {
+                let x = 1;
+            }
+            if (functionItem.get_Constant() && abi[i].outputs.length == 0) {
+               
+            } else {
+                functions.push(functionItem);
 
-            const temp = buildStructsFromParameters(abi[i].outputs);
-            for (const item of temp) {
-                if (!structs.some(x => x.get_Name() === item.get_Name())) {
-                    structs.push(item);
+                const temp = buildStructsFromParameters(abi[i].outputs);
+                for (const item of temp) {
+                    if (!structs.some(x => x.get_Name() === item.get_Name())) {
+                        structs.push(item);
+                    }
                 }
             }
         }

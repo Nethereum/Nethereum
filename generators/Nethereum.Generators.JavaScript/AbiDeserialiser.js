@@ -124,16 +124,24 @@ function buildContract(abiStr) {
     var contract = new contractAbi();
     for (var i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
-            functions.push(buildFunction(abi[i], contract));
-            var temp_3 = buildStructsFromParameters(abi[i].outputs);
-            var _loop_1 = function (item) {
-                if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
-                    structs.push(item);
+            var functionItem = buildFunction(abi[i], contract);
+            if (functionItem.get_Name() == "nonce") {
+                var x = 1;
+            }
+            if (functionItem.get_Constant() && abi[i].outputs.length == 0) {
+            }
+            else {
+                functions.push(functionItem);
+                var temp_3 = buildStructsFromParameters(abi[i].outputs);
+                var _loop_1 = function (item) {
+                    if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
+                        structs.push(item);
+                    }
+                };
+                for (var _i = 0, temp_1 = temp_3; _i < temp_1.length; _i++) {
+                    var item = temp_1[_i];
+                    _loop_1(item);
                 }
-            };
-            for (var _i = 0, temp_1 = temp_3; _i < temp_1.length; _i++) {
-                var item = temp_1[_i];
-                _loop_1(item);
             }
         }
         if (abi[i].type === "event") {

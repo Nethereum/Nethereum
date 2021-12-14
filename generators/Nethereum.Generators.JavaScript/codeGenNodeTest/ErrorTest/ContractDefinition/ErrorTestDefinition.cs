@@ -28,27 +28,189 @@ namespace Nethereum.ErrorTest.ErrorTest.ContractDefinition
 
     }
 
-    public partial class TransferFunction : TransferFunctionBase { }
+    public partial class AddOwnerWithThresholdFunction : AddOwnerWithThresholdFunctionBase { }
 
-    [Function("transfer")]
-    public class TransferFunctionBase : FunctionMessage
+    [Function("addOwnerWithThreshold")]
+    public class AddOwnerWithThresholdFunctionBase : FunctionMessage
     {
-        [Parameter("address", "to", 1)]
-        public virtual string To { get; set; }
-        [Parameter("uint256", "amount", 2)]
-        public virtual BigInteger Amount { get; set; }
+        [Parameter("address", "owner", 1)]
+        public virtual string Owner { get; set; }
+        [Parameter("uint256", "_threshold", 2)]
+        public virtual BigInteger Threshold { get; set; }
     }
 
-    public partial class InsufficientBalanceError : InsufficientBalanceErrorBase { }
+    public partial class ApproveHashFunction : ApproveHashFunctionBase { }
 
-    [Error("InsufficientBalance")]
-    public class InsufficientBalanceErrorBase : IErrorDTO
+    [Function("approveHash")]
+    public class ApproveHashFunctionBase : FunctionMessage
     {
-        [Parameter("uint256", "available", 1)]
-        public virtual BigInteger Available { get; set; }
-        [Parameter("uint256", "required", 2)]
-        public virtual BigInteger Required { get; set; }
+        [Parameter("bytes32", "hashToApprove", 1)]
+        public virtual byte[] HashToApprove { get; set; }
     }
+
+    public partial class ChangeThresholdFunction : ChangeThresholdFunctionBase { }
+
+    [Function("changeThreshold")]
+    public class ChangeThresholdFunctionBase : FunctionMessage
+    {
+        [Parameter("uint256", "_threshold", 1)]
+        public virtual BigInteger Threshold { get; set; }
+    }
+
+    public partial class AddedOwnerEventDTO : AddedOwnerEventDTOBase { }
+
+    [Event("AddedOwner")]
+    public class AddedOwnerEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "owner", 1, false )]
+        public virtual string Owner { get; set; }
+    }
+
+    public partial class ApproveHashEventDTO : ApproveHashEventDTOBase { }
+
+    [Event("ApproveHash")]
+    public class ApproveHashEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "approvedHash", 1, true )]
+        public virtual byte[] ApprovedHash { get; set; }
+        [Parameter("address", "owner", 2, true )]
+        public virtual string Owner { get; set; }
+    }
+
+    public partial class ChangedFallbackHandlerEventDTO : ChangedFallbackHandlerEventDTOBase { }
+
+    [Event("ChangedFallbackHandler")]
+    public class ChangedFallbackHandlerEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "handler", 1, false )]
+        public virtual string Handler { get; set; }
+    }
+
+    public partial class ChangedGuardEventDTO : ChangedGuardEventDTOBase { }
+
+    [Event("ChangedGuard")]
+    public class ChangedGuardEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "guard", 1, false )]
+        public virtual string Guard { get; set; }
+    }
+
+    public partial class ChangedThresholdEventDTO : ChangedThresholdEventDTOBase { }
+
+    [Event("ChangedThreshold")]
+    public class ChangedThresholdEventDTOBase : IEventDTO
+    {
+        [Parameter("uint256", "threshold", 1, false )]
+        public virtual BigInteger Threshold { get; set; }
+    }
+
+    public partial class DisabledModuleEventDTO : DisabledModuleEventDTOBase { }
+
+    [Event("DisabledModule")]
+    public class DisabledModuleEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "module", 1, false )]
+        public virtual string Module { get; set; }
+    }
+
+    public partial class EnabledModuleEventDTO : EnabledModuleEventDTOBase { }
+
+    [Event("EnabledModule")]
+    public class EnabledModuleEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "module", 1, false )]
+        public virtual string Module { get; set; }
+    }
+
+    public partial class ExecutionFailureEventDTO : ExecutionFailureEventDTOBase { }
+
+    [Event("ExecutionFailure")]
+    public class ExecutionFailureEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "txHash", 1, false )]
+        public virtual byte[] TxHash { get; set; }
+        [Parameter("uint256", "payment", 2, false )]
+        public virtual BigInteger Payment { get; set; }
+    }
+
+    public partial class ExecutionFromModuleFailureEventDTO : ExecutionFromModuleFailureEventDTOBase { }
+
+    [Event("ExecutionFromModuleFailure")]
+    public class ExecutionFromModuleFailureEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "module", 1, true )]
+        public virtual string Module { get; set; }
+    }
+
+    public partial class ExecutionFromModuleSuccessEventDTO : ExecutionFromModuleSuccessEventDTOBase { }
+
+    [Event("ExecutionFromModuleSuccess")]
+    public class ExecutionFromModuleSuccessEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "module", 1, true )]
+        public virtual string Module { get; set; }
+    }
+
+    public partial class ExecutionSuccessEventDTO : ExecutionSuccessEventDTOBase { }
+
+    [Event("ExecutionSuccess")]
+    public class ExecutionSuccessEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "txHash", 1, false )]
+        public virtual byte[] TxHash { get; set; }
+        [Parameter("uint256", "payment", 2, false )]
+        public virtual BigInteger Payment { get; set; }
+    }
+
+    public partial class RemovedOwnerEventDTO : RemovedOwnerEventDTOBase { }
+
+    [Event("RemovedOwner")]
+    public class RemovedOwnerEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "owner", 1, false )]
+        public virtual string Owner { get; set; }
+    }
+
+    public partial class SafeReceivedEventDTO : SafeReceivedEventDTOBase { }
+
+    [Event("SafeReceived")]
+    public class SafeReceivedEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "sender", 1, true )]
+        public virtual string Sender { get; set; }
+        [Parameter("uint256", "value", 2, false )]
+        public virtual BigInteger Value { get; set; }
+    }
+
+    public partial class SafeSetupEventDTO : SafeSetupEventDTOBase { }
+
+    [Event("SafeSetup")]
+    public class SafeSetupEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "initiator", 1, true )]
+        public virtual string Initiator { get; set; }
+        [Parameter("address[]", "owners", 2, false )]
+        public virtual List<string> Owners { get; set; }
+        [Parameter("uint256", "threshold", 3, false )]
+        public virtual BigInteger Threshold { get; set; }
+        [Parameter("address", "initializer", 4, false )]
+        public virtual string Initializer { get; set; }
+        [Parameter("address", "fallbackHandler", 5, false )]
+        public virtual string FallbackHandler { get; set; }
+    }
+
+    public partial class SignMsgEventDTO : SignMsgEventDTOBase { }
+
+    [Event("SignMsg")]
+    public class SignMsgEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "msgHash", 1, true )]
+        public virtual byte[] MsgHash { get; set; }
+    }
+
+
+
+
 
 
 }
