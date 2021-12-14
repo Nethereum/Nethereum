@@ -11,7 +11,17 @@ namespace Nethereum.Contracts.TransactionHandlers.MultiSend
     public class MultiSendFunction : FunctionMessage
     {
         [Parameter("bytes", "transactions", 1)]
-        public virtual byte[] Transactions { get; set; }
+        public byte[] Transactions { get; set; }
+
+        public MultiSendFunction()
+        {
+
+        }
+
+        public MultiSendFunction(params IMultiSendInput[] multiSendInputs)
+        {
+            Transactions = MultiSendEncoder.EncodeMultiSendList(multiSendInputs);
+        }
     }
 
     public interface IMultiSendInput

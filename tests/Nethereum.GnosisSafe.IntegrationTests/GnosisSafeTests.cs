@@ -53,17 +53,13 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
                 Value = Web3.Web3.Convert.ToWei(1)
             };
 
-            var multiSends = new List<IMultiSendInput>();
-            multiSends.Add(new MultiSendFunctionInput<TransferFunction>(transfer, daiAddress));
-            multiSends.Add(new MultiSendFunctionInput<TransferFunction>(transfer, daiAddress));
-
-            var multisendFunction = new MultiSendFunction();
-            multisendFunction.Transactions = MultiSendEncoder.EncodeMultiSendList(multiSends.ToArray());
-
+            var multiSendFunction = new MultiSendFunction(new MultiSendFunctionInput<TransferFunction>(transfer, daiAddress),
+                new MultiSendFunctionInput<TransferFunction>(transfer, daiAddress));
+            
             var gasPrice = await web3.Eth.GasPrice.SendRequestAsync();
 
             var execTransactionFunction = await service.BuildTransactionAsync(
-                new EncodeTransactionDataFunction() { To = multiSendAddress, Operation = (int)ContractOperationType.DelegateCall}, multisendFunction, (int)chainId, false,
+                new EncodeTransactionDataFunction() { To = multiSendAddress, Operation = (int)ContractOperationType.DelegateCall}, multiSendFunction, (int)chainId, false,
                 walletOwnerPrivateKey);
 
             //legacy
