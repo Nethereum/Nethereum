@@ -82,16 +82,23 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
         public async void ShouldTransferTokensUsingARelayer()
         {
+            //gnosis safe owner private key (only one in this scenario)
             var walletOwnerPrivateKey = "0xcf0d584dba3902252f3762d5161c4996f4b364e6e7";
+
+            //relayer or account that is going to send the transaction (no relation to the gnosis safe)
+            //pays the transaction
             var accountRelayerReceiverPrivateKey = "0xa261c1c7f775c3423be58cdb8c24c6e29f898af56";
             var chainId = Chain.Rinkeby;
+
             var gnosisSafeAddress = "0xa9C09412C1d93DAc6eE9254A51E97454588D3B88";
+            //contract address of the dai
             var daiAddress = "0x6a9865ade2b6207daac49f8bcba9705deb0b0e6d";
 
             var accountRelayerReceiver = new Account(accountRelayerReceiverPrivateKey, chainId);
 
             var web3Url = _ethereumClientIntegrationFixture.GetInfuraUrl(InfuraNetwork.Rinkeby);
             var web3 = new Web3.Web3(accountRelayerReceiver, web3Url);
+            
             var service = new GnosisSafeService(web3, gnosisSafeAddress);
 
             var transfer = new TransferFunction()
