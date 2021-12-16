@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Nethereum.Contracts;
+using Nethereum.Contracts.TransactionHandlers.MultiSend;
 using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
@@ -40,6 +41,31 @@ namespace Nethereum.GnosisSafe
             transactionData.SafeNonce = nonce;
 
             return BuildTransaction(transactionData, chainId, privateKeySigners);
+        }
+
+
+        public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
+            EncodeTransactionDataFunction transactionData,
+            BigInteger chainId,
+            string privateKeySigner,
+            bool estimateSafeTxGas = false, params IMultiSendInput[] multiSendInputs)
+        {
+            transactionData.Operation = (int)ContractOperationType.DelegateCall;
+            var multiSendFunction = new MultiSendFunction(multiSendInputs);
+            return BuildTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas,
+                privateKeySigner);
+        }
+
+        public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
+            EncodeTransactionDataFunction transactionData,
+            BigInteger chainId,
+            string[] privateKeySigners,
+            bool estimateSafeTxGas = false, params IMultiSendInput[] multiSendInputs)
+        {
+            transactionData.Operation = (int)ContractOperationType.DelegateCall;
+            var multiSendFunction = new MultiSendFunction(multiSendInputs);
+            return BuildTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas,
+                privateKeySigners);
         }
 
 
