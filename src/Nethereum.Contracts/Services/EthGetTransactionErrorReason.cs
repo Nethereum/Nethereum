@@ -39,20 +39,8 @@ namespace Nethereum.Contracts.Services
             }
             catch (RpcResponseException rpcException)
             {
-                if (rpcException.RpcError.Data != null)
-                {
-                    var encodedErrorData = rpcException.RpcError.Data.ToObject<string>();
-                    if (encodedErrorData.IsHex())
-                    {
-                        var error = functionCallDecoder.DecodeFunctionErrorMessage(encodedErrorData);
-                        if (error != null)
-                        {
-                            return error;
-                        }
-                        throw new SmartContractCustomErrorRevertException(encodedErrorData);
-                    }  
-                }
-               throw;
+                ContractRevertExceptionHandler.HandleContractRevertException(rpcException);
+                throw;
             }
         }
 #endif

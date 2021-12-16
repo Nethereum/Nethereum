@@ -2,6 +2,7 @@
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
 namespace Nethereum.Contracts
@@ -50,7 +51,7 @@ namespace Nethereum.Contracts
         public static bool IsExceptionForError(this ErrorABI errorABI, RpcResponseException exception)
         {
             if (exception.RpcError.Data == null) return false;
-            var encodedData = exception.RpcError.Data.ToObject<string>();
+            var encodedData = exception.RpcError.Data.ToString();
             if (!encodedData.IsHex()) return false;
             return encodedData.IsExceptionEncodedDataForError(errorABI.Sha3Signature);
         }
