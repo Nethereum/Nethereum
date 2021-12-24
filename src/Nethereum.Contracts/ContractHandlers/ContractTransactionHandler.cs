@@ -38,7 +38,7 @@ namespace Nethereum.Contracts.ContractHandlers
             return _receiptPollHandler.SendTransactionAsync(contractAddress, functionMessage, tokenSource);
         }
 
-        [Obsolete("Use SendTransactionAndWaitForReceipt instead")]
+        [Obsolete("Use SendTransactionAndWaitForReceiptAsync instead")]
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
             string contractAddress, TContractMessage functionMessage = null, CancellationTokenSource tokenSource = null)
         {
