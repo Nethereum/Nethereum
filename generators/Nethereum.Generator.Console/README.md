@@ -164,7 +164,7 @@ $ Nethereum.Generator.Console generate from-truffle -d ./build/contracts -o ./Cl
 
 ## Sample -Interacting with the generated code
 
-The code below uses the generated code to deploy a standard contract to a test chain and invoke it's Transfer function.
+The code below uses the generated code to deploy a standard contract to a test chain and invoke its Transfer function.
 (To run the code you need to ensure you have a test chain/node running and that you provide valid account addresses and passwords)
 
 ``` csharp
