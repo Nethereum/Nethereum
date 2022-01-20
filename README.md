@@ -124,7 +124,7 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 
 |  Project Source |  Description |
 | ------------- |--------------------------|
-| [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Generator.Console) |  |
+| [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/generators/Nethereum.Generator.Console) |  |
 | [Nethereum.Console](https://github.com/Nethereum/Nethereum.Console) | A collection of command line utilities to interact with Ethereum and account management | |
 [Testchains](https://github.com/Nethereum/TestChains) | Pre-configured devchains for fast response (PoA) | | 
 [DappHybrid](https://github.com/Nethereum/Nethereum.DappHybrid) | A cross-platform hybrid hosting mechanism for web based decentralised applications |
