@@ -9,6 +9,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Util;
+using System.Collections;
 
 namespace Nethereum.Signer.EIP712
 {
@@ -157,7 +158,7 @@ namespace Nethereum.Signer.EIP712
                 case "address":
                     return false;
                 case var array when array.Contains("["):
-                    throw new NotImplementedException("Array types are not supported");
+                    return false;
                 default:
                     return true;
             }
@@ -190,9 +191,33 @@ namespace Nethereum.Signer.EIP712
                     }
                     default:
                     {
-                        var abiValue = new ABIValue(memberValue.TypeName, memberValue.Value);
-                        var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
-                        writer.Write(abiValueEncoded);
+                            if (memberValue.TypeName.Contains("["))
+                            {
+                                var items = (IList)memberValue.Value;
+                                var itemsMemberValues = new List<MemberValue>();
+                                foreach (var item in items)
+                                {
+                                    itemsMemberValues.Add(new MemberValue()
+                                    {
+                                        TypeName = memberValue.TypeName.Substring(0, memberValue.TypeName.LastIndexOf("[")),
+                                        Value = item
+                                    });
+                                }
+                                using (var memoryStream = new MemoryStream())
+                                using (var writerItem = new BinaryWriter(memoryStream))
+                                {
+                                    EncodeData(writerItem, types, itemsMemberValues);
+                                    writerItem.Flush();
+                                    writer.Write(Sha3Keccack.Current.CalculateHash(memoryStream.ToArray()));
+                                }
+                                
+                            }
+                            else
+                            {
+                                var abiValue = new ABIValue(memberValue.TypeName, memberValue.Value);
+                                var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
+                                writer.Write(abiValueEncoded);
+                            }
                         break;
                     }
                 }
