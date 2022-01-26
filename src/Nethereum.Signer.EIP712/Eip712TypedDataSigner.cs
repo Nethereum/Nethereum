@@ -68,6 +68,22 @@ namespace Nethereum.Signer.EIP712
             return EthECDSASignature.CreateStringSignature(signature);
         }
 
+        public string RecoverFromSignatureV4(TypedData typedData, string signature)
+        {
+            var encodedData = EncodeTypedData(typedData);
+            return  new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
+        }
+
+        public string RecoverFromSignatureV4(byte[] encodedData, string signature)
+        {
+            return new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
+        }
+
+        public string RecoverFromSignatureHashV4(byte[] hash, string signature)
+        {
+            return new MessageSigner().EcRecover(hash, signature);
+        }
+
         /// <summary>
         /// Encodes data according to EIP-712.
         /// </summary>

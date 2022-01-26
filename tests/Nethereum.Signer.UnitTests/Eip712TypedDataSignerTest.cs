@@ -9,9 +9,90 @@ using System.Text;
 
 namespace Nethereum.Signer.UnitTests
 {
+
     public class Eip712TypedDataSignerTest
     {
         private readonly Eip712TypedDataSigner _signer = new Eip712TypedDataSigner();
+
+        [Fact]
+        public void ComplexMessageTypedDataEncodingShouldBeCorrectForV4()
+        {
+            var typedData = new TypedData
+            {
+                Domain = new Domain
+                {
+                    Name = "Ether Mail",
+                    Version = "1",
+                    ChainId = 1,
+                    VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+                },
+                Types = new Dictionary<string, MemberDescription[]>
+                {
+                    ["EIP712Domain"] = new[]
+                    {
+                        new MemberDescription {Name = "name", Type = "string"},
+                        new MemberDescription {Name = "version", Type = "string"},
+                        new MemberDescription {Name = "chainId", Type = "uint256"},
+                        new MemberDescription {Name = "verifyingContract", Type = "address"},
+                    },
+                    ["Person"] = new[]
+                    {
+                        new MemberDescription {Name = "name", Type = "string"},
+                        new MemberDescription {Name = "wallet", Type = "address"},
+                    },
+                    ["Mail"] = new[]
+                    {
+                        new MemberDescription {Name = "from", Type = "Person"},
+                        new MemberDescription {Name = "to", Type = "Person"},
+                        new MemberDescription {Name = "contents", Type = "string"},
+                    }
+                },
+                PrimaryType = "Mail",
+                Message = new[]
+                {
+                    new MemberValue
+                    {
+                        TypeName = "Person", Value = new[]
+                        {
+                            new MemberValue {TypeName = "string", Value = "Cow"},
+                            new MemberValue {TypeName = "address", Value = "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"},
+                        }
+                    },
+                    new MemberValue
+                    {
+                        TypeName = "Person", Value = new[]
+                        {
+                            new MemberValue {TypeName = "string", Value = "Bob"},
+                            new MemberValue {TypeName = "address", Value = "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"},
+                        }
+                    },
+                    new MemberValue {TypeName = "string", Value = "Hello, Bob!"},
+                }
+            };
+
+            var result = _signer.EncodeTypedData(typedData);
+
+            Assert.Equal(Sha3Keccack.Current.CalculateHash(result).ToHex(true), "0xbe609aee343fb3c4b28e1df9e632fca64fcfaede20f02e86244efddf30957bd2", ignoreCase: true);
+            var key = new EthECKey("83f8964bd55c98a4806a7b100bd9d885798d7f936f598b88916e11bade576204");
+            var signature = _signer.SignTypedDataV4(typedData, key);
+            Assert.Equal("0xf714d2cd123498a5551cafee538d073c139c5c237c2d0a98937a5cce109bfefb7c6585fed974543c649b0cae34ac8763ee0ac536a56a82980c14470f0029907b1b",
+                signature);
+
+           
+            var addressRecovered = new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(result), signature);
+            var address = key.GetPublicAddress();
+            Assert.True(address.IsTheSameAddress(addressRecovered));
+
+            addressRecovered =  _signer.RecoverFromSignatureV4(typedData, signature);
+            Assert.True(address.IsTheSameAddress(addressRecovered));
+
+            addressRecovered = _signer.RecoverFromSignatureV4(result, signature);
+            Assert.True(address.IsTheSameAddress(addressRecovered));
+
+            addressRecovered = _signer.RecoverFromSignatureHashV4(Sha3Keccack.Current.CalculateHash(result), signature);
+            Assert.True(address.IsTheSameAddress(addressRecovered));
+        }
+
 
         [Fact]
         public void ComplexMessageTypedDataEncodingShouldBeCorrect()
