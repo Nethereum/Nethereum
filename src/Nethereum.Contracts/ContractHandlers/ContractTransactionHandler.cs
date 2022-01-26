@@ -38,7 +38,7 @@ namespace Nethereum.Contracts.ContractHandlers
             return _receiptPollHandler.SendTransactionAsync(contractAddress, functionMessage, tokenSource);
         }
 
-        [Obsolete("Use SendTransactionAndWaitForReceipt instead")]
+        [Obsolete("Use " + nameof(SendTransactionAndWaitForReceiptAsync) + " instead")]
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
             string contractAddress, TContractMessage functionMessage = null, CancellationTokenSource tokenSource = null)
         {
@@ -50,7 +50,7 @@ namespace Nethereum.Contracts.ContractHandlers
             return _transactionSenderHandler.SendTransactionAsync(contractAddress, functionMessage);
         }
 
-        [Obsolete("Use SendTransactionAsync instead")]
+        [Obsolete("Use " + nameof(SendTransactionAsync) + " instead")]
         public Task<string> SendRequestAsync(string contractAddress, TContractMessage functionMessage = null)
         {
             return SendTransactionAsync(contractAddress, functionMessage);

@@ -8,7 +8,7 @@ assignees: ''
 
 ---
 
-Issue tracker is **ONLY** used for reporting bugs. New features, questions and support should be discussed on our gitter channel first. [Gitter](https://gitter.im/Nethereum/Nethereum)
+Issue tracker is **ONLY** used for reporting bugs. New features, questions and support should be discussed on our discord channel first. [Discord](https://discord.gg/u3Ej2BReNn )
 
 <!--- Provide a general summary of the issue in the Title above -->
 

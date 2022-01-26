@@ -124,7 +124,7 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 
 |  Project Source |  Description |
 | ------------- |--------------------------|
-| [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Generator.Console) |  |
+| [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/generators/Nethereum.Generator.Console) |  |
 | [Nethereum.Console](https://github.com/Nethereum/Nethereum.Console) | A collection of command line utilities to interact with Ethereum and account management | |
 [Testchains](https://github.com/Nethereum/TestChains) | Pre-configured devchains for fast response (PoA) | | 
 [DappHybrid](https://github.com/Nethereum/Nethereum.DappHybrid) | A cross-platform hybrid hosting mechanism for web based decentralised applications |
@@ -149,7 +149,7 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 [Blazor/Blockchain Explorer](https://github.com/Nethereum/NethereumBlazor) | Wasm blockchain explorer based on [Blazor](https://github.com/aspnet/Blazor) and [ReactiveUI](https://github.com/reactiveui/ReactiveUI)|
 
 ### Video guides
-There a few video guides, which might be helpful to get started. 
+There are a few video guides, which might be helpful to get started. 
 **NOTE: These videos are for version 1.0, so some areas have changed.**
 
 Please use the Nethereum playground for the latest samples.
@@ -159,7 +159,7 @@ Please use the Nethereum playground for the latest samples.
 These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code. 
 
 ##### Windows, Visual Studio
-This video takes you through the steps of creating the a smart contract, compile it, start a private chain and deploy it using Nethereum.
+This video takes you through the steps of creating a smart contract, compiling it, starting a private chain and deploying it using Nethereum.
 
 [![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
 
