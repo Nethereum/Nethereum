@@ -40,7 +40,7 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712.
         /// Infers types of message fields from <see cref="Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute"/>. 
-        /// For flat messages only, for complex messages with reference type fields use "EncodeTypedData(TypedData typedData)" method.
+        /// For flat messages only, for complex messages with reference type fields use "EncodeTypedData(TypedData typedData).
         /// </summary>
         public byte[] EncodeTypedData<T>(T data, Domain domain, string primaryTypeName)
         {
@@ -48,6 +48,17 @@ namespace Nethereum.Signer.EIP712
 
             return EncodeTypedData(typedData);
         }
+
+
+        /// <summary>
+        /// Encodes data according to EIP-712, it uses a predefined typed data schema and converts and encodes the provide the message value
+        /// </summary>
+        public byte[] EncodeTypedData<T>(T message, TypedData typedData)
+        {
+            typedData.Message = new MemberValueFactory().CreateFromMessage(message);
+            return EncodeTypedData(typedData);
+        }
+
 
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
@@ -67,6 +78,22 @@ namespace Nethereum.Signer.EIP712
             var encodedData = EncodeTypedData(typedData);
             var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
             return EthECDSASignature.CreateStringSignature(signature);
+        }
+
+        /// <summary>
+        /// Signs using a predefined typed data schema and converts and encodes the provide the message value
+        /// </summary>
+        public string SignTypedDataV4<T>(T message, TypedData typedData, EthECKey key)
+        {
+            var encodedData = EncodeTypedData(message, typedData);
+            var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
+            return EthECDSASignature.CreateStringSignature(signature);
+        }
+
+        public string RecoverFromSignatureV4<T>(T message, TypedData typedData, string signature)
+        {
+            var encodedData = EncodeTypedData(message, typedData);
+            return new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
         }
 
         public string RecoverFromSignatureV4(TypedData typedData, string signature)
@@ -129,7 +156,6 @@ namespace Nethereum.Signer.EIP712
             return fullyEncodedType;
         }
 
-        // TODO: handle array types
         private static IList<KeyValuePair<string, string>> EncodeTypes(IDictionary<string, MemberDescription[]> types, string currentTypeName)
         {
             var currentTypeMembers = types[currentTypeName];
@@ -269,6 +295,7 @@ namespace Nethereum.Signer.EIP712
 
             return result;
         }
+
 
         private TypedData GenerateTypedData<T>(T data, Domain domain, string primaryTypeName)
         {

@@ -4,7 +4,7 @@ namespace Nethereum.ABI
 {
     public abstract class ArrayType : ABIType
     {
-        internal ABIType ElementType;
+        public ABIType ElementType { get; set; }
 
         protected ArrayType(string name) : base(name)
         {

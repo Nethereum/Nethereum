@@ -6,12 +6,15 @@ using Nethereum.Util;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Xunit;
 using System.Text;
+using Nethereum.ABI.FunctionEncoding;
+using System.Linq;
 
 namespace Nethereum.Signer.UnitTests
 {
 
     public class Eip712TypedDataSignerTest
     {
+
         private readonly Eip712TypedDataSigner _signer = new Eip712TypedDataSigner();
 
         [Fact]
@@ -39,7 +42,7 @@ namespace Nethereum.Signer.UnitTests
                    {
                         new MemberDescription {Name = "name", Type = "string"},
                         new MemberDescription {Name = "members", Type = "Person[]"},
-                        
+
                     },
                     ["Mail"] = new[]
                    {
@@ -52,7 +55,7 @@ namespace Nethereum.Signer.UnitTests
                         new MemberDescription {Name = "name", Type = "string"},
                         new MemberDescription {Name = "wallets", Type = "address[]"},
                     },
-                   
+
                 },
                 PrimaryType = "Mail",
                 Message = new[]
@@ -72,7 +75,7 @@ namespace Nethereum.Signer.UnitTests
                             {
                                 new MemberValue {TypeName = "string", Value = "Bob"},
                                 new MemberValue {TypeName = "address[]", Value = new List<string>{ "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" } },
-                            } 
+                            }
                         }
                     },
                     new MemberValue {TypeName = "string", Value = "Hello, Bob!"},
@@ -87,6 +90,8 @@ namespace Nethereum.Signer.UnitTests
             var addressRecovered = _signer.RecoverFromSignatureV4(typedData, signature);
             var address = key.GetPublicAddress();
             Assert.True(address.IsTheSameAddress(addressRecovered));
+
+
         }
 
 
@@ -154,12 +159,12 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal("0xf714d2cd123498a5551cafee538d073c139c5c237c2d0a98937a5cce109bfefb7c6585fed974543c649b0cae34ac8763ee0ac536a56a82980c14470f0029907b1b",
                 signature);
 
-           
+
             var addressRecovered = new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(result), signature);
             var address = key.GetPublicAddress();
             Assert.True(address.IsTheSameAddress(addressRecovered));
 
-            addressRecovered =  _signer.RecoverFromSignatureV4(typedData, signature);
+            addressRecovered = _signer.RecoverFromSignatureV4(typedData, signature);
             Assert.True(address.IsTheSameAddress(addressRecovered));
 
             addressRecovered = _signer.RecoverFromSignatureV4(result, signature);
