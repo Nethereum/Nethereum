@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -109,6 +110,15 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(result, soliditySha3.GetABIEncodedPacked(new ABIValue(type, value)).ToHex());
         }
 
+
+        [Theory]
+        [InlineData(42, "uint256", "000000000000000000000000000000000000000000000000000000000000002a")]
+        public virtual void ShouldPackBigInt(int value, string type, string result)
+        {
+            var soliditySha3 = new ABIEncode();
+            Assert.Equal(result, soliditySha3.GetABIEncodedPacked(new BigInteger(value)).ToHex());
+        }
+
         [Fact]
         public virtual void ShouldEncodeSha3UsingDefaultValues()
         {
@@ -122,6 +132,23 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal("661136a4267dba9ccdf6bfddb7c00e714de936674c4bdb065a531cf1cb15c7fc", result2.ToHex());
 
             var result3 = abiEncode.GetSha3ABIEncodedPacked(234);
+            Assert.Equal("61c831beab28d67d1bb40b5ae1a11e2757fa842f031a2d0bc94a7867bc5d26c2", result3.ToHex());
+        }
+
+
+        [Fact]
+        public virtual void ShouldEncodeSha3UsingDefaultValuesIntAsBigInt()
+        {
+            var abiEncode = new ABIEncode();
+            var result = abiEncode.GetSha3ABIEncodedPacked(new BigInteger(234564535),
+                "0xfff23243".HexToByteArray(), true, new BigInteger(-10));
+
+            Assert.Equal("3e27a893dc40ef8a7f0841d96639de2f58a132be5ae466d40087a2cfa83b7179", result.ToHex());
+
+            var result2 = abiEncode.GetSha3ABIEncodedPacked("Hello!%");
+            Assert.Equal("661136a4267dba9ccdf6bfddb7c00e714de936674c4bdb065a531cf1cb15c7fc", result2.ToHex());
+
+            var result3 = abiEncode.GetSha3ABIEncodedPacked(new BigInteger(234));
             Assert.Equal("61c831beab28d67d1bb40b5ae1a11e2757fa842f031a2d0bc94a7867bc5d26c2", result3.ToHex());
         }
 

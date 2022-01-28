@@ -16,6 +16,11 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value)
         {
+            if (value is BigInteger bigIntValue)
+            {
+                return _intTypeEncoder.EncodeInt(bigIntValue);
+            }
+
             if (value.IsNumber())
             {
                 var bigInt = BigInteger.Parse(value.ToString());

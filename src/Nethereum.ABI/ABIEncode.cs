@@ -102,6 +102,19 @@ namespace Nethereum.ABI
             var abiValues = new List<ABIValue>();
             foreach (var value in values)
             {
+                if (value is BigInteger bigIntValue)
+                {
+                    if (bigIntValue >= 0)
+                    {
+                        abiValues.Add(new ABIValue(new IntType("uint256"), bigIntValue));
+                    }
+                    else
+                    {
+                        abiValues.Add(new ABIValue(new IntType("int256"), bigIntValue));
+                    }
+                }
+
+
                 if (value.IsNumber())
                 {
                     var bigInt = BigInteger.Parse(value.ToString());
