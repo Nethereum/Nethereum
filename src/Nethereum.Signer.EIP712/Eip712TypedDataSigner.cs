@@ -53,9 +53,9 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712, it uses a predefined typed data schema and converts and encodes the provide the message value
         /// </summary>
-        public byte[] EncodeTypedData<T>(T message, TypedData typedData)
+        public byte[] EncodeTypedData<T, TDomain>(T message, TypedData<TDomain> typedData) where TDomain : Domain
         {
-            typedData.Message = new MemberValueFactory().CreateFromMessage(message);
+            typedData.Message = MemberValueFactory.CreateFromMessage(message);
             return EncodeTypedData(typedData);
         }
 
@@ -63,7 +63,7 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// </summary>
-        public string SignTypedData(TypedData typedData, EthECKey key)
+        public string SignTypedData<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
         {
             var encodedData = EncodeTypedData(typedData);
             return _signer.HashAndSign(encodedData, key);
@@ -73,7 +73,7 @@ namespace Nethereum.Signer.EIP712
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// Matches the signature produced by eth_signTypedData_v4
         /// </summary>
-        public string SignTypedDataV4(TypedData typedData, EthECKey key)
+        public string SignTypedDataV4<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
         {
             var encodedData = EncodeTypedData(typedData);
             var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
@@ -83,20 +83,20 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Signs using a predefined typed data schema and converts and encodes the provide the message value
         /// </summary>
-        public string SignTypedDataV4<T>(T message, TypedData typedData, EthECKey key)
+        public string SignTypedDataV4<T, TDomain>(T message, TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
         {
             var encodedData = EncodeTypedData(message, typedData);
             var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
             return EthECDSASignature.CreateStringSignature(signature);
         }
 
-        public string RecoverFromSignatureV4<T>(T message, TypedData typedData, string signature)
+        public string RecoverFromSignatureV4<T,TDomain>(T message, TypedData<TDomain> typedData, string signature) where TDomain : Domain
         {
             var encodedData = EncodeTypedData(message, typedData);
             return new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
         }
 
-        public string RecoverFromSignatureV4(TypedData typedData, string signature)
+        public string RecoverFromSignatureV4<TDomain>(TypedData<TDomain> typedData, string signature) where TDomain : Domain
         {
             var encodedData = EncodeTypedData(typedData);
             return  new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
@@ -115,13 +115,13 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712.
         /// </summary>
-        public byte[] EncodeTypedData(TypedData typedData)
+        public byte[] EncodeTypedData<TDomain>(TypedData<TDomain> typedData) where TDomain : Domain
         {
             using (var memoryStream = new MemoryStream())
             using (var writer = new BinaryWriter(memoryStream))
             {
                 writer.Write("1901".HexToByteArray());
-                writer.Write(HashStruct(typedData.Types, "EIP712Domain", ParseDomain(typedData.Domain).Select(x => x.MemberValue)));
+                writer.Write(HashStruct(typedData.Types, "EIP712Domain", MemberValueFactory.CreateFromMessage(typedData.Domain)));
                 writer.Write(HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message));
 
                 writer.Flush();
@@ -285,19 +285,19 @@ namespace Nethereum.Signer.EIP712
                 ));
             }
 
-            if (domain.Salt != null)
-            {
-                result.Add(new Member(
-                    new MemberDescription {Type = "bytes32", Name = "salt"},
-                    new MemberValue {TypeName = "bytes32", Value = domain.Salt}
-                ));
-            }
+            //if (domain.Salt != null)
+            //{
+            //    result.Add(new Member(
+            //        new MemberDescription {Type = "bytes32", Name = "salt"},
+            //        new MemberValue {TypeName = "bytes32", Value = domain.Salt}
+            //    ));
+            //}
 
             return result;
         }
 
 
-        private TypedData GenerateTypedData<T>(T data, Domain domain, string primaryTypeName)
+        private TypedData<Domain> GenerateTypedData<T>(T data, Domain domain, string primaryTypeName)
         {
             var parameters = _parametersEncoder.GetParameterAttributeValues(typeof(T), data).OrderBy(x => x.ParameterAttribute.Order);
 
@@ -318,7 +318,7 @@ namespace Nethereum.Signer.EIP712
                 });
             }
 
-            var result = new TypedData
+            var result = new TypedData<Domain>
             {
                 PrimaryType = primaryTypeName,
                 Types = new Dictionary<string, MemberDescription[]>

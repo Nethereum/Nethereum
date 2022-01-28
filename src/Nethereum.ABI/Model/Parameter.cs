@@ -28,7 +28,7 @@ namespace Nethereum.ABI.Model
         public bool Indexed { get; set; }
         public string SerpentSignature { get; private set; }
 
-        public string TupleTypeName {get; set;}
+        public string StructTypeName {get; set;}
     }
 
 }

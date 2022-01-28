@@ -16,9 +16,9 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
             Parameter.Indexed = indexed;
         }
 
-        public ParameterAttribute(string type, string name, int order, string tupleTypeName = null) : this(type, name, order)
+        public ParameterAttribute(string type, string name, int order, string structTypeName = null) : this(type, name, order)
         {
-            Parameter.TupleTypeName = tupleTypeName;
+            Parameter.StructTypeName = structTypeName;
         }
 
         public ParameterAttribute(string type, int order) : this(type, null, order)
@@ -30,6 +30,6 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
         public int Order => Parameter.Order;
         public string Name => Parameter.Name;
         public string Type => Parameter.Type;
-        public string TupleTypeName => Parameter.TupleTypeName;
+        public string StructTypeName => Parameter.StructTypeName;
     }
 }

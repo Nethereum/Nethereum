@@ -11,6 +11,7 @@ namespace Nethereum.Signer.UnitTests
         private readonly Eip712TypedDataSigner _signer = new Eip712TypedDataSigner();
 
         //Message types for easier input
+        [Struct("Mail")]
         public class Mail
         {
             [Parameter("tuple", "from", 1, "Person")]
@@ -19,10 +20,11 @@ namespace Nethereum.Signer.UnitTests
             [Parameter("tuple[]", "to", 2, "Person[]")]
             public List<Person> To { get; set; }
 
-            [Parameter("string", "contents", 2)]
+            [Parameter("string", "contents", 3)]
             public string Contents { get; set; }
         }
 
+        [Struct("Person")]
         public class Person
         {
             [Parameter("string", "name", 1)]
@@ -32,10 +34,20 @@ namespace Nethereum.Signer.UnitTests
             public List<string> Wallets { get; set; }
         }
 
-        //The generic Typed schema defintion for this message
-        public TypedData GetMailTypedDefintion()
+        [Struct("Group")]
+        public class Group
         {
-            return new TypedData
+            [Parameter("string", "name", 1)]
+            public string Name { get; set; }
+
+            [Parameter("tuple[]", "members", 2, "Person[]")]
+            public List<Person> Members { get; set; }
+        }
+
+        //The generic EIP712 Typed schema defintion for this message
+        public TypedData<Domain> GetMailTypedDefinition()
+        {
+            return new TypedData<Domain>
             {
                 Domain = new Domain
                 {
@@ -44,55 +56,45 @@ namespace Nethereum.Signer.UnitTests
                     ChainId = 1,
                     VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
                 },
-                Types = new Dictionary<string, MemberDescription[]>
-                {
-                    ["EIP712Domain"] = new[]
-                    {
-                        new MemberDescription {Name = "name", Type = "string"},
-                        new MemberDescription {Name = "version", Type = "string"},
-                        new MemberDescription {Name = "chainId", Type = "uint256"},
-                        new MemberDescription {Name = "verifyingContract", Type = "address"},
-                    },
-                    ["Group"] = new[]
-                    {
-                        new MemberDescription {Name = "name", Type = "string"},
-                        new MemberDescription {Name = "members", Type = "Person[]"},
-
-                    },
-                    ["Mail"] = new[]
-                    {
-                        new MemberDescription {Name = "from", Type = "Person"},
-                        new MemberDescription {Name = "to", Type = "Person[]"},
-                        new MemberDescription {Name = "contents", Type = "string"},
-                    },
-                    ["Person"] = new[]
-                    {
-                        new MemberDescription {Name = "name", Type = "string"},
-                        new MemberDescription {Name = "wallets", Type = "address[]"},
-                    },
-                },
-                PrimaryType = "Mail",
+                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(Domain), typeof(Group), typeof(Mail), typeof(Person)),
+                PrimaryType = nameof(Mail),
             };
         }
 
         [Fact]
         private void ComplexMessageTypedDataEncodingShouldBeCorrectForV4IncludingArraysAndTypes()
         {
-            var typedData = GetMailTypedDefintion();
+            var typedData = GetMailTypedDefinition();
 
             var mail = new Mail
             {
-                From = new Person { Name = "Cow", Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" } },
-                To = new List<Person>(),
+                From = new Person 
+                { 
+                  Name = "Cow", 
+                  Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" } 
+                },
+                To = new List<Person>
+                {
+                    new Person 
+                    { 
+                        Name = "Bob", 
+                        Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" } 
+                    }
+                },
                 Contents = "Hello, Bob!"
             };
-            mail.To.Add(new Person { Name = "Bob", Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" } });
-      
+
+            typedData.Domain.ChainId = 1;
+            
             var key = new EthECKey("94e001d6adf3a3275d5dd45971c2a5f6637d3e9c51f9693f2e678f649e164fa5");
+
             var signature = _signer.SignTypedDataV4(mail, typedData, key);
+            
             Assert.Equal("0x943393c998ab7e067d2875385e2218c9b3140f563694267ac9f6276a9fcc53e15c1526abe460cd6e2f570a35418f132d9733363400c44791ff7b88f0e9c91d091b", signature);
+            
             var addressRecovered = _signer.RecoverFromSignatureV4(mail, typedData, signature);
             var address = key.GetPublicAddress();
+            
             Assert.True(address.IsTheSameAddress(addressRecovered));
 
         }

@@ -20,7 +20,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         private void ComplexMessageTypedDataEncodingShouldBeCorrectForV4IncludingArrays()
         {
-            var typedData = new TypedData
+            var typedData = new TypedData<Domain>
             {
                 Domain = new Domain
                 {
@@ -98,7 +98,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void ComplexMessageTypedDataEncodingShouldBeCorrectForV4()
         {
-            var typedData = new TypedData
+            var typedData = new TypedData<Domain>
             {
                 Domain = new Domain
                 {
@@ -178,7 +178,7 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void ComplexMessageTypedDataEncodingShouldBeCorrect()
         {
-            var typedData = new TypedData
+            var typedData = new TypedData<Domain>
             {
                 Domain = new Domain
                 {

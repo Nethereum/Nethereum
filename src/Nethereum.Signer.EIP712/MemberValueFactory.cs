@@ -9,8 +9,8 @@ namespace Nethereum.Signer.EIP712
 {
     public class MemberValueFactory
     {
-        private readonly ParametersEncoder _parametersEncoder = new ParametersEncoder();
-        public MemberValue[] CreateFromMessage<T>(T message)
+        private static readonly ParametersEncoder _parametersEncoder = new ParametersEncoder();
+        public static MemberValue[] CreateFromMessage<T>(T message)
         {
             var parameters = _parametersEncoder.GetParameterAttributeValues(typeof(T), message).OrderBy(x => x.ParameterAttribute.Order);
             var typeValues = new List<MemberValue>();
@@ -31,7 +31,7 @@ namespace Nethereum.Signer.EIP712
                         {
                             typeValues.Add(new MemberValue
                             {
-                                TypeName = parameterAttributeValue.ParameterAttribute.TupleTypeName,
+                                TypeName = parameterAttributeValue.ParameterAttribute.StructTypeName,
                                 Value = new List<MemberValue>()
                             }); 
                         }
@@ -45,7 +45,7 @@ namespace Nethereum.Signer.EIP712
 
                             typeValues.Add(new MemberValue
                             {
-                                TypeName = parameterAttributeValue.ParameterAttribute.TupleTypeName,
+                                TypeName = parameterAttributeValue.ParameterAttribute.StructTypeName,
                                 Value = arrayMemberValue
                             });
                         }
@@ -73,7 +73,7 @@ namespace Nethereum.Signer.EIP712
 
         }
 
-        public MemberValue[] CreateFromTuple(TupleType tupleType, object value)
+        public static MemberValue[] CreateFromTuple(TupleType tupleType, object value)
         {
             var structValue = new List<MemberValue>();
 
@@ -94,7 +94,7 @@ namespace Nethereum.Signer.EIP712
                 var component = tupleType.Components[i];
                 if (component.ABIType is TupleType tupleTypeComponent)
                 {
-                    structInnerValue.TypeName = component.TupleTypeName;
+                    structInnerValue.TypeName = component.StructTypeName;
                     structInnerValue.Value = CreateFromTuple(component, input[i]);
                     structValue.Add(structInnerValue);
                 } 
@@ -112,7 +112,7 @@ namespace Nethereum.Signer.EIP712
 
                         if (innerInput == null)
                         {
-                            structInnerValue.TypeName = component.TupleTypeName;
+                            structInnerValue.TypeName = component.StructTypeName;
                             structInnerValue.Value = new List<MemberValue>();
                         }
                         else
@@ -123,7 +123,7 @@ namespace Nethereum.Signer.EIP712
                                 arrayMemberValue.Add(CreateFromTuple(tupleTypeElement, itemValue));
                             }
 
-                            structInnerValue.TypeName = component.TupleTypeName;
+                            structInnerValue.TypeName = component.StructTypeName;
                             structInnerValue.Value = arrayMemberValue;
                             
                         }
@@ -148,12 +148,12 @@ namespace Nethereum.Signer.EIP712
         }
 
 
-        public MemberValue CreateFromTuple(Parameter structParameter, object value)
+        public static MemberValue CreateFromTuple(Parameter structParameter, object value)
         {
             var memberValue = new MemberValue();
             var tupleType = structParameter.ABIType as TupleType;
 
-            memberValue.TypeName = structParameter.TupleTypeName;
+            memberValue.TypeName = structParameter.StructTypeName;
             memberValue.Value = CreateFromTuple(tupleType, value);
             return memberValue;
         }
