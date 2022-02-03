@@ -1,4 +1,5 @@
 ﻿using Nethereum.JsonRpc.Client;
+using Nethereum.Quorum.RPC.Raft;
 using Nethereum.RPC;
 
 namespace Nethereum.Quorum.RPC.Services

@@ -224,6 +224,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Siwe.UnitTests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Siwe.IntegrationTests", "tests\Nethereum.Siwe.IntegrationTests\Nethereum.Siwe.IntegrationTests.csproj", "{73BE14F4-C5D7-45C8-829E-F73CFBCAEF24}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Siwe", "src\Nethereum.Siwe\Nethereum.Siwe.csproj", "{6CB83C82-2C87-44EC-AE28-011BB5B59A89}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1452,6 +1454,22 @@ Global
 		{73BE14F4-C5D7-45C8-829E-F73CFBCAEF24}.Release|x64.Build.0 = Release|Any CPU
 		{73BE14F4-C5D7-45C8-829E-F73CFBCAEF24}.Release|x86.ActiveCfg = Release|Any CPU
 		{73BE14F4-C5D7-45C8-829E-F73CFBCAEF24}.Release|x86.Build.0 = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|ARM.Build.0 = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|x64.Build.0 = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Debug|x86.Build.0 = Debug|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|ARM.ActiveCfg = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|ARM.Build.0 = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|x64.ActiveCfg = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|x64.Build.0 = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|x86.ActiveCfg = Release|Any CPU
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1565,6 +1583,7 @@ Global
 		{7199F951-8C9E-42A5-AF6A-A3478BEC8909} = {8CEC705B-E512-40DE-9673-15857A34D359}
 		{CCD8835E-9744-4B8E-B251-74A212F7BAD3} = {8CEC705B-E512-40DE-9673-15857A34D359}
 		{73BE14F4-C5D7-45C8-829E-F73CFBCAEF24} = {8CEC705B-E512-40DE-9673-15857A34D359}
+		{6CB83C82-2C87-44EC-AE28-011BB5B59A89} = {8CEC705B-E512-40DE-9673-15857A34D359}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

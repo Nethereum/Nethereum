@@ -71,8 +71,12 @@ namespace Nethereum.WebSocketsStreamingTest
 
             var pendingTransactionsSubscription = new EthNewPendingTransactionObservableSubscription(client);
 
-            pendingTransactionsSubscription.GetSubscribeResponseAsObservable().Subscribe(subscriptionId =>
-                Console.WriteLine("Pending transactions subscription Id: " + subscriptionId));
+            pendingTransactionsSubscription.GetSubscribeResponseAsObservable().SelectMany(async subscriptionId =>
+            {
+                Console.WriteLine("Pending transactions subscription Id: " + subscriptionId);
+                return Task.CompletedTask;
+            }).Subscribe();
+                
 
             pendingTransactionsSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(transactionHash =>
                 Console.WriteLine("New Pending TransactionHash: " + transactionHash)
@@ -157,17 +161,18 @@ namespace Nethereum.WebSocketsStreamingTest
 
             //blockHeaderSubscription.UnsubscribeAsync().Wait();
 
-            
 
-           // await client.StopAsync();
-           // await SubscribeAndRunAsync();
+            Thread.Sleep(20000);
+            await client.StopAsync();
+            await SubscribeAndRunAsync();
         }
 
         private static async void Client_Error(object sender, Exception ex)
         {
             Console.WriteLine("Client Error restarting...");
            // ((StreamingWebSocketClient)sender).Error -= Client_Error;
-            ((StreamingWebSocketClient)sender).Dispose();
+            ((StreamingWebSocketClient)sender).StopAsync().Wait();
+            //Restart everything
             await SubscribeAndRunAsync();
         }
 

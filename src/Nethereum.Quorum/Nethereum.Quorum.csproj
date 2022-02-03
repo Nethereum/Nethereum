@@ -30,5 +30,10 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="RPC\IBFT\" />
+    <Folder Include="RPC\Privacy\" />
+    <Folder Include="RPC\Permission\" />
+  </ItemGroup>
 
 </Project>

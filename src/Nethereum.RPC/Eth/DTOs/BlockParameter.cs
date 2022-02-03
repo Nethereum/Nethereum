@@ -90,5 +90,14 @@ namespace Nethereum.RPC.Eth.DTOs
             }
             return ParameterType.ToString();
         }
+
+        public object GetRPCParamAsNumber()
+        {
+            if (ParameterType == BlockParameterType.blockNumber)
+            {
+                return BlockNumber.Value;
+            }
+            return ParameterType.ToString();
+        }
     }
 }

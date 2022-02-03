@@ -1,4 +1,6 @@
-﻿using Nethereum.JsonRpc.Client;
+﻿using System;
+using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client;
 using Nethereum.Quorum.RPC.DTOs;
 using Nethereum.RPC.Infrastructure;
 
@@ -15,4 +17,6 @@ namespace Nethereum.Quorum.RPC
     {
 
     }
+
+
 }

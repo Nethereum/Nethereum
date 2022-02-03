@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Quorum.RPC.Services
+﻿using Nethereum.Quorum.RPC.Raft;
+
+namespace Nethereum.Quorum.RPC.Services
 {
     public interface IQuorumChainService
     {
