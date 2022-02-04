@@ -3,10 +3,18 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
+    [DataContract]
     public class PrivateTransactionInput : TransactionInput
     {
         public PrivateTransactionInput()
         {
+        }
+
+
+        public PrivateTransactionInput(TransactionInput transaction, string[] privateFor, string privateFrom, int privacyFlag, string[] mandatoryFor): this(transaction, privateFor, privateFrom)
+        {
+            PrivacyFlag = privacyFlag;
+            MandatoryFor = mandatoryFor;
         }
 
         public PrivateTransactionInput(TransactionInput transaction, string[] privateFor, string privateFrom)
@@ -27,5 +35,13 @@ namespace Nethereum.Quorum.RPC.DTOs
 
         [DataMember(Name =  "privateFor")]
         public string[] PrivateFor { get; set; }
+
+        [DataMember(Name = "privacyFlag")]
+        public int PrivacyFlag { get; set; }
+
+        [DataMember(Name = "mandatoryFor")]
+        public string[] MandatoryFor { get; set; }
     }
+
+    
 }

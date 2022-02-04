@@ -4,8 +4,28 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Quorum.RPC.Permission
 {
+    ///<Summary>
+    /// Temporarily suspends the specified organization or re-activates the specified suspended organization. This method can be called by a network admin account. This can only be performed for the master organization and requires the majority of network admins to approve.
+    /// 
+    /// Parameters
+    /// orgId: string - organization ID
+    /// 
+    /// action: number -
+    /// 
+    /// 1 - for suspending the organization
+    /// 
+    /// 2 - for activating the suspended organization
+    /// 
+    /// Returns
+    /// result: string - response message    
+    ///</Summary>
+    public interface IQuorumPermissionUpdateOrgStatus
+    {
+        Task<string> SendRequestAsync(string orgId, int action, object id = null);
+        RpcRequest BuildRequest(string orgId, int action, object id = null);
+    }
 
-///<Summary>
+    ///<Summary>
 /// Temporarily suspends the specified organization or re-activates the specified suspended organization. This method can be called by a network admin account. This can only be performed for the master organization and requires the majority of network admins to approve.
 /// 
 /// Parameters
@@ -20,7 +40,7 @@ namespace Nethereum.Quorum.RPC.Permission
 /// Returns
 /// result: string - response message    
 ///</Summary>
-    public class QuorumPermissionUpdateOrgStatus : RpcRequestResponseHandler<string>
+    public class QuorumPermissionUpdateOrgStatus : RpcRequestResponseHandler<string>, IQuorumPermissionUpdateOrgStatus
     {
         public QuorumPermissionUpdateOrgStatus(IClient client) : base(client,ApiMethods.quorumPermission_updateOrgStatus.ToString()) { }
 

@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.RPC.Eth.DTOs;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
     [DataContract]
-    public class PrivateDistributionInfo
+    public class PrivateData
     {
         /// <summary>
         /// an array of the recipients’ base64-encoded public keys
@@ -32,4 +33,5 @@ namespace Nethereum.Quorum.RPC.DTOs
 
 
     }
+
 }

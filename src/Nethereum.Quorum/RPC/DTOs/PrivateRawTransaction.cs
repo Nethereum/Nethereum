@@ -2,6 +2,7 @@
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
+    [DataContract]
     public class PrivateRawTransaction
     {
         public PrivateRawTransaction()

@@ -4,8 +4,26 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Quorum.RPC.Permission
 {
+    ///<Summary>
+    /// Assigns a role to the specified account. This method can be called by an organization admin account.
+    /// 
+    /// Parameters
+    /// acctId: string - account ID
+    /// 
+    /// orgId: string - organization ID
+    /// 
+    /// roleId: string - new role ID to be assigned to the account
+    /// 
+    /// Returns
+    /// result: string - response message    
+    ///</Summary>
+    public interface IQuorumPermissionChangeAccountRole
+    {
+        Task<string> SendRequestAsync(string acctId, string orgId, string roleId, object id = null);
+        RpcRequest BuildRequest(string acctId, string orgId, string roleId, object id = null);
+    }
 
-///<Summary>
+    ///<Summary>
 /// Assigns a role to the specified account. This method can be called by an organization admin account.
 /// 
 /// Parameters
@@ -18,7 +36,7 @@ namespace Nethereum.Quorum.RPC.Permission
 /// Returns
 /// result: string - response message    
 ///</Summary>
-    public class QuorumPermissionChangeAccountRole : RpcRequestResponseHandler<string>
+    public class QuorumPermissionChangeAccountRole : RpcRequestResponseHandler<string>, IQuorumPermissionChangeAccountRole
     {
         public QuorumPermissionChangeAccountRole(IClient client) : base(client,ApiMethods.quorumPermission_changeAccountRole.ToString()) { }
 

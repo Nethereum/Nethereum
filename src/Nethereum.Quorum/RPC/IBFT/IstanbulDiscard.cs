@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Quorum.RPC.IBFT
 {
-
 ///<Summary>
 /// Drops a currently running candidate, stopping further votes from being cast either for or against the candidate.
 /// 
@@ -14,7 +13,22 @@ namespace Nethereum.Quorum.RPC.IBFT
 /// Returns
 /// result: null    
 ///</Summary>
-    public class IstanbulDiscard : RpcRequestResponseHandler<string>
+    public interface IIstanbulDiscard
+    {
+        Task<string> SendRequestAsync(string address, object id = null);
+        RpcRequest BuildRequest(string address, object id = null);
+    }
+
+    ///<Summary>
+/// Drops a currently running candidate, stopping further votes from being cast either for or against the candidate.
+/// 
+/// Parameters
+/// address: string - address of the candidate
+/// 
+/// Returns
+/// result: null    
+///</Summary>
+    public class IstanbulDiscard : RpcRequestResponseHandler<string>, IIstanbulDiscard
     {
         public IstanbulDiscard(IClient client) : base(client,ApiMethods.istanbul_discard.ToString()) { }
 

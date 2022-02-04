@@ -55,6 +55,16 @@
         quorumPermission_nodeList,
         quorumPermission_orgList,
         quorumPermission_getOrgDetails,
-        eth_distributePrivateTransaction
+        eth_distributePrivateTransaction,
+        eth_fillTransaction,
+        eth_getContractPrivacyMetadata,
+        eth_getPrivacyPrecompileAddress,
+        eth_getPrivateTransactionByHash,
+        eth_getPrivateTransactionReceipt,
+        eth_sendRawPrivateTransaction,
+        eth_getQuorumPayload,
+        eth_sendTransaction,
+        istanbul_discard,
+        eth_getPSI
     }
 }

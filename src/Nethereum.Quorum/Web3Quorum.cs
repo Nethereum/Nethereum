@@ -50,10 +50,22 @@ namespace Nethereum.Quorum
         {
             base.InitialiseInnerServices();
             Quorum = new QuorumChainService(Client);
+            Permission = new PermissionService(Client);
+            Privacy = new PrivacyService(Client);
+            Raft = new RaftService(Client);
+            IBFT = new IBFTService(Client);
+
             base.TransactionManager.DefaultGasPrice = 0;
         }
 
         public IQuorumChainService Quorum { get; private set; }
+        public IPermissionService Permission { get; private set; }
+        public IPrivacyService Privacy { get; private set; }
+        public IRaftService Raft { get; private set; }
+        public IIBFTService IBFT { get; private set; }
+        
+
+
 
         public List<string> PrivateFor { get; private set; }
         public string PrivateFrom { get; private set; }
