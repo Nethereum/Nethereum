@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
 using Common.Logging;
+using Nethereum.Geth;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Quorum.RPC.Interceptors;
 using Nethereum.Quorum.RPC.Services;
 
+
 namespace Nethereum.Quorum
 {
 
-    public class Web3Quorum : Web3.Web3, IWeb3Quorum
+    public class Web3Quorum : Web3Geth, IWeb3Quorum
     {
         public Web3Quorum(IClient client, string accountAddress) :base(client)
         {
@@ -54,6 +56,8 @@ namespace Nethereum.Quorum
             Privacy = new PrivacyService(Client);
             Raft = new RaftService(Client);
             IBFT = new IBFTService(Client);
+            ContractExtensions = new ContractExtensionsService(Client);
+            DebugQuorum= new DebugQuorumService(Client);
 
             base.TransactionManager.DefaultGasPrice = 0;
         }
@@ -63,8 +67,10 @@ namespace Nethereum.Quorum
         public IPrivacyService Privacy { get; private set; }
         public IRaftService Raft { get; private set; }
         public IIBFTService IBFT { get; private set; }
-        
 
+        public IContractExtensionsService ContractExtensions { get; private set; }
+        public IDebugQuorumService DebugQuorum { get; private set; }
+        
 
 
         public List<string> PrivateFor { get; private set; }

@@ -65,6 +65,13 @@
         eth_getQuorumPayload,
         eth_sendTransaction,
         istanbul_discard,
-        eth_getPSI
+        eth_getPSI,
+        debug_dumpAddress,
+        debug_privateStateRoot,
+        quorumExtension_extendContract,
+        quorumExtension_getExtensionStatus,
+        quorumExtension_cancelExtension,
+        quorumExtension_approveExtension,
+        quorumExtension_activeExtensionContracts
     }
 }
