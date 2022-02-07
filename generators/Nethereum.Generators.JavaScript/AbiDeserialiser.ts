@@ -47,8 +47,11 @@ function buildError(item: any, contractAbi: Nethereum.Generators.Model.ContractA
 
 function getStructTypeName(item: any) {
     if (item.internalType !== undefined && item.internalType.startsWith("struct")) {
-        var internalType = item.internalType;
-        var structName = internalType.substring(internalType.lastIndexOf(".") + 1);
+        var internalType = item.internalType.substring('struct '.length);
+        var structName = internalType;
+        if (internalType.indexOf(".") > -1) {
+            structName = structName.substring(internalType.lastIndexOf(".") + 1);
+        }
         if (structName.indexOf("[") > 0) {
             structName = structName.substring(0, structName.indexOf("["));
         }

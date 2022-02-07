@@ -62,7 +62,12 @@ namespace Nethereum.Generators.Net
                     var internalType = (string)parameter["internalType"];
                     if (internalType.StartsWith("struct"))
                     {
-                        var structName = internalType.Substring(internalType.LastIndexOf(".") + 1);
+                        internalType = internalType.Substring("struct ".Length);
+                        var structName = internalType;
+                        if (internalType.IndexOf(".") > -1)
+                        {
+                            structName = structName.Substring(internalType.LastIndexOf(".") + 1);
+                        }
                         if (structName.IndexOf("[") > 0)
                         {
                             structName = structName.Substring(0, structName.IndexOf("["));
