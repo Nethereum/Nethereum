@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Nethereum.Util;
 
 namespace Nethereum.Siwe.Core
 {
@@ -73,5 +74,16 @@ namespace Nethereum.Siwe.Core
         ///Signature of the message signed by the wallet
         /// </summary>
         public string Signature { get; set; }
+
+
+        public bool HasRequiredFields()
+        {
+            return !string.IsNullOrEmpty(Domain) &&
+                   Address.IsValidEthereumAddressHexFormat() &&
+                   !string.IsNullOrEmpty(Version) &&
+                   !string.IsNullOrEmpty(Nonce) &&
+                   !string.IsNullOrEmpty(ChainId) &&
+                   !string.IsNullOrEmpty(IssuedAt);
+        }
 	}
 }

@@ -126,6 +126,7 @@ public class SiweMessageStringBuilder
 
     public static string BuildMessage(SiweMessage message)
     {
+      
         return GetDomain(message) +
                GetAddress(message) +
                GetStatement(message) +

@@ -23,7 +23,7 @@ namespace Nethereum.Signer
             return hash;
         }
 
-        public string HashAndEcRecover(string plainMessage, string signature)
+        public virtual string HashAndEcRecover(string plainMessage, string signature)
         {
             return EcRecover(Hash(Encoding.UTF8.GetBytes(plainMessage)), signature);
         }
