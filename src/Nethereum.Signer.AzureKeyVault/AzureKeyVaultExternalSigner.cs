@@ -1,59 +1,67 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Azure.KeyVault;
+using Azure.Core;
+using Azure.Security.KeyVault.Keys;
+using Azure.Security.KeyVault.Keys.Cryptography;
 using Nethereum.Signer.Crypto;
 
 namespace Nethereum.Signer.AzureKeyVault
 {
     public class AzureKeyVaultExternalSigner : EthExternalSignerBase
     {
-        public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
-        public override bool CalculatesV { get; protected set; } = false;
-        public KeyVaultClient KeyVaultClient { get; private set; }
-        public string VaultUrl { get; }
+        public CryptographyClient CryptoClient { get; }
+        public KeyClient KeyClient { get; }
+        public string KeyName { get; }
 
-        public AzureKeyVaultExternalSigner(KeyVaultClient keyVaultClient, string vaultUrl)
+        public AzureKeyVaultExternalSigner(string keyName, string vaultUri, TokenCredential credential)
+        : this(keyName, new KeyClient(new Uri(vaultUri), credential), credential)
         {
-            KeyVaultClient = keyVaultClient;
-            VaultUrl = vaultUrl;
+        }
+
+        public AzureKeyVaultExternalSigner(string keyName, KeyClient keyClient, TokenCredential credential)
+        {
+            KeyName = keyName ?? throw new ArgumentNullException(nameof(keyName));
+            KeyClient = keyClient ?? throw new ArgumentNullException(nameof(keyClient));
+
+            var keyId = new UriBuilder(keyClient.VaultUri) { Path = $"keys/{KeyName}" }.Uri;
+
+            CryptoClient = new CryptographyClient(keyId, credential ?? throw new ArgumentNullException(nameof(credential)));
         }
 
         protected override async Task<byte[]> GetPublicKeyAsync()
         {
-            var keyBundle = await KeyVaultClient.GetKeyAsync(VaultUrl).ConfigureAwait(false);
-            var xLen = keyBundle.Key.X.Length;
-            var yLen = keyBundle.Key.Y.Length;
-            var publicKey = new byte[1 + xLen + yLen];
+            var response = await KeyClient.GetKeyAsync(KeyName).ConfigureAwait(false);
+            var jwk = response.Value.Key;
+            var publicKey = new byte[1 + jwk.X.Length + jwk.Y.Length];
+
             publicKey[0] = 0x04;
-            var offset = 1;
-            Buffer.BlockCopy(keyBundle.Key.X, 0, publicKey, offset, xLen);
-            offset = offset + xLen;
-            Buffer.BlockCopy(keyBundle.Key.Y, 0, publicKey, offset, yLen);
+
+            Buffer.BlockCopy(jwk.X, 0, publicKey, 1, jwk.X.Length);
+            Buffer.BlockCopy(jwk.Y, 0, publicKey, 1 + jwk.X.Length, jwk.Y.Length);
+
             return publicKey;
         }
 
         protected override async Task<ECDSASignature> SignExternallyAsync(byte[] hash)
         {
-            var keyOperationResult = await KeyVaultClient.SignAsync(VaultUrl, "ECDSA256", hash).ConfigureAwait(false);
-            var signature = keyOperationResult.Result;
-            return ECDSASignatureFactory.FromComponents(signature).MakeCanonical();
+            if (hash == null)
+                throw new ArgumentNullException(nameof(hash));
+
+            var result = await CryptoClient.SignAsync(SignatureAlgorithm.ES256K, hash).ConfigureAwait(false);
+
+            return ECDSASignatureFactory.FromComponents(result.Signature).MakeCanonical();
         }
 
-        public override Task SignAsync(LegacyTransaction transaction)
-        {
-            return SignHashTransactionAsync(transaction);
-        }
+        public override Task SignAsync(LegacyTransaction transaction) => SignHashTransactionAsync(transaction);
 
-        public override Task SignAsync(LegacyTransactionChainId transaction)
-        {
-            return SignHashTransactionAsync(transaction);
-        }
+        public override Task SignAsync(LegacyTransactionChainId transaction) => SignHashTransactionAsync(transaction);
 
-        public override Task SignAsync(Transaction1559 transaction)
-        {
-            return SignHashTransactionAsync(transaction);
-        }
+        public override Task SignAsync(Transaction1559 transaction) => SignHashTransactionAsync(transaction);
 
+        public override bool CalculatesV { get; protected set; } = false;
+
+        public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
+        
         public override bool Supported1559 { get; } = true;
     }
 }
