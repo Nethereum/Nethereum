@@ -11,6 +11,7 @@
         admin_startWS,
         admin_stopRPC,
         admin_stopWS,
+
         debug_blockProfile,
         debug_backtraceAt,
         debug_dumpBlock,
@@ -41,6 +42,7 @@
         miner_setGasPrice,
         txpool_content,
         txpool_inspect,
-        txpool_status
+        txpool_status,
+        eth_Call
     }
 }

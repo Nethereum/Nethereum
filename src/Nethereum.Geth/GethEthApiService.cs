@@ -9,8 +9,10 @@ namespace Nethereum.Geth
         public GethEthApiService(IClient client) : base(client)
         {
             PendingTransactions = new EthPendingTransactions(client);
+            Call = new EthCall(client);
         }
 
         public IEthPendingTransactions PendingTransactions { get; }
+        public IEthCall Call { get; }
     }
 }
