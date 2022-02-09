@@ -31,6 +31,7 @@
         debug_traceBlockByHash,
         debug_traceBlockFromFile,
         debug_traceTransaction,
+        debug_traceCall,
         debug_verbosity,
         debug_vmodule,
         eth_pendingTransactions,
