@@ -10,10 +10,12 @@
     <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.Fx</AssemblyName>
     <PackageId>Nethereum.Fx</PackageId>
+	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -37,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Common.Logging.Core" Version="3.4.1"/>
+    <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="NBitcoin" Version="5.0.54" />
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
     <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,1.9)" />
@@ -51,6 +53,7 @@
     <Compile Remove="Nethereum.GSN\**" />
     <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
     <Compile Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
+    <Compile Remove="Nethereum.Siwe\**" />
     <None Remove="Nethereum.BigInteger.N351\**" />
     <None Remove="Nethereum.ClassDiagrams\**" />
     <None Remove="Nethereum.EVM\**" />
@@ -67,6 +70,8 @@
     <None Remove="Nethereum.RPC\Properties\**;Nethereum.RPC\bin\**;Nethereum.RPC\obj\**" />
 
     <Compile Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
+
+    <None Remove="Nethereum.Siwe\**" />
     <None Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
 
     <Compile Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
@@ -141,6 +146,11 @@
     <Compile Remove="Nethereum.HdWallet\Properties\**;Nethereum.HdWallet\bin\**;Nethereum.HdWallet\obj\**" />
     <None Remove="Nethereum.HdWallet\Properties\**;Nethereum.HdWallet\bin\**;Nethereum.HdWallet\obj\**" />
 
+    <Compile Remove="Nethereum.GnosisSafe\Properties\**;Nethereum.GnosisSafe\bin\**;Nethereum.GnosisSafe\obj\**" />
+    <None Remove="Nethereum.GnosisSafe\Properties\**;Nethereum.GnosisSafe\bin\**;Nethereum.GnosisSafe\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
+    <None Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
@@ -172,6 +182,8 @@
     <EmbeddedResource Remove="Nethereum.Signer.Ledger\**" />
 
     <EmbeddedResource Remove="Nethereum.Signer.Trezor\**" />
+
+    <EmbeddedResource Remove="Nethereum.Siwe\**" />
 
     <EmbeddedResource Remove="Nethereum.Unity\**" />
 

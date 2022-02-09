@@ -29,8 +29,10 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
 
         protected void SetupOrchestratorMock(bool invokeCancellationTokenOnceHandled = false, int? iterationsBeforeCancellation = null)
         {
+            
             _orchestratorMock
-                .Setup(o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(), It.IsAny<CancellationToken>()))
+                .Setup(o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(),
+                    It.IsAny<CancellationToken>(), null))
                 .Returns<BigInteger, BigInteger, CancellationToken>((from, to, ctx) =>
                 {
                     _orchestratedBlockRanges.Add(new BlockRange(from, to));
@@ -50,8 +52,9 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
 
         protected Exception SetupOrchestratorMockToSimulateError(Exception ex)
         {
-            _orchestratorMock
-                .Setup(o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(), It.IsAny<CancellationToken>()))
+            _ = _orchestratorMock
+                .Setup(expression: o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(),
+                    It.IsAny<CancellationToken>(), null))
                 .Returns<BigInteger, BigInteger, CancellationToken>((from, to, ctx) =>
                 {
                     return Task.FromResult(new OrchestrationProgress { Exception = ex });

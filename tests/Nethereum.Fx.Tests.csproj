@@ -80,7 +80,14 @@
   <ItemGroup>
     <Compile Remove="Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
     <Compile Remove="Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="Nethereum.GnosisSafe.IntegrationTests\XUnitConfiguration.cs" />
     <Compile Remove="Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
+    <Compile Remove="Nethereum.Siwe.IntegrationTests\EthereumClientIntegrationFixture.cs" />
+    
+    <Compile Remove="Nethereum.Siwe.IntegrationTests\XUnitConfiguration.cs" />
+    
+    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\EthereumClientIntegrationFixture.cs" />
+  
     <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
   </ItemGroup>
 
@@ -146,6 +153,15 @@
 
     <Compile Remove="Nethereum.Util.UnitTests\Properties\**;Nethereum.Util.UnitTests\bin\**;Nethereum.Util.UnitTests\obj\**" />
     <None Remove="Nethereum.Util.UnitTests\Properties\**;Nethereum.Util.UnitTests\bin\**;Nethereum.Util.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe.IntegrationTests\Properties\**;Nethereum.Siwe.IntegrationTests\bin\**;Nethereum.Siwe.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.Siwe.IntegrationTests\Properties\**;Nethereum.Siwe.IntegrationTests\bin\**;Nethereum.Siwe.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.GnosisSafe.IntegrationTests\Properties\**;Nethereum.GnosisSafe.IntegrationTests\bin\**;Nethereum.GnosisSafe.IntegrationTests\obj\**" />
+    <None Remove="Nethereum.GnosisSafe.IntegrationTests\Properties\**;Nethereum.GnosisSafe.IntegrationTests\bin\**;Nethereum.GnosisSafe.IntegrationTests\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe.UnitTests\Properties\**;Nethereum.Siwe.UnitTests\bin\**;Nethereum.Siwe.UnitTests\obj\**" />
+    <None Remove="Nethereum.Siwe.UnitTests\Properties\**;Nethereum.Siwe.UnitTests\bin\**;Nethereum.Siwe.UnitTests\obj\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -156,5 +172,9 @@
     <None Update="appsettings.test.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Nethereum.Siwe.IntegrationTests\" />
   </ItemGroup>
 </Project>

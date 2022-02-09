@@ -11,6 +11,7 @@
     <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.LiteFx</AssemblyName>
     <PackageId>Nethereum.LiteFx</PackageId>
+	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -86,6 +87,11 @@
     <Compile Include="..\..\src\Nethereum.BlockchainProcessing\**\*.cs" Exclude="..\..\src\Nethereum.BlockchainProcessing\Properties\**;..\..\src\Nethereum.BlockchainProcessing\bin\**;..\..\src\Nethereum.BlockchainProcessing\obj\**">
       <Link>BlockchainProcessing\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
+
+
+	  <Compile Include="..\..\src\Nethereum.Siwe.Core\**\*.cs" Exclude="..\..\src\Nethereum.Siwe.Core\Properties\**;..\..\src\Nethereum.Siwe.Core\bin\**;..\..\src\Nethereum.Siwe.Core\obj\**">
+		  <Link>Siwe.Core\%(RecursiveDir)%(FileName)%(Extension)</Link>
+	  </Compile>
 </ItemGroup>
 
   <ItemGroup>

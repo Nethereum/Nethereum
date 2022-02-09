@@ -7,9 +7,9 @@ namespace GenerateCsprojCompileLinks
     {
         static void Main(string[] args)
         {
-            GenerateBrowserLiteFx();
+            //GenerateBrowserLiteFx();
             //GenerateLiteFxRemove();
-            //GenerateLiteFxExcludeTests();
+            GenerateLiteFxExcludeTests();
         }
 
       
@@ -24,6 +24,8 @@ namespace GenerateCsprojCompileLinks
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.Model", "Model"));
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.StandardTokenEIP20", "EIP20"));
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.ENS", "ENS"));
+            stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.GnosisSafe", "GnosisSafe"));
+            stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.Siwe.Core", "Siwe.Core"));
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.StandardNonFungibleTokenERC721", "ERC721"));
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.JsonRpc.Client", "NethereumJsonRpc"));
             stringBuilder.Append(AddProject("..\\..\\src\\Nethereum.JsonRpc.RpcClient", "NethereumJsonRpcClient"));
@@ -66,6 +68,8 @@ namespace GenerateCsprojCompileLinks
             stringBuilder.Append(AddRemove("Nethereum.Besu", "Besu"));
             stringBuilder.Append(AddRemove("Nethereum.RSK", "RSK"));
             stringBuilder.Append(AddRemove("Nethereum.HdWallet", "HdWallet"));
+            stringBuilder.Append(AddRemove("Nethereum.GnosisSafe", "GnosisSafe"));
+            stringBuilder.Append(AddRemove("Nethereum.Siwe.Core", "Siwe.Core"));
 
 
             Debug.WriteLine(stringBuilder.ToString());
@@ -97,6 +101,9 @@ namespace GenerateCsprojCompileLinks
             stringBuilder.Append(AddRemove("Nethereum.XUnitEthereumClients", "XUnitEthereumClients"));
             stringBuilder.Append(AddRemove("Nethereum.RPC.Reactive.UnitTests", "ReactiveUnit"));
             stringBuilder.Append(AddRemove("Nethereum.Util.UnitTests", "UtilUnit"));
+            stringBuilder.Append(AddRemove("Nethereum.Siwe.IntegrationTests", "SiweInt"));
+            stringBuilder.Append(AddRemove("Nethereum.GnosisSafe.IntegrationTests", "GnosisSafeInt"));
+            stringBuilder.Append(AddRemove("Nethereum.Siwe.UnitTests", "SiweUnit"));
 
             Debug.WriteLine(stringBuilder.ToString());
         }
