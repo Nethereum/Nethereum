@@ -28,6 +28,7 @@ namespace Nethereum.Geth
             TraceBlockByNumber = new DebugTraceBlockByNumber(client);
             TraceBlockFromFile = new DebugTraceBlockFromFile(client);
             TraceTransaction = new DebugTraceTransaction(client);
+            TraceCall = new DebugTraceCall(client);
             Verbosity = new DebugVerbosity(client);
             Vmodule = new DebugVmodule(client);
             StackErrorChecker = new VmStackErrorChecker();
@@ -53,6 +54,7 @@ namespace Nethereum.Geth
         public IDebugTraceBlockByNumber TraceBlockByNumber { get; }
         public IDebugTraceBlockFromFile TraceBlockFromFile { get; }
         public IDebugTraceTransaction TraceTransaction { get; }
+        public IDebugTraceCall TraceCall { get; set; }
         public IDebugVerbosity Verbosity { get; }
         public IDebugVmodule Vmodule { get; }
 
