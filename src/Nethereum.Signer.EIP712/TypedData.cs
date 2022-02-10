@@ -2,7 +2,7 @@
 
 namespace Nethereum.Signer.EIP712
 {
-    public class TypedData<TDomain> where TDomain: Domain
+    public class TypedData<TDomain> where TDomain: IDomain
     {
         public IDictionary<string, MemberDescription[]> Types { get; set; }
 

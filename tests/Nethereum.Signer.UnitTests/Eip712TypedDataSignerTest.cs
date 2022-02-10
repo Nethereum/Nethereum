@@ -240,10 +240,20 @@ namespace Nethereum.Signer.UnitTests
             var address = key.GetPublicAddress();
         }
 
+
+        [Struct("EIP712Domain")]
+        public class MyFlatDomain : IDomain
+        {
+
+            [Parameter("address", "verifyingContract", 1)]
+            public virtual string VerifyingContract { get; set; }
+
+        }
+
         [Fact]
         public void FlatMessageObjectEncodingShouldBeCorrect()
         {
-            var domain = new Domain
+            var domain = new MyFlatDomain()
             {
                 VerifyingContract = "0x0fced4cc7788ede6d93e23e0b54bb56a98114ce2"
             };

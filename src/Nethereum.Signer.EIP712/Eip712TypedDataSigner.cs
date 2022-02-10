@@ -30,7 +30,7 @@ namespace Nethereum.Signer.EIP712
         /// Infers types of message fields from <see cref="Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute"/>.
         /// For flat messages only, for complex messages with reference type fields use "SignTypedData(TypedData typedData, EthECKey key)" method.
         /// </summary>
-        public string SignTypedData<T>(T data, Domain domain, string primaryTypeName, EthECKey key)
+        public string SignTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName, EthECKey key) where TDomain : IDomain
         {
             var typedData = GenerateTypedData(data, domain, primaryTypeName);
 
@@ -42,7 +42,7 @@ namespace Nethereum.Signer.EIP712
         /// Infers types of message fields from <see cref="Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute"/>. 
         /// For flat messages only, for complex messages with reference type fields use "EncodeTypedData(TypedData typedData).
         /// </summary>
-        public byte[] EncodeTypedData<T>(T data, Domain domain, string primaryTypeName)
+        public byte[] EncodeTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName) where TDomain : IDomain
         {
             var typedData = GenerateTypedData(data, domain, primaryTypeName);
 
@@ -53,17 +53,22 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712, it uses a predefined typed data schema and converts and encodes the provide the message value
         /// </summary>
-        public byte[] EncodeTypedData<T, TDomain>(T message, TypedData<TDomain> typedData) where TDomain : Domain
+        public byte[] EncodeTypedData<T, TDomain>(T message, TypedData<TDomain> typedData) where TDomain : IDomain
         {
             typedData.Message = MemberValueFactory.CreateFromMessage(message);
             return EncodeTypedData(typedData);
         }
 
+        public byte[] EncodeAndHashTypedData<T, TDomain>(T message, TypedData<TDomain> typedData) where TDomain : IDomain
+        {
+            var encodedData = EncodeTypedData(message, typedData);
+            return Sha3Keccack.Current.CalculateHash(encodedData);
+        }
 
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// </summary>
-        public string SignTypedData<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
+        public string SignTypedData<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : IDomain
         {
             var encodedData = EncodeTypedData(typedData);
             return _signer.HashAndSign(encodedData, key);
@@ -73,7 +78,7 @@ namespace Nethereum.Signer.EIP712
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// Matches the signature produced by eth_signTypedData_v4
         /// </summary>
-        public string SignTypedDataV4<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
+        public string SignTypedDataV4<TDomain>(TypedData<TDomain> typedData, EthECKey key) where TDomain : IDomain
         {
             var encodedData = EncodeTypedData(typedData);
             var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
@@ -83,20 +88,20 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Signs using a predefined typed data schema and converts and encodes the provide the message value
         /// </summary>
-        public string SignTypedDataV4<T, TDomain>(T message, TypedData<TDomain> typedData, EthECKey key) where TDomain : Domain
+        public string SignTypedDataV4<T, TDomain>(T message, TypedData<TDomain> typedData, EthECKey key) where TDomain : IDomain
         {
             var encodedData = EncodeTypedData(message, typedData);
             var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
             return EthECDSASignature.CreateStringSignature(signature);
         }
 
-        public string RecoverFromSignatureV4<T,TDomain>(T message, TypedData<TDomain> typedData, string signature) where TDomain : Domain
+        public string RecoverFromSignatureV4<T,TDomain>(T message, TypedData<TDomain> typedData, string signature) where TDomain : IDomain
         {
             var encodedData = EncodeTypedData(message, typedData);
             return new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
         }
 
-        public string RecoverFromSignatureV4<TDomain>(TypedData<TDomain> typedData, string signature) where TDomain : Domain
+        public string RecoverFromSignatureV4<TDomain>(TypedData<TDomain> typedData, string signature) where TDomain : IDomain
         {
             var encodedData = EncodeTypedData(typedData);
             return  new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
@@ -115,7 +120,7 @@ namespace Nethereum.Signer.EIP712
         /// <summary>
         /// Encodes data according to EIP-712.
         /// </summary>
-        public byte[] EncodeTypedData<TDomain>(TypedData<TDomain> typedData) where TDomain : Domain
+        public byte[] EncodeTypedData<TDomain>(TypedData<TDomain> typedData) where TDomain : IDomain
         {
             using (var memoryStream = new MemoryStream())
             using (var writer = new BinaryWriter(memoryStream))
@@ -250,54 +255,54 @@ namespace Nethereum.Signer.EIP712
             }
         }
 
-        private static IEnumerable<Member> ParseDomain(Domain domain)
-        {
-            var result = new List<Member>();
+        //private static IEnumerable<Member> ParseDomain(Domain domain)
+        //{
+        //    var result = new List<Member>();
 
-            if (domain.Name != null)
-            {
-                result.Add(new Member( new MemberDescription {Type = "string", Name = "name"},
-                    new MemberValue {TypeName = "string", Value = domain.Name}
-                ));
-            }
+        //    if (domain.Name != null)
+        //    {
+        //        result.Add(new Member( new MemberDescription {Type = "string", Name = "name"},
+        //            new MemberValue {TypeName = "string", Value = domain.Name}
+        //        ));
+        //    }
 
-            if (domain.Version != null)
-            {
-                result.Add(new Member(
-                    new MemberDescription {Type = "string", Name = "version"},
-                    new MemberValue {TypeName = "string", Value = domain.Version}
-                ));
-            }
+        //    if (domain.Version != null)
+        //    {
+        //        result.Add(new Member(
+        //            new MemberDescription {Type = "string", Name = "version"},
+        //            new MemberValue {TypeName = "string", Value = domain.Version}
+        //        ));
+        //    }
 
-            if (domain.ChainId.HasValue)
-            {
-                result.Add(new Member(
-                    new MemberDescription {Type = "uint256", Name = "chainId"},
-                    new MemberValue {TypeName = "uint256", Value = domain.ChainId.Value}
-                ));
-            }
+        //    if (domain.ChainId.HasValue)
+        //    {
+        //        result.Add(new Member(
+        //            new MemberDescription {Type = "uint256", Name = "chainId"},
+        //            new MemberValue {TypeName = "uint256", Value = domain.ChainId.Value}
+        //        ));
+        //    }
 
-            if (domain.VerifyingContract != null)
-            {
-                result.Add(new Member(
-                    new MemberDescription {Type = "address", Name = "verifyingContract"},
-                    new MemberValue {TypeName = "address", Value = domain.VerifyingContract}
-                ));
-            }
+        //    if (domain.VerifyingContract != null)
+        //    {
+        //        result.Add(new Member(
+        //            new MemberDescription {Type = "address", Name = "verifyingContract"},
+        //            new MemberValue {TypeName = "address", Value = domain.VerifyingContract}
+        //        ));
+        //    }
 
-            //if (domain.Salt != null)
-            //{
-            //    result.Add(new Member(
-            //        new MemberDescription {Type = "bytes32", Name = "salt"},
-            //        new MemberValue {TypeName = "bytes32", Value = domain.Salt}
-            //    ));
-            //}
+        //    //if (domain.Salt != null)
+        //    //{
+        //    //    result.Add(new Member(
+        //    //        new MemberDescription {Type = "bytes32", Name = "salt"},
+        //    //        new MemberValue {TypeName = "bytes32", Value = domain.Salt}
+        //    //    ));
+        //    //}
 
-            return result;
-        }
+        //    return result;
+        //}
 
 
-        private TypedData<Domain> GenerateTypedData<T>(T data, Domain domain, string primaryTypeName)
+        private TypedData<TDomain> GenerateTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName) where TDomain : IDomain
         {
             var parameters = _parametersEncoder.GetParameterAttributeValues(typeof(T), data).OrderBy(x => x.ParameterAttribute.Order);
 
@@ -318,13 +323,13 @@ namespace Nethereum.Signer.EIP712
                 });
             }
 
-            var result = new TypedData<Domain>
+            var result = new TypedData<TDomain>
             {
                 PrimaryType = primaryTypeName,
                 Types = new Dictionary<string, MemberDescription[]>
                 {
                     [primaryTypeName] = typeMembers.ToArray(),
-                    ["EIP712Domain"] = ParseDomain(domain).Select(x => x.MemberDescription).ToArray()
+                    ["EIP712Domain"] = MemberDescriptionFactory.GetTypesMemberDescription(typeof(TDomain))["EIP712Domain"]
                 },
                 Message = typeValues.ToArray(),
                 Domain = domain

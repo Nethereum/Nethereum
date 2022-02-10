@@ -12,6 +12,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class EncodeTransactionDataFunction : EncodeTransactionDataFunctionBase { }
 
     [Function("encodeTransactionData", "bytes")]
+    [Struct("SafeTx")]
     public class EncodeTransactionDataFunctionBase : FunctionMessage
     {
         [Parameter("address", "to", 1)]

@@ -3,9 +3,37 @@ using System.Numerics;
 
 namespace Nethereum.Signer.EIP712
 {
- 
+    //Interface placeholder for any domain type including any optional fields
+    public interface IDomain
+    {
+
+    }
+
     [Struct("EIP712Domain")]
-    public class Domain
+    public class DomainWithVerifyingContract : IDomain
+    {
+
+        [Parameter("address", "verifyingContract", 1)]
+        public virtual string VerifyingContract { get; set; }
+
+    }
+
+
+
+    [Struct("EIP712Domain")]
+    public class DomainWithChainIdAndVerifyingContract : IDomain
+    {
+        [Parameter("uint256", "chainId", 1)]
+        public virtual BigInteger? ChainId { get; set; }
+
+        [Parameter("address", "verifyingContract", 2)]
+        public virtual string VerifyingContract { get; set; }
+
+    }
+
+
+    [Struct("EIP712Domain")]
+    public class Domain:IDomain
     {
         [Parameter("string", "name", 1)]
         public virtual string Name { get; set; }

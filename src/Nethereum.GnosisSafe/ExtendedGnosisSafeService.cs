@@ -92,6 +92,22 @@ namespace Nethereum.GnosisSafe
             return BuildTransaction(transactionData, chainId, privateKeySigners);
         }
 
+        //The generic EIP712 Typed schema defintion for this message
+        public TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(BigInteger chainId, string verifyingContractAddress)
+        {
+            return new TypedData<GnosisSafeEIP712Domain>
+            {
+                Domain = new GnosisSafeEIP712Domain
+                {
+                    ChainId = chainId,
+                    VerifyingContract = verifyingContractAddress
+                },
+                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(GnosisSafeEIP712Domain), typeof(EncodeTransactionDataFunction) ),
+                PrimaryType = "SafeTx",
+            };
+        }
+
+
         public ExecTransactionFunction BuildTransaction(
             EncodeTransactionDataFunction transactionData,
             BigInteger chainId,
@@ -100,14 +116,9 @@ namespace Nethereum.GnosisSafe
             var signer = new Eip712TypedDataSigner();
             var messageSigner = new MessageSigner();
 
-            var domain = new Domain
-            {
-                VerifyingContract = this.ContractHandler.ContractAddress,
-                ChainId = chainId
-            };
+            var typedDefinition = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
 
-            var encodedMessage = signer.EncodeTypedData(transactionData, domain, "SafeTx");
-            var hashEncoded = Util.Sha3Keccack.Current.CalculateHash(encodedMessage);
+            var hashEncoded = signer.EncodeAndHashTypedData(transactionData, typedDefinition);
             var signatures = new List<SafeSignature>();
             foreach (var privateKey in privateKeySigners)
             {

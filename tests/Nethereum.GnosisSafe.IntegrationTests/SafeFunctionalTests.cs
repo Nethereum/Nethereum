@@ -46,7 +46,7 @@ namespace Nethereum.GnosisSafe.IntegrationTests
             };
             var encoded = await service.EncodeTransactionDataQueryAsync(param);
 
-            var domain = new Domain
+            var domain = new GnosisSafeEIP712Domain
             {
                 VerifyingContract = gnosisSafeAddress,
                 ChainId = chainId

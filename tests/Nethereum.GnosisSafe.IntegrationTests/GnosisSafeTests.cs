@@ -34,8 +34,8 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
         //[Fact] //replace private keys to avoid issues
         public async void ShouldDoMultiTransferTokensUsingARelayer()
         {
-            var walletOwnerPrivateKey = "0xcf0d584dba3902252f3762d5161c4996f4b36";
-            var accountRelayerReceiverPrivateKey = "0xa261c1c7f775c3423be58cdb8c24c6e29f898af56";
+            var walletOwnerPrivateKey = "0xcf0d584dba3902252f3762d5161c4996f4b364e6e79a75c96b2e2c3e3";
+            var accountRelayerReceiverPrivateKey = "0xa261c1c7f775c3423be58cdb8c24c6e29f898af56e8699107aa219a0";
             var chainId = Chain.Rinkeby;
             var gnosisSafeAddress = "0xa9C09412C1d93DAc6eE9254A51E97454588D3B88";
             var daiAddress = "0x6a9865ade2b6207daac49f8bcba9705deb0b0e6d";
@@ -83,11 +83,11 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
         public async void ShouldTransferTokensUsingARelayer()
         {
             //gnosis safe owner private key (only one in this scenario)
-            var walletOwnerPrivateKey = "0xcf0d584dba3902252f3762d5161c4996f4b364e6e7";
+            var walletOwnerPrivateKey = "0xcf0d584dba3902252f3762d5161c4996f4b364e6e79a75c96b2e2c3e";
 
             //relayer or account that is going to send the transaction (no relation to the gnosis safe)
             //pays the transaction
-            var accountRelayerReceiverPrivateKey = "0xa261c1c7f775c3423be58cdb8c24c6e29f898af56";
+            var accountRelayerReceiverPrivateKey = "0xa261c1c7f775c3423be58cdb8c24c6e29f898af56e8699107aa2";
             var chainId = Chain.Rinkeby;
 
             var gnosisSafeAddress = "0xa9C09412C1d93DAc6eE9254A51E97454588D3B88";
