@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
 
 namespace Nethereum.BlockchainProcessing.UnitTests.Services
 {
@@ -32,8 +33,8 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
             
             _orchestratorMock
                 .Setup(o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(),
-                    It.IsAny<CancellationToken>(), null))
-                .Returns<BigInteger, BigInteger, CancellationToken>((from, to, ctx) =>
+                    It.IsAny<CancellationToken>(), _progressRepoMock.Object))
+                .Returns<BigInteger, BigInteger, CancellationToken, IBlockProgressRepository>((from, to, ctx, progressRepo) =>
                 {
                     _orchestratedBlockRanges.Add(new BlockRange(from, to));
 
@@ -54,8 +55,8 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
         {
             _ = _orchestratorMock
                 .Setup(expression: o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(),
-                    It.IsAny<CancellationToken>(), null))
-                .Returns<BigInteger, BigInteger, CancellationToken>((from, to, ctx) =>
+                    It.IsAny<CancellationToken>(), _progressRepoMock.Object))
+                .Returns<BigInteger, BigInteger, CancellationToken, IBlockProgressRepository>((from, to, ctx, progressRepo) =>
                 {
                     return Task.FromResult(new OrchestrationProgress { Exception = ex });
                 });
