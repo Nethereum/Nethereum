@@ -18,7 +18,12 @@ namespace Nethereum.Contracts.DeploymentHandlers
         {
             if(deploymentMessage == null) deploymentMessage = new TContractDeploymentMessage();
             var callInput = DeploymentMessageEncodingService.CreateCallInput(deploymentMessage);
-            return TransactionManager.EstimateGasAsync(callInput);
+            if (TransactionManager.EstimateOrSetDefaultGasIfNotSet)
+            {
+                return TransactionManager.EstimateGasAsync(callInput);
+            }
+
+            return null;
         }
     }
 #endif

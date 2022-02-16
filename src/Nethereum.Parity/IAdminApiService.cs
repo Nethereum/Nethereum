@@ -4,6 +4,7 @@ namespace Nethereum.Parity
 {
     public interface IAdminApiService
     {
+        IParityListStorageKeys ParityListStorageKeys { get; }
         IParityConsensusCapability ConsensusCapability { get; }
         IParityListOpenedVaults ListOpenedVaults { get; }
         IParityListVaults ListVaults { get; }
@@ -11,5 +12,6 @@ namespace Nethereum.Parity
         IParityPendingTransactionsStats PendingTransactionsStats { get; }
         IParityReleasesInfo ReleasesInfo { get; }
         IParityVersionInfo VersionInfo { get; }
+
     }
 }

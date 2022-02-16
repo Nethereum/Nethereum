@@ -25,6 +25,8 @@ namespace Nethereum.RPC.TransactionManagers
         Task<string> SendTransactionAsync(string from, string to, HexBigInteger amount);
         Task<string> SignTransactionAsync(TransactionInput transaction);
         ITransactionReceiptService TransactionReceiptService { get; set; }
+        bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; }
+        bool EstimateOrSetDefaultGasIfNotSet { get; set; }
         Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource);
 #endif
 

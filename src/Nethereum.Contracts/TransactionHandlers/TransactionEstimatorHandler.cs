@@ -27,7 +27,12 @@ namespace Nethereum.Contracts.TransactionHandlers
             var callInput = FunctionMessageEncodingService.CreateCallInput(functionMessage);
             try
             {
-                return await TransactionManager.EstimateGasAsync(callInput).ConfigureAwait(false);
+                if (TransactionManager.EstimateOrSetDefaultGasIfNotSet)
+                {
+                    return await TransactionManager.EstimateGasAsync(callInput).ConfigureAwait(false);
+                }
+
+                return null;
             }
             catch(RpcResponseException rpcException)
             {

@@ -15,8 +15,10 @@ namespace Nethereum.Parity
             PendingTransactionsStats = new ParityPendingTransactionsStats(client);
             ReleasesInfo = new ParityReleasesInfo(client);
             VersionInfo = new ParityVersionInfo(client);
+            ParityListStorageKeys = new ParityListStorageKeys(client);
         }
 
+        public IParityListStorageKeys   ParityListStorageKeys { get; }
         public IParityConsensusCapability ConsensusCapability { get; }
         public IParityListOpenedVaults ListOpenedVaults { get; }
         public IParityListVaults ListVaults { get; }

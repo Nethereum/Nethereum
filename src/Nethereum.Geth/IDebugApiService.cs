@@ -27,5 +27,7 @@ namespace Nethereum.Geth
         IDebugTraceTransaction TraceTransaction { get; }
         IDebugVerbosity Verbosity { get; }
         IDebugVmodule Vmodule { get; }
+
+        IDebugTraceCall TraceCall { get; }
     }
 }

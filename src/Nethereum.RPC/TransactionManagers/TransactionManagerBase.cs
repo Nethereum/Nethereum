@@ -21,7 +21,8 @@ namespace Nethereum.RPC.TransactionManagers
         public abstract BigInteger DefaultGas { get; set; }
         public IAccount Account { get; protected set; }
         public bool UseLegacyAsDefault { get; set; } = false;
-        public bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; } = true; 
+        public bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; } = true;
+        public bool EstimateOrSetDefaultGasIfNotSet { get; set; } = true;
 
         public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
         {
@@ -165,7 +166,7 @@ namespace Nethereum.RPC.TransactionManagers
                 }
             }
 
-            if (DefaultGas != null)
+            if (DefaultGas != null && EstimateOrSetDefaultGasIfNotSet)
             {
                 if (transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(DefaultGas);
             }
@@ -173,7 +174,7 @@ namespace Nethereum.RPC.TransactionManagers
 
         protected void SetDefaultGasIfNotSet(TransactionInput transactionInput)
         {
-            if (DefaultGas != null)
+            if (DefaultGas != null && EstimateOrSetDefaultGasIfNotSet)
             {
                 if (transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(DefaultGas);
             }
