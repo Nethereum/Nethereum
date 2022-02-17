@@ -30,7 +30,7 @@
     <HdWalletFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netstandard2.0</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</HdWalletFrameworks>
-    <ExternalSignerFrameworks>netstandard2.0;net452;net461;netcoreapp2.1</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks>netstandard2.0;net461;netcoreapp2.1</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ExternalSignerFrameworks>
