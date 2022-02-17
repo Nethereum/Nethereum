@@ -28,18 +28,18 @@ namespace Nethereum.Signer.AzureKeyVault.Console
     {
         private const string APP_ID = "a73d5252-12f0-4b3e-80a2-8c13870bbcab";
         private const string APP_PASSWORD = "P3RpF4Ux2KHX9aoMAk4tUJtn8A5bAECCo/OmnwyeIW8=";
-        private const string TENANT_ID = "<TENANT_ID>";
+        private const string TENANT_ID = "TENANTID";
         private const string KEY_NAME = "nethereumec"; // "nethereumec/7ed70afdbf7d43bda5a8090515b154d2"
         private const string URI = "https://juanakv.vault.azure.net";
         static void Main(string[] args)
         {
-            var credential = new DefaultAzureCredential(
-                new DefaultAzureCredentialOptions
-                {
-                    //VisualStudioTenantId = TENANT_ID,
-                    //VisualStudioCodeTenantId = TENANT_ID,
-                });
-            //var credential = new ClientSecretCredential(TENANT_ID, APP_ID, APP_PASSWORD);
+            //var credential = new DefaultAzureCredential(
+            //    new DefaultAzureCredentialOptions
+            //    {
+            //        //VisualStudioTenantId = TENANT_ID,
+            //        //VisualStudioCodeTenantId = TENANT_ID,
+            //    });
+            var credential = new ClientSecretCredential(TENANT_ID, APP_ID, APP_PASSWORD);
             var signer = new AzureKeyVaultExternalSigner(KEY_NAME, URI, credential);
             var address = signer.GetAddressAsync().Result;
             System.Console.WriteLine(address);

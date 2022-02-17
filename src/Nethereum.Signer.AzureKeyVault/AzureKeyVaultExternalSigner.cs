@@ -13,6 +13,8 @@ namespace Nethereum.Signer.AzureKeyVault
         public KeyClient KeyClient { get; }
         public string KeyName { get; }
 
+        public bool UseLegacyECDSA256 { get; set; } = true;
+
         public AzureKeyVaultExternalSigner(string keyName, string vaultUri, TokenCredential credential)
         : this(keyName, new KeyClient(new Uri(vaultUri), credential), credential)
         {
@@ -30,15 +32,19 @@ namespace Nethereum.Signer.AzureKeyVault
 
         protected override async Task<byte[]> GetPublicKeyAsync()
         {
-            var response = await KeyClient.GetKeyAsync(KeyName).ConfigureAwait(false);
-            var jwk = response.Value.Key;
-            var publicKey = new byte[1 + jwk.X.Length + jwk.Y.Length];
+            var keyBundle = await KeyClient.GetKeyAsync(KeyName).ConfigureAwait(false);
+            
+            var x = keyBundle.Value.Key.X;
+            var y = keyBundle.Value.Key.Y;
+            var xLen = x.Length;
+            var yLen = y.Length;
 
+            var publicKey = new byte[1 + xLen + yLen];
             publicKey[0] = 0x04;
-
-            Buffer.BlockCopy(jwk.X, 0, publicKey, 1, jwk.X.Length);
-            Buffer.BlockCopy(jwk.Y, 0, publicKey, 1 + jwk.X.Length, jwk.Y.Length);
-
+            var offset = 1;
+            Buffer.BlockCopy(x, 0, publicKey, offset, xLen);
+            offset = offset + xLen;
+            Buffer.BlockCopy(y, 0, publicKey, offset, yLen);
             return publicKey;
         }
 
@@ -46,8 +52,17 @@ namespace Nethereum.Signer.AzureKeyVault
         {
             if (hash == null)
                 throw new ArgumentNullException(nameof(hash));
+            SignResult result;
+            if (UseLegacyECDSA256)
+            {
+                 result = await CryptoClient.SignAsync("ECDSA256", hash).ConfigureAwait(false);
+            }
+            else
+            {
+                 result = await CryptoClient.SignAsync(SignatureAlgorithm.ES256K, hash).ConfigureAwait(false);
+            }
 
-            var result = await CryptoClient.SignAsync(SignatureAlgorithm.ES256K, hash).ConfigureAwait(false);
+            
 
             return ECDSASignatureFactory.FromComponents(result.Signature).MakeCanonical();
         }
