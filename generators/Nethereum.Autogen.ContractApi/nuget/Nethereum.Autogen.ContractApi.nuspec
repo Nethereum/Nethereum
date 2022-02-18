@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Nethereum.Autogen.ContractApi</id>
-    <version>4.0.5</version>
+    <version>4.2.0</version>
     <authors>Juan Blanco, Dave Whiffin</authors>
     <owners>Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
