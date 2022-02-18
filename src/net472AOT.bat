@@ -91,6 +91,21 @@ cd Nethereum.Besu
 CALL :build
 cd ..
 
+cd Nethereum.Signer.EIP712
+CALL :build
+cd..
+
+cd Nethereum.GnosisSafe
+CALL :build
+cd ..
+
+cd Nethereum.Siwe.Core
+CALL :build
+cd ..
+
+cd Nethereum.BlockchainProcessing
+CALL :build
+cd..
 
 EXIT /B %ERRORLEVEL%
 
