@@ -11,6 +11,14 @@ namespace Nethereum.Quorum
         string PrivateFrom { get; }
         IQuorumChainService Quorum { get; }
 
+        IPermissionService Permission { get;}
+        IPrivacyService Privacy { get; }
+        IRaftService Raft { get;  }
+        IIBFTService IBFT { get; }
+
+        IContractExtensionsService ContractExtensions { get;}
+        IDebugQuorumService DebugQuorum { get; }
+
         void ClearPrivateForRequestParameters();
         void SetPrivateRequestParameters(IEnumerable<string> privateFor, string privateFrom = null);
     }
