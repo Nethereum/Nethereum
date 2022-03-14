@@ -5,6 +5,8 @@ using System.Runtime.Serialization;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
+
+
     [DataContract]
     public class TransactionReceipt
     {
@@ -32,6 +34,18 @@ namespace Nethereum.RPC.Eth.DTOs
        [DataMember(Name = "blockNumber")]
         public HexBigInteger BlockNumber { get; set; }
 
+        /// <summary>
+        ///     DATA, 20 Bytes - From address
+        /// </summary>
+        [DataMember(Name = "from")]
+        public string From { get; set; }
+
+        /// <summary>
+        ///     DATA, 20 Bytes - To address
+        /// </summary>
+        [DataMember(Name = "to")]
+        public string To { get; set; }
+        
         /// <summary>
         ///     QUANTITY - The total amount of gas used when this transaction was executed in the block.
         /// </summary>
@@ -80,6 +94,11 @@ namespace Nethereum.RPC.Eth.DTOs
        [DataMember(Name = "logsBloom")]
         public string LogsBloom { get; set; }
 
+        /// <summary>
+        ///  DATA, 32 Bytes The post-transaction state root. Only specified for transactions included before the Byzantium upgrade. (DEPRECATED)
+        /// </summary>
+        [DataMember(Name = "root")]
+        public string Root { get; set; }
         public bool? HasErrors()
         {
             if (Status?.HexValue == null) return null;
@@ -94,6 +113,8 @@ namespace Nethereum.RPC.Eth.DTOs
                        TransactionIndex == val.TransactionIndex &&
                        BlockHash == val.BlockHash &&
                        BlockNumber == val.BlockNumber &&
+                       From == val.From && 
+                       To == val.To &&
                        CumulativeGasUsed == val.CumulativeGasUsed &&
                        GasUsed == val.GasUsed &&
                        ContractAddress.IsTheSameAddress(val.ContractAddress) &&
