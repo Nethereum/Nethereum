@@ -110,7 +110,7 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     data: DATA - (optional) The compiled code of a contract
         /// </summary>
-        [DataMember(Name = "data")]
+        [DataMember(Name = "input")]
         public string Data
         {
             get { return _data.EnsureHexPrefix(); }
@@ -134,6 +134,12 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
         [DataMember(Name = "type")]
         public HexBigInteger Type { get; set; }
+
+        /// <summary>
+        /// chainId :Chain ID that this transaction is valid on.
+        /// </summary>
+        [DataMember(Name = "chainId")]
+        public HexBigInteger ChainId { get; set; }
 
     }
 }

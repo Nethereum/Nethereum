@@ -17,13 +17,13 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     DATA, 32 Bytes - hash of the block.  
         /// </summary>
-      [DataMember(Name = "hash")]
+        [DataMember(Name = "hash")]
         public string BlockHash { get; set; }
 
         /// <summary>
         ///  block author.
         /// </summary>
-      [DataMember(Name = "author")]
+        [DataMember(Name = "author")]
         public string Author { get; set; }
 
 
@@ -128,19 +128,19 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     QUANTITY - the unix timestamp for when the block was collated.
         /// </summary>
-      [DataMember(Name = "timestamp")]
+       [DataMember(Name = "timestamp")]
         public HexBigInteger Timestamp { get; set; }
 
         /// <summary>
         ///     Array - Array of uncle hashes.
         /// </summary>
-      [DataMember(Name = "uncles")]
+       [DataMember(Name = "uncles")]
         public string[] Uncles { get; set; }
 
         /// <summary>
         ///     QUANTITY - the base fee per gas.
         /// </summary>
-        [JsonProperty("baseFeePerGas")]
+        [DataMember(Name = "baseFeePerGas")]
         public HexBigInteger BaseFeePerGas { get; set; }
 
 

@@ -1,0 +1,1679 @@
+{
+	"openrpc": "1.2.4",
+	"info": {
+		"title": "Ethereum JSON-RPC Specification",
+		"description": "A specification of the standard interface for Ethereum clients.",
+		"license": {
+			"name": "CC0-1.0",
+			"url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
+		},
+		"version": "0.0.0"
+	},
+	"methods": [
+		{
+			"name": "eth_getBlockByHash",
+			"summary": "Returns information about a block by hash.",
+			"params": [
+				{
+					"name": "Block hash",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				},
+				{
+					"name": "Hydrated transactions",
+					"required": true,
+					"schema": {
+						"title": "hydrated",
+						"type": "boolean"
+					}
+				}
+			],
+			"result": {
+				"name": "Block information",
+				"schema": {
+					"$ref": "#/components/schemas/Block"
+				}
+			}
+		},
+		{
+			"name": "eth_getBlockByNumber",
+			"summary": "Returns information about a block by number.",
+			"params": [
+				{
+					"name": "Block number",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				},
+				{
+					"name": "Hydrated transactions",
+					"required": true,
+					"schema": {
+						"title": "hydrated",
+						"type": "boolean"
+					}
+				}
+			],
+			"result": {
+				"name": "Block information",
+				"schema": {
+					"$ref": "#/components/schemas/Block"
+				}
+			}
+		},
+		{
+			"name": "eth_getBlockTransactionCountByHash",
+			"summary": "Returns the number of transactions in a block from a block matching the given block hash.",
+			"params": [
+				{
+					"name": "Block hash",
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction count",
+				"schema": {
+					"title": "Transaction count",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_getBlockTransactionCountByNumber",
+			"summary": "Returns the number of transactions in a block matching the given block number.",
+			"params": [
+				{
+					"name": "Block number",
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction count",
+				"schema": {
+					"title": "Transaction count",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_getUncleCountByBlockHash",
+			"summary": "Returns the number of uncles in a block from a block matching the given block hash.",
+			"params": [
+				{
+					"name": "Block hash",
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				}
+			],
+			"result": {
+				"name": "Uncle count",
+				"schema": {
+					"title": "Uncle count",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_getUncleCountByBlockNumber",
+			"summary": "Returns the number of transactions in a block matching the given block number.",
+			"params": [
+				{
+					"name": "Block number",
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Uncle count",
+				"schema": {
+					"title": "Uncle count",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_protocolVersion",
+			"summary": "Returns the current Ethereum protocol version.",
+			"params": [],
+			"result": {
+				"name": "Protocol version",
+				"schema": {
+					"title": "version",
+					"type": "string"
+				}
+			}
+		},
+		{
+			"name": "eth_chainId",
+			"summary": "Returns the chain ID of the current network.",
+			"params": [],
+			"result": {
+				"name": "Chain ID",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_syncing",
+			"summary": "Returns an object with data about the sync status or false.",
+			"params": [],
+			"result": {
+				"name": "Syncing status",
+				"schema": {
+					"$ref": "#/components/schemas/SyncingStatus"
+				}
+			}
+		},
+		{
+			"name": "eth_coinbase",
+			"summary": "Returns the client coinbase address.",
+			"params": [],
+			"result": {
+				"name": "Coinbase address",
+				"schema": {
+					"$ref": "#/components/schemas/address"
+				}
+			}
+		},
+		{
+			"name": "eth_accounts",
+			"summary": "Returns a list of addresses owned by client.",
+			"params": [],
+			"result": {
+				"name": "Accounts",
+				"schema": {
+					"title": "Accounts",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/address"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_blockNumber",
+			"summary": "Returns the number of most recent block.",
+			"params": [],
+			"result": {
+				"name": "Block number",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_call",
+			"summary": "Executes a new message call immediately without creating a transaction on the block chain.",
+			"params": [
+				{
+					"name": "Transaction",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/TransactionWithSender"
+					}
+				}
+			],
+			"result": {
+				"name": "Return data",
+				"schema": {
+					"$ref": "#/components/schemas/bytes"
+				}
+			}
+		},
+		{
+			"name": "eth_estimateGas",
+			"summary": "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.",
+			"params": [
+				{
+					"name": "Transaction",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/TransactionWithSender"
+					}
+				}
+			],
+			"result": {
+				"name": "Gas used",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_gasPrice",
+			"summary": "Returns the current price per gas in wei.",
+			"params": [],
+			"result": {
+				"name": "Gas price",
+				"schema": {
+					"title": "Gas price",
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_feeHistory",
+			"summary": "",
+			"params": [
+				{
+					"name": "blockCount",
+					"description": "Requested range of blocks. Clients will return less than the requested range if not all blocks are available.",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				},
+				{
+					"name": "newestBlock",
+					"description": "Highest block of the requested range.",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
+				},
+				{
+					"name": "rewardPercentiles",
+					"description": "A monotonically increasing list of percentile values. For each block in the requested range, the transactions will be sorted in ascending order by effective tip per gas and the coresponding effective tip for the percentile will be determined, accounting for gas consumed.",
+					"required": true,
+					"schema": {
+						"title": "rewardPercentiles",
+						"type": "array",
+						"items": {
+							"title": "rewardPercentile",
+							"description": "Floating point value between 0 and 100.",
+							"type": "number"
+						}
+					}
+				}
+			],
+			"result": {
+				"name": "feeHistoryResult",
+				"description": "Fee history for the returned block range. This can be a subsection of the requested range if not all blocks are available.",
+				"schema": {
+					"title": "feeHistoryResults",
+					"description": "Fee history results.",
+					"type": "object",
+					"required": [
+						"firstBlock",
+						"baseFeePerGas",
+						"gasUsedRatio"
+					],
+					"properties": {
+						"oldestBlock": {
+							"title": "oldestBlock",
+							"description": "Lowest number block of returned range.",
+							"$ref": "#/components/schemas/uint"
+						},
+						"baseFeePerGas": {
+							"title": "baseFeePerGasArray",
+							"description": "An array of block base fees per gas. This includes the next block after the newest of the returned range, because this value can be derived from the newest block. Zeroes are returned for pre-EIP-1559 blocks.",
+							"type": "array",
+							"items": {
+								"$ref": "#/components/schemas/uint"
+							}
+						},
+						"reward": {
+							"title": "rewardArray",
+							"description": "A two-dimensional array of effective priority fees per gas at the requested block percentiles.",
+							"type": "array",
+							"items": {
+								"title": "rewardPercentile",
+								"description": "An array of effective priority fee per gas data points from a single block. All zeroes are returned if the block is empty.",
+								"type": "array",
+								"items": {
+									"title": "rewardPercentile",
+									"description": "A given percentile sample of effective priority fees per gas from a single block in ascending order, weighted by gas used. Zeroes are returned if the block is empty.",
+									"$ref": "#/components/schemas/uint"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_newFilter",
+			"summary": "Creates a filter object, based on filter options, to notify when the state changes (logs).",
+			"params": [
+				{
+					"name": "Filter",
+					"schema": {
+						"$ref": "#/components/schemas/Filter"
+					}
+				}
+			],
+			"result": {
+				"name": "Filter Identifier",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_newBlockFilter",
+			"summary": "Creates a filter in the node, to notify when a new block arrives.",
+			"params": [],
+			"result": {
+				"name": "Filter Identifier",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_newPendingTransactionFilter",
+			"summary": "Creates a filter in the node, to notify when new pending transactions arrive.",
+			"params": [],
+			"result": {
+				"name": "Filter Identifier",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_uninstallFilter",
+			"summary": "Uninstalls a filter with given id.",
+			"params": [
+				{
+					"name": "Filter Identifier",
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Success",
+				"schema": {
+					"type": "boolean"
+				}
+			}
+		},
+		{
+			"name": "eth_getFilterChanges",
+			"summary": "Polling method for a filter, which returns an array of logs which occurred since last poll.",
+			"params": [
+				{
+					"name": "Filter Identifier",
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Log objects",
+				"schema": {
+					"$ref": "#/components/schemas/FilterResults"
+				}
+			}
+		},
+		{
+			"name": "eth_getFilterLogs",
+			"summary": "Returns an array of all logs matching filter with given id.",
+			"params": [
+				{
+					"name": "Filter Identifier",
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Log objects",
+				"schema": {
+					"$ref": "#/components/schemas/FilterResults"
+				}
+			}
+		},
+		{
+			"name": "eth_getLogs",
+			"summary": "Returns an array of all logs matching filter with given id.",
+			"params": [
+				{
+					"name": "Filter",
+					"schema": {
+						"$ref": "#/components/schemas/Filter"
+					}
+				}
+			],
+			"result": {
+				"name": "Log objects",
+				"schema": {
+					"$ref": "#/components/schemas/FilterResults"
+				}
+			}
+		},
+		{
+			"name": "eth_mining",
+			"summary": "Returns whether the client is actively mining new blocks.",
+			"params": [],
+			"result": {
+				"name": "Mining status",
+				"schema": {
+					"title": "miningStatus",
+					"type": "boolean"
+				}
+			}
+		},
+		{
+			"name": "eth_hashrate",
+			"summary": "Returns the number of hashes per second that the node is mining with.",
+			"params": [],
+			"result": {
+				"name": "Mining status",
+				"schema": {
+					"title": "Hashrate",
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_getWork",
+			"summary": "Returns the hash of the current block, the seedHash, and the boundary condition to be met (“target”).",
+			"params": [],
+			"result": {
+				"name": "Current work",
+				"schema": {
+					"type": "array",
+					"items": [
+						{
+							"title": "Proof-of-work hash",
+							"$ref": "#/components/schemas/bytes32"
+						},
+						{
+							"title": "seed hash",
+							"$ref": "#/components/schemas/bytes32"
+						},
+						{
+							"title": "difficulty",
+							"$ref": "#/components/schemas/bytes32"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "eth_submitWork",
+			"summary": "Used for submitting a proof-of-work solution.",
+			"params": [
+				{
+					"name": "nonce",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes8"
+					}
+				},
+				{
+					"name": "hash",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes32"
+					}
+				},
+				{
+					"name": "digest",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes32"
+					}
+				}
+			],
+			"result": {
+				"name": "Success",
+				"schema": {
+					"type": "boolean"
+				}
+			}
+		},
+		{
+			"name": "eth_submitHashrate",
+			"summary": "Used for submitting mining hashrate.",
+			"params": [
+				{
+					"name": "Hashrate",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes32"
+					}
+				},
+				{
+					"name": "ID",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes32"
+					}
+				}
+			],
+			"result": {
+				"name": "Success",
+				"schema": {
+					"type": "boolean"
+				}
+			}
+		},
+		{
+			"name": "eth_sign",
+			"summary": "Returns an EIP-191 signature over the provided data.",
+			"params": [
+				{
+					"name": "Address",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/address"
+					}
+				},
+				{
+					"name": "Message",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes"
+					}
+				}
+			],
+			"result": {
+				"name": "Signature",
+				"schema": {
+					"$ref": "#/components/schemas/bytes65"
+				}
+			}
+		},
+		{
+			"name": "eth_signTransaction",
+			"summary": "Returns an RLP encoded transaction signed by the specified account.",
+			"params": [
+				{
+					"name": "Transaction",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/TransactionWithSender"
+					}
+				}
+			],
+			"result": {
+				"name": "Encoded transaction",
+				"schema": {
+					"$ref": "#/components/schemas/bytes"
+				}
+			}
+		},
+		{
+			"name": "eth_getBalance",
+			"summary": "Returns the balance of the account of given address.",
+			"params": [
+				{
+					"name": "Address",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/address"
+					}
+				},
+				{
+					"name": "Block",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
+				}
+			],
+			"result": {
+				"name": "Balance",
+				"schema": {
+					"$ref": "#/components/schemas/uint"
+				}
+			}
+		},
+		{
+			"name": "eth_getStorageAt",
+			"summary": "Returns the value from a storage position at a given address.",
+			"params": [
+				{
+					"name": "Address",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/address"
+					}
+				},
+				{
+					"name": "Storage slot",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint256"
+					}
+				},
+				{
+					"name": "Block",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
+				}
+			],
+			"result": {
+				"name": "Value",
+				"schema": {
+					"$ref": "#/components/schemas/bytes"
+				}
+			}
+		},
+		{
+			"name": "eth_getTransactionCount",
+			"summary": "Returns the number of transactions sent from an address.",
+			"params": [
+				{
+					"name": "Address",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/address"
+					}
+				},
+				{
+					"name": "Block",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction count",
+				"schema": {
+					"title": "Transaction count",
+					"type": "array",
+					"items": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			}
+		},
+		{
+			"name": "eth_getCode",
+			"summary": "Returns code at a given address.",
+			"params": [
+				{
+					"name": "Address",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/address"
+					}
+				},
+				{
+					"name": "Block",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
+				}
+			],
+			"result": {
+				"name": "Bytecode",
+				"schema": {
+					"$ref": "#/components/schemas/bytes"
+				}
+			}
+		},
+		{
+			"name": "eth_sendTransaction",
+			"summary": "Signs and submits a transaction.",
+			"params": [
+				{
+					"name": "Transaction",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/TransactionWithSender"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction hash",
+				"schema": {
+					"$ref": "#/components/schemas/hash32"
+				}
+			}
+		},
+		{
+			"name": "eth_sendRawTransaction",
+			"summary": "Submits a raw transaction.",
+			"params": [
+				{
+					"name": "Transaction",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/bytes"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction hash",
+				"schema": {
+					"$ref": "#/components/schemas/hash32"
+				}
+			}
+		},
+		{
+			"name": "eth_getTransactionByHash",
+			"summary": "Returns the information about a transaction requested by transaction hash.",
+			"params": [
+				{
+					"name": "Transaction hash",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction information",
+				"schema": {
+					"$ref": "#/components/schemas/TransactionInfo"
+				}
+			}
+		},
+		{
+			"name": "eth_getTransactionByBlockHashAndIndex",
+			"summary": "Returns information about a transaction by block hash and transaction index position.",
+			"params": [
+				{
+					"name": "Block hash",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				},
+				{
+					"name": "Transaction index",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction information",
+				"schema": {
+					"$ref": "#/components/schemas/TransactionInfo"
+				}
+			}
+		},
+		{
+			"name": "eth_getTransactionByBlockNumberAndIndex",
+			"summary": "Returns information about a transaction by block number and transaction index position.",
+			"params": [
+				{
+					"name": "Block number",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				},
+				{
+					"name": "Transaction index",
+					"required": true,
+					"schema": {
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			],
+			"result": {
+				"name": "Transaction information",
+				"schema": {
+					"$ref": "#/components/schemas/TransactionInfo"
+				}
+			}
+		},
+		{
+			"name": "eth_getTransactionReceipt",
+			"summary": "Returns the receipt of a transaction by transaction hash.",
+			"params": [
+				{
+					"name": "Transaction hash",
+					"schema": {
+						"$ref": "#/components/schemas/hash32"
+					}
+				}
+			],
+			"result": {
+				"name": "Receipt Information",
+				"schema": {
+					"$ref": "#/components/schemas/ReceiptInfo"
+				}
+			}
+		}
+	],
+	"components": {
+		"schemas": {
+			"address": {
+				"title": "hex encoded address",
+				"type": "string",
+				"pattern": "^0x[0-9,a-f,A-F]{40}$"
+			},
+			"addresses": {
+				"title": "hex encoded address",
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/address"
+				}
+			},
+			"byte": {
+				"title": "hex encoded byte",
+				"type": "string",
+				"pattern": "^0x([0-9,a-f,A-F]?){1,2}$"
+			},
+			"bytes": {
+				"title": "hex encoded bytes",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]*$"
+			},
+			"bytes8": {
+				"title": "8 hex encoded bytes",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{16}$"
+			},
+			"bytes32": {
+				"title": "32 hex encoded bytes",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{64}$"
+			},
+			"bytes256": {
+				"title": "256 hex encoded bytes",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{512}$"
+			},
+			"bytes65": {
+				"title": "65 hex encoded bytes",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{512}$"
+			},
+			"uint": {
+				"title": "hex encoded unsigned integer",
+				"type": "string",
+				"pattern": "^0x([1-9a-f]+[0-9a-f]*|0)$"
+			},
+			"uint256": {
+				"title": "hex encoded unsigned integer",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{64}$"
+			},
+			"hash32": {
+				"title": "32 byte hex value",
+				"type": "string",
+				"pattern": "^0x[0-9a-f]{64}$"
+			},
+			"Block": {
+				"title": "Block object",
+				"type": "object",
+				"required": [
+					"parentHash",
+					"sha3Uncles",
+					"miner",
+					"stateRoot",
+					"transactionsRoot",
+					"receiptsRoot",
+					"logsBloom",
+					"totalDifficulty",
+					"number",
+					"gasLimit",
+					"gasUsed",
+					"timestamp",
+					"extraData",
+					"mixHash",
+					"nonce",
+					"size",
+					"transactions",
+					"uncles"
+				],
+				"properties": {
+					"parentHash": {
+						"title": "Parent block hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"sha3Uncles": {
+						"title": "Ommers hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"miner": {
+						"title": "Coinbase",
+						"$ref": "#/components/schemas/address"
+					},
+					"stateRoot": {
+						"title": "State root",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"transactionsRoot": {
+						"title": "Transactions root",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"receiptsRoot": {
+						"title": "Receipts root",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"logsBloom": {
+						"title": "Bloom filter",
+						"$ref": "#/components/schemas/bytes256"
+					},
+					"difficulty": {
+						"title": "Difficulty",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"number": {
+						"title": "Number",
+						"$ref": "#/components/schemas/uint"
+					},
+					"gasLimit": {
+						"title": "Gas limit",
+						"$ref": "#/components/schemas/uint"
+					},
+					"gasUsed": {
+						"title": "Gas used",
+						"$ref": "#/components/schemas/uint"
+					},
+					"timestamp": {
+						"title": "Timestamp",
+						"$ref": "#/components/schemas/uint"
+					},
+					"extraData": {
+						"title": "Extra data",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"mixHash": {
+						"title": "Mix hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"nonce": {
+						"title": "Nonce",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"totalDifficulty": {
+						"title": "Total difficult",
+						"$ref": "#/components/schemas/uint"
+					},
+					"baseFeePerGas": {
+						"title": "Base fee per gas",
+						"$ref": "#/components/schemas/uint"
+					},
+					"size": {
+						"title": "Block size",
+						"$ref": "#/components/schemas/uint"
+					},
+					"transactions": {
+						"oneOf": [
+							{
+								"title": "Transaction hashes",
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/hash32"
+								}
+							},
+							{
+								"title": "Full transactions",
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/TransactionSigned"
+								}
+							}
+						]
+					},
+					"uncles": {
+						"title": "Uncles",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/hash32"
+						}
+					}
+				}
+			},
+			"BlockTag": {
+				"title": "Block tag",
+				"type": "string",
+				"enum": [
+					"earliest",
+					"latest",
+					"pending"
+				]
+			},
+			"BlockNumberOrTag": {
+				"title": "Block number or tag",
+				"oneOf": [
+					{
+						"title": "Block number",
+						"$ref": "#/components/schemas/uint"
+					},
+					{
+						"title": "Block tag",
+						"$ref": "#/components/schemas/BlockTag"
+					}
+				]
+			},
+			"SyncingStatus": {
+				"title": "Syncing status",
+				"oneOf": [
+					{
+						"title": "Syncing progress",
+						"type": "object",
+						"properties": {
+							"startingBlock": {
+								"title": "Starting block",
+								"$ref": "#/components/schemas/uint"
+							},
+							"currentBlock": {
+								"title": "Current block",
+								"$ref": "#/components/schemas/uint"
+							},
+							"highestBlock": {
+								"title": "Highest block",
+								"$ref": "#/components/schemas/uint"
+							}
+						}
+					},
+					{
+						"title": "Not syncing",
+						"description": "Should always return false if not syncing.",
+						"type": "boolean"
+					}
+				]
+			},
+			"FilterResults": {
+				"title": "Filter results",
+				"oneOf": [
+					{
+						"title": "new block hashes",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/hash32"
+						}
+					},
+					{
+						"title": "new transaction hashes",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/hash32"
+						}
+					},
+					{
+						"title": "new logs",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Log"
+						}
+					}
+				]
+			},
+			"Filter": {
+				"title": "filter",
+				"type": "object",
+				"properties": {
+					"fromBlock": {
+						"title": "from block",
+						"$ref": "#/components/schemas/uint"
+					},
+					"toBlock": {
+						"title": "to block",
+						"$ref": "#/components/schemas/uint"
+					},
+					"address": {
+						"title": "Address(es)",
+						"oneOf": [
+							{
+								"title": "Address",
+								"$ref": "#/components/schemas/address"
+							},
+							{
+								"title": "Addresses",
+								"$ref": "#/components/schemas/addresses"
+							}
+						]
+					},
+					"topics": {
+						"title": "Topics",
+						"$ref": "#/components/schemas/FilterTopics"
+					}
+				}
+			},
+			"FilterTopics": {
+				"title": "Filter Topics",
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/FilterTopic"
+				}
+			},
+			"FilterTopic": {
+				"title": "Filter Topic List Entry",
+				"oneOf": [
+					{
+						"title": "Any Topic Match",
+						"type": "null"
+					},
+					{
+						"title": "Single Topic Match",
+						"$ref": "#/components/schemas/bytes32"
+					},
+					{
+						"title": "Multiple Topic Match",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/bytes32"
+						}
+					}
+				]
+			},
+			"Log": {
+				"title": "log",
+				"type": "object",
+				"properties": {
+					"removed": {
+						"title": "removed",
+						"type": "boolean"
+					},
+					"logIndex": {
+						"title": "log index",
+						"$ref": "#/components/schemas/uint"
+					},
+					"transactionIndex": {
+						"title": "transaction index",
+						"$ref": "#/components/schemas/uint"
+					},
+					"transactionHash": {
+						"title": "transaction hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"blockHash": {
+						"title": "block hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"blockNumber": {
+						"title": "block number",
+						"$ref": "#/components/schemas/uint"
+					},
+					"address": {
+						"title": "address",
+						"$ref": "#/components/schemas/address"
+					},
+					"data": {
+						"title": "data",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"topics": {
+						"title": "topics",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/bytes32"
+						}
+					}
+				}
+			},
+			"ReceiptInfo": {
+				"type": "object",
+				"title": "Receipt info",
+				"required": [
+					"blockHash",
+					"blockNumber",
+					"from",
+					"cumulativeGasUsed",
+					"gasUsed",
+					"logs",
+					"logsBloom",
+					"transactionHash",
+					"transactionIndex",
+					"effectiveGasPrice"
+				],
+				"properties": {
+					"transactionHash": {
+						"title": "transaction hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"transactionIndex": {
+						"title": "transaction index",
+						"$ref": "#/components/schemas/uint"
+					},
+					"blockHash": {
+						"title": "block hash",
+						"$ref": "#/components/schemas/hash32"
+					},
+					"blockNumber": {
+						"title": "block number",
+						"$ref": "#/components/schemas/uint"
+					},
+					"from": {
+						"title": "from",
+						"$ref": "#/components/schemas/address"
+					},
+					"to": {
+						"title": "to",
+						"description": "Address of the receiver or null in a contract creation transaction.",
+						"$ref": "#/components/schemas/address"
+					},
+					"cumulativeGasUsed": {
+						"title": "cumulative gas used",
+						"description": "The sum of gas used by this transaction and all preceding transactions in the same block.",
+						"$ref": "#/components/schemas/uint"
+					},
+					"gasUsed": {
+						"title": "gas used",
+						"description": "The amount of gas used for this specific transaction alone.",
+						"$ref": "#/components/schemas/uint"
+					},
+					"contractAddress": {
+						"title": "contract address",
+						"description": "The contract address created, if the transaction was a contract creation, otherwise null.",
+						"$ref": "#/components/schemas/address"
+					},
+					"logs": {
+						"title": "logs",
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Log"
+						}
+					},
+					"logsBloom": {
+						"title": "logs bloom",
+						"$ref": "#/components/schemas/bytes256"
+					},
+					"root": {
+						"title": "state root",
+						"description": "The post-transaction state root. Only specified for transactions included before the Byzantium upgrade.",
+						"$ref": "#/components/schemas/bytes32"
+					},
+					"status": {
+						"title": "status",
+						"description": "Either 1 (success) or 0 (failure). Only specified for transactions included after the Byzantium upgrade.",
+						"$ref": "#/components/schemas/uint"
+					},
+					"effectiveGasPrice": {
+						"title": "effective gas price",
+						"description": "The actual value per gas deducted from the senders account. Before EIP-1559, this is equal to the transaction's gas price. After, it is equal to baseFeePerGas + min(maxFeePerGas - baseFeePerGas, maxPriorityFeePerGas).",
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			},
+			"AccessListEntry": {
+				"title": "Access list entry",
+				"type": "object",
+				"properties": {
+					"address": {
+						"$ref": "#/components/schemas/address"
+					},
+					"storageKeys": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/hash32"
+						}
+					}
+				}
+			},
+			"AccessList": {
+				"title": "Access list",
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/AccessListEntry"
+				}
+			},
+			"TransactionWithSender": {
+				"title": "Transaction object with sender",
+				"type": "object",
+				"allOf": [
+					{
+						"required": [
+							"from"
+						],
+						"properties": {
+							"from": {
+								"title": "from",
+								"$ref": "#/components/schemas/address"
+							}
+						}
+					},
+					{
+						"$ref": "#/components/schemas/TransactionUnsigned"
+					}
+				]
+			},
+			"Transaction1559Unsigned": {
+				"type": "object",
+				"title": "EIP-1559 transaction.",
+				"required": [
+					"type",
+					"nonce",
+					"gas",
+					"value",
+					"input",
+					"maxFeePerGas",
+					"maxPriorityFeePerGas",
+					"chainId",
+					"accessList"
+				],
+				"properties": {
+					"type": {
+						"title": "type",
+						"$ref": "#/components/schemas/byte"
+					},
+					"nonce": {
+						"title": "nonce",
+						"$ref": "#/components/schemas/uint"
+					},
+					"to": {
+						"title": "to address",
+						"$ref": "#/components/schemas/address"
+					},
+					"gas": {
+						"title": "gas limit",
+						"$ref": "#/components/schemas/uint"
+					},
+					"value": {
+						"title": "value",
+						"$ref": "#/components/schemas/uint"
+					},
+					"input": {
+						"title": "input data",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"maxPriorityFeePerGas": {
+						"title": "max priority fee per gas",
+						"description": "Maximum fee per gas the sender is willing to pay to miners in wei",
+						"$ref": "#/components/schemas/uint"
+					},
+					"maxFeePerGas": {
+						"title": "max fee per gas",
+						"description": "The maximum total fee per gas the sender is willing to pay (includes the network / base fee and miner / priority fee) in wei",
+						"$ref": "#/components/schemas/uint"
+					},
+					"accessList": {
+						"title": "accessList",
+						"description": "EIP-2930 access list",
+						"$ref": "#/components/schemas/AccessList"
+					},
+					"chainId": {
+						"title": "chainId",
+						"description": "Chain ID that this transaction is valid on.",
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			},
+			"Transaction2930Unsigned": {
+				"type": "object",
+				"title": "EIP-2930 transaction.",
+				"required": [
+					"type",
+					"nonce",
+					"gas",
+					"value",
+					"input",
+					"gasPrice",
+					"chainId",
+					"accessList"
+				],
+				"properties": {
+					"type": {
+						"title": "type",
+						"$ref": "#/components/schemas/byte"
+					},
+					"nonce": {
+						"title": "nonce",
+						"$ref": "#/components/schemas/uint"
+					},
+					"to": {
+						"title": "to address",
+						"$ref": "#/components/schemas/address"
+					},
+					"gas": {
+						"title": "gas limit",
+						"$ref": "#/components/schemas/uint"
+					},
+					"value": {
+						"title": "value",
+						"$ref": "#/components/schemas/uint"
+					},
+					"input": {
+						"title": "input data",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"gasPrice": {
+						"title": "gas price",
+						"description": "The gas price willing to be paid by the sender in wei",
+						"$ref": "#/components/schemas/uint"
+					},
+					"accessList": {
+						"title": "accessList",
+						"description": "EIP-2930 access list",
+						"$ref": "#/components/schemas/AccessList"
+					},
+					"chainId": {
+						"title": "chainId",
+						"description": "Chain ID that this transaction is valid on.",
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			},
+			"TransactionLegacyUnsigned": {
+				"type": "object",
+				"title": "Legacy transaction.",
+				"required": [
+					"type",
+					"nonce",
+					"gas",
+					"value",
+					"input",
+					"gasPrice"
+				],
+				"properties": {
+					"type": {
+						"title": "type",
+						"$ref": "#/components/schemas/byte"
+					},
+					"nonce": {
+						"title": "nonce",
+						"$ref": "#/components/schemas/uint"
+					},
+					"to": {
+						"title": "to address",
+						"$ref": "#/components/schemas/address"
+					},
+					"gas": {
+						"title": "gas limit",
+						"$ref": "#/components/schemas/uint"
+					},
+					"value": {
+						"title": "value",
+						"$ref": "#/components/schemas/uint"
+					},
+					"input": {
+						"title": "input data",
+						"$ref": "#/components/schemas/bytes"
+					},
+					"gasPrice": {
+						"title": "gas price",
+						"description": "The gas price willing to be paid by the sender in wei",
+						"$ref": "#/components/schemas/uint"
+					},
+					"chainId": {
+						"title": "chainId",
+						"description": "Chain ID that this transaction is valid on.",
+						"$ref": "#/components/schemas/uint"
+					}
+				}
+			},
+			"TransactionUnsigned": {
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/Transaction1559Unsigned"
+					},
+					{
+						"$ref": "#/components/schemas/Transaction2930Unsigned"
+					},
+					{
+						"$ref": "#/components/schemas/TransactionLegacyUnsigned"
+					}
+				]
+			},
+			"Transaction1559Signed": {
+				"title": "Signed 1559 Transaction",
+				"type": "object",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/Transaction1559Unsigned"
+					},
+					{
+						"title": "EIP-1559 transaction signature properties.",
+						"required": [
+							"yParity",
+							"r",
+							"s"
+						],
+						"properties": {
+							"yParity": {
+								"title": "yParity",
+								"description": "The parity (0 for even, 1 for odd) of the y-value of the secp256k1 signature.",
+								"$ref": "#/components/schemas/uint"
+							},
+							"r": {
+								"title": "r",
+								"$ref": "#/components/schemas/uint"
+							},
+							"s": {
+								"title": "s",
+								"$ref": "#/components/schemas/uint"
+							}
+						}
+					}
+				]
+			},
+			"Transaction2930Signed": {
+				"title": "Signed 2930 Transaction",
+				"type": "object",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/Transaction2930Unsigned"
+					},
+					{
+						"title": "EIP-2930 transaction signature properties.",
+						"required": [
+							"yParity",
+							"r",
+							"s"
+						],
+						"properties": {
+							"yParity": {
+								"title": "yParity",
+								"description": "The parity (0 for even, 1 for odd) of the y-value of the secp256k1 signature.",
+								"$ref": "#/components/schemas/uint"
+							},
+							"r": {
+								"title": "r",
+								"$ref": "#/components/schemas/uint"
+							},
+							"s": {
+								"title": "s",
+								"$ref": "#/components/schemas/uint"
+							}
+						}
+					}
+				]
+			},
+			"TransactionLegacySigned": {
+				"title": "Signed Legacy Transaction",
+				"type": "object",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/TransactionLegacyUnsigned"
+					},
+					{
+						"title": "Legacy transaction signature properties.",
+						"required": [
+							"v",
+							"r",
+							"s"
+						],
+						"properties": {
+							"v": {
+								"title": "v",
+								"$ref": "#/components/schemas/uint"
+							},
+							"r": {
+								"title": "r",
+								"$ref": "#/components/schemas/uint"
+							},
+							"s": {
+								"title": "s",
+								"$ref": "#/components/schemas/uint"
+							}
+						}
+					}
+				]
+			},
+			"TransactionSigned": {
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/Transaction1559Signed"
+					},
+					{
+						"$ref": "#/components/schemas/Transaction2930Signed"
+					},
+					{
+						"$ref": "#/components/schemas/TransactionLegacySigned"
+					}
+				]
+			},
+			"TransactionInfo": {
+				"type": "object",
+				"title": "Transaction information",
+				"allOf": [
+					{
+						"title": "Contextual information",
+						"required": [
+							"blockHash",
+							"blockNumber",
+							"from",
+							"hash",
+							"transactionIndex"
+						],
+						"properties": {
+							"blockHash": {
+								"title": "block hash",
+								"$ref": "#/components/schemas/hash32"
+							},
+							"blockNumber": {
+								"title": "block number",
+								"$ref": "#/components/schemas/uint"
+							},
+							"from": {
+								"title": "from address",
+								"$ref": "#/components/schemas/address"
+							},
+							"hash": {
+								"title": "transaction hash",
+								"$ref": "#/components/schemas/hash32"
+							},
+							"transactionIndex": {
+								"title": "transaction index",
+								"$ref": "#/components/schemas/uint"
+							}
+						}
+					},
+					{
+						"$ref": "#/components/schemas/TransactionSigned"
+					}
+				]
+			}
+		}
+	}
+}

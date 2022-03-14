@@ -1,5 +1,6 @@
 ﻿namespace Nethereum.RPC
 {
+    public enum UnsupportedApiMethods {eth_signTransaction}
     public enum ApiMethods
     {
         net_listening,
