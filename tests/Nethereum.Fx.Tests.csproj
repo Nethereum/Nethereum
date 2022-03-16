@@ -172,6 +172,10 @@
     <None Update="appsettings.test.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Nethereum.RPC.UnitTests\openrpc.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	    <TargetPath>openrpc.json</TargetPath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
