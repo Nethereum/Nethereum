@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic-CodeGen.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1;net50</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64;portable</RuntimeIdentifiers>
     <PackAsTool>true</PackAsTool>
