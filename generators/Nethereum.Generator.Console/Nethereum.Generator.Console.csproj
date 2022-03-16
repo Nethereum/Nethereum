@@ -2,9 +2,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic-CodeGen.props" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1;net50</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
-    <RuntimeIdentifiers>win-x64;osx-x64;linux-x64;portable</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;osx-x64;linux-x64;</RuntimeIdentifiers>
     <PackAsTool>true</PackAsTool>
     <PackageId>Nethereum.Generator.Console</PackageId>
     <Authors>Juan Blanco,Dave Whiffin,Nethereum contributors</Authors>
