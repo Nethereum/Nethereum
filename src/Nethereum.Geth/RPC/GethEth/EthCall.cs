@@ -229,7 +229,7 @@ namespace Nethereum.Geth.RPC.GethEth
 ///</Summary>
     public class EthCall : RpcRequestResponseHandler<string>, IEthCall
     {
-        public EthCall(IClient client) : base(client,ApiMethods.eth_Call.ToString()) { }
+        public EthCall(IClient client) : base(client,ApiMethods.eth_call.ToString()) { }
 
         public Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null)
         {

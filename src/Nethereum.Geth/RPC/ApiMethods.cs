@@ -43,6 +43,6 @@
         txpool_content,
         txpool_inspect,
         txpool_status,
-        eth_Call
+        eth_call
     }
 }
