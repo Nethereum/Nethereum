@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Generator.Tests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net60</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
