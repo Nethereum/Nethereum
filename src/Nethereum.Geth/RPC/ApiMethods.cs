@@ -3,14 +3,26 @@
     public enum ApiMethods
     {
         admin_addPeer,
+        admin_removePeer,
+        admin_addTrustedPeer,
+        admin_removeTrustedPeer,
+        admin_importChain,
+        admin_exportChain,
+        /*
+        admin_sleepBlocks
+        */
+        admin_startHTTP,
+        admin_stopHTTP,
+        admin_startRPC,
+        admin_stopRPC,
+        admin_startWS,
+        admin_stopWS,
+
         admin_nodeInfo,
         admin_datadir,
         admin_peers,
-        admin_startRPC,
+        
         admin_setSolc,
-        admin_startWS,
-        admin_stopRPC,
-        admin_stopWS,
 
         debug_blockProfile,
         debug_backtraceAt,
@@ -35,7 +47,10 @@
         debug_traceCall,
         debug_verbosity,
         debug_vmodule,
+
         eth_pendingTransactions,
+        eth_call,
+
         miner_hashrate,
         miner_start,
         miner_stop,
@@ -43,6 +58,9 @@
         txpool_content,
         txpool_inspect,
         txpool_status,
-        eth_call
+      
+
+
+        
     }
 }
