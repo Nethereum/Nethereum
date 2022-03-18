@@ -76,6 +76,84 @@ namespace Nethereum.Siwe.Core
         public string Signature { get; set; }
 
 
+        public void SetIssuedAtNow()
+        {
+           SetIssuedAt(DateTime.Now.ToUniversalTime());
+        }
+
+        public void SetIssuedAt(DateTime dateTime)
+        {
+            IssuedAt = GetDateAsIso8602String(dateTime);
+        }
+
+        private static string GetDateAsIso8602String(DateTime dateTime)
+        {
+            return dateTime.ToString("o");
+        }
+
+        public DateTime GetIssuedAtAsDateTime()
+        {
+            if (string.IsNullOrEmpty(IssuedAt))
+            {
+                return GetIso8602AsDateTime(IssuedAt);
+            }
+
+            throw new Exception("IssuedAt Not Set");
+        }
+
+        public DateTime GetNotBeforeAsDateTime()
+        {
+            if (string.IsNullOrEmpty(NotBefore))
+            {
+                return GetIso8602AsDateTime(NotBefore);
+            }
+
+            throw new Exception("NotBefore Not Set");
+        }
+
+        public DateTime GetExpirationTimeAsDateTime()
+        {
+            if (string.IsNullOrEmpty(ExpirationTime))
+            {
+                return GetIso8602AsDateTime(ExpirationTime);
+            }
+
+            throw new Exception("ExpirationTime Not Set");
+        }
+
+        protected DateTime GetIso8602AsDateTime(string iso8601dateTime)
+        {
+            return DateTime.ParseExact(iso8601dateTime, "o",
+                System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public void SetExpirationTime(DateTime utcDateTime)
+        {
+            ExpirationTime = GetDateAsIso8602String(utcDateTime);
+        }
+
+        public void SetNotBefore(DateTime utcDateTime)
+        {
+            NotBefore = GetDateAsIso8602String(utcDateTime);
+        }
+
+        public bool HasMessageDateStarted()
+        {
+            if (string.IsNullOrEmpty(NotBefore)) return true;
+            return DateTime.Now.ToUniversalTime() > GetIso8602AsDateTime(NotBefore);
+        }
+
+        public bool HasMessageDateExpired()
+        {
+            if (string.IsNullOrEmpty(ExpirationTime)) return false;
+            return DateTime.Now.ToUniversalTime() > DateTime.Parse(ExpirationTime);
+        }
+
+        public bool HasMessageDateStartedAndNotExpired()
+        {
+            return HasMessageDateStarted() && !HasMessageDateExpired();
+        }
+
         public bool HasRequiredFields()
         {
             return !string.IsNullOrEmpty(Domain) &&
