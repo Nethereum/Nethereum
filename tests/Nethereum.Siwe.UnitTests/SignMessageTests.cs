@@ -39,6 +39,8 @@ namespace Nethereum.Siwe.UnitTests
             var messageSigner = new EthereumMessageSigner();
             var accountRecovered = messageSigner.EncodeUTF8AndEcRecover(builtMessage, signature);
             Assert.True(accountRecovered.IsTheSameAddress(address));
-        } 
+        }
+
+     
     }
 }

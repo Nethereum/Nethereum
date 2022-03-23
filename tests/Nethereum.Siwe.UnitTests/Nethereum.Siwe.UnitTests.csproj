@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Siwe.Core\Nethereum.Siwe.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Siwe\Nethereum.Siwe.csproj" />
   </ItemGroup>
 
 </Project>

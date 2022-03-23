@@ -53,7 +53,7 @@
     <Compile Remove="Nethereum.GSN\**" />
     <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
     <Compile Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
-    <Compile Remove="Nethereum.Siwe\**" />
+    
     <None Remove="Nethereum.BigInteger.N351\**" />
     <None Remove="Nethereum.ClassDiagrams\**" />
     <None Remove="Nethereum.EVM\**" />
@@ -71,7 +71,6 @@
 
     <Compile Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
 
-    <None Remove="Nethereum.Siwe\**" />
     <None Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
 
     <Compile Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
@@ -151,6 +150,9 @@
 
     <Compile Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
     <None Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
+    <None Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
@@ -182,8 +184,6 @@
     <EmbeddedResource Remove="Nethereum.Signer.Ledger\**" />
 
     <EmbeddedResource Remove="Nethereum.Signer.Trezor\**" />
-
-    <EmbeddedResource Remove="Nethereum.Siwe\**" />
 
     <EmbeddedResource Remove="Nethereum.Unity\**" />
 
