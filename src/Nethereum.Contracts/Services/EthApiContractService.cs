@@ -3,6 +3,10 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
+using Nethereum.Contracts.Standards.ENS;
+using Nethereum.Contracts.Standards.ERC1155;
+using Nethereum.Contracts.Standards.ERC20;
+using Nethereum.Contracts.Standards.ERC721;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
@@ -85,6 +89,31 @@ namespace Nethereum.Contracts.Services
         {
             return new MultiQueryHandler(Client, multiContractAdress, TransactionManager?.Account?.Address,
                 DefaultBlock);
+        }
+
+        public ERC20Service GetERC20Service(string contractAddress)
+        {
+            return new ERC20Service(this, contractAddress);
+        }
+
+        public ERC721Service GetERC721Service(string contractAddress)
+        {
+            return new ERC721Service(this, contractAddress);
+        }
+
+        public ERC1155Service GetERC1155Service(string contractAddress)
+        {
+            return new ERC1155Service(this, contractAddress);
+        }
+
+        public ENSService GetEnsService(string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        {
+            return new ENSService(this, ensRegistryAddress);
+        }
+
+        public EthTLSService GetEnsEthTlsService(string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        {
+            return new EthTLSService(this, ensRegistryAddress);
         }
 
         public IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }

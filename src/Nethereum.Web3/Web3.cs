@@ -77,6 +77,7 @@ namespace Nethereum.Web3
         {
 
             return EthECKey.GetPublicAddress(privateKey);
+            
 
         }
 #endif

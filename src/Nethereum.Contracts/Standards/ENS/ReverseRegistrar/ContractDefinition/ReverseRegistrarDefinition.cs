@@ -1,39 +1,12 @@
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Numerics;
-using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Web3;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Contracts.CQS;
-using Nethereum.Contracts;
-using System.Threading;
 
-namespace Nethereum.ENS.ReverseRegistrar.ContractDefinition
+namespace Nethereum.Contracts.Standards.ENS.ReverseRegistrar.ContractDefinition
 {
 
-    public partial class ReverseRegistrarDeployment : ReverseRegistrarDeploymentBase
-    {
-        public ReverseRegistrarDeployment() : base(ReverseRegistrarDeploymentBase.BYTECODE) { }
-        public ReverseRegistrarDeployment(string byteCode) : base(byteCode) { }
-    }
-
-    public class ReverseRegistrarDeploymentBase : ContractDeploymentMessage
-    {
-        public static string BYTECODE = "0x";
-        public ReverseRegistrarDeploymentBase() : base(BYTECODE) { }
-        public ReverseRegistrarDeploymentBase(string byteCode) : base(byteCode) { }
-        [Parameter("address", "ensAddr", 1)]
-        public virtual string EnsAddr { get; set; }
-        [Parameter("address", "resolverAddr", 2)]
-        public virtual string ResolverAddr { get; set; }
-    }
-
-    public partial class ADDR_REVERSE_NODEFunction : ADDR_REVERSE_NODEFunctionBase { }
+    public partial class AddrReverseNodeFunction : AddrReverseNodeFunctionBase { }
 
     [Function("ADDR_REVERSE_NODE", "bytes32")]
-    public class ADDR_REVERSE_NODEFunctionBase : FunctionMessage
+    public class AddrReverseNodeFunctionBase : FunctionMessage
     {
 
     }
@@ -92,10 +65,10 @@ namespace Nethereum.ENS.ReverseRegistrar.ContractDefinition
         public virtual string Name { get; set; }
     }
 
-    public partial class ADDR_REVERSE_NODEOutputDTO : ADDR_REVERSE_NODEOutputDTOBase { }
+    public partial class AddrReverseNodeOutputDto : AddrReverseNodeOutputDtoBase { }
 
     [FunctionOutput]
-    public class ADDR_REVERSE_NODEOutputDTOBase : IFunctionOutputDTO 
+    public class AddrReverseNodeOutputDtoBase : IFunctionOutputDTO 
     {
         [Parameter("bytes32", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
