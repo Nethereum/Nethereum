@@ -55,7 +55,7 @@ namespace Nethereum.Contracts.CQS
         public byte? TransactionType { get;  set; }
 
         /// <summary>
-        ///   The transaction type, null for legacy, 0x02 for EIP 1559
+        ///   Access list. Introduced in EIP 1559
         /// </summary>
         public List<AccessList> AccessList { get; set; }
     }
