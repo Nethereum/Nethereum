@@ -70,7 +70,8 @@ namespace Nethereum.RLP
             if (BitConverter.IsLittleEndian)
                 bytes = bytes.Reverse().ToArray();
 
-            return TrimZeroBytes(bytes);
+            var trimmed = TrimZeroBytes(bytes);
+            return trimmed.Any() ? trimmed : new byte[1];
         }
 
         public static byte[] TrimZeroBytes(this byte[] bytes)
