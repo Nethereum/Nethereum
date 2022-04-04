@@ -1,4 +1,5 @@
-﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+﻿using System.Linq;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
@@ -69,6 +70,20 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(ownerOfToken.IsTheSameAddress(addressToRegisterOwnership));
             
         }
+
+        //[Fact]
+        public async void ShouldRetriveAllTheMetadataUrls()
+        {
+            //e2e test of using multicall to retrieve all the ipfs metadata urls of a user
+            var web3 = new Web3.Web3("https://optimism-mainnet.infura.io/v3/<<infuraId>>");
+            var erc721Service = web3.Eth.GetERC721Service("0xB8Df6Cc3050cC02F967Db1eE48330bA23276A492"); //optimism
+            var urls = await erc721Service.GetAllTokenUrlsOwnedByOwnerUsingMultiCallAsync(
+                "<<owner>>"); //Pick an owner with some balance
+            Assert.True(urls.Any());
+        }
+
+            
+        
 
     }
 }

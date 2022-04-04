@@ -108,9 +108,9 @@ namespace Nethereum.RPC.Eth.DTOs
         public HexBigInteger Value { get; set; }
 
         /// <summary>
-        ///     data: DATA - (optional) The compiled code of a contract
+        ///     data: DATA - (optional) The compiled code of a contract (note this should be "input" now but changed for backwards compatibility in many forks)
         /// </summary>
-        [DataMember(Name = "input")]
+        [DataMember(Name = "data")]
         public string Data
         {
             get { return _data.EnsureHexPrefix(); }

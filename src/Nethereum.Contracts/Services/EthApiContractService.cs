@@ -1,5 +1,6 @@
 using System;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
@@ -85,7 +86,7 @@ namespace Nethereum.Contracts.Services
         /// </summary>
         /// <param name="multiContractAdress">The contracts address of the deployed contract</param>
         /// <returns></returns>
-        public MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441")
+        public MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = CommonAddresses.MULTICALL_ADDRESS)
         {
             return new MultiQueryHandler(Client, multiContractAdress, TransactionManager?.Account?.Address,
                 DefaultBlock);
@@ -106,12 +107,12 @@ namespace Nethereum.Contracts.Services
             return new ERC1155Service(this, contractAddress);
         }
 
-        public ENSService GetEnsService(string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        public ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)
         {
             return new ENSService(this, ensRegistryAddress);
         }
 
-        public EthTLSService GetEnsEthTlsService(string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        public EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)
         {
             return new EthTLSService(this, ensRegistryAddress);
         }

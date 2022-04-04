@@ -284,7 +284,7 @@ function TestEmpty(Empty empty) public {
                 deploymentReceipt.ContractAddress);
 
             await web3.Eth.GetMultiQueryHandler(deploymentReceiptMulticall.ContractAddress)
-                .MultiCallAsync(call1, call2);
+                .MultiCallV1Async(call1, call2);
 
             Assert.Equal(5, call1.Output.Test1);
             Assert.Equal(5, call2.Output.Test1);

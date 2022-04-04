@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ENS.PublicResolver.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -12,7 +13,7 @@ namespace Nethereum.Contracts.Standards.ENS
         private readonly IEthApiContractService _ethApiContractService;
         public static string REVERSE_NAME_SUFFIX = ".addr.reverse";
 
-        public ENSService(IEthApiContractService ethApiContractService, string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        public ENSService(IEthApiContractService ethApiContractService, string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)
         {
             if (ethApiContractService == null) throw new ArgumentNullException(nameof(ethApiContractService));
             _ethApiContractService = ethApiContractService;
