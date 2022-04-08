@@ -27,6 +27,7 @@ namespace Nethereum.RPC.Eth.DTOs
 
         /// <summary>
         ///     DATA, 32 Bytes - hash of the block where this transaction was in. null when its pending.
+        /// </summary>
        [DataMember(Name = "blockHash")]
         public string BlockHash { get; set; }
 
