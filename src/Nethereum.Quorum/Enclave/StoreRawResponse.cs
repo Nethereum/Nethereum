@@ -2,6 +2,7 @@
 
 namespace Nethereum.Quorum.Enclave
 {
+    [DataContract]
     public class StoreRawResponse
     {
         [DataMember(Name =  "key")]
