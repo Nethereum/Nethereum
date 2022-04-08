@@ -6,6 +6,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.Constants;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.Contracts.QueryHandlers.MultiCall
 {
@@ -119,6 +120,7 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
     /// <param name="multiContractAdress">The address of the deployed multicall contract</param>
     public class MultiQueryHandler
     {
+        public const int DEFAULT_CALLS_PER_REQUEST = 3000;
         public string ContractAddress { get; set; }
         private readonly QueryToDTOHandler<AggregateFunction, AggregateOutputDTO> _multiQueryV1ToDtoHandler;
         private readonly QueryToDTOHandler<Aggregate3Function, Aggregate3OutputDTO> _multiQueryToDtoHandler;
@@ -130,7 +132,6 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
             _multiQueryV1ToDtoHandler =
                 new QueryToDTOHandler<AggregateFunction, AggregateOutputDTO>(client, defaultAddressFrom,
                     defaultBlockParameter);
-            _multiQueryToDtoHandler = new QueryToDTOHandler<Aggregate3Function, Aggregate3OutputDTO>(client, defaultAddressFrom, defaultBlockParameter);
             _multiQueryToDtoHandler = new QueryToDTOHandler<Aggregate3Function, Aggregate3OutputDTO>(client, defaultAddressFrom, defaultBlockParameter);
             _multiQueryToValueDtoHandler = new QueryToDTOHandler<Aggregate3ValueFunction, Aggregate3ValueOutputDTO>(client, defaultAddressFrom, defaultBlockParameter);
         }
@@ -167,32 +168,43 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
         public Task<IMulticallInputOutput[]> MultiCallAsync(
             params IMulticallInputOutput[] multiCalls)
         {
-            return MultiCallAsync(null, multiCalls);
+            return MultiCallAsync(null, DEFAULT_CALLS_PER_REQUEST, multiCalls);
         }
 
-        public async Task<IMulticallInputOutput[]> MultiCallAsync(BlockParameter block,
+        public Task<IMulticallInputOutput[]> MultiCallAsync(int pageSize = DEFAULT_CALLS_PER_REQUEST,
+            params IMulticallInputOutput[] multiCalls)
+        {
+            return MultiCallAsync(null, pageSize, multiCalls);
+        }
+
+        public async Task<IMulticallInputOutput[]> MultiCallAsync(BlockParameter block, int pageSize = DEFAULT_CALLS_PER_REQUEST,
             params IMulticallInputOutput[] multiCalls)
         {
 
             if (multiCalls.Any(x => x.Value > 0))
             {
-                var contractCalls = new List<Call3Value>();
-                foreach (var multiCall in multiCalls)
+                var results = new List<Result>();
+                foreach (var page in multiCalls.Batch(pageSize))
                 {
-                    contractCalls.Add(new Call3Value { CallData = multiCall.GetCallData(), Target = multiCall.Target, AllowFailure = multiCall.AllowFailure, Value = multiCall.Value});
+                    var contractCalls = new List<Call3Value>();
+                    foreach (var multiCall in page)
+                    {
+                        contractCalls.Add(new Call3Value { CallData = multiCall.GetCallData(), Target = multiCall.Target, AllowFailure = multiCall.AllowFailure, Value = multiCall.Value });
+                    }
+
+                    var aggregateFunction = new Aggregate3ValueFunction();
+                    aggregateFunction.Calls = contractCalls;
+                    var returnCalls = await _multiQueryToValueDtoHandler
+                        .QueryAsync(ContractAddress, aggregateFunction, block)
+                        .ConfigureAwait(false);
+                    results.AddRange(returnCalls.ReturnData);
                 }
 
-                var aggregateFunction = new Aggregate3ValueFunction();
-                aggregateFunction.Calls = contractCalls;
-                var returnCalls = await _multiQueryToValueDtoHandler
-                    .QueryAsync(ContractAddress, aggregateFunction, block)
-                    .ConfigureAwait(false);
-
-                for (var i = 0; i < returnCalls.ReturnData.Count; i++)
+                for (var i = 0; i < results.Count; i++)
                 {
-                    if (returnCalls.ReturnData[i].Success)
+                    if (results[i].Success)
                     {
-                        multiCalls[i].Decode(returnCalls.ReturnData[i].ReturnData);
+                        multiCalls[i].Decode(results[i].ReturnData);
                         multiCalls[i].Success = true;
                     }
                     else
@@ -202,26 +214,32 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
                 }
 
                 return multiCalls;
+
             }
             else
             {
-                var contractCalls = new List<Call3>();
-                foreach (var multiCall in multiCalls)
+                var results = new List<Result>();
+                foreach (var page in multiCalls.Batch(pageSize))
                 {
-                    contractCalls.Add(new Call3 { CallData = multiCall.GetCallData(), Target = multiCall.Target, AllowFailure = multiCall.AllowFailure });
+                    var contractCalls = new List<Call3>();
+                    foreach (var multiCall in page)
+                    {
+                        contractCalls.Add(new Call3 { CallData = multiCall.GetCallData(), Target = multiCall.Target, AllowFailure = multiCall.AllowFailure });
+                    }
+
+                    var aggregateFunction = new Aggregate3Function();
+                    aggregateFunction.Calls = contractCalls;
+                    var returnCalls = await _multiQueryToDtoHandler
+                        .QueryAsync(ContractAddress, aggregateFunction, block)
+                        .ConfigureAwait(false);
+                    results.AddRange(returnCalls.ReturnData);
                 }
 
-                var aggregateFunction = new Aggregate3Function();
-                aggregateFunction.Calls = contractCalls;
-                var returnCalls = await _multiQueryToDtoHandler
-                    .QueryAsync(ContractAddress, aggregateFunction, block)
-                    .ConfigureAwait(false);
-
-                for (var i = 0; i < returnCalls.ReturnData.Count; i++)
+                for (var i = 0; i < results.Count; i++)
                 {
-                    if (returnCalls.ReturnData[i].Success)
+                    if (results[i].Success)
                     {
-                        multiCalls[i].Decode(returnCalls.ReturnData[i].ReturnData);
+                        multiCalls[i].Decode(results[i].ReturnData);
                         multiCalls[i].Success = true;
                     }
                     else
@@ -234,6 +252,8 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
             }
             
         }
+
+        
     }
 #endif
 }
