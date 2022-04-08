@@ -1,8 +1,12 @@
 {
   "name": "nethereum-codegen",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "Code generator of Nethereum and Ethereum integration classes and projects ",
   "main": "app.js",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
   "directories": {
     "example": "examples"
   },

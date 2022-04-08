@@ -41,8 +41,12 @@ function buildError(item, contractAbi) {
 }
 function getStructTypeName(item) {
     if (item.internalType !== undefined && item.internalType.startsWith("struct")) {
-        var internalType = item.internalType;
-        var structName = internalType.substring(internalType.lastIndexOf(".") + 1);
+        var length = 'struct '.length;
+        var internalTypeName = item.internalType;
+        var structName = internalTypeName.substring(length);
+        if (structName.indexOf(".") > -1) {
+            structName = structName.substring(structName.lastIndexOf(".") + 1);
+        }
         if (structName.indexOf("[") > 0) {
             structName = structName.substring(0, structName.indexOf("["));
         }
