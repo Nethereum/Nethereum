@@ -12,7 +12,7 @@
     <PackageTags>Nethereum;Ethereum;Blockchain;HdWallet</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-	  <PackageReference Include="NBitcoin" Version="5.0.54" />
+	  <PackageReference Include="NBitcoin" Version="7.0.6" />
   </ItemGroup>
 
   <ItemGroup>

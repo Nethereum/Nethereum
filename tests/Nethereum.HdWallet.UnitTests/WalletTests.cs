@@ -2,6 +2,7 @@ using NBitcoin;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Web3.Accounts;
 using System;
+using System.Diagnostics;
 using Xunit;
 using Nethereum.Util;
 
@@ -237,6 +238,19 @@ namespace Nethereum.HdWallet.UnitTests
             var account = new Account(ethWallet.GetPrivateKey(0));
             account = ethWallet.GetAccount(account.Address);
             Assert.True(account.Address.IsTheSameAddress("0x03dd02C038e15fcFbBdc372c71D595BD241E0898"));
+        }
+
+        [Fact]
+        public void ShouldGenerateMnemonics()
+        {
+            var mnemonic = new NBitcoin.Mnemonic(Wordlist.English, WordCount.Twelve);
+            Debug.WriteLine("The 12 seed words are: " + mnemonic.ToString());
+
+            var password = "password";
+            var wallet = new Wallet(mnemonic.ToString(), password);
+            var account = wallet.GetAccount(0);
+            Assert.NotNull(account);
+            Debug.WriteLine("Address at Index 0 is: " + account.Address + " with private key:" + account.PrivateKey);
         }
     }
 }
