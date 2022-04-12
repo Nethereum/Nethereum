@@ -10,11 +10,11 @@ using System.Threading;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 using Nethereum.Contracts.TransactionHandlers.MultiSend;
 using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer.EIP712;
-using Nethereum.StandardTokenEIP20.ContractDefinition;
 using InfuraNetwork = Nethereum.XUnitEthereumClients.InfuraNetwork;
 
 namespace Nethereum.GnosisSafe.Contracts.Testing
@@ -64,7 +64,7 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
             //legacy
             execTransactionFunction.GasPrice = gasPrice;
-            var tokenService = new StandardTokenEIP20.StandardTokenService(web3, daiAddress);
+            var tokenService = web3.Eth.ERC20.GetERC20ContractService(daiAddress);
             var balanceBefore = await tokenService.BalanceOfQueryAsync(accountRelayerReceiver.Address);
 
 
@@ -115,7 +115,7 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
             //legacy
             execTransactionFunction.GasPrice = gasPrice;
-            var tokenService = new StandardTokenEIP20.StandardTokenService(web3, daiAddress);
+            var tokenService = web3.Eth.ERC20.GetERC20ContractService(daiAddress);
             var balanceBefore = await tokenService.BalanceOfQueryAsync(accountRelayerReceiver.Address);
 
 

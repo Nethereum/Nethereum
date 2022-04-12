@@ -27,6 +27,10 @@
   <ItemGroup>
   
     <Compile Remove="Nethereum.Besu.IntegrationTests\**" />
+  
+    <Compile Remove="Nethereum.ENS.IntegrationTests\**" />
+  
+    <Compile Remove="Nethereum.ENS.UnitTests\**" />
     <Compile Remove="Nethereum.EVM.UnitTests\**" />
     <Compile Remove="Nethereum.Geth.IntegrationTests\**" />
     <Compile Remove="Nethereum.Geth.Tests\**" />
@@ -36,7 +40,10 @@
     <Compile Remove="Nethereum.RPC.IntegrationTests\**" />
     <Compile Remove="Nethereum.RPC.Sample\**" />
     <Compile Remove="Nethereum.Signer.Ledger.IntegrationTests\**" />
+    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\**" />
     <None Remove="Nethereum.Besu.IntegrationTests\**" />
+    <None Remove="Nethereum.ENS.IntegrationTests\**" />
+    <None Remove="Nethereum.ENS.UnitTests\**" />
     
     <None Remove="Nethereum.EVM.UnitTests\**" />
 
@@ -57,6 +64,10 @@
 
     <EmbeddedResource Remove="Nethereum.Besu.IntegrationTests\**" />
 
+    <EmbeddedResource Remove="Nethereum.ENS.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.ENS.UnitTests\**" />
+
     <EmbeddedResource Remove="Nethereum.EVM.UnitTests\**" />
 
     <EmbeddedResource Remove="Nethereum.Geth.IntegrationTests\**" />
@@ -74,26 +85,22 @@
     <EmbeddedResource Remove="Nethereum.RPC.Sample\**" />
 
     <EmbeddedResource Remove="Nethereum.Signer.Ledger.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.StandardTokenEIP20.IntegrationTests\**" />
     
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
-    <Compile Remove="Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
     <Compile Remove="Nethereum.GnosisSafe.IntegrationTests\XUnitConfiguration.cs" />
     <Compile Remove="Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
     <Compile Remove="Nethereum.Siwe.IntegrationTests\EthereumClientIntegrationFixture.cs" />
     
     <Compile Remove="Nethereum.Siwe.IntegrationTests\XUnitConfiguration.cs" />
-    
-    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\EthereumClientIntegrationFixture.cs" />
-  
-    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Nethereum.Accounts.IntegrationTests\XUnitConfiguration.cs" />
-    <None Include="Nethereum.ENS.IntegrationTests\XUnitConfiguration.cs" />
     <None Include="Nethereum.Signer.IntegrationTests\XUnitConfiguration.cs" />
     <None Include="Nethereum.StandardTokenEIP20.IntegrationTests\XUnitConfiguration.cs" />
   </ItemGroup>
@@ -139,13 +146,9 @@
     <Compile Remove="Nethereum.Signer.UnitTests\Properties\**;Nethereum.Signer.UnitTests\bin\**;Nethereum.Signer.UnitTests\obj\**" />
     <None Remove="Nethereum.Signer.UnitTests\Properties\**;Nethereum.Signer.UnitTests\bin\**;Nethereum.Signer.UnitTests\obj\**" />
 
-    <Compile Remove="Nethereum.ENS.IntegrationTests\Properties\**;Nethereum.ENS.IntegrationTests\bin\**;Nethereum.ENS.IntegrationTests\obj\**" />
-    <None Remove="Nethereum.ENS.IntegrationTests\Properties\**;Nethereum.ENS.IntegrationTests\bin\**;Nethereum.ENS.IntegrationTests\obj\**" />
-
-    <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\Properties\**;Nethereum.StandardTokenEIP20.IntegrationTests\bin\**;Nethereum.StandardTokenEIP20.IntegrationTests\obj\**" />
-    <None Remove="Nethereum.StandardTokenEIP20.IntegrationTests\Properties\**;Nethereum.StandardTokenEIP20.IntegrationTests\bin\**;Nethereum.StandardTokenEIP20.IntegrationTests\obj\**" />
-
     <Compile Remove="Nethereum.XUnitEthereumClients\Properties\**;Nethereum.XUnitEthereumClients\bin\**;Nethereum.XUnitEthereumClients\obj\**" />
+
+    <None Remove="Nethereum.StandardTokenEIP20.IntegrationTests\**" />
     <None Remove="Nethereum.XUnitEthereumClients\Properties\**;Nethereum.XUnitEthereumClients\bin\**;Nethereum.XUnitEthereumClients\obj\**" />
 
     <Compile Remove=" Nethereum.RPC.Reactive.UnitTests\Properties\**; Nethereum.RPC.Reactive.UnitTests\bin\**; Nethereum.RPC.Reactive.UnitTests\obj\**" />

@@ -15,7 +15,7 @@ namespace Nethereum.Siwe.UnitTests
             var startDate = DateTime.Now.ToUniversalTime().AddDays(1);
             siweMessage.SetNotBefore(startDate);
             Assert.False(siweMessage.HasMessageDateStarted());
-            startDate = DateTime.Now.ToUniversalTime();
+            startDate = DateTime.Now.ToUniversalTime().AddHours(-1);
             siweMessage.SetNotBefore(startDate);
             Assert.True(siweMessage.HasMessageDateStarted());
 

@@ -1,11 +1,11 @@
 ﻿using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.StandardTokenEIP20.ContractDefinition;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 using Xunit;
 
 namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing

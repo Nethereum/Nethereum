@@ -195,10 +195,10 @@ namespace Nethereum.RPC.UnitTests
             list.Add(new ComplexTypeValidation { Name = "AccessListEntry", Type = typeof(AccessList) });
             list.Add(new ComplexTypeValidation { Name = "AccessList", Type = typeof(List<AccessList>), Ignored = true});
             list.Add(new ComplexTypeValidation { Name = "TransactionWithSender", Type = typeof(TransactionInput), Ignored = true});
-            list.Add(new ComplexTypeValidation { Name = "Transaction1559Unsigned", Type = typeof(TransactionInput) });
-            list.Add(new ComplexTypeValidation { Name = "Transaction2930Unsigned", Type = typeof(TransactionInput) });
-            list.Add(new ComplexTypeValidation { Name = "TransactionLegacyUnsigned", Type = typeof(TransactionInput) });
-            list.Add(new ComplexTypeValidation { Name = "TransactionUnsigned", Type = typeof(TransactionInput), Ignored = true });
+            list.Add(new ComplexTypeValidation { Name = "Transaction1559Unsigned", Type = typeof(TransactionInput), IgnoredProperties = new[] { "input" } });
+            list.Add(new ComplexTypeValidation { Name = "Transaction2930Unsigned", Type = typeof(TransactionInput) , IgnoredProperties = new[] { "input" }});
+            list.Add(new ComplexTypeValidation { Name = "TransactionLegacyUnsigned", Type = typeof(TransactionInput), IgnoredProperties = new[] { "input" } });
+            list.Add(new ComplexTypeValidation { Name = "TransactionUnsigned", Type = typeof(TransactionInput), Ignored = true, IgnoredProperties = new[] { "input" } });
             list.Add(new ComplexTypeValidation { Name = "Transaction1559Signed", Type = typeof(Transaction), IgnoredProperties = new[] { "yParity" } }); //yParity is v
             list.Add(new ComplexTypeValidation { Name = "Transaction2930Signed", Type = typeof(Transaction), IgnoredProperties = new[] { "yParity" }}); //yParity is v
             list.Add(new ComplexTypeValidation { Name = "TransactionLegacySigned", Type = typeof(Transaction) });

@@ -52,18 +52,6 @@
       <Link>Model\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="..\..\src\Nethereum.StandardTokenEIP20\**\*.cs" Exclude="..\..\src\Nethereum.StandardTokenEIP20\Properties\**;..\..\src\Nethereum.StandardTokenEIP20\bin\**;..\..\src\Nethereum.StandardTokenEIP20\obj\**">
-      <Link>EIP20\%(RecursiveDir)%(FileName)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="..\..\src\Nethereum.ENS\**\*.cs" Exclude="..\..\src\Nethereum.ENS\Properties\**;..\..\src\Nethereum.ENS\bin\**;..\..\src\Nethereum.ENS\obj\**">
-      <Link>ENS\%(RecursiveDir)%(FileName)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="..\..\src\Nethereum.StandardNonFungibleTokenERC721\**\*.cs" Exclude="..\..\src\Nethereum.StandardNonFungibleTokenERC721\Properties\**;..\..\src\Nethereum.StandardNonFungibleTokenERC721\bin\**;..\..\src\Nethereum.StandardNonFungibleTokenERC721\obj\**">
-      <Link>ERC721\%(RecursiveDir)%(FileName)%(Extension)</Link>
-    </Compile>
-
     <Compile Include="..\..\src\Nethereum.JsonRpc.Client\**\*.cs" Exclude="..\..\src\Nethereum.JsonRpc.Client\Properties\**;..\..\src\Nethereum.JsonRpc.Client\bin\**;..\..\src\Nethereum.JsonRpc.Client\obj\**">
       <Link>NethereumJsonRpc\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
@@ -92,36 +80,6 @@
 	  <Compile Include="..\..\src\Nethereum.Siwe.Core\**\*.cs" Exclude="..\..\src\Nethereum.Siwe.Core\Properties\**;..\..\src\Nethereum.Siwe.Core\bin\**;..\..\src\Nethereum.Siwe.Core\obj\**">
 		  <Link>Siwe.Core\%(RecursiveDir)%(FileName)%(Extension)</Link>
 	  </Compile>
+
 </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="..\..\src\Nethereum.ENS\BaseRegistrarImplementation\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\Deed\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DefaultReverseResolver\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DNSRegister\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DNSResolver\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\ENSRegistryWithFallback\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\EthRegistrarSubdomainRegistrar\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\FIFSRegistrar\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\Root\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\ShortNameClaims\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\StablePriceOracle\ContractDefinition\**" />
-    <Compile Remove="..\..\src\Nethereum.ENS\TestRegistrar\ContractDefinition\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="..\..\src\Nethereum.ENS\BaseRegistrarImplementationService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DeedService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DefaultReverseResolverService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DNSRegisterService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\DNSResolverService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\ENSRegistryWithFallbackService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\EthRegistrarSubdomainRegistrarService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\FIFSRegistrarService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\ReverseRegistrarService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\RootService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\ShortNameClaimsService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\StablePriceOracleService.cs" />
-    <Compile Remove="..\..\src\Nethereum.ENS\TestRegistrarService.cs" />
-  </ItemGroup>
 </Project>
