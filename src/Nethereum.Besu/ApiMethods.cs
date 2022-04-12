@@ -30,8 +30,8 @@
         perm_reloadPermissionsFromFile,
         perm_removeAccountsFromWhitelist,
         perm_removeNodesFromWhitelist,
-        txpool_BesuStatistics,
-        txpool_BesuTransactions,
+        txpool_besuStatistics,
+        txpool_besuTransactions,
         eea_getTransactionReceipt,
         eea_sendRawTransaction
     }

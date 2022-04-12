@@ -9,7 +9,7 @@ namespace Nethereum.Besu.RPC.Txpool
     /// </Summary>
     public class TxpoolBesuStatistics : GenericRpcRequestResponseHandlerNoParam<JObject>, ITxpoolBesuStatistics
     {
-        public TxpoolBesuStatistics(IClient client) : base(client, ApiMethods.txpool_BesuStatistics.ToString())
+        public TxpoolBesuStatistics(IClient client) : base(client, ApiMethods.txpool_besuStatistics.ToString())
         {
         }
     }

@@ -11,7 +11,7 @@ namespace Nethereum.Besu.RPC.Txpool
         ITxpoolBesuTransactions
     {
         public TxpoolBesuTransactions(IClient client) : base(client,
-            ApiMethods.txpool_BesuTransactions.ToString())
+            ApiMethods.txpool_besuTransactions.ToString())
         {
         }
     }
