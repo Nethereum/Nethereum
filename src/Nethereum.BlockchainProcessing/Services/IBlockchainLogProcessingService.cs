@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Logging;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.BlockchainProcessing.Services.SmartContracts;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.RPC.Eth.DTOs;
@@ -116,5 +119,32 @@ namespace Nethereum.BlockchainProcessing.Services
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
             ILog log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0);
+
+        Task<List<EventLog<TEventDTO>>> GetAllEvents<TEventDTO>(NewFilterInput filterInput,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight) where TEventDTO : class, new();
+
+        Task<List<EventLog<TEventDTO>>> GetAllEventsForContracts<TEventDTO>(string[] contractAddresses,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight) where TEventDTO : class, new();
+
+        Task<List<EventLog<TEventDTO>>> GetAllEventsForContract<TEventDTO>(string contractAddress,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight) where TEventDTO : class, new();
+
+        Task<List<FilterLog>> GetAllEvents(NewFilterInput filterInput,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight);
+
+        Task<List<FilterLog>> GetAllEventsForContracts(string[] contractAddresses,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight);
+
+        Task<List<FilterLog>> GetAllEventsForContract(string contractAddress,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight);
+
+        IERC20LogProcessingService ERC20 { get; }
+        IERC721LogProcessingService ERC721 { get; }
     }
 }

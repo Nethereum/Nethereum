@@ -27,16 +27,16 @@ namespace Nethereum.Contracts.Services
 
         /// <summary>
         /// Creates a multi query handler, to enable execute a single request combining multiple queries to multiple contracts using the multicall contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
-        /// This is deployed at https://etherscan.io/address/0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441#code
+        /// This is deployed at https://etherscan.io/address/0xcA11bde05977b3631167028862bE2a173976CA11#code
         /// </summary>
         /// <param name="multiContractAdress">The address of the deployed multicall contract</param>
         MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = CommonAddresses.MULTICALL_ADDRESS);
 
-        ERC20Service GetERC20Service(string contractAddress);
+        ERC20Service ERC20 { get; }
         IContractTransactionHandler<TContractFunctionMessage> GetContractTransactionHandler<TContractFunctionMessage>() where TContractFunctionMessage : FunctionMessage, new();
         IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }
-        ERC721Service GetERC721Service(string contractAddress);
-        ERC1155Service GetERC1155Service(string contractAddress);
+        ERC721Service ERC721 { get; }
+        ERC1155Service ERC1155 { get; }
         ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
         EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
 #endif

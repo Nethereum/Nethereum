@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Nethereum.Contracts.Standards.ERC20
+namespace Nethereum.Contracts.Standards.ERC20.TokenList
 {
     public class Root
     {

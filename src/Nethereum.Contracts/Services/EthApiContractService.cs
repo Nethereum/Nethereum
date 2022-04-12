@@ -21,7 +21,10 @@ namespace Nethereum.Contracts.Services
         {
 #if !DOTNET35
             GetContractTransactionErrorReason = new EthGetContractTransactionErrorReason(Transactions);
-#endif            
+            ERC721 = new ERC721Service(this);
+            ERC20 = new ERC20Service(this);
+            ERC1155 = new ERC1155Service(this);
+#endif
         }
 
         public EthApiContractService(IClient client, ITransactionManager transactionManager) : base(client,
@@ -92,20 +95,11 @@ namespace Nethereum.Contracts.Services
                 DefaultBlock);
         }
 
-        public ERC20Service GetERC20Service(string contractAddress)
-        {
-            return new ERC20Service(this, contractAddress);
-        }
+        public ERC20Service ERC20 { get; private set; }
 
-        public ERC721Service GetERC721Service(string contractAddress)
-        {
-            return new ERC721Service(this, contractAddress);
-        }
+        public ERC721Service ERC721 { get; private set; }
 
-        public ERC1155Service GetERC1155Service(string contractAddress)
-        {
-            return new ERC1155Service(this, contractAddress);
-        }
+        public ERC1155Service ERC1155 { get; private set; }
 
         public ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)
         {

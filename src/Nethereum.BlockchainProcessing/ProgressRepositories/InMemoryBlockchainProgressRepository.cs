@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace Nethereum.BlockchainProcessing.ProgressRepositories
@@ -22,6 +23,7 @@ namespace Nethereum.BlockchainProcessing.ProgressRepositories
         public virtual Task UpsertProgressAsync(BigInteger blockNumber)
         {
             LastBlockProcessed = blockNumber;
+            //Debug.WriteLine(blockNumber.ToString());
             return Task.FromResult(0);
         }
     }

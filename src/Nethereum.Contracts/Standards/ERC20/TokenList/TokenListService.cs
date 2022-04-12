@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
-#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-#endif
-using Newtonsoft.Json;
 
-namespace Nethereum.Contracts.Standards.ERC20
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
+using System.Net.Http;
+#endif
+
+namespace Nethereum.Contracts.Standards.ERC20.TokenList
 {
     /// <summary>
     /// Helper service to get tokens from https://tokenlists.org/

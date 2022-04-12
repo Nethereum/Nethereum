@@ -1,4 +1,4 @@
-﻿namespace Nethereum.Contracts.Standards.ERC20
+﻿namespace Nethereum.Contracts.Standards.ERC20.TokenList
 {
     public class Token
     {
