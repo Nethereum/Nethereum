@@ -6,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include = "Nethereum.Web3" Version="4.1.0" />
+        <PackageReference Include = "Nethereum.Web3" Version="4.*" />
     </ItemGroup>
     
 </Project>

@@ -1,6 +1,6 @@
 {
   "name": "nethereum-codegen",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Code generator of Nethereum and Ethereum integration classes and projects ",
   "main": "app.js",
   "scripts": {

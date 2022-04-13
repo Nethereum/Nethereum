@@ -502,7 +502,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "4.1.0";
+        this.NethereumWeb3Version = "4.*";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
@@ -2273,10 +2273,14 @@ $d.define(Nethereum.Generators.Core.Utils, null, function($t, $p) {
     };
     $p.LowerCaseFirstCharAndRemoveUnderscorePrefix = function Utils_LowerCaseFirstCharAndRemoveUnderscorePrefix(value) {
         value = this.RemoveUnderscorePrefix(value);
+        value = this.ConvertIfAllCapitalsToLower(value);
+        value = this.UnderscoreToCamelCase(value);
         return this.LowerCaseFirstChar(value);
     };
     $p.CapitaliseFirstCharAndRemoveUnderscorePrefix = function Utils_CapitaliseFirstCharAndRemoveUnderscorePrefix(value) {
         value = this.RemoveUnderscorePrefix(value);
+        value = this.ConvertIfAllCapitalsToLower(value);
+        value = this.UnderscoreToCamelCase(value);
         return this.CapitaliseFirstChar(value);
     };
     $p.LowerCaseFirstChar = function Utils_LowerCaseFirstChar(value) {
@@ -2285,10 +2289,50 @@ $d.define(Nethereum.Generators.Core.Utils, null, function($t, $p) {
     $p.CapitaliseFirstChar = function Utils_CapitaliseFirstChar(value) {
         return value.Substring$1(0, 1).toUpperCase() + value.Substring(1);
     };
+    $p.ConvertIfAllCapitalsToLower = function Utils_ConvertIfAllCapitalsToLower(value) {
+        if (this.IsAllUpper(value)) {
+            return value.toLowerCase();
+        }
+
+        return value;
+    };
     $p.GetBooleanAsString = function Utils_GetBooleanAsString(value) {
         if (value)
             return "true";
         return "false";
+    };
+    $p.IsAllUpper = function Utils_IsAllUpper(input) {
+        for (var i = 0; i < input.length; i++) {
+            if (System.Char.IsLetter(input.get_Chars(i)) && !System.Char.IsUpper(input.get_Chars(i)))
+                return false;
+        }
+        return true;
+    };
+    $p.UnderscoreToCamelCase = function Utils_UnderscoreToCamelCase(name) {
+        if (String.IsNullOrEmpty(name) || !name.Contains("_")) {
+            return name;
+        }
+        var array = name.Split($d.array(System.Char, [95 /*'_'*/]));
+        for (var i = 0; i < array.length; i++) {
+            var s = array[i];
+            var first = String.Empty;
+            var rest = String.Empty;
+            if (s.length > 0) {
+                first = String.fromCharCode(s.get_Chars(0)).toUpperCase();
+            }
+            if (s.length > 1) {
+                rest = s.Substring(1).toLowerCase();
+            }
+            array[i] = first + rest;
+        }
+        var newName = String.Join("", array);
+        if (newName.length > 0) {
+            newName = String.fromCharCode(newName.get_Chars(0)).toUpperCase() + newName.Substring(1);
+        }
+        else {
+            newName = name;
+        }
+        return newName;
     };
 });
 $d.define(Nethereum.Generators.CQS.VbClassFileTemplate, Nethereum.Generators.CQS.ClassFileTemplate, function($t, $p) {
