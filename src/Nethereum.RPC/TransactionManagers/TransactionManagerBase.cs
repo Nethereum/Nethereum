@@ -38,7 +38,7 @@ namespace Nethereum.RPC.TransactionManagers
             get
             {
                 if (_fee1559SuggestionStrategy == null)
-                    _fee1559SuggestionStrategy = new SimpleFeeSuggestionStrategy(Client);
+                    _fee1559SuggestionStrategy = new TimePreferenceFeeSuggestionStrategy(Client);
                 return _fee1559SuggestionStrategy;
             }
             set => _fee1559SuggestionStrategy = value;

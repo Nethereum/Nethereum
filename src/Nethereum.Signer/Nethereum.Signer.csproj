@@ -17,9 +17,6 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
-	  <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,1.9)" />
-  </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
