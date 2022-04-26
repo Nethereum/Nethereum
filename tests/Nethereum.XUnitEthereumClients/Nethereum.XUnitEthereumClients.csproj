@@ -3,6 +3,7 @@
     <TargetFrameworks>netstandard2.1;netcoreapp2.1;netcoreapp3.1;net461;net5.0;</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+  <ProjectReference Include="..\..\src\Nethereum.JsonRpc.IpcClient\Nethereum.JsonRpc.IpcClient.csproj" />
   <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
   <ProjectReference Include="..\..\src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
 

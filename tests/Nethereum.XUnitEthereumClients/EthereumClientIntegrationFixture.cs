@@ -128,6 +128,7 @@ namespace Nethereum.XUnitEthereumClients
 
         public IClient GetClient()
         {
+            //return new  Nethereum.JsonRpc.IpcClient.IpcClient("geth.ipc");
             if (ClientType == ClientType.HTTP)
             {
                 return new RpcClient(new Uri(GetHttpUrl()));
