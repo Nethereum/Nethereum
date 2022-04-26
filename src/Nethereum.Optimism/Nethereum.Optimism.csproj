@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>Nethereum.Optimism L2 Ethereum Smart contract Services to interact with Optimism L1 and L2 smart contracts</Description>
+		<AssemblyTitle>Nethereum.Optimism</AssemblyTitle>
+		<VersionPrefix>$(NethereumVersion)</VersionPrefix>
+		<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+		<AssemblyName>Nethereum.Optimism</AssemblyName>
+		<PackageId>Nethereum.Optimism</PackageId>
+		<PackageTags>Netherum;Ethereum;Optimism;L2;Blockchain;Crypto 2.0</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>
