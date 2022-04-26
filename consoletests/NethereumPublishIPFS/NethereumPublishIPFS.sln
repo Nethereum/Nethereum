@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32210.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NethereumPublishIPFS", "NethereumPublishIPFS\NethereumPublishIPFS.csproj", "{8300CDFD-80EC-41B6-976C-4F6779F4427A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8300CDFD-80EC-41B6-976C-4F6779F4427A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8300CDFD-80EC-41B6-976C-4F6779F4427A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8300CDFD-80EC-41B6-976C-4F6779F4427A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8300CDFD-80EC-41B6-976C-4F6779F4427A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3451E424-A750-4B4B-BB71-7C433523203B}
+	EndGlobalSection
+EndGlobal
