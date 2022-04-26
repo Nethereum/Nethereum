@@ -23,10 +23,6 @@ cd Nethereum.Web3
 CALL :build
 cd ..
 
-cd Nethereum.StandardToken*
-CALL :build
-cd ..
-
 cd Nethereum.JsonRpc.IpcClient*
 CALL :build
 cd ..
@@ -39,15 +35,15 @@ cd Nethereum.JsonRpc.RpcClient*
 CALL :build
 cd ..
 
-cd Nethereum.KeyStore*
+cd Nethereum.KeyStore
 CALL :build
 cd ..
 
-cd Nethereum.Quorum*
+cd Nethereum.Geth
 CALL :build
 cd ..
 
-cd Nethereum.Geth*
+cd Nethereum.Quorum
 CALL :build
 cd ..
 
@@ -79,14 +75,6 @@ cd Nethereum.Accounts*
 CALL :build
 cd ..
 
-cd Nethereum.Unity*
-CALL :build
-cd ..
-
-cd Nethereum.RPC.Reactive
-CALL :build
-cd ..
-
 cd Nethereum.Besu
 CALL :build
 cd ..
@@ -114,8 +102,8 @@ cd..
 EXIT /B %ERRORLEVEL%
 
 :build
-rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
-rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
-dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
-xcopy bin\Release\netstandard2.0\*.dll "..\compiledlibraries\netStandardAOT" /s /y
+rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
+rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
+dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
+xcopy bin\Release\netstandard2.0\*.dll "..\compiledlibraries\netStandard" /s /y
 EXIT /B 0
