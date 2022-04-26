@@ -79,7 +79,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<EIP20Deployment>();
             var receipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentContract);
-            var tokenService = web3.Eth.ERC20.GetERC20ContractService(receipt.ContractAddress);
+            var tokenService = web3.Eth.ERC20.GetContractService(receipt.ContractAddress);
             
             var transfersEvent = tokenService.GetTransferEvent();
 

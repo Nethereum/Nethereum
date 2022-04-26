@@ -64,7 +64,7 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
             //legacy
             execTransactionFunction.GasPrice = gasPrice;
-            var tokenService = web3.Eth.ERC20.GetERC20ContractService(daiAddress);
+            var tokenService = web3.Eth.ERC20.GetContractService(daiAddress);
             var balanceBefore = await tokenService.BalanceOfQueryAsync(accountRelayerReceiver.Address);
 
 
@@ -115,7 +115,7 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
             //legacy
             execTransactionFunction.GasPrice = gasPrice;
-            var tokenService = web3.Eth.ERC20.GetERC20ContractService(daiAddress);
+            var tokenService = web3.Eth.ERC20.GetContractService(daiAddress);
             var balanceBefore = await tokenService.BalanceOfQueryAsync(accountRelayerReceiver.Address);
 
 

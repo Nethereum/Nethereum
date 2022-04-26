@@ -46,7 +46,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<MyERC1155Deployment>().SendRequestAndWaitForReceiptAsync(ercERC1155Deployment);
 
             //creating a new service with the new contract address
-            var erc1155Service = web3.Eth.ERC1155.GetERC1155ContractService(deploymentReceipt.ContractAddress);
+            var erc1155Service = web3.Eth.ERC1155.GetContractService(deploymentReceipt.ContractAddress);
             var id = 123456789;
             var url = "ipfs://bafkreiblz4ltiepapdhqhjiurmfpov7extmxwcntqskvx2zqisoftlmk7a";
             var amount = 100;

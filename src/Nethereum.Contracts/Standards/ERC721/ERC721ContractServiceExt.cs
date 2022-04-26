@@ -64,7 +64,7 @@ namespace Nethereum.Contracts.Standards.ERC721
             for (int i = 0; i < tokenIds.Length; i++)
             {
                 var tokenUriFunction = new TokenURIFunction()
-                { TokenId = tokenIds[0] };
+                { TokenId = tokenIds[i] };
                 calls.Add(new MulticallInputOutput<TokenURIFunction, TokenURIOutputDTO>(tokenUriFunction,
                     ContractAddress));
             }

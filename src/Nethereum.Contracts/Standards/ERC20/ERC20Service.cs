@@ -21,7 +21,7 @@ namespace Nethereum.Contracts.Standards.ERC20
             _ethApiContractService = ethApiContractService;
         }
 
-        public ERC20ContractService GetERC20ContractService(string contractAddress)
+        public ERC20ContractService GetContractService(string contractAddress)
         {
             return new ERC20ContractService(_ethApiContractService, contractAddress);
         }

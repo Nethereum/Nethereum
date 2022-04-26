@@ -38,7 +38,7 @@ namespace Nethereum.HdWallet.IntegrationTests
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode,
                 account.Address, new HexBigInteger(3000000), null, totalSupply);
 
-            var standarErc20Service = web3.Eth.ERC20.GetERC20ContractService(receipt.ContractAddress);
+            var standarErc20Service = web3.Eth.ERC20.GetContractService(receipt.ContractAddress);
 
             var pollingService = new TransactionReceiptPollingService(web3.TransactionManager);
 

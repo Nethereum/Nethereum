@@ -11,7 +11,7 @@ namespace Nethereum.Contracts.Standards.ERC1155
             _ethApiContractService = ethApiContractService;
         }
 
-        public ERC1155ContractService GetERC1155ContractService(string contractAddress)
+        public ERC1155ContractService GetContractService(string contractAddress)
         {
             return new ERC1155ContractService(_ethApiContractService, contractAddress);
         }
