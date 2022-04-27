@@ -147,6 +147,10 @@ cd Nethereum.Siwe
 CALL :restorepack
 cd ..
 
+cd Nethereum.Optimism
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages

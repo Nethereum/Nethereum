@@ -5,12 +5,7 @@ SET targetNet35=false
 SET projectName=
 
 
-
-cd Nethereum.GnosisSafe
-CALL :restorepack
-cd ..
-
-cd Nethereum.Siwe.Core
+cd Nethereum.Optimism
 CALL :restorepack
 cd ..
 

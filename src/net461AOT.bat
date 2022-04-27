@@ -107,6 +107,10 @@ cd Nethereum.BlockchainProcessing
 CALL :build
 cd..
 
+cd Nethereum.Optimism
+CALL :build
+cd ..
+
 EXIT /B %ERRORLEVEL%
 
 :build
