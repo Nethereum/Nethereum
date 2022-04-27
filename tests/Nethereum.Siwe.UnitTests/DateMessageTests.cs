@@ -12,23 +12,23 @@ namespace Nethereum.Siwe.UnitTests
         {
             var siweMessage = new SiweMessage();
 
-            var startDate = DateTime.Now.ToUniversalTime().AddDays(1);
+            var startDate = DateTime.Now.AddDays(1);
             siweMessage.SetNotBefore(startDate);
             Assert.False(siweMessage.HasMessageDateStarted());
-            startDate = DateTime.Now.ToUniversalTime().AddHours(-1);
+            startDate = DateTime.Now.AddHours(-1);
             siweMessage.SetNotBefore(startDate);
             Assert.True(siweMessage.HasMessageDateStarted());
 
-            var expiryDate = DateTime.Now.ToUniversalTime().AddDays(1);
+            var expiryDate = DateTime.Now.AddDays(1);
             siweMessage.SetExpirationTime(expiryDate);
             Assert.False(siweMessage.HasMessageDateExpired());
 
-            expiryDate = DateTime.Now.ToUniversalTime();
+            expiryDate = DateTime.Now.AddMinutes(-2);
             siweMessage.SetExpirationTime(expiryDate);
             Assert.True(siweMessage.HasMessageDateExpired());
 
-            siweMessage.SetExpirationTime(DateTime.Now.ToUniversalTime().AddDays(1));
-            siweMessage.SetNotBefore(DateTime.Now.ToUniversalTime().AddDays(-1));
+            siweMessage.SetExpirationTime(DateTime.Now.AddDays(1));
+            siweMessage.SetNotBefore(DateTime.Now);
             Assert.True(siweMessage.HasMessageDateStartedAndNotExpired());
         }
     }

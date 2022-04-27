@@ -78,7 +78,7 @@ namespace Nethereum.Siwe.Core
 
         public void SetIssuedAtNow()
         {
-           SetIssuedAt(DateTime.Now.ToUniversalTime());
+           SetIssuedAt(DateTime.Now);
         }
 
         public void SetIssuedAt(DateTime dateTime)
@@ -88,7 +88,7 @@ namespace Nethereum.Siwe.Core
 
         private static string GetDateAsIso8602String(DateTime dateTime)
         {
-            return dateTime.ToString("o");
+            return dateTime.ToUniversalTime().ToString("o");
         }
 
         public DateTime GetIssuedAtAsDateTime()
@@ -124,7 +124,7 @@ namespace Nethereum.Siwe.Core
         protected DateTime GetIso8602AsDateTime(string iso8601dateTime)
         {
             return DateTime.ParseExact(iso8601dateTime, "o",
-                System.Globalization.CultureInfo.InvariantCulture);
+                System.Globalization.CultureInfo.InvariantCulture).ToUniversalTime();
         }
 
         public void SetExpirationTime(DateTime utcDateTime)
@@ -146,7 +146,7 @@ namespace Nethereum.Siwe.Core
         public bool HasMessageDateExpired()
         {
             if (string.IsNullOrEmpty(ExpirationTime)) return false;
-            return DateTime.Now.ToUniversalTime() > DateTime.Parse(ExpirationTime);
+            return DateTime.Now.ToUniversalTime() > GetIso8602AsDateTime(ExpirationTime);
         }
 
         public bool HasMessageDateStartedAndNotExpired()
