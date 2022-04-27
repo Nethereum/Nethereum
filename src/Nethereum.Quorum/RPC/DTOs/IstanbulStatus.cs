@@ -1,21 +1,21 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
     public class IstanbulStatus
     {
         /// <summary>
         /// Number of blocks for which sealer activity is retrieved
         /// </summary>
-        [DataMember(Name = "numBlocks")]
+        [JsonProperty(PropertyName = "numBlocks")]
         public long NumberOfBlocks { get; set; }
 
         /// <summary>
         ///map of strings to numbers - key is the validator and value is the number of blocks sealed by the validator
         /// </summary>
-        [DataMember(Name = "sealerActivity")]
+        [JsonProperty(PropertyName = "sealerActivity")]
         public JObject SealerActivity { get; set; }
     }
 }

@@ -1,8 +1,8 @@
 ﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
     public class PrivateRawTransaction
     {
         public PrivateRawTransaction()
@@ -14,7 +14,7 @@ namespace Nethereum.Quorum.RPC.DTOs
             PrivateFor = privateFor;
         }
 
-        [DataMember(Name =  "privateFor")]
+        [JsonProperty(PropertyName =  "privateFor")]
         public string[] PrivateFor { get; set; }
     }
 }

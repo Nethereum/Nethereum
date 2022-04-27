@@ -1,17 +1,18 @@
 ﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Block including transaction objects
     /// </summary>
-    [DataContract]
+
     public class BlockWithTransactions : Block
     {
         /// <summary>
         ///     Array - Array of transaction objects
         /// </summary>
-        [DataMember(Name = "transactions")]
+        [JsonProperty(PropertyName = "transactions")]
         public Transaction[] Transactions { get; set; }
     }
 }

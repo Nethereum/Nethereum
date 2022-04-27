@@ -1,11 +1,11 @@
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Object - The transaction object
     /// </summary>
-    [DataContract]
     public class NewFilterInput
     {
         public NewFilterInput()
@@ -18,21 +18,21 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     QUANTITY|TAG - (optional, default: "latest") Integer block number, or "latest" for the last mined block or
         ///     "pending", "earliest" for not yet mined transactions.
         /// </summary>
-        [DataMember(Name = "fromBlock")]
+        [JsonProperty(PropertyName = "fromBlock")]
         public BlockParameter FromBlock { get; set; }
 
         /// <summary>
         ///     QUANTITY|TAG - (optional, default: "latest") Integer block number, or "latest" for the last mined block or
         ///     "pending", "earliest" for not yet mined transactions.
         /// </summary>
-        [DataMember(Name = "toBlock")]
+        [JsonProperty(PropertyName = "toBlock")]
         public BlockParameter ToBlock { get; set; }
 
         /// <summary>
         ///     address: DATA|Array, 20 Bytes - (optional) Contract address or a list of addresses from which logs should
         ///     originate.
         /// </summary>
-        [DataMember(Name = "address")]
+        [JsonProperty(PropertyName = "address")]
         public string[] Address { get; set; }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     be an array of DATA with "or" options.
         /// </summary>
         /// <see cref="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI#events" />
-        [DataMember(Name = "topics")]
+        [JsonProperty(PropertyName = "topics")]
         public object[] Topics { get; set; }
     }
 }

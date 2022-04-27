@@ -1,9 +1,10 @@
 ﻿using System.Runtime.Serialization;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
+
     public class PrivateTransactionInput : TransactionInput
     {
         public PrivateTransactionInput()
@@ -30,16 +31,16 @@ namespace Nethereum.Quorum.RPC.DTOs
             Value = transaction.Value;
         }
 
-        [DataMember(Name =  "privateFrom")]
+        [JsonProperty(PropertyName =  "privateFrom")]
         public string PrivateFrom { get; set; }
 
-        [DataMember(Name =  "privateFor")]
+        [JsonProperty(PropertyName =  "privateFor")]
         public string[] PrivateFor { get; set; }
 
-        [DataMember(Name = "privacyFlag")]
+        [JsonProperty(PropertyName = "privacyFlag")]
         public int PrivacyFlag { get; set; }
 
-        [DataMember(Name = "mandatoryFor")]
+        [JsonProperty(PropertyName = "mandatoryFor")]
         public string[] MandatoryFor { get; set; }
     }
 

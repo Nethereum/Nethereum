@@ -1,50 +1,51 @@
 ﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
+
     public class PermissionOrganisation
     {
         /// <summary>
         /// Complete organization ID including all the parent organization IDs separated by.
         /// </summary>
-        [DataMember(Name = "fullOrgId")]
+        [JsonProperty(PropertyName = "fullOrgId")]
         public string FullOrgId  { get; set; }
 
         /// <summary>
         ///level of the organization in the organization hierarchy
         /// </summary>
-        [DataMember(Name = "level")]
+        [JsonProperty(PropertyName = "level")]
         public int Level { get; set; }
 
         /// <summary>
         ///Organization ID
         /// </summary>
-        [DataMember(Name = "orgId")]
+        [JsonProperty(PropertyName = "orgId")]
         public string OrgId { get; set; }
 
         /// <summary>
         ///immediate parent organization ID
         /// </summary>
-        [DataMember(Name = "parentOrgId")]
+        [JsonProperty(PropertyName = "parentOrgId")]
         public string ParentOrgId { get; set; }
 
         /// <summary>
         ///master organization under which the organization falls
         /// </summary>
-        [DataMember(Name = "ultimateParent")]
+        [JsonProperty(PropertyName = "ultimateParent")]
         public string UltimateParent { get; set; }
 
         /// <summary>
         ///list of sub-organizations linked to the organization
         /// </summary>
-        [DataMember(Name = "subOrgList")]
+        [JsonProperty(PropertyName = "subOrgList")]
         public string[] SubOrgList { get; set; }
 
         /// <summary>
         ///organization status
         /// </summary>
-        [DataMember(Name = "status")]
+        [JsonProperty(PropertyName = "status")]
         public int Status { get; set; }
     }
 

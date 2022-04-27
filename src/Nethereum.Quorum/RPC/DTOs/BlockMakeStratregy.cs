@@ -1,21 +1,22 @@
 ﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
+
     public class BlockMakeStratregy
 
     {
-        [DataMember(Name =  "maxblocktime")]
+        [JsonProperty(PropertyName =  "maxblocktime")]
         public int MaxBlockTime { get; set; }
 
-        [DataMember(Name =  "minblocktime")]
+        [JsonProperty(PropertyName =  "minblocktime")]
         public int MinBlockTime { get; set; }
 
-        [DataMember(Name =  "status")]
+        [JsonProperty(PropertyName =  "status")]
         public string Status { get; set; }
 
-        [DataMember(Name =  "type")]
+        [JsonProperty(PropertyName =  "type")]
         public string Type { get; set; }
     }
 }

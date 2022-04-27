@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -74,7 +75,7 @@ namespace Nethereum.RPC.UnitTests
                     {
                         if (!complexTypeValidation.Ignored)
                         {
-                            var dataMembers = GetPropertiesWithDataMemmberAttribute(complexTypeValidation.Type);
+                            var dataMembers = GetPropertiesWithJsonPropertyAttribute(complexTypeValidation.Type);
 
                             if (schemas[schemaName]["properties"] is JObject properties)
                             {
@@ -110,7 +111,7 @@ namespace Nethereum.RPC.UnitTests
                 {
                     var propertyObject = properties[property.Name].Value<JObject>();
                     var dataMember = dataMembers.FirstOrDefault(x =>
-                        x.GetCustomAttribute<DataMemberAttribute>().Name == property.Name);
+                        x.GetCustomAttribute<JsonPropertyAttribute>().PropertyName == property.Name);
 
                     if (dataMember == null)
                     {
@@ -163,9 +164,9 @@ namespace Nethereum.RPC.UnitTests
             }
         }
 
-        public static IEnumerable<PropertyInfo> GetPropertiesWithDataMemmberAttribute(Type type)
+        public static IEnumerable<PropertyInfo> GetPropertiesWithJsonPropertyAttribute(Type type)
         {
-            return GetProperties(type).Where(x => x.IsDefined(typeof(DataMemberAttribute), true));
+            return GetProperties(type).Where(x => x.IsDefined(typeof(JsonPropertyAttribute), true));
         }
 
 

@@ -1,46 +1,46 @@
 ﻿using System.Runtime.Serialization;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 
 namespace Nethereum.Parity.RPC.Trace.TraceDTOs
 {
-    [DataContract]
     public class TraceFilterDTO
     {
         /// <summary>
         ///     From this block
         /// </summary>
-        [DataMember(Name =  "fromBlock")]
+        [JsonProperty(PropertyName =  "fromBlock")]
         public BlockParameter FromBlock { get; set; }
 
         /// <summary>
         ///     To this block
         /// </summary>
-        [DataMember(Name =  "toBlock")]
+        [JsonProperty(PropertyName =  "toBlock")]
         public BlockParameter ToBlock { get; set; }
 
         /// <summary>
         ///     From address
         /// </summary>
-        [DataMember(Name =  "fromAddress")]
+        [JsonProperty(PropertyName =  "fromAddress")]
         public string[] FromAddresses { get; set; }
 
         /// <summary>
         ///     Count
         /// </summary>
-        [DataMember(Name =  "count")]
+        [JsonProperty(PropertyName =  "count")]
         public int Count { get; set; }
 
 
         /// <summary>
         ///    After (optional) The offset trace number
         /// </summary>
-        [DataMember(Name =  "after")]
+        [JsonProperty(PropertyName =  "after")]
         public int After { get; set; }
 
         /// <summary>
         ///     To address
         /// </summary>
-        [DataMember(Name =  "toAddress")]
+        [JsonProperty(PropertyName =  "toAddress")]
         public string[] ToAddress { get; set; }
     }
 }

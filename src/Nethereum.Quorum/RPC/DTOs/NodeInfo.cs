@@ -1,23 +1,23 @@
 ﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.Quorum.RPC.DTOs
 {
-    [DataContract]
     public class NodeInfo
     {
-        [DataMember(Name =  "blockMakerAccount")]
+        [JsonProperty(PropertyName =  "blockMakerAccount")]
         public string BlockMakerAccount { get; set; }
 
-        [DataMember(Name =  "voteAccount")]
+        [JsonProperty(PropertyName =  "voteAccount")]
         public string VoteAccount { get; set; }
 
-        [DataMember(Name =  "blockmakestrategy")]
+        [JsonProperty(PropertyName =  "blockmakestrategy")]
         public BlockMakeStratregy BlockMakeStratregy { get; set; }
 
-        [DataMember(Name =  "canCreateBlocks")]
+        [JsonProperty(PropertyName =  "canCreateBlocks")]
         public bool CanCreateBlocks { get; set; }
 
-        [DataMember(Name =  "canVote")]
+        [JsonProperty(PropertyName =  "canVote")]
         public bool CanVote { get; set; }
     }
 }
