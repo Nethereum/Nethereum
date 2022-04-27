@@ -10,7 +10,7 @@ using Nethereum.Web3.Accounts;
 using System.Linq;
 using Xunit;
 
-namespace Optimism.Testing
+namespace Nethereum.Optimism.Testing
 {
 
     public class Eth_L1_to_L2_Deposit_and_Withdraw
@@ -20,7 +20,7 @@ namespace Optimism.Testing
         string ADDRESS_MANAGER = "0x3e4CFaa8730092552d9425575E49bB542e329981";
         private string KOVAN_ADDRESS_MANAGER = "0x100Dd3b414Df5BbA2B542864fF94aF8024aFdf3a";
 
-        [Fact]
+        //[Fact]
         public async void ShouldBeAbleToDepositEtherAndWithdrawUsingTheGateway()
         {
            
@@ -28,8 +28,8 @@ namespace Optimism.Testing
             //var web3l2 = new Web3(new Account("0x754fde3f5e60ef2c7649061e06957c29017fe21032a8017132c0078e37f6193a", 420), "http://localhost:8545");
 
 
-            var web3l1 = new Web3(new Account("YOUR PRIVATE KEY", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
-            var web3l2 = new Web3(new Account("YOUR PRIVATE KEY", 69), "https://kovan.optimism.io");
+            var web3l1 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
+            var web3l2 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 69), "https://kovan.optimism.io");
 
             var ourAdddress = web3l1.TransactionManager.Account.Address;
             var watcher = new CrossMessagingWatcherService();
@@ -45,7 +45,7 @@ namespace Optimism.Testing
             var l1StandardBridgeService = new L1StandardBridgeService(web3l1, l1StandardBridgeAddress);
      
 
-            var amount = Web3.Convert.ToWei(0.05);
+            var amount = Web3.Web3.Convert.ToWei(0.05);
             var currentBalanceInL2 = await web3l2.Eth.GetBalance.SendRequestAsync(ourAdddress);
             var depositEther = new DepositETHFunction()
             {

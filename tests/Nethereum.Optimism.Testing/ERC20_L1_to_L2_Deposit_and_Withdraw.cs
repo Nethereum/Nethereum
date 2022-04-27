@@ -18,7 +18,7 @@ using Nethereum.Optimism.Lib_AddressManager;
 using Xunit;
 using WithdrawFunction = Nethereum.Optimism.L2StandardBridge.ContractDefinition.WithdrawFunction;
 
-namespace OptimismTemplate.Testing
+namespace Nethereum.Optimism.Testing
 {
     public class ERC20_L1_to_L2_Deposit_and_Withdraw
     {
@@ -27,13 +27,13 @@ namespace OptimismTemplate.Testing
         //This is the addres manager for the local node
         string ADDRESS_MANAGER = "0x3e4CFaa8730092552d9425575E49bB542e329981";
         string KOVAN_ADDRESS_MANAGER = "0x100Dd3b414Df5BbA2B542864fF94aF8024aFdf3a";
-        [Fact]
+        //[Fact]
         public async void ShouldBeAbleToDepositErc20AndWithdrawUsingTheGateway()
         {
 
 
-            var web3l1 = new Web3(new Account("YOUR PRIVATE KEY", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
-            var web3l2 = new Web3(new Account("YOUR PRIVATE KEY", 69), "https://kovan.optimism.io");
+            var web3l1 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
+            var web3l2 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 69), "https://kovan.optimism.io");
             web3l2.TransactionManager.UseLegacyAsDefault = true;
 
             var ourAdddress = web3l1.TransactionManager.Account.Address;
