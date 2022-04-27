@@ -33,8 +33,10 @@ namespace Nethereum.BlockchainProcessing
             
             while (!cancellationToken.IsCancellationRequested)
             {
-                var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
+                var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber).ConfigureAwait(false);
                 var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
+
+                //If the BlockchainProcessingOrchestrator successfully processed blocks, even if cancelled, we must update the last block processed to prevent re-processing of same block.
                 if (!progress.HasErrored)
                 {
                     fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
@@ -55,7 +57,7 @@ namespace Nethereum.BlockchainProcessing
 
             while (!cancellationToken.IsCancellationRequested && fromBlockNumber <= toBlockNumber)
             {
-                var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber, cancellationToken).ConfigureAwait(false);
+                var blockToProcess = await _lastConfirmedBlockNumberService.GetLastConfirmedBlockNumberAsync(fromBlockNumber).ConfigureAwait(false);
                 if (blockToProcess > toBlockNumber) blockToProcess = toBlockNumber;
 
                 var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
