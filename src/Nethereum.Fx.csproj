@@ -12,8 +12,12 @@
     <PackageId>Nethereum.Fx</PackageId>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
-  
+
   <ItemGroup>
+		<None Include="..\logos\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
+  </ItemGroup>
+
+	<ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
     <None Include="..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)" />
   </ItemGroup>

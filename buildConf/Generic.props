@@ -23,6 +23,6 @@
   <None Condition="Exists('..\..\LICENSE.md')" Include="..\..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
 </ItemGroup>
 <ItemGroup>
-    <None Include="..\..\logos\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
+    <None Condition="Exists('..\..\logos\logo64x64.png')"  Include="..\..\logos\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
   </ItemGroup>
 </Project>
