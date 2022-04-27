@@ -39,12 +39,6 @@ namespace Nethereum.Optimism.Testing
             var ourAdddress = web3l1.TransactionManager.Account.Address;
             var watcher = new CrossMessagingWatcherService();
 
-            ////CHAINID 31337
-            ////PORT 9454
-            //var ourAdddress = "0x023ffdc1530468eb8c8eebc3e38380b5bc19cc5d";
-            //var web3l1 = new Web3(new Account("0x754fde3f5e60ef2c7649061e06957c29017fe21032a8017132c0078e37f6193a", 31337), "http://localhost:9545");
-            //var web3l2 = new Web3(new Account("0x754fde3f5e60ef2c7649061e06957c29017fe21032a8017132c0078e37f6193a", 420), "http://localhost:8545");
-            
             var addressManagerService = new Lib_AddressManagerService(web3l1, KOVAN_ADDRESS_MANAGER);
             var L2CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync("L2CrossDomainMessenger");
             var L1StandardBridgeAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1StandardBridge);

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Nethereum.Optimism.Testing
 {
-
+    //kill build Alt + b + a
     public class Eth_L1_to_L2_Deposit_and_Withdraw
     {
 
@@ -28,8 +28,8 @@ namespace Nethereum.Optimism.Testing
             //var web3l2 = new Web3(new Account("0x754fde3f5e60ef2c7649061e06957c29017fe21032a8017132c0078e37f6193a", 420), "http://localhost:8545");
 
 
-            var web3l1 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
-            var web3l2 = new Web3.Web3(new Account("YOUR PRIVATE KEY", 69), "https://kovan.optimism.io");
+            var web3l1 = new Web3.Web3(new Account("", 42), "https://kovan.infura.io/v3/3e2d593aa68042cc8cce973b4b5d23ef");
+            var web3l2 = new Web3.Web3(new Account("", 69), "https://kovan.optimism.io");
 
             var ourAdddress = web3l1.TransactionManager.Account.Address;
             var watcher = new CrossMessagingWatcherService();
