@@ -165,6 +165,9 @@
 
     <Compile Remove="Nethereum.Siwe.UnitTests\Properties\**;Nethereum.Siwe.UnitTests\bin\**;Nethereum.Siwe.UnitTests\obj\**" />
     <None Remove="Nethereum.Siwe.UnitTests\Properties\**;Nethereum.Siwe.UnitTests\bin\**;Nethereum.Siwe.UnitTests\obj\**" />
+
+    <Compile Remove="Nethereum.Optimism.Testing\Properties\**;Nethereum.Optimism.Testing\bin\**;Nethereum.Optimism.Testing\obj\**" />
+    <None Remove="Nethereum.Optimism.Testing\Properties\**;Nethereum.Optimism.Testing\bin\**;Nethereum.Optimism.Testing\obj\**" />
   </ItemGroup>
 
   <ItemGroup>

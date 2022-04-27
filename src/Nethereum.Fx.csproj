@@ -155,6 +155,9 @@
 
     <Compile Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
     <None Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
+
+    <Compile Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
+    <None Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
