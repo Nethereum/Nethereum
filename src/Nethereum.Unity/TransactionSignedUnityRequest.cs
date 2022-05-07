@@ -116,7 +116,7 @@ namespace Nethereum.JsonRpc.UnityClient
                     if (transactionInput.MaxFeePerGas == null)
                     {
                         yield return Fee1559SuggestionStrategy.SuggestFee(transactionInput.MaxPriorityFeePerGas.Value);
-                        if (Fee1559SuggestionStrategy.Exception != null)
+                        if (Fee1559SuggestionStrategy.Exception == null)
                         {
                             transactionInput.MaxFeePerGas = new HexBigInteger(Fee1559SuggestionStrategy.Result.MaxFeePerGas.Value);
                         }
@@ -131,7 +131,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 {
 
                     yield return Fee1559SuggestionStrategy.SuggestFee();
-                    if (Fee1559SuggestionStrategy.Exception != null)
+                    if (Fee1559SuggestionStrategy.Exception == null)
                     {
                         if (transactionInput.MaxFeePerGas == null)
                         {
