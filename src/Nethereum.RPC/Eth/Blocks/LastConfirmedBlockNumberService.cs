@@ -23,9 +23,9 @@ namespace Nethereum.RPC.Eth.Blocks
             ILog log = null,
             IWaitStrategy waitStrategy = null
             ) : this(
-                ethBlockNumber,
-                waitStrategy ?? new WaitStrategy(),
-                minimumBlockConfirmations,
+                ethBlockNumber, 
+                waitStrategy ?? new WaitStrategy(), 
+                minimumBlockConfirmations, 
                 log)
         {
 
