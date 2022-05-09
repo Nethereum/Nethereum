@@ -67,7 +67,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 }
 
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 progress.Exception = ex;
             }
@@ -96,14 +96,14 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 To = to;
             }
 
-            public FilterLog[] Logs { get; set; }
+            public FilterLog[] Logs { get;set;}
             public BigInteger From { get; set; }
-            public BigInteger To { get; set; }
+            public BigInteger To { get; set;}
         }
 
         private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
         {
-            try
+            try 
             {
 
                 var adjustedToBlock =
@@ -115,7 +115,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
 
                 //If we don't get any, lets retry in case there is an issue with the node.
-                if (logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)
+                if(logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)
                 {
                     return await GetLogsAsync(progress, fromBlock, toBlock, 0, retryNullLogsRequestNumber + 1).ConfigureAwait(false);
                 }
@@ -124,7 +124,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 return new GetLogsResponse(fromBlock, adjustedToBlock, logs);
 
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 if (retryRequestNumber >= MaxGetLogsRetries)
                 {
