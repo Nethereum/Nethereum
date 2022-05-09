@@ -40,7 +40,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             var nextBlockNumberFrom = fromNumber;
             try
             {
-                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
+                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber && !cancellationToken.IsCancellationRequested)
                 {
                     if (progress.BlockNumberProcessTo != null)
                     {
@@ -53,20 +53,18 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                     var logs = getLogsResponse.Value.Logs;
 
-                    if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
-                    {
-                        if (logs != null)
-                        {
-                            logs = logs.Sort();
-                            await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
-                        }
-                        progress.BlockNumberProcessTo = getLogsResponse.Value.To;
-                        if (blockProgressRepository != null)
-                        {
-                            await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
-                        }
 
+                    if (logs != null)
+                    {
+                        logs = logs.Sort();
+                        await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                     }
+                    progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                    if (blockProgressRepository != null)
+                    {
+                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                    }
+
                 }
 
             }
@@ -106,7 +104,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
         {
-            try 
+            try
             {
 
                 var adjustedToBlock =
