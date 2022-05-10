@@ -44,13 +44,14 @@ namespace Nethereum.RPC.Eth.Blocks
             _log = log;
         }
 
-        public async Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber)
+        public async Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber, CancellationToken cancellationToken)
         {
             var currentBlockOnChain = await GetCurrentBlockOnChainAsync();
             uint attemptCount = 0;
 
             while (!IsBlockNumberConfirmed(waitForConfirmedBlockNumber, currentBlockOnChain.Value, _minimumBlockConfirmations))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 attemptCount++;
                 LogWaitingForBlockAvailability(currentBlockOnChain, _minimumBlockConfirmations, waitForConfirmedBlockNumber, attemptCount);
                 await _waitStrategy.ApplyAsync(attemptCount).ConfigureAwait(false);

@@ -6,6 +6,6 @@ namespace Nethereum.RPC.Eth.Blocks
 {
     public interface ILastConfirmedBlockNumberService
     {
-        Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber);
+        Task<BigInteger> GetLastConfirmedBlockNumberAsync(BigInteger? waitForConfirmedBlockNumber, CancellationToken cancellationToken);
     }
 }

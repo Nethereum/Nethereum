@@ -1,13 +1,12 @@
 ﻿using Moq;
 using Nethereum.BlockchainProcessing.Orchestrator;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.BlockchainProcessing.ProgressRepositories;
 
 namespace Nethereum.BlockchainProcessing.UnitTests.Services
 {
@@ -30,7 +29,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
 
         protected void SetupOrchestratorMock(bool invokeCancellationTokenOnceHandled = false, int? iterationsBeforeCancellation = null)
         {
-            
+
             _orchestratorMock
                 .Setup(o => o.ProcessAsync(It.IsAny<BigInteger>(), It.IsAny<BigInteger>(),
                     It.IsAny<CancellationToken>(), _progressRepoMock.Object))
@@ -78,13 +77,21 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
                 .ReturnsAsync(lastBlockProcessed);
         }
 
-        protected void SetupLastConfirmedBlockNumberMock(bool invokeCancellationTokenOnceHandled = false)
+        protected void SetupLastConfirmedBlockNumberMock(bool invokeCancellationTokenOnceHandled = false, int? iterationsBeforeCancellation = null)
         {
+            int _LastConfirmedBlockIterations = 0;
+
             _lastConfirmedBlockNumberMock
-                .Setup(s => s.GetLastConfirmedBlockNumberAsync(It.IsAny<BigInteger>()))
-                .Returns<BigInteger>((blk) =>
+                .Setup(s => s.GetLastConfirmedBlockNumberAsync(It.IsAny<BigInteger>(), It.IsAny<CancellationToken>()))
+                .Returns<BigInteger, CancellationToken>((blk, ctx) =>
                 {
-                    if (invokeCancellationTokenOnceHandled)
+                    _LastConfirmedBlockIterations++;
+
+                    if (iterationsBeforeCancellation.HasValue && iterationsBeforeCancellation == _orchestratedBlockRanges.Count)
+                    {
+                        _cancellationTokenSource.Cancel();
+                    }
+                    else if (invokeCancellationTokenOnceHandled)
                     {
                         _cancellationTokenSource.Cancel();
                     }
