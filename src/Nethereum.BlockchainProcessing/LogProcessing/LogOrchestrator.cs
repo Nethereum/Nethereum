@@ -40,7 +40,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             var nextBlockNumberFrom = fromNumber;
             try
             {
-                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
+                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber && !cancellationToken.IsCancellationRequested)
                 {
                     if (progress.BlockNumberProcessTo != null)
                     {
