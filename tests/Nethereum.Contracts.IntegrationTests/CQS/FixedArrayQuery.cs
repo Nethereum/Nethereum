@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
 using Xunit; 
@@ -8,7 +9,9 @@ using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.CQS
 {
-    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
+
+
+        [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class FixedArrayQuery
     {
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
@@ -16,6 +19,39 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         public FixedArrayQuery(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+        [Fact]
+        public async void MultiDimensionShouldUseSolidityNestedNotationToDescribeReturnButDecodeToCSharp()
+        {
+            var senderAddress = EthereumClientIntegrationFixture.AccountAddress;
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var contractAddress = "0x5EF1009b9FCD4fec3094a5564047e190D72Bd511";
+            var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+
+            var getPairsByIndexRangeFunction = new GetPairsByIndexRangeFunction();
+            getPairsByIndexRangeFunction.UniswapFactory = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+            getPairsByIndexRangeFunction.Start = 0;
+            getPairsByIndexRangeFunction.Stop = 10;
+
+            var getPairsByIndexRangeFunctionReturn = await contractHandler.QueryAsync<GetPairsByIndexRangeFunction, List<List<string>>>(getPairsByIndexRangeFunction);
+
+            Assert.Equal(10, getPairsByIndexRangeFunctionReturn.Count);
+            Assert.Equal(3, getPairsByIndexRangeFunctionReturn[0].Count);
+        }
+
+
+        public partial class GetPairsByIndexRangeFunction : GetPairsByIndexRangeFunctionBase { }
+
+        [Function("getPairsByIndexRange", "address[3][]")]
+        public class GetPairsByIndexRangeFunctionBase : FunctionMessage
+        {
+            [Parameter("address", "_uniswapFactory", 1)]
+            public virtual string UniswapFactory { get; set; }
+            [Parameter("uint256", "_start", 2)]
+            public virtual BigInteger Start { get; set; }
+            [Parameter("uint256", "_stop", 3)]
+            public virtual BigInteger Stop { get; set; }
         }
 
         [Fact]

@@ -21,7 +21,7 @@ namespace Nethereum.ABI
 
         private void IntialiseSize(string name)
         {
-            var indexFirstBracket = name.IndexOf("[", StringComparison.Ordinal);
+            var indexFirstBracket = name.LastIndexOf("[", StringComparison.Ordinal);
             var indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);
             var arraySize = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
             Size = int.Parse(arraySize);

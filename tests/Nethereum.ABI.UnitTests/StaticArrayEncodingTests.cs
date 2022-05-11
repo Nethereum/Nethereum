@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -38,6 +39,42 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldDecodeMultidimensionAddressArray()
+        {
+            //Given
+
+            var given =
+                "000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000b4e16d0168e52d35cacd2c6185b44281ec28c9dc0000000000000000000000008e870d67f660d95d5be530380d0ec0bd388289e1000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000003139ffc91b99aa94da8a2dc13f1fc36f9bdc98ee00000000000000000000000006af07097c9eeb7fd685c692751d5c66db49c215000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000012ede161c702d1494612d19f05992f43aa6a26fb0000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000a478c2975ab1ea89e8196811f51a7b7ade33eb11000000000000000000000000408e41876cccdc0f92210600ef50372656052a38000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000007f068ca326a469fc1d87d85d448990c8cba7df90000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000ae461ca67b15dc8dc81ce7615e0320da1a9ab8d5000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000fa3e941d1f6b7b10ed84a0c211bfa8aee907965e000000000000000000000000ce407cd7b95b39d3b4d53065e711e713dd5c59990000000000000000000000001f573d6fb3f13d689ff844b4ce37794d79a7ff1c0000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000033c2d48bc95fb7d0199c5c693e7a9f527145a9af0000000000000000000000000d8775f648430679a709e98d2b0cb6250d2887ef000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000b6909b960dbbe7392d405429eb2b3649752b483800000000000000000000000039aa39c021dfbae8fac545936693ac917d5e75630000000000000000000000005d3a536e4d6dbd6114cc1ead35777bab948e364300000000000000000000000030eb5e15476e6a80f4f3cd8479749b4881dab1b8";
+
+            var arrayType = ArrayType.CreateABIType("address[3][]");
+
+            //when
+            var list = arrayType.Decode<List<List<string>>>(given);
+
+            //then
+
+
+            if (list != null)
+            {
+                Assert.Equal(10, list.Count);
+
+                for (var i = 0; i < list.Count; i++)
+                {
+                    Assert.Equal(list[i].Count, 3);
+                    foreach (var address in list[i])
+                    {
+                        Assert.True(address.IsValidEthereumAddressHexFormat());
+                    }
+                }
+                ;
+            }
+            else
+            {
+                throw new Exception("Expected to return IList object when decoding array");
+            }
+        }
+
+        [Fact]
         public virtual void ShouldEncodeStaticIntArray()
         {
             //Given
@@ -56,5 +93,9 @@ namespace Nethereum.ABI.UnitTests
 
             Assert.Equal(expected, result);
         }
+
+
+
+        
     }
 }
