@@ -14,11 +14,11 @@ namespace Nethereum.Web3.Accounts
         public BigInteger? ChainId { get; }
 
 #if !PCL
-        public static Account LoadFromKeyStoreFile(string filePath, string password)
+        public static Account LoadFromKeyStoreFile(string filePath, string password, BigInteger? chainId = null)
         {
             var keyStoreService = new Nethereum.KeyStore.KeyStoreService();
             var key = keyStoreService.DecryptKeyStoreFromFile(password, filePath);
-            return new Account(key);
+            return new Account(key, chainId);
         }
 #endif
         public static Account LoadFromKeyStore(string json, string password, BigInteger? chainId = null)
