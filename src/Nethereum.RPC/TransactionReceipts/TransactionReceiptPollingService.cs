@@ -100,7 +100,7 @@ namespace Nethereum.RPC.TransactionReceipts
                 var ethGetCode = new EthGetCode(_transactionManager.Client);
                 var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
                 if (code == "0x")
-                    throw new ContractDeploymentException("Code not deployed succesfully", transactionReceipt);
+                    throw new ContractDeploymentException("Contract code not deployed successfully", transactionReceipt);
             }
 
             return transactionReceipt;
