@@ -83,7 +83,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
         }
 
         [Fact]
-        public async Task Should_Return_Current_Block_When_Cancellation_Occurs_During_Processing()
+        public async Task Should_Cancel_When_Cancellation_Occurs_During_Processing()
         {
             var fromBlock = new BigInteger(10);
             var toBlock = new BigInteger(20);
@@ -107,9 +107,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
             var progress = await _logOrchestrator.ProcessAsync(fromBlock, toBlock, cancellationTokenSource.Token);
 
             Assert.NotNull(progress);
-            Assert.Equal(toBlock, progress.BlockNumberProcessTo);
             Assert.Null(progress.Exception);
-            Assert.Equal(logsRetrieved, _logsHandled);
         }
 
         [Fact]
