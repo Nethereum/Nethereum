@@ -53,13 +53,11 @@ namespace Nethereum.RPC.Eth.Blocks
 
             while (!IsBlockNumberConfirmed(waitForConfirmedBlockNumber, currentBlockOnChain.Value, _minimumBlockConfirmations))
             {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    attemptCount++;
-                    LogWaitingForBlockAvailability(currentBlockOnChain, _minimumBlockConfirmations, waitForConfirmedBlockNumber, attemptCount);
-                    await _waitStrategy.ApplyAsync(attemptCount).ConfigureAwait(false);
-                    currentBlockOnChain = await GetCurrentBlockOnChainAsync().ConfigureAwait(false);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                attemptCount++;
+                LogWaitingForBlockAvailability(currentBlockOnChain, _minimumBlockConfirmations, waitForConfirmedBlockNumber, attemptCount);
+                await _waitStrategy.ApplyAsync(attemptCount).ConfigureAwait(false);
+                currentBlockOnChain = await GetCurrentBlockOnChainAsync().ConfigureAwait(false);
             }
 
             return currentBlockOnChain;
