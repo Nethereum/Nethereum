@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Nethereum.Signer;
 using Nethereum.Siwe.Core;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Siwe.UnitTests
@@ -8,10 +10,10 @@ namespace Nethereum.Siwe.UnitTests
     public class ServiceTests
     {
         [Fact]
-        public void ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning()
+        public async Task ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning()
         {
             var domain = "login.xyz";
-            var address = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var address = "0x12890d2cce102216644c59daE5baed380d84830c".ConvertToEthereumChecksumAddress();
             var statement = "Sign-In With Ethereum Example Statement";
             var uri = "https://login.xyz";
             var chainId = "1";
@@ -22,23 +24,23 @@ namespace Nethereum.Siwe.UnitTests
             siweMessage.Uri = uri;
             siweMessage.ChainId = chainId;
             siweMessage.SetExpirationTime(DateTime.Now.ToUniversalTime().AddHours(1));
-            var service = new SiweMessageService(new SimpleNonceManagement());
+            var service = new SiweMessageService(new InMemorySessionNonceStorage());
             var message = service.BuildMessageToSign(siweMessage);
             var messageSigner = new EthereumMessageSigner();
             var signature = messageSigner.EncodeUTF8AndSign(message,
                 new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
-            siweMessage.Signature = signature;
+  
             Assert.True(service.HasMessageDateStartedAndNotExpired(siweMessage));
-            Assert.True(service.IsMessageSessionNonceValid(siweMessage));
-            Assert.True(service.IsMessageSignatureValid(siweMessage));
-            Assert.True(service.IsValidMessage(siweMessage));
+            Assert.True(service.IsMessageTheSameAsSessionStored(siweMessage));
+            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature));
+            Assert.True(await service.IsValidMessage(siweMessage, signature));
         }
 
         [Fact]
-        public void ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning_UsingInMemoryNonceManagement()
+        public async Task ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning_UsingInMemoryNonceManagement()
         {
             var domain = "login.xyz";
-            var address = "0x12890d2cce102216644c59daE5baed380d84830c";
+            var address = "0x12890d2cce102216644c59daE5baed380d84830c".ConvertToEthereumChecksumAddress();
             var statement = "Sign-In With Ethereum Example Statement";
             var uri = "https://login.xyz";
             var chainId = "1";
@@ -49,16 +51,16 @@ namespace Nethereum.Siwe.UnitTests
             siweMessage.Uri = uri;
             siweMessage.ChainId = chainId;
             siweMessage.SetExpirationTime(DateTime.Now.ToUniversalTime().AddHours(1));
-            var service = new SiweMessageService(new InMemoryStorageSessionNonceManagement());
+            var service = new SiweMessageService(new InMemorySessionNonceStorage());
             var message = service.BuildMessageToSign(siweMessage);
             var messageSigner = new EthereumMessageSigner();
             var signature = messageSigner.EncodeUTF8AndSign(message,
                 new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
-            siweMessage.Signature = signature;
+            
             Assert.True(service.HasMessageDateStartedAndNotExpired(siweMessage));
-            Assert.True(service.IsMessageSessionNonceValid(siweMessage));
-            Assert.True(service.IsMessageSignatureValid(siweMessage));
-            Assert.True(service.IsValidMessage(siweMessage));
+            Assert.True(service.IsMessageTheSameAsSessionStored(siweMessage));
+            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature));
+            Assert.True(await service.IsValidMessage(siweMessage, signature));
         }
 
     }

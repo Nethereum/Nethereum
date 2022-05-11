@@ -29,12 +29,12 @@ namespace Nethereum.Siwe.Core
         {
             //should this be a checksum address?
             //if (message.Address.IsEthereumChecksumAddress())
-            if(message.Address.IsValidEthereumAddressHexFormat())
+            if(message.Address.IsEthereumChecksumAddress())
             {
                 return string.Format(ADDRESS, message.Address);
             }
 
-            throw new FormatException("Invalid address format");
+            throw new FormatException("Invalid address format, please ensure is a valid address using the EIP-55 checksum");
         }
 
         private static string GetStatement(SiweMessage message)

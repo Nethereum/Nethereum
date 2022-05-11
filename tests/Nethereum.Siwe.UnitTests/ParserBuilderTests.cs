@@ -9,9 +9,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWith2OptionalFields()
         {
-            var message = "service.org wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z\nResources:\n- ipfs://Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu\n- https://example.com/my-web2-claim.json";
+            var message = "service.org wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z\nResources:\n- ipfs://Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu\n- https://example.com/my-web2-claim.json";
             var domain = "service.org";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -56,9 +56,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWithNoOptionalFields()
         {
-            var message = "service.org wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
+            var message = "service.org wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
             var domain = "service.org";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -99,9 +99,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildTimestampWithoutMicroseconds()
         {
-            var message = "service.org wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24Z";
+            var message = "service.org wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24Z";
             var domain = "service.org";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -141,9 +141,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWithDomainRFC3986AndUserInfo()
         {
-            var message = "test@127.0.0.1 wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
+            var message = "test@127.0.0.1 wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
             var domain = "test@127.0.0.1";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -183,9 +183,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWithDomainRFC3986AndPort()
         {
-            var message = "127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
+            var message = "127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
             var domain = "127.0.0.1:8080";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -225,9 +225,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWithDomainRFC3986WithUserInfoAndPort()
         {
-            var message = "test@127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
+            var message = "test@127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z";
             var domain = "test@127.0.0.1:8080";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";
@@ -267,9 +267,9 @@ namespace Nethereum.Siwe.UnitTests
         [Fact]
         public void ShouldParseAndBuildWithAllOptionalFields()
         {
-            var message = "test@127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z\nExpiration Time: 2021-09-30T16:25:24.000Z\nNot Before: 2021-09-30T16:25:24.000Z\nRequest ID: 200\nResources:\n- ipfs://Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu\n- https://example.com/my-web2-claim.json";
+            var message = "test@127.0.0.1:8080 wants you to sign in with your Ethereum account:\n0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\n\nI accept the ServiceOrg Terms of Service: https://service.org/tos\n\nURI: https://service.org/login\nVersion: 1\nChain ID: 1\nNonce: 32891757\nIssued At: 2021-09-30T16:25:24.000Z\nExpiration Time: 2021-09-30T16:25:24.000Z\nNot Before: 2021-09-30T16:25:24.000Z\nRequest ID: 200\nResources:\n- ipfs://Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu\n- https://example.com/my-web2-claim.json";
             var domain = "test@127.0.0.1:8080";
-            var address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+            var address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
             var statement = "I accept the ServiceOrg Terms of Service: https://service.org/tos";
             var uri = "https://service.org/login";
             var version = "1";

@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Siwe.Core;
+using Nethereum.Siwe.UserServices;
 using Nethereum.Util;
 
 
@@ -11,16 +13,22 @@ namespace Nethereum.Siwe
 {
     public class SiweMessageService
     {
-        private readonly ISiweSessionNonceManagement _siweSessionNonceManagement;
+        private readonly ISessionStorage _sessionStorage;
+        private readonly IEthereumUserService _ethereumUserService;
+        private readonly Web3.Web3 _web3;
 
-        public SiweMessageService(ISiweSessionNonceManagement siweSessionNonceManagement)
+        public SiweMessageService(ISessionStorage sessionStorage, 
+            IEthereumUserService ethereumUserService = null,
+            Web3.Web3 web3ForERC1271Validation = null)
         {
-            _siweSessionNonceManagement = siweSessionNonceManagement;
+            _sessionStorage = sessionStorage;
+            _ethereumUserService = ethereumUserService;
+            _web3 = web3ForERC1271Validation;
         }
 
         public SiweMessageService()
         {
-            _siweSessionNonceManagement = new InMemoryStorageSessionNonceManagement();
+            _sessionStorage = new InMemorySessionNonceStorage();
         }
 
         public string BuildMessageToSign(SiweMessage siweMessage)
@@ -35,30 +43,40 @@ namespace Nethereum.Siwe
                 siweMessage.Version = "1";
             }
 
-            _siweSessionNonceManagement.AssignNewNonce(siweMessage);
+            AssignNewNonce(siweMessage);
             return SiweMessageStringBuilder.BuildMessage(siweMessage);
-
         }
 
 
-        public bool IsMessageSignatureValid(SiweMessage siweMessage)
+        public async Task<bool> IsMessageSignatureValid(SiweMessage siweMessage, string signature)
         {
             var builtMessage = SiweMessageStringBuilder.BuildMessage(siweMessage);
             var messageSigner = new EthereumMessageSigner();
-            var accountRecovered = messageSigner.EncodeUTF8AndEcRecover(builtMessage, siweMessage.Signature);
+            var accountRecovered = messageSigner.EncodeUTF8AndEcRecover(builtMessage, signature);
             if (accountRecovered.IsTheSameAddress(siweMessage.Address)) return true;
+            if (_web3 != null)
+            {
+                var service = _web3.Eth.ERC1271.GetContractService(siweMessage.Address);
+                return await service.IsValidSignatureAndValidateReturnQueryAsync(
+                    messageSigner.HashPrefixedMessage(Encoding.UTF8.GetBytes(builtMessage)),
+                    signature.HexToByteArray());
+            }
+
             return false;
         }
 
-        public bool IsMessageSessionNonceValid(SiweMessage siweMessage)
+       
+        public virtual async Task<bool> IsValidMessage(SiweMessage siweMessage, string signature)
         {
-            return _siweSessionNonceManagement.ValidateSiweMessageHasCorrectNonce(siweMessage);
+            return HasMessageDateStartedAndNotExpired(siweMessage) &&
+                   IsMessageTheSameAsSessionStored(siweMessage)
+                   && await IsMessageSignatureValid(siweMessage, signature);
         }
 
-        public virtual bool IsValidMessage(SiweMessage siweMessage)
+        public virtual Task<bool> IsUserAddressRegistered(SiweMessage siweMessage)
         {
-            return HasMessageDateStartedAndNotExpired(siweMessage) && IsMessageSignatureValid(siweMessage) &&
-                   IsMessageSessionNonceValid(siweMessage);
+            if (_ethereumUserService == null) return Task.FromResult(true);
+            return _ethereumUserService.IsUserAddressRegistered(siweMessage.Address);
         }
 
         public virtual bool HasMessageDateStartedAndNotExpired(SiweMessage siweMessage)
@@ -66,6 +84,40 @@ namespace Nethereum.Siwe
             return siweMessage.HasMessageDateStartedAndNotExpired();
         }
 
-    }
 
+        public virtual SiweMessage AssignNewNonce(SiweMessage siweMessage)
+        {
+            if (string.IsNullOrEmpty(siweMessage.Nonce))
+            {
+                siweMessage.Nonce = RandomNonceBuilder.GenerateNewNonce();
+                _sessionStorage.AddOrUpdate(siweMessage);
+            }
+            else
+            {
+                throw new Exception("Siwe message has an allocated nonce already");
+            }
+
+            return siweMessage;
+        }
+
+
+        public virtual bool IsMessageTheSameAsSessionStored(SiweMessage siweMessage)
+        {
+            var sessionMessage = _sessionStorage.GetSiweMessage(siweMessage);
+
+            if (sessionMessage != null)
+            {
+                return sessionMessage.IsTheSame(siweMessage);
+            }
+
+            return false;
+        }
+
+
+        public virtual void InvalidateSession(SiweMessage siweMessage)
+        {
+            _sessionStorage.Remove(siweMessage.Nonce);
+        }
+
+    }
 }

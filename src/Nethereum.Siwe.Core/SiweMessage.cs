@@ -70,10 +70,10 @@ namespace Nethereum.Siwe.Core
         /// </summary>
         public List<string> Resources { get; set; }
 
-        /// <summary>
-        ///Signature of the message signed by the wallet
-        /// </summary>
-        public string Signature { get; set; }
+        ///// <summary>
+        /////Signature of the message signed by the wallet
+        ///// </summary>
+        //public string Signature { get; set; }
 
 
         public void SetIssuedAtNow()
@@ -163,5 +163,25 @@ namespace Nethereum.Siwe.Core
                    !string.IsNullOrEmpty(ChainId) &&
                    !string.IsNullOrEmpty(IssuedAt);
         }
+
+        public bool IsTheSame(SiweMessage other)
+        {
+            return SiweMessageUtil.AreMessagesTheSame(this, other);
+        }
 	}
+
+    public static class SiweMessageUtil
+    {
+        public static bool AreMessagesTheSame(SiweMessage first, SiweMessage second)
+        {
+            var currentMessage = SiweMessageStringBuilder.BuildMessage(first);
+            var existingMessage = SiweMessageStringBuilder.BuildMessage(second);
+            if (currentMessage == existingMessage)
+            {
+                return true;
+            }
+
+            return false;
+        }
+    }
 }
