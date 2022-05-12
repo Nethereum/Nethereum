@@ -50,6 +50,26 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
         }
 
         [Fact]
+        public async Task Should_Complete_Current_Block_When_Canceled_During_Fetch_Of_Last_Confirmed_Block_Number()
+        {
+            var lastBlockProcessed = new BigInteger(100);
+            var expectedNextBlock = lastBlockProcessed + 1;
+
+            //setup / mock out dependencies
+            SetupProgressRepoForPreviousProgress(lastBlockProcessed);
+            SetupOrchestratorMock();
+            SetupProgressRepoUpsertMock();
+            SetupLastConfirmedBlockNumberMock(invokeCancellationTokenOnceHandled: true);
+
+            //act
+            await _blockchainProcessor.ExecuteAsync(_cancellationTokenSource.Token);
+
+            //assert
+            Assert.Single(_blocksUpsertedInToProgressRepo, expectedNextBlock);
+            Assert.Single(_orchestratedBlockRanges, new BlockRange(expectedNextBlock, expectedNextBlock));
+        }
+
+        [Fact]
         public async Task When_There_Is_No_Given_Range_Will_Run_Until_Cancellation()
         {
             var lastBlockProcessed = new BigInteger(100);

@@ -78,11 +78,18 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
                 .ReturnsAsync(lastBlockProcessed);
         }
 
-        protected void SetupLastConfirmedBlockNumberMock()
+        protected void SetupLastConfirmedBlockNumberMock(bool invokeCancellationTokenOnceHandled = false)
         {
             _lastConfirmedBlockNumberMock
                 .Setup(s => s.GetLastConfirmedBlockNumberAsync(It.IsAny<BigInteger>(), It.IsAny<CancellationToken>()))
-                .Returns<BigInteger, CancellationToken>((blk, ctx) => Task.FromResult(blk));
+                .Returns<BigInteger, CancellationToken>((blk, ctx) =>
+                {
+                    if (invokeCancellationTokenOnceHandled)
+                    {
+                        _cancellationTokenSource.Cancel();
+                    }
+                    return Task.FromResult(blk);
+                });
         }
     }
 }
