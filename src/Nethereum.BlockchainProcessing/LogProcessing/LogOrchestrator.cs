@@ -49,24 +49,21 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                     var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
 
-                    if (getLogsResponse == null) return progress;
+                    if (getLogsResponse == null || cancellationToken.IsCancellationRequested) return progress; //allowing all the logs to be processed if not cancelled before hand
 
                     var logs = getLogsResponse.Value.Logs;
 
-                    if (!cancellationToken.IsCancellationRequested) //allowing all the logs to be processed if not cancelled before hand
+                    if (logs != null)
                     {
-                        if (logs != null)
-                        {
-                            logs = logs.Sort();
-                            await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
-                        }
-                        progress.BlockNumberProcessTo = getLogsResponse.Value.To;
-                        if (blockProgressRepository != null)
-                        {
-                            await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
-                        }
-
+                        logs = logs.Sort();
+                        await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                     }
+                    progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                    if (blockProgressRepository != null)
+                    {
+                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                    }
+
                 }
 
             }
@@ -104,10 +101,13 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             public BigInteger To { get; set;}
         }
 
-        private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
+        private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, CancellationToken cancellationToken = default(CancellationToken), int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
         {
             try 
             {
+
+
+                if (cancellationToken.IsCancellationRequested) return null; // check cancellation on entry as this is recursive
 
                 var adjustedToBlock =
                     _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
@@ -117,10 +117,12 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
 
+                if (cancellationToken.IsCancellationRequested) return null; // check cancellation after logs as this might be a long call
+
                 //If we don't get any, lets retry in case there is an issue with the node.
-                if(logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)
+                if (logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)
                 {
-                    return await GetLogsAsync(progress, fromBlock, toBlock, 0, retryNullLogsRequestNumber + 1).ConfigureAwait(false);
+                    return await GetLogsAsync(progress, fromBlock, toBlock, cancellationToken, 0, retryNullLogsRequestNumber + 1).ConfigureAwait(false);
                 }
                 retryRequestNumber = 0;
                 retryNullLogsRequestNumber = 0;
@@ -129,14 +131,15 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             }
             catch(Exception ex)
             {
-                if (retryRequestNumber >= MaxGetLogsRetries)
+                
+                if (retryRequestNumber >= MaxGetLogsRetries || cancellationToken.IsCancellationRequested)
                 {
                     progress.Exception = ex;
                     return null;
                 }
                 else
                 {
-                    return await GetLogsAsync(progress, fromBlock, toBlock, retryRequestNumber + 1).ConfigureAwait(false);
+                    return await GetLogsAsync(progress, fromBlock, toBlock, cancellationToken, retryRequestNumber + 1).ConfigureAwait(false);
                 }
             }
         }
