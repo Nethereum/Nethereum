@@ -130,6 +130,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var innerItems = new List<object>();
             foreach (var innerItem in item)
             {
+
+                if (innerItem is string)
+                {
+                    innerItems.Add(innerItem);
+                }
+                else
                 if (innerItem is List<ParameterOutput> innerItemStruct)
                 {
                     innerItems.Add(ConvertToObjectDictionary(innerItemStruct));
@@ -184,7 +190,11 @@ namespace Nethereum.ABI.FunctionEncoding
             var innerItems = new List<dynamic>();
             foreach (var innerItem in item)
             {
-                if (innerItem is List<ParameterOutput> innerItemStruct)
+                if (innerItem is string)
+                {
+                    innerItems.Add(innerItem);
+                }
+                else if (innerItem is List<ParameterOutput> innerItemStruct)
                 {
                     innerItems.Add(ConvertToDynamicDictionary(innerItemStruct));
                 }
@@ -256,7 +266,12 @@ namespace Nethereum.ABI.FunctionEncoding
                 }
                 else
                 {
-                    if (innerItem is IEnumerable array)
+                    if(innerItem is string)
+                    {
+                        var value = innerItem;
+                        jArray.Add(value);
+                    }
+                    else if (innerItem is IEnumerable array)
                     {
                         var value = innerItem;
                         if (value is byte[] val)
@@ -273,10 +288,6 @@ namespace Nethereum.ABI.FunctionEncoding
                     else
                     {
                         var value = innerItem;
-                        if (value is byte[] val)
-                        {
-                            value = val.ToHex();
-                        }
                         jArray.Add(value);
                     }
                 }
