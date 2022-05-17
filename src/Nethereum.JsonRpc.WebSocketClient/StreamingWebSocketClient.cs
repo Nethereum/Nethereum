@@ -287,20 +287,22 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
                         {
-                            if (memoryData.Length == 0) return;
-                            memoryData.Position = 0;
-                            using (var streamReader = new StreamReader(memoryData))
-                            using (var reader = new JsonTextReader(streamReader))
+                            if (memoryData.Length != 0)
                             {
-                                var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                                var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
-                                //Random random = new Random();
-                                //var x = random.Next(0, 50);
-                                //if (x == 5) throw new Exception("Error");
+                                memoryData.Position = 0;
+                                using (var streamReader = new StreamReader(memoryData))
+                                using (var reader = new JsonTextReader(streamReader))
+                                {
+                                    var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                                    var message = serializer.Deserialize<RpcStreamingResponseMessage>(reader);
+                                    //Random random = new Random();
+                                    //var x = random.Next(0, 50);
+                                    //if (x == 5) throw new Exception("Error");
 
-                                HandleResponse(message);
-                                logger.LogResponse(message);
+                                    HandleResponse(message);
+                                    logger.LogResponse(message);
 
+                                }
                             }
                         }
                     }
