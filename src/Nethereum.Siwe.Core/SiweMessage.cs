@@ -93,7 +93,7 @@ namespace Nethereum.Siwe.Core
 
         public DateTime GetIssuedAtAsDateTime()
         {
-            if (string.IsNullOrEmpty(IssuedAt))
+            if (!string.IsNullOrEmpty(IssuedAt))
             {
                 return GetIso8602AsDateTime(IssuedAt);
             }
@@ -103,7 +103,7 @@ namespace Nethereum.Siwe.Core
 
         public DateTime GetNotBeforeAsDateTime()
         {
-            if (string.IsNullOrEmpty(NotBefore))
+            if (!string.IsNullOrEmpty(NotBefore))
             {
                 return GetIso8602AsDateTime(NotBefore);
             }
@@ -113,7 +113,7 @@ namespace Nethereum.Siwe.Core
 
         public DateTime GetExpirationTimeAsDateTime()
         {
-            if (string.IsNullOrEmpty(ExpirationTime))
+            if (!string.IsNullOrEmpty(ExpirationTime))
             {
                 return GetIso8602AsDateTime(ExpirationTime);
             }
