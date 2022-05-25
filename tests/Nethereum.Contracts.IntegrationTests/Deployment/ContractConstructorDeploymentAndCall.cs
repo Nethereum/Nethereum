@@ -199,7 +199,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
             var web3 = _ethereumClientIntegrationFixture
                 .GetWeb3(); //deploy the contract, including abi and a paramter of 7. 
 
-            var feeEstimate = web3.FeeSuggestion.GeTimePreferenceFeeSuggestionStrategy();
+            var feeEstimate = web3.FeeSuggestion.GetTimePreferenceFeeSuggestionStrategy();
 
             var fees = await feeEstimate.SuggestFeesAsync();
 
