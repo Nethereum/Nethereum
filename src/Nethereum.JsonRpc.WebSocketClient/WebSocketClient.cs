@@ -44,6 +44,31 @@ namespace Nethereum.JsonRpc.WebSocketClient
             _log = log;
         }
 
+        public  Task StopAsync()
+        {
+             return StopAsync(WebSocketCloseStatus.NormalClosure, "", new CancellationTokenSource(ConnectionTimeout).Token);
+        }
+
+        public async Task StopAsync(WebSocketCloseStatus webSocketCloseStatus, string status, CancellationToken timeOutToken)
+        {
+            try
+            {
+                if (_clientWebSocket != null && (_clientWebSocket.State == WebSocketState.Open || _clientWebSocket.State == WebSocketState.Connecting))
+                {
+
+                    await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                    await _clientWebSocket.CloseOutputAsync(webSocketCloseStatus, status, timeOutToken).ConfigureAwait(false);
+                    while (_clientWebSocket.State != WebSocketState.Closed && !timeOutToken.IsCancellationRequested) ;
+                }
+                
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
+
+        }
+
         private async Task<ClientWebSocket> GetClientWebSocketAsync()
         {
             try
@@ -69,6 +94,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             catch
             {
                 //Connection error we want to allow to retry.
+                _clientWebSocket.Dispose();
                 _clientWebSocket = null;
                 throw;
             }
@@ -170,7 +196,16 @@ namespace Nethereum.JsonRpc.WebSocketClient
 
         public void Dispose()
         {
+            try
+            {
+                StopAsync().Wait();
+            }
+            catch 
+            {
+                
+            }
             _clientWebSocket?.Dispose();
+            _clientWebSocket = null;
         }
     }
 }

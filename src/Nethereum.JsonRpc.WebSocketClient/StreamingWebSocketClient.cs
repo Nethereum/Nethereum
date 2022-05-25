@@ -425,6 +425,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
                         tokenSource.Token);
+                    while (_clientWebSocket.State != WebSocketState.Closed && !tokenSource.IsCancellationRequested) ;
                 }
             }
             catch { }
