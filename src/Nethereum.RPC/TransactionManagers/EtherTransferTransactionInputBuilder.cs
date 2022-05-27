@@ -12,7 +12,7 @@ namespace Nethereum.RPC.TransactionManagers
         {
             if (string.IsNullOrEmpty(toAddress)) throw new ArgumentNullException(nameof(toAddress));
             if (etherAmount <= 0) throw new ArgumentOutOfRangeException(nameof(etherAmount));
-            if (gasPriceGwei <= 0) throw new ArgumentOutOfRangeException(nameof(gasPriceGwei));
+            if (gasPriceGwei < 0) throw new ArgumentOutOfRangeException(nameof(gasPriceGwei));
 
             var transactionInput = new TransactionInput()
             {
