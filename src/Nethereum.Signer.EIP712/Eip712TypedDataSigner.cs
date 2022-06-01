@@ -65,6 +65,12 @@ namespace Nethereum.Signer.EIP712
             return Sha3Keccack.Current.CalculateHash(encodedData);
         }
 
+        public byte[] EncodeAndHashTypedData<TDomain>(TypedData<TDomain> typedData) where TDomain : IDomain
+        {
+            var encodedData = EncodeTypedData(typedData);
+            return Sha3Keccack.Current.CalculateHash(encodedData);
+        }
+
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// </summary>
@@ -170,9 +176,18 @@ namespace Nethereum.Signer.EIP712
                 new KeyValuePair<string, string>(currentTypeName, currentTypeName + "(" + string.Join(",", currentTypeMembersEncoded) + ")")
             };
 
-            result.AddRange(currentTypeMembers.Select(x => x.Type).Distinct().Where(IsReferenceType).SelectMany(x => EncodeTypes(types, x)));
+            result.AddRange(currentTypeMembers.Select(x => ConvertToElementType(x.Type)).Distinct().Where(IsReferenceType).SelectMany(x => EncodeTypes(types, x)));
 
             return result;
+        }
+
+        private static string ConvertToElementType(string type)
+        {
+            if (type.Contains("["))
+            {
+                return type.Substring(0, type.IndexOf("["));
+            }
+            return type;
         }
 
         private static bool IsReferenceType(string typeName)
