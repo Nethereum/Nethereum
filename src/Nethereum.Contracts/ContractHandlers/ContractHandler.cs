@@ -44,43 +44,43 @@ namespace Nethereum.Contracts.ContractHandlers
 #if !DOTNET35
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage = null, CancellationTokenSource tokenSource = null)
+            TEthereumContractFunctionMessage transactionMessage = null, CancellationTokenSource tokenSource = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
-            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
+            if (transactionMessage == null) transactionMessage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
-            SetAddressFrom(transactionMesssage);
-            return command.SendRequestAndWaitForReceiptAsync(ContractAddress, transactionMesssage, tokenSource);
+            SetAddressFrom(transactionMessage);
+            return command.SendRequestAndWaitForReceiptAsync(ContractAddress, transactionMessage, tokenSource);
         }
   
         public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage = null)
+            TEthereumContractFunctionMessage transactionMessage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
-            if(transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
+            if(transactionMessage == null) transactionMessage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
-            SetAddressFrom(transactionMesssage);
-            return command.SendRequestAsync(ContractAddress, transactionMesssage);
+            SetAddressFrom(transactionMessage);
+            return command.SendRequestAsync(ContractAddress, transactionMessage);
         }
 
         public Task<string> SignTransactionAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage = null)
+            TEthereumContractFunctionMessage transactionMessage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
-            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
+            if (transactionMessage == null) transactionMessage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
-            SetAddressFrom(transactionMesssage);
-            return command.SignTransactionAsync(ContractAddress, transactionMesssage);
+            SetAddressFrom(transactionMessage);
+            return command.SignTransactionAsync(ContractAddress, transactionMessage);
         }
 
         public Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(
-            TEthereumContractFunctionMessage transactionMesssage = null)
+            TEthereumContractFunctionMessage transactionMessage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
-            if (transactionMesssage == null) transactionMesssage = new TEthereumContractFunctionMessage();
+            if (transactionMessage == null) transactionMessage = new TEthereumContractFunctionMessage();
             var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
-            SetAddressFrom(transactionMesssage);
-            return command.EstimateGasAsync(ContractAddress, transactionMesssage);
+            SetAddressFrom(transactionMessage);
+            return command.EstimateGasAsync(ContractAddress, transactionMessage);
         }
 
         public Task<TEthereumFunctionReturn> QueryDeserializingToObjectAsync<TEthereumContractFunctionMessage,
