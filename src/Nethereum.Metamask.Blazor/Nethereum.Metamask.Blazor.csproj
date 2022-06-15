@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.Metamask.Blazor Nethereum Metamask integration with Blazor including Control and EthereumAuthenticationProvider</Description>
+		<AssemblyTitle>Nethereum.Metamask.Blazor</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
+		<AssemblyName>Nethereum.Metamask.Blazor</AssemblyName>
+		<PackageId>Nethereum.Metamask.Blazor</PackageId>
+		<PackageTags>Netherum;Metamask;Ethereum;Blockchain</PackageTags>
+	</PropertyGroup>
+
+
+  <ItemGroup>
+	  <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="6.0.5" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.2" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.2" PrivateAssets="all" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Metamask\Nethereum.Metamask.csproj" />
+  </ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+</Project>

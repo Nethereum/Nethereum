@@ -1,0 +1,24 @@
+.btnMetamask {
+    border: none;
+    padding: 8px 8px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+
+.btnMetamask btnMetamaskSelected{
+   cursor:pointer
+}
+
+
+.btnMetamask:before {
+    content: url("/_content/Nethereum.Metamask.Blazor/img/metamask-fox.svg"); 
+    width: 30px;
+    float: left;
+    margin-right: 5px;
+    margin-top: -2px;
+}
+
+.btnMetamaskDisabled {
+    filter: grayscale(1);
+}
+

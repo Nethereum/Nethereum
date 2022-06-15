@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.Metamask Nethereum Metamask core integration</Description>
+		<AssemblyTitle>Nethereum.Metamask</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(UIFrameworksCore)</TargetFrameworks>
+		<AssemblyName>Nethereum.Metamask</AssemblyName>
+		<PackageId>Nethereum.Metamask</PackageId>
+		<PackageTags>Netherum;Metamask;Ethereum;Blockchain</PackageTags>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
+	  <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+</Project>
