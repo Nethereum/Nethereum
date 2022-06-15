@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <VersionMajor>4</VersionMajor>
-    <VersionMinor>5</VersionMinor>
+    <VersionMinor>6</VersionMinor>
     <VersionPatch>0</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
