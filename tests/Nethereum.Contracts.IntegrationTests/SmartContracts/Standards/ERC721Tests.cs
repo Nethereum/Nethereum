@@ -1,8 +1,15 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts.Standards.ERC721.ContractDefinition;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
@@ -121,6 +128,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
         }
 
+       
         [Fact]
         public async void ShouldRetriveAllOwnnedTokensUsingProcessor()
         {
@@ -149,6 +157,98 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(ownedByAccount2.Count >= ownedByAccount.Count);
         }
 
+        //[Fact]
+        public async void ShouldGetAllApeOwners()
+        {
+            var web3 = new Web3.Web3("http://fullnode.dappnode:8545");
+            Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(190.0);
+            var erc721TokenContractAddress = "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D";
+
+
+            var tokensOwned = await web3.Processing.Logs.ERC721.GetAllCurrentOwnersProcessingAllTransferEvents(erc721TokenContractAddress, 12287507, null, default(CancellationToken), 50000);
+
+            foreach (var token in tokensOwned)
+            {
+                System.Diagnostics.Debug.WriteLine(token.Owner);
+                System.Diagnostics.Debug.WriteLine(token.TokenId);
+            }
+        }
+
+
+        //[Fact]
+        public async void ShouldGetAllApeOwners2()
+        {
+            var web3 = new Web3.Web3("http://fullnode.dappnode:8545");
+            Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(190.0);
+            var erc721TokenContractAddress = "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D";
+            var currentBlockNumber = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var numberOfBlocks = 50000;
+            var blockRanges = GetBlockRanges(12287507, currentBlockNumber.Value, numberOfBlocks);
+            var items = new ConcurrentBag<EventLog<TransferEventDTO>>();
+            await blockRanges
+                .ParallelForEachAsync(
+                    async item =>
+                    {
+                        var transfers = await web3.Processing.Logs.ERC721.GetAllTransferEventsForContract(erc721TokenContractAddress, item.StartBlockNumber, item.EndBlockNumber, default(CancellationToken), numberOfBlocks); ;
+                        foreach(var transfer in transfers)
+                        {
+                            items.Add(transfer);
+                        };
+                    },
+                    3
+                    //Convert.ToInt32(Math.Ceiling((Environment.ProcessorCount * 0.75) * 2.0))
+                );
+
+            //foreach (var token in tokensOwned)
+            //{
+            //    //System.Diagnostics.Debug.WriteLine(token.Owner);
+            //   // System.Diagnostics.Debug.WriteLine(token.TokenId);
+            //}
+        }
+
+       
+
+        public List<BlockRange> GetBlockRanges(BigInteger startBlockNumber, BigInteger endBlockNumber, int pageSize)
+        {
+            var currentBlockNumber = startBlockNumber;
+            var blockRanges = new List<BlockRange>();
+            
+            while (currentBlockNumber < endBlockNumber)
+            {
+                blockRanges.Add(new BlockRange() { StartBlockNumber = currentBlockNumber, EndBlockNumber = currentBlockNumber + pageSize });
+                currentBlockNumber = currentBlockNumber + pageSize;
+            }
+
+            return blockRanges;
+        }
+
+
+        public class BlockRange
+        {
+            public BigInteger StartBlockNumber { get; set; }
+            public BigInteger EndBlockNumber { get; set; }
+        }
     }
 
+
+    public static class AsyncExtensions
+    {
+        public static Task ParallelForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> body, int maxDop = DataflowBlockOptions.Unbounded, TaskScheduler scheduler = null)
+        {
+            var options = new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = maxDop
+            };
+            if (scheduler != null)
+                options.TaskScheduler = scheduler;
+
+            var block = new ActionBlock<T>(body, options);
+
+            foreach (var item in source)
+                block.Post(item);
+
+            block.Complete();
+            return block.Completion;
+        }
+    }
 }
