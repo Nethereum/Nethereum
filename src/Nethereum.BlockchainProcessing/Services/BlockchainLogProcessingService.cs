@@ -127,7 +127,9 @@ namespace Nethereum.BlockchainProcessing.Services
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = DefaultNumberOfBlocksPerRequest,
             int retryWeight = RetryWeight) where TEventDTO : class, new()
         {
-            return GetAllEvents<TEventDTO>(new NewFilterInput() { Address = contractAddresses }, fromBlockNumber,
+            var filter = ABITypedRegistry.GetEvent<TEventDTO>().CreateFilterInput();
+            filter.Address = contractAddresses;
+            return GetAllEvents<TEventDTO>(filter, fromBlockNumber,
                 toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
         }
 
