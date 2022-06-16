@@ -151,6 +151,18 @@ cd Nethereum.Optimism
 CALL :restorepack
 cd ..
 
+cd Nethereum.Metamask
+CALL :restorepack
+cd ..
+
+cd Nethereum.Metamask.Blazor
+CALL :restorepack
+cd ..
+
+cd Nethereum.UI
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
