@@ -42,10 +42,10 @@
 			"summary": "Returns information about a block by number.",
 			"params": [
 				{
-					"name": "Block number",
+					"name": "Block",
 					"required": true,
 					"schema": {
-						"$ref": "#/components/schemas/uint"
+						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
 				},
 				{
@@ -91,9 +91,9 @@
 			"summary": "Returns the number of transactions in a block matching the given block number.",
 			"params": [
 				{
-					"name": "Block number",
+					"name": "Block",
 					"schema": {
-						"$ref": "#/components/schemas/uint"
+						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
 				}
 			],
@@ -135,9 +135,9 @@
 			"summary": "Returns the number of transactions in a block matching the given block number.",
 			"params": [
 				{
-					"name": "Block number",
+					"name": "Block",
 					"schema": {
-						"$ref": "#/components/schemas/uint"
+						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
 				}
 			],
@@ -233,6 +233,13 @@
 					"schema": {
 						"$ref": "#/components/schemas/TransactionWithSender"
 					}
+				},
+				{
+					"name": "Block",
+					"required": false,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
+					}
 				}
 			],
 			"result": {
@@ -251,6 +258,13 @@
 					"required": true,
 					"schema": {
 						"$ref": "#/components/schemas/TransactionWithSender"
+					}
+				},
+				{
+					"name": "Block",
+					"required": false,
+					"schema": {
+						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
 				}
 			],
@@ -275,7 +289,8 @@
 		},
 		{
 			"name": "eth_feeHistory",
-			"summary": "",
+			"summary": "Transaction fee history",
+			"description": "Returns transaction base fee per gas and effective priority fee per gas for the requested/supported block range.",
 			"params": [
 				{
 					"name": "blockCount",
@@ -631,7 +646,7 @@
 				},
 				{
 					"name": "Block",
-					"required": true,
+					"required": false,
 					"schema": {
 						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
@@ -664,7 +679,7 @@
 				},
 				{
 					"name": "Block",
-					"required": true,
+					"required": false,
 					"schema": {
 						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
@@ -690,7 +705,7 @@
 				},
 				{
 					"name": "Block",
-					"required": true,
+					"required": false,
 					"schema": {
 						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
@@ -720,7 +735,7 @@
 				},
 				{
 					"name": "Block",
-					"required": true,
+					"required": false,
 					"schema": {
 						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
@@ -821,10 +836,10 @@
 			"summary": "Returns information about a transaction by block number and transaction index position.",
 			"params": [
 				{
-					"name": "Block number",
+					"name": "Block",
 					"required": true,
 					"schema": {
-						"$ref": "#/components/schemas/uint"
+						"$ref": "#/components/schemas/BlockNumberOrTag"
 					}
 				},
 				{

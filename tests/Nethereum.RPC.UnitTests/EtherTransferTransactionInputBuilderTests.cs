@@ -51,7 +51,6 @@ namespace Nethereum.RPC.UnitTests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(0)]
         public void CreateTransactionInput_IncorrectGasPriceGwei_ThrowsArgumentOutOfRangeException(decimal gasPriceGwei)
         {
             string expectedMessage = "Specified argument was out of the range of valid values.";

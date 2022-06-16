@@ -170,6 +170,12 @@
 
     <Compile Remove="Nethereum.Signer.AzureKeyVault\**" />
 
+	<Compile Remove="Nethereum.UI\**" />
+
+	<Compile Remove="Nethereum.Metamask\**" />
+
+	<Compile Remove="Nethereum.Metamask.Blazor\**" />
+	  
     <Compile Remove="Nethereum.Signer.Ledger\**" />
 
     <Compile Remove="Nethereum.Signer.Trezor\**" />
