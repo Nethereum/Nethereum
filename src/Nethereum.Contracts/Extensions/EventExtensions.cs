@@ -551,12 +551,23 @@ namespace Nethereum.Contracts
             return list.ToArray();
         }
 
+        public static FilterLog[] SortLogs(this IEnumerable<FilterLog> logs)
+        {
+            return logs.Sort();
+        }
+
         public static EventLog<TEventDTO>[] Sort<TEventDTO>(this IEnumerable<EventLog<TEventDTO>> events) where TEventDTO : IEventDTO
         {
             var list = events.ToList();
             list.Sort(new EventLogBlockNumberTransactionIndexComparer<EventLog<TEventDTO>>());
             return list.ToArray();
         }
+
+        public static EventLog<TEventDTO>[] SortLogs<TEventDTO>(this IEnumerable<EventLog<TEventDTO>> events) where TEventDTO : IEventDTO
+        {
+            return events.Sort<TEventDTO>();
+        }
+
 
         public static string EventSignature(this FilterLog log) => log.GetTopic(0);
         public static string IndexedVal1(this FilterLog log) => log.GetTopic(1);

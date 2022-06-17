@@ -32,6 +32,17 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(registrations[2].IsRegistered);
             Assert.False(registrations[3].IsRegistered);
         }
+
+        [Fact]
+        public async void ShouldRetrieveEvidenceFromLogs()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var log = await web3.Eth.ProofOfHumanity.GetContractService().GetLatestEvidenceLogAsync("0x1db3439a222c519ab44bb1144fc28167b4fa6ee6");
+            Assert.Equal("/ipfs/QmQ3zm9y76sPT5Qyaxfpbtmdp8LNNGPrg2CrNYqbzGFokk/registration.json", log.Event.Evidence);
+            
+        }
+
+    
         //VITALIK
         //"0x1db3439a222c519ab44bb1144fc28167b4fa6ee6
         //JUANU

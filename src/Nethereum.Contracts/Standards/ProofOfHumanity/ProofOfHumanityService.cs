@@ -12,7 +12,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             _ethApiContractService = ethApiContractService;
         }
 
-        public ProofOfHumanityContractService GetContractService(string contractAddress = CommonAddresses.PROOF_OF_HUMANITY_PROXY_ADDRESS)
+        public ProofOfHumanityContractService GetContractService(string contractAddress = CommonAddresses.PROOF_OF_HUMANITY_CONTRACT_ADDRESS)
         {
             return new ProofOfHumanityContractService(_ethApiContractService, contractAddress);
         }

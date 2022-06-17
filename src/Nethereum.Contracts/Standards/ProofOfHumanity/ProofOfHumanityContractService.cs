@@ -5,6 +5,9 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ProofOfHumanity.ContractDefinition;
 using Nethereum.Contracts.Constants;
+using System.Collections.Generic;
+using System.Numerics;
+using Newtonsoft.Json;
 
 namespace Nethereum.Contracts.Standards.ProofOfHumanity
 {
@@ -28,7 +31,6 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
         {
             return ContractHandler.QueryAsync<IsRegisteredFunction, bool>(isRegisteredFunction, blockParameter);
         }
-
         
         public Task<bool> IsRegisteredQueryAsync(string submissionID, BlockParameter blockParameter = null)
         {
@@ -37,6 +39,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             
             return ContractHandler.QueryAsync<IsRegisteredFunction, bool>(isRegisteredFunction, blockParameter);
         }
+    
 #endif
     }
 
