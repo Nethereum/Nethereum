@@ -8,6 +8,7 @@ using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC721;
+using Nethereum.Contracts.Standards.ProofOfHumanity;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
 
@@ -58,6 +59,11 @@ namespace Nethereum.Contracts.Services
         /// </summary>
         ERC1271Service ERC1271 { get; }
         ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
+
+        /// <summary>
+        /// Service to interact with the Proof of Humanity registry smart contract
+        /// </summary>
+        ProofOfHumanityService ProofOfHumanity { get; }
         EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
 #endif
 
