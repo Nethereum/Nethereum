@@ -8,7 +8,9 @@ using Nethereum.Contracts.Constants;
 using Nethereum.Contracts;
 using System.Linq;
 using System.Numerics;
+#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
 using System.Net.Http;
+#endif
 using System;
 using Newtonsoft.Json;
 using Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Model;
@@ -71,7 +73,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             var filterInput = eventDTO.GetFilterBuilder().AddTopic(x => x.Arbitrator, arbitrator).AddTopic(x => x.EvidenceGroupID, evidenceGroupId).AddTopic(x => x.Party, party).Build(ContractAddress, fromBlock, toBlock);
             return eventDTO.GetAllChangesAsync(filterInput);
         }
-
+#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
         public Task<Registration> GetRegistrationFromIpfs(EvidenceEventDTO evidenceEvent, string ipfsGateway = "https://gateway.ipfs.io/")
         {
             return GetRegistrationFromIpfs(evidenceEvent.Evidence, ipfsGateway);
@@ -109,6 +111,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
                 return JsonConvert.DeserializeObject<T>(json);
             }
         }
+#endif
 
 #endif
     }
