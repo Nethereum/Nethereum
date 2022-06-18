@@ -37,9 +37,11 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         public async void ShouldRetrieveEvidenceFromLogs()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var log = await web3.Eth.ProofOfHumanity.GetContractService().GetLatestEvidenceLogAsync("0x1db3439a222c519ab44bb1144fc28167b4fa6ee6");
+            var service = web3.Eth.ProofOfHumanity.GetContractService();
+            var log = await service.GetLatestEvidenceLogAsync("0x1db3439a222c519ab44bb1144fc28167b4fa6ee6");
             Assert.Equal("/ipfs/QmQ3zm9y76sPT5Qyaxfpbtmdp8LNNGPrg2CrNYqbzGFokk/registration.json", log.Event.Evidence);
-            
+            var registrationEvidence = await service.GetRegistrationEvidenceFromIpfs(log.Event);
+            Assert.Equal("Vitalik Buterin", registrationEvidence.Name);
         }
 
     

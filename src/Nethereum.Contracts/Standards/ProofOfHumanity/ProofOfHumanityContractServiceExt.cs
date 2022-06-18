@@ -8,6 +8,10 @@ using Nethereum.Contracts.Constants;
 using Nethereum.Contracts;
 using System.Linq;
 using System.Numerics;
+using Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Ipfs.Model;
+using System.Net.Http;
+using System;
+using Newtonsoft.Json;
 
 namespace Nethereum.Contracts.Standards.ProofOfHumanity
 {
@@ -67,6 +71,45 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             var filterInput = eventDTO.GetFilterBuilder().AddTopic(x => x.Arbitrator, arbitrator).AddTopic(x => x.EvidenceGroupID, evidenceGroupId).AddTopic(x => x.Party, party).Build(ContractAddress, fromBlock, toBlock);
             return eventDTO.GetAllChangesAsync(filterInput);
         }
+
+        public Task<Registration> GetRegistrationFromIpfs(EvidenceEventDTO evidenceEvent, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            return GetRegistrationFromIpfs(evidenceEvent.Evidence, ipfsGateway);
+        }
+
+        public Task<Registration> GetRegistrationFromIpfs(string evidencePath, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            return GetJsonObjectFromIpfsGateway<Registration>(evidencePath, false, ipfsGateway);
+        }
+
+        public Task<RegistrationEvidence> GetRegistrationEvidenceFromIpfs(string registrationEvidencePath, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            return GetJsonObjectFromIpfsGateway<RegistrationEvidence>(registrationEvidencePath, false, ipfsGateway);
+        }
+
+        public Task<RegistrationEvidence> GetRegistrationEvidenceFromIpfs(Registration registration, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            return GetRegistrationEvidenceFromIpfs(registration.FileUri, ipfsGateway);
+        }
+
+        public async Task<RegistrationEvidence> GetRegistrationEvidenceFromIpfs(EvidenceEventDTO evidenceEventDTO, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            var registration = await GetRegistrationFromIpfs(evidenceEventDTO, ipfsGateway);
+            return await  GetRegistrationEvidenceFromIpfs(registration, ipfsGateway);
+        }
+
+        internal async Task<T> GetJsonObjectFromIpfsGateway<T>(string relativePath, bool addIpfsSuffix = true, string ipfsGateway = "https://gateway.ipfs.io/")
+        {
+            var uri = new Uri(ipfsGateway);
+            if (addIpfsSuffix) uri = new Uri(uri, "ipfs");
+            var fullUri = new Uri(uri, relativePath);
+            using (var client = new HttpClient())
+            {
+                var json = await client.GetStringAsync(fullUri);
+                return JsonConvert.DeserializeObject<T>(json);
+            }
+        }
+
 #endif
     }
 }
