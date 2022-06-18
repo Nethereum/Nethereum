@@ -8,10 +8,10 @@ using Nethereum.Contracts.Constants;
 using Nethereum.Contracts;
 using System.Linq;
 using System.Numerics;
-using Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Ipfs.Model;
 using System.Net.Http;
 using System;
 using Newtonsoft.Json;
+using Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Model;
 
 namespace Nethereum.Contracts.Standards.ProofOfHumanity
 {
