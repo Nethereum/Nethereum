@@ -51,15 +51,17 @@ namespace Nethereum.Quorum
         public override BigInteger DefaultGas { get; set; } = LegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
-        public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
+        public override async Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            return SignAndSendTransactionAsync(transactionInput);
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+            return await SignAndSendTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
-        public override Task<string> SignTransactionAsync(TransactionInput transaction)
-        { 
-            return SignTransactionRetrievingNextNonceAsync(transaction);
+        public async override Task<string> SignTransactionAsync(TransactionInput transaction)
+        {
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+            return await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
         }
 
         public string SignTransaction(TransactionInput transaction)

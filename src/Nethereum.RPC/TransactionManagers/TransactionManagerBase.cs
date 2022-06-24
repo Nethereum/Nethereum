@@ -11,6 +11,7 @@ using Nethereum.RPC.Eth;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.TransactionTypes;
+using Nethereum.RPC.Chain;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -23,9 +24,13 @@ namespace Nethereum.RPC.TransactionManagers
         public bool UseLegacyAsDefault { get; set; } = false;
         public bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; } = true;
         public bool EstimateOrSetDefaultGasIfNotSet { get; set; } = true;
+        protected ChainFeature ChainFeature { get; set; }
+
+        public BigInteger? ChainId { get; protected set; }
 
         public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
         {
+            if (ChainFeature != null && !ChainFeature.SupportEIP1559) return false;
             return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte());
         }
 
@@ -48,8 +53,11 @@ namespace Nethereum.RPC.TransactionManagers
 
         protected async Task SetTransactionFeesOrPricingAsync(TransactionInput transaction)
         {
+           
             if (CalculateOrSetDefaultGasPriceFeesIfNotSet)
             {
+                await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+
                 if (IsTransactionToBeSendAsEIP1559(transaction))
                 {
                     transaction.Type = new HexBigInteger(TransactionType.EIP1559.AsByte());
@@ -95,6 +103,28 @@ namespace Nethereum.RPC.TransactionManagers
                         transaction.GasPrice = gasPrice;
                     }
                 }
+            }
+        }
+
+        protected async Task EnsureChainIdAndChainFeatureIsSetAsync()
+        {
+            if(ChainId == null)
+            {
+                var ethGetChainId = new EthChainId(Client);
+                try
+                {
+                    ChainId = await ethGetChainId.SendRequestAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                    ChainId = -1;
+                }
+                
+            }
+
+            if (ChainId != null)
+            {
+                ChainFeature = ChainFeaturesService.Current.GetChainFeature(ChainId.Value);
             }
         }
 

@@ -23,12 +23,13 @@ namespace Nethereum.RPC.TransactionManagers
             throw new InvalidOperationException("Default transaction manager cannot sign offline transactions");
         }
 
-        public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
+        public async override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            
-            if(IsTransactionToBeSendAsEIP1559(transactionInput)) 
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+
+            if (IsTransactionToBeSendAsEIP1559(transactionInput)) 
             {
                 SetDefaultGasIfNotSet(transactionInput);
             }
@@ -37,7 +38,7 @@ namespace Nethereum.RPC.TransactionManagers
                 SetDefaultGasPriceAndCostIfNotSet(transactionInput);
             }
             
-            return new EthSendTransaction(Client).SendRequestAsync(transactionInput);
+            return await new EthSendTransaction(Client).SendRequestAsync(transactionInput).ConfigureAwait(false);
         }
 #endif
     }

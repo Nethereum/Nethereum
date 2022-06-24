@@ -50,20 +50,22 @@ namespace Nethereum.Web3.Accounts
         {
         }
 
-        public BigInteger? ChainId { get; }
+       
 
         public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 
 
-        public override Task<string> SendTransactionAsync(TransactionInput transactionInput)
+        public async override Task<string> SendTransactionAsync(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException(nameof(transactionInput));
-            return SignAndSendTransactionAsync(transactionInput);
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+            return await SignAndSendTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
-        public override Task<string> SignTransactionAsync(TransactionInput transaction)
+        public async override Task<string> SignTransactionAsync(TransactionInput transaction)
         {
-            return SignTransactionRetrievingNextNonceAsync(transaction);
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+            return await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
         }
 
         public string SignTransaction(TransactionInput transaction)
@@ -79,6 +81,7 @@ namespace Nethereum.Web3.Accounts
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (!transaction.From.IsTheSameAddress(Account.Address))
                 throw new Exception("Invalid account used signing");
+
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
 
