@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 
 namespace Nethereum.ABI
@@ -21,8 +23,15 @@ namespace Nethereum.ABI
         {
             //TODO: do we need to check ? we always return a list of ParameterOutputs
             // if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
-            var decodingComponents = InitDefaultDecodingComponents();
-            return parameterDecoder.DecodeOutput(encoded, decodingComponents);
+            if (type == typeof(List<ParameterOutput>))
+            {
+                var decodingComponents = InitDefaultDecodingComponents();
+                return parameterDecoder.DecodeOutput(encoded, decodingComponents);
+            }
+            else
+            {
+                return parameterDecoder.DecodeAttributes(encoded, type);
+            }
         }
 
         public ParameterOutput[] InitDefaultDecodingComponents()
@@ -39,6 +48,8 @@ namespace Nethereum.ABI
 
             return decodingDefaultComponents.ToArray();
         }
+
+       
 
         public List<ParameterOutput> Decode(byte[] encoded)
         {
