@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Nethereum.WebSocketsStreamingTest
 {
-    internal class ExampleLogsSubscriptions
+    internal class ExampleLogsERC20Subscriptions
     {
         private readonly string url;
         StreamingWebSocketClient client;
 
-        public ExampleLogsSubscriptions(string url)
+        public ExampleLogsERC20Subscriptions(string url)
         {
             this.url = url;
         }
