@@ -117,6 +117,7 @@ contract StructsSample
 
         [Fact]
         public async void ShouldEncodeDecodeStructContainingStructsArray()
+        
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<StructsSampleDeployment>()

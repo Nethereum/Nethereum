@@ -6,33 +6,43 @@ using System;
 using System.Text;
 using Nethereum.Util;
 using System.Diagnostics;
+using Nethereum.Web3.Accounts;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using BenchmarkDotNet.Configs;
 
 namespace Nethereum.Signer.Performance
 {
+    //dotnet run -c Release
     class Program
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<MessageSignerTest>();
+            var summary = BenchmarkRunner.Run<MessageSignerTest>(DefaultConfig.Instance.WithOptions(ConfigOptions.DisableOptimizationsValidator));
         }
     }
 
     /*
-BenchmarkDotNet=v0.12.1, OS=Windows 10.0.18363.1256 (1909/November2018Update/19H2)
-Intel Core i7-7560U CPU 2.40GHz (Kaby Lake), 1 CPU, 4 logical and 2 physical cores
-.NET Core SDK=5.0.400-preview.21328.4
-  [Host]     : .NET Core 3.1.17 (CoreCLR 4.700.21.31506, CoreFX 4.700.21.31502), X64 RyuJIT
-  DefaultJob : .NET Core 3.1.17 (CoreCLR 4.700.21.31506, CoreFX 4.700.21.31502), X64 RyuJIT
+// * Summary *
+
+BenchmarkDotNet=v0.12.1, OS=Windows 10.0.22000
+AMD Ryzen 9 3900X, 1 CPU, 24 logical and 12 physical cores
+.NET Core SDK=6.0.400-preview.22301.10
+  [Host]     : .NET Core 6.0.5 (CoreCLR 6.0.522.21309, CoreFX 6.0.522.21309), X64 RyuJIT
+  DefaultJob : .NET Core 6.0.5 (CoreCLR 6.0.522.21309, CoreFX 6.0.522.21309), X64 RyuJIT
 
 
-|               Method |       Mean |     Error |    StdDev |     Median |
-|--------------------- |-----------:|----------:|----------:|-----------:|
-|    MessageSigningRec |  0.6303 ns | 0.0354 ns | 0.1044 ns |  0.6065 ns |
-| MessageSigningBouncy |  5.8634 ns | 0.2128 ns | 0.6072 ns |  5.8039 ns |
-|             Recovery |  1.5782 ns | 0.1643 ns | 0.4792 ns |  1.8315 ns |
-|       RecoveryBouncy |  4.9051 ns | 0.1879 ns | 0.5450 ns |  4.9124 ns |
-|         FullRoundRec |  7.0034 ns | 0.6793 ns | 1.9923 ns |  6.6981 ns |
-|      FullRoundBouncy | 16.9897 ns | 0.6262 ns | 1.8462 ns | 17.0129 ns |
+|                    Method |          Mean |      Error |     StdDev |
+|-------------------------- |--------------:|-----------:|-----------:|
+|         MessageSigningRec |     0.1944 ns |  0.0028 ns |  0.0025 ns |
+|      MessageSigningBouncy |     2.5965 ns |  0.0275 ns |  0.0257 ns |
+|                  Recovery |     0.2177 ns |  0.0035 ns |  0.0033 ns |
+|            RecoveryBouncy |     1.7579 ns |  0.0300 ns |  0.0281 ns |
+|              FullRoundRec |     1.7343 ns |  0.0069 ns |  0.0061 ns |
+|           FullRoundBouncy |     6.7162 ns |  0.1183 ns |  0.1408 ns |
+|       SignFunctionMessage | 4,051.9825 ns | 16.8164 ns | 15.7300 ns |
+| SignFunctionMessageBouncy | 4,051.6605 ns | 17.6386 ns | 15.6361 ns |
+
+4,051ns == 0.004045 milliseconds
     */
     public class MessageSignerTest
     {
@@ -52,6 +62,10 @@ Intel Core i7-7560U CPU 2.40GHz (Kaby Lake), 1 CPU, 4 logical and 2 physical cor
             EthECKey.SignRecoverable = true;
             return key.SignAndCalculateV(message);
         }
+
+
+
+
 
         [Benchmark(OperationsPerInvoke = 1000000)]
         public EthECDSASignature MessageSigningBouncy()
@@ -117,6 +131,57 @@ Intel Core i7-7560U CPU 2.40GHz (Kaby Lake), 1 CPU, 4 logical and 2 physical cor
                 Debug.WriteLine(key.GetPrivateKey());
             }
             return recAdress;
+        }
+
+
+
+        [Benchmark(OperationsPerInvoke = 1000000)]
+        public string SignFunctionMessage()
+        {
+            EthECKey.SignRecoverable = true;
+            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
+            var fromAddress = web3.TransactionManager.Account.Address;
+            var transactionMessage = new TransferFunction
+            {
+                FromAddress = fromAddress,
+                To = newAddress,
+                Value = 1000,
+                MaxFeePerGas = 1000,
+                MaxPriorityFeePerGas = 1000,
+                Nonce = 0,
+                TransactionType = TransactionType.EIP1559.AsByte(),
+                Gas = 1000
+            };
+
+            var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+            var signature =  transferHandler.SignTransactionAsync(fromAddress, transactionMessage).Result;
+            return signature;
+        }
+
+
+        [Benchmark(OperationsPerInvoke = 1000000)]
+        public string SignFunctionMessageBouncy()
+        {
+            EthECKey.SignRecoverable = false;
+            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
+            var fromAddress = web3.TransactionManager.Account.Address;
+            var transactionMessage = new TransferFunction
+            {
+                FromAddress = fromAddress,
+                To = newAddress,
+                Value = 1000,
+                MaxFeePerGas = 1000,
+                MaxPriorityFeePerGas = 1000,
+                Nonce = 0,
+                TransactionType = TransactionType.EIP1559.AsByte(),
+                Gas = 1000
+            };
+
+            var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+            var signature = transferHandler.SignTransactionAsync(fromAddress, transactionMessage).Result;
+            return signature;
         }
     }
 
