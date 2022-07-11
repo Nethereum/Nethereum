@@ -18,6 +18,20 @@ namespace Nethereum.Signer.EIP712
 
     }
 
+    [Struct("EIP712Domain")]
+    public class DomainWithNameVersionAndChainId: IDomain
+    {
+        [Parameter("string", "name", 1)]
+        public virtual string Name { get; set; }
+
+        [Parameter("string", "version", 2)]
+        public virtual string Version { get; set; }
+
+        [Parameter("uint256", "chainId", 3)]
+        public virtual BigInteger? ChainId { get; set; }
+
+    }
+
 
 
     [Struct("EIP712Domain")]
