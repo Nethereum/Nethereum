@@ -24,6 +24,7 @@ declare module Nethereum {
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
             GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
+            GenerateUnityFunctionRequests(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateAllCQSMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllFunctionDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllStructs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
@@ -1459,6 +1460,48 @@ declare module Nethereum {
                 ctor: { new (model: StructTypeModel): StructTypeVbTemplate; };
             }
             const StructTypeVbTemplate: StructTypeVbTemplateTypeFunc;
+        }
+        module Unity {
+            // Nethereum.Generators.Unity.UnityRequestsGenerator
+            export interface UnityRequestsGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<UnityRequestsModel>, UnityRequestsModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface UnityRequestsGeneratorTypeFunc extends TypeFunction {
+                (): UnityRequestsGeneratorTypeFunc;
+                prototype: UnityRequestsGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): UnityRequestsGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): UnityRequestsGenerator; };
+            }
+            const UnityRequestsGenerator: UnityRequestsGeneratorTypeFunc;
+
+            // Nethereum.Generators.Unity.UnityRequestsModel
+            export interface UnityRequestsModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+                get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
+            }
+            export interface UnityRequestsModelTypeFunc extends TypeFunction {
+                (): UnityRequestsModelTypeFunc;
+                prototype: UnityRequestsModel;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): UnityRequestsModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): UnityRequestsModel; };
+            }
+            const UnityRequestsModel: UnityRequestsModelTypeFunc;
+            module CSharp {
+                // Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates
+                export interface UnityFunctionRequestsClassTemplates extends CQS.ClassTemplateBase$1<UnityRequestsModel>, Core.IClassTemplate {
+                    GenerateSingleClass(functionABI: Model.FunctionABI): string;
+                }
+                export interface UnityFunctionRequestsClassTemplatesTypeFunc extends TypeFunction {
+                    (): UnityFunctionRequestsClassTemplatesTypeFunc;
+                    prototype: UnityFunctionRequestsClassTemplates;
+                    new (model: UnityRequestsModel): UnityFunctionRequestsClassTemplates;
+                    ctor: { new (model: UnityRequestsModel): UnityFunctionRequestsClassTemplates; };
+                }
+                const UnityFunctionRequestsClassTemplates: UnityFunctionRequestsClassTemplatesTypeFunc;
+            }
         }
         module XUnit {
             // Nethereum.Generators.XUnit.SimpleTestGenerator

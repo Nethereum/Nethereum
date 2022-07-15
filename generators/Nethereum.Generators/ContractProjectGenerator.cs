@@ -3,6 +3,7 @@ using Nethereum.Generators.CQS;
 using Nethereum.Generators.DTOs;
 using Nethereum.Generators.Model;
 using Nethereum.Generators.Service;
+using Nethereum.Generators.Unity;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -104,6 +105,20 @@ namespace Nethereum.Generators
             var serviceFullPath = GetFullPath(ServiceNamespace);
             var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
+        }
+
+        public GeneratedFile GenerateUnityFunctionRequests(bool singleMessagesFile = false)
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+
+            dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
+
+            var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
+            var serviceFullPath = GetFullPath(ServiceNamespace);
+            var unityRequestsGenerator = new UnityRequestsGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+            return unityRequestsGenerator.GenerateFileContent(serviceFullPath);
         }
 
         public List<GeneratedFile> GenerateAllCQSMessages()

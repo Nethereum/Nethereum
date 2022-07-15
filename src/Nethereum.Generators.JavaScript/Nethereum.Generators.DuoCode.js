@@ -23,6 +23,8 @@ Nethereum.Generators.Console.CSharp = Nethereum.Generators.Console.CSharp || {};
 Nethereum.Generators.Console.Vb = Nethereum.Generators.Console.Vb || {};
 Nethereum.Generators.CQS = Nethereum.Generators.CQS || {};
 Nethereum.Generators.DTOs = Nethereum.Generators.DTOs || {};
+Nethereum.Generators.Unity = Nethereum.Generators.Unity || {};
+Nethereum.Generators.Unity.CSharp = Nethereum.Generators.Unity.CSharp || {};
 Nethereum.Generators.XUnit = Nethereum.Generators.XUnit || {};
 var $d = DuoCode.Runtime;
 $d.$assemblies["Nethereum.Generators.DuoCode"] = $asm;
@@ -214,6 +216,12 @@ Nethereum.Generators.Service.FunctionServiceMethodVbTemplate = $d.declare("Nethe
     0, $asm);
 Nethereum.Generators.Service.ServiceVbTemplate = $d.declare("Nethereum.Generators.Service.ServiceVbTemplate", 
     0, $asm);
+Nethereum.Generators.Unity.UnityRequestsGenerator = $d.declare("Nethereum.Generators.Unity.UnityRequestsGenerator", 
+    0, $asm);
+Nethereum.Generators.Unity.UnityRequestsModel = $d.declare("Nethereum.Generators.Unity.UnityRequestsModel", 
+    0, $asm);
+Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates = $d.declare("Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates", 
+    0, $asm);
 Nethereum.Generators.XUnit.SimpleTestGenerator = $d.declare("Nethereum.Generators.XUnit.SimpleTestGenerator", 
     0, $asm);
 Nethereum.Generators.XUnit.SimpleTestModel = $d.declare("Nethereum.Generators.XUnit.SimpleTestModel", 
@@ -311,6 +319,20 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             this.get_ContractName(), this.get_ByteCode(), serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, 
             this.get_CodeGenLanguage());
         return serviceGenerator.GenerateFileContent$1(serviceFullPath);
+    };
+    $p.GenerateUnityFunctionRequests = function ContractProjectGenerator_GenerateUnityFunctionRequests(singleMessagesFile) {
+        var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
+        var cqsFullNamespace = this.GetFullNamespace(this.get_CQSNamespace());
+
+        dtoFullNamespace = singleMessagesFile ? String.Empty : this.FullyQualifyNamespaceFromImport(dtoFullNamespace);
+        cqsFullNamespace = this.FullyQualifyNamespaceFromImport(cqsFullNamespace);
+
+        var serviceFullNamespace = this.GetFullNamespace(this.get_ServiceNamespace());
+        var serviceFullPath = this.GetFullPath(this.get_ServiceNamespace());
+        var unityRequestsGenerator = new Nethereum.Generators.Unity.UnityRequestsGenerator.ctor(this.get_ContractABI(), 
+            this.get_ContractName(), this.get_ByteCode(), serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, 
+            this.get_CodeGenLanguage());
+        return unityRequestsGenerator.GenerateFileContent$1(serviceFullPath);
     };
     $p.GenerateAllCQSMessages = function ContractProjectGenerator_GenerateAllCQSMessages() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
@@ -502,7 +524,7 @@ $d.define(Nethereum.Generators.NetStandardLibraryGenerator, null, function($t, $
         this._languageBasedPropertyGroups = null;
         this.ProjectFileName = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
-        this.NethereumWeb3Version = "4.0.1";
+        this.NethereumWeb3Version = "4.*";
     };
     $p.get_ProjectFileName = function NetStandardLibraryGenerator_get_ProjectFileName() { return this.ProjectFileName; };
     $p.get_CodeGenLanguage = function NetStandardLibraryGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
@@ -2273,10 +2295,14 @@ $d.define(Nethereum.Generators.Core.Utils, null, function($t, $p) {
     };
     $p.LowerCaseFirstCharAndRemoveUnderscorePrefix = function Utils_LowerCaseFirstCharAndRemoveUnderscorePrefix(value) {
         value = this.RemoveUnderscorePrefix(value);
+        value = this.ConvertIfAllCapitalsToLower(value);
+        value = this.UnderscoreToCamelCase(value);
         return this.LowerCaseFirstChar(value);
     };
     $p.CapitaliseFirstCharAndRemoveUnderscorePrefix = function Utils_CapitaliseFirstCharAndRemoveUnderscorePrefix(value) {
         value = this.RemoveUnderscorePrefix(value);
+        value = this.ConvertIfAllCapitalsToLower(value);
+        value = this.UnderscoreToCamelCase(value);
         return this.CapitaliseFirstChar(value);
     };
     $p.LowerCaseFirstChar = function Utils_LowerCaseFirstChar(value) {
@@ -2285,10 +2311,50 @@ $d.define(Nethereum.Generators.Core.Utils, null, function($t, $p) {
     $p.CapitaliseFirstChar = function Utils_CapitaliseFirstChar(value) {
         return value.Substring$1(0, 1).toUpperCase() + value.Substring(1);
     };
+    $p.ConvertIfAllCapitalsToLower = function Utils_ConvertIfAllCapitalsToLower(value) {
+        if (this.IsAllUpper(value)) {
+            return value.toLowerCase();
+        }
+
+        return value;
+    };
     $p.GetBooleanAsString = function Utils_GetBooleanAsString(value) {
         if (value)
             return "true";
         return "false";
+    };
+    $p.IsAllUpper = function Utils_IsAllUpper(input) {
+        for (var i = 0; i < input.length; i++) {
+            if (System.Char.IsLetter(input.get_Chars(i)) && !System.Char.IsUpper(input.get_Chars(i)))
+                return false;
+        }
+        return true;
+    };
+    $p.UnderscoreToCamelCase = function Utils_UnderscoreToCamelCase(name) {
+        if (String.IsNullOrEmpty(name) || !name.Contains("_")) {
+            return name;
+        }
+        var array = name.Split($d.array(System.Char, [95 /*'_'*/]));
+        for (var i = 0; i < array.length; i++) {
+            var s = array[i];
+            var first = String.Empty;
+            var rest = String.Empty;
+            if (s.length > 0) {
+                first = String.fromCharCode(s.get_Chars(0)).toUpperCase();
+            }
+            if (s.length > 1) {
+                rest = s.Substring(1).toLowerCase();
+            }
+            array[i] = first + rest;
+        }
+        var newName = String.Join("", array);
+        if (newName.length > 0) {
+            newName = String.fromCharCode(newName.get_Chars(0)).toUpperCase() + newName.Substring(1);
+        }
+        else {
+            newName = name;
+        }
+        return newName;
     };
 });
 $d.define(Nethereum.Generators.CQS.VbClassFileTemplate, Nethereum.Generators.CQS.ClassFileTemplate, function($t, $p) {
@@ -2886,7 +2952,7 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function ErrorDTOCSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}\r\n\r\n{1}[Error(\"{2}\")]\r\n{3}public class {4}Base\r\n{5}{{\r\n{6}\r\n{7}}}", 
+            return String.Format("{0}\r\n\r\n{1}[Error(\"{2}\")]\r\n{3}public class {4}Base : IErrorDTO\r\n{5}{{\r\n{6}\r\n{7}}}", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this._parameterAbiErrorDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
@@ -3061,10 +3127,11 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators
     };
     $p.GenerateClass = function ErrorDTOFSharpTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}[<Error(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}\r\n{5}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
-                this.get_Model().get_ErrorABI().get_Name(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
-                this.get_Model().GetTypeName(), this._parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
-                Nethereum.Generators.Core.SpaceUtils().OneTab]);
+            return String.Format("{0}[<Error(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}inherit ErrorDTO()\r\n{5}\r\n{6}", 
+                [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    this._parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;
     };
@@ -3217,10 +3284,10 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS
     };
     $p.GenerateClass = function ErrorDTOVbTemplate_GenerateClass() {
         if (this.get_Model().CanGenerateOutputDTO()) {
-            return String.Format("{0}\r\n\r\n{1}<[Error](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}\r\n{6}\r\n{7}\r\n{8}End Class", 
+            return String.Format("{0}\r\n\r\n{1}<[Error](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}Implements IErrorDTO\r\n{6}\r\n{7}\r\n{8}\r\n{9}End Class", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_ErrorABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
-                    this._parameterAbiErrorDtoVbTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiErrorDtoVbTemplate.GenerateAllProperties(this.get_Model().get_ErrorABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
         return null;
@@ -3996,6 +4063,159 @@ $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.C
                 this._functionServiceMethodVbTemplate.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                 Nethereum.Generators.Core.SpaceUtils().OneTab]);
 
+    };
+    $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
+});
+$d.define(Nethereum.Generators.Unity.UnityRequestsGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityRequestsModel, 
+    57724), Nethereum.Generators.Unity.UnityRequestsModel, 18465), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
+    $t.$ator = function() {
+        this.ContractABI = null;
+    };
+    $p.get_ContractABI = function UnityRequestsGenerator_get_ContractABI() { return this.ContractABI; };
+    $t.ctor = function UnityRequestsGenerator(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, codeGenLanguage) {
+        $t.$baseType.ctor.call(this);
+        this.ContractABI = contractABI;
+        this.set_ClassModel(new Nethereum.Generators.Unity.UnityRequestsModel.ctor(contractABI, contractName, 
+            byteCode, namespace, cqsNamespace, functionOutputNamespace));
+        this.get_ClassModel().set_CodeGenLanguage(codeGenLanguage);
+        this.InitialiseTemplate(codeGenLanguage);
+    };
+    $p.InitialiseTemplate = function UnityRequestsGenerator_InitialiseTemplate(codeGenLanguage) {
+        switch (codeGenLanguage) {
+            case 0 /* CodeGenLanguage.CSharp */:
+                this.set_ClassTemplate(new Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates.ctor(this.get_ClassModel()));
+                break;
+            default:
+                throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+                    codeGenLanguage), "Code generation not implemented for this language");
+        }
+
+    };
+});
+$d.define(Nethereum.Generators.Unity.UnityRequestsModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
+    $t.$ator = function() {
+        this.ContractABI = null;
+        this.CQSNamespace = null;
+        this.FunctionOutputNamespace = null;
+        this.ContractDeploymentCQSMessageModel = null;
+    };
+    $p.get_ContractABI = function UnityRequestsModel_get_ContractABI() { return this.ContractABI; };
+    $p.get_CQSNamespace = function UnityRequestsModel_get_CQSNamespace() { return this.CQSNamespace; };
+    $p.get_FunctionOutputNamespace = function UnityRequestsModel_get_FunctionOutputNamespace() { return this.FunctionOutputNamespace; };
+    $p.get_ContractDeploymentCQSMessageModel = function UnityRequestsModel_get_ContractDeploymentCQSMessageModel() { return this.ContractDeploymentCQSMessageModel; };
+    $t.ctor = function UnityRequestsModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace) {
+        $t.$baseType.ctor.call(this, namespace, contractName, "UnityRequests");
+        this.ContractABI = contractABI;
+        this.CQSNamespace = cqsNamespace;
+        this.FunctionOutputNamespace = functionOutputNamespace;
+        this.ContractDeploymentCQSMessageModel = new Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel.ctor(contractABI.get_Constructor(), 
+            cqsNamespace, byteCode, contractName);
+        this.InitialiseNamespaceDependencies();
+
+        if (!String.IsNullOrEmpty(cqsNamespace))
+            this.get_NamespaceDependencies().Add(cqsNamespace);
+
+        if (!String.IsNullOrEmpty(functionOutputNamespace))
+            this.get_NamespaceDependencies().Add(functionOutputNamespace);
+    };
+    $p.InitialiseNamespaceDependencies = function UnityRequestsModel_InitialiseNamespaceDependencies() {
+        this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
+            "System.Collections.Generic", "System.Numerics", "Nethereum.RPC.Eth.DTOs", "Newtonsoft.Json", 
+            "System.Threading"]));
+    };
+});
+$d.define(Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityRequestsModel, 
+    57724), function($t, $p) {
+    $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $t.$ator = function() {
+        this._model = null;
+        this._commonGenerators = null;
+        this._typeConvertor = null;
+        this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $t.ctor = function UnityFunctionRequestsClassTemplates(model) {
+        $t.$baseType.ctor.call(this, model);
+        this._model = model;
+        this._typeConvertor = new Nethereum.Generators.Core.ABITypeToCSharpType.ctor();
+        this._commonGenerators = new Nethereum.Generators.Core.CommonGenerators.ctor();
+        this._parameterAbiFunctionDtocSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate.ctor();
+    };
+    $p.GenerateClass = function UnityFunctionRequestsClassTemplates_GenerateClass() {
+        var functions = this._model.get_ContractABI().get_Functions();
+        return String.Join$1(String, this.GenerateLineBreak(), System.Linq.Enumerable.Select(Nethereum.Generators.Model.FunctionABI, 
+            String, functions, $d.delegate(this.GenerateSingleClass, this)));
+    };
+    $p.GenerateSingleClass = function UnityFunctionRequestsClassTemplates_GenerateSingleClass(functionABI) {
+        var functionCQSMessageModel = new Nethereum.Generators.CQS.FunctionCQSMessageModel.ctor(functionABI, 
+            this._model.get_CQSNamespace());
+        var functionOutputDTOModel = new Nethereum.Generators.DTOs.FunctionOutputDTOModel.ctor(functionABI, 
+            this._model.get_FunctionOutputNamespace());
+        var functionABIModel = new Nethereum.Generators.Core.FunctionABIModel.ctor(functionABI, this._typeConvertor, 
+            0 /* CodeGenLanguage.CSharp */);
+
+        var messageType = functionCQSMessageModel.GetTypeName();
+        var messageVariableName = functionCQSMessageModel.GetVariableName();
+        var functionNameUpper = this._commonGenerators.GenerateClassName(functionABI.get_Name());
+
+        if (!functionABIModel.IsTransaction()) {
+
+            var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
+            var queryMethod = String.Empty;
+            if (functionABIModel.HasNoInputParameters()) {
+                queryMethod = String.Format("{0}public IEnumerator Query(BlockParameter blockParameter = null)\r\n{1}{{\r\n{2}var {3} = new {4}();\r\n{5}yield return Query({6}, blockParameter);\r\n{7}}}", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                        Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, messageType, 
+                        Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+            }
+            else {
+                queryMethod = String.Format("{0}public IEnumerator Query({1}, BlockParameter blockParameter = null)\r\n{2}{{\r\n{3}var {4} = new {5}();\r\n{6}\r\n{7}yield return Query({8}, blockParameter);\r\n{9}}}", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                        Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageVariableName, messageType, this._parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                            messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+            }
+            var classQuery = String.Format("{0}public partial class {1}QueryRequest : ContractFunctionQueryRequest<{2}, {3}>\r\n{4}{{\r\n\r\n{5}public {6}QueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)\r\n{7}{{\r\n{8}}}\r\n\r\n{9}public {10}QueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)\r\n{11}{{\r\n{12}}}\r\n\r\n{13}\r\n\r\n{14}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().OneTab, functionNameUpper, messageType, functionOutputDTOType, 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, queryMethod, Nethereum.Generators.Core.SpaceUtils().OneTab]);
+            return classQuery;
+        }
+
+        if (functionABIModel.IsTransaction()) {
+            var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
+            var txnMethod = String.Empty;
+            if (functionABIModel.HasNoInputParameters()) {
+                txnMethod = String.Format("{0}public IEnumerator SignAndSendTransaction(BlockParameter blockParameter = null)\r\n{1}{{\r\n{2}var {3} = new {4}();\r\n{5}yield return SignAndSendTransaction({6});\r\n{7}}}", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                        Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, messageType, 
+                        Nethereum.Generators.Core.SpaceUtils().ThreeTabs, messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+            }
+            else {
+                txnMethod = String.Format("{0}public IEnumerator SignAndSendTransaction({1}, BlockParameter blockParameter = null)\r\n{2}{{\r\n{3}var {4} = new {5}();\r\n{6}\r\n{7}yield return SignAndSendTransaction({8});\r\n{9}}}", 
+                    [Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
+                        Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageVariableName, messageType, this._parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
+                            messageVariableName, Nethereum.Generators.Core.SpaceUtils().FourTabs), Nethereum.Generators.Core.SpaceUtils().ThreeTabs, 
+                        messageVariableName, Nethereum.Generators.Core.SpaceUtils().TwoTabs]);
+            }
+            var classTxn = String.Format("{0}public partial class {1}TransactionRequest : ContractFunctionQueryRequest<{2}, {3}>\r\n{4}{{\r\n\r\n{5}public {6}TransactionRequest(IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, string contractAddress) : base(contractTransactionUnityRequestFactory, contractAddress)\r\n{7}{{\r\n{8}}}\r\n\r\n{9}public {10}TransactionRequest(string url, BigInteger chainId, string privateKey, string contractAddress, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, chainId, privateKey, contractAddress, jsonSerializerSettings, requestHeaders)\r\n{11}{{\r\n{12}}}\r\n\r\n{13}\r\n\r\n{14}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().OneTab, functionNameUpper, messageType, functionOutputDTOType, 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, txnMethod, Nethereum.Generators.Core.SpaceUtils().OneTab]);
+            return classTxn;
+        }
+
+        return null;
+    };
+    $p.GenerateLineBreak = function UnityFunctionRequestsClassTemplates_GenerateLineBreak() {
+        return System.Environment().NewLine + System.Environment().NewLine;
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });

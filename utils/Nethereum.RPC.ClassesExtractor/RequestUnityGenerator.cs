@@ -64,11 +64,16 @@ namespace Nethereum.JsonRpc.UnityClient
             //forcing null the default value
 
             return $@"
-    public class {className}UnityRequest:UnityRpcWebRequest<{returnType}>
+    public class {className}UnityRequest:UnityRpcRequest<{returnType}>
     {{
         private readonly {classTypeName} _{FirstLetterToLower(className)};
 
-        public {className}UnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
+        public {className}UnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null):base(url, jsonSerializerSettings, requestHeaders)
+        {{
+            _{FirstLetterToLower(className)} = new {classTypeName}(null);
+        }}
+
+        public {className}UnityRequest(IUnityRpcClientFactory unityRpcClientFactory):base(unityRpcClientFactory)
         {{
             _{FirstLetterToLower(className)} = new {classTypeName}(null);
         }}

@@ -4,7 +4,7 @@
     <Description>Nethereum.ClassesExtractor RPC classes extractor</Description>
     <VersionPrefix>1.0.0</VersionPrefix>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>Nethereum.RPC.ClassesExtractor</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>Nethereum.RPC.ClassesExtractor</PackageId>
@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RPC\Nethereum.RPC.csproj" />
   </ItemGroup>
 
 </Project>
