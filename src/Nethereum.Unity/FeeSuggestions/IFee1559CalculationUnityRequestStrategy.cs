@@ -3,7 +3,7 @@ using System.Collections;
 using System.Numerics;
 using Nethereum.RPC.Fee1559Suggestions;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.FeeSuggestions
 {
     public interface IFee1559SuggestionUnityRequestStrategy
     {

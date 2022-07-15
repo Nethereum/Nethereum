@@ -73,7 +73,7 @@ SOFTWARE.
 	}
 
     [JsonObject]
-	internal class RpcResponse
+	public class RpcResponse
 	{
 		[JsonConstructor]
 		protected RpcResponse()
@@ -242,7 +242,7 @@ SOFTWARE.
 	}
 
     [JsonObject]
-	internal class RpcError
+	public class RpcError
 	{
 		[JsonConstructor]
 		private RpcError()

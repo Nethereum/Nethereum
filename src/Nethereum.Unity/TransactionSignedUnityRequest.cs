@@ -15,10 +15,13 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Newtonsoft.Json;
+using Nethereum.Unity.Contracts;
+using Nethereum.Unity.FeeSuggestions;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class TransactionSignedUnityRequest : UnityRequest<string>
+    public class TransactionSignedUnityRequest : UnityRequest<string>, IContractTransactionUnityRequest
     {
         private string _url;
         private readonly string _privateKey;
@@ -33,24 +36,31 @@ namespace Nethereum.JsonRpc.UnityClient
         public bool EstimateGas { get; set; } = true;
         public bool UseLegacyAsDefault { get; set; } = false;
 
-        public TransactionSignedUnityRequest(string url, string privateKey, BigInteger? chainId = null, Dictionary<string, string> requestHeaders = null)
+        public TransactionSignedUnityRequest(string url, string privateKey, BigInteger? chainId = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
             _chainId = chainId;
             _url = url;
             _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
             _transactionSigner = new LegacyTransactionSigner();
-            _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(_url);
-            _ethSendTransactionRequest.RequestHeaders = requestHeaders;
-            _transactionCountRequest = new EthGetTransactionCountUnityRequest(_url);
-            _transactionCountRequest.RequestHeaders = requestHeaders;
-            _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(_url);
-            _ethEstimateGasUnityRequest.RequestHeaders = requestHeaders;
-            _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(_url);
-            _ethGasPriceUnityRequest.RequestHeaders = requestHeaders;
-            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(url, requestHeaders);
+            _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(_url, jsonSerializerSettings, requestHeaders);
+            _transactionCountRequest = new EthGetTransactionCountUnityRequest(_url, jsonSerializerSettings, requestHeaders);
+            _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(_url, jsonSerializerSettings, requestHeaders);
+            _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(_url, jsonSerializerSettings, requestHeaders);
+            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(url, jsonSerializerSettings, requestHeaders);
+        }
 
-
+        public TransactionSignedUnityRequest(string privateKey, BigInteger chainId, IUnityRpcRequestClientFactory unityRpcClientFactory)
+        {
+            _chainId = chainId;
+            _account = EthECKey.GetPublicAddress(privateKey);
+            _privateKey = privateKey;
+            _transactionSigner = new LegacyTransactionSigner();
+            _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(unityRpcClientFactory);
+            _transactionCountRequest = new EthGetTransactionCountUnityRequest(unityRpcClientFactory);
+            _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(unityRpcClientFactory);
+            _ethGasPriceUnityRequest = new EthGasPriceUnityRequest(unityRpcClientFactory);
+            Fee1559SuggestionStrategy = new SimpleFeeSuggestionUnityRequestStrategy(unityRpcClientFactory);
         }
 
         public IEnumerator SignAndSendTransaction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage

@@ -5,32 +5,42 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
+using Nethereum.Contracts.Standards.ERC1155.ContractDefinition;
+using System.Numerics;
+using Newtonsoft.Json;
+using System;
+using Nethereum.Signer;
+using Nethereum.Unity.Contracts;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
-    public class QueryUnityRequest<TFunctionMessage, TResponse> : UnityRequest<TResponse>
+
+    public class QueryUnityRequest<TFunctionMessage, TResponse> : 
+        UnityRequest<TResponse>, 
+        IContractQueryUnityRequest<TFunctionMessage, TResponse> 
         where TFunctionMessage : FunctionMessage, new()
         where TResponse : IFunctionOutputDTO, new()
 
     {
-        private string _url;
         private readonly EthCallUnityRequest _ethCallUnityRequest;
         public string DefaultAccount { get; set; }
 
-        public QueryUnityRequest(string url, string defaultAccount, Dictionary<string, string> requestHeaders = null)
+        public QueryUnityRequest(string url, string defaultAccount, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
-            _url = url;
             DefaultAccount = defaultAccount;
-            _ethCallUnityRequest = new EthCallUnityRequest(_url)
-            {
-                RequestHeaders = requestHeaders
-            };
+            _ethCallUnityRequest = new EthCallUnityRequest(url, jsonSerializerSettings, requestHeaders);
+        }
+
+        public QueryUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory, string defaultAccount)
+        {
+            DefaultAccount = defaultAccount;
+            _ethCallUnityRequest = new EthCallUnityRequest(unityRpcClientFactory);
         }
 
         public IEnumerator Query(TFunctionMessage functionMessage, string contractAddress,
             BlockParameter blockParameter = null)
         {
-            if(blockParameter == null) blockParameter = BlockParameter.CreateLatest();
+            if (blockParameter == null) blockParameter = BlockParameter.CreateLatest();
 
             functionMessage.SetDefaultFromAddressIfNotSet(DefaultAccount);
             var callInput = functionMessage.CreateCallInput(contractAddress);

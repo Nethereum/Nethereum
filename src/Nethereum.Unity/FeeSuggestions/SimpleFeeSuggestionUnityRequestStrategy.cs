@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.JsonRpc.UnityClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
+using Newtonsoft.Json;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.FeeSuggestions
 {
 
 
@@ -14,10 +16,14 @@ namespace Nethereum.JsonRpc.UnityClient
         private EthGetBlockWithTransactionsHashesByNumberUnityRequest _ethGetBlockWithTransactionsHashes;
         public static BigInteger DEFAULT_MAX_PRIORITY_FEE_PER_GAS = 2000000000;
 
-        public SimpleFeeSuggestionUnityRequestStrategy(string url, Dictionary<string, string> requestHeaders = null)
+        public SimpleFeeSuggestionUnityRequestStrategy(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
-            _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumberUnityRequest(url);
-            _ethGetBlockWithTransactionsHashes.RequestHeaders = requestHeaders;
+            _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumberUnityRequest(url, jsonSerializerSettings, requestHeaders);
+        }
+
+        public SimpleFeeSuggestionUnityRequestStrategy(IUnityRpcRequestClientFactory unityRpcClientFactory)
+        {
+            _ethGetBlockWithTransactionsHashes = new EthGetBlockWithTransactionsHashesByNumberUnityRequest(unityRpcClientFactory);
         }
 
         public IEnumerator SuggestFee(BigInteger? maxPriorityFeePerGas = null)
@@ -31,7 +37,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 var lastBlock = _ethGetBlockWithTransactionsHashes.Result;
                 var baseFee = lastBlock.BaseFeePerGas;
                 var maxFeePerGas = baseFee.Value * 2 + maxPriorityFeePerGas;
-                this.Result =  new Fee1559()
+                Result = new Fee1559()
                 {
                     BaseFee = baseFee,
                     MaxPriorityFeePerGas = maxPriorityFeePerGas,
@@ -40,7 +46,7 @@ namespace Nethereum.JsonRpc.UnityClient
             }
             else
             {
-                this.Exception = _ethGetBlockWithTransactionsHashes.Exception;
+                Exception = _ethGetBlockWithTransactionsHashes.Exception;
                 yield break;
             }
         }

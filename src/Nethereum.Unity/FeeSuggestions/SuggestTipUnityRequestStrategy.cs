@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.UnityClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
+using Newtonsoft.Json;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.FeeSuggestions
 {
     public class SuggestTipUnityRequestStrategy : UnityRequest<BigInteger>
     {
@@ -15,10 +17,15 @@ namespace Nethereum.JsonRpc.UnityClient
         public BigInteger FallbackTip { get; set; } = 2000000000;
 
 
-        public SuggestTipUnityRequestStrategy(string url, Dictionary<string, string> requestHeaders = null)
+        public SuggestTipUnityRequestStrategy(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
-            _ethFeeHistory = new EthFeeHistoryUnityRequest(url);
-            _ethFeeHistory.RequestHeaders = requestHeaders;
+            _ethFeeHistory = new EthFeeHistoryUnityRequest(url, jsonSerializerSettings, requestHeaders);
+            _timePreferenceFeeSuggestionStrategy = new TimePreferenceFeeSuggestionStrategy();
+        }
+
+        public SuggestTipUnityRequestStrategy(IUnityRpcRequestClientFactory unityRpcClientFactory)
+        {
+            _ethFeeHistory = new EthFeeHistoryUnityRequest(unityRpcClientFactory);
             _timePreferenceFeeSuggestionStrategy = new TimePreferenceFeeSuggestionStrategy();
         }
 
@@ -50,7 +57,7 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                     else
                     {
-                        this.Exception = _ethFeeHistory.Exception;
+                        Exception = _ethFeeHistory.Exception;
                         yield break;
                     }
 
@@ -61,12 +68,12 @@ namespace Nethereum.JsonRpc.UnityClient
 
             if (rewards.Count == 0)
             {
-                this.Result = FallbackTip;
+                Result = FallbackTip;
             }
             else
             {
                 rewards.Sort();
-                this.Result = rewards[(int)Math.Truncate((double)(rewards.Count / 2))];
+                Result = rewards[(int)Math.Truncate((double)(rewards.Count / 2))];
             }
         }
     }

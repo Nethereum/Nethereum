@@ -1,23 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace Nethereum.JsonRpc.UnityClient
 {
     public class TransactionReceiptPollingRequest : UnityRequest<TransactionReceipt>
     {
-        private string _url;
         private readonly EthGetTransactionReceiptUnityRequest _ethGetTransactionReceipt;
         public bool CancelPolling { get; set; } = false;
 
-        public TransactionReceiptPollingRequest(string url, Dictionary<string, string> requestHeaders = null)
+        public TransactionReceiptPollingRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
-            _url = url;
-            _ethGetTransactionReceipt = new EthGetTransactionReceiptUnityRequest(_url)
-            {
-                RequestHeaders = requestHeaders
-            };
+            _ethGetTransactionReceipt = new EthGetTransactionReceiptUnityRequest(url, jsonSerializerSettings, requestHeaders);
+            
+        }
+
+        public TransactionReceiptPollingRequest(IUnityRpcRequestClientFactory unityRpcClientFactory)
+        {
+            _ethGetTransactionReceipt = new EthGetTransactionReceiptUnityRequest(unityRpcClientFactory);
         }
 
         public IEnumerator PollForReceipt(string transactionHash, float secondsToWait)
