@@ -163,7 +163,8 @@ namespace Nethereum.Util
             TryValidateUnitValue(fromUnit);
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
             var conversion = amount * bigDecimalFromUnit;
-            return conversion.Floor().Mantissa;
+            var floor = conversion.Floor();
+            return floor.Mantissa;
         }
 
         public BigInteger ToWei(BigDecimal amount, EthUnit fromUnit = EthUnit.Ether)

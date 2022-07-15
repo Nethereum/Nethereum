@@ -194,5 +194,21 @@ namespace Nethereum.Util.UnitTests
             var result2 = unitConversion.ToWei(100m);
             Assert.NotEqual(result1.ToString(), result2.ToString());
         }
+
+        [Theory]
+        [InlineData("0.00000001", 6, 0)]
+        [InlineData("0.0000001", 6, 0)]
+        [InlineData("0.000001", 5, 0)]
+        [InlineData("0.000001", 6, 1)]
+        [InlineData("0.00001", 6, 10)]
+        [InlineData("0.0001", 6, 100)]
+        [InlineData("0.001", 6, 1000)]
+        [InlineData("1.001", 6, 1001000)]
+        public void ShouldFloorToZeroWhenPrecissionIsZeroOrLower(string value, int numberOfDecimalPlaces, int expected)
+        {
+            var unitConversion = new UnitConversion();
+            var result = unitConversion.ToWei(decimal.Parse(value), numberOfDecimalPlaces);
+            Assert.Equal(expected, result);  
+        }
     }
 }
