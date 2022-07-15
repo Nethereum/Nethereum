@@ -35,6 +35,15 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
         public event WebSocketStreamingErrorEventHandler Error;
 
+        public WebSocketState WebSocketState
+        {
+            get
+            {
+                if (_clientWebSocket == null) return WebSocketState.None;
+                return _clientWebSocket.State;
+            }
+        }
+
         private StreamingWebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
             if (jsonSerializerSettings == null)
