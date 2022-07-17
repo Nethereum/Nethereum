@@ -23,12 +23,12 @@ namespace Nethereum.RPC.TransactionReceipts
     public class TransactionReceiptPollingService : ITransactionReceiptService
     {
         private readonly ITransactionManager _transactionManager;
-        private readonly int _retryMiliseconds;
+        private readonly int _retryMilliseconds;
 
-        public TransactionReceiptPollingService(ITransactionManager transactionManager, int retryMiliseconds = 100)
+        public TransactionReceiptPollingService(ITransactionManager transactionManager, int retryMilliseconds = 100)
         {
             _transactionManager = transactionManager;
-            _retryMiliseconds = retryMiliseconds;
+            _retryMilliseconds = retryMilliseconds;
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
@@ -63,7 +63,7 @@ namespace Nethereum.RPC.TransactionReceipts
             {
                 if (tokenSource != null)
                 {
-                    await Task.Delay(_retryMiliseconds, tokenSource.Token).ConfigureAwait(false);
+                    await Task.Delay(_retryMilliseconds, tokenSource.Token).ConfigureAwait(false);
                     tokenSource?.Token.ThrowIfCancellationRequested();
                 }
 
