@@ -24,6 +24,8 @@ declare module Nethereum {
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
             GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
+            GenerateAllUnity(): Core.GeneratedFile[];
+            GenerateUnityContractFactory(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateUnityFunctionRequests(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateAllCQSMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllFunctionDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
@@ -1462,6 +1464,34 @@ declare module Nethereum {
             const StructTypeVbTemplate: StructTypeVbTemplateTypeFunc;
         }
         module Unity {
+            // Nethereum.Generators.Unity.UnityContractFactoryGenerator
+            export interface UnityContractFactoryGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<UnityContractFactoryModel>, UnityContractFactoryModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface UnityContractFactoryGeneratorTypeFunc extends TypeFunction {
+                (): UnityContractFactoryGeneratorTypeFunc;
+                prototype: UnityContractFactoryGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): UnityContractFactoryGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): UnityContractFactoryGenerator; };
+            }
+            const UnityContractFactoryGenerator: UnityContractFactoryGeneratorTypeFunc;
+
+            // Nethereum.Generators.Unity.UnityContractFactoryModel
+            export interface UnityContractFactoryModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+                get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
+            }
+            export interface UnityContractFactoryModelTypeFunc extends TypeFunction {
+                (): UnityContractFactoryModelTypeFunc;
+                prototype: UnityContractFactoryModel;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): UnityContractFactoryModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): UnityContractFactoryModel; };
+            }
+            const UnityContractFactoryModel: UnityContractFactoryModelTypeFunc;
+
             // Nethereum.Generators.Unity.UnityRequestsGenerator
             export interface UnityRequestsGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<UnityRequestsModel>, UnityRequestsModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
                 get_ContractABI(): Model.ContractABI;
@@ -1490,17 +1520,29 @@ declare module Nethereum {
             }
             const UnityRequestsModel: UnityRequestsModelTypeFunc;
             module CSharp {
-                // Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsClassTemplates
-                export interface UnityFunctionRequestsClassTemplates extends CQS.ClassTemplateBase$1<UnityRequestsModel>, Core.IClassTemplate {
+                // Nethereum.Generators.Unity.CSharp.UnityContractFactoryCSharpTemplate
+                export interface UnityContractFactoryCSharpTemplate extends CQS.ClassTemplateBase$1<UnityContractFactoryModel>, Core.IClassTemplate {
+                    GenerateMethod(functionABI: Model.FunctionABI): string;
+                }
+                export interface UnityContractFactoryCSharpTemplateTypeFunc extends TypeFunction {
+                    (): UnityContractFactoryCSharpTemplateTypeFunc;
+                    prototype: UnityContractFactoryCSharpTemplate;
+                    new (model: UnityContractFactoryModel): UnityContractFactoryCSharpTemplate;
+                    ctor: { new (model: UnityContractFactoryModel): UnityContractFactoryCSharpTemplate; };
+                }
+                const UnityContractFactoryCSharpTemplate: UnityContractFactoryCSharpTemplateTypeFunc;
+
+                // Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsCsharpTemplates
+                export interface UnityFunctionRequestsCsharpTemplates extends CQS.ClassTemplateBase$1<UnityRequestsModel>, Core.IClassTemplate {
                     GenerateSingleClass(functionABI: Model.FunctionABI): string;
                 }
-                export interface UnityFunctionRequestsClassTemplatesTypeFunc extends TypeFunction {
-                    (): UnityFunctionRequestsClassTemplatesTypeFunc;
-                    prototype: UnityFunctionRequestsClassTemplates;
-                    new (model: UnityRequestsModel): UnityFunctionRequestsClassTemplates;
-                    ctor: { new (model: UnityRequestsModel): UnityFunctionRequestsClassTemplates; };
+                export interface UnityFunctionRequestsCsharpTemplatesTypeFunc extends TypeFunction {
+                    (): UnityFunctionRequestsCsharpTemplatesTypeFunc;
+                    prototype: UnityFunctionRequestsCsharpTemplates;
+                    new (model: UnityRequestsModel): UnityFunctionRequestsCsharpTemplates;
+                    ctor: { new (model: UnityRequestsModel): UnityFunctionRequestsCsharpTemplates; };
                 }
-                const UnityFunctionRequestsClassTemplates: UnityFunctionRequestsClassTemplatesTypeFunc;
+                const UnityFunctionRequestsCsharpTemplates: UnityFunctionRequestsCsharpTemplatesTypeFunc;
             }
         }
         module XUnit {

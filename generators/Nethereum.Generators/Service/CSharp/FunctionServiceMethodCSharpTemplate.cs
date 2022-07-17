@@ -7,6 +7,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
+
     public class FunctionServiceMethodCSharpTemplate
     {
         private readonly ServiceModel _model;
@@ -73,28 +74,28 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
                 }
             }
 
-            if(functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
-            if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1 &&
-                functionABI.Constant)
-            {
-                var type = functionABIModel.GetSingleOutputReturnType();
+            if (functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
+                if (functionABI.OutputParameters != null && functionABI.OutputParameters.Length == 1 &&
+                    functionABI.Constant)
+                {
+                    var type = functionABIModel.GetSingleOutputReturnType();
 
-                var returnWithInputParam = 
-                    $@"{SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
+                    var returnWithInputParam =
+                        $@"{SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync({messageType} {messageVariableName}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
 
-                var returnWithoutInputParam =
-                    $@"{SpaceUtils.TwoTabs}
+                    var returnWithoutInputParam =
+                        $@"{SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync(BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>(null, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
-                var returnWithSimpleParams =
-                    $@"{SpaceUtils.TwoTabs}
+                    var returnWithSimpleParams =
+                        $@"{SpaceUtils.TwoTabs}
 {SpaceUtils.TwoTabs}public Task<{type}> {functionNameUpper}QueryAsync({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
@@ -103,19 +104,19 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 {SpaceUtils.ThreeTabs}return ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameter);
 {SpaceUtils.TwoTabs}}}";
 
-                if (functionABIModel.HasNoInputParameters())
-                {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam;
+                    if (functionABIModel.HasNoInputParameters())
+                    {
+                        return returnWithInputParam + GenerateLineBreak() + returnWithoutInputParam;
+                    }
+                    else
+                    {
+                        return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams;
+                    }
                 }
-                else
-                {
-                    return returnWithInputParam + GenerateLineBreak() + returnWithSimpleParams;
-                }
-            }
 
-            if(functionABIModel.IsTransaction())
-            { 
-                var transactionRequestWithInput = 
+            if (functionABIModel.IsTransaction())
+            {
+                var transactionRequestWithInput =
                     $@"{SpaceUtils.TwoTabs}public Task<string> {functionNameUpper}RequestAsync({messageType} {messageVariableName})
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs} return ContractHandler.SendRequestAsync({messageVariableName});
@@ -161,7 +162,7 @@ $@"{SpaceUtils.TwoTabs}public Task<{functionOutputDTOType}> {functionNameUpper}Q
 
                 if (functionABIModel.HasNoInputParameters())
                 {
-                    return transactionRequestWithInput + GenerateLineBreak() 
+                    return transactionRequestWithInput + GenerateLineBreak()
                            + transactionRequestWithoutInput +
                            GenerateLineBreak() +
                            transactionRequestAndReceiptWithInput +

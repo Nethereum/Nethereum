@@ -107,6 +107,28 @@ namespace Nethereum.Generators
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
+        public GeneratedFile[] GenerateAllUnity()
+        {
+            var generated = new List<GeneratedFile>();
+            generated.Add(GenerateUnityFunctionRequests());
+            generated.Add(GenerateUnityContractFactory());
+            return generated.ToArray();
+        }
+
+        public GeneratedFile GenerateUnityContractFactory(bool singleMessagesFile = false)
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+
+            dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
+
+            var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
+            var serviceFullPath = GetFullPath(ServiceNamespace);
+            var unityRequestsGenerator = new UnityContractFactoryGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+            return unityRequestsGenerator.GenerateFileContent(serviceFullPath);
+        }
+
         public GeneratedFile GenerateUnityFunctionRequests(bool singleMessagesFile = false)
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);

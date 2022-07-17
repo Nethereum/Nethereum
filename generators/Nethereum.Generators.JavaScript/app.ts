@@ -32,6 +32,31 @@ var n = require('./Nethereum.Generators.DuoCode.js');
     outputFiles(generatedClases);
 }
 
+
+function generateAllUnityClassesInternal(abi: string, byteCode: string,
+    contractName: string,
+    baseNamespace: string,
+    serviceNamespace: string,
+    cqsNamespace: string,
+    dtoNamespace: string,
+    basePath: string,
+    pathSeparator: string
+) {
+    var contractDes = abiDes.buildContract(abi);
+    var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
+        contractName,
+        byteCode,
+        baseNamespace,
+        serviceNamespace,
+        cqsNamespace,
+        dtoNamespace,
+        basePath,
+        pathSeparator,
+        0);
+        var generatedClases = classGenerator.GenerateAllUnity();
+        outputFiles(generatedClases);
+}
+
 function outputFiles(generatedFiles: Nethereum.Generators.Core.GeneratedFile[]) {
     for (var i = 0; i < generatedFiles.length; i++) {
         outputFile(generatedFiles[i]);
@@ -77,5 +102,28 @@ export function generateAllClasses(abi: string, byteCode: string,
         basePath,
         pathSeparator,
         codeGenLang);
+}
+
+export function generateUnityRequests(abi: string, byteCode: string,
+    contractName: string,
+    baseNamespace: string,
+    basePath: string
+) {
+
+    var serviceNamespace = contractName;
+    //Same, we are generating single file
+    var cqsNamespace = contractName + ".ContractDefinition";
+    var dtoNamespace = contractName + ".ContractDefinition";
+    var pathSeparator = path.sep;
+    generateAllUnityClassesInternal(abi,
+        byteCode,
+        contractName,
+        baseNamespace,
+        serviceNamespace,
+        cqsNamespace,
+        dtoNamespace,
+        basePath,
+        pathSeparator
+        );
 }
 

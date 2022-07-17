@@ -27,7 +27,6 @@ namespace Nethereum.Generators.Service
                 "System.Numerics",
                 "Nethereum.Hex.HexTypes",
                 "Nethereum.ABI.FunctionEncoding.Attributes",
-                "Nethereum.Web3",
                 "Nethereum.RPC.Eth.DTOs",
                 "Nethereum.Contracts.CQS",
                 "Nethereum.Contracts",

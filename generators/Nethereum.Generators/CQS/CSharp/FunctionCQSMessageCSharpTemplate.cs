@@ -51,4 +51,6 @@ namespace Nethereum.Generators.CQS
             return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
         }
     }
+
+
 }
