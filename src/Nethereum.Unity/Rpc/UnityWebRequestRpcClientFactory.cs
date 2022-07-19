@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public class UnityWebRequestRpcClientFactory : IUnityRpcRequestClientFactory
     {
@@ -22,5 +22,5 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 }
-    
+
 

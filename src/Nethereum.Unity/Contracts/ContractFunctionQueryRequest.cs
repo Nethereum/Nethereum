@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Newtonsoft.Json;
-using Nethereum.JsonRpc.UnityClient;
+using Nethereum.Unity.Rpc;
 
 namespace Nethereum.Unity.Contracts
 {

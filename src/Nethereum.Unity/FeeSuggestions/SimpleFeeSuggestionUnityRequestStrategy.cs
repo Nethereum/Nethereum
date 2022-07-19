@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using Nethereum.JsonRpc.UnityClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
+using Nethereum.Unity.Rpc;
 using Newtonsoft.Json;
 
 namespace Nethereum.Unity.FeeSuggestions

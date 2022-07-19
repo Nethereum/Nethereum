@@ -1,7 +1,7 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
-using Nethereum.JsonRpc.UnityClient;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Unity.Rpc;
 using System.Collections;
 
 namespace Nethereum.Unity.Contracts

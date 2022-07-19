@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using Nethereum.Unity.Contracts;
 using Nethereum.Unity.FeeSuggestions;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public class TransactionSignedUnityRequest : UnityRequest<string>, IContractTransactionUnityRequest
     {
@@ -107,13 +107,13 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                     else
                     {
-                        this.Exception = _ethEstimateGasUnityRequest.Exception;
+                        Exception = _ethEstimateGasUnityRequest.Exception;
                         yield break;
                     }
                 }
                 else
                 {
-                    transactionInput.Gas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_LIMIT);
+                    transactionInput.Gas = new HexBigInteger(SignedLegacyTransaction.DEFAULT_GAS_LIMIT);
                 }
             }
 
@@ -132,7 +132,7 @@ namespace Nethereum.JsonRpc.UnityClient
                         }
                         else
                         {
-                            this.Exception = Fee1559SuggestionStrategy.Exception;
+                            Exception = Fee1559SuggestionStrategy.Exception;
                             yield break;
                         }
                     }
@@ -166,7 +166,7 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                     else
                     {
-                        this.Exception = Fee1559SuggestionStrategy.Exception;
+                        Exception = Fee1559SuggestionStrategy.Exception;
                         yield break;
                     }
                 }
@@ -184,7 +184,7 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                     else
                     {
-                        this.Exception = _ethGasPriceUnityRequest.Exception;
+                        Exception = _ethGasPriceUnityRequest.Exception;
                         yield break;
                     }
                 }
@@ -195,7 +195,7 @@ namespace Nethereum.JsonRpc.UnityClient
 
             if (nonce == null)
             {
-                yield return _transactionCountRequest.SendRequest(_account, Nethereum.RPC.Eth.DTOs.BlockParameter.CreateLatest());
+                yield return _transactionCountRequest.SendRequest(_account, BlockParameter.CreateLatest());
 
                 if (_transactionCountRequest.Exception == null)
                 {
@@ -203,7 +203,7 @@ namespace Nethereum.JsonRpc.UnityClient
                 }
                 else
                 {
-                    this.Exception = _transactionCountRequest.Exception;
+                    Exception = _transactionCountRequest.Exception;
                     yield break;
                 }
             }
@@ -242,18 +242,18 @@ namespace Nethereum.JsonRpc.UnityClient
 
             if (_ethSendTransactionRequest.Exception == null)
             {
-                this.Result = _ethSendTransactionRequest.Result;
+                Result = _ethSendTransactionRequest.Result;
             }
             else
             {
-                this.Exception = _ethSendTransactionRequest.Exception;
+                Exception = _ethSendTransactionRequest.Exception;
                 yield break;
             }
         }
 
         public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
         {
-            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte());
+            return !UseLegacyAsDefault && transaction.GasPrice == null || transaction.MaxPriorityFeePerGas != null || transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte();
         }
     }
 }

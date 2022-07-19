@@ -6,10 +6,12 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.Unity.Rpc;
 using Newtonsoft.Json;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Contracts
 {
+
     public class EstimateContractTransactionUnityRequest : UnityRequest<HexBigInteger>
     {
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;

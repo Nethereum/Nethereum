@@ -4,7 +4,7 @@ using System.Numerics;
 using Nethereum.RPC.TransactionManagers;
 using Newtonsoft.Json;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public class EthTransferUnityRequest : UnityRequest<string>
     {
@@ -36,11 +36,11 @@ namespace Nethereum.JsonRpc.UnityClient
             if (_transactionSignedUnityRequest.Exception == null)
             {
 
-                this.Result = _transactionSignedUnityRequest.Result;
+                Result = _transactionSignedUnityRequest.Result;
             }
             else
             {
-                this.Exception = _transactionSignedUnityRequest.Exception;
+                Exception = _transactionSignedUnityRequest.Exception;
             }
         }
 
@@ -55,11 +55,11 @@ namespace Nethereum.JsonRpc.UnityClient
             if (_transactionSignedUnityRequest.Exception == null)
             {
 
-                this.Result = _transactionSignedUnityRequest.Result;
+                Result = _transactionSignedUnityRequest.Result;
             }
             else
             {
-                this.Exception = _transactionSignedUnityRequest.Exception;
+                Exception = _transactionSignedUnityRequest.Exception;
             }
         }
 

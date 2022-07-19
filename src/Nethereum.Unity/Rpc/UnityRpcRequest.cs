@@ -13,7 +13,7 @@ using Nethereum.RPC.Eth.Transactions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using System.Data;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
 
 
@@ -44,23 +44,23 @@ namespace Nethereum.JsonRpc.UnityClient
             try
             {
 
-                if (_unityRpcClient.Exception != null)
+                if (_unityRpcClient.Exception == null)
                 {
-                    this.Result = _unityRpcClient.Result.GetResult<TResult>(true, _unityRpcClient.JsonSerializerSettings);
-                    this.Exception = HandleRpcError(_unityRpcClient.Result);
+                    Result = _unityRpcClient.Result.GetResult<TResult>(true, _unityRpcClient.JsonSerializerSettings);
+                    Exception = HandleRpcError(_unityRpcClient.Result);
                 }
                 else
                 {
-                    this.Result = default(TResult);
-                    this.Exception = _unityRpcClient.Exception;
+                    Result = default;
+                    Exception = _unityRpcClient.Exception;
                     yield break;
                 }
 
             }
             catch (Exception ex)
             {
-                this.Result = default(TResult);
-                this.Exception = new Exception(ex.Message);
+                Result = default;
+                Exception = new Exception(ex.Message);
 #if DEBUG
                 Debug.Log(ex.Message);
 #endif
@@ -68,5 +68,5 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 }
-    
+
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public interface IUnityRequest<TResult>
     {

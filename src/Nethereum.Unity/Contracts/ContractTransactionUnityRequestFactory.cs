@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using Nethereum.JsonRpc.UnityClient;
+using Nethereum.Unity.Rpc;
 using Newtonsoft.Json;
 
 namespace Nethereum.Unity.Contracts

@@ -12,21 +12,21 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using System.Collections.Generic;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
 
-     public class Web3ClientVersionUnityRequest:UnityRpcRequest<System.String>
+    public class Web3ClientVersionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Web3.Web3ClientVersion _web3ClientVersion;
+        private readonly RPC.Web3.Web3ClientVersion _web3ClientVersion;
 
         public Web3ClientVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _web3ClientVersion = new Nethereum.RPC.Web3.Web3ClientVersion(null);
+            _web3ClientVersion = new RPC.Web3.Web3ClientVersion(null);
         }
 
         public Web3ClientVersionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _web3ClientVersion = new Nethereum.RPC.Web3.Web3ClientVersion(null);
+            _web3ClientVersion = new RPC.Web3.Web3ClientVersion(null);
         }
 
 
@@ -36,44 +36,44 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class Web3Sha3UnityRequest:UnityRpcRequest<System.String>
+
+    public class Web3Sha3UnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Web3.Web3Sha3 _web3Sha3;
+        private readonly RPC.Web3.Web3Sha3 _web3Sha3;
 
         public Web3Sha3UnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _web3Sha3 = new Nethereum.RPC.Web3.Web3Sha3(null);
+            _web3Sha3 = new RPC.Web3.Web3Sha3(null);
         }
 
         public Web3Sha3UnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _web3Sha3 = new Nethereum.RPC.Web3.Web3Sha3(null);
+            _web3Sha3 = new RPC.Web3.Web3Sha3(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexUTF8String valueToConvert)
+        public IEnumerator SendRequest(HexUTF8String valueToConvert)
         {
             var request = _web3Sha3.BuildRequest(valueToConvert);
             yield return SendRequest(request);
         }
     }
 
-    public class ShhPostUnityRequest : UnityRpcRequest<System.String>
+    public class ShhPostUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.ShhPost _shhPost;
+        private readonly RPC.Shh.ShhPost _shhPost;
 
         public ShhPostUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhPost = new Nethereum.RPC.Shh.ShhPost(null);
+            _shhPost = new RPC.Shh.ShhPost(null);
         }
 
         public ShhPostUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhPost = new Nethereum.RPC.Shh.ShhPost(null);
+            _shhPost = new RPC.Shh.ShhPost(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Shh.DTOs.MessageInput input)
+        public IEnumerator SendRequest(RPC.Shh.DTOs.MessageInput input)
         {
             var request = _shhPost.BuildRequest(input);
             yield return SendRequest(request);
@@ -81,18 +81,18 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhVersionUnityRequest : UnityRpcRequest<System.String>
+    public class ShhVersionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.ShhVersion _shhVersion;
+        private readonly RPC.Shh.ShhVersion _shhVersion;
 
         public ShhVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhVersion = new Nethereum.RPC.Shh.ShhVersion(null);
+            _shhVersion = new RPC.Shh.ShhVersion(null);
         }
 
         public ShhVersionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhVersion = new Nethereum.RPC.Shh.ShhVersion(null);
+            _shhVersion = new RPC.Shh.ShhVersion(null);
         }
 
         public IEnumerator SendRequest()
@@ -103,21 +103,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhAddSymKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhAddSymKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhAddSymKey _shhAddSymKey;
+        private readonly RPC.Shh.SymKey.ShhAddSymKey _shhAddSymKey;
 
         public ShhAddSymKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhAddSymKey = new Nethereum.RPC.Shh.SymKey.ShhAddSymKey(null);
+            _shhAddSymKey = new RPC.Shh.SymKey.ShhAddSymKey(null);
         }
 
         public ShhAddSymKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhAddSymKey = new Nethereum.RPC.Shh.SymKey.ShhAddSymKey(null);
+            _shhAddSymKey = new RPC.Shh.SymKey.ShhAddSymKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhAddSymKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -125,21 +125,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhDeleteSymKeyUnityRequest : UnityRpcRequest<System.Boolean>
+    public class ShhDeleteSymKeyUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhDeleteSymKey _shhDeleteSymKey;
+        private readonly RPC.Shh.SymKey.ShhDeleteSymKey _shhDeleteSymKey;
 
         public ShhDeleteSymKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhDeleteSymKey = new Nethereum.RPC.Shh.SymKey.ShhDeleteSymKey(null);
+            _shhDeleteSymKey = new RPC.Shh.SymKey.ShhDeleteSymKey(null);
         }
 
         public ShhDeleteSymKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhDeleteSymKey = new Nethereum.RPC.Shh.SymKey.ShhDeleteSymKey(null);
+            _shhDeleteSymKey = new RPC.Shh.SymKey.ShhDeleteSymKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhDeleteSymKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -147,21 +147,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhGenerateSymKeyFromPasswordUnityRequest : UnityRpcRequest<System.String>
+    public class ShhGenerateSymKeyFromPasswordUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword _shhGenerateSymKeyFromPassword;
+        private readonly RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword _shhGenerateSymKeyFromPassword;
 
         public ShhGenerateSymKeyFromPasswordUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhGenerateSymKeyFromPassword = new Nethereum.RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword(null);
+            _shhGenerateSymKeyFromPassword = new RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword(null);
         }
 
         public ShhGenerateSymKeyFromPasswordUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhGenerateSymKeyFromPassword = new Nethereum.RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword(null);
+            _shhGenerateSymKeyFromPassword = new RPC.Shh.SymKey.ShhGenerateSymKeyFromPassword(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhGenerateSymKeyFromPassword.BuildRequest(str);
             yield return SendRequest(request);
@@ -169,21 +169,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhGetSymKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhGetSymKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhGetSymKey _shhGetSymKey;
+        private readonly RPC.Shh.SymKey.ShhGetSymKey _shhGetSymKey;
 
         public ShhGetSymKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhGetSymKey = new Nethereum.RPC.Shh.SymKey.ShhGetSymKey(null);
+            _shhGetSymKey = new RPC.Shh.SymKey.ShhGetSymKey(null);
         }
 
         public ShhGetSymKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhGetSymKey = new Nethereum.RPC.Shh.SymKey.ShhGetSymKey(null);
+            _shhGetSymKey = new RPC.Shh.SymKey.ShhGetSymKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhGetSymKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -191,21 +191,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhHasSymKeyUnityRequest : UnityRpcRequest<System.Boolean>
+    public class ShhHasSymKeyUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhHasSymKey _shhHasSymKey;
+        private readonly RPC.Shh.SymKey.ShhHasSymKey _shhHasSymKey;
 
         public ShhHasSymKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhHasSymKey = new Nethereum.RPC.Shh.SymKey.ShhHasSymKey(null);
+            _shhHasSymKey = new RPC.Shh.SymKey.ShhHasSymKey(null);
         }
 
         public ShhHasSymKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhHasSymKey = new Nethereum.RPC.Shh.SymKey.ShhHasSymKey(null);
+            _shhHasSymKey = new RPC.Shh.SymKey.ShhHasSymKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhHasSymKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -213,18 +213,18 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhNewSymKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhNewSymKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.SymKey.ShhNewSymKey _shhNewSymKey;
+        private readonly RPC.Shh.SymKey.ShhNewSymKey _shhNewSymKey;
 
         public ShhNewSymKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhNewSymKey = new Nethereum.RPC.Shh.SymKey.ShhNewSymKey(null);
+            _shhNewSymKey = new RPC.Shh.SymKey.ShhNewSymKey(null);
         }
 
         public ShhNewSymKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhNewSymKey = new Nethereum.RPC.Shh.SymKey.ShhNewSymKey(null);
+            _shhNewSymKey = new RPC.Shh.SymKey.ShhNewSymKey(null);
         }
 
         public IEnumerator SendRequest()
@@ -235,21 +235,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhNewMessageFilterUnityRequest : UnityRpcRequest<System.String>
+    public class ShhNewMessageFilterUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.MessageFilter.ShhNewMessageFilter _shhNewMessageFilter;
+        private readonly RPC.Shh.MessageFilter.ShhNewMessageFilter _shhNewMessageFilter;
 
         public ShhNewMessageFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhNewMessageFilter = new Nethereum.RPC.Shh.MessageFilter.ShhNewMessageFilter(null);
+            _shhNewMessageFilter = new RPC.Shh.MessageFilter.ShhNewMessageFilter(null);
         }
 
         public ShhNewMessageFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhNewMessageFilter = new Nethereum.RPC.Shh.MessageFilter.ShhNewMessageFilter(null);
+            _shhNewMessageFilter = new RPC.Shh.MessageFilter.ShhNewMessageFilter(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Shh.DTOs.MessageFilterInput input)
+        public IEnumerator SendRequest(RPC.Shh.DTOs.MessageFilterInput input)
         {
             var request = _shhNewMessageFilter.BuildRequest(input);
             yield return SendRequest(request);
@@ -257,21 +257,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhDeleteMessageFilterUnityRequest : UnityRpcRequest<System.Boolean>
+    public class ShhDeleteMessageFilterUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Shh.MessageFilter.ShhDeleteMessageFilter _shhDeleteMessageFilter;
+        private readonly RPC.Shh.MessageFilter.ShhDeleteMessageFilter _shhDeleteMessageFilter;
 
         public ShhDeleteMessageFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhDeleteMessageFilter = new Nethereum.RPC.Shh.MessageFilter.ShhDeleteMessageFilter(null);
+            _shhDeleteMessageFilter = new RPC.Shh.MessageFilter.ShhDeleteMessageFilter(null);
         }
 
         public ShhDeleteMessageFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhDeleteMessageFilter = new Nethereum.RPC.Shh.MessageFilter.ShhDeleteMessageFilter(null);
+            _shhDeleteMessageFilter = new RPC.Shh.MessageFilter.ShhDeleteMessageFilter(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhDeleteMessageFilter.BuildRequest(str);
             yield return SendRequest(request);
@@ -279,21 +279,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhGetFilterMessagesUnityRequest : UnityRpcRequest<Nethereum.RPC.Shh.DTOs.ShhMessage[]>
+    public class ShhGetFilterMessagesUnityRequest : UnityRpcRequest<RPC.Shh.DTOs.ShhMessage[]>
     {
-        private readonly Nethereum.RPC.Shh.MessageFilter.ShhGetFilterMessages _shhGetFilterMessages;
+        private readonly RPC.Shh.MessageFilter.ShhGetFilterMessages _shhGetFilterMessages;
 
         public ShhGetFilterMessagesUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhGetFilterMessages = new Nethereum.RPC.Shh.MessageFilter.ShhGetFilterMessages(null);
+            _shhGetFilterMessages = new RPC.Shh.MessageFilter.ShhGetFilterMessages(null);
         }
 
         public ShhGetFilterMessagesUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhGetFilterMessages = new Nethereum.RPC.Shh.MessageFilter.ShhGetFilterMessages(null);
+            _shhGetFilterMessages = new RPC.Shh.MessageFilter.ShhGetFilterMessages(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhGetFilterMessages.BuildRequest(str);
             yield return SendRequest(request);
@@ -301,21 +301,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhAddPrivateKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhAddPrivateKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey _shhAddPrivateKey;
+        private readonly RPC.Shh.KeyPair.ShhAddPrivateKey _shhAddPrivateKey;
 
         public ShhAddPrivateKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhAddPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey(null);
+            _shhAddPrivateKey = new RPC.Shh.KeyPair.ShhAddPrivateKey(null);
         }
 
         public ShhAddPrivateKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhAddPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhAddPrivateKey(null);
+            _shhAddPrivateKey = new RPC.Shh.KeyPair.ShhAddPrivateKey(null);
         }
 
-        public IEnumerator SendRequest(System.String privateKey)
+        public IEnumerator SendRequest(string privateKey)
         {
             var request = _shhAddPrivateKey.BuildRequest(privateKey);
             yield return SendRequest(request);
@@ -323,21 +323,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhDeleteKeyPairUnityRequest : UnityRpcRequest<System.Boolean>
+    public class ShhDeleteKeyPairUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhDeleteKeyPair _shhDeleteKeyPair;
+        private readonly RPC.Shh.KeyPair.ShhDeleteKeyPair _shhDeleteKeyPair;
 
         public ShhDeleteKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhDeleteKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhDeleteKeyPair(null);
+            _shhDeleteKeyPair = new RPC.Shh.KeyPair.ShhDeleteKeyPair(null);
         }
 
         public ShhDeleteKeyPairUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhDeleteKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhDeleteKeyPair(null);
+            _shhDeleteKeyPair = new RPC.Shh.KeyPair.ShhDeleteKeyPair(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhDeleteKeyPair.BuildRequest(str);
             yield return SendRequest(request);
@@ -345,21 +345,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhGetPrivateKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhGetPrivateKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhGetPrivateKey _shhGetPrivateKey;
+        private readonly RPC.Shh.KeyPair.ShhGetPrivateKey _shhGetPrivateKey;
 
         public ShhGetPrivateKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhGetPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhGetPrivateKey(null);
+            _shhGetPrivateKey = new RPC.Shh.KeyPair.ShhGetPrivateKey(null);
         }
 
         public ShhGetPrivateKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhGetPrivateKey = new Nethereum.RPC.Shh.KeyPair.ShhGetPrivateKey(null);
+            _shhGetPrivateKey = new RPC.Shh.KeyPair.ShhGetPrivateKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhGetPrivateKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -367,21 +367,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhGetPublicKeyUnityRequest : UnityRpcRequest<System.String>
+    public class ShhGetPublicKeyUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhGetPublicKey _shhGetPublicKey;
+        private readonly RPC.Shh.KeyPair.ShhGetPublicKey _shhGetPublicKey;
 
         public ShhGetPublicKeyUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhGetPublicKey = new Nethereum.RPC.Shh.KeyPair.ShhGetPublicKey(null);
+            _shhGetPublicKey = new RPC.Shh.KeyPair.ShhGetPublicKey(null);
         }
 
         public ShhGetPublicKeyUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhGetPublicKey = new Nethereum.RPC.Shh.KeyPair.ShhGetPublicKey(null);
+            _shhGetPublicKey = new RPC.Shh.KeyPair.ShhGetPublicKey(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhGetPublicKey.BuildRequest(str);
             yield return SendRequest(request);
@@ -389,21 +389,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhHasKeyPairUnityRequest : UnityRpcRequest<System.Boolean>
+    public class ShhHasKeyPairUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhHasKeyPair _shhHasKeyPair;
+        private readonly RPC.Shh.KeyPair.ShhHasKeyPair _shhHasKeyPair;
 
         public ShhHasKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhHasKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhHasKeyPair(null);
+            _shhHasKeyPair = new RPC.Shh.KeyPair.ShhHasKeyPair(null);
         }
 
         public ShhHasKeyPairUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhHasKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhHasKeyPair(null);
+            _shhHasKeyPair = new RPC.Shh.KeyPair.ShhHasKeyPair(null);
         }
 
-        public IEnumerator SendRequest(System.String str)
+        public IEnumerator SendRequest(string str)
         {
             var request = _shhHasKeyPair.BuildRequest(str);
             yield return SendRequest(request);
@@ -411,18 +411,18 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class ShhNewKeyPairUnityRequest : UnityRpcRequest<System.String>
+    public class ShhNewKeyPairUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair _shhNewKeyPair;
+        private readonly RPC.Shh.KeyPair.ShhNewKeyPair _shhNewKeyPair;
 
         public ShhNewKeyPairUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _shhNewKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair(null);
+            _shhNewKeyPair = new RPC.Shh.KeyPair.ShhNewKeyPair(null);
         }
 
         public ShhNewKeyPairUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _shhNewKeyPair = new Nethereum.RPC.Shh.KeyPair.ShhNewKeyPair(null);
+            _shhNewKeyPair = new RPC.Shh.KeyPair.ShhNewKeyPair(null);
         }
 
         public IEnumerator SendRequest()
@@ -432,18 +432,18 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 
-    public class PersonalListAccountsUnityRequest:UnityRpcRequest<System.String[]>
+    public class PersonalListAccountsUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Personal.PersonalListAccounts _personalListAccounts;
+        private readonly RPC.Personal.PersonalListAccounts _personalListAccounts;
 
         public PersonalListAccountsUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _personalListAccounts = new Nethereum.RPC.Personal.PersonalListAccounts(null);
+            _personalListAccounts = new RPC.Personal.PersonalListAccounts(null);
         }
 
         public PersonalListAccountsUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _personalListAccounts = new Nethereum.RPC.Personal.PersonalListAccounts(null);
+            _personalListAccounts = new RPC.Personal.PersonalListAccounts(null);
         }
 
         public IEnumerator SendRequest()
@@ -452,108 +452,108 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class PersonalLockAccountUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class PersonalLockAccountUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Personal.PersonalLockAccount _personalLockAccount;
+        private readonly RPC.Personal.PersonalLockAccount _personalLockAccount;
 
         public PersonalLockAccountUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _personalLockAccount = new Nethereum.RPC.Personal.PersonalLockAccount(null);
+            _personalLockAccount = new RPC.Personal.PersonalLockAccount(null);
         }
 
         public PersonalLockAccountUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _personalLockAccount = new Nethereum.RPC.Personal.PersonalLockAccount(null);
+            _personalLockAccount = new RPC.Personal.PersonalLockAccount(null);
         }
 
-        public IEnumerator SendRequest(System.String account)
+        public IEnumerator SendRequest(string account)
         {
             var request = _personalLockAccount.BuildRequest(account);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class PersonalNewAccountUnityRequest:UnityRpcRequest<System.String>
+
+    public class PersonalNewAccountUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Personal.PersonalNewAccount _personalNewAccount;
+        private readonly RPC.Personal.PersonalNewAccount _personalNewAccount;
 
         public PersonalNewAccountUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _personalNewAccount = new Nethereum.RPC.Personal.PersonalNewAccount(null);
+            _personalNewAccount = new RPC.Personal.PersonalNewAccount(null);
         }
 
         public PersonalNewAccountUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _personalNewAccount = new Nethereum.RPC.Personal.PersonalNewAccount(null);
+            _personalNewAccount = new RPC.Personal.PersonalNewAccount(null);
         }
 
-        public IEnumerator SendRequest(System.String passPhrase)
+        public IEnumerator SendRequest(string passPhrase)
         {
             var request = _personalNewAccount.BuildRequest(passPhrase);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class PersonalSignAndSendTransactionUnityRequest:UnityRpcRequest<System.String>
+
+    public class PersonalSignAndSendTransactionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Personal.PersonalSignAndSendTransaction _personalSignAndSendTransaction;
+        private readonly RPC.Personal.PersonalSignAndSendTransaction _personalSignAndSendTransaction;
 
         public PersonalSignAndSendTransactionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _personalSignAndSendTransaction = new Nethereum.RPC.Personal.PersonalSignAndSendTransaction(null);
+            _personalSignAndSendTransaction = new RPC.Personal.PersonalSignAndSendTransaction(null);
         }
 
         public PersonalSignAndSendTransactionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _personalSignAndSendTransaction = new Nethereum.RPC.Personal.PersonalSignAndSendTransaction(null);
+            _personalSignAndSendTransaction = new RPC.Personal.PersonalSignAndSendTransaction(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.TransactionInput txn, System.String password)
+        public IEnumerator SendRequest(TransactionInput txn, string password)
         {
             var request = _personalSignAndSendTransaction.BuildRequest(txn, password);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class PersonalUnlockAccountUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class PersonalUnlockAccountUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Personal.PersonalUnlockAccount _personalUnlockAccount;
+        private readonly RPC.Personal.PersonalUnlockAccount _personalUnlockAccount;
 
         public PersonalUnlockAccountUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _personalUnlockAccount = new Nethereum.RPC.Personal.PersonalUnlockAccount(null);
+            _personalUnlockAccount = new RPC.Personal.PersonalUnlockAccount(null);
         }
 
         public PersonalUnlockAccountUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _personalUnlockAccount = new Nethereum.RPC.Personal.PersonalUnlockAccount(null);
+            _personalUnlockAccount = new RPC.Personal.PersonalUnlockAccount(null);
         }
 
-        public IEnumerator SendRequest(System.String address, System.String passPhrase, int durationInSeconds)
+        public IEnumerator SendRequest(string address, string passPhrase, int durationInSeconds)
         {
             var request = _personalUnlockAccount.BuildRequest(address, passPhrase, durationInSeconds);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class NetListeningUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class NetListeningUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Net.NetListening _netListening;
+        private readonly RPC.Net.NetListening _netListening;
 
         public NetListeningUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _netListening = new Nethereum.RPC.Net.NetListening(null);
+            _netListening = new RPC.Net.NetListening(null);
         }
 
         public NetListeningUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _netListening = new Nethereum.RPC.Net.NetListening(null);
+            _netListening = new RPC.Net.NetListening(null);
         }
 
         public IEnumerator SendRequest()
@@ -562,20 +562,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class NetPeerCountUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class NetPeerCountUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Net.NetPeerCount _netPeerCount;
+        private readonly RPC.Net.NetPeerCount _netPeerCount;
 
         public NetPeerCountUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _netPeerCount = new Nethereum.RPC.Net.NetPeerCount(null);
+            _netPeerCount = new RPC.Net.NetPeerCount(null);
         }
 
         public NetPeerCountUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _netPeerCount = new Nethereum.RPC.Net.NetPeerCount(null);
+            _netPeerCount = new RPC.Net.NetPeerCount(null);
         }
         public IEnumerator SendRequest()
         {
@@ -583,20 +583,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class NetVersionUnityRequest:UnityRpcRequest<System.String>
+
+    public class NetVersionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Net.NetVersion _netVersion;
+        private readonly RPC.Net.NetVersion _netVersion;
 
         public NetVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _netVersion = new Nethereum.RPC.Net.NetVersion(null);
+            _netVersion = new RPC.Net.NetVersion(null);
         }
 
         public NetVersionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _netVersion = new Nethereum.RPC.Net.NetVersion(null);
+            _netVersion = new RPC.Net.NetVersion(null);
         }
 
         public IEnumerator SendRequest()
@@ -605,20 +605,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthAccountsUnityRequest:UnityRpcRequest<System.String[]>
+
+    public class EthAccountsUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Eth.EthAccounts _ethAccounts;
+        private readonly RPC.Eth.EthAccounts _ethAccounts;
 
         public EthAccountsUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethAccounts = new Nethereum.RPC.Eth.EthAccounts(null);
+            _ethAccounts = new RPC.Eth.EthAccounts(null);
         }
 
         public EthAccountsUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethAccounts = new Nethereum.RPC.Eth.EthAccounts(null);
+            _ethAccounts = new RPC.Eth.EthAccounts(null);
         }
 
 
@@ -629,18 +629,18 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 
-    public class EthChainIdUnityRequest : UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+    public class EthChainIdUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.EthChainId _ethChainId;
+        private readonly RPC.Eth.EthChainId _ethChainId;
 
         public EthChainIdUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethChainId = new Nethereum.RPC.Eth.EthChainId(null);
+            _ethChainId = new RPC.Eth.EthChainId(null);
         }
 
         public EthChainIdUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethChainId = new Nethereum.RPC.Eth.EthChainId(null);
+            _ethChainId = new RPC.Eth.EthChainId(null);
         }
 
         public IEnumerator SendRequest()
@@ -650,18 +650,18 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 
-    public class EthCoinBaseUnityRequest:UnityRpcRequest<System.String>
+    public class EthCoinBaseUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.EthCoinBase _ethCoinBase;
+        private readonly RPC.Eth.EthCoinBase _ethCoinBase;
 
         public EthCoinBaseUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethCoinBase = new Nethereum.RPC.Eth.EthCoinBase(null);
+            _ethCoinBase = new RPC.Eth.EthCoinBase(null);
         }
 
         public EthCoinBaseUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethCoinBase = new Nethereum.RPC.Eth.EthCoinBase(null);
+            _ethCoinBase = new RPC.Eth.EthCoinBase(null);
         }
 
         public IEnumerator SendRequest()
@@ -670,21 +670,21 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGasPriceUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGasPriceUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.EthGasPrice _ethGasPrice;
+        private readonly RPC.Eth.EthGasPrice _ethGasPrice;
 
 
         public EthGasPriceUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGasPrice = new Nethereum.RPC.Eth.EthGasPrice(null);
+            _ethGasPrice = new RPC.Eth.EthGasPrice(null);
         }
 
         public EthGasPriceUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGasPrice = new Nethereum.RPC.Eth.EthGasPrice(null);
+            _ethGasPrice = new RPC.Eth.EthGasPrice(null);
         }
 
 
@@ -694,86 +694,86 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBalanceUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetBalanceUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.EthGetBalance _ethGetBalance;
+        private readonly RPC.Eth.EthGetBalance _ethGetBalance;
 
         public EthGetBalanceUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBalance = new Nethereum.RPC.Eth.EthGetBalance(null);
+            _ethGetBalance = new RPC.Eth.EthGetBalance(null);
         }
 
         public EthGetBalanceUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBalance = new Nethereum.RPC.Eth.EthGetBalance(null);
+            _ethGetBalance = new RPC.Eth.EthGetBalance(null);
         }
 
-        public IEnumerator SendRequest(System.String address, Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(string address, BlockParameter block)
         {
             var request = _ethGetBalance.BuildRequest(address, block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetCodeUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthGetCodeUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.EthGetCode _ethGetCode;
+        private readonly RPC.Eth.EthGetCode _ethGetCode;
 
         public EthGetCodeUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetCode = new Nethereum.RPC.Eth.EthGetCode(null);
+            _ethGetCode = new RPC.Eth.EthGetCode(null);
         }
 
         public EthGetCodeUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetCode = new Nethereum.RPC.Eth.EthGetCode(null);
+            _ethGetCode = new RPC.Eth.EthGetCode(null);
         }
 
-        public IEnumerator SendRequest(System.String address, Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(string address, BlockParameter block)
         {
             var request = _ethGetCode.BuildRequest(address, block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetStorageAtUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthGetStorageAtUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.EthGetStorageAt _ethGetStorageAt;
+        private readonly RPC.Eth.EthGetStorageAt _ethGetStorageAt;
 
         public EthGetStorageAtUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetStorageAt = new Nethereum.RPC.Eth.EthGetStorageAt(null);
+            _ethGetStorageAt = new RPC.Eth.EthGetStorageAt(null);
         }
 
         public EthGetStorageAtUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetStorageAt = new Nethereum.RPC.Eth.EthGetStorageAt(null);
+            _ethGetStorageAt = new RPC.Eth.EthGetStorageAt(null);
         }
 
-        public IEnumerator SendRequest(System.String address, Nethereum.Hex.HexTypes.HexBigInteger position, Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(string address, HexBigInteger position, BlockParameter block)
         {
             var request = _ethGetStorageAt.BuildRequest(address, position, block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthProtocolVersionUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthProtocolVersionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.EthProtocolVersion _ethProtocolVersion;
+        private readonly RPC.Eth.EthProtocolVersion _ethProtocolVersion;
 
         public EthProtocolVersionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethProtocolVersion = new Nethereum.RPC.Eth.EthProtocolVersion(null);
+            _ethProtocolVersion = new RPC.Eth.EthProtocolVersion(null);
         }
 
         public EthProtocolVersionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethProtocolVersion = new Nethereum.RPC.Eth.EthProtocolVersion(null);
+            _ethProtocolVersion = new RPC.Eth.EthProtocolVersion(null);
         }
 
         public IEnumerator SendRequest()
@@ -782,42 +782,42 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSignUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthSignUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.EthSign _ethSign;
+        private readonly RPC.Eth.EthSign _ethSign;
 
         public EthSignUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSign = new Nethereum.RPC.Eth.EthSign(null);
+            _ethSign = new RPC.Eth.EthSign(null);
         }
 
         public EthSignUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSign = new Nethereum.RPC.Eth.EthSign(null);
+            _ethSign = new RPC.Eth.EthSign(null);
         }
 
-        public IEnumerator SendRequest(System.String address, System.String data)
+        public IEnumerator SendRequest(string address, string data)
         {
             var request = _ethSign.BuildRequest(address, data);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSyncingUnityRequest:UnityRpcRequest<System.Object>
+
+    public class EthSyncingUnityRequest : UnityRpcRequest<object>
     {
-        private readonly Nethereum.RPC.Eth.EthSyncing _ethSyncing;
+        private readonly RPC.Eth.EthSyncing _ethSyncing;
 
         public EthSyncingUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSyncing = new Nethereum.RPC.Eth.EthSyncing(null);
+            _ethSyncing = new RPC.Eth.EthSyncing(null);
         }
 
         public EthSyncingUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSyncing = new Nethereum.RPC.Eth.EthSyncing(null);
+            _ethSyncing = new RPC.Eth.EthSyncing(null);
         }
 
         public IEnumerator SendRequest()
@@ -826,310 +826,310 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetUncleByBlockHashAndIndexUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+
+    public class EthGetUncleByBlockHashAndIndexUnityRequest : UnityRpcRequest<BlockWithTransactionHashes>
     {
-        private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex _ethGetUncleByBlockHashAndIndex;
+        private readonly RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex _ethGetUncleByBlockHashAndIndex;
 
         public EthGetUncleByBlockHashAndIndexUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetUncleByBlockHashAndIndex = new Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex(null);
+            _ethGetUncleByBlockHashAndIndex = new RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex(null);
         }
 
         public EthGetUncleByBlockHashAndIndexUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetUncleByBlockHashAndIndex = new Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex(null);
+            _ethGetUncleByBlockHashAndIndex = new RPC.Eth.Uncles.EthGetUncleByBlockHashAndIndex(null);
         }
 
-        public IEnumerator SendRequest(System.String blockHash, Nethereum.Hex.HexTypes.HexBigInteger uncleIndex)
+        public IEnumerator SendRequest(string blockHash, HexBigInteger uncleIndex)
         {
             var request = _ethGetUncleByBlockHashAndIndex.BuildRequest(blockHash, uncleIndex);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetUncleByBlockNumberAndIndexUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+
+    public class EthGetUncleByBlockNumberAndIndexUnityRequest : UnityRpcRequest<BlockWithTransactionHashes>
     {
-        private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex _ethGetUncleByBlockNumberAndIndex;
+        private readonly RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex _ethGetUncleByBlockNumberAndIndex;
 
         public EthGetUncleByBlockNumberAndIndexUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetUncleByBlockNumberAndIndex = new Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex(null);
+            _ethGetUncleByBlockNumberAndIndex = new RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex(null);
         }
 
         public EthGetUncleByBlockNumberAndIndexUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetUncleByBlockNumberAndIndex = new Nethereum.RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex(null);
+            _ethGetUncleByBlockNumberAndIndex = new RPC.Eth.Uncles.EthGetUncleByBlockNumberAndIndex(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.BlockParameter blockParameter, Nethereum.Hex.HexTypes.HexBigInteger uncleIndex)
+        public IEnumerator SendRequest(BlockParameter blockParameter, HexBigInteger uncleIndex)
         {
             var request = _ethGetUncleByBlockNumberAndIndex.BuildRequest(blockParameter, uncleIndex);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetUncleCountByBlockHashUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetUncleCountByBlockHashUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockHash _ethGetUncleCountByBlockHash;
+        private readonly RPC.Eth.Uncles.EthGetUncleCountByBlockHash _ethGetUncleCountByBlockHash;
 
         public EthGetUncleCountByBlockHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetUncleCountByBlockHash = new Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockHash(null);
+            _ethGetUncleCountByBlockHash = new RPC.Eth.Uncles.EthGetUncleCountByBlockHash(null);
         }
 
         public EthGetUncleCountByBlockHashUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetUncleCountByBlockHash = new Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockHash(null);
+            _ethGetUncleCountByBlockHash = new RPC.Eth.Uncles.EthGetUncleCountByBlockHash(null);
         }
 
-        public IEnumerator SendRequest(System.String hash)
+        public IEnumerator SendRequest(string hash)
         {
             var request = _ethGetUncleCountByBlockHash.BuildRequest(hash);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetUncleCountByBlockNumberUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetUncleCountByBlockNumberUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockNumber _ethGetUncleCountByBlockNumber;
+        private readonly RPC.Eth.Uncles.EthGetUncleCountByBlockNumber _ethGetUncleCountByBlockNumber;
 
         public EthGetUncleCountByBlockNumberUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetUncleCountByBlockNumber = new Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockNumber(null);
+            _ethGetUncleCountByBlockNumber = new RPC.Eth.Uncles.EthGetUncleCountByBlockNumber(null);
         }
 
         public EthGetUncleCountByBlockNumberUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetUncleCountByBlockNumber = new Nethereum.RPC.Eth.Uncles.EthGetUncleCountByBlockNumber(null);
+            _ethGetUncleCountByBlockNumber = new RPC.Eth.Uncles.EthGetUncleCountByBlockNumber(null);
         }
 
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger blockNumber)
+        public IEnumerator SendRequest(HexBigInteger blockNumber)
         {
             var request = _ethGetUncleCountByBlockNumber.BuildRequest(blockNumber);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthCallUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthCallUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthCall _ethCall;
+        private readonly RPC.Eth.Transactions.EthCall _ethCall;
 
         public EthCallUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethCall = new Nethereum.RPC.Eth.Transactions.EthCall(null);
+            _ethCall = new RPC.Eth.Transactions.EthCall(null);
         }
 
         public EthCallUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethCall = new Nethereum.RPC.Eth.Transactions.EthCall(null);
+            _ethCall = new RPC.Eth.Transactions.EthCall(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.CallInput callInput, Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(CallInput callInput, BlockParameter block)
         {
             var request = _ethCall.BuildRequest(callInput, block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthEstimateGasUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthEstimateGasUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthEstimateGas _ethEstimateGas;
+        private readonly RPC.Eth.Transactions.EthEstimateGas _ethEstimateGas;
 
         public EthEstimateGasUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethEstimateGas = new Nethereum.RPC.Eth.Transactions.EthEstimateGas(null);
+            _ethEstimateGas = new RPC.Eth.Transactions.EthEstimateGas(null);
         }
 
         public EthEstimateGasUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethEstimateGas = new Nethereum.RPC.Eth.Transactions.EthEstimateGas(null);
+            _ethEstimateGas = new RPC.Eth.Transactions.EthEstimateGas(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.CallInput callInput)
+        public IEnumerator SendRequest(CallInput callInput)
         {
             var request = _ethEstimateGas.BuildRequest(callInput);
             yield return SendRequest(request);
         }
     }
 
-  
 
-    public class EthGetTransactionByBlockHashAndIndexUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+
+    public class EthGetTransactionByBlockHashAndIndexUnityRequest : UnityRpcRequest<Transaction>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex _ethGetTransactionByBlockHashAndIndex;
+        private readonly RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex _ethGetTransactionByBlockHashAndIndex;
 
 
         public EthGetTransactionByBlockHashAndIndexUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetTransactionByBlockHashAndIndex = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex(null);
+            _ethGetTransactionByBlockHashAndIndex = new RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex(null);
         }
 
         public EthGetTransactionByBlockHashAndIndexUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetTransactionByBlockHashAndIndex = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex(null);
+            _ethGetTransactionByBlockHashAndIndex = new RPC.Eth.Transactions.EthGetTransactionByBlockHashAndIndex(null);
         }
 
-        public IEnumerator SendRequest(System.String blockHash, Nethereum.Hex.HexTypes.HexBigInteger transactionIndex)
+        public IEnumerator SendRequest(string blockHash, HexBigInteger transactionIndex)
         {
             var request = _ethGetTransactionByBlockHashAndIndex.BuildRequest(blockHash, transactionIndex);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetTransactionByBlockNumberAndIndexUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+
+    public class EthGetTransactionByBlockNumberAndIndexUnityRequest : UnityRpcRequest<Transaction>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex _ethGetTransactionByBlockNumberAndIndex;
+        private readonly RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex _ethGetTransactionByBlockNumberAndIndex;
 
         public EthGetTransactionByBlockNumberAndIndexUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetTransactionByBlockNumberAndIndex = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex(null);
+            _ethGetTransactionByBlockNumberAndIndex = new RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex(null);
         }
 
         public EthGetTransactionByBlockNumberAndIndexUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetTransactionByBlockNumberAndIndex = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex(null);
+            _ethGetTransactionByBlockNumberAndIndex = new RPC.Eth.Transactions.EthGetTransactionByBlockNumberAndIndex(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger blockNumber, Nethereum.Hex.HexTypes.HexBigInteger transactionIndex)
+        public IEnumerator SendRequest(HexBigInteger blockNumber, HexBigInteger transactionIndex)
         {
             var request = _ethGetTransactionByBlockNumberAndIndex.BuildRequest(blockNumber, transactionIndex);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetTransactionByHashUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.Transaction>
+
+    public class EthGetTransactionByHashUnityRequest : UnityRpcRequest<Transaction>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionByHash _ethGetTransactionByHash;
+        private readonly RPC.Eth.Transactions.EthGetTransactionByHash _ethGetTransactionByHash;
 
         public EthGetTransactionByHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetTransactionByHash = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByHash(null);
+            _ethGetTransactionByHash = new RPC.Eth.Transactions.EthGetTransactionByHash(null);
         }
 
         public EthGetTransactionByHashUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetTransactionByHash = new Nethereum.RPC.Eth.Transactions.EthGetTransactionByHash(null);
+            _ethGetTransactionByHash = new RPC.Eth.Transactions.EthGetTransactionByHash(null);
         }
 
-        public IEnumerator SendRequest(System.String hashTransaction)
+        public IEnumerator SendRequest(string hashTransaction)
         {
             var request = _ethGetTransactionByHash.BuildRequest(hashTransaction);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetTransactionCountUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetTransactionCountUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionCount _ethGetTransactionCount;
+        private readonly RPC.Eth.Transactions.EthGetTransactionCount _ethGetTransactionCount;
 
         public EthGetTransactionCountUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetTransactionCount = new Nethereum.RPC.Eth.Transactions.EthGetTransactionCount(null);
+            _ethGetTransactionCount = new RPC.Eth.Transactions.EthGetTransactionCount(null);
         }
 
         public EthGetTransactionCountUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetTransactionCount = new Nethereum.RPC.Eth.Transactions.EthGetTransactionCount(null);
+            _ethGetTransactionCount = new RPC.Eth.Transactions.EthGetTransactionCount(null);
         }
 
-        public IEnumerator SendRequest(System.String address, Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(string address, BlockParameter block)
         {
             var request = _ethGetTransactionCount.BuildRequest(address, block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetTransactionReceiptUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.TransactionReceipt>
+
+    public class EthGetTransactionReceiptUnityRequest : UnityRpcRequest<TransactionReceipt>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthGetTransactionReceipt _ethGetTransactionReceipt;
+        private readonly RPC.Eth.Transactions.EthGetTransactionReceipt _ethGetTransactionReceipt;
 
         public EthGetTransactionReceiptUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetTransactionReceipt = new Nethereum.RPC.Eth.Transactions.EthGetTransactionReceipt(null);
+            _ethGetTransactionReceipt = new RPC.Eth.Transactions.EthGetTransactionReceipt(null);
         }
 
         public EthGetTransactionReceiptUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetTransactionReceipt = new Nethereum.RPC.Eth.Transactions.EthGetTransactionReceipt(null);
+            _ethGetTransactionReceipt = new RPC.Eth.Transactions.EthGetTransactionReceipt(null);
         }
 
-        public IEnumerator SendRequest(System.String transactionHash)
+        public IEnumerator SendRequest(string transactionHash)
         {
             var request = _ethGetTransactionReceipt.BuildRequest(transactionHash);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSendRawTransactionUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthSendRawTransactionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthSendRawTransaction _ethSendRawTransaction;
+        private readonly RPC.Eth.Transactions.EthSendRawTransaction _ethSendRawTransaction;
 
 
         public EthSendRawTransactionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSendRawTransaction = new Nethereum.RPC.Eth.Transactions.EthSendRawTransaction(null);
+            _ethSendRawTransaction = new RPC.Eth.Transactions.EthSendRawTransaction(null);
         }
 
         public EthSendRawTransactionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSendRawTransaction = new Nethereum.RPC.Eth.Transactions.EthSendRawTransaction(null);
+            _ethSendRawTransaction = new RPC.Eth.Transactions.EthSendRawTransaction(null);
         }
 
-        public IEnumerator SendRequest(System.String signedTransactionData)
+        public IEnumerator SendRequest(string signedTransactionData)
         {
             var request = _ethSendRawTransaction.BuildRequest(signedTransactionData);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSendTransactionUnityRequest:UnityRpcRequest<System.String>
+
+    public class EthSendTransactionUnityRequest : UnityRpcRequest<string>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthSendTransaction _ethSendTransaction;
+        private readonly RPC.Eth.Transactions.EthSendTransaction _ethSendTransaction;
 
         public EthSendTransactionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSendTransaction = new Nethereum.RPC.Eth.Transactions.EthSendTransaction(null);
+            _ethSendTransaction = new RPC.Eth.Transactions.EthSendTransaction(null);
         }
 
         public EthSendTransactionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSendTransaction = new Nethereum.RPC.Eth.Transactions.EthSendTransaction(null);
+            _ethSendTransaction = new RPC.Eth.Transactions.EthSendTransaction(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.TransactionInput input)
+        public IEnumerator SendRequest(TransactionInput input)
         {
             var request = _ethSendTransaction.BuildRequest(input);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetWorkUnityRequest:UnityRpcRequest<System.String[]>
+
+    public class EthGetWorkUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Eth.Mining.EthGetWork _ethGetWork;
+        private readonly RPC.Eth.Mining.EthGetWork _ethGetWork;
 
         public EthGetWorkUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetWork = new Nethereum.RPC.Eth.Mining.EthGetWork(null);
+            _ethGetWork = new RPC.Eth.Mining.EthGetWork(null);
         }
 
         public EthGetWorkUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetWork = new Nethereum.RPC.Eth.Mining.EthGetWork(null);
+            _ethGetWork = new RPC.Eth.Mining.EthGetWork(null);
         }
 
         public IEnumerator SendRequest()
@@ -1138,20 +1138,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthHashrateUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthHashrateUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Mining.EthHashrate _ethHashrate;
+        private readonly RPC.Eth.Mining.EthHashrate _ethHashrate;
 
         public EthHashrateUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethHashrate = new Nethereum.RPC.Eth.Mining.EthHashrate(null);
+            _ethHashrate = new RPC.Eth.Mining.EthHashrate(null);
         }
 
         public EthHashrateUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethHashrate = new Nethereum.RPC.Eth.Mining.EthHashrate(null);
+            _ethHashrate = new RPC.Eth.Mining.EthHashrate(null);
         }
 
         public IEnumerator SendRequest()
@@ -1160,20 +1160,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthMiningUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class EthMiningUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Eth.Mining.EthMining _ethMining;
+        private readonly RPC.Eth.Mining.EthMining _ethMining;
 
         public EthMiningUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethMining = new Nethereum.RPC.Eth.Mining.EthMining(null);
+            _ethMining = new RPC.Eth.Mining.EthMining(null);
         }
 
         public EthMiningUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethMining = new Nethereum.RPC.Eth.Mining.EthMining(null);
+            _ethMining = new RPC.Eth.Mining.EthMining(null);
         }
 
         public IEnumerator SendRequest()
@@ -1182,173 +1182,173 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSubmitHashrateUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class EthSubmitHashrateUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Eth.Mining.EthSubmitHashrate _ethSubmitHashrate;
+        private readonly RPC.Eth.Mining.EthSubmitHashrate _ethSubmitHashrate;
 
         public EthSubmitHashrateUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSubmitHashrate = new Nethereum.RPC.Eth.Mining.EthSubmitHashrate(null);
+            _ethSubmitHashrate = new RPC.Eth.Mining.EthSubmitHashrate(null);
         }
 
         public EthSubmitHashrateUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSubmitHashrate = new Nethereum.RPC.Eth.Mining.EthSubmitHashrate(null);
+            _ethSubmitHashrate = new RPC.Eth.Mining.EthSubmitHashrate(null);
         }
 
-        public IEnumerator SendRequest(System.String hashRate, System.String clientId)
+        public IEnumerator SendRequest(string hashRate, string clientId)
         {
             var request = _ethSubmitHashrate.BuildRequest(hashRate, clientId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthSubmitWorkUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class EthSubmitWorkUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Eth.Mining.EthSubmitWork _ethSubmitWork;
+        private readonly RPC.Eth.Mining.EthSubmitWork _ethSubmitWork;
 
         public EthSubmitWorkUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethSubmitWork = new Nethereum.RPC.Eth.Mining.EthSubmitWork(null);
+            _ethSubmitWork = new RPC.Eth.Mining.EthSubmitWork(null);
         }
 
         public EthSubmitWorkUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethSubmitWork = new Nethereum.RPC.Eth.Mining.EthSubmitWork(null);
+            _ethSubmitWork = new RPC.Eth.Mining.EthSubmitWork(null);
         }
-        public IEnumerator SendRequest(System.String nonce, System.String header, System.String mix)
+        public IEnumerator SendRequest(string nonce, string header, string mix)
         {
             var request = _ethSubmitWork.BuildRequest(nonce, header, mix);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetFilterChangesForEthNewFilterUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+
+    public class EthGetFilterChangesForEthNewFilterUnityRequest : UnityRpcRequest<FilterLog[]>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter _ethGetFilterChangesForEthNewFilter;
+        private readonly RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter _ethGetFilterChangesForEthNewFilter;
 
         public EthGetFilterChangesForEthNewFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetFilterChangesForEthNewFilter = new Nethereum.RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter(null);
+            _ethGetFilterChangesForEthNewFilter = new RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter(null);
         }
 
         public EthGetFilterChangesForEthNewFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetFilterChangesForEthNewFilter = new Nethereum.RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter(null);
+            _ethGetFilterChangesForEthNewFilter = new RPC.Eth.Filters.EthGetFilterChangesForEthNewFilter(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger filterId)
+        public IEnumerator SendRequest(HexBigInteger filterId)
         {
             var request = _ethGetFilterChangesForEthNewFilter.BuildRequest(filterId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetFilterChangesForBlockOrTransactionUnityRequest:UnityRpcRequest<System.String[]>
+
+    public class EthGetFilterChangesForBlockOrTransactionUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction _ethGetFilterChangesForBlockOrTransaction;
+        private readonly RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction _ethGetFilterChangesForBlockOrTransaction;
 
         public EthGetFilterChangesForBlockOrTransactionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetFilterChangesForBlockOrTransaction = new Nethereum.RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction(null);
+            _ethGetFilterChangesForBlockOrTransaction = new RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction(null);
         }
 
         public EthGetFilterChangesForBlockOrTransactionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetFilterChangesForBlockOrTransaction = new Nethereum.RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction(null);
+            _ethGetFilterChangesForBlockOrTransaction = new RPC.Eth.Filters.EthGetFilterChangesForBlockOrTransaction(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger filterId)
+        public IEnumerator SendRequest(HexBigInteger filterId)
         {
             var request = _ethGetFilterChangesForBlockOrTransaction.BuildRequest(filterId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetFilterLogsForBlockOrTransactionUnityRequest:UnityRpcRequest<System.String[]>
+
+    public class EthGetFilterLogsForBlockOrTransactionUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction _ethGetFilterLogsForBlockOrTransaction;
+        private readonly RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction _ethGetFilterLogsForBlockOrTransaction;
 
         public EthGetFilterLogsForBlockOrTransactionUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetFilterLogsForBlockOrTransaction = new Nethereum.RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction(null);
+            _ethGetFilterLogsForBlockOrTransaction = new RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction(null);
         }
 
         public EthGetFilterLogsForBlockOrTransactionUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetFilterLogsForBlockOrTransaction = new Nethereum.RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction(null);
+            _ethGetFilterLogsForBlockOrTransaction = new RPC.Eth.Filters.EthGetFilterLogsForBlockOrTransaction(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger filterId)
+        public IEnumerator SendRequest(HexBigInteger filterId)
         {
             var request = _ethGetFilterLogsForBlockOrTransaction.BuildRequest(filterId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetFilterLogsForEthNewFilterUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+
+    public class EthGetFilterLogsForEthNewFilterUnityRequest : UnityRpcRequest<FilterLog[]>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter _ethGetFilterLogsForEthNewFilter;
+        private readonly RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter _ethGetFilterLogsForEthNewFilter;
 
         public EthGetFilterLogsForEthNewFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetFilterLogsForEthNewFilter = new Nethereum.RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter(null);
+            _ethGetFilterLogsForEthNewFilter = new RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter(null);
         }
 
         public EthGetFilterLogsForEthNewFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetFilterLogsForEthNewFilter = new Nethereum.RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter(null);
+            _ethGetFilterLogsForEthNewFilter = new RPC.Eth.Filters.EthGetFilterLogsForEthNewFilter(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger filterId)
+        public IEnumerator SendRequest(HexBigInteger filterId)
         {
             var request = _ethGetFilterLogsForEthNewFilter.BuildRequest(filterId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetLogsUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.FilterLog[]>
+
+    public class EthGetLogsUnityRequest : UnityRpcRequest<FilterLog[]>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthGetLogs _ethGetLogs;
+        private readonly RPC.Eth.Filters.EthGetLogs _ethGetLogs;
 
         public EthGetLogsUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetLogs = new Nethereum.RPC.Eth.Filters.EthGetLogs(null);
+            _ethGetLogs = new RPC.Eth.Filters.EthGetLogs(null);
         }
 
         public EthGetLogsUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetLogs = new Nethereum.RPC.Eth.Filters.EthGetLogs(null);
+            _ethGetLogs = new RPC.Eth.Filters.EthGetLogs(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.NewFilterInput newFilter)
+        public IEnumerator SendRequest(NewFilterInput newFilter)
         {
             var request = _ethGetLogs.BuildRequest(newFilter);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthNewBlockFilterUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthNewBlockFilterUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthNewBlockFilter _ethNewBlockFilter;
+        private readonly RPC.Eth.Filters.EthNewBlockFilter _ethNewBlockFilter;
 
         public EthNewBlockFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethNewBlockFilter = new Nethereum.RPC.Eth.Filters.EthNewBlockFilter(null);
+            _ethNewBlockFilter = new RPC.Eth.Filters.EthNewBlockFilter(null);
         }
 
         public EthNewBlockFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethNewBlockFilter = new Nethereum.RPC.Eth.Filters.EthNewBlockFilter(null);
+            _ethNewBlockFilter = new RPC.Eth.Filters.EthNewBlockFilter(null);
         }
 
         public IEnumerator SendRequest()
@@ -1357,42 +1357,42 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthNewFilterUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthNewFilterUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthNewFilter _ethNewFilter;
+        private readonly RPC.Eth.Filters.EthNewFilter _ethNewFilter;
 
         public EthNewFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethNewFilter = new Nethereum.RPC.Eth.Filters.EthNewFilter(null);
+            _ethNewFilter = new RPC.Eth.Filters.EthNewFilter(null);
         }
 
         public EthNewFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethNewFilter = new Nethereum.RPC.Eth.Filters.EthNewFilter(null);
+            _ethNewFilter = new RPC.Eth.Filters.EthNewFilter(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.NewFilterInput newFilterInput)
+        public IEnumerator SendRequest(NewFilterInput newFilterInput)
         {
             var request = _ethNewFilter.BuildRequest(newFilterInput);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthNewPendingTransactionFilterUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthNewPendingTransactionFilterUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthNewPendingTransactionFilter _ethNewPendingTransactionFilter;
+        private readonly RPC.Eth.Filters.EthNewPendingTransactionFilter _ethNewPendingTransactionFilter;
 
         public EthNewPendingTransactionFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethNewPendingTransactionFilter = new Nethereum.RPC.Eth.Filters.EthNewPendingTransactionFilter(null);
+            _ethNewPendingTransactionFilter = new RPC.Eth.Filters.EthNewPendingTransactionFilter(null);
         }
 
         public EthNewPendingTransactionFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethNewPendingTransactionFilter = new Nethereum.RPC.Eth.Filters.EthNewPendingTransactionFilter(null);
+            _ethNewPendingTransactionFilter = new RPC.Eth.Filters.EthNewPendingTransactionFilter(null);
         }
 
 
@@ -1402,108 +1402,108 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthUninstallFilterUnityRequest:UnityRpcRequest<System.Boolean>
+
+    public class EthUninstallFilterUnityRequest : UnityRpcRequest<bool>
     {
-        private readonly Nethereum.RPC.Eth.Filters.EthUninstallFilter _ethUninstallFilter;
+        private readonly RPC.Eth.Filters.EthUninstallFilter _ethUninstallFilter;
 
         public EthUninstallFilterUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethUninstallFilter = new Nethereum.RPC.Eth.Filters.EthUninstallFilter(null);
+            _ethUninstallFilter = new RPC.Eth.Filters.EthUninstallFilter(null);
         }
 
         public EthUninstallFilterUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethUninstallFilter = new Nethereum.RPC.Eth.Filters.EthUninstallFilter(null);
+            _ethUninstallFilter = new RPC.Eth.Filters.EthUninstallFilter(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger filterId)
+        public IEnumerator SendRequest(HexBigInteger filterId)
         {
             var request = _ethUninstallFilter.BuildRequest(filterId);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthCompileLLLUnityRequest:UnityRpcRequest<Newtonsoft.Json.Linq.JObject>
+
+    public class EthCompileLLLUnityRequest : UnityRpcRequest<Newtonsoft.Json.Linq.JObject>
     {
-        private readonly Nethereum.RPC.Eth.Compilation.EthCompileLLL _ethCompileLLL;
+        private readonly RPC.Eth.Compilation.EthCompileLLL _ethCompileLLL;
 
         public EthCompileLLLUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethCompileLLL = new Nethereum.RPC.Eth.Compilation.EthCompileLLL(null);
+            _ethCompileLLL = new RPC.Eth.Compilation.EthCompileLLL(null);
         }
 
         public EthCompileLLLUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethCompileLLL = new Nethereum.RPC.Eth.Compilation.EthCompileLLL(null);
+            _ethCompileLLL = new RPC.Eth.Compilation.EthCompileLLL(null);
         }
 
-        public IEnumerator SendRequest(System.String lllcode)
+        public IEnumerator SendRequest(string lllcode)
         {
             var request = _ethCompileLLL.BuildRequest(lllcode);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthCompileSerpentUnityRequest:UnityRpcRequest<Newtonsoft.Json.Linq.JObject>
+
+    public class EthCompileSerpentUnityRequest : UnityRpcRequest<Newtonsoft.Json.Linq.JObject>
     {
-        private readonly Nethereum.RPC.Eth.Compilation.EthCompileSerpent _ethCompileSerpent;
+        private readonly RPC.Eth.Compilation.EthCompileSerpent _ethCompileSerpent;
 
         public EthCompileSerpentUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethCompileSerpent = new Nethereum.RPC.Eth.Compilation.EthCompileSerpent(null);
+            _ethCompileSerpent = new RPC.Eth.Compilation.EthCompileSerpent(null);
         }
 
         public EthCompileSerpentUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethCompileSerpent = new Nethereum.RPC.Eth.Compilation.EthCompileSerpent(null);
+            _ethCompileSerpent = new RPC.Eth.Compilation.EthCompileSerpent(null);
         }
 
-        public IEnumerator SendRequest(System.String serpentCode)
+        public IEnumerator SendRequest(string serpentCode)
         {
             var request = _ethCompileSerpent.BuildRequest(serpentCode);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthCompileSolidityUnityRequest:UnityRpcRequest<Newtonsoft.Json.Linq.JToken>
+
+    public class EthCompileSolidityUnityRequest : UnityRpcRequest<Newtonsoft.Json.Linq.JToken>
     {
-        private readonly Nethereum.RPC.Eth.Compilation.EthCompileSolidity _ethCompileSolidity;
+        private readonly RPC.Eth.Compilation.EthCompileSolidity _ethCompileSolidity;
 
         public EthCompileSolidityUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethCompileSolidity = new Nethereum.RPC.Eth.Compilation.EthCompileSolidity(null);
+            _ethCompileSolidity = new RPC.Eth.Compilation.EthCompileSolidity(null);
         }
 
         public EthCompileSolidityUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethCompileSolidity = new Nethereum.RPC.Eth.Compilation.EthCompileSolidity(null);
+            _ethCompileSolidity = new RPC.Eth.Compilation.EthCompileSolidity(null);
         }
 
-        public IEnumerator SendRequest(System.String contractCode)
+        public IEnumerator SendRequest(string contractCode)
         {
             var request = _ethCompileSolidity.BuildRequest(contractCode);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetCompilersUnityRequest:UnityRpcRequest<System.String[]>
+
+    public class EthGetCompilersUnityRequest : UnityRpcRequest<string[]>
     {
-        private readonly Nethereum.RPC.Eth.Compilation.EthGetCompilers _ethGetCompilers;
+        private readonly RPC.Eth.Compilation.EthGetCompilers _ethGetCompilers;
 
         public EthGetCompilersUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetCompilers = new Nethereum.RPC.Eth.Compilation.EthGetCompilers(null);
+            _ethGetCompilers = new RPC.Eth.Compilation.EthGetCompilers(null);
         }
 
         public EthGetCompilersUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetCompilers = new Nethereum.RPC.Eth.Compilation.EthGetCompilers(null);
+            _ethGetCompilers = new RPC.Eth.Compilation.EthGetCompilers(null);
         }
 
         public IEnumerator SendRequest()
@@ -1512,20 +1512,20 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthBlockNumberUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthBlockNumberUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthBlockNumber _ethBlockNumber;
+        private readonly RPC.Eth.Blocks.EthBlockNumber _ethBlockNumber;
 
         public EthBlockNumberUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethBlockNumber = new Nethereum.RPC.Eth.Blocks.EthBlockNumber(null);
+            _ethBlockNumber = new RPC.Eth.Blocks.EthBlockNumber(null);
         }
 
         public EthBlockNumberUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethBlockNumber = new Nethereum.RPC.Eth.Blocks.EthBlockNumber(null);
+            _ethBlockNumber = new RPC.Eth.Blocks.EthBlockNumber(null);
         }
 
         public IEnumerator SendRequest()
@@ -1534,125 +1534,125 @@ namespace Nethereum.JsonRpc.UnityClient
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockWithTransactionsByHashUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
+
+    public class EthGetBlockWithTransactionsByHashUnityRequest : UnityRpcRequest<BlockWithTransactions>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash _ethGetBlockWithTransactionsByHash;
+        private readonly RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash _ethGetBlockWithTransactionsByHash;
 
         public EthGetBlockWithTransactionsByHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBlockWithTransactionsByHash = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash(null);
+            _ethGetBlockWithTransactionsByHash = new RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash(null);
         }
 
         public EthGetBlockWithTransactionsByHashUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBlockWithTransactionsByHash = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash(null);
+            _ethGetBlockWithTransactionsByHash = new RPC.Eth.Blocks.EthGetBlockWithTransactionsByHash(null);
         }
 
-        public IEnumerator SendRequest(System.String blockHash)
+        public IEnumerator SendRequest(string blockHash)
         {
             var request = _ethGetBlockWithTransactionsByHash.BuildRequest(blockHash);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockWithTransactionsHashesByHashUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+
+    public class EthGetBlockWithTransactionsHashesByHashUnityRequest : UnityRpcRequest<BlockWithTransactionHashes>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash _ethGetBlockWithTransactionsHashesByHash;
+        private readonly RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash _ethGetBlockWithTransactionsHashesByHash;
 
         public EthGetBlockWithTransactionsHashesByHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBlockWithTransactionsHashesByHash = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash(null);
+            _ethGetBlockWithTransactionsHashesByHash = new RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash(null);
         }
 
         public EthGetBlockWithTransactionsHashesByHashUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBlockWithTransactionsHashesByHash = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash(null);
+            _ethGetBlockWithTransactionsHashesByHash = new RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByHash(null);
         }
-        public IEnumerator SendRequest(System.String blockHash)
+        public IEnumerator SendRequest(string blockHash)
         {
             var request = _ethGetBlockWithTransactionsHashesByHash.BuildRequest(blockHash);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockWithTransactionsByNumberUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactions>
+
+    public class EthGetBlockWithTransactionsByNumberUnityRequest : UnityRpcRequest<BlockWithTransactions>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber _ethGetBlockWithTransactionsByNumber;
+        private readonly RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber _ethGetBlockWithTransactionsByNumber;
 
         public EthGetBlockWithTransactionsByNumberUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBlockWithTransactionsByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(null);
+            _ethGetBlockWithTransactionsByNumber = new RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(null);
         }
 
         public EthGetBlockWithTransactionsByNumberUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBlockWithTransactionsByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(null);
+            _ethGetBlockWithTransactionsByNumber = new RPC.Eth.Blocks.EthGetBlockWithTransactionsByNumber(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger number)
+        public IEnumerator SendRequest(HexBigInteger number)
         {
             var request = _ethGetBlockWithTransactionsByNumber.BuildRequest(number);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockTransactionCountByHashUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetBlockTransactionCountByHashUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByHash _ethGetBlockTransactionCountByHash;
+        private readonly RPC.Eth.Blocks.EthGetBlockTransactionCountByHash _ethGetBlockTransactionCountByHash;
 
-        public EthGetBlockTransactionCountByHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null):base(url, jsonSerializerSettings)
+        public EthGetBlockTransactionCountByHashUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null) : base(url, jsonSerializerSettings)
         {
-            _ethGetBlockTransactionCountByHash = new Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByHash(null);
+            _ethGetBlockTransactionCountByHash = new RPC.Eth.Blocks.EthGetBlockTransactionCountByHash(null);
         }
 
-        public IEnumerator SendRequest(System.String hash)
+        public IEnumerator SendRequest(string hash)
         {
             var request = _ethGetBlockTransactionCountByHash.BuildRequest(hash);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockTransactionCountByNumberUnityRequest:UnityRpcRequest<Nethereum.Hex.HexTypes.HexBigInteger>
+
+    public class EthGetBlockTransactionCountByNumberUnityRequest : UnityRpcRequest<HexBigInteger>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber _ethGetBlockTransactionCountByNumber;
+        private readonly RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber _ethGetBlockTransactionCountByNumber;
 
         public EthGetBlockTransactionCountByNumberUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBlockTransactionCountByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber(null);
+            _ethGetBlockTransactionCountByNumber = new RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber(null);
         }
 
         public EthGetBlockTransactionCountByNumberUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBlockTransactionCountByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber(null);
+            _ethGetBlockTransactionCountByNumber = new RPC.Eth.Blocks.EthGetBlockTransactionCountByNumber(null);
         }
 
 
-        public IEnumerator SendRequest(Nethereum.RPC.Eth.DTOs.BlockParameter block)
+        public IEnumerator SendRequest(BlockParameter block)
         {
             var request = _ethGetBlockTransactionCountByNumber.BuildRequest(block);
             yield return SendRequest(request);
         }
     }
-                
 
-    public class EthGetBlockWithTransactionsHashesByNumberUnityRequest:UnityRpcRequest<Nethereum.RPC.Eth.DTOs.BlockWithTransactionHashes>
+
+    public class EthGetBlockWithTransactionsHashesByNumberUnityRequest : UnityRpcRequest<BlockWithTransactionHashes>
     {
-        private readonly Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashesByNumber;
+        private readonly RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber _ethGetBlockWithTransactionsHashesByNumber;
 
         public EthGetBlockWithTransactionsHashesByNumberUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethGetBlockWithTransactionsHashesByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber(null);
+            _ethGetBlockWithTransactionsHashesByNumber = new RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber(null);
         }
 
         public EthGetBlockWithTransactionsHashesByNumberUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethGetBlockWithTransactionsHashesByNumber = new Nethereum.RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber(null);
+            _ethGetBlockWithTransactionsHashesByNumber = new RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber(null);
         }
 
         public IEnumerator SendRequest(BlockParameter blockParameter)
@@ -1663,21 +1663,21 @@ namespace Nethereum.JsonRpc.UnityClient
     }
 
 
-    public class EthFeeHistoryUnityRequest : UnityRpcRequest<Nethereum.RPC.Eth.DTOs.FeeHistoryResult>
+    public class EthFeeHistoryUnityRequest : UnityRpcRequest<FeeHistoryResult>
     {
-        private readonly Nethereum.RPC.Eth.Transactions.EthFeeHistory _ethFeeHistory;
+        private readonly RPC.Eth.Transactions.EthFeeHistory _ethFeeHistory;
 
         public EthFeeHistoryUnityRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, jsonSerializerSettings, requestHeaders)
         {
-            _ethFeeHistory = new Nethereum.RPC.Eth.Transactions.EthFeeHistory(null);
+            _ethFeeHistory = new RPC.Eth.Transactions.EthFeeHistory(null);
         }
 
         public EthFeeHistoryUnityRequest(IUnityRpcRequestClientFactory unityRpcClientFactory) : base(unityRpcClientFactory)
         {
-            _ethFeeHistory = new Nethereum.RPC.Eth.Transactions.EthFeeHistory(null);
+            _ethFeeHistory = new RPC.Eth.Transactions.EthFeeHistory(null);
         }
 
-        public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger blockCount, Nethereum.RPC.Eth.DTOs.BlockParameter highestBlockNumber, System.Double[] rewardPercentiles = null)
+        public IEnumerator SendRequest(HexBigInteger blockCount, BlockParameter highestBlockNumber, double[] rewardPercentiles = null)
         {
             var request = _ethFeeHistory.BuildRequest(blockCount, highestBlockNumber, rewardPercentiles);
             yield return SendRequest(request);

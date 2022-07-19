@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Nethereum.Contracts;
 using System.Numerics;
 using Newtonsoft.Json;
-using Nethereum.JsonRpc.UnityClient;
+using Nethereum.Unity.Rpc;
 
 namespace Nethereum.Unity.Contracts
 {

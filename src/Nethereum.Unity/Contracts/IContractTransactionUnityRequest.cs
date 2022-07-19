@@ -1,5 +1,5 @@
 ﻿using Nethereum.Contracts;
-using Nethereum.JsonRpc.UnityClient;
+using Nethereum.Unity.Rpc;
 using System.Collections;
 
 namespace Nethereum.Unity.Contracts

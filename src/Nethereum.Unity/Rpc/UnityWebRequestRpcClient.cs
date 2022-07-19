@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
 using Nethereum.JsonRpc.Client.RpcMessages;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public class UnityWebRequestRpcClient : UnityRequest<RpcResponseMessage>, IClientRequestHeaderSupport, IUnityRpcRequestClient
     {
@@ -23,11 +23,11 @@ namespace Nethereum.JsonRpc.UnityClient
         {
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
-            this._url = url;
+            _url = url;
 
             if (requestHeaders != null)
             {
-                this.RequestHeaders = requestHeaders;
+                RequestHeaders = requestHeaders;
             }
             this.SetBasicAuthenticationHeaderFromUri(new Uri(url));
 
@@ -36,7 +36,7 @@ namespace Nethereum.JsonRpc.UnityClient
 
         public IEnumerator SendRequest(RpcRequest request)
         {
-            var requestFormatted = new Unity.RpcModel.RpcRequest(request.Id, request.Method, request.RawParameters);
+            var requestFormatted = new RpcModel.RpcRequest(request.Id, request.Method, request.RawParameters);
 
             var rpcRequestJson = JsonConvert.SerializeObject(requestFormatted, JsonSerializerSettings);
             var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
@@ -61,7 +61,7 @@ namespace Nethereum.JsonRpc.UnityClient
 
                 if (unityRequest.error != null)
                 {
-                    this.Exception = new Exception(unityRequest.error);
+                    Exception = new Exception(unityRequest.error);
 #if DEBUG
                     Debug.Log(unityRequest.error);
 #endif
@@ -75,11 +75,11 @@ namespace Nethereum.JsonRpc.UnityClient
 #if DEBUG
                         Debug.Log(responseJson);
 #endif
-                        this.Result = JsonConvert.DeserializeObject<RpcResponseMessage>(responseJson, JsonSerializerSettings);
+                        Result = JsonConvert.DeserializeObject<RpcResponseMessage>(responseJson, JsonSerializerSettings);
                     }
                     catch (Exception ex)
                     {
-                        this.Exception = new Exception(ex.Message);
+                        Exception = new Exception(ex.Message);
 #if DEBUG
                         Debug.Log(ex.Message);
 #endif
@@ -89,5 +89,5 @@ namespace Nethereum.JsonRpc.UnityClient
         }
     }
 }
-    
+
 

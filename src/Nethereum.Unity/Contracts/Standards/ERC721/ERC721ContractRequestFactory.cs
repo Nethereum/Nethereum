@@ -1,5 +1,10 @@
+using System.Collections.Generic;
+using System;
+using Nethereum.Contracts.Standards.ERC721.ContractDefinition;
+
 namespace Nethereum.Unity.Contracts.Standards.ERC721
 {
+
     public partial class ERC721ContractRequestFactory 
     {
         public string ContractAddress { get; protected set; }

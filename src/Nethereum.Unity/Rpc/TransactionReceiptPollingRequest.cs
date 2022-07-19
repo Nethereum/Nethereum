@@ -4,7 +4,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
     public class TransactionReceiptPollingRequest : UnityRequest<TransactionReceipt>
     {
@@ -14,7 +14,7 @@ namespace Nethereum.JsonRpc.UnityClient
         public TransactionReceiptPollingRequest(string url, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
             _ethGetTransactionReceipt = new EthGetTransactionReceiptUnityRequest(url, jsonSerializerSettings, requestHeaders);
-            
+
         }
 
         public TransactionReceiptPollingRequest(IUnityRpcRequestClientFactory unityRpcClientFactory)
@@ -38,7 +38,7 @@ namespace Nethereum.JsonRpc.UnityClient
                     }
                     else
                     {
-                        this.Exception = _ethGetTransactionReceipt.Exception;
+                        Exception = _ethGetTransactionReceipt.Exception;
                         yield break;
                     }
                 }

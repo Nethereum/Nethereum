@@ -12,12 +12,12 @@ using System;
 using Nethereum.Signer;
 using Nethereum.Unity.Contracts;
 
-namespace Nethereum.JsonRpc.UnityClient
+namespace Nethereum.Unity.Rpc
 {
 
-    public class QueryUnityRequest<TFunctionMessage, TResponse> : 
-        UnityRequest<TResponse>, 
-        IContractQueryUnityRequest<TFunctionMessage, TResponse> 
+    public class QueryUnityRequest<TFunctionMessage, TResponse> :
+        UnityRequest<TResponse>,
+        IContractQueryUnityRequest<TFunctionMessage, TResponse>
         where TFunctionMessage : FunctionMessage, new()
         where TResponse : IFunctionOutputDTO, new()
 
@@ -54,7 +54,7 @@ namespace Nethereum.JsonRpc.UnityClient
             }
             else
             {
-                this.Exception = _ethCallUnityRequest.Exception;
+                Exception = _ethCallUnityRequest.Exception;
                 yield break;
             }
         }
