@@ -60,7 +60,7 @@ namespace Nethereum.RPC.Eth.Blocks
                 currentBlockOnChain = await GetCurrentBlockOnChainAsync().ConfigureAwait(false);
             }
 
-            return currentBlockOnChain;
+            return currentBlockOnChain.Value - _minimumBlockConfirmations;
         }
 
         private Task<HexBigInteger> GetCurrentBlockOnChainAsync()
