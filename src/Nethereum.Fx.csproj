@@ -162,6 +162,9 @@
 
     <Compile Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
     <None Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
+
+	  <Compile Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
+	  <None Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
@@ -218,6 +221,8 @@
     <None Remove="Nethereum.Signer.Ledger\**" />
     <None Remove="Nethereum.Signer.Trezor\**" />
     <None Remove="Nethereum.Unity\**" />
+	<None Remove="Nethereum.Metamask\**" />
+	<None Remove="Nethereum.Metamask.Blazor\**" />
     <None Remove="packages\**" />
   </ItemGroup>
 
