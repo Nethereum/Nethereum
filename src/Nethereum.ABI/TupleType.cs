@@ -1,5 +1,6 @@
 using System.Linq;
 using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI
 {
@@ -18,6 +19,16 @@ namespace Nethereum.ABI
         {
             Decoder = new TupleTypeDecoder();
             Encoder = new TupleTypeEncoder();
+        }
+
+        public T DecodeComplexType<T>(string encoded)
+        {
+            return DecodeComplexType<T>(encoded.HexToByteArray());
+        }
+
+        public T DecodeComplexType<T>(byte[] encoded)
+        {
+            return ((TupleTypeDecoder)Decoder).DecodeComplexType<T>(encoded);
         }
 
         public override int FixedSize {

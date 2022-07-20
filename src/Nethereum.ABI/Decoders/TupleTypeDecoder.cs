@@ -22,16 +22,16 @@ namespace Nethereum.ABI
         public override object Decode(byte[] encoded, Type type)
         {
             //TODO: do we need to check ? we always return a list of ParameterOutputs
-            // if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
-            if (type == typeof(List<ParameterOutput>))
-            {
-                var decodingComponents = InitDefaultDecodingComponents();
-                return parameterDecoder.DecodeOutput(encoded, decodingComponents);
-            }
-            else
-            {
-                return parameterDecoder.DecodeAttributes(encoded, type);
-            }
+            // if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported"); 
+            var decodingComponents = InitDefaultDecodingComponents();
+            return parameterDecoder.DecodeOutput(encoded, decodingComponents);
+           
+        }
+
+        public T DecodeComplexType<T>(byte[] encoded)
+        {
+           return (T)parameterDecoder.DecodeAttributes(encoded, typeof(T));
+           
         }
 
         public ParameterOutput[] InitDefaultDecodingComponents()
