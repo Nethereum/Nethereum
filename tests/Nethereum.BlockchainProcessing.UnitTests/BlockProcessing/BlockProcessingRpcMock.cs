@@ -2,36 +2,39 @@
 using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.Blocks;
 using Nethereum.RPC.Eth.DTOs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 {
     public class BlockProcessingRpcMock : ProcessingRpcMockBase
     {
-        public BlockProcessingRpcMock(Web3Mock web3Mock):base(web3Mock)
+        public BlockProcessingRpcMock(Web3Mock web3Mock) : base(web3Mock)
         {
 
             web3Mock.GetBlockWithTransactionsByNumberMock.Setup(s => s.SendRequestAsync(It.IsAny<HexBigInteger>(), null))
                 .Returns<HexBigInteger, object>((n, id) =>
                 {
-                    BlockRequestCount ++;
+                    BlockRequestCount++;
                     return Task.FromResult(Blocks.FirstOrDefault(b => b.Number.Value == n.Value));
                 });
 
             web3Mock.GetTransactionReceiptMock.Setup(s => s.SendRequestAsync(It.IsAny<string>(), null))
                 .Returns<string, object>((hash, id) =>
                 {
-                    ReceiptRequestCount ++;
+                    ReceiptRequestCount++;
                     return Task.FromResult(Receipts.FirstOrDefault(b => b.TransactionHash == hash));
                 });
         }
 
-        public int BlockRequestCount { get;set;}
-        public int ReceiptRequestCount { get;set;}
+        public int BlockRequestCount { get; set; }
+        public int ReceiptRequestCount { get; set; }
 
         public List<BlockWithTransactions> Blocks { get; set; } = new List<BlockWithTransactions>();
 
@@ -63,7 +66,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 
                 for (var l = 0; l < logsPerTransaction; l++)
                 {
-                    logs[l] = new FilterLog() { LogIndex = new HexBigInteger(l)};
+                    logs[l] = new FilterLog() { LogIndex = new HexBigInteger(l) };
                 }
 
                 Receipts.AddRange(new[] {new TransactionReceipt {
@@ -73,6 +76,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
                     });
             }
         }
+
 
     }
 }
