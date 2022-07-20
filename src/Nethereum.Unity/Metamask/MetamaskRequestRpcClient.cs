@@ -23,15 +23,17 @@ namespace Nethereum.Unity.Metamask
         }
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
+        public int TimeOuMiliseconds { get; }
 
         private string _account;
 
-        public MetamaskRequestRpcClient(string account, JsonSerializerSettings jsonSerializerSettings = null)
+        public MetamaskRequestRpcClient(string account, JsonSerializerSettings jsonSerializerSettings = null, int timeOuMiliseconds = WaitUntilRequestResponse.DefaultTimeOutMiliSeconds)
         {
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
 
             JsonSerializerSettings = jsonSerializerSettings;
+            TimeOuMiliseconds = timeOuMiliseconds;
             _account = account;
         }
 
@@ -56,17 +58,21 @@ namespace Nethereum.Unity.Metamask
             }
 
 
-            var waitUntilRequestResponse = new WaitUntilRequestResponse(newUniqueRequestId);
-            yield return new WaitUntil(waitUntilRequestResponse.HasReceivedResponse);
-
-
+            var waitUntilRequestResponse = new WaitUntilRequestResponse(newUniqueRequestId, TimeOuMiliseconds);
+            yield return new WaitUntil(waitUntilRequestResponse.HasCompletedResponse);
             RpcResponseMessage responseMessage = null;
+
             if (RequestResponses.TryRemove(newUniqueRequestId, out responseMessage))
             {
                 Result = responseMessage;
             }
             else
             {
+                if (waitUntilRequestResponse.HasTimedOut)
+                {
+                    Exception = new Exception($"Metamask Response has timeout after : {TimeOuMiliseconds}");
+                    yield break;
+                }
                 Exception = new Exception("Unexpected error retrieving message");
             }
 

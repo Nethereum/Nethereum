@@ -6,19 +6,20 @@ namespace Nethereum.Unity.Metamask
 {
     public class MetamaskRequestRpcClientFactory : IUnityRpcRequestClientFactory
     {
-        public MetamaskRequestRpcClientFactory(string account = null, JsonSerializerSettings jsonSerializerSettings = null)
+        public MetamaskRequestRpcClientFactory(string account = null, JsonSerializerSettings jsonSerializerSettings = null, int timeOuMiliseconds = WaitUntilRequestResponse.DefaultTimeOutMiliSeconds)
         {
 
             Account = account;
             JsonSerializerSettings = jsonSerializerSettings;
-
+            TimeOuMiliseconds = timeOuMiliseconds;
         }
         public string Account { get; set; }
         public JsonSerializerSettings JsonSerializerSettings { get; }
+        public int TimeOuMiliseconds { get; }
 
         public IUnityRpcRequestClient CreateUnityRpcClient()
         {
-            return new MetamaskRequestRpcClient(Account, JsonSerializerSettings);
+            return new MetamaskRequestRpcClient(Account, JsonSerializerSettings, TimeOuMiliseconds);
         }
     }
 

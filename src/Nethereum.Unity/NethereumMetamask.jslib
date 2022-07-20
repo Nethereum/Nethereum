@@ -23,16 +23,16 @@
         const parsedObjectName = UTF8ToString(gameObjectName);
         const parsedCallbackAccountChange = UTF8ToString(callBackAccountChange);
         const parsedCallbackChainChange = UTF8ToString(callBackChainChange);
-        console.log("EthereumInit");
+        // console.log("EthereumInit");
             
         ethereum.on("accountsChanged",
                 function (accounts) {
-                    console.log(accounts[0]);
+                   //console.log(accounts[0]);
                     nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallbackAccountChange, accounts[0]);
                 });
         ethereum.on("chainChanged",
                 function (chainId) {
-                    console.log(chainId);
+                    // console.log(chainId);
                     nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallbackChainChange, chainId.toString());
                 });
     },
@@ -68,11 +68,9 @@
         const parsedObjectName = UTF8ToString(gameObjectName);
         const parsedCallback = UTF8ToString(callback);
         const parsedFallback = UTF8ToString(fallback);
-
+        let parsedMessage = JSON.parse(parsedMessageStr);
         try {
-            
-            let parsedMessage = JSON.parse(parsedMessageStr);
-            console.log(parsedMessage);
+            //console.log(parsedMessage);
             const response = await ethereum.request(parsedMessage);
             let rpcResponse = {
                 jsonrpc: "2.0",
@@ -80,10 +78,10 @@
                 id: parsedMessage.id,
                 error: null
             }
-            console.log(rpcResponse);
+            //console.log(rpcResponse);
 
             var json = JSON.stringify(rpcResponse);
-            console.log(json);
+            //console.log(json);
             nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallback, json);
             return json;
         } catch (e) {
@@ -101,10 +99,10 @@
     RequestRpcClientCallback: async function (callback, message) {
         const parsedMessageStr = UTF8ToString(message);
         const parsedCallback = UTF8ToString(callback);
+        let parsedMessage = JSON.parse(parsedMessageStr);
         try {
             
-            let parsedMessage = JSON.parse(parsedMessageStr);
-            console.log(parsedMessage);
+            //console.log(parsedMessage);
             const response = await ethereum.request(parsedMessage);
             let rpcResponse = {
                 jsonrpc: "2.0",
@@ -112,10 +110,10 @@
                 id: parsedMessage.id,
                 error: null
             }
-            console.log(rpcResponse);
+            //console.log(rpcResponse);
 
             var json = JSON.stringify(rpcResponse);
-            console.log(json);
+            //console.log(json);
            
             var len = lengthBytesUTF8(json) + 1;
             var strPtr = _malloc(len);
@@ -143,8 +141,8 @@
         return new Promise(function (resolve, reject) {
             console.log(JSON.parse(message));
             ethereum.send(JSON.parse(message), function (error, result) {
-                console.log(result);
-                console.log(error);
+                //console.log(result);
+                //console.log(error);
                 resolve(JSON.stringify(result));
             });
         });
@@ -163,7 +161,7 @@
                 if (error) {
                     reject(error);
                 } else {
-                    console.log(result.result);
+                    //console.log(result.result);
                     resolve(JSON.stringify(result.result));
                 }
 
