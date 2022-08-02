@@ -48,10 +48,22 @@ namespace Nethereum.RPC.Eth
             return base.SendRequestAsync(id, address.EnsureHexPrefix(), block);
         }
 
-        public Task<string> SendRequestAsync(string address, object id = null)
+        public async Task<string> SendRequestAsync(string address, object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
-            return base.SendRequestAsync(id, address.EnsureHexPrefix(), DefaultBlock);
+            var res = await base.Client.SendRequestAsync<object>(this.BuildRequest(address.EnsureHexPrefix(), DefaultBlock, id));
+            // Some servers may return empty array for non-contract addresses instead of "0x", so check for array
+            if (res is Newtonsoft.Json.Linq.JArray)
+            {
+                var array = res as Newtonsoft.Json.Linq.JArray;
+                if (!array.HasValues)
+                    return "0x";
+                else
+                    throw new Exceptions.UnexpectedReplyException(
+                        "Unexpected response value: " + array.ToString(Newtonsoft.Json.Formatting.None), 
+                        array);
+            }
+            return (string)res;
         }
 
         public RpcRequest BuildRequest(string address, BlockParameter block, object id = null)
