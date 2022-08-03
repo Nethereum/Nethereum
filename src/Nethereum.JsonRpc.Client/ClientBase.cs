@@ -22,6 +22,13 @@ namespace Nethereum.JsonRpc.Client
             return await SendInnerRequestAsync<T>(request, route).ConfigureAwait(false);
         }
 
+        public virtual async Task<RpcRequestResponseBatch> SendBatchRequestAsync(RpcRequestResponseBatch rpcRequestResponseBatch)
+        {
+            var responses = await SendAsync(rpcRequestResponseBatch.GetRpcRequests()).ConfigureAwait(false);
+            rpcRequestResponseBatch.UpdateBatchItemResponses(responses);
+            return rpcRequestResponseBatch;
+        }
+
         public async Task<T> SendRequestAsync<T>(string method, string route = null, params object[] paramList)
         {
             if (OverridingRequestInterceptor != null)
@@ -79,7 +86,7 @@ namespace Nethereum.JsonRpc.Client
         }
 
         protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
-
+        protected abstract Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests);
         public virtual async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);

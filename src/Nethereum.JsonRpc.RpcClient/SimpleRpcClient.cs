@@ -57,5 +57,39 @@ namespace Nethereum.JsonRpc.Client
                 throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s): " + request.Method, ex);
             }
         }
+
+        protected override async Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests)
+        {
+            try
+            {
+                var rpcRequestJson = JsonConvert.SerializeObject(requests, _jsonSerializerSettings);
+                var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
+
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+
+                var httpResponseMessage = await _httpClient.PostAsync(String.Empty, httpContent, cancellationTokenSource.Token)
+                    .ConfigureAwait(false);
+                httpResponseMessage.EnsureSuccessStatusCode();
+
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                using (var streamReader = new StreamReader(stream))
+                using (var reader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
+                    var messages = serializer.Deserialize<RpcResponseMessage[]>(reader);
+
+                    return messages;
+                }
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new RpcClientUnknownException("Error occurred when trying to send rpc requests(s): ", ex);
+            }
+        }
     }
 }

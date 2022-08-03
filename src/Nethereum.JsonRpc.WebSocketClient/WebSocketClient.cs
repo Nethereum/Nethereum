@@ -2,6 +2,7 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -179,6 +180,46 @@ namespace Nethereum.JsonRpc.WebSocketClient
                         var message = serializer.Deserialize<RpcResponseMessage>(reader);
                         logger.LogResponse(message);
                         return message;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var exception = new RpcClientUnknownException("Error occurred when trying to web socket requests(s): " + request.Method, ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
+        }
+
+        protected async override Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests)
+        {
+            var logger = new RpcLogger(_log);
+            try
+            {
+                await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                var rpcRequestJson = JsonConvert.SerializeObject(requests, JsonSerializerSettings);
+                var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
+                logger.LogRequest(rpcRequestJson);
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+
+                var webSocket = await GetClientWebSocketAsync().ConfigureAwait(false);
+                await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationTokenSource.Token)
+                    .ConfigureAwait(false);
+
+                using (var memoryData = await ReceiveFullResponseAsync(webSocket).ConfigureAwait(false))
+                {
+                    memoryData.Position = 0;
+                    using (var streamReader = new StreamReader(memoryData))
+                    using (var reader = new JsonTextReader(streamReader))
+                    {
+                        var serializer = JsonSerializer.Create(JsonSerializerSettings);
+                        var messages = serializer.Deserialize<RpcResponseMessage[]>(reader);
+                        return messages;
                     }
                 }
             }

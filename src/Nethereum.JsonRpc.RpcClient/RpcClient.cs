@@ -101,6 +101,47 @@ namespace Nethereum.JsonRpc.Client
             _rotateHttpClients = false;
         }
 
+
+        protected override async Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests)
+        {
+            var logger = new RpcLogger(_log);
+            try
+            {
+                var httpClient = GetOrCreateHttpClient();
+                var rpcRequestJson = JsonConvert.SerializeObject(requests, _jsonSerializerSettings);
+                var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+
+                logger.LogRequest(rpcRequestJson);
+
+                var httpResponseMessage = await httpClient.PostAsync(String.Empty, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
+                httpResponseMessage.EnsureSuccessStatusCode();
+
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                using (var streamReader = new StreamReader(stream))
+                using (var reader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
+                    var messages = serializer.Deserialize<RpcResponseMessage[]>(reader);
+
+                    return messages;
+                }
+            }
+            catch (TaskCanceledException ex)
+            {
+                var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+            catch (Exception ex)
+            {
+                var exception = new RpcClientUnknownException("Error occurred when trying to send multiple rpc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
+        }
+
         protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             var logger = new RpcLogger(_log);
@@ -226,5 +267,7 @@ namespace Nethereum.JsonRpc.Client
             httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
             httpClient.BaseAddress = _baseUrl;
         }
+
+    
     }
 }

@@ -4,6 +4,7 @@ using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 using System.Text;
 using System.IO;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
@@ -90,7 +91,17 @@ namespace Nethereum.JsonRpc.IpcClient
             }
         }
 
-       #region IDisposable Support
+        public override Task<RpcRequestResponseBatch> SendBatchRequestAsync(RpcRequestResponseBatch rpcRequestResponseBatch)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests)
+        {
+            throw new NotImplementedException();
+        }
+
+        #region IDisposable Support
 
         private bool disposedValue;
 

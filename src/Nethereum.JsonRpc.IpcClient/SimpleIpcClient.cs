@@ -90,5 +90,15 @@ namespace Nethereum.JsonRpc.IpcClient
             }
             return rpcResponseMessage;
         }
+
+        public override Task<RpcRequestResponseBatch> SendBatchRequestAsync(RpcRequestResponseBatch rpcRequestResponseBatch)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
