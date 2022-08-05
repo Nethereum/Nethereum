@@ -41,10 +41,12 @@ namespace Nethereum.Contracts.Standards.ENS
             {
                 var idn = new IdnMapping
                 {
-                    UseStd3AsciiRules = true
+                    UseStd3AsciiRules = true,
+                    AllowUnassigned = true
                 };
-                return idn.GetAscii(name).ToLower();
-                
+                var puny = idn.GetAscii(name).ToLower();
+                return idn.GetUnicode(puny);
+
             }
             catch (Exception ex)
             {

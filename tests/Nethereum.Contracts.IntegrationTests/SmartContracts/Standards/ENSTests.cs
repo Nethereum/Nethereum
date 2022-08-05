@@ -155,5 +155,54 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.Equal(expectedName, name);
         }
 
+
+        [Fact]
+        public async void ShouldResolveAddressFromMainnetEmoji()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var ensService = web3.Eth.GetEnsService();
+            var theAddress = await ensService.ResolveAddressAsync("💩💩💩.eth");
+            var expectedAddress = "0x372973309f827B5c3864115cE121c96ef9cB1658";
+            Assert.True(expectedAddress.IsTheSameAddress(theAddress));
+        }
+
+
+        [Fact]
+        public async void ShouldNormaliseAsciiDomain()
+        {
+            var input = "foo.eth"; // latin chars only
+            var expected = "foo.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+
+        [Fact]
+        public void ShouldNormaliseInternationalDomain()
+        {
+            var input = "fоо.eth"; // with cyrillic 'o'
+            var expected = "fоо.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+        [Fact]
+        public void ShouldNormaliseToLowerDomain()
+        {
+            var input = "Foo.eth"; 
+            var expected = "foo.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+        [Fact]
+        public void ShouldNormaliseEmojiDomain()
+        {
+            var input = "🦚.eth";
+            var expected = "🦚.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
     }
 }

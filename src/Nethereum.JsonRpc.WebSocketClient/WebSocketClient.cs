@@ -2,7 +2,6 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -225,7 +224,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
             }
             catch (Exception ex)
             {
-                var exception = new RpcClientUnknownException("Error occurred when trying to web socket requests(s): " + request.Method, ex);
+                var exception = new RpcClientUnknownException("Error occurred when trying to web socket requests(s)", ex);
                 logger.LogException(exception);
                 throw exception;
             }
