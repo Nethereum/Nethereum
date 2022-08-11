@@ -35,7 +35,7 @@ namespace Nethereum.RPC.TransactionManagers
         }
 
 #if !DOTNET35
-        public BigInteger DefaultMaxPriorityFeePerGas { get; set; } = SimpleFeeSuggestionStrategy.DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
+        public BigInteger? DefaultMaxPriorityFeePerGas { get; set; } = null;
 
         private IFee1559SuggestionStrategy _fee1559SuggestionStrategy;
         public IFee1559SuggestionStrategy Fee1559SuggestionStrategy
