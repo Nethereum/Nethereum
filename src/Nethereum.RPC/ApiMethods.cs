@@ -82,6 +82,15 @@
         personal_newAccount,
         personal_unlockAccount,
         personal_lockAccount,
-        personal_sendTransaction
+        personal_sendTransaction,
+
+        //wallet
+        eth_requestAccounts,
+        wallet_requestPermissions,
+        wallet_getPermissions,
+        wallet_addEthereumChain,
+        wallet_switchEthereumChain,
+        wallet_watchAsset
+
     }
 }
