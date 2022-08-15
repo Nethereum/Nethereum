@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var parityGenerateSecretPhrase = new ParityGenerateSecretPhrase(client);
-            return await parityGenerateSecretPhrase.SendRequestAsync();
+            return await parityGenerateSecretPhrase.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         [Fact]
         public async void ShouldGenerateSecretePhrase()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

@@ -59,12 +59,12 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var errorThrowDeployment = new ErrorThrowDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
-                    await contractHandler.QueryAsync<ThrowItFunction, bool>());
+                    await contractHandler.QueryAsync<ThrowItFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
                 Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
@@ -73,12 +73,12 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var errorThrowDeployment = new ErrorThrowDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
-                    await contractHandler.QueryAsync<ThrowItFunction, bool>());
+                    await contractHandler.QueryAsync<ThrowItFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
             }
         }
 
@@ -93,12 +93,12 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var errorThrowDeployment = new ErrorThrowDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
-                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>().ConfigureAwait(false)).ConfigureAwait(false);
                 Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
@@ -107,12 +107,12 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                 var errorThrowDeployment = new ErrorThrowDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
-                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>());
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>().ConfigureAwait(false)).ConfigureAwait(false);
             }
         }
 

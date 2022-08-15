@@ -59,9 +59,9 @@ namespace Nethereum.Web3
                 httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
                 var query = pin ? "?pin=true&cid-version=1" : "?cid-version=1";
                 var fullUrl = Url + "/add" + query;
-                var httpResponseMessage = await httpClient.PostAsync(fullUrl, content);
+                var httpResponseMessage = await httpClient.PostAsync(fullUrl, content).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 using (var streamReader = new StreamReader(stream))
                 using (var reader = new JsonTextReader(streamReader))
                 {
@@ -82,7 +82,7 @@ namespace Nethereum.Web3
                 serializer.Serialize(jsonTextWriter, objectToSerialise);
                 jsonTextWriter.Flush();
                 ms.Position = 0;
-                var node = await AddAsync(ms.ToArray(), fileName, true);
+                var node = await AddAsync(ms.ToArray(), fileName, true).ConfigureAwait(false);
                 return node;
             }
         }

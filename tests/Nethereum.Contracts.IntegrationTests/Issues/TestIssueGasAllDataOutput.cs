@@ -24,12 +24,12 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
 
         public async Task<TransactionReceipt> WaitForReceiptAsync(Web3.Web3 web3, string transactionHash)
         {
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
 
             while (receipt == null)
             {
                 Thread.Sleep(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
 
             return receipt;
@@ -72,9 +72,9 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
 
             var transactionHash =
                 await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(1999990));
+                    new HexBigInteger(1999990)).ConfigureAwait(false);
 
-            var receipt = await WaitForReceiptAsync(web3, transactionHash);
+            var receipt = await WaitForReceiptAsync(web3, transactionHash).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -85,16 +85,16 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
             var getCustomersByMobileNumberFunction = contract.GetFunction("getCustomersByMobileNumber");
 
             var resultHash = await addCustomerFunction.SendTransactionAsync(senderAddress, new HexBigInteger(900000),
-                new HexBigInteger(0), "Mahesh", 111, "Airtel");
+                new HexBigInteger(0), "Mahesh", 111, "Airtel").ConfigureAwait(false);
 
-            receipt = await WaitForReceiptAsync(web3, resultHash);
+            receipt = await WaitForReceiptAsync(web3, resultHash).ConfigureAwait(false);
 
-            var results = await getCustomersByMobileNumberFunction.CallDeserializingToObjectAsync<CustomerData>(111);
+            var results = await getCustomersByMobileNumberFunction.CallDeserializingToObjectAsync<CustomerData>(111).ConfigureAwait(false);
 
             Assert.Equal("Mahesh", results.customerName);
 
             var getAllCustomers = contract.GetFunction("getAllCustomers");
-            var results2 = await getAllCustomers.CallDeserializingToObjectAsync<AllCustomerData>();
+            var results2 = await getAllCustomers.CallDeserializingToObjectAsync<AllCustomerData>().ConfigureAwait(false);
         }
     }
 }

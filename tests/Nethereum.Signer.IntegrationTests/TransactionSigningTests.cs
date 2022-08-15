@@ -31,7 +31,7 @@ namespace Nethereum.Signer.IntegrationTests
             
             var feeStrategy = new SimpleFeeSuggestionStrategy(web3.Client);
          
-            var fee = await feeStrategy.SuggestFeeAsync();
+            var fee = await feeStrategy.SuggestFeeAsync().ConfigureAwait(false);
             var encoded = await web3.TransactionManager.SignTransactionAsync(
                 new TransactionInput()
                 {
@@ -39,10 +39,10 @@ namespace Nethereum.Signer.IntegrationTests
                     From = web3.TransactionManager.Account.Address,
                     MaxFeePerGas = new HexBigInteger(fee.MaxFeePerGas.Value),
                     MaxPriorityFeePerGas = new HexBigInteger(fee.MaxPriorityFeePerGas.Value),
-                    Nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync(),
+                    Nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync().ConfigureAwait(false),
                     To = receiveAddress,
                     Value = new HexBigInteger(10)
-                });
+                }).ConfigureAwait(false);
             
             Assert.True(TransactionVerificationAndRecovery.VerifyTransaction(encoded));
 
@@ -50,12 +50,12 @@ namespace Nethereum.Signer.IntegrationTests
             Assert.Equal(web3.TransactionManager.Account.Address.EnsureHexPrefix().ToLower(),
                 TransactionVerificationAndRecovery.GetSenderAddress(encoded).EnsureHexPrefix().ToLower());
 
-            var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded);
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+            var txId = await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encoded).ConfigureAwait(false);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             while (receipt == null)
             {
                 Thread.Sleep(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txId).ConfigureAwait(false);
             }
 
             Assert.Equal(txId, receipt.TransactionHash);

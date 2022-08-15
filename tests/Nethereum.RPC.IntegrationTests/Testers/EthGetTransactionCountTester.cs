@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheTransactionCountOfTheAccount()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.True(result.Value > 0);
         }
@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethGetTransactionCount = new EthGetTransactionCount(client);
-            return await ethGetTransactionCount.SendRequestAsync(Settings.GetDefaultAccount());
+            return await ethGetTransactionCount.SendRequestAsync(Settings.GetDefaultAccount()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

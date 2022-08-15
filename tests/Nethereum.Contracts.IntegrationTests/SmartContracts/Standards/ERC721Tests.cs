@@ -66,7 +66,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var erc721Deployment = new MyERC721Deployment() {Name = "Property Registry", Symbol = "PR"};
 
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<MyERC721Deployment>()
-                .SendRequestAndWaitForReceiptAsync(erc721Deployment);
+                .SendRequestAndWaitForReceiptAsync(erc721Deployment).ConfigureAwait(false);
 
             //creating a new service with the new contract address
             var erc721Service = web3.Eth.ERC721.GetContractService(deploymentReceipt.ContractAddress);
@@ -75,22 +75,22 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var addressToRegisterOwnership = "0xe612205919814b1995D861Bdf6C2fE2f20cDBd68";
 
             var mintReceipt =
-                await erc721Service.SafeMintRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, url);
+                await erc721Service.SafeMintRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, url).ConfigureAwait(false);
 
-            var ownerOfToken = await erc721Service.OwnerOfQueryAsync(0);
+            var ownerOfToken = await erc721Service.OwnerOfQueryAsync(0).ConfigureAwait(false);
 
             Assert.True(ownerOfToken.IsTheSameAddress(web3.TransactionManager.Account.Address));
 
-            var addressOfToken = await erc721Service.TokenURIQueryAsync(0);
+            var addressOfToken = await erc721Service.TokenURIQueryAsync(0).ConfigureAwait(false);
 
             Assert.Equal(url, addressOfToken);
 
             var transfer =
                 await erc721Service.TransferFromRequestAndWaitForReceiptAsync(ownerOfToken, addressToRegisterOwnership,
-                    0);
+                    0).ConfigureAwait(false);
             Assert.False(transfer.HasErrors());
 
-            ownerOfToken = await erc721Service.OwnerOfQueryAsync(0);
+            ownerOfToken = await erc721Service.OwnerOfQueryAsync(0).ConfigureAwait(false);
             Assert.True(ownerOfToken.IsTheSameAddress(addressToRegisterOwnership));
 
         }
@@ -104,10 +104,10 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var contractAddress =
                 "0x31385d3520bced94f77aae104b406994d8f2168c";
             var erc721Service = web3.Eth.ERC721.GetContractService(contractAddress);
-            var ownerToCheck = await erc721Service.OwnerOfQueryAsync(1);
+            var ownerToCheck = await erc721Service.OwnerOfQueryAsync(1).ConfigureAwait(false);
             //var erc721Service = web3.Eth.ERC721.GetContractService("0xB8Df6Cc3050cC02F967Db1eE48330bA23276A492"); //optimism
             var urls = await erc721Service.GetAllTokenUrlsOfOwnerUsingTokenOfOwnerByIndexAndMultiCallAsync(
-                ownerToCheck); //Pick an owner with some balance
+                ownerToCheck).ConfigureAwait(false); //Pick an owner with some balance
             Assert.True(urls.Any());
 
 
@@ -123,7 +123,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
                 "0x31385d3520bced94f77aae104b406994d8f2168c";
             var erc721Service = web3.Eth.ERC721.GetContractService(contractAddress);
             var owners = await web3.Eth.ERC721.GetContractService(contractAddress)
-                .GetAllOwnersUsingIdRangeAndMultiCallAsync(0, 11304);
+                .GetAllOwnersUsingIdRangeAndMultiCallAsync(0, 11304).ConfigureAwait(false);
             Assert.Equal(11305, owners.Count);
 
         }
@@ -138,7 +138,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var contractAddresses = new string[]
                 {"0xd24a7c412f2279b1901e591898c1e96c140be8c5", "0x31385d3520bced94f77aae104b406994d8f2168c"};
             var erc721Service = web3.Eth.ERC721.GetContractService(contractAddresses[0]);
-            var ownerToCheck = await erc721Service.OwnerOfQueryAsync(1);
+            var ownerToCheck = await erc721Service.OwnerOfQueryAsync(1).ConfigureAwait(false);
 
             var cancellationToken = new CancellationToken();
             //// this is 143 calls as we hit the limit
@@ -148,12 +148,12 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
             var ownedByAccount = await web3.Processing.Logs.ERC721.GetErc721OwnedByAccountUsingAllTransfersForContract(
                 contractAddresses[0],
-                ownerToCheck, null, null, cancellationToken);
+                ownerToCheck, null, null, cancellationToken).ConfigureAwait(false);
             Assert.True(ownedByAccount.Count > 0);
             var ownedByAccount2 =
                 await web3.Processing.Logs.ERC721.GetErc721OwnedByAccountUsingAllTransfersForContracts(
                     contractAddresses,
-                    ownerToCheck, null, null, cancellationToken);
+                    ownerToCheck, null, null, cancellationToken).ConfigureAwait(false);
             Assert.True(ownedByAccount2.Count >= ownedByAccount.Count);
         }
 
@@ -165,7 +165,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var erc721TokenContractAddress = "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D";
 
 
-            var tokensOwned = await web3.Processing.Logs.ERC721.GetAllCurrentOwnersProcessingAllTransferEvents(erc721TokenContractAddress, 12287507, null, default(CancellationToken), 50000);
+            var tokensOwned = await web3.Processing.Logs.ERC721.GetAllCurrentOwnersProcessingAllTransferEvents(erc721TokenContractAddress, 12287507, null, default(CancellationToken), 50000).ConfigureAwait(false);
 
             foreach (var token in tokensOwned)
             {

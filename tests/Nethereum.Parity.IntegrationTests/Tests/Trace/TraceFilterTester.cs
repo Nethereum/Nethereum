@@ -26,7 +26,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
                     From = senderAddress,
                     To = senderAddress,
                     Value = new HexBigInteger(Web3.Web3.Convert.ToWei(1))
-                });
+                }).ConfigureAwait(false);
 
             var traceTransaction = new TraceFilter(client);
             //ToAddress = new []{receiverAddress}, FromBlock = new BlockParameter(receipt.BlockNumber), Count = 1}
@@ -34,9 +34,9 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
             {
                 FromBlock = new BlockParameter(receipt.BlockNumber),
                 ToBlock = new BlockParameter(receipt.BlockNumber),
-                FromAddresses = new[] {senderAddress},
+                FromAddresses = new[] { senderAddress },
                 Count = 10,
-            });
+            }).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -47,7 +47,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

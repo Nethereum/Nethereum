@@ -61,7 +61,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                     progress.BlockNumberProcessTo = getLogsResponse.Value.To;
                     if (blockProgressRepository != null)
                     {
-                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value).ConfigureAwait(false);
                     }
 
                 }

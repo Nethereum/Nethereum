@@ -29,14 +29,14 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var deploymentMessage = new TestAnonymousEventContractDeployment {FromAddress = senderAddress};
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestAnonymousEventContractDeployment>();
             var deploymentTransactionReceipt =
-                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage).ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentTransactionReceipt.ContractAddress);
 
             var itemCreatedEvent = contractHandler.GetEvent<ItemCreatedEventDTO>();
 
-            var eventFilter1 = await itemCreatedEvent.CreateFilterAsync(1);
-            var eventFilter2 = await itemCreatedEvent.CreateFilterAsync(2);
-            var eventFilter12 = await itemCreatedEvent.CreateFilterAsync(new[] {1, 2});
+            var eventFilter1 = await itemCreatedEvent.CreateFilterAsync(1).ConfigureAwait(false);
+            var eventFilter2 = await itemCreatedEvent.CreateFilterAsync(2).ConfigureAwait(false);
+            var eventFilter12 = await itemCreatedEvent.CreateFilterAsync(new[] { 1, 2 }).ConfigureAwait(false);
 
             var newItem1FunctionTransactionReceipt = await contractHandler.SendRequestAndWaitForReceiptAsync(
                 new NewItemFunction
@@ -44,24 +44,24 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     FromAddress = senderAddress,
                     Id = 1,
                     Price = 100
-                });
+                }).ConfigureAwait(false);
             var newItem2FunctionTransactionReceipt = await contractHandler.SendRequestAndWaitForReceiptAsync(
                 new NewItemFunction
                 {
                     FromAddress = senderAddress,
                     Id = 2,
                     Price = 100
-                });
+                }).ConfigureAwait(false);
 
-            var logs1Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter1);
+            var logs1Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter1).ConfigureAwait(false);
             Assert.Single(logs1Result);
             Assert.Equal(1, logs1Result[0].Event.ItemId);
 
-            var logs2Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter2);
+            var logs2Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter2).ConfigureAwait(false);
             Assert.Single(logs2Result);
             Assert.Equal(2, logs2Result[0].Event.ItemId);
 
-            var logs12Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter12);
+            var logs12Result = await itemCreatedEvent.GetFilterChangesAsync(eventFilter12).ConfigureAwait(false);
             Assert.Equal(2, logs12Result.Count);
             Assert.Contains(logs12Result, el => el.Event.ItemId == 1);
             Assert.Contains(logs12Result, el => el.Event.ItemId == 2);

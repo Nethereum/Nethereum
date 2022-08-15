@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugStopGoTrace = new DebugStopGoTrace(client);
-            return await debugStopGoTrace.SendRequestAsync();
+            return await debugStopGoTrace.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldAlwaysReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.Null(result);
         }
     }

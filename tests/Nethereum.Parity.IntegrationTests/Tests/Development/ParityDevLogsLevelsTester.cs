@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Development
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var parityDevLogsLevels = new ParityDevLogsLevels(client);
-            return await parityDevLogsLevels.SendRequestAsync();
+            return await parityDevLogsLevels.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Development
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

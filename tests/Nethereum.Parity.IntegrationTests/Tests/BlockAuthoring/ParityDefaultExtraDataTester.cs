@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var parityDefaultExtraData = new ParityDefaultExtraData(client);
-            return await parityDefaultExtraData.SendRequestAsync();
+            return await parityDefaultExtraData.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         [Fact]
         public async void ShouldGetDefaultExtraData()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

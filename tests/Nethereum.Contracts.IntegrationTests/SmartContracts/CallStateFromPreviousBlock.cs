@@ -31,25 +31,25 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             var newAddress = "0x12890d2cce102216644c59dae5baed380d848301";
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode,
-                address, new HexBigInteger(900000), null, null, null, totalSupply);
+                address, new HexBigInteger(900000), null, null, null, totalSupply).ConfigureAwait(false);
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var transferFunction = contract.GetFunction("transfer");
             var balanceFunction = contract.GetFunction("balanceOf");
 
-            var gas = await transferFunction.EstimateGasAsync(address, null, null, newAddress, 1000);
+            var gas = await transferFunction.EstimateGasAsync(address, null, null, newAddress, 1000).ConfigureAwait(false);
             var receiptFirstBlock =
                 await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, null, newAddress,
-                    1000);
-            var balanceFirstBlock = await balanceFunction.CallAsync<int>(newAddress);
+                    1000).ConfigureAwait(false);
+            var balanceFirstBlock = await balanceFunction.CallAsync<int>(newAddress).ConfigureAwait(false);
             var receiptSecondBlock =
                 await transferFunction.SendTransactionAndWaitForReceiptAsync(address, gas, null, null, newAddress,
-                    1000);
-            var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress);
+                    1000).ConfigureAwait(false);
+            var balanceSecondBlock = await balanceFunction.CallAsync<int>(newAddress).ConfigureAwait(false);
             var balanceOldBlock =
                 await
                     balanceFunction.CallAsync<int>(
-                        new BlockParameter(receiptFirstBlock.BlockNumber), newAddress);
+                        new BlockParameter(receiptFirstBlock.BlockNumber), newAddress).ConfigureAwait(false);
 
             Assert.Equal(2000, balanceSecondBlock);
             Assert.Equal(1000, balanceOldBlock);

@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnCompilers()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             //we need at least solidity configured
             Assert.True(result.Contains("Solidity"));
@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<string[]> ExecuteAsync(IClient client)
         {
             var ethGetCompilers = new EthGetCompilers(client);
-            return await ethGetCompilers.SendRequestAsync();
+            return await ethGetCompilers.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

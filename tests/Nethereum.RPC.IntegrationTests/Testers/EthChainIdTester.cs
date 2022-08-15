@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveChainId()
         {
-            var chainId = await ExecuteAsync();
+            var chainId = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(chainId.Value > 0);
         }
 
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethAccounts = new EthChainId(client);
-            return await ethAccounts.SendRequestAsync();
+            return await ethAccounts.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

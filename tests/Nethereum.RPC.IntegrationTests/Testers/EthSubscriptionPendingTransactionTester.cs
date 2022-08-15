@@ -24,11 +24,11 @@ namespace Nethereum.RPC.Tests.Testers
                 receivedMessage = args.Response;
             };
 
-            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString()).ConfigureAwait(false);
 
             try
             {
-                await Task.Delay(10000);
+                await Task.Delay(10000).ConfigureAwait(false);
             }
             catch (TaskCanceledException)
             {
@@ -41,7 +41,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task ExecuteAsync(IStreamingClient client)
         {
             var subscription = new EthNewPendingTransactionSubscription(client);
-            await subscription.SubscribeAsync(Guid.NewGuid().ToString());
+            await subscription.SubscribeAsync(Guid.NewGuid().ToString()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

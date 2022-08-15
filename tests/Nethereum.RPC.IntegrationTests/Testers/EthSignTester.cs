@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethSign = new EthSign(client);
-            return await ethSign.SendRequestAsync("0x12890D2cce102216644c59daE5baed380d84830c", "0xdeadbeef");
+            return await ethSign.SendRequestAsync("0x12890D2cce102216644c59daE5baed380d84830c", "0xdeadbeef").ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

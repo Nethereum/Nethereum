@@ -12,14 +12,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveBlockNumberEqualOrBiggerThanZero()
         {
-            var blockNumber = await ExecuteAsync();
+            var blockNumber = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(blockNumber.Value >= 0);
         }
 
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethBlockNumber = new EthBlockNumber(client);
-            return await ethBlockNumber.SendRequestAsync();
+            return await ethBlockNumber.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

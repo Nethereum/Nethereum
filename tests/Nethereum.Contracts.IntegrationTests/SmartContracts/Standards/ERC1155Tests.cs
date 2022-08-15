@@ -43,7 +43,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
             var ercERC1155Deployment = new MyERC1155Deployment();
             //Deploy the 1155 contract (shop)
-            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<MyERC1155Deployment>().SendRequestAndWaitForReceiptAsync(ercERC1155Deployment);
+            var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<MyERC1155Deployment>().SendRequestAndWaitForReceiptAsync(ercERC1155Deployment).ConfigureAwait(false);
 
             //creating a new service with the new contract address
             var erc1155Service = web3.Eth.ERC1155.GetContractService(deploymentReceipt.ContractAddress);
@@ -54,25 +54,25 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
             //Adding the product information
             var tokenUriReceipt = await erc1155Service.SetTokenUriRequestAndWaitForReceiptAsync(id,
-                 url);
+                 url).ConfigureAwait(false);
 
-            var mintReceipt = await erc1155Service.MintRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, id, amount, new byte[] { });
+            var mintReceipt = await erc1155Service.MintRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, id, amount, new byte[] { }).ConfigureAwait(false);
 
 
             // the balance should be 
-            var balance = await erc1155Service.BalanceOfQueryAsync(web3.TransactionManager.Account.Address, id);
+            var balance = await erc1155Service.BalanceOfQueryAsync(web3.TransactionManager.Account.Address, id).ConfigureAwait(false);
 
             Assert.Equal(amount, balance);
 
-            var addressOfToken = await erc1155Service.UriQueryAsync(id);
+            var addressOfToken = await erc1155Service.UriQueryAsync(id).ConfigureAwait(false);
 
             Assert.Equal(url, addressOfToken);
 
             //lets sell 2
-            var transfer = await erc1155Service.SafeTransferFromRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, addressToRegisterOwnership, id, 2, new byte[] { });
+            var transfer = await erc1155Service.SafeTransferFromRequestAndWaitForReceiptAsync(web3.TransactionManager.Account.Address, addressToRegisterOwnership, id, 2, new byte[] { }).ConfigureAwait(false);
             Assert.False(transfer.HasErrors());
 
-            var balance2 = await erc1155Service.BalanceOfQueryAsync(addressToRegisterOwnership, id);
+            var balance2 = await erc1155Service.BalanceOfQueryAsync(addressToRegisterOwnership, id).ConfigureAwait(false);
             Assert.Equal(2, balance2);
         }
 

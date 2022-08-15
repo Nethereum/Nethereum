@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.L2StandardTokenFactory
 
         public static async Task<L2StandardTokenFactoryService> DeployContractAndGetServiceAsync(Web3.Web3 web3, L2StandardTokenFactoryDeployment l2StandardTokenFactoryDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardTokenFactoryDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardTokenFactoryDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new L2StandardTokenFactoryService(web3, receipt.ContractAddress);
         }
 

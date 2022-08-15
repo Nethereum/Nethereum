@@ -33,7 +33,7 @@ namespace Nethereum.Optimism
 
         public async Task<List<byte[]>> GetMessageHashes(Web3.Web3 web3, string txnHash)
         {
-            var txnReceipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txnHash);
+            var txnReceipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(txnHash).ConfigureAwait(false);
             return GetMessageHashes(txnReceipt);
         }
 
@@ -60,14 +60,14 @@ namespace Nethereum.Optimism
         public async Task<TransactionReceipt> GetCrossMessageMessageTransactionReceipt(Web3.Web3 web3layerToReceiveMessage, string messengerAddress, byte[] msgHash, CancellationToken token = default, int numberOfPastBlocks = 1000)
         {
             //this needs a time out cancellation process.
-            var blockNumber = await web3layerToReceiveMessage.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var blockNumber = await web3layerToReceiveMessage.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
             var startingBlock = BigInteger.Max(blockNumber.Value - numberOfPastBlocks, 0);
 
             var eventRelayedMessage = web3layerToReceiveMessage.Eth.GetEvent<RelayedMessageEventDTO>(messengerAddress);
             Debug.WriteLine(eventRelayedMessage.EventABI.Sha3Signature);
             var filterInput = eventRelayedMessage.CreateFilterInput(new BlockParameter((ulong)startingBlock), BlockParameter.CreateLatest());
 
-            var logs = await eventRelayedMessage.GetAllChangesAsync(filterInput);
+            var logs = await eventRelayedMessage.GetAllChangesAsync(filterInput).ConfigureAwait(false);
             var logsFiltered = logs.Where(x => x.Event.MsgHash.ToHex() == msgHash.ToHex());
 
             while (!logsFiltered.Any())
@@ -78,11 +78,11 @@ namespace Nethereum.Optimism
                     token.ThrowIfCancellationRequested();
                 }
 
-                logs = await eventRelayedMessage.GetAllChangesAsync(filterInput);
+                logs = await eventRelayedMessage.GetAllChangesAsync(filterInput).ConfigureAwait(false);
                 logsFiltered = logs.Where(x => x.Event.MsgHash.ToHex() == msgHash.ToHex());
             }
 
-            return await web3layerToReceiveMessage.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(logsFiltered.First().Log.TransactionHash);
+            return await web3layerToReceiveMessage.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(logsFiltered.First().Log.TransactionHash).ConfigureAwait(false);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var debugSeedHash = new DebugSeedHash(client);
-            return await debugSeedHash.SendRequestAsync(Settings.GetBlockNumber());
+            return await debugSeedHash.SendRequestAsync(Settings.GetBlockNumber()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldReturnTheHash()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

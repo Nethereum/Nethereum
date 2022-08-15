@@ -56,7 +56,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 {
                     var transactionHash2 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                         senderAddress, // lower gas
-                        new HexBigInteger(900), 7);
+                        new HexBigInteger(900), 7).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -67,11 +67,11 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 Assert.Contains("RPC Response Error: intrinsic gas too low",
                     capturingLoggerAdapter.LoggerEvents[6].MessageObject.ToString());
 
-                await web3.TransactionManager.Account.NonceService.ResetNonceAsync();
+                await web3.TransactionManager.Account.NonceService.ResetNonceAsync().ConfigureAwait(false);
 
                 var transactionHash3 = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode,
                     senderAddress,
-                    new HexBigInteger(900000), 7);
+                    new HexBigInteger(900000), 7).ConfigureAwait(false);
 
                 Assert.Contains("eth_getTransactionCount",
                     capturingLoggerAdapter.LoggerEvents[7].MessageObject.ToString());

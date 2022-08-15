@@ -29,11 +29,11 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var deploymentMessage = new TestAnonymousEventContractDeployment {FromAddress = senderAddress};
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<TestAnonymousEventContractDeployment>();
             var deploymentTransactionReceipt =
-                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+                await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage).ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentTransactionReceipt.ContractAddress);
 
             var eventFilter = contractHandler.GetEvent<ItemCreatedEventDTO>();
-            var filterId = await eventFilter.CreateFilterAsync(1);
+            var filterId = await eventFilter.CreateFilterAsync(1).ConfigureAwait(false);
 
             var transactionReceiptSend = await contractHandler.SendRequestAndWaitForReceiptAsync(
                 new NewItemFunction()
@@ -41,9 +41,9 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     FromAddress = senderAddress,
                     Id = 1,
                     Price = 100
-                });
+                }).ConfigureAwait(false);
 
-            var result = await eventFilter.GetFilterChangesAsync(filterId);
+            var result = await eventFilter.GetFilterChangesAsync(filterId).ConfigureAwait(false);
 
             Assert.Single(result);
         }

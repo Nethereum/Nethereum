@@ -36,7 +36,7 @@ namespace Nethereum.BlockchainProcessing.Processor
             _eventAction = (l) => { action(l); return Task.FromResult(0); };
             if (eventCriteria != null)
             {
-                _eventCriteria = async (l) => { return await Task.FromResult(eventCriteria(l)); };
+                _eventCriteria = async (l) => { return await Task.FromResult(eventCriteria(l)).ConfigureAwait(false); };
             }
             SetMatchCriteriaForEvent();
         }
@@ -45,7 +45,7 @@ namespace Nethereum.BlockchainProcessing.Processor
         {
             base.SetMatchCriteria(async log =>
             {
-                if (await Task.FromResult(log.IsLogForEvent<TEvent>()) == false) return false;
+                if (await Task.FromResult(log.IsLogForEvent<TEvent>()).ConfigureAwait(false) == false) return false;
 
                 if (_eventCriteria == null) return true;
 

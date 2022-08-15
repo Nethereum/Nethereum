@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void Should()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             //we want some code
             Assert.True(result.Length > "0x".Length);
@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethGetCode = new EthGetCode(client);
-            return await ethGetCode.SendRequestAsync(Settings.GetContractAddress());
+            return await ethGetCode.SendRequestAsync(Settings.GetContractAddress()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

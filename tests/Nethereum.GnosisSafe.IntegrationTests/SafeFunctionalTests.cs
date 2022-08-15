@@ -44,7 +44,7 @@ namespace Nethereum.GnosisSafe.IntegrationTests
                 RefundReceiver = AddressUtil.AddressEmptyAsHex,
                 Nonce = 1
             };
-            var encoded = await service.EncodeTransactionDataQueryAsync(param);
+            var encoded = await service.EncodeTransactionDataQueryAsync(param).ConfigureAwait(false);
 
             var domain = new GnosisSafeEIP712Domain
             {

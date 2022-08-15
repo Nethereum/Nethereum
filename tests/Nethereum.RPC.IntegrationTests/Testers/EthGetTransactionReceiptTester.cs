@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveReceipt()
         {
-            var receipt = await ExecuteAsync();
+            var receipt = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(receipt);
         }
 
@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers
             return
                 await
                     ethGetTransactionByHash.SendRequestAsync(
-                        Settings.GetTransactionHash());
+                        Settings.GetTransactionHash()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var web3ClientVersion = new Web3ClientVersion(client);
-            return await web3ClientVersion.SendRequestAsync();
+            return await web3ClientVersion.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

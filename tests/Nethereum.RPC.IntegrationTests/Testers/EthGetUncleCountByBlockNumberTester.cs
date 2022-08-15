@@ -18,7 +18,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheUncleCount()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.Equal(1, result.Value);
 
@@ -27,7 +27,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethGetUncleCountByBlockNumber = new EthGetUncleCountByBlockNumber(client);
-            return await ethGetUncleCountByBlockNumber.SendRequestAsync(new HexBigInteger(668));
+            return await ethGetUncleCountByBlockNumber.SendRequestAsync(new HexBigInteger(668)).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

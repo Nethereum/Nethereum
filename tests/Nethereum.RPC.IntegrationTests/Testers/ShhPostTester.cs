@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Tests.Testers
             var shhNewKeyPair = new ShhPost(Client);
             var shhAddPrivateKey = new ShhAddPrivateKey(Client);
 
-            var keyPair = await shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
+            var keyPair = await shhAddPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey()).ConfigureAwait(false);
             //4 Bytes
             var topic = UTF8Encoding.ASCII.GetBytes("default_topic").Take(4).ToArray().ToHex(true);
             var payload = UTF8Encoding.ASCII.GetBytes("default_message").ToHex(true);
@@ -33,7 +33,7 @@ namespace Nethereum.RPC.Tests.Testers
                 PowTime = 100,
                 Payload = payload,
                 Sig = keyPair
-            });
+            }).ConfigureAwait(false);
             Assert.NotNull(result);
         }
 
@@ -43,19 +43,19 @@ namespace Nethereum.RPC.Tests.Testers
             var shhNewKeyPair = new ShhPost(Client);
             var shhSymKey = new ShhSymKey(Client);
 
-            var symKeyId = await shhSymKey.AddSymKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey()); 
+            var symKeyId = await shhSymKey.AddSymKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey()).ConfigureAwait(false); 
             //4 Bytes
             var topic = UTF8Encoding.ASCII.GetBytes("default_topic").Take(4).ToArray().ToHex(true);
             var payload = UTF8Encoding.ASCII.GetBytes("default_message").ToHex(true);
             var result = await shhNewKeyPair.SendRequestAsync(new Shh.DTOs.MessageInput
-            { 
+            {
                 Ttl = 7,
                 Topic = topic,
                 PowTarget = 2.1,
                 PowTime = 100,
                 Payload = payload,
-                SymKeyID = symKeyId 
-            });
+                SymKeyID = symKeyId
+            }).ConfigureAwait(false);
             Assert.NotNull(result);
         }
 

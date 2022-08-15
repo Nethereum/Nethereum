@@ -51,24 +51,24 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
                 @"[{""constant"":false,""inputs"":[{""name"":""_myvalue"",""type"":""string""}],""name"":""sha3Test"",""outputs"":[{""name"":""val"",""type"":""bytes32""}],""type"":""function""},{""constant"":false,""inputs"":[{""name"":""_myHash"",""type"":""bytes32""}],""name"":""storeMyHash"",""outputs"":[],""type"":""function""},{""constant"":true,""inputs"":[],""name"":""myHash"",""outputs"":[{""name"":"""",""type"":""bytes32""}],""type"":""function""}]";
 
             var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(contractByteCode,
-                senderAddress, new HexBigInteger(900000), null, null, null);
+                senderAddress, new HexBigInteger(900000), null, null, null).ConfigureAwait(false);
 
             //"0x350b79547251fdb18b64ec17cf3783e7d854bd30" (prev deployed contract)
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var sha3Function = contract.GetFunction("sha3Test");
-            var result = await sha3Function.CallAsync<byte[]>(text);
+            var result = await sha3Function.CallAsync<byte[]>(text).ConfigureAwait(false);
             Assert.Equal(hash, "0x" + result.ToHex());
 
             var storeMyHash = contract.GetFunction("storeMyHash");
-            var gas = await storeMyHash.EstimateGasAsync(senderAddress, null, null, hash.HexToByteArray());
+            var gas = await storeMyHash.EstimateGasAsync(senderAddress, null, null, hash.HexToByteArray()).ConfigureAwait(false);
             var receiptTxn =
                 await storeMyHash.SendTransactionAndWaitForReceiptAsync(senderAddress, gas, null, null,
-                    hash.HexToByteArray());
+                    hash.HexToByteArray()).ConfigureAwait(false);
 
             var myHashFuction = contract.GetFunction("myHash");
-            result = await myHashFuction.CallAsync<byte[]>();
+            result = await myHashFuction.CallAsync<byte[]>().ConfigureAwait(false);
             Assert.Equal(hash, "0x" + result.ToHex());
         }
     }

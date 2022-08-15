@@ -38,7 +38,7 @@ namespace Nethereum.JsonRpc.Client
                     .ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 using (var streamReader = new StreamReader(stream))
                 using (var reader = new JsonTextReader(streamReader))
                 {
@@ -72,7 +72,7 @@ namespace Nethereum.JsonRpc.Client
                     .ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 using (var streamReader = new StreamReader(stream))
                 using (var reader = new JsonTextReader(streamReader))
                 {

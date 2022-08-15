@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugSetBlockProfileRate = new DebugSetBlockProfileRate(client);
-            return await debugSetBlockProfileRate.SendRequestAsync(10);
+            return await debugSetBlockProfileRate.SendRequestAsync(10).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldSetBlockProfileAndReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.Null(result);
         }
     }

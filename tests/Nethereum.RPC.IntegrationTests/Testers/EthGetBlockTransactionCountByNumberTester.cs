@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTransactionCount()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             //we have configured one transaction at least for this block
             Assert.True(result.Value > 0);
@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethGetBlockTransactionCountByNumber = new EthGetBlockTransactionCountByNumber(client);
-            return await ethGetBlockTransactionCountByNumber.SendRequestAsync(new BlockParameter(Settings.GetBlockNumber()));
+            return await ethGetBlockTransactionCountByNumber.SendRequestAsync(new BlockParameter(Settings.GetBlockNumber())).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

@@ -46,7 +46,7 @@ namespace Nethereum.Contracts.Standards.ERC20
             }
 
             var multiqueryHandler = this._ethApiContractService.GetMultiQueryHandler(multiCallAddress);
-            var results = await multiqueryHandler.MultiCallAsync(numberOfCallsPerRequest, balanceCalls.ToArray());
+            var results = await multiqueryHandler.MultiCallAsync(numberOfCallsPerRequest, balanceCalls.ToArray()).ConfigureAwait(false);
             return balanceCalls.Select(x => new TokenOwnerBalance()
             {
                 Balance = x.Output.Balance,
@@ -78,7 +78,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         string multiCallAddress = CommonAddresses.MULTICALL_ADDRESS)
         {
             var tokenBalances = await GetAllTokenBalancesUsingMultiCallAsync(ownerAddresses, tokens.Select(x => x.Address),
-                block, numberOfCallsPerRequest, multiCallAddress);
+                block, numberOfCallsPerRequest, multiCallAddress).ConfigureAwait(false);
             var returnInfo = new List<TokenOwnerInfo>();
             foreach (var token in tokens)
             {

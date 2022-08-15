@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityGasPriceHistogram = new ParityGasPriceHistogram(client);
-            return await parityGasPriceHistogram.SendRequestAsync();
+            return await parityGasPriceHistogram.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -23,7 +23,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
 
             var bucketBounds = result["bucketBounds"] as JArray;

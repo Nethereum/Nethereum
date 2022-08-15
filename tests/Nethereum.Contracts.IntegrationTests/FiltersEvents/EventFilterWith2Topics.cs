@@ -93,22 +93,22 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash = await web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, addressFrom,
-                new HexBigInteger(900000), 7);
+                new HexBigInteger(900000), 7).ConfigureAwait(false);
 
             Assert.NotNull(transactionHash);
 
             //the contract should be mining now
 
             //get the contract address 
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
                 Thread.Sleep(100);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
 
-            var code = await web3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress);
+            var code = await web3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(code))
                 throw new Exception(
@@ -118,58 +118,58 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var multipliedEvent = contract.GetEvent("Multiplied");
-            var filterAllContract = await contract.CreateFilterAsync();
-            var filterAll = await multipliedEvent.CreateFilterAsync();
+            var filterAllContract = await contract.CreateFilterAsync().ConfigureAwait(false);
+            var filterAll = await multipliedEvent.CreateFilterAsync().ConfigureAwait(false);
             //filter on the first indexed parameter
-            var filter69 = await multipliedEvent.CreateFilterAsync(69);
+            var filter69 = await multipliedEvent.CreateFilterAsync(69).ConfigureAwait(false);
 
             HexBigInteger filter49 = null;
 
 
             //filter on the second indexed parameter
-            filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49);
+            filter49 = await multipliedEvent.CreateFilterAsync<object, int>(null, 49).ConfigureAwait(false);
 
 
             //filter OR on the first indexed parameter
-            var filter69And18 = await multipliedEvent.CreateFilterAsync(new[] {69, 18});
+            var filter69And18 = await multipliedEvent.CreateFilterAsync(new[] { 69, 18 }).ConfigureAwait(false);
 
 
             var multipliedEventLog = contract.GetEvent("MultipliedLog");
-            var filterAllLog = await multipliedEventLog.CreateFilterAsync();
+            var filterAllLog = await multipliedEventLog.CreateFilterAsync().ConfigureAwait(false);
 
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
 
-            var gas = await multiplyFunction.EstimateGasAsync(69);
-            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 69);
-            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 18);
-            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 7);
+            var gas = await multiplyFunction.EstimateGasAsync(69).ConfigureAwait(false);
+            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 69).ConfigureAwait(false);
+            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 18).ConfigureAwait(false);
+            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 7).ConfigureAwait(false);
 
             var multiplyFunction2 = contract.GetFunction("multiply2");
-            var callResult = await multiplyFunction2.CallAsync<int>(7, 7);
+            var callResult = await multiplyFunction2.CallAsync<int>(7, 7).ConfigureAwait(false);
 
             TransactionReceipt receiptTransaction = null;
 
             while (receiptTransaction == null)
             {
                 Thread.Sleep(100);
-                receiptTransaction = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
+                receiptTransaction = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction7).ConfigureAwait(false);
             }
 
-            var logs = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract);
-            var eventLogsAll = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filterAll);
-            var eventLogs69 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69);
+            var logs = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract).ConfigureAwait(false);
+            var eventLogsAll = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filterAll).ConfigureAwait(false);
+            var eventLogs69 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69).ConfigureAwait(false);
 
 
             //Parity does not accept null values for filter
-            var eventLogsResult49 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter49);
+            var eventLogsResult49 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter49).ConfigureAwait(false);
 
 
-            var eventLogsFor69And18 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69And18);
+            var eventLogsFor69And18 = await multipliedEvent.GetFilterChangesAsync<EventMultiplied>(filter69And18).ConfigureAwait(false);
 
 
             var multipliedLogEvents =
-                await multipliedEventLog.GetFilterChangesAsync<EventMultipliedSenderLog>(filterAllLog);
+                await multipliedEventLog.GetFilterChangesAsync<EventMultipliedSenderLog>(filterAllLog).ConfigureAwait(false);
 
             Assert.Equal(483, eventLogs69.First().Event.Result);
             Assert.Equal("0xed6c11b0b5b808960df26f5bfc471d04c1995b0ffd2055925ad1be28d6baadfd",

@@ -20,35 +20,35 @@ namespace Nethereum.Metamask.Blazor
 
         public async ValueTask<string> EnableEthereumAsync()
         {
-            return await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.EnableEthereum");
+            return await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.EnableEthereum").ConfigureAwait(false);
         }
 
         public async ValueTask<bool> CheckMetamaskAvailability()
         {
-            return await _jsRuntime.InvokeAsync<bool>("NethereumMetamaskInterop.IsMetamaskAvailable");
+            return await _jsRuntime.InvokeAsync<bool>("NethereumMetamaskInterop.IsMetamaskAvailable").ConfigureAwait(false);
         }
 
         public async ValueTask<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage)
         {
-            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage));
+            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage)).ConfigureAwait(false);
             return JsonConvert.DeserializeObject<RpcResponseMessage>(response);
         }
 
         public async ValueTask<RpcResponseMessage> SendTransactionAsync(MetamaskRpcRequestMessage rpcRequestMessage)
         {
-            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage));
+            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage)).ConfigureAwait(false);
             return JsonConvert.DeserializeObject<RpcResponseMessage>(response);
         }
 
         public async ValueTask<string> SignAsync(string utf8Hex)
         {
-            var rpcJsonResponse = await  _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Sign", utf8Hex);
+            var rpcJsonResponse = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Sign", utf8Hex).ConfigureAwait(false);
             return ConvertResponse<string>(rpcJsonResponse);
         }
 
         public async ValueTask<string> GetSelectedAddress()
         {
-            var rpcJsonResponse = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.GetAddresses");
+            var rpcJsonResponse = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.GetAddresses").ConfigureAwait(false);
             var accounts = ConvertResponse<string[]>(rpcJsonResponse);
             if (accounts.Length > 0)
                 return accounts[0];
@@ -61,19 +61,19 @@ namespace Nethereum.Metamask.Blazor
         [JSInvokable()]
         public static async Task MetamaskAvailableChanged(bool available)
         {
-            await MetamaskHostProvider.Current.ChangeMetamaskAvailableAsync(available);
+            await MetamaskHostProvider.Current.ChangeMetamaskAvailableAsync(available).ConfigureAwait(false);
         }
 
         [JSInvokable()]
         public static async Task SelectedAccountChanged(string selectedAccount)
         {
-            await MetamaskHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount);
+            await MetamaskHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).ConfigureAwait(false);
         }
 
         [JSInvokable()]
         public static async Task SelectedNetworkChanged(int chainId)
         {
-            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync(chainId);
+            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync(chainId).ConfigureAwait(false);
         }
 
         private T ConvertResponse<T>(string jsonResponseMessage)

@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var netVersion = new NetVersion(client);
-            return await netVersion.SendRequestAsync();
+            return await netVersion.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

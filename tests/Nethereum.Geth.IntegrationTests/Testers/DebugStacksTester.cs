@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var debugStacks = new DebugStacks(client);
-            return await debugStacks.SendRequestAsync();
+            return await debugStacks.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldReturnStacksAsString()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

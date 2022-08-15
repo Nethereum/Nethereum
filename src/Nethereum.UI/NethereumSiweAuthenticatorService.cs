@@ -32,8 +32,8 @@ namespace Nethereum.UI
             }
 
             var challenge = GenerateNewSiweMessage(siweMessage);
-            var signedMessage = await host.SignMessageAsync(challenge);
-            if (await _siweMessageService.IsMessageSignatureValid(siweMessage, signedMessage))
+            var signedMessage = await host.SignMessageAsync(challenge).ConfigureAwait(false);
+            if (await _siweMessageService.IsMessageSignatureValid(siweMessage, signedMessage).ConfigureAwait(false))
             {
                 return siweMessage;
             }

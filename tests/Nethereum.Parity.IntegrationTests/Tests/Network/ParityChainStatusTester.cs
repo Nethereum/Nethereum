@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityChainStatus = new ParityChainStatus(client);
-            return await parityChainStatus.SendRequestAsync();
+            return await parityChainStatus.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -23,7 +23,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

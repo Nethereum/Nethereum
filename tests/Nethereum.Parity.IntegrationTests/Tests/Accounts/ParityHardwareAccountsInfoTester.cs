@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityHardwareAccountsInfo = new ParityHardwareAccountsInfo(client);
-            return await parityHardwareAccountsInfo.SendRequestAsync();
+            return await parityHardwareAccountsInfo.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         {
             try
             {
-                var result = await ExecuteAsync();
+                var result = await ExecuteAsync().ConfigureAwait(false);
                 Assert.NotNull(result);
             }
             catch (RpcResponseException exception)

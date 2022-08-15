@@ -95,8 +95,8 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     .ConfigureAwait(false);
 
 
-            await EventAssertionsAsync(contractAddress, web3.Client, senderAddress, newAddress);
-            await EventAssertionsAsync(null, web3.Client, senderAddress, newAddress);
+            await EventAssertionsAsync(contractAddress, web3.Client, senderAddress, newAddress).ConfigureAwait(false);
+            await EventAssertionsAsync(null, web3.Client, senderAddress, newAddress).ConfigureAwait(false);
         }
 
         public async Task EventAssertionsAsync(string contractAddresses,
@@ -117,41 +117,41 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var filterInputForAllContracts = eventForAnyContract.CreateFilterInput();
 
-            var event1 = await eventForAnyContract.GetAllChangesAsync(filterInputForAllContracts);
+            var event1 = await eventForAnyContract.GetAllChangesAsync(filterInputForAllContracts).ConfigureAwait(false);
 
             Assert.True(event1.Any());
 
             var filterInputForFromAddress = eventForAnyContract.CreateFilterInput(senderAddress);
 
-            var event2 = await eventForAnyContract.GetAllChangesAsync(filterInputForFromAddress);
+            var event2 = await eventForAnyContract.GetAllChangesAsync(filterInputForFromAddress).ConfigureAwait(false);
 
             Assert.True(event2.Any());
 
 
             var filterInputForToAddress = eventForAnyContract.CreateFilterInput<string, string>(null, newAddress);
 
-            var event3 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAddress);
+            var event3 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAddress).ConfigureAwait(false);
 
             Assert.True(event3.Any());
 
 
             var filterInputForToAndFromAddress = eventForAnyContract.CreateFilterInput(senderAddress, newAddress);
 
-            var event4 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAndFromAddress);
+            var event4 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAndFromAddress).ConfigureAwait(false);
             Assert.True(event4.Any());
 
 
             var filterInputForFromAddressArray = eventForAnyContract.CreateFilterInput(new[] {senderAddress});
 
 
-            var event5 = await eventForAnyContract.GetAllChangesAsync(filterInputForFromAddressArray);
+            var event5 = await eventForAnyContract.GetAllChangesAsync(filterInputForFromAddressArray).ConfigureAwait(false);
 
             Assert.True(event5.Any());
 
 
             var filterInputForToAddressArray = eventForAnyContract.CreateFilterInput(null, new[] {newAddress});
 
-            var event6 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAddressArray);
+            var event6 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAddressArray).ConfigureAwait(false);
 
             Assert.True(event6.Any());
 
@@ -159,7 +159,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var filterInputForToAndFromAddressArray =
                 eventForAnyContract.CreateFilterInput(new[] {senderAddress}, new[] {newAddress});
 
-            var event7 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAndFromAddressArray);
+            var event7 = await eventForAnyContract.GetAllChangesAsync(filterInputForToAndFromAddressArray).ConfigureAwait(false);
             Assert.True(event5.Any());
         }
     }

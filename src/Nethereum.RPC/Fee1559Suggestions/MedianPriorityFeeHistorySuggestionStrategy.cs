@@ -85,7 +85,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 var estimatedPriorityFee = await EstimatePriorityFeeAsync(
                     baseFee,
                     lastBlock.Number
-                );
+                ).ConfigureAwait(false);
 
                 if (estimatedPriorityFee == null)
                 {

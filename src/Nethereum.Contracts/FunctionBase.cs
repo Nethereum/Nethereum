@@ -60,50 +60,50 @@ namespace Nethereum.Contracts
 
         public async Task<byte[]> CallRawAsync(CallInput callInput)
         {
-            var result = await CallAsync(callInput);
+            var result = await CallAsync(callInput).ConfigureAwait(false);
             return result.HexToByteArray();
         }
 
         public async Task<byte[]> CallRawAsync(CallInput callInput, BlockParameter block)
         {
-            var result = await CallAsync(callInput, block);
+            var result = await CallAsync(callInput, block).ConfigureAwait(false);
             return result.HexToByteArray();
         }
 
         public async Task<List<ParameterOutput>> CallDecodingToDefaultAsync(CallInput callInput, BlockParameter block)
         {
-            var result = await CallAsync(callInput, block);
+            var result = await CallAsync(callInput, block).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeOutput(result);
         }
 
         public async Task<List<ParameterOutput>> CallDecodingToDefaultAsync(CallInput callInput)
         {
-            var result = await CallAsync(callInput);
+            var result = await CallAsync(callInput).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeOutput(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput)
         {
-            var result = await CallAsync(callInput);
+            var result = await CallAsync(callInput).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeTypeOutput<TReturn>(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(CallInput callInput, BlockParameter block)
         {
-            var result = await CallAsync(callInput, block);
+            var result = await CallAsync(callInput, block).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeTypeOutput<TReturn>(result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput)
         {
-            var result = await CallAsync(callInput);
+            var result = await CallAsync(callInput).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeDTOTypeOutput(functionOuput, result);
         }
 
         protected async Task<TReturn> CallAsync<TReturn>(TReturn functionOuput, CallInput callInput,
             BlockParameter block)
         {
-            var result = await CallAsync(callInput, block);
+            var result = await CallAsync(callInput, block).ConfigureAwait(false);
             return FunctionBuilderBase.DecodeDTOTypeOutput(functionOuput, result);
         }
 

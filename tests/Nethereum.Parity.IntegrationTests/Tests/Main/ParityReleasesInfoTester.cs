@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityReleasesInfo = new ParityReleasesInfo(client);
-            return await parityReleasesInfo.SendRequestAsync();
+            return await parityReleasesInfo.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
             //parity returns a null result
             //{"jsonrpc":"2.0","result":null,"id":1}
             //so we can no longer check for not null
-            await ExecuteAsync();
+            await ExecuteAsync().ConfigureAwait(false);
         }
     }
 }

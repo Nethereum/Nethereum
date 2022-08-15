@@ -46,7 +46,7 @@ namespace Nethereum.Ledger
         protected override async Task<byte[]> GetPublicKeyAsync()
         {
             var path = GetPath();
-            var publicKeyResponse = await LedgerManager.SendRequestAsync<EthereumAppGetPublicKeyResponse, EthereumAppGetPublicKeyRequest>(new EthereumAppGetPublicKeyRequest(true, false, path));
+            var publicKeyResponse = await LedgerManager.SendRequestAsync<EthereumAppGetPublicKeyResponse, EthereumAppGetPublicKeyRequest>(new EthereumAppGetPublicKeyRequest(true, false, path)).ConfigureAwait(false);
             if (publicKeyResponse.IsSuccess)
             {
                 return publicKeyResponse.PublicKeyData;
@@ -61,7 +61,7 @@ namespace Nethereum.Ledger
 
             var firstRequest = new EthereumAppSignatureRequest(true, path.Concat(hash).ToArray());
 
-            var response = await LedgerManager.SendRequestAsync<EthereumAppSignatureResponse, EthereumAppSignatureRequest>(firstRequest);
+            var response = await LedgerManager.SendRequestAsync<EthereumAppSignatureResponse, EthereumAppSignatureRequest>(firstRequest).ConfigureAwait(false);
             if (response.SignatureS == null || response.SignatureR == null) throw new Exception("Signing failure or not accepted");
             var signature = ECDSASignatureFactory.FromComponents(response.SignatureR, response.SignatureS);
             signature.V = new BigInteger(response.SignatureV).ToBytesForRLPEncoding();

@@ -15,7 +15,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnBlockWithHashes()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.NotNull(result.Transactions.FirstOrDefault(x => x.TransactionHash == Settings.GetTransactionHash()));
         }
@@ -25,7 +25,7 @@ namespace Nethereum.RPC.Tests.Testers
             var ethGetBlockByHash = new EthGetBlockWithTransactionsByHash(client);
             return
                 await
-                    ethGetBlockByHash.SendRequestAsync(Settings.GetBlockHash());
+                    ethGetBlockByHash.SendRequestAsync(Settings.GetBlockHash()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

@@ -27,14 +27,14 @@ namespace Nethereum.Metamask
                 transaction.From = _metamaskHostProvider.SelectedAccount;
                 request.RawParameters[0] = transaction;
                 var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
-                    request.RawParameters));
+                    request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
             else
             {
                 var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(request.Id,
                     request.Method,
-                    request.RawParameters));
+                    request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response); 
             }
 
@@ -49,14 +49,14 @@ namespace Nethereum.Metamask
                 var transaction = (TransactionInput)paramList[0];
                 transaction.From = GetSelectedAccount();
                 paramList[0] = transaction;
-                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(), 
-                    paramList));
+                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(),
+                    paramList)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
             else
             {
                 var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(route, GetSelectedAccount(), method,
-                    paramList));
+                    paramList)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
           

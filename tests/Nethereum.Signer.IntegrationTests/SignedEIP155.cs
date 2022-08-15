@@ -35,12 +35,12 @@ namespace Nethereum.Signer.IntegrationTests
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             //GetWeb3 includes the chain Id
 
-            var x = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var x = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
             web3.Eth.TransactionManager.UseLegacyAsDefault = true;
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
-                    new HexBigInteger(900000), null, 7);
+                    new HexBigInteger(900000), null, 7).ConfigureAwait(false);
             var contractAddress = receipt.ContractAddress;
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var multiplyFunction = contract.GetFunction("multiply");
@@ -59,7 +59,7 @@ namespace Nethereum.Signer.IntegrationTests
 
             var transactionsReceipts =
                 await web3.TransactionManager.TransactionReceiptService
-                    .SendRequestsAndWaitForReceiptAsync(transactions);
+                    .SendRequestsAndWaitForReceiptAsync(transactions).ConfigureAwait(false);
 
             Assert.Equal(4, transactionsReceipts.Count);
 

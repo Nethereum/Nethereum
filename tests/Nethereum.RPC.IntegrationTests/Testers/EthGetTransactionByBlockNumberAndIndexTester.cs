@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheTransaction()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.Equal(Settings.GetTransactionHash(), result.TransactionHash);
 
@@ -23,7 +23,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<Transaction> ExecuteAsync(IClient client)
         {
             var ethGetTransactionByBlockNumberAndIndex = new EthGetTransactionByBlockNumberAndIndex(client);
-            return await ethGetTransactionByBlockNumberAndIndex.SendRequestAsync(new HexBigInteger(Settings.GetBlockNumber()), new HexBigInteger(0));
+            return await ethGetTransactionByBlockNumberAndIndex.SendRequestAsync(new HexBigInteger(Settings.GetBlockNumber()), new HexBigInteger(0)).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

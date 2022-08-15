@@ -15,7 +15,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var debugDumpBlock = new DebugDumpBlock(client);
-            return await debugDumpBlock.SendRequestAsync(Settings.GetBlockNumber());
+            return await debugDumpBlock.SendRequestAsync(Settings.GetBlockNumber()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -26,7 +26,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldReturnAJObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

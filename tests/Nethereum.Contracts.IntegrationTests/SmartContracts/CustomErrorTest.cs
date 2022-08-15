@@ -79,13 +79,13 @@ contract TestToken {
                 var errorThrowDeployment = new TestTokenDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
 
                 var error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
-                   await contractHandler.EstimateGasAsync(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }));
+                   await contractHandler.EstimateGasAsync(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }).ConfigureAwait(false)).ConfigureAwait(false);
                 
                 Assert.True(error.IsCustomErrorFor<InsufficientBalance>());
                 var insufficientBalance = error.DecodeError<InsufficientBalance>();
@@ -104,15 +104,15 @@ contract TestToken {
                 var errorThrowDeployment = new TestTokenDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
 
 
                 var error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
-                    //random return value as it is going to error
-                   await contractHandler.QueryAsync<TransferFunction, int>(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }));
+                   //random return value as it is going to error
+                   await contractHandler.QueryAsync<TransferFunction, int>(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }).ConfigureAwait(false)).ConfigureAwait(false);
 
                 Assert.True(error.IsCustomErrorFor<InsufficientBalance>());
                 var insufficientBalance = error.DecodeError<InsufficientBalance>();
@@ -131,13 +131,13 @@ contract TestToken {
                 var errorThrowDeployment = new TestTokenDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
 
                 var customErrorException = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
                    //random return value as it is going to error
-                   await contractHandler.QueryAsync<TransferFunction, int>(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }));
+                   await contractHandler.QueryAsync<TransferFunction, int>(new TransferFunction() { Amount = 100, To = EthereumClientIntegrationFixture.AccountAddress }).ConfigureAwait(false)).ConfigureAwait(false);
 
                 var contract = web3.Eth.GetContract("[{'inputs':[{'internalType':'uint256','name':'available','type':'uint256'},{'internalType':'uint256','name':'required','type':'uint256'}],'name':'InsufficientBalance','type':'error'},{'inputs':[{'internalType':'address','name':'to','type':'address'},{'internalType':'uint256','name':'amount','type':'uint256'}],'name':'transfer','outputs':[],'stateMutability':'nonpayable','type':'function'}]", contractAddress);
                 var error = contract.FindError(customErrorException.ExceptionEncodedData);
@@ -157,7 +157,7 @@ contract TestToken {
                 var errorThrowDeployment = new TestTokenDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contract = web3.Eth.GetContract("[{'inputs':[{'internalType':'uint256','name':'available','type':'uint256'},{'internalType':'uint256','name':'required','type':'uint256'}],'name':'InsufficientBalance','type':'error'},{'inputs':[{'internalType':'address','name':'to','type':'address'},{'internalType':'uint256','name':'amount','type':'uint256'}],'name':'transfer','outputs':[],'stateMutability':'nonpayable','type':'function'}]", contractAddress);
@@ -165,7 +165,7 @@ contract TestToken {
 
                 var error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
                    //random return value as it is going to error
-                   await function.CallAsync<int>(EthereumClientIntegrationFixture.AccountAddress,100));
+                   await function.CallAsync<int>(EthereumClientIntegrationFixture.AccountAddress, 100).ConfigureAwait(false)).ConfigureAwait(false);
 
                 Assert.True(error.IsCustomErrorFor<InsufficientBalance>());
                 var insufficientBalance = error.DecodeError<InsufficientBalance>();
@@ -184,7 +184,7 @@ contract TestToken {
                 var errorThrowDeployment = new TestTokenDeployment();
 
                 var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
-                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment);
+                    .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contract = web3.Eth.GetContract("[{'inputs':[{'internalType':'uint256','name':'available','type':'uint256'},{'internalType':'uint256','name':'required','type':'uint256'}],'name':'InsufficientBalance','type':'error'},{'inputs':[{'internalType':'address','name':'to','type':'address'},{'internalType':'uint256','name':'amount','type':'uint256'}],'name':'transfer','outputs':[],'stateMutability':'nonpayable','type':'function'}]", contractAddress);
@@ -192,7 +192,7 @@ contract TestToken {
 
                 var error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
                    //random return value as it is going to error
-                   await function.EstimateGasAsync(EthereumClientIntegrationFixture.AccountAddress, 100));
+                   await function.EstimateGasAsync(EthereumClientIntegrationFixture.AccountAddress, 100).ConfigureAwait(false)).ConfigureAwait(false);
 
                 Assert.True(error.IsCustomErrorFor<InsufficientBalance>());
                 var insufficientBalance = error.DecodeError<InsufficientBalance>();

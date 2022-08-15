@@ -123,7 +123,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
                     progress.BlockNumberProcessTo = currentBlockNumber;
                     if (blockProgressRepository != null)
                     {
-                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value);
+                        await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value).ConfigureAwait(false);
                     }
                     currentBlockNumber = currentBlockNumber + 1;
                 }

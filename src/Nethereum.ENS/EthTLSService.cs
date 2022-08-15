@@ -59,7 +59,7 @@ namespace Nethereum.ENS
 
         public async Task<decimal> CalculateRentPriceInEtherAsync(string name, int durationInDays)
         {
-            var rentPriceWei = await CalculateRentPriceAsync(name, durationInDays);
+            var rentPriceWei = await CalculateRentPriceAsync(name, durationInDays).ConfigureAwait(false);
             return Util.UnitConversion.Convert.FromWei(rentPriceWei);
         }
 
@@ -99,7 +99,7 @@ namespace Nethereum.ENS
         public async Task<string> CommitRequestAsync(string name, string owner, string secret)
         {
             var commitment = await CalculateCommitmentAsync(name, owner, secret).ConfigureAwait(false);
-            return await TLSRegistrarControllerService.CommitRequestAsync(commitment);
+            return await TLSRegistrarControllerService.CommitRequestAsync(commitment).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> CommitRequestAndWaitForReceiptAsync(string name, string owner, string secret)

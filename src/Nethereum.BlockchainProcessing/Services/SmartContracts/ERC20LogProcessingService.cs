@@ -51,12 +51,12 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             var filterInputTo = new FilterInputBuilder<TransferEventDTO>().AddTopic(x => x.To, account)
                 .Build(contractAddresses);
             var allEvents = await _blockchainLogProcessing.GetAllEvents<TransferEventDTO>(filterInputTo, fromBlockNumber, toBlockNumber,
-                cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
 
             var filterInputFrom = new FilterInputBuilder<TransferEventDTO>().AddTopic(x => x.From, account)
                 .Build(contractAddresses);
             var eventsFrom = await _blockchainLogProcessing.GetAllEvents<TransferEventDTO>(filterInputFrom, fromBlockNumber, toBlockNumber,
-                cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
             allEvents.AddRange(eventsFrom);
             return allEvents;
         }

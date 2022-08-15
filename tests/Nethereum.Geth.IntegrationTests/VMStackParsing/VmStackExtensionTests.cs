@@ -15,7 +15,7 @@ namespace Nethereum.Geth.IntegrationTests.VMStackParsing
         [Fact]
         public async Task CanFindInterContractCalls()
         {
-            var stackTrace = await GetTestStackTrace("StackTrace_Calls.json");
+            var stackTrace = await GetTestStackTrace("StackTrace_Calls.json").ConfigureAwait(false);
 
             var interContractCalls = stackTrace.GetInterContractCalls("0x786a30e1ab0c58303c85419b9077657ad4fdb0ea").ToArray();
 
@@ -37,7 +37,7 @@ namespace Nethereum.Geth.IntegrationTests.VMStackParsing
         [Fact]
         public async Task CanFindInterContractCreations()
         {
-            var stackTrace = await GetTestStackTrace("StackTrace_Creations.json");
+            var stackTrace = await GetTestStackTrace("StackTrace_Creations.json").ConfigureAwait(false);
             var interContractCalls = stackTrace.GetInterContractCalls("0xd0828aeb00e4db6813e2f330318ef94d2bba2f60").ToArray();
 
             Assert.Single(interContractCalls);
@@ -49,7 +49,7 @@ namespace Nethereum.Geth.IntegrationTests.VMStackParsing
         [Fact]
         public async Task CanFindInterContractDelegateCalls()
         {
-            var stackTrace = await GetTestStackTrace("StackTrace_DelegateCalls.json");
+            var stackTrace = await GetTestStackTrace("StackTrace_DelegateCalls.json").ConfigureAwait(false);
             var interContractCalls = stackTrace.GetInterContractCalls("0x786a30e1ab0c58303c85419b9077657ad4fdb0ea").ToArray();
 
             Assert.Single(interContractCalls);
@@ -61,7 +61,7 @@ namespace Nethereum.Geth.IntegrationTests.VMStackParsing
         [Fact]
         public async Task CanFindInterContractSelfDestructs()
         {
-            var stackTrace = await GetTestStackTrace("StackTrace_SelfDestruct.json");
+            var stackTrace = await GetTestStackTrace("StackTrace_SelfDestruct.json").ConfigureAwait(false);
             var interContractCalls = stackTrace.GetInterContractCalls("0xd2e474c616cc60fb95d8b5f86c1043fa4552611b").ToArray();
 
             Assert.Equal(2, interContractCalls.Length);
@@ -82,7 +82,7 @@ namespace Nethereum.Geth.IntegrationTests.VMStackParsing
                 {
                     using (var jsonReader = new JsonTextReader(streamReader))
                     {
-                        jObject = await JObject.LoadAsync(jsonReader);
+                        jObject = await JObject.LoadAsync(jsonReader).ConfigureAwait(false);
                     }
                 }
             }

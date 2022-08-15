@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         public override async Task<int> ExecuteAsync(IClient client)
         {
             var parityNetPort = new ParityNetPort(client);
-            return await parityNetPort.SendRequestAsync();
+            return await parityNetPort.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Network
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(result > 0);
         }
     }

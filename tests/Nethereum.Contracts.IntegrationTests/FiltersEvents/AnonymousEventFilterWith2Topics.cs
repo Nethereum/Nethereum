@@ -36,9 +36,9 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
             var deploymentTransactionReceipt = await DoTransactionAndWaitForReceiptAsync(web3,
-                () => web3.Eth.DeployContract.SendRequestAsync(abi, bytecode, addressFrom, new HexBigInteger(900000)));
+                () => web3.Eth.DeployContract.SendRequestAsync(abi, bytecode, addressFrom, new HexBigInteger(900000))).ConfigureAwait(false);
 
-            var code = await web3.Eth.GetCode.SendRequestAsync(deploymentTransactionReceipt.ContractAddress);
+            var code = await web3.Eth.GetCode.SendRequestAsync(deploymentTransactionReceipt.ContractAddress).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(code))
             {
@@ -50,34 +50,34 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             var itemCreatedEvent = contract.GetEvent("ItemCreated");
 
-            var filter1_ = await itemCreatedEvent.CreateFilterAsync(1);
-            var filter_22 = await itemCreatedEvent.CreateFilterAsync<object, int>(null, 22);
-            var filter1_22 = await itemCreatedEvent.CreateFilterAsync(1, 22);
-            var filter1_11 = await itemCreatedEvent.CreateFilterAsync(1, 11);
+            var filter1_ = await itemCreatedEvent.CreateFilterAsync(1).ConfigureAwait(false);
+            var filter_22 = await itemCreatedEvent.CreateFilterAsync<object, int>(null, 22).ConfigureAwait(false);
+            var filter1_22 = await itemCreatedEvent.CreateFilterAsync(1, 22).ConfigureAwait(false);
+            var filter1_11 = await itemCreatedEvent.CreateFilterAsync(1, 11).ConfigureAwait(false);
 
             var newItemFunction = contract.GetFunction("newItem");
 
-            var gas1_11 = await newItemFunction.EstimateGasAsync(1, 11);
+            var gas1_11 = await newItemFunction.EstimateGasAsync(1, 11).ConfigureAwait(false);
             var newItem1_11TransactionReceipt = await DoTransactionAndWaitForReceiptAsync(web3,
-                () => newItemFunction.SendTransactionAsync(addressFrom, gas1_11, null, 1, 11));
-            var gas2_22 = await newItemFunction.EstimateGasAsync(2, 22);
+                () => newItemFunction.SendTransactionAsync(addressFrom, gas1_11, null, 1, 11)).ConfigureAwait(false);
+            var gas2_22 = await newItemFunction.EstimateGasAsync(2, 22).ConfigureAwait(false);
             var newItem2_22TransactionReceipt = await DoTransactionAndWaitForReceiptAsync(web3,
-                () => newItemFunction.SendTransactionAsync(addressFrom, gas2_22, null, 2, 22));
+                () => newItemFunction.SendTransactionAsync(addressFrom, gas2_22, null, 2, 22)).ConfigureAwait(false);
 
-            var logs1_Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_);
+            var logs1_Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_).ConfigureAwait(false);
             Assert.Single(logs1_Result);
             Assert.Equal(1, logs1_Result[0].Event.ItemId);
             Assert.Equal(11, logs1_Result[0].Event.Price);
 
-            var logs_22Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter_22);
+            var logs_22Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter_22).ConfigureAwait(false);
             Assert.Single(logs_22Result);
             Assert.Equal(2, logs_22Result[0].Event.ItemId);
             Assert.Equal(22, logs_22Result[0].Event.Price);
 
-            var logs1_22Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_22);
+            var logs1_22Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_22).ConfigureAwait(false);
             Assert.Empty(logs1_22Result);
 
-            var logs1_11Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_11);
+            var logs1_11Result = await itemCreatedEvent.GetFilterChangesAsync<ItemCreatedEvent>(filter1_11).ConfigureAwait(false);
             Assert.Single(logs1_11Result);
             Assert.Equal(1, logs1_11Result[0].Event.ItemId);
             Assert.Equal(11, logs1_11Result[0].Event.Price);
@@ -86,20 +86,20 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         private async Task<TransactionReceipt> DoTransactionAndWaitForReceiptAsync(Web3.Web3 web3,
             Func<Task<string>> transactionFunc)
         {
-            var transactionHash = await transactionFunc();
+            var transactionHash = await transactionFunc().ConfigureAwait(false);
 
             TransactionReceipt receipt = null;
 
             while (receipt == null)
             {
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
 
                 if (receipt != null)
                 {
                     break;
                 }
 
-                await Task.Delay(100);
+                await Task.Delay(100).ConfigureAwait(false);
             }
 
             return receipt;

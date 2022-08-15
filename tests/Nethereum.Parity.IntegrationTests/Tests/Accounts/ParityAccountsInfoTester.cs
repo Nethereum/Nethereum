@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityAccountsInfo = new ParityAccountsInfo(client);
-            return await parityAccountsInfo.SendRequestAsync();
+            return await parityAccountsInfo.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -23,7 +23,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
         [Fact]
         public async void ShouldGetInfo()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

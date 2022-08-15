@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetunStorage()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             //cannot verify it will be the same content but the lenght yes
             Assert.True(result.Length == "0x4d756c7469706c69657200000000000000000000000000000000000000000014".Length);
@@ -24,7 +24,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethGetStorageAt = new EthGetStorageAt(client);
-            return await ethGetStorageAt.SendRequestAsync(Settings.GetContractAddress(), new HexBigInteger(1));
+            return await ethGetStorageAt.SendRequestAsync(Settings.GetContractAddress(), new HexBigInteger(1)).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

@@ -33,15 +33,15 @@ namespace Nethereum.JsonRpc.IpcClient
 
         public async Task<int> ReceiveBufferedResponseAsync(NamedPipeClientStream client, byte[] buffer, CancellationToken cancellationToken)
         {
-            return await client.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+            return await client.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<MemoryStream> ReceiveFullResponseAsync(NamedPipeClientStream client, CancellationToken cancellationToken)
         {
             MemoryStream memoryStream = new MemoryStream();
             byte[] buffer = new byte[512];
-            for (int count = await ReceiveBufferedResponseAsync(client, buffer, cancellationToken); count > 0; count = buffer[count - 1] != 10 ? await ReceiveBufferedResponseAsync(client, buffer, cancellationToken) : 0)
-                await memoryStream.WriteAsync(buffer, 0, count, cancellationToken);
+            for (int count = await ReceiveBufferedResponseAsync(client, buffer, cancellationToken).ConfigureAwait(false); count > 0; count = buffer[count - 1] != 10 ? await ReceiveBufferedResponseAsync(client, buffer, cancellationToken).ConfigureAwait(false) : 0)
+                await memoryStream.WriteAsync(buffer, 0, count, cancellationToken).ConfigureAwait(false);
             return memoryStream;
         }
 
@@ -56,12 +56,12 @@ namespace Nethereum.JsonRpc.IpcClient
 
                 using (var pipeStream = new NamedPipeClientStream(IpcPath))
                 {
-                    await pipeStream.ConnectAsync(cancellationTokenSource.Token);
+                    await pipeStream.ConnectAsync(cancellationTokenSource.Token).ConfigureAwait(false);
                     string str = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                     byte[] bytes = Encoding.UTF8.GetBytes(str);
                     rpcLogger.LogRequest(str);
-                    await pipeStream.WriteAsync(bytes, 0, bytes.Length, cancellationTokenSource.Token);
-                    using (MemoryStream fullResponse = await ReceiveFullResponseAsync(pipeStream, cancellationTokenSource.Token))
+                    await pipeStream.WriteAsync(bytes, 0, bytes.Length, cancellationTokenSource.Token).ConfigureAwait(false);
+                    using (MemoryStream fullResponse = await ReceiveFullResponseAsync(pipeStream, cancellationTokenSource.Token).ConfigureAwait(false))
                     {
                         fullResponse.Position = 0L;
                         using (StreamReader streamReader = new StreamReader(fullResponse))

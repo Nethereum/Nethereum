@@ -130,7 +130,7 @@ namespace Nethereum.Quorum
             if (PrivateFor != null && PrivateFor.Count > 0)
             {
                 var enclave = new QuorumEnclave(PrivateUrl);
-                var key = await enclave.StoreRawAsync(Convert.ToBase64String(transaction.Data.HexToByteArray()), PrivateFrom);
+                var key = await enclave.StoreRawAsync(Convert.ToBase64String(transaction.Data.HexToByteArray()), PrivateFrom).ConfigureAwait(false);
                 transaction.Data = Convert.FromBase64String(key).ToHex();
             }
 

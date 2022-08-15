@@ -19,7 +19,7 @@ namespace Nethereum.Parity.IntegrationTests
 
         public async Task<object> ExecuteTestAsync(IClient client)
         {
-            return await ExecuteAsync(client);
+            return await ExecuteAsync(client).ConfigureAwait(false);
         }
 
         public abstract Type GetRequestType();

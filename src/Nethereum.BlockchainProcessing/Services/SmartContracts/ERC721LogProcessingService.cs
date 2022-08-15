@@ -30,7 +30,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
             var eventsFromOwner = await GetAllTransferEventsFromAndToAccount(contractAddresses,
-                account, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                account, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
             var accountOwned = GetCurrentOwnersFromTransferEvents(eventsFromOwner);
             return accountOwned.Where(x => AddressExtensions.IsTheSameAddress(x.Owner, account)).ToList();
         }
@@ -42,7 +42,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
             var eventsFromOwner = await GetAllTransferEventsFromAndToAccount(contractAddress,
-                account, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                account, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
             var accountOwned = GetCurrentOwnersFromTransferEvents(eventsFromOwner);
             return accountOwned.Where(x => x.Owner.IsTheSameAddress(account)).ToList();
         }
@@ -52,7 +52,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
             int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
-            var transferEvents = await GetAllTransferEventsForContract(contractAddress, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
+            var transferEvents = await GetAllTransferEventsForContract(contractAddress, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
 
             return GetCurrentOwnersFromTransferEvents(transferEvents);
         }
@@ -61,7 +61,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
             int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
-            var transferEvents = await GetAllTransferEventsForContracts(contractAddresses, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
+            var transferEvents = await GetAllTransferEventsForContracts(contractAddresses, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
 
             return GetCurrentOwnersFromTransferEvents(transferEvents);
             ;
@@ -117,12 +117,12 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             var filterInputTo = new FilterInputBuilder<TransferEventDTO>().AddTopic(x => x.To, account)
                 .Build(contractAddresses);
             var allEvents = await _blockchainLogProcessing.GetAllEvents<TransferEventDTO>(filterInputTo, fromBlockNumber, toBlockNumber,
-                cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
 
             var filterInputFrom = new FilterInputBuilder<TransferEventDTO>().AddTopic(x => x.From, account)
                 .Build(contractAddresses);
             var eventsFrom = await _blockchainLogProcessing.GetAllEvents<TransferEventDTO>(filterInputFrom, fromBlockNumber, toBlockNumber,
-                cancellationToken, numberOfBlocksPerRequest, retryWeight);
+                cancellationToken, numberOfBlocksPerRequest, retryWeight).ConfigureAwait(false);
             allEvents.AddRange(eventsFrom);
             return allEvents;
         }

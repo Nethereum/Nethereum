@@ -33,7 +33,7 @@ namespace Nethereum.Contracts.Standards.ERC721
             }
 
             var multiqueryHandler = this._ethApiContractService.GetMultiQueryHandler(multiCallAddress);
-            var results = await multiqueryHandler.MultiCallAsync(balanceCalls.ToArray());
+            var results = await multiqueryHandler.MultiCallAsync(balanceCalls.ToArray()).ConfigureAwait(false);
 
             var contractsWithBalance = balanceCalls.Where(x => x.Output.ReturnValue1 > 0).ToArray();
             
@@ -51,7 +51,7 @@ namespace Nethereum.Contracts.Standards.ERC721
                 }
             } 
           
-            var resultsTokens  = await multiqueryHandler.MultiCallAsync(calls.ToArray());
+            var resultsTokens  = await multiqueryHandler.MultiCallAsync(calls.ToArray()).ConfigureAwait(false);
             return calls.Select(x => new ERC721TokenOwnerInfo()
             {
                 TokenId = x.Output.ReturnValue1,
@@ -62,7 +62,7 @@ namespace Nethereum.Contracts.Standards.ERC721
 
         public async Task<List<ERC721TokenOwnerInfo>> GetAllTokenUrlsOfOwnerUsingTokenOfOwnerByIndexAndMultiCallAsync(string ownerAddress, string[] contractAddresses, string multiCallAddress = CommonAddresses.MULTICALL_ADDRESS)
         {
-            var ownerTokens = await GetAllTokenIdsOfOwnerUsingTokenOfOwnerByIndexAndMultiCallAsync(ownerAddress, contractAddresses, multiCallAddress);
+            var ownerTokens = await GetAllTokenIdsOfOwnerUsingTokenOfOwnerByIndexAndMultiCallAsync(ownerAddress, contractAddresses, multiCallAddress).ConfigureAwait(false);
             var calls = new List<MulticallInputOutput<TokenURIFunction, TokenURIOutputDTO>>();
             foreach (var ownerToken in ownerTokens)
             {
@@ -72,7 +72,7 @@ namespace Nethereum.Contracts.Standards.ERC721
                     ownerToken.ContractAddress));
             }
             var multiqueryHandler = this._ethApiContractService.GetMultiQueryHandler(multiCallAddress);
-            var results = await multiqueryHandler.MultiCallAsync(calls.ToArray());
+            var results = await multiqueryHandler.MultiCallAsync(calls.ToArray()).ConfigureAwait(false);
             return calls.Select(x => new ERC721TokenOwnerInfo() { TokenId = x.Input.TokenId, MetadataUrl = x.Output.ReturnValue1, ContractAddress = x.Target, Owner = ownerAddress }).ToList();
         }
 #endif

@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<EthRegistrarSubdomainRegistrarService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, EthRegistrarSubdomainRegistrarDeployment ethRegistrarSubdomainRegistrarDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, ethRegistrarSubdomainRegistrarDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, ethRegistrarSubdomainRegistrarDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new EthRegistrarSubdomainRegistrarService(web3, receipt.ContractAddress);
         }
 

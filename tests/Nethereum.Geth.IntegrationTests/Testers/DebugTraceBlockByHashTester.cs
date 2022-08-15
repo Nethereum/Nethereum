@@ -17,7 +17,7 @@ namespace Nethereum.Geth.Tests.Testers
         {
             var debugTraceBlockByHash = new DebugTraceBlockByHash(client);
             //live block number 1700742
-            return await debugTraceBlockByHash.SendRequestAsync(Settings.GetBlockHash(), new TraceTransactionOptions());
+            return await debugTraceBlockByHash.SendRequestAsync(Settings.GetBlockHash(), new TraceTransactionOptions()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -28,7 +28,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

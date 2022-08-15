@@ -32,12 +32,12 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             // retrieve the hash
 
             var minerStart = new MinerStart(client);
-            var minerStartResult = await minerStart.SendRequestAsync();
+            var minerStartResult = await minerStart.SendRequestAsync().ConfigureAwait(false);
 
             var transactionHash =
                 await
                     new PersonalSignAndSendTransaction(client).SendRequestAsync(transactionInput,
-                        Settings.GetDefaultAccountPassword());
+                        Settings.GetDefaultAccountPassword()).ConfigureAwait(false);
 
             //get contract address 
             var ethGetTransactionReceipt = new EthGetTransactionReceipt(client);
@@ -45,13 +45,13 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(1000);
-                receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash);
+                await Task.Delay(1000).ConfigureAwait(false);
+                receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
 
 
             var minerStop = new MinerStop(client);
-            var minerStopResult = await minerStop.SendRequestAsync();
+            var minerStopResult = await minerStop.SendRequestAsync().ConfigureAwait(false);
 
             //Encode and build function parameters 
             var function = new FunctionCallEncoder();
@@ -72,7 +72,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             // rpc method to do the call
             var ethCall = new EthCall(client);
             // call and get the result
-            var resultFunction = await ethCall.SendRequestAsync(transactionInput);
+            var resultFunction = await ethCall.SendRequestAsync(transactionInput).ConfigureAwait(false);
             // decode the output
             var functionDecoder = new FunctionCallDecoder();
 
@@ -94,7 +94,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
         [Fact]
         public async void ShouldDeployContractAndPerformCall()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.Equal(
                 "The result of deploying a contract and calling a function to multiply 7 by 69 is: 483 and should be 483",
                 result);

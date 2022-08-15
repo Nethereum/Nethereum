@@ -17,7 +17,7 @@ namespace Nethereum.RPC.UnitTests.InterceptorTests
             {
                 return "the code";
             }
-            return await interceptedSendRequestAsync(request, route);
+            return await interceptedSendRequestAsync(request, route).ConfigureAwait(false);
         }
 
 
@@ -34,7 +34,7 @@ namespace Nethereum.RPC.UnitTests.InterceptorTests
                 return "the code";
             }
 
-            return await interceptedSendRequestAsync(method, route, paramList);
+            return await interceptedSendRequestAsync(method, route, paramList).ConfigureAwait(false);
         }
     }
 }

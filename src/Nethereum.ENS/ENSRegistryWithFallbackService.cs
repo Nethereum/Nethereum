@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<ENSRegistryWithFallbackService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ENSRegistryWithFallbackDeployment eNSRegistryWithFallbackDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eNSRegistryWithFallbackDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, eNSRegistryWithFallbackDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new ENSRegistryWithFallbackService(web3, receipt.ContractAddress);
         }
 

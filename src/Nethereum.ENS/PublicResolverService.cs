@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<PublicResolverService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, PublicResolverDeployment publicResolverDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, publicResolverDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, publicResolverDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new PublicResolverService(web3, receipt.ContractAddress);
         }
 

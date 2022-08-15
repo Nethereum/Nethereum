@@ -79,7 +79,7 @@ namespace Nethereum.BlockchainProcessing.ProgressRepositories
 
         private async Task PersistAsync()
         {
-            await _jsonWriter.Invoke(JsonConvert.SerializeObject(_progress));
+            await _jsonWriter.Invoke(JsonConvert.SerializeObject(_progress)).ConfigureAwait(false);
         }
     }
 }

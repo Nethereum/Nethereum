@@ -71,7 +71,7 @@ namespace Nethereum.Ledger.IntegrationTests
             var addressFrom = "0x1996a57077877D38e18A1BE44A55100D77b8fA1D";
             var privateKey = "0x128c6818917d98a3b933de1d400e777963424ce71f0a58755b092d1b670394eb";
 
-            await Test(addressFrom, privateKey, true);
+            await Test(addressFrom, privateKey, true).ConfigureAwait(false);
         }
         
         public async Task Test(string addressFrom, string privateKey, bool legacy)
@@ -89,14 +89,14 @@ namespace Nethereum.Ledger.IntegrationTests
             var account = new Account(privateKey, Chain.MainNet);
 
             account.TransactionManager.Client = rpcClient;
-            var signature = await account.TransactionManager.SignTransactionAsync(transactionInput);
+            var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
-            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManagerAsync();
+            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManagerAsync().ConfigureAwait(false);
             var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), 1);
-            await externalAccount.InitialiseAsync();
+            await externalAccount.InitialiseAsync().ConfigureAwait(false);
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
             //Ensure contract data is enable in the settings of ledger nano
-            var signature2 = await externalAccount.TransactionManager.SignTransactionAsync(transactionInput);
+            var signature2 = await externalAccount.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
             Assert.Equal(signature, signature2);
 
@@ -111,7 +111,7 @@ namespace Nethereum.Ledger.IntegrationTests
                 To = "0x12890d2cce102216644c59daE5baed380d848301",
                 Value = new HexBigInteger(100)
 
-            });
+            }).ConfigureAwait(false);
         }
 
 
@@ -121,7 +121,7 @@ namespace Nethereum.Ledger.IntegrationTests
             var addressFrom = "0x76579b7aD091747F9aF144C207e640136c47A6b8";
             var privateKey = "0x105023ddd0e214d9e79bd94639a896e5ef19d24e9cb9fe59baf12969ffe0101e";
 
-            await Test(addressFrom, privateKey, false);
+            await Test(addressFrom, privateKey, false).ConfigureAwait(false);
 
         }
     }

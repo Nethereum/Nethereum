@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldUnLockAccountAndReturnTrue()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(result);
         }
 
@@ -21,21 +21,21 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var personalunlockAccount = new PersonalUnlockAccount(client);
             ulong? duration = null;
-            await personalunlockAccount.SendRequestAsync(Settings.GetDefaultAccount(), Settings.GetDefaultAccountPassword(), duration);
+            await personalunlockAccount.SendRequestAsync(Settings.GetDefaultAccount(), Settings.GetDefaultAccountPassword(), duration).ConfigureAwait(false);
             if (Settings.IsParity())
             {
                 //Parity
                 return
                     await
                         personalunlockAccount.SendRequestAsync(Settings.GetDefaultAccount(),
-                            Settings.GetDefaultAccountPassword(), new HexBigInteger(30));
+                            Settings.GetDefaultAccountPassword(), new HexBigInteger(30)).ConfigureAwait(false);
             }
             else
             {
                 return
                     await
                         personalunlockAccount.SendRequestAsync(Settings.GetDefaultAccount(),
-                            Settings.GetDefaultAccountPassword(), 30);
+                            Settings.GetDefaultAccountPassword(), 30).ConfigureAwait(false);
             }
         }
 

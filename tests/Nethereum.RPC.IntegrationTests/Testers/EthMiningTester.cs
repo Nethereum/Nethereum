@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var ethMining = new EthMining(client);
-            return await ethMining.SendRequestAsync();
+            return await ethMining.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

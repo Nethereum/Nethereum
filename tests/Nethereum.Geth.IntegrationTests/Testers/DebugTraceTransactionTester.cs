@@ -28,7 +28,7 @@ namespace Nethereum.Geth.Tests.Testers
         {
             var debugTraceTransaction = new DebugTraceTransaction(client);
             return await debugTraceTransaction.SendRequestAsync(Settings.GetTransactionHash(),
-                new TraceTransactionOptions());
+                new TraceTransactionOptions()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -39,7 +39,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldReturnAJObjectRepresentingTheTransactionStack()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             try
             {

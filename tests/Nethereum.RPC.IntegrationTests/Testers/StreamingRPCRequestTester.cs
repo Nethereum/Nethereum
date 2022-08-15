@@ -25,7 +25,7 @@ namespace Nethereum.RPC.Tests.Testers
 
         public async Task ExecuteTestAsync(IStreamingClient client)
         {
-            await ExecuteAsync(client);
+            await ExecuteAsync(client).ConfigureAwait(false);
         }
 
         public abstract Task ExecuteAsync(IStreamingClient client);

@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers.Streaming
             var rpcRequestMessage = new RpcRequestMessage("", "");
             var mockResponseHandler = new Mock<IRpcStreamingResponseHandler>();
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendRequestAsync(rpcRequestMessage, mockResponseHandler.Object));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendRequestAsync(rpcRequestMessage, mockResponseHandler.Object)).ConfigureAwait(false);
             Assert.Equal("Websocket is null.  Ensure that StartAsync has been called to create the websocket.", exception.Message);
         }
     }

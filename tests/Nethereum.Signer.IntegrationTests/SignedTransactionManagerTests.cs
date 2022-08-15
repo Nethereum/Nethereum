@@ -33,7 +33,7 @@ namespace Nethereum.Signer.IntegrationTests
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, contractByteCode, senderAddress,
-                    new HexBigInteger(900000), null, 7);
+                    new HexBigInteger(900000), null, 7).ConfigureAwait(false);
             var contractAddress = receipt.ContractAddress;
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var multiplyFunction = contract.GetFunction("multiply");
@@ -52,7 +52,7 @@ namespace Nethereum.Signer.IntegrationTests
 
             var transactionsReceipts =
                 await web3.TransactionManager.TransactionReceiptService
-                    .SendRequestsAndWaitForReceiptAsync(transactions);
+                    .SendRequestsAndWaitForReceiptAsync(transactions).ConfigureAwait(false);
 
             Assert.Equal(4, transactionsReceipts.Count);
         }

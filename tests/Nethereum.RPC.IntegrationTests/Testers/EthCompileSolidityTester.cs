@@ -12,7 +12,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnJTokenObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             //parity returns the bytecode, geth retuns the whole json
             Assert.NotNull(result);
         }
@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var ethCompileSolidty = new EthCompileSolidity(client);
             var contractCode = "contract Test {}";
-            return await ethCompileSolidty.SendRequestAsync(contractCode);
+            return await ethCompileSolidty.SendRequestAsync(contractCode).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

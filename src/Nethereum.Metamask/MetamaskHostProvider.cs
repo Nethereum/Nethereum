@@ -23,8 +23,8 @@ namespace Nethereum.Metamask
         public event Func<bool, Task> EnabledChanged;
         public async Task<bool> CheckProviderAvailabilityAsync()
         {
-            var result = await _metamaskInterop.CheckMetamaskAvailability();
-            await ChangeMetamaskAvailableAsync(result);
+            var result = await _metamaskInterop.CheckMetamaskAvailability().ConfigureAwait(false);
+            await ChangeMetamaskAvailableAsync(result).ConfigureAwait(false);
             return result;
         }
 
@@ -37,16 +37,16 @@ namespace Nethereum.Metamask
 
         public async Task<string> EnableProviderAsync()
         {
-            var selectedAccount = await _metamaskInterop.EnableEthereumAsync();
+            var selectedAccount = await _metamaskInterop.EnableEthereumAsync().ConfigureAwait(false);
             Enabled = !string.IsNullOrEmpty(selectedAccount);
 
             if (Enabled)
             {
-                await ChangeMetamaskEnabledAsync(true);
+                await ChangeMetamaskEnabledAsync(true).ConfigureAwait(false);
                 SelectedAccount = selectedAccount;
                 if (SelectedAccountChanged != null)
                 {
-                    await SelectedAccountChanged.Invoke(selectedAccount);
+                    await SelectedAccountChanged.Invoke(selectedAccount).ConfigureAwait(false);
                 }
                 return selectedAccount;
             }
@@ -56,14 +56,14 @@ namespace Nethereum.Metamask
 
         public async Task<string> GetProviderSelectedAccountAsync()
         {
-            var result = await _metamaskInterop.GetSelectedAddress();
-            await ChangeSelectedAccountAsync(result);
+            var result = await _metamaskInterop.GetSelectedAddress().ConfigureAwait(false);
+            await ChangeSelectedAccountAsync(result).ConfigureAwait(false);
             return result;
         }
 
         public async Task<string> SignMessageAsync(string message)
         {
-            return await _metamaskInterop.SignAsync(message.ToHexUTF8());
+            return await _metamaskInterop.SignAsync(message.ToHexUTF8()).ConfigureAwait(false);
         }
 
         public MetamaskHostProvider(IMetamaskInterop metamaskInterop)
@@ -80,7 +80,7 @@ namespace Nethereum.Metamask
                 SelectedAccount = selectedAccount;
                 if (SelectedAccountChanged != null)
                 {
-                    await SelectedAccountChanged.Invoke(selectedAccount);
+                    await SelectedAccountChanged.Invoke(selectedAccount).ConfigureAwait(false);
                 }
             }
         }
@@ -92,7 +92,7 @@ namespace Nethereum.Metamask
                 SelectedNetworkChainId = chainId;
                 if (NetworkChanged != null)
                 {
-                    await NetworkChanged.Invoke(SelectedNetworkChainId);
+                    await NetworkChanged.Invoke(SelectedNetworkChainId).ConfigureAwait(false);
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace Nethereum.Metamask
                 Available = available;
                 if (AvailabilityChanged != null)
                 {
-                    await AvailabilityChanged.Invoke(available);
+                    await AvailabilityChanged.Invoke(available).ConfigureAwait(false);
                 }
             }
         }
@@ -116,7 +116,7 @@ namespace Nethereum.Metamask
                 Enabled = enabled;
                 if (EnabledChanged != null)
                 {
-                    await EnabledChanged.Invoke(enabled);
+                    await EnabledChanged.Invoke(enabled).ConfigureAwait(false);
                 }
             }
         }

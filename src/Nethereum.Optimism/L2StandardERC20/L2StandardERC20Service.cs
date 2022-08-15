@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.L2StandardERC20
 
         public static async Task<L2StandardERC20Service> DeployContractAndGetServiceAsync(Web3.Web3 web3, L2StandardERC20Deployment l2StandardERC20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardERC20Deployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardERC20Deployment, cancellationTokenSource).ConfigureAwait(false);
             return new L2StandardERC20Service(web3, receipt.ContractAddress);
         }
 

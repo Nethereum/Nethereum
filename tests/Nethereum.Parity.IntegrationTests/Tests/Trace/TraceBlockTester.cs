@@ -26,11 +26,11 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), null, multiplier).ConfigureAwait(false);
 
 
             var traceTransaction = new TraceBlock(client);
-            return await traceTransaction.SendRequestAsync(receipt.BlockNumber);
+            return await traceTransaction.SendRequestAsync(receipt.BlockNumber).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -41,7 +41,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

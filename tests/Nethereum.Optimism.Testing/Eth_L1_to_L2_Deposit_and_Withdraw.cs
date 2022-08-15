@@ -35,18 +35,18 @@ namespace Nethereum.Optimism.Testing
             var watcher = new CrossMessagingWatcherService();
 
             var addressManagerService = new Lib_AddressManagerService(web3l1, KOVAN_ADDRESS_MANAGER);
-            var L2CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync("L2CrossDomainMessenger");
-            var L1StandardBridgeAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1StandardBridge);
-            var L1CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1CrossDomainMessenger);
+            var L2CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync("L2CrossDomainMessenger").ConfigureAwait(false);
+            var L1StandardBridgeAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1StandardBridge).ConfigureAwait(false);
+            var L1CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1CrossDomainMessenger).ConfigureAwait(false);
             var L2StandardBridgeAddress = PredeployedAddresses.L2StandardBridge;
             
             var l2StandardBridgeService = new L2StandardBridgeService(web3l2, L2StandardBridgeAddress);
-            var l1StandardBridgeAddress = await l2StandardBridgeService.L1TokenBridgeQueryAsync();
+            var l1StandardBridgeAddress = await l2StandardBridgeService.L1TokenBridgeQueryAsync().ConfigureAwait(false);
             var l1StandardBridgeService = new L1StandardBridgeService(web3l1, l1StandardBridgeAddress);
      
 
             var amount = Web3.Web3.Convert.ToWei(0.05);
-            var currentBalanceInL2 = await web3l2.Eth.GetBalance.SendRequestAsync(ourAdddress);
+            var currentBalanceInL2 = await web3l2.Eth.GetBalance.SendRequestAsync(ourAdddress).ConfigureAwait(false);
             var depositEther = new DepositETHFunction()
             {
                 AmountToSend = amount,
@@ -54,23 +54,23 @@ namespace Nethereum.Optimism.Testing
                 Data = "0x".HexToByteArray()
             };
 
-            var estimateGas = await l1StandardBridgeService.ContractHandler.EstimateGasAsync(depositEther);
+            var estimateGas = await l1StandardBridgeService.ContractHandler.EstimateGasAsync(depositEther).ConfigureAwait(false);
 
-            var receiptDeposit = await l1StandardBridgeService.DepositETHRequestAndWaitForReceiptAsync(depositEther);
+            var receiptDeposit = await l1StandardBridgeService.DepositETHRequestAndWaitForReceiptAsync(depositEther).ConfigureAwait(false);
 
             var messageHashes = watcher.GetMessageHashes(receiptDeposit);
 
-            var txnReceipt = await watcher.GetCrossMessageMessageTransactionReceipt(web3l2, L2CrossDomainMessengerAddress, messageHashes.First());
+            var txnReceipt = await watcher.GetCrossMessageMessageTransactionReceipt(web3l2, L2CrossDomainMessengerAddress, messageHashes.First()).ConfigureAwait(false);
 
 
             if (txnReceipt.HasErrors() == true)
             {
                 var error =
-                     await web3l2.Eth.GetContractTransactionErrorReason.SendRequestAsync(txnReceipt.TransactionHash);
+                     await web3l2.Eth.GetContractTransactionErrorReason.SendRequestAsync(txnReceipt.TransactionHash).ConfigureAwait(false);
                 //throw new Exception(error);
             }
 
-            var balancesInL2 = await web3l2.Eth.GetBalance.SendRequestAsync(ourAdddress); ;
+            var balancesInL2 = await web3l2.Eth.GetBalance.SendRequestAsync(ourAdddress).ConfigureAwait(false); ;
 
             Assert.Equal(amount, balancesInL2.Value - currentBalanceInL2.Value);
 
@@ -82,7 +82,7 @@ namespace Nethereum.Optimism.Testing
                 L1Gas = 700000,
                 Data = "0x".HexToByteArray()
             };
-            var receiptWidthdraw = await l2StandardBridgeService.WithdrawRequestAndWaitForReceiptAsync(withdrawEther);
+            var receiptWidthdraw = await l2StandardBridgeService.WithdrawRequestAndWaitForReceiptAsync(withdrawEther).ConfigureAwait(false);
 
             messageHashes = watcher.GetMessageHashes(receiptWidthdraw);
 

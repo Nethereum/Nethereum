@@ -43,7 +43,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         public async Task UpsertAsync(ContractCreationVO contractCreation)
         {
-            var record = await FindByAddressAsync(contractCreation.ContractAddress);
+            var record = await FindByAddressAsync(contractCreation.ContractAddress).ConfigureAwait(false);
             if(record != null) Records.Remove(record);
             Records.Add(contractCreation.MapToStorageEntityForUpsert());
         }

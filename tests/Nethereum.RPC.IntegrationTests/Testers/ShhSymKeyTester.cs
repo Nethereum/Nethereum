@@ -20,10 +20,10 @@ namespace Nethereum.RPC.Tests.Testers
             var getSymKey = new ShhGetSymKey(Client); 
             var deleteSymKey = new ShhDeleteSymKey(Client);
 
-            var addResult = await addSymKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
-            var hasSymKeyResult = await hasSymKey.SendRequestAsync(addResult);
-            var getSymKeyResult = await getSymKey.SendRequestAsync(addResult); 
-            var deleteSymKeyResult = await deleteSymKey.SendRequestAsync(addResult);
+            var addResult = await addSymKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey()).ConfigureAwait(false);
+            var hasSymKeyResult = await hasSymKey.SendRequestAsync(addResult).ConfigureAwait(false);
+            var getSymKeyResult = await getSymKey.SendRequestAsync(addResult).ConfigureAwait(false); 
+            var deleteSymKeyResult = await deleteSymKey.SendRequestAsync(addResult).ConfigureAwait(false);
 
             Assert.NotNull(addResult);
             Assert.True(hasSymKeyResult);

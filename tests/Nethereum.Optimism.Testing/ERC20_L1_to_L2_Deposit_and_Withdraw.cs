@@ -40,14 +40,14 @@ namespace Nethereum.Optimism.Testing
             var watcher = new CrossMessagingWatcherService();
 
             var addressManagerService = new Lib_AddressManagerService(web3l1, KOVAN_ADDRESS_MANAGER);
-            var L2CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync("L2CrossDomainMessenger");
-            var L1StandardBridgeAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1StandardBridge);
-            var L1CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1CrossDomainMessenger);
+            var L2CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync("L2CrossDomainMessenger").ConfigureAwait(false);
+            var L1StandardBridgeAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1StandardBridge).ConfigureAwait(false);
+            var L1CrossDomainMessengerAddress = await addressManagerService.GetAddressQueryAsync(StandardAddressManagerKeys.L1CrossDomainMessenger).ConfigureAwait(false);
 
             var L2StandardBridgeAddress = PredeployedAddresses.L2StandardBridge;
 
             var l2StandardBridgeService = new L2StandardBridgeService(web3l2, L2StandardBridgeAddress);
-            var l1StandardBridgeAddress = await l2StandardBridgeService.L1TokenBridgeQueryAsync();
+            var l1StandardBridgeAddress = await l2StandardBridgeService.L1TokenBridgeQueryAsync().ConfigureAwait(false);
             var l1StandardBridgeService = new L1StandardBridgeService(web3l1, l1StandardBridgeAddress);
 
             var tokenName = "OPNETH";
@@ -59,7 +59,7 @@ namespace Nethereum.Optimism.Testing
             //Deploy our custom token
 
             var deploymentHandler = web3l1.Eth.GetContractDeploymentHandler<ERC20Deployment>();
-            var tokenDeploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(erc20TokenDeployment);
+            var tokenDeploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(erc20TokenDeployment).ConfigureAwait(false);
 
             var l2Erc20TokenDeployment = new L2StandardERC20Deployment();
             l2Erc20TokenDeployment.L1Token = tokenDeploymentReceipt.ContractAddress;
@@ -67,7 +67,7 @@ namespace Nethereum.Optimism.Testing
             l2Erc20TokenDeployment.Name = tokenName;
             l2Erc20TokenDeployment.Symbol = tokenSymbol;
 
-            var l2Erc20TokenDeploymentReceipt = await L2StandardERC20Service.DeployContractAndWaitForReceiptAsync(web3l2, l2Erc20TokenDeployment);
+            var l2Erc20TokenDeploymentReceipt = await L2StandardERC20Service.DeployContractAndWaitForReceiptAsync(web3l2, l2Erc20TokenDeployment).ConfigureAwait(false);
 
             var l2StandardErc20Service = new L2StandardERC20Service(web3l2, l2Erc20TokenDeploymentReceipt.ContractAddress);
             //Creating a new service
@@ -75,24 +75,26 @@ namespace Nethereum.Optimism.Testing
             
             
             
-            var balancesInL1 = await tokenService.BalanceOfQueryAsync(ourAdddress);
-            var receiptApproval = await tokenService.ApproveRequestAndWaitForReceiptAsync(l1StandardBridgeAddress, 1);
+            var balancesInL1 = await tokenService.BalanceOfQueryAsync(ourAdddress).ConfigureAwait(false);
+            var receiptApproval = await tokenService.ApproveRequestAndWaitForReceiptAsync(l1StandardBridgeAddress, 1).ConfigureAwait(false);
            
             
             var receiptDeposit = await l1StandardBridgeService.DepositERC20RequestAndWaitForReceiptAsync(new DepositERC20Function()
             {
                 L1Token = tokenDeploymentReceipt.ContractAddress,
                 L2Token = l2Erc20TokenDeploymentReceipt.ContractAddress,
-                Amount = 1, L2Gas = 2000000, Data = "0x".HexToByteArray()
-            });
+                Amount = 1,
+                L2Gas = 2000000,
+                Data = "0x".HexToByteArray()
+            }).ConfigureAwait(false);
 
-            balancesInL1 = await tokenService.BalanceOfQueryAsync(ourAdddress);
+            balancesInL1 = await tokenService.BalanceOfQueryAsync(ourAdddress).ConfigureAwait(false);
             //what the watcher does.. we do already have the txn receipt.. but for demo purpouses
             var messageHashes = watcher.GetMessageHashes(receiptDeposit);
 
-            var txnReceipt = await watcher.GetCrossMessageMessageTransactionReceipt(web3l2, L2CrossDomainMessengerAddress, messageHashes.First());
+            var txnReceipt = await watcher.GetCrossMessageMessageTransactionReceipt(web3l2, L2CrossDomainMessengerAddress, messageHashes.First()).ConfigureAwait(false);
 
-            var balancesInL2 = await l2StandardErc20Service.BalanceOfQueryAsync(ourAdddress);
+            var balancesInL2 = await l2StandardErc20Service.BalanceOfQueryAsync(ourAdddress).ConfigureAwait(false);
 
             Assert.Equal(1, balancesInL2);
 
@@ -104,11 +106,11 @@ namespace Nethereum.Optimism.Testing
                 Data = "0x".HexToByteArray()
             };
 
-            var receiptWidthdraw = await l2StandardBridgeService.WithdrawRequestAndWaitForReceiptAsync(withdrawErc20Token);
+            var receiptWidthdraw = await l2StandardBridgeService.WithdrawRequestAndWaitForReceiptAsync(withdrawErc20Token).ConfigureAwait(false);
 
              messageHashes = watcher.GetMessageHashes(receiptWidthdraw);
 
-             balancesInL2 = await l2StandardErc20Service.BalanceOfQueryAsync(ourAdddress);
+             balancesInL2 = await l2StandardErc20Service.BalanceOfQueryAsync(ourAdddress).ConfigureAwait(false);
 
              Assert.Equal(0, balancesInL2);
 

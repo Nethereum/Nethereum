@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldRetrieveTheAccounts()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
 
@@ -19,7 +19,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             var personalListAccounts = new PersonalListAccounts(client);
             
-            var accounts = await personalListAccounts.SendRequestAsync();
+            var accounts = await personalListAccounts.SendRequestAsync().ConfigureAwait(false);
             return accounts;
         }
 

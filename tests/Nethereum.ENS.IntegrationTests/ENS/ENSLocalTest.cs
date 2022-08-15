@@ -46,7 +46,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
                 //deploy ENS contract
                 var ensDeploymentReceipt =
-                    await ENSRegistryService.DeployContractAndWaitForReceiptAsync(web3, new ENSRegistryDeployment());
+                    await ENSRegistryService.DeployContractAndWaitForReceiptAsync(web3, new ENSRegistryDeployment()).ConfigureAwait(false);
 
                 var ensUtil = new EnsUtil();
                 var ethNode = ensUtil.GetNameHash("eth");
@@ -57,13 +57,13 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                     {
                         EnsAddr = ensDeploymentReceipt.ContractAddress,
                         Node = ethNode.HexToByteArray()
-                    });
+                    }).ConfigureAwait(false);
 
 
                 var publicResolverDeploymentReceipt = await PublicResolverService.DeployContractAndWaitForReceiptAsync(
                     web3,
-                    new PublicResolverDeployment() {Ens = ensDeploymentReceipt.ContractAddress}
-                );
+                    new PublicResolverDeployment() { Ens = ensDeploymentReceipt.ContractAddress }
+                ).ConfigureAwait(false);
 
 
                 var ensRegistryService = new ENSRegistryService(web3, ensDeploymentReceipt.ContractAddress);
@@ -76,12 +76,12 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                     ensUtil.GetNameHash("").HexToByteArray(),
                     ethLabel.HexToByteArray(),
                     fifsDeploymentReceipt.ContractAddress
-                );
+                ).ConfigureAwait(false);
 
 
                 //Now the owner of Eth is the FIFS
                 var ownerOfEth =
-                    await ensRegistryService.OwnerQueryAsync(ethNode.HexToByteArray());
+                    await ensRegistryService.OwnerQueryAsync(ethNode.HexToByteArray()).ConfigureAwait(false);
                 Assert.Equal(fifsDeploymentReceipt.ContractAddress.ToLower(), ownerOfEth.ToLower());
                 /**** setup done **/
 
@@ -97,7 +97,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                 {
                     Owner = addressFrom,
                     Subnode = testLabel.HexToByteArray()
-                });
+                }).ConfigureAwait(false);
 
                 
 
@@ -105,7 +105,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                 var fullNameNode = ensUtil.GetNameHash("myname.eth");
 
                 var ownerOfMyName =
-                    await ensRegistryService.OwnerQueryAsync(fullNameNode.HexToByteArray());
+                    await ensRegistryService.OwnerQueryAsync(fullNameNode.HexToByteArray()).ConfigureAwait(false);
                 //set the resolver (the public one)
                 await ensRegistryService.SetResolverRequestAndWaitForReceiptAsync(
                     new SetResolverFunction()
@@ -113,7 +113,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
 
                         Resolver = publicResolverDeploymentReceipt.ContractAddress,
                         Node = fullNameNode.HexToByteArray()
-                    });
+                    }).ConfigureAwait(false);
 
 
                 var publicResolverService =
@@ -123,21 +123,21 @@ namespace Nethereum.ENS.IntegrationTests.ENS
                 //Fails here
                 await publicResolverService.SetAddrRequestAndWaitForReceiptAsync(fullNameNode.HexToByteArray(),
                     addressToResolve
-                );
+                ).ConfigureAwait(false);
 
 
                 //Now as "end user" we can start resolving... 
 
                 //get the resolver address from ENS
                 var resolverAddress = await ensRegistryService.ResolverQueryAsync(
-                    fullNameNode.HexToByteArray());
+                    fullNameNode.HexToByteArray()).ConfigureAwait(false);
 
                 //using the resolver address we can create our service (should be an abstract / interface based on abi as we can have many)
                 var resolverService = new PublicResolverService(web3, resolverAddress);
 
                 //and get the address from the resolver
                 var theAddress =
-                    await resolverService.AddrQueryAsync(fullNameNode.HexToByteArray());
+                    await resolverService.AddrQueryAsync(fullNameNode.HexToByteArray()).ConfigureAwait(false);
 
                 Assert.Equal(addressToResolve.ToLower(), theAddress.ToLower());
             }

@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var ethNewPendingTransactionFilter = new EthNewPendingTransactionFilter(client);
-            return await ethNewPendingTransactionFilter.SendRequestAsync();
+            return await ethNewPendingTransactionFilter.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

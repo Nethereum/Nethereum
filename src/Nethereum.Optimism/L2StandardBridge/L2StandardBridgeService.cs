@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.L2StandardBridge
 
         public static async Task<L2StandardBridgeService> DeployContractAndGetServiceAsync(Web3.Web3 web3, L2StandardBridgeDeployment l2StandardBridgeDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardBridgeDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2StandardBridgeDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new L2StandardBridgeService(web3, receipt.ContractAddress);
         }
 

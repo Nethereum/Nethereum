@@ -59,7 +59,7 @@ namespace Nethereum.Siwe
                 var service = _web3.Eth.ERC1271.GetContractService(siweMessage.Address);
                 return await service.IsValidSignatureAndValidateReturnQueryAsync(
                     messageSigner.HashPrefixedMessage(Encoding.UTF8.GetBytes(builtMessage)),
-                    signature.HexToByteArray());
+                    signature.HexToByteArray()).ConfigureAwait(false);
             }
 
             return false;
@@ -70,7 +70,7 @@ namespace Nethereum.Siwe
         {
             return HasMessageDateStartedAndNotExpired(siweMessage) &&
                    IsMessageTheSameAsSessionStored(siweMessage)
-                   && await IsMessageSignatureValid(siweMessage, signature);
+                   && await IsMessageSignatureValid(siweMessage, signature).ConfigureAwait(false);
         }
 
         public virtual Task<bool> IsUserAddressRegistered(SiweMessage siweMessage)

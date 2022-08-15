@@ -63,7 +63,7 @@ namespace Nethereum.JsonRpc.IpcClient
              int bytesRead = 0;
             if (Task.Run(async () => 
                     bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
-                ).Wait(ForceCompleteReadTotalMiliseconds))
+.ConfigureAwait(false)).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }

@@ -125,7 +125,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
 
             _listener = Task.Factory.StartNew(async () =>
             {
-                await HandleIncomingMessagesAsync();
+                await HandleIncomingMessagesAsync().ConfigureAwait(false);
             }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
            
             return ConnectWebSocketAsync();
@@ -432,8 +432,8 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 {
                     tokenSource = new CancellationTokenSource(ConnectionTimeout);
 
-                   await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
-                        tokenSource.Token);
+                    await _clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "",
+                         tokenSource.Token).ConfigureAwait(false);
                     while (_clientWebSocket.State != WebSocketState.Closed && !tokenSource.IsCancellationRequested) ;
                 }
             }

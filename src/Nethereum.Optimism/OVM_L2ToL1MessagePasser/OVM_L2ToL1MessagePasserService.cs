@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.OVM_L2ToL1MessagePasser
 
         public static async Task<OVM_L2ToL1MessagePasserService> DeployContractAndGetServiceAsync(Web3.Web3 web3, OVM_L2ToL1MessagePasserDeployment oVM_L2ToL1MessagePasserDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, oVM_L2ToL1MessagePasserDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, oVM_L2ToL1MessagePasserDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new OVM_L2ToL1MessagePasserService(web3, receipt.ContractAddress);
         }
 

@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var parityGasCeilTarget = new ParityGasCeilTarget(client);
-            return await parityGasCeilTarget.SendRequestAsync();
+            return await parityGasCeilTarget.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -23,7 +23,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         [Fact]
         public async void ShouldGetGasCeil()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

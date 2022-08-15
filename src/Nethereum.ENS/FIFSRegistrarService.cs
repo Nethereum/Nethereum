@@ -20,7 +20,7 @@ namespace Nethereum.ENS
         }
         public static async Task<FIFSRegistrarService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, FIFSRegistrarDeployment fIFSRegistrarDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, fIFSRegistrarDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, fIFSRegistrarDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new FIFSRegistrarService(web3, receipt.ContractAddress);
         }
     

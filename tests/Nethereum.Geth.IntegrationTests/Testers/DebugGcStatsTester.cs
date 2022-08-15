@@ -15,7 +15,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var debugGcStats = new DebugGcStats(client);
-            return await debugGcStats.SendRequestAsync();
+            return await debugGcStats.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -26,7 +26,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldReturnTheGcStatsAsJObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

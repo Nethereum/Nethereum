@@ -32,7 +32,7 @@ namespace Nethereum.Signer.IntegrationTests
                 for (var x = 0; x < 10; x++)
                 {
                     Thread.Sleep(500);
-                    var fee = await feeStrategy.SuggestFeeAsync();
+                    var fee = await feeStrategy.SuggestFeeAsync().ConfigureAwait(false);
                 }
             }
         }
@@ -53,7 +53,7 @@ namespace Nethereum.Signer.IntegrationTests
                 for (var x = 0; x < 10; x++)
                 {
                     Thread.Sleep(500);
-                    var fee = await feeStrategy.SuggestFeeAsync();
+                    var fee = await feeStrategy.SuggestFeeAsync().ConfigureAwait(false);
                     for (int i = 0; i < 50; i++)
                     {
                         var encoded = await web3.TransactionManager.SendTransactionAsync(
@@ -65,7 +65,7 @@ namespace Nethereum.Signer.IntegrationTests
                                 MaxPriorityFeePerGas = new HexBigInteger(fee.MaxPriorityFeePerGas.Value),
                                 To = receiveAddress,
                                 Value = new HexBigInteger(10)
-                            });
+                            }).ConfigureAwait(false);
                     }
                 }
             }

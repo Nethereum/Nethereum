@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void HighestBlockShouldBeBiggerThan0WhenSyncing()
         {
-            var syncResult = await ExecuteAsync();
+            var syncResult = await ExecuteAsync().ConfigureAwait(false);
             if (syncResult.IsSyncing)
             {
                 Assert.True(syncResult.HighestBlock.Value > 0);
@@ -23,7 +23,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<SyncingOutput> ExecuteAsync(IClient client)
         {
             var ethSyncing = new EthSyncing(client);
-            return await ethSyncing.SendRequestAsync();
+            return await ethSyncing.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

@@ -51,11 +51,11 @@ namespace Nethereum.Blazor
         {
             if(string.IsNullOrEmpty(ethereumAddress))
             {
-                await NotifyAuthenticationStateAsEthereumDisconnected();
+                await NotifyAuthenticationStateAsEthereumDisconnected().ConfigureAwait(false);
             }
             else
             {
-                await NotifyAuthenticationStateAsEthereumConnected(ethereumAddress);
+                await NotifyAuthenticationStateAsEthereumConnected(ethereumAddress).ConfigureAwait(false);
             }
         }
 
@@ -63,7 +63,7 @@ namespace Nethereum.Blazor
         {
             if (EthereumHostProvider != null && EthereumHostProvider.Available)
             {
-                var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync();
+                var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync().ConfigureAwait(false);
                 if (currentAddress != null)
                 {
                     var claimsPrincipal = GetClaimsPrincipal(currentAddress);
@@ -77,8 +77,8 @@ namespace Nethereum.Blazor
 
         public async Task NotifyAuthenticationStateAsEthereumConnected()
         {
-            var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync();
-            await NotifyAuthenticationStateAsEthereumConnected(currentAddress);
+            var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync().ConfigureAwait(false);
+            await NotifyAuthenticationStateAsEthereumConnected(currentAddress).ConfigureAwait(false);
         }
 
         public async Task NotifyAuthenticationStateAsEthereumConnected(string currentAddress)

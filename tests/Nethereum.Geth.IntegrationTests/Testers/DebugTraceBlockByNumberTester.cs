@@ -28,7 +28,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

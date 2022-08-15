@@ -12,7 +12,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         public override async Task<JObject> ExecuteAsync(IClient client)
         {
             var parityPendingTransactionsStats = new ParityPendingTransactionsStats(client);
-            return await parityPendingTransactionsStats.SendRequestAsync();
+            return await parityPendingTransactionsStats.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -23,7 +23,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

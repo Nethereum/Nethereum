@@ -118,7 +118,7 @@ namespace Nethereum.JsonRpc.Client
                 var httpResponseMessage = await httpClient.PostAsync(String.Empty, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 using (var streamReader = new StreamReader(stream))
                 using (var reader = new JsonTextReader(streamReader))
                 {
@@ -158,7 +158,7 @@ namespace Nethereum.JsonRpc.Client
                 var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
-                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 using (var streamReader = new StreamReader(stream))
                 using (var reader = new JsonTextReader(streamReader))
                 {

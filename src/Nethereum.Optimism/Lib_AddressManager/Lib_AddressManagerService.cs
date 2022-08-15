@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.Lib_AddressManager
 
         public static async Task<Lib_AddressManagerService> DeployContractAndGetServiceAsync(Web3.Web3 web3, Lib_AddressManagerDeployment lib_AddressManagerDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, lib_AddressManagerDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, lib_AddressManagerDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new Lib_AddressManagerService(web3, receipt.ContractAddress);
         }
 

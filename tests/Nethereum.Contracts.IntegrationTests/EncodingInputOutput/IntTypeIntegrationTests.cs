@@ -77,39 +77,39 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
             var transactionHash =
                 await
                     web3.Eth.DeployContract.SendRequestAsync(contractByteCode, senderAddress,
-                        new HexBigInteger(900000));
+                        new HexBigInteger(900000)).ConfigureAwait(false);
 
             //get the contract address 
             TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(500);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                await Task.Delay(500).ConfigureAwait(false);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
             var test1 = contract.GetFunction("test1");
-            Assert.Equal("3457987492347979798742", (await test1.CallAsync<BigInteger>()).ToString());
+            Assert.Equal("3457987492347979798742", (await test1.CallAsync<BigInteger>().ConfigureAwait(false)).ToString());
             var test2 = contract.GetFunction("test2");
             Assert.Equal("3457987492347979798742",
-                (await test2.CallAsync<BigInteger>(BigInteger.Parse("3457987492347979798742"))).ToString());
+                (await test2.CallAsync<BigInteger>(BigInteger.Parse("3457987492347979798742")).ConfigureAwait(false)).ToString());
 
             var test3 = contract.GetFunction("test3");
             Assert.Equal("3457987492347979798742",
-                (await test3.CallAsync<BigInteger>(BigInteger.Parse("3457987492347979798742"))).ToString());
+                (await test3.CallAsync<BigInteger>(BigInteger.Parse("3457987492347979798742")).ConfigureAwait(false)).ToString());
 
             var test4 = contract.GetFunction("test4");
-            Assert.True(await test4.CallAsync<bool>(BigInteger.Parse("3457987492347979798742")));
+            Assert.True(await test4.CallAsync<bool>(BigInteger.Parse("3457987492347979798742")).ConfigureAwait(false));
 
             var test5 = contract.GetFunction("test5");
-            Assert.True(await test5.CallAsync<bool>(BigInteger.Parse("-3457987492347979798742")));
+            Assert.True(await test5.CallAsync<bool>(BigInteger.Parse("-3457987492347979798742")).ConfigureAwait(false));
 
             var test6 = contract.GetFunction("test6");
-            Assert.True(await test6.CallAsync<bool>(BigInteger.Parse("500")));
+            Assert.True(await test6.CallAsync<bool>(BigInteger.Parse("500")).ConfigureAwait(false));
 
             var test8 = contract.GetFunction("test8");
-            Assert.True(await test8.CallAsync<bool>(BigInteger.Parse("9223372036854775808")));
+            Assert.True(await test8.CallAsync<bool>(BigInteger.Parse("9223372036854775808")).ConfigureAwait(false));
 
             return "OK";
         }

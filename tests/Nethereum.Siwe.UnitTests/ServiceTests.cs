@@ -32,8 +32,8 @@ namespace Nethereum.Siwe.UnitTests
   
             Assert.True(service.HasMessageDateStartedAndNotExpired(siweMessage));
             Assert.True(service.IsMessageTheSameAsSessionStored(siweMessage));
-            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature));
-            Assert.True(await service.IsValidMessage(siweMessage, signature));
+            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature).ConfigureAwait(false));
+            Assert.True(await service.IsValidMessage(siweMessage, signature).ConfigureAwait(false));
         }
 
         [Fact]
@@ -59,8 +59,8 @@ namespace Nethereum.Siwe.UnitTests
             
             Assert.True(service.HasMessageDateStartedAndNotExpired(siweMessage));
             Assert.True(service.IsMessageTheSameAsSessionStored(siweMessage));
-            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature));
-            Assert.True(await service.IsValidMessage(siweMessage, signature));
+            Assert.True(await service.IsMessageSignatureValid(siweMessage, signature).ConfigureAwait(false));
+            Assert.True(await service.IsValidMessage(siweMessage, signature).ConfigureAwait(false));
         }
 
     }

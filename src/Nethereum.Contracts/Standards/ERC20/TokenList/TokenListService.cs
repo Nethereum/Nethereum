@@ -23,7 +23,7 @@ namespace Nethereum.Contracts.Standards.ERC20.TokenList
         public async  Task<List<Token>> LoadFromUrl(string url)
         {
             var client = new HttpClient();
-            var json = await client.GetStringAsync(url);
+            var json = await client.GetStringAsync(url).ConfigureAwait(false);
             return DeserialiseFromJson(json);
         }
 #endif

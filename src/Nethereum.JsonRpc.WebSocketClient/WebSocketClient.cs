@@ -149,7 +149,7 @@ namespace Nethereum.JsonRpc.WebSocketClient
                 }
             }
 
-            if (memoryStream.Length == 0) return await ReceiveFullResponseAsync(client); //empty response
+            if (memoryStream.Length == 0) return await ReceiveFullResponseAsync(client).ConfigureAwait(false); //empty response
             return memoryStream;
         }
 

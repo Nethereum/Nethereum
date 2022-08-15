@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var ethNewBlockFilter = new EthNewBlockFilter(client);
-            return await ethNewBlockFilter.SendRequestAsync();
+            return await ethNewBlockFilter.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

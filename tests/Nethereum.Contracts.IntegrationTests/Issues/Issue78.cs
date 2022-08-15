@@ -29,22 +29,22 @@ namespace Nethereum.Contracts.IntegrationTests.Issues
             var account = EthereumClientIntegrationFixture.AccountAddress;
 
             var contractHash = await web3.Eth.DeployContract.SendRequestAsync(abi, byteCode, account,
-                new HexBigInteger(900 * 1000), "My product");
+                new HexBigInteger(900 * 1000), "My product").ConfigureAwait(false);
 
-            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash);
+            var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash).ConfigureAwait(false);
             while (receipt == null)
             {
-                await Task.Delay(1000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash);
+                await Task.Delay(1000).ConfigureAwait(false);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(contractHash).ConfigureAwait(false);
             }
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
-            var code = await web3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress);
+            var code = await web3.Eth.GetCode.SendRequestAsync(receipt.ContractAddress).ConfigureAwait(false);
 
             Assert.True(!string.IsNullOrEmpty(code) && code.Length > 3);
 
             var function = contract.GetFunction("getProduct");
-            var result = await function.CallAsync<string>();
+            var result = await function.CallAsync<string>().ConfigureAwait(false);
 
             Assert.Equal("My product", result);
         }

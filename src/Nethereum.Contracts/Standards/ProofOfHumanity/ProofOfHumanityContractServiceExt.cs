@@ -36,7 +36,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             }
 
             var multiqueryHandler = this._ethApiContractService.GetMultiQueryHandler(multiCallAddress);
-            var results = await multiqueryHandler.MultiCallAsync(block, numberOfCallsPerRequest, registeredCalls.ToArray());
+            var results = await multiqueryHandler.MultiCallAsync(block, numberOfCallsPerRequest, registeredCalls.ToArray()).ConfigureAwait(false);
             return registeredCalls.Select(x => new IsRegisteredInfo()
             {
                 IsRegistered = x.Output.IsRegistered,
@@ -53,7 +53,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
 
         public async Task<EventLog<EvidenceEventDTO>> GetLatestEvidenceLogAsync(string party, BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var eventLogs = await GetEvidenceLogsAsync(party, fromBlock, toBlock);
+            var eventLogs = await GetEvidenceLogsAsync(party, fromBlock, toBlock).ConfigureAwait(false);
             if (eventLogs != null && eventLogs.Count > 0)
             {
                 if (eventLogs.Count > 1)
@@ -96,8 +96,8 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
 
         public async Task<RegistrationEvidence> GetRegistrationEvidenceFromIpfs(EvidenceEventDTO evidenceEventDTO, string ipfsGateway = "https://gateway.ipfs.io/")
         {
-            var registration = await GetRegistrationFromIpfs(evidenceEventDTO, ipfsGateway);
-            return await  GetRegistrationEvidenceFromIpfs(registration, ipfsGateway);
+            var registration = await GetRegistrationFromIpfs(evidenceEventDTO, ipfsGateway).ConfigureAwait(false);
+            return await GetRegistrationEvidenceFromIpfs(registration, ipfsGateway).ConfigureAwait(false);
         }
 
         internal async Task<T> GetJsonObjectFromIpfsGateway<T>(string relativePath, bool addIpfsSuffix = true, string ipfsGateway = "https://gateway.ipfs.io/")
@@ -107,7 +107,7 @@ namespace Nethereum.Contracts.Standards.ProofOfHumanity
             var fullUri = new Uri(uri, relativePath);
             using (var client = new HttpClient())
             {
-                var json = await client.GetStringAsync(fullUri);
+                var json = await client.GetStringAsync(fullUri).ConfigureAwait(false);
                 return JsonConvert.DeserializeObject<T>(json);
             }
         }

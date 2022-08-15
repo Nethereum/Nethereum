@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.OVM_SequencerFeeVault
 
         public static async Task<OVM_SequencerFeeVaultService> DeployContractAndGetServiceAsync(Web3.Web3 web3, OVM_SequencerFeeVaultDeployment oVM_SequencerFeeVaultDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, oVM_SequencerFeeVaultDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, oVM_SequencerFeeVaultDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new OVM_SequencerFeeVaultService(web3, receipt.ContractAddress);
         }
 

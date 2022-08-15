@@ -57,12 +57,12 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 
             var receipt =
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(BYTE_CODE, senderAddress,
-                    new HexBigInteger(900000), null);
+                    new HexBigInteger(900000), null).ConfigureAwait(false);
             var contract = web3.Eth.GetContract(ABI, receipt.ContractAddress);
 
             var function = contract.GetFunction("sendEvent");
             receipt = await function.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000),
-                null, null);
+                null, null).ConfigureAwait(false);
 
 
             var eventLog = contract.GetEvent("Event");
@@ -82,12 +82,12 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
 
             var receipt =
                 await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(BYTE_CODE, senderAddress,
-                    new HexBigInteger(900000), null);
+                    new HexBigInteger(900000), null).ConfigureAwait(false);
             var contract = web3.Eth.GetContract(ABI, receipt.ContractAddress);
 
             var function = contract.GetFunction("sendEvent");
             receipt = await function.SendTransactionAndWaitForReceiptAsync(senderAddress, new HexBigInteger(900000),
-                null, null);
+                null, null).ConfigureAwait(false);
 
             var events = receipt.Logs.DecodeAllEvents<EventEventDTO>();
 

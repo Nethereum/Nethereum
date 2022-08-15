@@ -15,7 +15,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnBalanceBiggerThanZero()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             //Default account has balance
             Assert.True(result.Value > 0);
         }
@@ -23,9 +23,9 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]  
         public async void ShouldReturnBalanceBiggerThanZeroForCurrentBlock()
         {
-            var blockNumber = await (new EthBlockNumber(Client)).SendRequestAsync();
+            var blockNumber = await (new EthBlockNumber(Client)).SendRequestAsync().ConfigureAwait(false);
             var ethGetBalance = new EthGetBalance(Client);
-            var result = await ethGetBalance.SendRequestAsync(Settings.GetDefaultAccount(), new BlockParameter(blockNumber));
+            var result = await ethGetBalance.SendRequestAsync(Settings.GetDefaultAccount(), new BlockParameter(blockNumber)).ConfigureAwait(false);
             //Default account has balance
             Assert.True(result.Value > 0);
         }
@@ -33,7 +33,7 @@ namespace Nethereum.RPC.Tests.Testers
         public override async Task<HexBigInteger> ExecuteAsync(IClient client)
         {
             var ethGetBalance = new EthGetBalance(client);
-            return await ethGetBalance.SendRequestAsync(Settings.GetDefaultAccount());
+            return await ethGetBalance.SendRequestAsync(Settings.GetDefaultAccount()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

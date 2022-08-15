@@ -20,11 +20,11 @@ namespace Nethereum.RPC.Tests.Testers
             var getPublicKey = new ShhGetPublicKey(Client);
             var deleteKeyPair = new ShhDeleteKeyPair(Client);
 
-            var addResult = await addPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey());
-            var hasKeyPairResult = await hasKeyPair.SendRequestAsync(addResult);
-            var getPrivateKeyResult = await getPrivateKey.SendRequestAsync(addResult);
-            var getPublicKeyResult = await getPublicKey.SendRequestAsync(addResult); 
-            var deleteKeyPairResult = await deleteKeyPair.SendRequestAsync(addResult);
+            var addResult = await addPrivateKey.SendRequestAsync(Settings.GetDefaultShhPrivateKey()).ConfigureAwait(false);
+            var hasKeyPairResult = await hasKeyPair.SendRequestAsync(addResult).ConfigureAwait(false);
+            var getPrivateKeyResult = await getPrivateKey.SendRequestAsync(addResult).ConfigureAwait(false);
+            var getPublicKeyResult = await getPublicKey.SendRequestAsync(addResult).ConfigureAwait(false); 
+            var deleteKeyPairResult = await deleteKeyPair.SendRequestAsync(addResult).ConfigureAwait(false);
 
             Assert.NotNull(addResult);
             Assert.True(hasKeyPairResult);

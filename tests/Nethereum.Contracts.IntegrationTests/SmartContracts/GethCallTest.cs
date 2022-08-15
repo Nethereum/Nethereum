@@ -32,14 +32,14 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
                     {Owner = EthereumClientIntegrationFixture.AccountAddress};
 
                 var deploymentHandler = web3.Eth.GetContractDeploymentHandler<SimpleStorageDeployment>();
-                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
+                var deploymentReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage).ConfigureAwait(false);
 
                 var stateChanges = new Dictionary<string, StateChange>();
                 stateChanges.Add(deploymentReceipt.ContractAddress,
                     new StateChange() {Code = SimpleStorage2DeployedByteCode.EnsureHexPrefix()});
                 var result = await web3.GethEth.Call.SendRequestAsync(
                     new GetOwnerFunction().CreateTransactionInput(deploymentReceipt.ContractAddress),
-                    BlockParameter.CreateLatest(), stateChanges);
+                    BlockParameter.CreateLatest(), stateChanges).ConfigureAwait(false);
                 var output = new GetOwnerFunctionOutput();
                 output = output.DecodeOutput(result);
                 Assert.True(output.Owner.IsTheSameAddress(EthereumClientIntegrationFixture.AccountAddress));

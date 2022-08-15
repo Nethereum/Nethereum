@@ -13,7 +13,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldEstimateGas()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(result.Value > 0);
         }
 
@@ -28,7 +28,7 @@ namespace Nethereum.RPC.Tests.Testers
             transactionInput.To = to;
             transactionInput.From = Settings.GetDefaultAccount();
 
-            return await ethEstimateGas.SendRequestAsync(transactionInput);
+            return await ethEstimateGas.SendRequestAsync(transactionInput).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

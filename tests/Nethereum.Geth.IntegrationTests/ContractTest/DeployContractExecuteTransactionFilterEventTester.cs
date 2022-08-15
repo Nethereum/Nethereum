@@ -42,7 +42,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             var contractByteCode =
                 "606060405260c08060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000817f10f82b5dc139f3677a16d7bfb70c65252e78143313768d2c52e07db775e1c7ab33604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a260078202905060bb565b91905056";
             var minerStart = new MinerStart(client);
-            var minerStartResult = await minerStart.SendRequestAsync();
+            var minerStartResult = await minerStart.SendRequestAsync().ConfigureAwait(false);
 
             //Create a new Eth Send Transanction RPC Handler
 
@@ -54,7 +54,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             transactionInput.From = "0x12890D2cce102216644c59daE5baed380d84830c";
             // retrieve the transaction hash, as we need to get a transaction sreceipt with the contract address
             var transactionHash =
-                await new PersonalSignAndSendTransaction(client).SendRequestAsync(transactionInput, "password");
+                await new PersonalSignAndSendTransaction(client).SendRequestAsync(transactionInput, "password").ConfigureAwait(false);
 
             //the contract should be mining now
 
@@ -63,12 +63,12 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             TransactionReceipt receipt = null;
             //wait for the contract to be mined to the address
             while (receipt == null)
-                receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash);
+                receipt = await ethGetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
 
             //sha3 the event call, we can use this to validate our topics 
 
             var eventCallSh3 =
-                await new Web3Sha3(client).SendRequestAsync(new HexUTF8String("Multiplied(uint256,address)"));
+                await new Web3Sha3(client).SendRequestAsync(new HexUTF8String("Multiplied(uint256,address)")).ConfigureAwait(false);
             //create a filter 
             //just listen to anything no more filter topics (ie int indexed number)
             var ethFilterInput = new NewFilterInput();
@@ -79,11 +79,11 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             //ethFilterInput.Topics = new object[]{};
 
             var newEthFilter = new EthNewFilter(client);
-            var filterId = await newEthFilter.SendRequestAsync(ethFilterInput);
+            var filterId = await newEthFilter.SendRequestAsync(ethFilterInput).ConfigureAwait(false);
 
 
             //create a transaction which will raise the event
-            await SendTransaction(client, transactionInput.From, receipt.ContractAddress, "password");
+            await SendTransaction(client, transactionInput.From, receipt.ContractAddress, "password").ConfigureAwait(false);
 
             //get filter changes
             var ethGetFilterChangesForEthNewFilter = new EthGetFilterChangesForEthNewFilter(client);
@@ -92,7 +92,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             while (logs == null || logs.Length < 1)
             {
                 //Get the filter changes logs
-                logs = await ethGetFilterChangesForEthNewFilter.SendRequestAsync(filterId);
+                logs = await ethGetFilterChangesForEthNewFilter.SendRequestAsync(filterId).ConfigureAwait(false);
 
                 if (logs.Length > 0)
                 {
@@ -110,7 +110,7 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             }
 
             var minerStop = new MinerStop(client);
-            var minerStopResult = await minerStop.SendRequestAsync();
+            var minerStopResult = await minerStop.SendRequestAsync().ConfigureAwait(false);
             throw new Exception("Execution failed");
         }
 
@@ -138,13 +138,13 @@ namespace Nethereum.Geth.IntegrationTests.ContractTest
             //use as data the function call
             transactionInput.Data = functionCall;
 
-            return await ethSendTransaction.SendRequestAsync(transactionInput, password);
+            return await ethSendTransaction.SendRequestAsync(transactionInput, password).ConfigureAwait(false);
         }
 
         [Fact]
         public async void ShouldDeployContractAndPerformCall()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

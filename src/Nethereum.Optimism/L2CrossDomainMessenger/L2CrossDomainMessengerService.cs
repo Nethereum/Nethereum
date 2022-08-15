@@ -28,7 +28,7 @@ namespace Nethereum.Optimism.L2CrossDomainMessenger
 
         public static async Task<L2CrossDomainMessengerService> DeployContractAndGetServiceAsync(Web3.Web3 web3, L2CrossDomainMessengerDeployment l2CrossDomainMessengerDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2CrossDomainMessengerDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, l2CrossDomainMessengerDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new L2CrossDomainMessengerService(web3, receipt.ContractAddress);
         }
 

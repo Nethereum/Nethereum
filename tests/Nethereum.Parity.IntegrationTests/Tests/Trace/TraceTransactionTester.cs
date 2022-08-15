@@ -27,11 +27,11 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
             //var receipt = await web3.TransactionManager.TransactionReceiptService.SendRequestAsync(new TransactionInput(){From = senderAddress, To = senderAddress, Value = new HexBigInteger(Web3.Web3.Convert.ToWei(1))});
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,
-                    new HexBigInteger(900000), null, multiplier);
+                    new HexBigInteger(900000), null, multiplier).ConfigureAwait(false);
 
 
             var traceTransaction = new TraceTransaction(client);
-            return await traceTransaction.SendRequestAsync(receipt.TransactionHash);
+            return await traceTransaction.SendRequestAsync(receipt.TransactionHash).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -42,7 +42,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
         [Fact]
         public async void ShouldReturnTraceArray()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
             Assert.NotEmpty(result);
         }

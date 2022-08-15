@@ -14,14 +14,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnCoinBaseAccount()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
 
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var ethCoinBase = new EthCoinBase(client);
-            return await ethCoinBase.SendRequestAsync();
+            return await ethCoinBase.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

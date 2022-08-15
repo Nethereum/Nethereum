@@ -35,12 +35,12 @@ namespace Nethereum.Quorum.Tests
 
             var deploymentHandler = web3Quorum.Eth.GetContractDeploymentHandler<StandardTokenDeployment>();
             //Deploying
-            var transactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage1);
+            var transactionReceipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage1).ConfigureAwait(false);
 
             var contractAddress = transactionReceipt.ContractAddress;
 
             var totalSupply = await web3Quorum.Eth.GetContractQueryHandler<TotalSupplyFunction>()
-                .QueryAsync<BigInteger>(contractAddress);
+                .QueryAsync<BigInteger>(contractAddress).ConfigureAwait(false);
 
             //var balance = await web3Quorum.Eth.GetContractQueryHandler<BalanceOfFunction>()
             //    .QueryAsync<BigInteger>(contractAddress,
@@ -52,7 +52,7 @@ namespace Nethereum.Quorum.Tests
         public async void UpCheck()
         {
             var quorumEnclave = new QuorumEnclave(url+ ":9081");
-            Assert.True(await quorumEnclave.UpCheckAsync());
+            Assert.True(await quorumEnclave.UpCheckAsync().ConfigureAwait(false));
         }
 
 
@@ -109,7 +109,7 @@ namespace Nethereum.Quorum.Tests
 
             var web3Node1 = new Web3Quorum(urlNode1);
             var transactionService = new TransactionReceiptPollingService(web3Node1.TransactionManager);
-            var account = await web3Node1.Eth.CoinBase.SendRequestAsync();
+            var account = await web3Node1.Eth.CoinBase.SendRequestAsync().ConfigureAwait(false);
             var contract = web3Node1.Eth.GetContract(abi, address);
             var functionSet = contract.GetFunction("set");
 
@@ -117,27 +117,27 @@ namespace Nethereum.Quorum.Tests
             var privateFor = new List<string>(new[] { "ROAZBWtSacxXQrOe3FGAqJDyJjFePR5ce4TSIzmJ0Bc=" });
             web3Node1.SetPrivateRequestParameters(privateFor);
             //send transaction
-            var txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 4));
+            var txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 4)).ConfigureAwait(false);
 
-            var node1Value = await GetValue(abi, address, urlNode1);
+            var node1Value = await GetValue(abi, address, urlNode1).ConfigureAwait(false);
             Assert.Equal(4, node1Value);
 
-            var node2Value = await GetValue(abi, address, urlNode2);
+            var node2Value = await GetValue(abi, address, urlNode2).ConfigureAwait(false);
             Assert.Equal(0, node2Value);
 
-            var node7Value = await GetValue(abi, address, urlNode7);
+            var node7Value = await GetValue(abi, address, urlNode7).ConfigureAwait(false);
             Assert.Equal(4, node7Value);
 
-            txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 42));
+            txnHash = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 42)).ConfigureAwait(false);
 
             //node1
-            node1Value = await GetValue(abi, address, urlNode1);
+            node1Value = await GetValue(abi, address, urlNode1).ConfigureAwait(false);
             Assert.Equal(42, node1Value);
 
-            node2Value = await GetValue(abi, address, urlNode2);
+            node2Value = await GetValue(abi, address, urlNode2).ConfigureAwait(false);
             Assert.Equal(0, node2Value);
 
-            node7Value = await GetValue(abi, address, urlNode7);
+            node7Value = await GetValue(abi, address, urlNode7).ConfigureAwait(false);
             Assert.Equal(42, node7Value);
 
             //private.set(4,{from:eth.coinbase,privateFor:["ROAZBWtSacxXQrOe3FGAqJDyJjFePR5ce4TSIzmJ0Bc="]});
@@ -149,7 +149,7 @@ namespace Nethereum.Quorum.Tests
             var web3 = new Web3.Web3(nodeUrl);
             var contract = web3.Eth.GetContract(abi, address);
             var functionGet = contract.GetFunction("get");
-            return await functionGet.CallAsync<int>();
+            return await functionGet.CallAsync<int>().ConfigureAwait(false);
         }
     }
 }

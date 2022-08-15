@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         public override async Task<int> ExecuteAsync(IClient client)
         {
             var parityTransactionsLimit = new ParityTransactionsLimit(client);
-            return await parityTransactionsLimit.SendRequestAsync();
+            return await parityTransactionsLimit.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.BlockAuthoring
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

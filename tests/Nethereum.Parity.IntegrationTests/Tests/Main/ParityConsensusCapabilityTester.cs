@@ -11,7 +11,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var parityConsensusCapability = new ParityConsensusCapability(client);
-            return await parityConsensusCapability.SendRequestAsync();
+            return await parityConsensusCapability.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -22,7 +22,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Main
         [Fact]
         public async void ShouldNotReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

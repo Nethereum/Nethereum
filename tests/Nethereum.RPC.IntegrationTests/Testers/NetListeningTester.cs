@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var netListening = new NetListening(client);
-            return await netListening.SendRequestAsync();
+            return await netListening.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

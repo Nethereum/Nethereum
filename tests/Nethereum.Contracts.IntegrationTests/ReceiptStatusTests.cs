@@ -39,7 +39,7 @@ namespace Nethereum.Contracts.IntegrationTests
                     accountAddresss,
                     new HexBigInteger(900000),
                     null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -47,10 +47,10 @@ namespace Nethereum.Contracts.IntegrationTests
             var multiplyFunction = contract.GetFunction("multiply");
 
             //correct gas estimation with a parameter
-            var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
+            var estimatedGas = await multiplyFunction.EstimateGasAsync(7).ConfigureAwait(false);
 
             var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
-                new HexBigInteger(estimatedGas.Value), null, null, 5);
+                new HexBigInteger(estimatedGas.Value), null, null, 5).ConfigureAwait(false);
 
             Assert.Equal(1, receipt1.Status.Value);
 
@@ -80,7 +80,7 @@ namespace Nethereum.Contracts.IntegrationTests
                     accountAddresss,
                     new HexBigInteger(900000),
                     null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -89,10 +89,10 @@ namespace Nethereum.Contracts.IntegrationTests
 
             //incorrect gas estimation without a parameter
             //it will ran out of gas
-            var estimatedGas = await multiplyFunction.EstimateGasAsync();
+            var estimatedGas = await multiplyFunction.EstimateGasAsync().ConfigureAwait(false);
 
             var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
-                new HexBigInteger(estimatedGas.Value), null, null, 5);
+                new HexBigInteger(estimatedGas.Value), null, null, 5).ConfigureAwait(false);
 
             Assert.Equal(0, receipt1.Status.Value);
 

@@ -31,8 +31,8 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(1000);
-                receipt = await transactionService.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                await Task.Delay(1000).ConfigureAwait(false);
+                receipt = await transactionService.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
             return receipt;
         }
@@ -43,8 +43,8 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var contractHandler = web3.Eth.GetContractHandler("0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359");
             var stringBytes32Decoder = new StringBytes32Decoder();
-            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>();
-            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>();
+            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>().ConfigureAwait(false);
+            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>().ConfigureAwait(false);
             
         }
 
@@ -59,11 +59,11 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
                 InitialAmount = BigInteger.Parse("10000000000000000000000000"),
                 TokenSymbol = "XST",
                 TokenName = "XomeStandardToken"
-            });
+            }).ConfigureAwait(false);
 
             var contractHandler = web3.Eth.GetContractHandler(receipt.ContractAddress);
-            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>();
-            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>();
+            var symbol = await contractHandler.QueryRawAsync<SymbolFunction, StringBytes32Decoder, string>().ConfigureAwait(false);
+            var token = await contractHandler.QueryRawAsync<NameFunction, StringBytes32Decoder, string>().ConfigureAwait(false);
 
             Assert.Equal("XST", symbol);
             Assert.Equal("XomeStandardToken", token);
@@ -85,34 +85,34 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
                 TokenSymbol = "TST"
             };
 
-            var tokenService = await StandardTokenService.DeployContractAndGetServiceAsync(web3, deploymentContract);
+            var tokenService = await StandardTokenService.DeployContractAndGetServiceAsync(web3, deploymentContract).ConfigureAwait(false);
             
             var transfersEvent = tokenService.GetTransferEvent();
 
-            var totalSupplyDeployed = await tokenService.TotalSupplyQueryAsync();
+            var totalSupplyDeployed = await tokenService.TotalSupplyQueryAsync().ConfigureAwait(false);
             Assert.Equal(totalSupply, totalSupplyDeployed);
 
-            var tokenName = await tokenService.NameQueryAsync();
+            var tokenName = await tokenService.NameQueryAsync().ConfigureAwait(false);
             Assert.Equal("TestToken", tokenName);
 
-            var tokenSymbol = await tokenService.SymbolQueryAsync();
+            var tokenSymbol = await tokenService.SymbolQueryAsync().ConfigureAwait(false);
             Assert.Equal("TST", tokenSymbol);
 
-            var ownerBalance = await tokenService.BalanceOfQueryAsync(addressOwner);
+            var ownerBalance = await tokenService.BalanceOfQueryAsync(addressOwner).ConfigureAwait(false);
             Assert.Equal(totalSupply, ownerBalance);
 
             var transferReceipt =
-                await tokenService.TransferRequestAndWaitForReceiptAsync(newAddress, 1000);
+                await tokenService.TransferRequestAndWaitForReceiptAsync(newAddress, 1000).ConfigureAwait(false);
 
-            ownerBalance = await tokenService.BalanceOfQueryAsync(addressOwner);
+            ownerBalance = await tokenService.BalanceOfQueryAsync(addressOwner).ConfigureAwait(false);
             Assert.Equal(totalSupply - 1000, ownerBalance);
 
-            var newAddressBalance = await tokenService.BalanceOfQueryAsync(newAddress);
+            var newAddressBalance = await tokenService.BalanceOfQueryAsync(newAddress).ConfigureAwait(false);
             Assert.Equal(1000, newAddressBalance);
 
             var allTransfersFilter =
-                await transfersEvent.CreateFilterAsync(new BlockParameter(transferReceipt.BlockNumber));
-            var eventLogsAll = await transfersEvent.GetAllChangesAsync(allTransfersFilter);
+                await transfersEvent.CreateFilterAsync(new BlockParameter(transferReceipt.BlockNumber)).ConfigureAwait(false);
+            var eventLogsAll = await transfersEvent.GetAllChangesAsync(allTransfersFilter).ConfigureAwait(false);
             Assert.Single(eventLogsAll);
             var transferLog = eventLogsAll.First();
             Assert.Equal(transferLog.Log.TransactionIndex.HexValue, transferReceipt.TransactionIndex.HexValue);
@@ -120,8 +120,8 @@ namespace Nethereum.StandardTokenEIP20.IntegrationTests
             Assert.Equal(transferLog.Event.To.ToLower(), newAddress.ToLower());
             Assert.Equal(transferLog.Event.Value, (ulong) 1000);
 
-            var approveTransactionReceipt = await tokenService.ApproveRequestAndWaitForReceiptAsync(newAddress, 1000);
-            var allowanceAmount =  await tokenService.AllowanceQueryAsync(addressOwner, newAddress);
+            var approveTransactionReceipt = await tokenService.ApproveRequestAndWaitForReceiptAsync(newAddress, 1000).ConfigureAwait(false);
+            var allowanceAmount = await tokenService.AllowanceQueryAsync(addressOwner, newAddress).ConfigureAwait(false);
             Assert.Equal(1000, allowanceAmount);
         }
     }

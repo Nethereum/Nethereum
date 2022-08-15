@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<object> ExecuteAsync(IClient client)
         {
             var debugCpuProfile = new DebugStartCPUProfile(client);
-            return await debugCpuProfile.SendRequestAsync(Settings.GetDefaultLogLocation());
+            return await debugCpuProfile.SendRequestAsync(Settings.GetDefaultLogLocation()).ConfigureAwait(false);
         }
 
 
@@ -26,7 +26,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldStartCPUProfileAndAlwaysReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.Null(result);
         }
     }

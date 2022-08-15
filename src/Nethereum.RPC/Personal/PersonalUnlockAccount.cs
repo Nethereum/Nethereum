@@ -59,7 +59,7 @@ namespace Nethereum.RPC.Personal
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
             return
                 await
-                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase)
+                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync().ConfigureAwait(false), passPhrase)
                         .ConfigureAwait(false);
         }
 

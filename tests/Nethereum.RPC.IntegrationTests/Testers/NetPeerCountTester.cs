@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var netPeerCount = new NetPeerCount(client);
-            return await netPeerCount.SendRequestAsync();
+            return await netPeerCount.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

@@ -146,7 +146,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var addressFrom = EthereumClientIntegrationFixture.AccountAddress;
             var receipt = await web3.Eth.GetContractDeploymentHandler<TestEventDeployment>()
-                .SendRequestAndWaitForReceiptAsync(new TestEventDeployment() {FromAddress = addressFrom});
+                .SendRequestAndWaitForReceiptAsync(new TestEventDeployment() { FromAddress = addressFrom }).ConfigureAwait(false);
 
 
             var contractHandler = web3.Eth.GetContractHandler(receipt.ContractAddress);
@@ -156,7 +156,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             //Event with all parameters fixed 32 bytes 2 addresses indexed and last indexed bytes 32
             var eventAllBytes32 = contractHandler.GetEvent<PushedResultEventDTO>();
             var filterAllBytes32 = await eventAllBytes32.CreateFilterAsync(addressFrom, addressFrom, bytes,
-                new BlockParameter(receipt.BlockNumber), BlockParameter.CreateLatest());
+                new BlockParameter(receipt.BlockNumber), BlockParameter.CreateLatest()).ConfigureAwait(false);
 
 
             //Event with dynamic and last indexed bytes32
@@ -170,15 +170,15 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var eventIndexedAtTheFront = contractHandler.GetEvent<Pushed2EventDTO>();
             var filterIndexedAtTheFront = await eventIndexedAtTheFront.CreateFilterAsync(addressFrom, addressFrom,
                 bytes,
-                new BlockParameter(receipt.BlockNumber), BlockParameter.CreateLatest());
+                new BlockParameter(receipt.BlockNumber), BlockParameter.CreateLatest()).ConfigureAwait(false);
 
 
             var pushReceipt =
                 await contractHandler.SendRequestAndWaitForReceiptAsync(new PushEventFunction()
-                    {FromAddress = addressFrom});
+                { FromAddress = addressFrom }).ConfigureAwait(false);
 
             // Getting changes from the event with all bytes32
-            var filterChangesAllBytes32 = await eventAllBytes32.GetFilterChangesAsync(filterAllBytes32);
+            var filterChangesAllBytes32 = await eventAllBytes32.GetFilterChangesAsync(filterAllBytes32).ConfigureAwait(false);
 
             Assert.NotEmpty(filterChangesAllBytes32);
 
@@ -194,7 +194,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
 
             // Getting changes from the event with indexed at the front
             var filterChangesIndexedAtTheFront =
-                await eventIndexedAtTheFront.GetFilterChangesAsync(filterIndexedAtTheFront);
+                await eventIndexedAtTheFront.GetFilterChangesAsync(filterIndexedAtTheFront).ConfigureAwait(false);
 
             Assert.NotEmpty(filterChangesIndexedAtTheFront);
 

@@ -38,7 +38,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var account = new Account(_privateKey);
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
 
-            var accountBalance = await web3.Eth.GetBalance.SendRequestAsync(account.Address);
+            var accountBalance = await web3.Eth.GetBalance.SendRequestAsync(account.Address).ConfigureAwait(false);
 
             Assert.True(accountBalance.Value > 0);
 
@@ -47,7 +47,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     abi,
                     smartContractByteCode,
                     account.Address,
-                    new HexBigInteger(900000));
+                    new HexBigInteger(900000)).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -55,15 +55,15 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var storeDocumentFunction = contract.GetFunction("storeDocument");
 
             var receipt1 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address,
-                new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1");
+                new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1").ConfigureAwait(false);
             Assert.Equal(1, receipt1.Status?.Value);
             var receipt2 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(account.Address,
-                new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2");
+                new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2").ConfigureAwait(false);
             Assert.Equal(1, receipt2.Status?.Value);
 
             var documentsFunction = contract.GetFunction("documents");
-            var document1 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k1", 0);
-            var document2 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k2", 0);
+            var document1 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k1", 0).ConfigureAwait(false);
+            var document2 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k2", 0).ConfigureAwait(false);
 
             Assert.Equal("doc1", document1.Name);
             Assert.Equal("doc2", document2.Name);
@@ -101,7 +101,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
                     accountAddresss,
                     new HexBigInteger(900000),
                     null,
-                    multiplier);
+                    multiplier).ConfigureAwait(false);
 
             var contractAddress = receipt.ContractAddress;
 
@@ -109,14 +109,14 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             var multiplyFunction = contract.GetFunction("multiply");
 
             var multipliedEvent = contract.GetEvent("Multiplied");
-            var filterForAll = await multipliedEvent.CreateFilterAsync();
+            var filterForAll = await multipliedEvent.CreateFilterAsync().ConfigureAwait(false);
 
-            var estimatedGas = await multiplyFunction.EstimateGasAsync(7);
+            var estimatedGas = await multiplyFunction.EstimateGasAsync(7).ConfigureAwait(false);
 
             var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
-                new HexBigInteger(estimatedGas.Value), null, null, 5);
+                new HexBigInteger(estimatedGas.Value), null, null, 5).ConfigureAwait(false);
             var receipt2 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
-                new HexBigInteger(estimatedGas.Value), null, null, 7);
+                new HexBigInteger(estimatedGas.Value), null, null, 7).ConfigureAwait(false);
 
             Assert.Equal(1, receipt1.Status.Value);
             Assert.Equal(1, receipt2.Status.Value);
@@ -124,7 +124,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             Assert.False(receipt1.HasErrors());
             Assert.False(receipt2.HasErrors());
 
-            var logsForAll = await multipliedEvent.GetFilterChangesAsync<MultipliedEvent>(filterForAll);
+            var logsForAll = await multipliedEvent.GetFilterChangesAsync<MultipliedEvent>(filterForAll).ConfigureAwait(false);
 
             Assert.Equal(2, logsForAll.Count());
         }
@@ -187,38 +187,38 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(5000);
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+                await Task.Delay(5000).ConfigureAwait(false);
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
             }
 
             var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
 
             var multipliedEvent = contract.GetEvent("Multiplied");
-            var filterAll = await multipliedEvent.CreateFilterAsync();
+            var filterAll = await multipliedEvent.CreateFilterAsync().ConfigureAwait(false);
             //filter first indexed parameter
-            var filter69 = await multipliedEvent.CreateFilterAsync(new object[] {69});
+            var filter69 = await multipliedEvent.CreateFilterAsync(new object[] { 69 }).ConfigureAwait(false);
 
 
-            await Task.Delay(2000);
+            await Task.Delay(2000).ConfigureAwait(false);
 
             //get the function by name
             var multiplyFunction = contract.GetFunction("multiply");
 
-            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 69);
-            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 18);
-            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 7);
+            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 69).ConfigureAwait(false);
+            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 18).ConfigureAwait(false);
+            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, null, 7).ConfigureAwait(false);
 
 
             TransactionReceipt receiptTransaction = null;
 
             while (receiptTransaction == null)
             {
-                await Task.Delay(5000);
-                receiptTransaction = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
+                await Task.Delay(5000).ConfigureAwait(false);
+                receiptTransaction = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transaction7).ConfigureAwait(false);
             }
 
-            var logsAll = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAll);
-            var logs69 = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filter69);
+            var logsAll = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAll).ConfigureAwait(false);
+            var logs69 = await web3.Eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filter69).ConfigureAwait(false);
 
 
             return "All logs :" + logsAll.Length + " Logs for 69 " + logs69.Length;

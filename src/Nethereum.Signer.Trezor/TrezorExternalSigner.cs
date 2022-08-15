@@ -110,7 +110,7 @@ namespace Nethereum.Signer.Trezor
                 txMessage.DataLength = (uint)transaction.Data.Length;
             }
 
-            var signature = await TrezorManager.SendMessageAsync<EthereumTxRequest, EthereumSignTx>(txMessage);
+            var signature = await TrezorManager.SendMessageAsync<EthereumTxRequest, EthereumSignTx>(txMessage).ConfigureAwait(false);
             transaction.SetSignature(EthECDSASignatureFactory.FromComponents(signature.SignatureR, signature.SignatureS, (byte)signature.SignatureV));
         }
 

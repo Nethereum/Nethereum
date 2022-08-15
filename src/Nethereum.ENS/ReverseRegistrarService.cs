@@ -28,7 +28,7 @@ namespace Nethereum.ENS
 
         public static async Task<ReverseRegistrarService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ReverseRegistrarDeployment reverseRegistrarDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, reverseRegistrarDeployment, cancellationTokenSource);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, reverseRegistrarDeployment, cancellationTokenSource).ConfigureAwait(false);
             return new ReverseRegistrarService(web3, receipt.ContractAddress);
         }
 

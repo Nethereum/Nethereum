@@ -21,14 +21,14 @@ namespace Nethereum.Geth.Tests.Testers
         //[Fact] TODO: Refactor test
         public async void ShouldAlwaysReturnNull()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.Null(result);
         }
 
         public override async Task<JArray> ExecuteAsync(IClient client)
         {
             var debugTraceBlockFromFile = new DebugTraceBlockFromFile(client);
-            return await debugTraceBlockFromFile.SendRequestAsync(Settings.GetDefaultLogLocation(), new TraceTransactionOptions());
+            return await debugTraceBlockFromFile.SendRequestAsync(Settings.GetDefaultLogLocation(), new TraceTransactionOptions()).ConfigureAwait(false);
         }
     }
 }

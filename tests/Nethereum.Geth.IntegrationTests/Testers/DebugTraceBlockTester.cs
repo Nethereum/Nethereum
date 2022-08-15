@@ -17,8 +17,8 @@ namespace Nethereum.Geth.Tests.Testers
         {
             var debugTraceBlock = new DebugTraceBlock(client);
             var debugGetBlockRlp = new DebugGetBlockRlp(client);
-            var rlp = await debugGetBlockRlp.SendRequestAsync(Settings.GetBlockNumber());
-            return await debugTraceBlock.SendRequestAsync("0x" + rlp, new TraceTransactionOptions());
+            var rlp = await debugGetBlockRlp.SendRequestAsync(Settings.GetBlockNumber()).ConfigureAwait(false);
+            return await debugTraceBlock.SendRequestAsync("0x" + rlp, new TraceTransactionOptions()).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -29,7 +29,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldDecodeTheBlockRplAsJObject()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
     }

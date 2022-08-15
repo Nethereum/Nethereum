@@ -25,7 +25,7 @@ namespace Nethereum.RPC.Tests.Testers
             transactionInput.Data = contractByteCode;
             transactionInput.To = to;
             transactionInput.From = "0x12890D2cce102216644c59daE5baed380d84830c";
-            return await ethSendTransation.SendRequestAsync(transactionInput);
+            return await ethSendTransation.SendRequestAsync(transactionInput).ConfigureAwait(false);
             //result
             // 0x00000000000000000000000000000000000000000000000000000000000001e3
             //483

@@ -14,7 +14,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<bool> ExecuteAsync(IClient client)
         {
             var minerStop = new MinerStop(client);
-            return await minerStop.SendRequestAsync();
+            return await minerStop.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -25,7 +25,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldStopMiner()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(result);
         }
     }

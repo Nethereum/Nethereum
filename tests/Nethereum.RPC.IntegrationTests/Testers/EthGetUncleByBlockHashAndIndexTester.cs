@@ -18,7 +18,7 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShoulRetrieveUncleWithTransactionHashes()
         {
-            var uncle = await ExecuteAsync();
+            var uncle = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(uncle);
         }
 
@@ -29,7 +29,7 @@ namespace Nethereum.RPC.Tests.Testers
             return
                 await
                     ethGetUncleByBlockHashAndIndex.SendRequestAsync(
-                        "0x84e538e6da2340e3d4d90535f334c22974fecd037798d1cf8965c02e8ab3394b", new HexBigInteger(0));
+                        "0x84e538e6da2340e3d4d90535f334c22974fecd037798d1cf8965c02e8ab3394b", new HexBigInteger(0)).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()

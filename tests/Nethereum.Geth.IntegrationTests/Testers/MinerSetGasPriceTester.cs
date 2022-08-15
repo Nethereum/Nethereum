@@ -15,7 +15,7 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<bool> ExecuteAsync(IClient client)
         {
             var minerSetGasPrice = new MinerSetGasPrice(client);
-            return await minerSetGasPrice.SendRequestAsync(new HexBigInteger(1000));
+            return await minerSetGasPrice.SendRequestAsync(new HexBigInteger(1000)).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -26,7 +26,7 @@ namespace Nethereum.Geth.Tests.Testers
         [Fact]
         public async void ShouldSetTheGasPrice()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.True(result);
         }
     }

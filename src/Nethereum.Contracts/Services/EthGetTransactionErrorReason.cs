@@ -19,7 +19,7 @@ namespace Nethereum.Contracts.Services
 #if !DOTNET35
         public async Task<string> SendRequestAsync(string transactionHash)
         {
-            var transaction = await _apiTransactionsService.GetTransactionByHash.SendRequestAsync(transactionHash);
+            var transaction = await _apiTransactionsService.GetTransactionByHash.SendRequestAsync(transactionHash).ConfigureAwait(false);
             var transactionInput = transaction.ConvertToTransactionInput();
             var functionCallDecoder = new FunctionCallDecoder();
             if (transactionInput.MaxFeePerGas != null)
@@ -28,7 +28,7 @@ namespace Nethereum.Contracts.Services
             }
             try
             {
-                var errorHex = await _apiTransactionsService.Call.SendRequestAsync(transactionInput, new BlockParameter(transaction.BlockNumber));
+                var errorHex = await _apiTransactionsService.Call.SendRequestAsync(transactionInput, new BlockParameter(transaction.BlockNumber)).ConfigureAwait(false);
 
                 if (ErrorFunction.IsErrorData(errorHex))
                 {

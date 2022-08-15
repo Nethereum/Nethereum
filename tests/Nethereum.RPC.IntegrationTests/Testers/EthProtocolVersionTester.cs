@@ -10,7 +10,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var ethProtocolVersion = new EthProtocolVersion(client);
-            return await ethProtocolVersion.SendRequestAsync();
+            return await ethProtocolVersion.SendRequestAsync().ConfigureAwait(false);
         }
 
         public Type GetRequestType()

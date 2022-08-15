@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Tests.Testers
         public async Task<object> ExecuteTestAsync(IClient client)
         {
             var web3Sha3 = new Web3Sha3(client);
-            return await web3Sha3.SendRequestAsync(new HexUTF8String("Monkey"));
+            return await web3Sha3.SendRequestAsync(new HexUTF8String("Monkey")).ConfigureAwait(false);
         }
 
         public Type GetRequestType()

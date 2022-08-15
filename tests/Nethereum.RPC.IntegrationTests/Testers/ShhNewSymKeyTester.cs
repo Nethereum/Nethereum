@@ -16,14 +16,14 @@ namespace Nethereum.RPC.Tests.Testers
         [Fact]
         public async void ShouldReturnTheSymKey()
         {
-            var result = await ExecuteAsync();
+            var result = await ExecuteAsync().ConfigureAwait(false);
             Assert.NotNull(result);
         }
 
         public override async Task<string> ExecuteAsync(IClient client)
         {
             var shhNewKeyPair = new ShhNewSymKey(client);
-            return await shhNewKeyPair.SendRequestAsync();
+            return await shhNewKeyPair.SendRequestAsync().ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
