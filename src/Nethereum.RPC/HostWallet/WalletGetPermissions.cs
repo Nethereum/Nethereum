@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.RPC.HostWallet
 {
-    public class WalletGetPermissions : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class WalletGetPermissions : GenericRpcRequestResponseHandlerNoParam<JObject>, IWalletGetPermissions
     {
         public WalletGetPermissions() : this(null)
         {

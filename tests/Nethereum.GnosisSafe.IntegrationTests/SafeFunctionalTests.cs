@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Nethereum.ABI.EIP712;
 using Nethereum.Contracts.TransactionHandlers.MultiSend;
 using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -27,7 +28,6 @@ namespace Nethereum.GnosisSafe.IntegrationTests
         public async void ShouldBeAbleToEncodeTheSameAsTheSmartContract()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Rinkeby);
-            var signer = new Eip712TypedDataSigner();
             var gnosisSafeAddress = "0xa9C09412C1d93DAc6eE9254A51E97454588D3B88";
             var chainId = (int)Chain.Rinkeby;
             var service = new GnosisSafeService(web3, gnosisSafeAddress);
@@ -52,7 +52,7 @@ namespace Nethereum.GnosisSafe.IntegrationTests
                 ChainId = chainId
             };
 
-            var encodedMessage = signer.EncodeTypedData(param, domain, "SafeTx");
+            var encodedMessage = Eip712TypedDataEncoder.Current.EncodeTypedData(param, domain, "SafeTx");
             Assert.Equal(encoded.ToHex(), encodedMessage.ToHex());
 
         }

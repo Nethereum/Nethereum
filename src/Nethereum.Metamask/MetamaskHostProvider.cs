@@ -12,13 +12,13 @@ namespace Nethereum.Metamask
         public string Name { get; } = "Metamask";
         public bool Available { get; private set; }
         public string SelectedAccount { get; private set; }
-        public int SelectedNetworkChainId { get; private set; }
+        public long SelectedNetworkChainId { get; private set; }
         public bool Enabled { get; private set; }
 
         private MetamaskInterceptor _metamaskInterceptor;
 
         public event Func<string, Task> SelectedAccountChanged;
-        public event Func<int, Task> NetworkChanged;
+        public event Func<long, Task> NetworkChanged;
         public event Func<bool, Task> AvailabilityChanged;
         public event Func<bool, Task> EnabledChanged;
         public async Task<bool> CheckProviderAvailabilityAsync()
@@ -85,7 +85,7 @@ namespace Nethereum.Metamask
             }
         }
 
-        public async Task ChangeSelectedNetworkAsync(int chainId)
+        public async Task ChangeSelectedNetworkAsync(long chainId)
         {
             if (SelectedNetworkChainId != chainId)
             {

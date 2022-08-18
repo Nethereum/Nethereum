@@ -3,6 +3,7 @@ using Nethereum.Signer.EIP712;
 using Nethereum.Util;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Xunit;
+using Nethereum.ABI.EIP712;
 
 namespace Nethereum.Signer.UnitTests
 {
@@ -85,7 +86,9 @@ namespace Nethereum.Signer.UnitTests
             };
 
             typedData.Domain.ChainId = 1;
-            
+            typedData.SetMessage(mail);
+
+            var json = typedData.ToJson();
             var key = new EthECKey("94e001d6adf3a3275d5dd45971c2a5f6637d3e9c51f9693f2e678f649e164fa5");
 
             var signature = _signer.SignTypedDataV4(mail, typedData, key);

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Nethereum.Signer.EIP712
+namespace Nethereum.ABI.EIP712
 {
     [JsonObject(MemberSerialization.OptIn)]
     public class TypedDataRaw

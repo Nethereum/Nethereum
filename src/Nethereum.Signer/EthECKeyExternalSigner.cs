@@ -46,6 +46,13 @@ namespace Nethereum.Signer
             return new EthECDSASignature(signature);
         }
 
+        public Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes)
+        {
+            var messageSigner = new EthereumMessageSigner();
+            var hash = messageSigner.HashPrefixedMessage(rawBytes);
+            return SignAsync(hash);
+        }
+
         public async Task<EthECDSASignature> SignAndCalculateYParityVAsync(byte[] rawBytes)
         {
             var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);

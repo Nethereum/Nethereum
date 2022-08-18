@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
+using Nethereum.ABI.EIP712;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Signer.EIP712;
 
 namespace Nethereum.GnosisSafe
 {

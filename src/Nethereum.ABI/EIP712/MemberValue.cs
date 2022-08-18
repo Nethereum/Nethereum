@@ -1,4 +1,4 @@
-﻿namespace Nethereum.Signer.EIP712
+﻿namespace Nethereum.ABI.EIP712
 {
 
     public class MemberValue

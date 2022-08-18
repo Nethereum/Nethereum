@@ -4,6 +4,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Xunit;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Diagnostics;
+using Nethereum.ABI.EIP712;
 
 namespace Nethereum.Signer.UnitTests
 {
@@ -57,7 +58,6 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void ShouldEncodeUsingSimpleTypeDefinitions()
         {
-            var signer = new Eip712TypedDataSigner();
 
             //The mail typed definition, this provides the typed data schema used for this specific domain
             var typedData = GetMailTypedDefinition();
@@ -79,7 +79,7 @@ namespace Nethereum.Signer.UnitTests
             //This type data is specific to the chainId 1
             typedData.Domain.ChainId = 1;
 
-            var encoded = signer.EncodeAndHashTypedData(mail, typedData);
+            var encoded = Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(mail, typedData);
             Assert.True(encoded.ToHex().IsTheSameHex("a7f60314a32adc242676f7264d7246d13f70989540ce0584605f811c69556bf7"));
         }
 
@@ -151,8 +151,8 @@ namespace Nethereum.Signer.UnitTests
             },
             };
 
-            var signer = new Eip712TypedDataSigner();
-            var encoded = signer.EncodeAndHashTypedData(typedData);
+            var encoder = new Eip712TypedDataEncoder();
+            var encoded = encoder.EncodeAndHashTypedData(typedData);
             Assert.True(encoded.ToHex().IsTheSameHex("a7f60314a32adc242676f7264d7246d13f70989540ce0584605f811c69556bf7"));
 
         }

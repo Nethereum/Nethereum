@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Nethereum.Hex.HexTypes;
+using Nethereum.JsonRpc.Client;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace Nethereum.RPC.HostWallet
@@ -6,7 +8,7 @@ namespace Nethereum.RPC.HostWallet
     public class AddEthereumChainParameter
     {
         [JsonProperty(PropertyName = "chainId")]
-        public string ChainId { get; set; }
+        public HexBigInteger ChainId { get; set; }
         [JsonProperty(PropertyName = "blockExplorerUrls")]
         public List<string> BlockExplorerUrls { get; set; }
         [JsonProperty(PropertyName = "chainName")]

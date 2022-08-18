@@ -15,6 +15,7 @@ using System.Collections;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Xml.Linq;
+using Nethereum.ABI.EIP712;
 
 namespace Nethereum.Signer.UnitTests
 {
@@ -242,7 +243,7 @@ namespace Nethereum.Signer.UnitTests
                 }
             };
 
-           
+          
             var typedDataJson = typedData.ToJson();
 
             var result = _signer.EncodeTypedData(typedData);
@@ -376,7 +377,7 @@ namespace Nethereum.Signer.UnitTests
                 Nonce = 1
             };
 
-            var encodedMessage = _signer.EncodeTypedData(param, domain, "SafeTx");
+            var encodedMessage = Eip712TypedDataEncoder.Current.EncodeTypedData(param, domain, "SafeTx");
             Assert.Equal(
                 "0x1901a15700103df744480601949aa3add5a0c0ebf6d258bf881eb6abac9736ead7f43a707a87afefa511211636c16608979d6ce2fc81e3c6979d4b80fb4bf3ff1080",
                 encodedMessage.ToHex(true), ignoreCase: true

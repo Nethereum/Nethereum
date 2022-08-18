@@ -1,4 +1,4 @@
-﻿logEnabled = false;
+﻿logEnabled = true;
 
 async function metamaskRequest(parsedMessage) {
     try {

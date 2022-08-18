@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.ABI.EIP712;
 using Nethereum.Contracts;
 using Nethereum.Contracts.TransactionHandlers.MultiSend;
 using Nethereum.GnosisSafe.ContractDefinition;
@@ -113,12 +114,11 @@ namespace Nethereum.GnosisSafe
             BigInteger chainId,
             params string[] privateKeySigners)
         {
-            var signer = new Eip712TypedDataSigner();
             var messageSigner = new MessageSigner();
 
             var typedDefinition = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
 
-            var hashEncoded = signer.EncodeAndHashTypedData(transactionData, typedDefinition);
+            var hashEncoded = Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(transactionData, typedDefinition);
             var signatures = new List<SafeSignature>();
             foreach (var privateKey in privateKeySigners)
             {

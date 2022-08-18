@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Nethereum.Signer.EIP712
+namespace Nethereum.ABI.EIP712
 {
     public class MemberDescription
     {

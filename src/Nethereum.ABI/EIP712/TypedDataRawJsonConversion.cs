@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Nethereum.ABI.ABIDeserialisation;
 
-namespace Nethereum.Signer.EIP712
+namespace Nethereum.ABI.EIP712
 {
     public static class TypedDataRawJsonConversion
     {
@@ -71,7 +71,7 @@ namespace Nethereum.Signer.EIP712
         private static MemberValue GetMemberValue(string memberType, object memberValue, Dictionary<string, MemberDescription[]> typeMemberDescriptions)
         {
 
-            if (Eip712TypedDataSigner.IsReferenceType(memberType))
+            if (Eip712TypedDataEncoder.IsReferenceType(memberType))
             {
                 return new MemberValue()
                 {
@@ -85,7 +85,7 @@ namespace Nethereum.Signer.EIP712
                 {
                     var items = (IList)memberValue;
                     var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
-                    if (Eip712TypedDataSigner.IsReferenceType(innerType))
+                    if (Eip712TypedDataEncoder.IsReferenceType(innerType))
                     {
                         var itemsMemberValues = new List<MemberValue[]>();
                         foreach (var item in items)
@@ -165,10 +165,17 @@ namespace Nethereum.Signer.EIP712
             {
                 var memberType = mainType[i].Type;
                 var memberName = mainType[i].Name;
-                if (Eip712TypedDataSigner.IsReferenceType(memberType))
+                if (Eip712TypedDataEncoder.IsReferenceType(memberType))
                 {
                     var memberProperty = new JProperty(memberName);
-                    memberProperty.Value = new JObject(GetJProperties(memberType, (MemberValue[])values[i].Value, typedDataRaw).ToArray());
+                    if (values[i].Value != null)
+                    {
+                        memberProperty.Value = new JObject(GetJProperties(memberType, (MemberValue[])values[i].Value, typedDataRaw).ToArray());
+                    }
+                    else
+                    {
+                        memberProperty.Value = null;
+                    }
                     properties.Add(memberProperty);
                 }
                 else
@@ -178,28 +185,36 @@ namespace Nethereum.Signer.EIP712
                         var memberProperty = new JProperty(memberName);
                         var memberValueArray = new JArray();
                         var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
-                        if (Eip712TypedDataSigner.IsReferenceType(innerType))
+                        if (values[i].Value == null)
                         {
-                            var items = (List<MemberValue[]>)values[i].Value;
-
-                            foreach (var item in items)
-                            {
-                                memberValueArray.Add(new JObject(GetJProperties(innerType, item, typedDataRaw).ToArray()));
-                            }
-                            memberProperty.Value = memberValueArray;
+                            memberProperty.Value = null;
                             properties.Add(memberProperty);
                         }
                         else
                         {
-                            var items = (IList)values[i].Value;
-
-                            foreach (var item in items)
+                            if (Eip712TypedDataEncoder.IsReferenceType(innerType))
                             {
-                                memberValueArray.Add(item);
-                            }
+                                var items = (List<MemberValue[]>)values[i].Value;
 
-                            memberProperty.Value = memberValueArray;
-                            properties.Add(memberProperty);
+                                foreach (var item in items)
+                                {
+                                    memberValueArray.Add(new JObject(GetJProperties(innerType, item, typedDataRaw).ToArray()));
+                                }
+                                memberProperty.Value = memberValueArray;
+                                properties.Add(memberProperty);
+                            }
+                            else
+                            {
+                                var items = (IList)values[i].Value;
+
+                                foreach (var item in items)
+                                {
+                                    memberValueArray.Add(item);
+                                }
+
+                                memberProperty.Value = memberValueArray;
+                                properties.Add(memberProperty);
+                            }
                         }
 
                     }

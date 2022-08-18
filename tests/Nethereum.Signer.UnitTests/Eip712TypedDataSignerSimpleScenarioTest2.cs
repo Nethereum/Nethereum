@@ -2,6 +2,7 @@
 using Nethereum.Util;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Xunit;
+using Nethereum.ABI.EIP712;
 
 namespace Nethereum.Signer.UnitTests
 {

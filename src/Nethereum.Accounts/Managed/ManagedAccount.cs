@@ -1,4 +1,5 @@
 ﻿using Nethereum.RPC.Accounts;
+using Nethereum.RPC.AccountSigning;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 
@@ -29,6 +30,8 @@ namespace Nethereum.Web3.Accounts.Managed
         public ITransactionManager TransactionManager { get; protected set; }
 
         public INonceService NonceService { get; set; }
+
+        public IAccountSigningService AccountSigningService { get; private set; }
 
         protected virtual void InitialiseDefaultTransactionManager()
         {

@@ -10,6 +10,7 @@ namespace Nethereum.Signer
         ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; }
         Task<string> GetAddressAsync();
         Task<EthECDSASignature> SignAsync(byte[] rawBytes);
+        Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes);
         Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId);
         Task SignAsync(LegacyTransaction transaction);
         Task SignAsync(LegacyTransactionChainId transaction);

@@ -90,7 +90,9 @@
         wallet_getPermissions,
         wallet_addEthereumChain,
         wallet_switchEthereumChain,
-        wallet_watchAsset
+        wallet_watchAsset,
+        eth_signTypedData_v4,
+        personal_sign
 
     }
 }

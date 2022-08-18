@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC.Eth.DTOs;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Nethereum.Metamask
 {
@@ -29,6 +30,22 @@ namespace Nethereum.Metamask
                 var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
                     request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
+            } 
+            else if ( request.Method == "eth_signTypedData_v4" )
+            {
+                var account = GetSelectedAccount();
+                var parameters = new object[] { account, request.RawParameters[0] };
+                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                   parameters)).ConfigureAwait(false);
+                return ConvertResponse<T>(response);
+            }
+            else if (request.Method == "personal_sign")
+            {
+                var account = GetSelectedAccount();
+                var parameters = new object[] { request.RawParameters[0], account};
+                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                   parameters)).ConfigureAwait(false);
+                return ConvertResponse<T>(response);
             }
             else
             {
@@ -51,6 +68,14 @@ namespace Nethereum.Metamask
                 paramList[0] = transaction;
                 var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(),
                     paramList)).ConfigureAwait(false);
+                return ConvertResponse<T>(response);
+            }
+            else if (method == "eth_signTypedData_v4" || method == "eth_personalSign")
+            {
+                var account = GetSelectedAccount();
+                var parameters = new object[] { account, paramList[0] };
+                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(),
+                   parameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
             else

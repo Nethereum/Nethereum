@@ -9,11 +9,11 @@ namespace Nethereum.UI
 
         bool Available { get; }
         string SelectedAccount { get;}
-        int SelectedNetworkChainId { get; }
+        long SelectedNetworkChainId { get; }
         bool Enabled { get; }
         
         event Func<string, Task> SelectedAccountChanged;
-        event Func<int, Task> NetworkChanged;
+        event Func<long, Task> NetworkChanged;
         event Func<bool, Task> AvailabilityChanged;
         event Func<bool, Task> EnabledChanged;
 

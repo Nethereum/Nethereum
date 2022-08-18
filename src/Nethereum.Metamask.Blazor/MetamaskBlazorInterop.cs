@@ -71,7 +71,7 @@ namespace Nethereum.Metamask.Blazor
         }
 
         [JSInvokable()]
-        public static async Task SelectedNetworkChanged(int chainId)
+        public static async Task SelectedNetworkChanged(long chainId)
         {
             await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync(chainId).ConfigureAwait(false);
         }

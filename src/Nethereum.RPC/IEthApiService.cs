@@ -1,7 +1,9 @@
-﻿using Nethereum.RPC.Eth;
+﻿using Nethereum.RPC.AccountSigning;
+using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.HostWallet;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.RPC
@@ -27,8 +29,11 @@ namespace Nethereum.RPC
         IEthApiTransactionsService Transactions { get; }
         IEthApiUncleService Uncles { get; }
         IEthFeeHistory FeeHistory { get; }
+        IAccountSigningService AccountSigning { get; }
+        IHostWalletService HostWallet { get; }
+        
 #if !DOTNET35
-        IEtherTransferService GetEtherTransferService();
+            IEtherTransferService GetEtherTransferService();
 #endif
     }
 }

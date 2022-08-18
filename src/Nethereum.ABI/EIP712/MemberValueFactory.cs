@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nethereum.Signer.EIP712
+namespace Nethereum.ABI.EIP712
 {
     public class MemberValueFactory
     {

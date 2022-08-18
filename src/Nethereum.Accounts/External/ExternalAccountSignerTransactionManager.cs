@@ -26,8 +26,6 @@ namespace Nethereum.Web3.Accounts
             _transactionSigner = new LegacyTransactionSigner();
         }
 
-        public BigInteger? ChainId { get; }
-
 
         public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 

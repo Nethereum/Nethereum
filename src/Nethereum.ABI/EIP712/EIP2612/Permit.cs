@@ -1,7 +1,7 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using System.Numerics;
 
-namespace Nethereum.Signer.EIP712.EIP2612
+namespace Nethereum.ABI.EIP712.EIP2612
 {
     [Struct("Permit")]
     public class Permit
