@@ -40,8 +40,9 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             var nextBlockNumberFrom = fromNumber;
             try
             {
-                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber && !cancellationToken.IsCancellationRequested)
+                while (!progress.HasErrored && progress.BlockNumberProcessTo != toNumber)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (progress.BlockNumberProcessTo != null)
                     {
                         nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
@@ -49,7 +50,9 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                     var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
 
-                    if (getLogsResponse == null || cancellationToken.IsCancellationRequested) return progress; //allowing all the logs to be processed if not cancelled before hand
+                    //allowing all the logs to be processed if not cancelled before hand
+                    if (getLogsResponse == null) return progress; 
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     var logs = getLogsResponse.Value.Logs;
 
@@ -105,9 +108,8 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         {
             try 
             {
-
-
-                if (cancellationToken.IsCancellationRequested) return null; // check cancellation on entry as this is recursive
+                // check cancellation on entry as this is recursive
+                cancellationToken.ThrowIfCancellationRequested();
 
                 var adjustedToBlock =
                     _blockRangeRequestStrategy.GeBlockNumberToRequestTo(fromBlock, toBlock,
@@ -117,7 +119,8 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                 var logs = await EthApi.Filters.GetLogs.SendRequestAsync(_filterInput).ConfigureAwait(false);
 
-                if (cancellationToken.IsCancellationRequested) return null; // check cancellation after logs as this might be a long call
+                // check cancellation after logs as this might be a long call
+                cancellationToken.ThrowIfCancellationRequested();
 
                 //If we don't get any, lets retry in case there is an issue with the node.
                 if (logs == null && retryNullLogsRequestNumber < MaxGetLogsNullRetries)

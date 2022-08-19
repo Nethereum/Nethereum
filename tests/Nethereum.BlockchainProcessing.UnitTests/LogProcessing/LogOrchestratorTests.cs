@@ -83,34 +83,6 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
         }
 
         [Fact]
-        public async Task Should_Cancel_When_Cancellation_Occurs_During_Processing()
-        {
-            var fromBlock = new BigInteger(10);
-            var toBlock = new BigInteger(20);
-
-            var logsRetrieved = new List<FilterLog>();
-
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
-            _web3Mock.GetLogsMock
-                .Setup(s => s.SendRequestAsync(It.IsAny<NewFilterInput>(), null))
-                .Returns<NewFilterInput, object>((filter, id) =>
-                {
-                    var logs = new[] { new FilterLog() };
-                    logsRetrieved.AddRange(logs);
-
-                    cancellationTokenSource.Cancel();
-
-                    return Task.FromResult(logs);
-                });
-
-            var progress = await _logOrchestrator.ProcessAsync(fromBlock, toBlock, cancellationTokenSource.Token);
-
-            Assert.NotNull(progress);
-            Assert.Null(progress.Exception);
-        }
-
-        [Fact]
         public async Task When_Max_Log_Retrieval_RetryAttempt_Is_Exceeded_Returns_ProgressWithException()
         {
             var fromBlock = new BigInteger(10);
@@ -131,6 +103,41 @@ namespace Nethereum.BlockchainProcessing.UnitTests.LogProcessing
             Assert.Equal(retrievalException, progress.Exception);
             Assert.Equal(LogOrchestrator.MaxGetLogsRetries, retries);
             Assert.Empty(_logsHandled);
+        }
+
+        [Fact]
+        public async Task Should_Throw_OperationCanceledException_When_Cancellation()
+        {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            var progress = await _logOrchestrator.ProcessAsync(0, 0, cancellationTokenSource.Token);
+
+            Assert.NotNull(progress);
+            Assert.Null(progress.BlockNumberProcessTo);
+            Assert.NotNull(progress.Exception);
+            Assert.IsType<OperationCanceledException>(progress.Exception);
+        }
+
+        [Fact]
+        public async Task Should_Throw_OperationCanceledException_When_Cancellation_2()
+        {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+            _web3Mock.GetLogsMock
+                .Setup(s => s.SendRequestAsync(It.IsAny<NewFilterInput>(), null))
+                .Returns<NewFilterInput, object>((filter, id) =>
+                {
+                    cancellationTokenSource.Cancel();
+                    return Task.FromResult(new[] { new FilterLog() });
+                });
+
+            var progress = await _logOrchestrator.ProcessAsync(0, 0, cancellationTokenSource.Token);
+
+            Assert.NotNull(progress);
+            Assert.Null(progress.BlockNumberProcessTo);
+            Assert.NotNull(progress.Exception);
+            Assert.IsType<OperationCanceledException>(progress.Exception);
         }
     }
 }
