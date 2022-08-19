@@ -7,6 +7,7 @@ using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Accounts;
+using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 #if !LITE
 using Nethereum.Signer;
@@ -61,6 +62,7 @@ namespace Nethereum.Web3
         public INetApiService Net { get; private set; }
         public IPersonalApiService Personal { get; private set; }
         public IBlockchainProcessingService Processing { get; private set; }
+        public IDebugApiService Debug { get; private set; }
 
         public FeeSuggestionService FeeSuggestion { get; private set; }
 
@@ -110,6 +112,7 @@ namespace Nethereum.Web3
             Net = new NetApiService(Client);
             Personal = new PersonalApiService(Client);
             FeeSuggestion = new FeeSuggestionService(Client);
+            Debug = new DebugApiService(Client);
         }
 
         private void InitialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)

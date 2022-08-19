@@ -25,7 +25,7 @@ namespace Nethereum.Geth
 
         public IAdminApiService Admin { get; private set; }
 
-        public IDebugApiService Debug { get; private set; }
+        public IDebugApiService GethDebug { get; private set; }
 
         public IMinerApiService Miner { get; private set; }
 
@@ -37,7 +37,7 @@ namespace Nethereum.Geth
         {
             base.InitialiseInnerServices();
             Miner = new MinerApiService(Client);
-            Debug = new DebugApiService(Client);
+            GethDebug = new DebugApiService(Client);
             Admin = new AdminApiService(Client);
             GethEth = new GethEthApiService(Client);
             TxnPool = new TxnPoolApiService(Client);

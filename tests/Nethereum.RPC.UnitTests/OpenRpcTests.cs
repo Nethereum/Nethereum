@@ -200,11 +200,16 @@ namespace Nethereum.RPC.UnitTests
             list.Add(new ComplexTypeValidation { Name = "Transaction2930Unsigned", Type = typeof(TransactionInput) , IgnoredProperties = new[] { "input" }});
             list.Add(new ComplexTypeValidation { Name = "TransactionLegacyUnsigned", Type = typeof(TransactionInput), IgnoredProperties = new[] { "input" } });
             list.Add(new ComplexTypeValidation { Name = "TransactionUnsigned", Type = typeof(TransactionInput), Ignored = true, IgnoredProperties = new[] { "input" } });
+            list.Add(new ComplexTypeValidation { Name = "GenericTransaction", Type = typeof(TransactionInput), Ignored = true, IgnoredProperties = new[] { "input" } });
             list.Add(new ComplexTypeValidation { Name = "Transaction1559Signed", Type = typeof(Transaction), IgnoredProperties = new[] { "yParity" } }); //yParity is v
             list.Add(new ComplexTypeValidation { Name = "Transaction2930Signed", Type = typeof(Transaction), IgnoredProperties = new[] { "yParity" }}); //yParity is v
             list.Add(new ComplexTypeValidation { Name = "TransactionLegacySigned", Type = typeof(Transaction) });
             list.Add(new ComplexTypeValidation { Name = "TransactionInfo", Type = typeof(Transaction) });
             list.Add(new ComplexTypeValidation { Name = "TransactionSigned", Type = typeof(Transaction), Ignored = true });
+            list.Add(new ComplexTypeValidation { Name = "AccountProof", Type = typeof(AccountProof), Ignored = false });
+            list.Add(new ComplexTypeValidation { Name = "StorageProof", Type = typeof(StorageProof), Ignored = false });
+            list.Add(new ComplexTypeValidation { Name = "Access list result", Type = typeof(AccessListGasUsed), Ignored = true });
+            list.Add(new ComplexTypeValidation { Name = "BadBlock", Type = typeof(BadBlock), Ignored = false });
 
             return list;
 
@@ -223,6 +228,7 @@ namespace Nethereum.RPC.UnitTests
             mappings.Add("bytes256", typeof(string));
             mappings.Add("bytes65", typeof(string));
             mappings.Add("uint", typeof(HexBigInteger));
+            mappings.Add("uint64", typeof(HexBigInteger));
             mappings.Add("uint256", typeof(HexBigInteger));
             mappings.Add("hash32", typeof(string));
 

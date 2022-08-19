@@ -6,6 +6,8 @@ namespace Nethereum.RPC.Eth.DTOs
 {
     public class AccountProof
     {
+        [JsonProperty(PropertyName = "address")]
+        public string Address { get; set; }
         /// <summary>
         /// QUANTITY - the balance of the account. See eth_getBalance
         /// </summary>

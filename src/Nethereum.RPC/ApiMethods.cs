@@ -84,6 +84,14 @@
         personal_lockAccount,
         personal_sendTransaction,
         eth_getProof,
+        eth_createAccessList,
+        eth_maxPriorityFeePerGas,
+        debug_getRawTransaction,
+        debug_getBadBlocks,
+        debug_getRawBlock,
+        debug_getRawHeader,
+        debug_getRawReceipts,
+
 
         //wallet
         eth_requestAccounts,
@@ -94,6 +102,6 @@
         wallet_watchAsset,
         eth_signTypedData_v4,
         personal_sign
-
+        
     }
 }

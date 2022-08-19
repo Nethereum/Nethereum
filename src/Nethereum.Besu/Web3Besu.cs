@@ -27,7 +27,7 @@ namespace Nethereum.Besu
 
         public IAdminApiService Admin { get; private set; }
 
-        public IDebugApiService Debug { get; private set; }
+        public IDebugApiService DebugBesu { get; private set; }
 
         public IMinerApiService Miner { get; private set; }
 
@@ -46,7 +46,7 @@ namespace Nethereum.Besu
         {
             base.InitialiseInnerServices();
             Miner = new MinerApiService(Client);
-            Debug = new DebugApiService(Client);
+            DebugBesu = new DebugApiService(Client);
             Admin = new AdminApiService(Client);
             Clique = new CliqueApiService(Client);
             Ibft = new IbftApiService(Client);

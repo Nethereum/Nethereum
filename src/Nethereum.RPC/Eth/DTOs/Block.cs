@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using System.Collections;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
 namespace Nethereum.RPC.Eth.DTOs
 {
+
 
     public class Block
     {

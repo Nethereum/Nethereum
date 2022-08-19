@@ -2,6 +2,7 @@
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
+using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.Web3
@@ -15,5 +16,6 @@ namespace Nethereum.Web3
         IPersonalApiService Personal { get; }
         IShhApiService Shh { get; }
         ITransactionManager TransactionManager { get; set; }
+        IDebugApiService Debug { get; }
     }
 }
