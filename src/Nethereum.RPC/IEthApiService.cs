@@ -31,6 +31,7 @@ namespace Nethereum.RPC
         IEthFeeHistory FeeHistory { get; }
         IAccountSigningService AccountSigning { get; }
         IHostWalletService HostWallet { get; }
+        IEthGetProof GetProof { get; }
         
 #if !DOTNET35
             IEtherTransferService GetEtherTransferService();

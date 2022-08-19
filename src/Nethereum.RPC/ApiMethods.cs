@@ -83,6 +83,7 @@
         personal_unlockAccount,
         personal_lockAccount,
         personal_sendTransaction,
+        eth_getProof,
 
         //wallet
         eth_requestAccounts,
