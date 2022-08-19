@@ -23,10 +23,44 @@ namespace Nethereum.Contracts.UnitTests
             Assert.Equal("0xde9b09fd7c5f901e23a3f19fecc54828e9c848539801e86591bd9801b019f84f", ensUtil.GetNameHash("foo.eth"));
             //normalise ascii domain
             Assert.Equal("foo.eth", ensUtil.Normalise("foo.eth"));
-            //normalise international domain
-            //with crylic 'o' 
-            Assert.Equal("xn--f-1tba.eth", ensUtil.Normalise("fоо.eth"));
-
         }
+
+        [Fact]
+        public async void ShouldNormaliseAsciiDomain()
+        {
+            var input = "foo.eth"; // latin chars only
+            var expected = "foo.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+
+        [Fact]
+        public void ShouldNormaliseInternationalDomain()
+        {
+            var input = "fоо.eth"; // with cyrillic 'o'
+            var expected = "fоо.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+        [Fact]
+        public void ShouldNormaliseToLowerDomain()
+        {
+            var input = "Foo.eth";
+            var expected = "foo.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
+        [Fact]
+        public void ShouldNormaliseEmojiDomain()
+        {
+            var input = "🦚.eth";
+            var expected = "🦚.eth";
+            var output = new EnsUtil().Normalise(input);
+            Assert.Equal(expected, output);
+        }
+
     }
 }

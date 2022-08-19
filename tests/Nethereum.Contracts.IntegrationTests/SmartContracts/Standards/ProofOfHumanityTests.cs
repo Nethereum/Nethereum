@@ -40,7 +40,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var service = web3.Eth.ProofOfHumanity.GetContractService();
             var log = await service.GetLatestEvidenceLogAsync("0x1db3439a222c519ab44bb1144fc28167b4fa6ee6").ConfigureAwait(false);
             Assert.Equal("/ipfs/QmQ3zm9y76sPT5Qyaxfpbtmdp8LNNGPrg2CrNYqbzGFokk/registration.json", log.Event.Evidence);
-            var registrationEvidence = await service.GetRegistrationEvidenceFromIpfs(log.Event, "https://ipfs.infura.io/").ConfigureAwait(false);
+            var registrationEvidence = await service.GetRegistrationEvidenceFromIpfs(log.Event, "https://cf-ipfs.com/").ConfigureAwait(false);
             Assert.Equal("Vitalik Buterin", registrationEvidence.Name);
         }
 
