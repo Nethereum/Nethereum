@@ -46,6 +46,7 @@ namespace Nethereum.RPC
             AccountSigning = new AccountSigningService(client);
             HostWallet = new HostWalletService(client);
             GetProof = new EthGetProof(client);
+            CreateAccessList = new EthCreateAccessList(client);
 
             DefaultBlock = BlockParameter.CreateLatest();
             TransactionManager = transactionManager;
@@ -123,6 +124,8 @@ namespace Nethereum.RPC
 
         public IEthGetProof GetProof { get; private set; }
 
+        public IEthCreateAccessList CreateAccessList { get; private set; }
+
 #if !DOTNET35
         public virtual IEtherTransferService  GetEtherTransferService()
         {
@@ -149,6 +152,7 @@ namespace Nethereum.RPC
             GetCode.DefaultBlock = DefaultBlock;
             GetStorageAt.DefaultBlock = DefaultBlock;
             GetProof.DefaultBlock = DefaultBlock;
+            CreateAccessList.DefaultBlock = DefaultBlock;
             Transactions.SetDefaultBlock(_defaultBlock);
         }
     }

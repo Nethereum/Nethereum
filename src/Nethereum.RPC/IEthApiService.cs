@@ -32,9 +32,10 @@ namespace Nethereum.RPC
         IAccountSigningService AccountSigning { get; }
         IHostWalletService HostWallet { get; }
         IEthGetProof GetProof { get; }
-        
+        IEthCreateAccessList CreateAccessList { get; }
+
 #if !DOTNET35
-            IEtherTransferService GetEtherTransferService();
+        IEtherTransferService GetEtherTransferService();
 #endif
     }
 }
