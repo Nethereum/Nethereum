@@ -37,8 +37,12 @@ namespace Nethereum.BlockchainProcessing
                 var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
-                    fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
-                    await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
+                        await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    }
+                    //else will stop the loop and progress has been updated already on process
                 }
                 else
                 {
@@ -61,8 +65,12 @@ namespace Nethereum.BlockchainProcessing
                 var progress = await BlockchainProcessingOrchestrator.ProcessAsync(fromBlockNumber, blockToProcess, cancellationToken, _blockProgressRepository).ConfigureAwait(false);
                 if (!progress.HasErrored)
                 {
-                    fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
-                    await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
+                        await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    }
+                    //else will stop the loop and progress has been updated already on process
                 }
                 else
                 {
