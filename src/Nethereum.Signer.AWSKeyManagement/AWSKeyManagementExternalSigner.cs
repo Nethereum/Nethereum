@@ -26,6 +26,12 @@ namespace Nethereum.Signer.AWSKeyManagement
             KeyClient = new AmazonKeyManagementServiceClient(credentials);
         }
 
+        public AWSKeyManagementExternalSigner(string keyId, RegionEndpoint region)
+        {
+            KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
+            KeyClient = new AmazonKeyManagementServiceClient(region);
+        }
+
         protected override async Task<byte[]> GetPublicKeyAsync()
         {
             var request = new GetPublicKeyRequest()
