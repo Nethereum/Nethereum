@@ -173,7 +173,9 @@
 
     <Compile Remove="Nethereum.Signer.AzureKeyVault\**" />
 
-	<Compile Remove="Nethereum.UI\**" />
+	<Compile Remove="Nethereum.Signer.AWSKeyManagement\**" />
+	
+	  <Compile Remove="Nethereum.UI\**" />
 
 	<Compile Remove="Nethereum.Metamask\**" />
 
@@ -218,6 +220,7 @@
     
     <None Remove="Nethereum.GSN\**" />
     <None Remove="Nethereum.Signer.AzureKeyVault\**" />
+	<None Remove="Nethereum.Signer.AWSKeyManagement\**" />
     <None Remove="Nethereum.Signer.Ledger\**" />
     <None Remove="Nethereum.Signer.Trezor\**" />
     <None Remove="Nethereum.Unity\**" />
