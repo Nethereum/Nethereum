@@ -42,7 +42,12 @@ namespace Nethereum.BlockchainProcessing
                         fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
                         await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
                     }
-                    //else will stop the loop and progress has been updated already on process
+                    else
+                    {
+                        //updating as other implementations might not have updated internally
+                        await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    }
+                   
                 }
                 else
                 {
@@ -70,8 +75,12 @@ namespace Nethereum.BlockchainProcessing
                         fromBlockNumber = progress.BlockNumberProcessTo.Value + 1;
                         await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
                     }
-                    //else will stop the loop and progress has been updated already on process
-                }
+                    else
+                    {
+                        //updating as other implementations might not have updated internally
+                        await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
+                    }
+                    }
                 else
                 {
                     await UpdateLastBlockProcessedAsync(progress.BlockNumberProcessTo).ConfigureAwait(false);
