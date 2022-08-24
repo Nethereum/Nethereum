@@ -1,6 +1,4 @@
-﻿using Nethereum.Geth.RPC.Debug;
-using Nethereum.Geth;
-using Nethereum.JsonRpc.Client;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Infrastructure;
 
