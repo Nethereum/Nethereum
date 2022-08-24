@@ -79,6 +79,10 @@ cd Nethereum.Signer.AzureKeyVault
 CALL :restorepack
 cd ..
 
+cd Nethereum.Signer.AWSKeyManagement
+CALL :restorepack
+cd ..
+
 cd Nethereum.Signer.Ledger
 CALL :restorepack
 cd ..
