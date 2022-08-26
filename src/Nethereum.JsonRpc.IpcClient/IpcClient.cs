@@ -58,7 +58,7 @@ namespace Nethereum.JsonRpc.IpcClient
             }
             else
             {
-                return bytesRead;
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ForceCompleteReadTotalMiliseconds} milliseconds");
             }
         }
 
@@ -94,12 +94,19 @@ namespace Nethereum.JsonRpc.IpcClient
             {
                 lock (_lockingObject)
                 {
+                    var client = GetPipeClient();
                     var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                     var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
                     logger.LogRequest(rpcRequestJson);
-                    GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
 
-                    using (var memoryData = ReceiveFullResponse(GetPipeClient()))
+                    if (!Task.Run(async () =>
+                            client.Write(requestBytes, 0, requestBytes.Length)
+                        ).Wait(ForceCompleteReadTotalMiliseconds))
+                    {
+                        throw new RpcClientTimeoutException($"Rpc timeout afer {ForceCompleteReadTotalMiliseconds} milliseconds");
+                    }
+
+                    using (var memoryData = ReceiveFullResponse(client))
                     {
                         memoryData.Position = 0;
                         using (StreamReader streamReader = new StreamReader(memoryData))
