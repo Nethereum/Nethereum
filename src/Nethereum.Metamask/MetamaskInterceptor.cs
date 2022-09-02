@@ -31,6 +31,15 @@ namespace Nethereum.Metamask
                     request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             } 
+            else if (request.Method == "eth_estimateGas") 
+            {
+                var callinput = (CallInput)request.RawParameters[0];
+                callinput.From ??= _metamaskHostProvider.SelectedAccount;
+                request.RawParameters[0] = callinput;
+                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                    request.RawParameters)).ConfigureAwait(false);
+                return ConvertResponse<T>(response);
+            } 
             else if ( request.Method == "eth_signTypedData_v4" )
             {
                 var account = GetSelectedAccount();
