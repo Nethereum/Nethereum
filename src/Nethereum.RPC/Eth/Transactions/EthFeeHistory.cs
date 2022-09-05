@@ -34,11 +34,25 @@ namespace Nethereum.RPC.Eth.Transactions
             
             if (!UseBlockCountAsNumber)
             {
-                return base.SendRequestAsync(id, blockCount, highestBlockNumber, rewardPercentiles);
+                if (rewardPercentiles != null)
+                {
+                    return base.SendRequestAsync(id, blockCount, highestBlockNumber, rewardPercentiles);
+                }
+                else
+                {
+                    return base.SendRequestAsync(id, blockCount, highestBlockNumber);
+                }
             }
             else
             {
-                return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+                if (rewardPercentiles != null)
+                {
+                    return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+                }
+                else
+                {
+                    return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber);
+                }
             }
         }
 
@@ -77,11 +91,25 @@ namespace Nethereum.RPC.Eth.Transactions
 
             if (!UseBlockCountAsNumber)
             {
-                return base.BuildRequest(id, blockCount, highestBlockNumber, rewardPercentiles);
+                if (rewardPercentiles != null)
+                {
+                    return base.BuildRequest(id, blockCount, highestBlockNumber, rewardPercentiles);
+                }
+                else
+                {
+                    return base.BuildRequest(id, blockCount, highestBlockNumber);
+                }
             }
             else
             {
-                return base.BuildRequest(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+                if (rewardPercentiles != null)
+                {
+                    return base.BuildRequest(id, blockCount.Value, highestBlockNumber, rewardPercentiles);
+                }
+                else
+                {
+                    return base.BuildRequest(id, blockCount.Value, highestBlockNumber);
+                }
             }
            
         }
