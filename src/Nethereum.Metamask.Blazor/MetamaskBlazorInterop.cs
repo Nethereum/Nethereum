@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
@@ -71,9 +72,10 @@ namespace Nethereum.Metamask.Blazor
         }
 
         [JSInvokable()]
-        public static async Task SelectedNetworkChanged(long chainId)
+        public static async Task SelectedNetworkChanged(string chainId)
         {
-            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync(chainId).ConfigureAwait(false);
+            
+            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).ConfigureAwait(false);
         }
 
         private T ConvertResponse<T>(string jsonResponseMessage)
