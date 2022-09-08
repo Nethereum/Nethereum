@@ -40,7 +40,7 @@ namespace Nethereum.RPC.Eth.Transactions
                 }
                 else
                 {
-                    return base.SendRequestAsync(id, blockCount, highestBlockNumber);
+                    return base.SendRequestAsync(id, blockCount, highestBlockNumber, new double[] { });
                 }
             }
             else
@@ -51,7 +51,7 @@ namespace Nethereum.RPC.Eth.Transactions
                 }
                 else
                 {
-                    return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber);
+                    return base.SendRequestAsync(id, blockCount.Value, highestBlockNumber, new double[] { });
                 }
             }
         }
@@ -97,7 +97,7 @@ namespace Nethereum.RPC.Eth.Transactions
                 }
                 else
                 {
-                    return base.BuildRequest(id, blockCount, highestBlockNumber);
+                    return base.BuildRequest(id, blockCount, highestBlockNumber, new double[] { });
                 }
             }
             else
@@ -108,7 +108,7 @@ namespace Nethereum.RPC.Eth.Transactions
                 }
                 else
                 {
-                    return base.BuildRequest(id, blockCount.Value, highestBlockNumber);
+                    return base.BuildRequest(id, blockCount.Value, highestBlockNumber, new double[] { });
                 }
             }
            
