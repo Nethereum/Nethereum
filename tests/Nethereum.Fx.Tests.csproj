@@ -10,14 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ILogger.Moq" Version="1.1.10" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="Microsoft.TestPlatform.TestHost" Version="17.2.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="Common.Logging" Version="3.4.1" />
-    <PackageReference Include="Moq" Version="4.10.0" />
     <PackageReference Include="IPLD.ContentIdentifier" Version="1.1.1" />
     <PackageReference Include="Multiformats.Codec" Version="1.1.2" />
     <PackageReference Include="Multiformats.Hash" Version="1.5.0" />

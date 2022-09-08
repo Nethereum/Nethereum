@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
@@ -20,7 +24,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessorForContract<TEventDTO>(
             string contractAddress,
@@ -28,7 +32,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
             string[] contractAddresses,
@@ -36,14 +40,14 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessor<TEventDTO>(
             Func<EventLog<TEventDTO>, Task> action,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessorForContract<TEventDTO>(
             string contractAddress,
@@ -51,7 +55,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
             string[] contractAddresses,
@@ -59,14 +63,14 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new();
+            ILogger log = null) where TEventDTO : class, new();
 
         BlockchainProcessor CreateProcessorForContracts<TEventDTO>(
             ProcessorHandler<FilterLog> logProcessor,
             string[] contractAddresses,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class;
+            ILogger log = null) where TEventDTO : class;
 
         BlockchainProcessor CreateProcessorForContract(
 
@@ -75,7 +79,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainProcessor CreateProcessorForContracts(
 
@@ -84,7 +88,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainProcessor CreateProcessor(
 
@@ -93,7 +97,7 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, bool> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainProcessor CreateProcessor(
 
@@ -102,7 +106,7 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, Task<bool>> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainProcessor CreateProcessor(
 
@@ -110,7 +114,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainProcessor CreateProcessor(
 
@@ -118,7 +122,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0);
+            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0);
 
         Task<List<EventLog<TEventDTO>>> GetAllEvents<TEventDTO>(NewFilterInput filterInput,
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,

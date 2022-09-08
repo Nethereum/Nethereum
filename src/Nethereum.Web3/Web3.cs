@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Net.Http.Headers;
-using Common.Logging;
+
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.BlockchainProcessing.Services;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
@@ -34,14 +39,14 @@ namespace Nethereum.Web3
             TransactionManager.Client = Client;
         }
 
-        public Web3(string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null)
+        public Web3(string url = @"http://localhost:8545/", ILogger log = null, AuthenticationHeaderValue authenticationHeader = null)
         {
             InitialiseDefaultRpcClient(url, log, authenticationHeader);
             InitialiseInnerServices();
             InitialiseDefaultGasAndGasPrice();
         }
 
-        public Web3(IAccount account, string url = @"http://localhost:8545/", ILog log = null, AuthenticationHeaderValue authenticationHeader = null) : this(url, log, authenticationHeader)
+        public Web3(IAccount account, string url = @"http://localhost:8545/", ILogger log = null, AuthenticationHeaderValue authenticationHeader = null) : this(url, log, authenticationHeader)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
@@ -115,7 +120,7 @@ namespace Nethereum.Web3
             Debug = new DebugApiService(Client);
         }
 
-        private void InitialiseDefaultRpcClient(string url, ILog log, AuthenticationHeaderValue authenticationHeader)
+        private void InitialiseDefaultRpcClient(string url, ILogger log, AuthenticationHeaderValue authenticationHeader)
         {
             Client = new RpcClient(new Uri(url), authenticationHeader, null, null, log);
         }

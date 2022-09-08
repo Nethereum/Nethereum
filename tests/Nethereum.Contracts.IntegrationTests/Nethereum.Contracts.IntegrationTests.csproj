@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Contracts.IntegrationTests </Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp3.1;netcoreapp2.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,16 +21,16 @@
   </ItemGroup>
 
   <ItemGroup>
+	  <PackageReference Include="ILogger.Moq" Version="1.1.10" />
 	  <PackageReference Include="IPLD.ContentIdentifier" Version="1.1.1" />
 	  <PackageReference Include="Multiformats.Codec" Version="1.1.2" />
 	  <PackageReference Include="Multiformats.Hash" Version="1.5.0" />
-	  <PackageReference Include="Common.Logging" Version="3.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>

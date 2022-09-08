@@ -1,5 +1,9 @@
 ﻿#if !NET35
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.Hex.HexTypes;
 using Nethereum.Util;
 using System.Numerics;
@@ -14,13 +18,13 @@ namespace Nethereum.RPC.Eth.Blocks
         private readonly IEthBlockNumber _ethBlockNumber;
         private readonly IWaitStrategy _waitStrategy;
         private readonly uint _minimumBlockConfirmations;
-        private readonly ILog _log;
+        private readonly ILogger _log;
         public const uint DEFAULT_BLOCK_CONFIRMATIONS = 12;
 
         public LastConfirmedBlockNumberService(
             IEthBlockNumber ethBlockNumber,
             uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
-            ILog log = null,
+            ILogger log = null,
             IWaitStrategy waitStrategy = null
             ) : this(
                 ethBlockNumber, 
@@ -35,7 +39,7 @@ namespace Nethereum.RPC.Eth.Blocks
             IEthBlockNumber ethBlockNumber,
             IWaitStrategy waitStrategy,
             uint minimumBlockConfirmations = DEFAULT_BLOCK_CONFIRMATIONS,
-            ILog log = null
+            ILogger log = null
             )
         {
             _ethBlockNumber = ethBlockNumber;
@@ -81,7 +85,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         private void LogWaitingForBlockAvailability(BigInteger currentBlock, uint minimumBlockConfirmations, BigInteger? maxBlockOnChain, uint attempt)
         {
-            if (_log != null) _log.Info($"Waiting for current block ({currentBlock}) to be more than {minimumBlockConfirmations} confirmations behind the max block on the chain ({maxBlockOnChain}). Attempt: {attempt}.");
+            if (_log != null) _log.LogInformation($"Waiting for current block ({currentBlock}) to be more than {minimumBlockConfirmations} confirmations behind the max block on the chain ({maxBlockOnChain}). Attempt: {attempt}.");
         }
 
     }

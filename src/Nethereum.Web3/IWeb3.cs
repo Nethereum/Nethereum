@@ -17,5 +17,6 @@ namespace Nethereum.Web3
         IShhApiService Shh { get; }
         ITransactionManager TransactionManager { get; set; }
         IDebugApiService Debug { get; }
+        FeeSuggestionService FeeSuggestion { get; }
     }
 }

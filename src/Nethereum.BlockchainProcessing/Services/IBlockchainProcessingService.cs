@@ -1,5 +1,9 @@
 using System;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
@@ -19,26 +23,26 @@ namespace Nethereum.BlockchainProcessing.Services
         BlockchainCrawlingProcessor CreateBlockProcessor(
             Action<BlockProcessingSteps> stepsConfiguration,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainCrawlingProcessor CreateBlockProcessor(
             IBlockProgressRepository blockProgressRepository,
             Action<BlockProcessingSteps> stepsConfiguration,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
-            ILog log = null);
+            ILogger log = null);
 
 
         BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
-            ILog log = null);
+            ILogger log = null);
 
         BlockchainCrawlingProcessor CreateBlockStorageProcessor(
             IBlockchainStoreRepositoryFactory blockchainStorageFactory,
             IBlockProgressRepository blockProgressRepository,
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             Action<BlockProcessingSteps> configureSteps = null,
-            ILog log = null);
+            ILogger log = null);
     }
 }

@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.BlockchainProcessing.LogProcessing;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
@@ -146,7 +150,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(), blockProgressRepository, log);
 
@@ -157,7 +161,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[]
             {
                 new EventLogProcessorHandler<TEventDTO>(action, criteria)
@@ -175,7 +179,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(contractAddresses), blockProgressRepository, log);
 
@@ -184,7 +188,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(), blockProgressRepository, log);
 
@@ -195,7 +199,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(new[] {contractAddress}), blockProgressRepository, log);
 
@@ -205,7 +209,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<EventLog<TEventDTO>, Task<bool>> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class, new() =>
+            ILogger log = null) where TEventDTO : class, new() =>
             CreateProcessor(new[] {new EventLogProcessorHandler<TEventDTO>(action, criteria)}, minimumBlockConfirmations,
                 new FilterInputBuilder<TEventDTO>().Build(contractAddresses), blockProgressRepository, log);
 
@@ -214,7 +218,7 @@ namespace Nethereum.BlockchainProcessing.Services
             string[] contractAddresses,
             uint minimumBlockConfirmations,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) where TEventDTO : class =>
+            ILogger log = null) where TEventDTO : class =>
             CreateProcessor(new[] {logProcessor}, minimumBlockConfirmations, new FilterInputBuilder<TEventDTO>().Build(contractAddresses),
                 blockProgressRepository, log);
 
@@ -225,7 +229,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
+            ILogger log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
             new NewFilterInput {Address = new[] {contractAddress}}, blockProgressRepository, log);
 
         public BlockchainProcessor CreateProcessorForContracts(
@@ -235,7 +239,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             Func<FilterLog, bool> criteria = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
+            ILogger log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations,
             new NewFilterInput {Address = contractAddresses}, blockProgressRepository, log);
 
 
@@ -247,7 +251,7 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, bool> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
+            ILogger log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
             blockProgressRepository, log);
 
         //async action and criteria
@@ -258,7 +262,7 @@ namespace Nethereum.BlockchainProcessing.Services
             Func<FilterLog, Task<bool>> criteria = null,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
+            ILogger log = null) => CreateProcessor(new[] {new ProcessorHandler<FilterLog>(action, criteria)}, minimumBlockConfirmations, filter,
             blockProgressRepository, log);
 
         //single processor
@@ -268,7 +272,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null) => CreateProcessor(new[] {logProcessor}, minimumBlockConfirmations, filter, blockProgressRepository, log);
+            ILogger log = null) => CreateProcessor(new[] {logProcessor}, minimumBlockConfirmations, filter, blockProgressRepository, log);
 
         //multi processor
         public BlockchainProcessor CreateProcessor(
@@ -277,7 +281,7 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILog log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
             var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight);
 

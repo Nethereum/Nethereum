@@ -6,6 +6,8 @@ using System.Text;
 using System.IO;
 using Nethereum.JsonRpc.Client.RpcMessages;
 
+
+
 namespace Nethereum.JsonRpc.IpcClient
 {
     public abstract class IpcClientBase : ClientBase, IDisposable

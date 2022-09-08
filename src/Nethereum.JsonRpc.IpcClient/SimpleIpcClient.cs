@@ -6,7 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
@@ -17,11 +19,11 @@ namespace Nethereum.JsonRpc.IpcClient
     /// </summary>
     public class SimpleIpcClient : ClientBase
     {
-        private readonly ILog _log;
+        private readonly ILogger _log;
         protected readonly string IpcPath;
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
-        public SimpleIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null)
+        public SimpleIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILogger log = null)
         {
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();

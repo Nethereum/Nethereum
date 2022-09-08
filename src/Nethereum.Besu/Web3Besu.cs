@@ -1,5 +1,7 @@
 ﻿using System.Net.Http.Headers;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 
@@ -11,7 +13,7 @@ namespace Nethereum.Besu
         {
         }
 
-        public Web3Besu(string url = @"http://localhost:8545/", ILog log = null,
+        public Web3Besu(string url = @"http://localhost:8545/", ILogger log = null,
             AuthenticationHeaderValue authenticationHeader = null) : base(url, log, authenticationHeader)
         {
         }
@@ -20,7 +22,7 @@ namespace Nethereum.Besu
         {
         }
 
-        public Web3Besu(IAccount account, string url = @"http://localhost:8545/", ILog log = null,
+        public Web3Besu(IAccount account, string url = @"http://localhost:8545/", ILogger log = null,
             AuthenticationHeaderValue authenticationHeader = null) : base(account, url, log, authenticationHeader)
         {
         }

@@ -1,4 +1,5 @@
-﻿using Common.Logging;
+﻿
+using Microsoft.Extensions.Logging;
 using Moq;
 using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
@@ -11,7 +12,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
         protected readonly Mock<IBlockchainProcessingOrchestrator> _orchestratorMock;
         protected readonly Mock<IBlockProgressRepository> _progressRepoMock;
         protected readonly Mock<ILastConfirmedBlockNumberService> _lastConfirmedBlockNumberMock;
-        protected readonly Mock<ILog> _logMock;
+        protected readonly Mock<ILogger> _logMock;
         protected readonly BlockchainProcessor _blockchainProcessor;
 
         public BlockchainProcessorTestBase()
@@ -19,7 +20,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.Services
             _orchestratorMock = new Mock<IBlockchainProcessingOrchestrator>();
             _progressRepoMock = new Mock<IBlockProgressRepository>();
             _lastConfirmedBlockNumberMock = new Mock<ILastConfirmedBlockNumberService>();
-            _logMock = new Mock<ILog>();
+            _logMock = new Mock<ILogger>();
             _blockchainProcessor = new BlockchainProcessor(
                 _orchestratorMock.Object, 
                 _progressRepoMock.Object, 

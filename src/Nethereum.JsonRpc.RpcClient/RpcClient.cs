@@ -5,8 +5,11 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
 
 namespace Nethereum.JsonRpc.Client
@@ -18,7 +21,7 @@ namespace Nethereum.JsonRpc.Client
         private readonly AuthenticationHeaderValue _authHeaderValue;
         private readonly Uri _baseUrl;
         private readonly HttpClientHandler _httpClientHandler;
-        private readonly ILog _log;
+        private readonly ILogger _log;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private volatile bool _firstHttpClient;
         private HttpClient _httpClient;
@@ -28,7 +31,7 @@ namespace Nethereum.JsonRpc.Client
         private readonly object _lockObject = new object();
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
-            JsonSerializerSettings jsonSerializerSettings = null, HttpClientHandler httpClientHandler = null, ILog log = null)
+            JsonSerializerSettings jsonSerializerSettings = null, HttpClientHandler httpClientHandler = null, ILogger log = null)
         {
             _baseUrl = baseUrl;
 
@@ -82,7 +85,7 @@ namespace Nethereum.JsonRpc.Client
         }
 
         public RpcClient(Uri baseUrl, HttpClient httpClient, AuthenticationHeaderValue authHeaderValue = null,
-           JsonSerializerSettings jsonSerializerSettings = null, ILog log = null)
+           JsonSerializerSettings jsonSerializerSettings = null, ILogger log = null)
         {
             _baseUrl = baseUrl;
 

@@ -10,12 +10,6 @@
     <PackageTags>Json;RPC</PackageTags>
   </PropertyGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net35'">
-	  <PackageReference Include="Common.Logging.Core">
-		<Version>3.4.1</Version>
-	  </PackageReference>
-	</ItemGroup>
-
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
@@ -23,6 +17,10 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+  </ItemGroup>
+		
 
 
 </Project>

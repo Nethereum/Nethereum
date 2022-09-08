@@ -5,23 +5,28 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
-using Common.Logging;
 using Nethereum.JsonRpc.Client.RpcMessages;
+
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 
 namespace Nethereum.JsonRpc.IpcClient
 {
     public class IpcClient : IpcClientBase
     {
         private readonly object _lockingObject = new object();
-        private readonly ILog _log;
+        private readonly ILogger _log;
+
 
         private NamedPipeClientStream _pipeClient;
-      
 
-        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : base(ipcPath, jsonSerializerSettings)
+
+        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILogger log = null) : base(ipcPath, jsonSerializerSettings)
         {
             _log = log;
         }
+
 
         private NamedPipeClientStream GetPipeClient()
         {

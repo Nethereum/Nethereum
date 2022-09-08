@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<Description>Nethereum.ABI.UnitTests Class Library</Description>
 		<Authors>Juan Blanco</Authors>
-		<TargetFrameworks>net5.0;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
+		<TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
 		<AssemblyName>Nethereum.ABI.UnitTests</AssemblyName>
 		<PackageId>Nethereum.ABI.UnitTests</PackageId>
 	</PropertyGroup>

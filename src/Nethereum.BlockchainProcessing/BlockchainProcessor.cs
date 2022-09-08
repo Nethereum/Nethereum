@@ -1,7 +1,11 @@
 ﻿using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.RPC.Eth.Blocks;
@@ -13,9 +17,9 @@ namespace Nethereum.BlockchainProcessing
         protected IBlockchainProcessingOrchestrator BlockchainProcessingOrchestrator { get; set; }
         private IBlockProgressRepository _blockProgressRepository;
         private ILastConfirmedBlockNumberService _lastConfirmedBlockNumberService;
-        private ILog _log;
+        private ILogger _log;
 
-        public BlockchainProcessor(IBlockchainProcessingOrchestrator blockchainProcessingOrchestrator, IBlockProgressRepository blockProgressRepository, ILastConfirmedBlockNumberService lastConfirmedBlockNumberService,  ILog log = null)
+        public BlockchainProcessor(IBlockchainProcessingOrchestrator blockchainProcessingOrchestrator, IBlockProgressRepository blockProgressRepository, ILastConfirmedBlockNumberService lastConfirmedBlockNumberService,  ILogger log = null)
         {
             BlockchainProcessingOrchestrator = blockchainProcessingOrchestrator;
             _blockProgressRepository = blockProgressRepository;
@@ -117,11 +121,11 @@ namespace Nethereum.BlockchainProcessing
             if (lastBlock != null)
             {
                 await _blockProgressRepository.UpsertProgressAsync(lastBlock.Value).ConfigureAwait(false);
-                _log?.Info($"Last Block Processed: {lastBlock}");
+                _log?.LogInformation($"Last Block Processed: {lastBlock}");
             }
             else
             {
-                _log?.Info($"No Block Processed");
+                _log?.LogInformation($"No Block Processed");
             }
         }
     }

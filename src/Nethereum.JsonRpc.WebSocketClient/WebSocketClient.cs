@@ -1,4 +1,4 @@
-﻿using Common.Logging;
+﻿
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
@@ -9,6 +9,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 
 namespace Nethereum.JsonRpc.WebSocketClient
 {
@@ -34,12 +37,12 @@ namespace Nethereum.JsonRpc.WebSocketClient
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
         private readonly object _lockingObject = new object();
-        private readonly ILog _log;
+        private readonly ILogger _log;
 
         private ClientWebSocket _clientWebSocket;
 
 
-        public WebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : this(path, jsonSerializerSettings)
+        public WebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null, ILogger log = null) : this(path, jsonSerializerSettings)
         {
             _log = log;
         }

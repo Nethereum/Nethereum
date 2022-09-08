@@ -17,7 +17,10 @@
   <PropertyGroup>
     <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
-
+	
+<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+</ItemGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);LITE;BYTECODELITE</DefineConstants>
   </PropertyGroup>

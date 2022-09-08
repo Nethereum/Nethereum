@@ -1,7 +1,8 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
-using Common.Logging;
-using Common.Logging.Simple;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
@@ -133,35 +134,30 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task MinInt256()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
-            
-            var web3 = GetWeb3();
+            var loggerMock = new Mock<ILogger<RpcClient>>();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
             var result = await contractHandler.QueryAsync<MinInt256Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(result, BigInteger.Parse("-57896044618658097711785492504343953926634992332820282019728792003956564819968"));
-            Assert.Equal("RPC Response: 0x8000000000000000000000000000000000000000000000000000000000000000", 
-                capturingLoggerAdapter.LastEvent.MessageObject.ToString());
+            loggerMock.VerifyLog(logger => logger.LogTrace("*RPC Response: 0x8000000000000000000000000000000000000000000000000000000000000000*"));
         }
 
         [Fact]
         public async Task MaxInt256()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
+            var loggerMock = new Mock<ILogger<RpcClient>>();
 
-            
-            var web3 = GetWeb3();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
 
             var result = await contractHandler.QueryAsync<MaxInt256Function, BigInteger>().ConfigureAwait(false);
             Assert.Equal(result, BigInteger.Parse("57896044618658097711785492504343953926634992332820282019728792003956564819967"));
-            Assert.Equal("RPC Response: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                capturingLoggerAdapter.LastEvent.MessageObject.ToString());
+            loggerMock.VerifyLog(logger => logger.LogTrace("*RPC Response: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff*"));
+
         }
 
         //This test forces an overflow to test the encoding of the values for different values on the limits.
@@ -174,10 +170,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task OverflowInt256TestingEncoding()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
+            var loggerMock = new Mock<ILogger<RpcClient>>();
 
-            var web3 = GetWeb3();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
@@ -197,8 +192,8 @@ namespace Nethereum.Accounts.IntegrationTests
                         }
                     ).ConfigureAwait(false);
 
-                    Assert.Equal("RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                        capturingLoggerAdapter.LastEvent.MessageObject.ToString());
+                    loggerMock.Invocations.Last().Arguments.Contains("*RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff*");
+
 
                     Assert.Equal(-1, result);
                 }
@@ -209,10 +204,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task OverflowUInt256TestingEncoding()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
+            var loggerMock = new Mock<ILogger<RpcClient>>();
 
-            var web3 = GetWeb3();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
@@ -231,9 +225,8 @@ namespace Nethereum.Accounts.IntegrationTests
                             Value = IntType.MAX_UINT256_VALUE - testAmount
                         }
                     ).ConfigureAwait(false);
+                    loggerMock.Invocations.Last().Arguments.Contains("*RPC Response: 0x0000000000000000000000000000000000000000000000000000000000000000*");
 
-                    Assert.Equal("RPC Response: 0x0000000000000000000000000000000000000000000000000000000000000000",
-                        capturingLoggerAdapter.LastEvent.MessageObject.ToString());
 
                     Assert.Equal(0, result);
                 }
@@ -253,10 +246,9 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task UnderflowInt256TestingEncoding()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
+            var loggerMock = new Mock<ILogger<RpcClient>>();
 
-            var web3 = GetWeb3();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
 
@@ -274,10 +266,8 @@ namespace Nethereum.Accounts.IntegrationTests
                             Value = IntType.MIN_INT256_VALUE + testAmount
                         }
                     ).ConfigureAwait(false);
-
-                    Assert.Equal("RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                        capturingLoggerAdapter.LastEvent.MessageObject.ToString());
-
+                    loggerMock.Invocations.Last().Arguments.Contains("*RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff*");
+                   
                     Assert.Equal(-1, result);
                 }
             }
@@ -286,25 +276,22 @@ namespace Nethereum.Accounts.IntegrationTests
         [Fact]
         public async Task UMaxInt256()
         {
-            var capturingLoggerAdapter = new CapturingLoggerFactoryAdapter();
-            LogManager.Adapter = capturingLoggerAdapter;
+            var loggerMock = new Mock<ILogger<RpcClient>>();
 
-            var web3 = GetWeb3();
+            var web3 = GetWeb3(loggerMock.Object);
             var deploymentReceipt = await web3.Eth.GetContractDeploymentHandler<TestDeployment>()
                 .SendRequestAndWaitForReceiptAsync().ConfigureAwait(false);
             var contractHandler = web3.Eth.GetContractHandler(deploymentReceipt.ContractAddress);
             var result = await contractHandler.QueryAsync<MaxFunction, BigInteger>().ConfigureAwait(false);
-            
-            Assert.Equal("RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                capturingLoggerAdapter.LastEvent.MessageObject.ToString());
+            loggerMock.VerifyLog(logger => logger.LogTrace("*RPC Response: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff*"));
             
             Assert.Equal(result, BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935"));
         }
 
-        public Web3.Web3 GetWeb3()
+        public Web3.Web3 GetWeb3(ILogger logger)
         {
-            var web3 = new Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
-                _ethereumClientIntegrationFixture.GetHttpUrl(), LogManager.GetLogger<ILog>());
+            var web3 = new Nethereum.Web3.Web3(_ethereumClientIntegrationFixture.GetWeb3().TransactionManager.Account,
+                _ethereumClientIntegrationFixture.GetHttpUrl(), logger);
             return web3;
         }
        
