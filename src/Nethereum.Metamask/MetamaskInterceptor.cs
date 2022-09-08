@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Nethereum.Metamask
 {
@@ -22,7 +22,7 @@ namespace Nethereum.Metamask
             Func<RpcRequest, string, Task<T>> interceptedSendRequestAsync, RpcRequest request,
             string route = null)
         {
-            if (request.Method == "eth_sendTransaction")
+            if (request.Method == ApiMethods.eth_sendTransaction.ToString())
             {
                 var transaction = (TransactionInput)request.RawParameters[0];
                 transaction.From = _metamaskHostProvider.SelectedAccount;
@@ -31,16 +31,20 @@ namespace Nethereum.Metamask
                     request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             } 
-            else if (request.Method == "eth_estimateGas") 
+            else if (request.Method == ApiMethods.eth_estimateGas.ToString() || request.Method == ApiMethods.eth_call.ToString()) 
             {
                 var callinput = (CallInput)request.RawParameters[0];
-                callinput.From ??= _metamaskHostProvider.SelectedAccount;
-                request.RawParameters[0] = callinput;
-                var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                if (callinput.From == null)
+                {
+                    callinput.From ??= _metamaskHostProvider.SelectedAccount;
+                    request.RawParameters[0] = callinput;
+                }
+                var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(request.Id,
+                    request.Method,
                     request.RawParameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             } 
-            else if ( request.Method == "eth_signTypedData_v4" )
+            else if ( request.Method == ApiMethods.eth_signTypedData_v4.ToString() )
             {
                 var account = GetSelectedAccount();
                 var parameters = new object[] { account, request.RawParameters[0] };
@@ -48,7 +52,7 @@ namespace Nethereum.Metamask
                    parameters)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
-            else if (request.Method == "personal_sign")
+            else if (request.Method == ApiMethods.personal_sign.ToString())
             {
                 var account = GetSelectedAccount();
                 var parameters = new object[] { request.RawParameters[0], account};
@@ -70,7 +74,7 @@ namespace Nethereum.Metamask
             Func<string, string, object[], Task<T>> interceptedSendRequestAsync, string method,
             string route = null, params object[] paramList)
         {
-            if (method == "eth_sendTransaction")
+            if (method == ApiMethods.eth_sendTransaction.ToString())
             {
                 var transaction = (TransactionInput)paramList[0];
                 transaction.From = GetSelectedAccount();
@@ -79,7 +83,19 @@ namespace Nethereum.Metamask
                     paramList)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
-            else if (method == "eth_signTypedData_v4" || method == "eth_personalSign")
+            else if (method == ApiMethods.eth_estimateGas.ToString() || method == ApiMethods.eth_call.ToString())
+            {
+                var callinput = (CallInput)paramList[0];
+                if (callinput.From == null)
+                {
+                    callinput.From ??= _metamaskHostProvider.SelectedAccount;
+                    paramList[0] = callinput;
+                }
+                var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(route, method,
+                     paramList)).ConfigureAwait(false);
+                return ConvertResponse<T>(response);
+            }
+            else if (method == ApiMethods.eth_signTypedData_v4.ToString() || method == ApiMethods.personal_sign.ToString())
             {
                 var account = GetSelectedAccount();
                 var parameters = new object[] { account, paramList[0] };
@@ -89,7 +105,7 @@ namespace Nethereum.Metamask
             }
             else
             {
-                var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(route, GetSelectedAccount(), method,
+                var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(route, method,
                     paramList)).ConfigureAwait(false);
                 return ConvertResponse<T>(response);
             }
