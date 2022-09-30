@@ -8,7 +8,7 @@ namespace Nethereum.Unity.Rpc
 {
     public class EthTransferUnityRequest : UnityRequest<string>
     {
-        private readonly TransactionSignedUnityRequest _transactionSignedUnityRequest;
+        private readonly ITransactionUnityRequest _transactionSignedUnityRequest;
         public bool UseLegacyAsDefault
         {
             get => _transactionSignedUnityRequest.UseLegacyAsDefault;
@@ -23,6 +23,10 @@ namespace Nethereum.Unity.Rpc
         public EthTransferUnityRequest(string privateKey, BigInteger chainId, IUnityRpcRequestClientFactory unityRpcClientFactory)
         {
             _transactionSignedUnityRequest = new TransactionSignedUnityRequest(privateKey, chainId, unityRpcClientFactory);
+        }
+        public EthTransferUnityRequest(ITransactionUnityRequest transactionUnityRequest)
+        {
+            _transactionSignedUnityRequest = transactionUnityRequest;
         }
 
 
