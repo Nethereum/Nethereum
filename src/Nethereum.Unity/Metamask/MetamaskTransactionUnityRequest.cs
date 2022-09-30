@@ -18,7 +18,7 @@ namespace Nethereum.Unity.Metamask
         private readonly string _account;
         private readonly IUnityRpcRequestClientFactory unityRpcRequestClientFactory;
         public bool EstimateGas { get; set; } = true;
-
+        public bool UseLegacyAsDefault { get; set; }
 
         public MetamaskTransactionUnityRequest(string account, IUnityRpcRequestClientFactory unityRpcRequestClientFactory)
         {
@@ -29,7 +29,7 @@ namespace Nethereum.Unity.Metamask
             this.unityRpcRequestClientFactory = unityRpcRequestClientFactory;
         }
 
-        public IEnumerator SendTransaction(TransactionInput transactionInput)
+        public IEnumerator SignAndSendTransaction(TransactionInput transactionInput)
         {
             if (transactionInput == null) throw new ArgumentNullException("transactionInput");
 
@@ -81,13 +81,13 @@ namespace Nethereum.Unity.Metamask
         public IEnumerator SignAndSendDeploymentContractTransaction<TDeploymentMessage>(TDeploymentMessage deploymentMessage) where TDeploymentMessage : ContractDeploymentMessage
         {
             var transactionInput = deploymentMessage.CreateTransactionInput();
-            yield return SendTransaction(transactionInput);
+            yield return SignAndSendTransaction(transactionInput);
         }
 
         public IEnumerator SignAndSendTransaction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage
         {
             var transactionInput = function.CreateTransactionInput(contractAdress);
-            yield return SendTransaction(transactionInput);
+            yield return SignAndSendTransaction(transactionInput);
         }
     }
 }

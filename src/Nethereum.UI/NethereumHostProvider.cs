@@ -101,7 +101,7 @@ namespace Nethereum.UI
 
         public Task<IWeb3> GetWeb3Async()
         {
-            return Task.FromResult((IWeb3)new Web3.Web3(new Account(Account.PrivateKey, Account.ChainId), Url));
+            return Task.FromResult((IWeb3)new Web3.Web3(new Account(Account.PrivateKey, SelectedNetworkChainId), Url));
         }
     }
 }

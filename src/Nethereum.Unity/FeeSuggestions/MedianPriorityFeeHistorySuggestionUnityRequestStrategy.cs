@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.Unity.FeeSuggestions
 {
-    public class MedianPriorityFeeHistorySuggestionUnityRequestStrategy : UnityRequest<Fee1559>
+    public class MedianPriorityFeeHistorySuggestionUnityRequestStrategy : UnityRequest<Fee1559>, IFee1559SuggestionUnityRequestStrategy
     {
         private readonly MedianPriorityFeeHistorySuggestionStrategy _medianPriorityFeeHistorySuggestionStrategy;
         private readonly EthFeeHistoryUnityRequest _ethFeeHistory;
