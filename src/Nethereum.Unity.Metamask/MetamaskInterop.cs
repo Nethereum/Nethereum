@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace Nethereum.Unity.Metamask
 {
+
     public  class MetamaskInterop
     {
         [DllImport("__Internal")]
@@ -36,4 +37,5 @@ namespace Nethereum.Unity.Metamask
         public static extern string RequestRpcClientCallback(Action<string> rpcResponse, string rpcRequest);
 
     }
+
 }

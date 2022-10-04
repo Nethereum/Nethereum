@@ -24,14 +24,4 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Metamask\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="NethereumMetamask.jslib">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>
