@@ -38,6 +38,17 @@ namespace Nethereum.Contracts.ContractHandlers
             return _receiptPollHandler.SendTransactionAsync(contractAddress, functionMessage, tokenSource);
         }
 
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(
+            string contractAddress, TContractMessage functionMessage, CancellationToken cancellationToken)
+        {
+            return _receiptPollHandler.SendTransactionAsync(contractAddress, functionMessage, cancellationToken);
+        }
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(string contractAddress, TContractMessage functionMessage, CancellationToken cancellationToken)
+        {
+            return SendTransactionAndWaitForReceiptAsync(contractAddress, functionMessage, cancellationToken);
+        }
+
         [Obsolete("Use " + nameof(SendTransactionAndWaitForReceiptAsync) + " instead")]
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(
             string contractAddress, TContractMessage functionMessage = null, CancellationTokenSource tokenSource = null)
@@ -68,6 +79,8 @@ namespace Nethereum.Contracts.ContractHandlers
         {
             return _estimatorHandler.EstimateGasAsync(contractAddress, functionMessage);
         }
+
+       
     }
 #endif
 

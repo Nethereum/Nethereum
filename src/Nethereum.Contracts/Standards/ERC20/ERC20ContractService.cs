@@ -51,7 +51,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction,
-            CancellationTokenSource cancellationToken = null)
+            CancellationToken cancellationToken = default)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
         }
@@ -66,7 +66,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(string spender, BigInteger value,
-            CancellationTokenSource cancellationToken = null)
+            CancellationToken cancellationToken = default)
         {
             var approveFunction = new ApproveFunction();
             approveFunction.Spender = spender;
@@ -93,7 +93,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(
-            TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
+            TransferFromFunction transferFromFunction, CancellationToken cancellationToken = default)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFromFunction, cancellationToken);
         }
@@ -109,7 +109,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(string from, string to,
-            BigInteger value, CancellationTokenSource cancellationToken = null)
+            BigInteger value, CancellationToken cancellationToken = default)
         {
             var transferFromFunction = new TransferFromFunction();
             transferFromFunction.From = from;
@@ -177,7 +177,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction,
-            CancellationTokenSource cancellationToken = null)
+            CancellationToken cancellationToken = default)
         {
             return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
         }
@@ -192,7 +192,7 @@ namespace Nethereum.Contracts.Standards.ERC20
         }
 
         public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger value,
-            CancellationTokenSource cancellationToken = null)
+            CancellationToken cancellationToken = default)
         {
             var transferFunction = new TransferFunction();
             transferFunction.To = to;

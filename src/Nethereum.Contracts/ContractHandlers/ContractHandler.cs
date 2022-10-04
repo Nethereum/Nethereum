@@ -52,7 +52,17 @@ namespace Nethereum.Contracts.ContractHandlers
             SetAddressFrom(transactionMessage);
             return command.SendRequestAndWaitForReceiptAsync(ContractAddress, transactionMessage, tokenSource);
         }
-  
+
+        public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync<TEthereumContractFunctionMessage>(
+            TEthereumContractFunctionMessage transactionMessage, CancellationToken cancellationToken)
+            where TEthereumContractFunctionMessage : FunctionMessage, new()
+        {
+            if (transactionMessage == null) transactionMessage = new TEthereumContractFunctionMessage();
+            var command = EthApiContractService.GetContractTransactionHandler<TEthereumContractFunctionMessage>();
+            SetAddressFrom(transactionMessage);
+            return command.SendRequestAndWaitForReceiptAsync(ContractAddress, transactionMessage, cancellationToken);
+        }
+
         public Task<string> SendRequestAsync<TEthereumContractFunctionMessage>(
             TEthereumContractFunctionMessage transactionMessage = null)
             where TEthereumContractFunctionMessage : FunctionMessage, new()

@@ -130,7 +130,7 @@ namespace Nethereum.Signer.IntegrationTests
 
                 var transactionReceipt =
                     await new TransactionReceiptPollingService(web3.TransactionManager).PollForReceiptAsync(txnHash,
-                        new CancellationTokenSource()).ConfigureAwait(false);
+                        new CancellationTokenSource().Token).ConfigureAwait(false);
 
             }
 

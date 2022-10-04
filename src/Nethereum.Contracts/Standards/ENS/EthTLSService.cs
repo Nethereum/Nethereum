@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ENS.ETHRegistrarController.ContractDefinition;
@@ -105,10 +106,10 @@ namespace Nethereum.Contracts.Standards.ENS
             return await TLSRegistrarControllerService.CommitRequestAsync(commitment).ConfigureAwait(false);
         }
 
-        public async Task<TransactionReceipt> CommitRequestAndWaitForReceiptAsync(string name, string owner, string secret)
+        public async Task<TransactionReceipt> CommitRequestAndWaitForReceiptAsync(string name, string owner, string secret, CancellationToken cancellationToken = default)
         {
             var commitment = await CalculateCommitmentAsync(name, owner, secret).ConfigureAwait(false);
-            return await TLSRegistrarControllerService.CommitRequestAndWaitForReceiptAsync(commitment).ConfigureAwait(false);
+            return await TLSRegistrarControllerService.CommitRequestAndWaitForReceiptAsync(commitment, cancellationToken).ConfigureAwait(false);
         }
 
         public Task<string> RegisterRequestAsync(string name, string owner, int durationInDays, string secret, decimal etherRentPrice)
@@ -139,16 +140,16 @@ namespace Nethereum.Contracts.Standards.ENS
             return registerFunction;
         }
 
-        public Task<TransactionReceipt> RegisterRequestAndWaitForReceiptAsync(string name, string owner, int durationInDays, string secret, decimal etherRentPrice)
+        public Task<TransactionReceipt> RegisterRequestAndWaitForReceiptAsync(string name, string owner, int durationInDays, string secret, decimal etherRentPrice, CancellationToken cancellationToken = default)
         {
             var weiPrice = Util.UnitConversion.Convert.ToWei(etherRentPrice);
-            return RegisterRequestAndWaitForReceiptAsync(name, owner, durationInDays, secret, weiPrice);
+            return RegisterRequestAndWaitForReceiptAsync(name, owner, durationInDays, secret, weiPrice, cancellationToken);
         }
 
-        public Task<TransactionReceipt> RegisterRequestAndWaitForReceiptAsync(string name, string owner, int durationInDays, string secret, BigInteger weiRentPrice)
+        public Task<TransactionReceipt> RegisterRequestAndWaitForReceiptAsync(string name, string owner, int durationInDays, string secret, BigInteger weiRentPrice, CancellationToken cancellationToken = default)
         {
             var registerFunction = CreateRegisterFunction(name, owner, durationInDays, secret, weiRentPrice);
-            return TLSRegistrarControllerService.RegisterRequestAndWaitForReceiptAsync(registerFunction);
+            return TLSRegistrarControllerService.RegisterRequestAndWaitForReceiptAsync(registerFunction, cancellationToken);
         }
 
         public Task<string> CommitRequestAsync(byte[] commitment)
@@ -156,9 +157,9 @@ namespace Nethereum.Contracts.Standards.ENS
             return TLSRegistrarControllerService.CommitRequestAsync(commitment);
         }
 
-        public Task<TransactionReceipt> CommitRequestAndWaitForReceiptAsync(byte[] commitment)
+        public Task<TransactionReceipt> CommitRequestAndWaitForReceiptAsync(byte[] commitment, CancellationToken cancellationToken = default)
         {
-            return TLSRegistrarControllerService.CommitRequestAndWaitForReceiptAsync(commitment);
+            return TLSRegistrarControllerService.CommitRequestAndWaitForReceiptAsync(commitment, cancellationToken);
         }
 
         public Task<string> RenewRequestAsync(string name, int durationInDays, decimal etherRentPrice)

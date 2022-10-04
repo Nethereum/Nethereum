@@ -23,7 +23,24 @@ namespace Nethereum.RPC.TransactionReceipts
     public class TransactionReceiptPollingService : ITransactionReceiptService
     {
         private readonly ITransactionManager _transactionManager;
-        private readonly int _retryMilliseconds;
+
+        private int _retryMilliseconds;
+        private readonly object _lockingObject = new object();
+        public int GetPollingRetryIntervalInMilliseconds()
+        {
+            lock (_lockingObject)
+            {
+                return _retryMilliseconds;
+            }
+        }
+
+        public void SetPollingRetryIntervalInMilliseconds(int retryMilliseconds)
+        {
+            lock (_lockingObject)
+            {
+                _retryMilliseconds = retryMilliseconds;
+            }
+        }
 
         public TransactionReceiptPollingService(ITransactionManager transactionManager, int retryMilliseconds = 100)
         {
@@ -32,39 +49,44 @@ namespace Nethereum.RPC.TransactionReceipts
         }
 
         public Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
-            CancellationTokenSource tokenSource = null)
+           CancellationToken cancellationToken = default)
         {
-            return SendRequestAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
+            return SendRequestAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), cancellationToken);
         }
 
         public Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<TransactionInput> transactionInputs,
-            CancellationTokenSource tokenSource = null)
+           CancellationToken cancellationToken = default)
         {
             var funcs = new List<Func<Task<string>>>();
             foreach (var transactionInput in transactionInputs)
             {
                 funcs.Add(() => _transactionManager.SendTransactionAsync(transactionInput));
             }
-            return SendRequestsAndWaitForReceiptAsync(funcs.ToArray(), tokenSource);
+            return SendRequestsAndWaitForReceiptAsync(funcs.ToArray(), cancellationToken);
         }
 
         public async Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(Func<Task<string>> transactionFunction,
-            CancellationTokenSource tokenSource = null)
+           CancellationToken cancellationToken = default)
         {
             var transaction = await transactionFunction().ConfigureAwait(false);
-            return await PollForReceiptAsync(transaction, tokenSource).ConfigureAwait(false);
+            return await PollForReceiptAsync(transaction, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationTokenSource tokenSource = null)
+        public async Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationToken cancellationToken = default)
         {
             var getTransactionReceipt = new EthGetTransactionReceipt(_transactionManager.Client);
             var receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
             while (receipt == null)
             {
-                if (tokenSource != null)
+                if (cancellationToken !=  CancellationToken.None)
                 {
-                    await Task.Delay(_retryMilliseconds, tokenSource.Token).ConfigureAwait(false);
-                    tokenSource?.Token.ThrowIfCancellationRequested();
+                    await Task.Delay(GetPollingRetryIntervalInMilliseconds(), cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+                else
+                {
+                    await Task.Delay(GetPollingRetryIntervalInMilliseconds()).ConfigureAwait(false);
+                    
                 }
 
                 receipt = await getTransactionReceipt.SendRequestAsync(transaction).ConfigureAwait(false);
@@ -72,8 +94,9 @@ namespace Nethereum.RPC.TransactionReceipts
             return receipt;
         }
 
+
         public async Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
-            CancellationTokenSource tokenSource = null)
+            CancellationToken cancellationToken = default)
         {
             var txnList = new List<string>();
             foreach (var transactionFunction in transactionFunctions)
@@ -84,16 +107,16 @@ namespace Nethereum.RPC.TransactionReceipts
             var receipts = new List<TransactionReceipt>();
             foreach (var transaction in txnList)
             {
-                var receipt = await PollForReceiptAsync(transaction, tokenSource).ConfigureAwait(false);
+                var receipt = await PollForReceiptAsync(transaction, cancellationToken).ConfigureAwait(false);
                 receipts.Add(receipt);
             }
             return receipts;
         }
 
         public async Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null)
+           CancellationToken cancellationToken = default)
         {
-            var transactionReceipt = await SendRequestAndWaitForReceiptAsync(deployFunction, tokenSource).ConfigureAwait(false);
+            var transactionReceipt = await SendRequestAndWaitForReceiptAsync(deployFunction, cancellationToken).ConfigureAwait(false);
             if (transactionReceipt.Status.Value != 1 )
             {
                 var contractAddress = transactionReceipt.ContractAddress;
@@ -107,15 +130,15 @@ namespace Nethereum.RPC.TransactionReceipts
         }
 
         public async Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null)
+           CancellationToken cancellationToken = default)
         {
-            var transactionReceipt = await DeployContractAndWaitForReceiptAsync(deployFunction, tokenSource).ConfigureAwait(false);
+            var transactionReceipt = await DeployContractAndWaitForReceiptAsync(deployFunction, cancellationToken).ConfigureAwait(false);
             return transactionReceipt.ContractAddress;
         }
 
-        public Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default)
         {
-             return DeployContractAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), tokenSource);
+             return DeployContractAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), cancellationToken);
         }
     }
 #endif

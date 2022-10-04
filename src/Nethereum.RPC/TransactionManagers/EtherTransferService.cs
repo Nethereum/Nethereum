@@ -27,11 +27,11 @@ namespace Nethereum.RPC.TransactionManagers
             return _transactionManager.SendTransactionAsync(transactionInput);
         }
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
         {
             var fromAddress = _transactionManager?.Account?.Address;
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas, nonce);
-            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
+            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken);
         }
 
         public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address, decimal gasPriceGwei, BigInteger? gas = null)
@@ -48,11 +48,11 @@ namespace Nethereum.RPC.TransactionManagers
 
     
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationTokenSource tokenSource = null)
+        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
         {
             var fromAddress = _transactionManager?.Account?.Address;
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxPriorityFeePerGas, maxFeePerGas, gas, nonce);
-            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, tokenSource);
+            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken);
         }
 
         public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null)

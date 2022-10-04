@@ -9,26 +9,28 @@ namespace Nethereum.RPC.TransactionReceipts
     public interface ITransactionReceiptService
     {
         Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(Func<Task<string>> transactionFunction,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
         Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null);
+             CancellationToken cancellationToken = default);
 
         Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
         Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
         Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
         Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<TransactionInput> transactionInputs,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
         Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
-          CancellationTokenSource tokenSource = null);
+          CancellationToken cancellationToken = default);
+        Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationToken cancellationToken = default);
 
-        Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationTokenSource tokenSource = null);
+        int GetPollingRetryIntervalInMilliseconds();
+        void SetPollingRetryIntervalInMilliseconds(int retryMilliseconds);
     }
 }

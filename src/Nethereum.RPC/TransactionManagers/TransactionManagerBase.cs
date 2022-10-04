@@ -149,9 +149,9 @@ namespace Nethereum.RPC.TransactionManagers
             }
         }
 
-        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource)
+        public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default)
         {
-            return TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput, tokenSource);
+            return TransactionReceiptService.SendRequestAndWaitForReceiptAsync(transactionInput, cancellationToken);
         }
                
         public virtual Task<HexBigInteger> EstimateGasAsync(CallInput callInput)

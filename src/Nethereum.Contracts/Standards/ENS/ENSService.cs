@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.Services;
@@ -90,11 +91,11 @@ namespace Nethereum.Contracts.Standards.ENS
             return await resolverService.ContenthashQueryAsync(fullNameNode).ConfigureAwait(false);
         }
 
-        public async Task<TransactionReceipt> SetTextRequestAndWaitForReceiptAsync(string fullName, TextDataKey textDataKey, string value)
+        public async Task<TransactionReceipt> SetTextRequestAndWaitForReceiptAsync(string fullName, TextDataKey textDataKey, string value, CancellationToken cancellationToken = default)
         {
             var fullNameNode = _ensUtil.GetNameHash(fullName).HexToByteArray();
             var resolverService = await GetResolverAsync(fullNameNode).ConfigureAwait(false);
-            return await resolverService.SetTextRequestAndWaitForReceiptAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value).ConfigureAwait(false);
+            return await resolverService.SetTextRequestAndWaitForReceiptAsync(fullNameNode, textDataKey.GetDataKeyAsString(), value, cancellationToken).ConfigureAwait(false);
         }
 
         public Task<PublicResolverService> GetResolverAsync(string fullNameNode)

@@ -14,6 +14,7 @@ using Nethereum.RPC;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.RPC.TransactionReceipts;
 #if !LITE
 using Nethereum.Signer;
 #endif
@@ -70,12 +71,25 @@ namespace Nethereum.Web3
         public IDebugApiService Debug { get; private set; }
 
         public FeeSuggestionService FeeSuggestion { get; private set; }
+        public ITransactionReceiptService TransactionReceiptPolling
+        {
+            get
+            {
+                return TransactionManager?.TransactionReceiptService;
+            }
+            set
+            {
+                TransactionManager.TransactionReceiptService = value;
+            }
+        }
 
         private void InitialiseDefaultGasAndGasPrice()
         {
 #if !LITE
             TransactionManager.DefaultGas = LegacyTransaction.DEFAULT_GAS_LIMIT;
             TransactionManager.DefaultGasPrice = LegacyTransaction.DEFAULT_GAS_PRICE;
+
+           
 #endif
         }
 

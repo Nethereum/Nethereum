@@ -4,6 +4,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.RPC.TransactionReceipts;
 
 namespace Nethereum.Web3
 {
@@ -16,6 +17,7 @@ namespace Nethereum.Web3
         IPersonalApiService Personal { get; }
         IShhApiService Shh { get; }
         ITransactionManager TransactionManager { get; set; }
+        ITransactionReceiptService TransactionReceiptPolling { get; set; }
         IDebugApiService Debug { get; }
         FeeSuggestionService FeeSuggestion { get; }
     }

@@ -27,7 +27,7 @@ namespace Nethereum.RPC.TransactionManagers
         ITransactionReceiptService TransactionReceiptService { get; set; }
         bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; }
         bool EstimateOrSetDefaultGasIfNotSet { get; set; }
-        Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationTokenSource tokenSource);
+        Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default);
 #endif
 
     }
