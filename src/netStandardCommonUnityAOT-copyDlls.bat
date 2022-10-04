@@ -18,6 +18,7 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Signer.EIP712.dll" "compi
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Siwe.Core.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Siwe.Core.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Siwe.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Siwe.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Unity.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Util.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Web3.dll" /s /y
 

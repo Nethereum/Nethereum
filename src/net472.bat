@@ -79,7 +79,11 @@ cd Nethereum.Accounts*
 CALL :build
 cd ..
 
-cd Nethereum.Unity*
+cd Nethereum.Unity
+CALL :build
+cd ..
+
+cd Nethereum.Unity.Metamask
 CALL :build
 cd ..
 

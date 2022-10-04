@@ -1,5 +1,5 @@
 rem packing web3 and dependencies
-echo on 
+rem echo on 
 
 del /S compiledlibraries\netStandardUnityAOT\*.dll
 SET releaseSuffix=
@@ -7,164 +7,168 @@ SET targetNet35=false
 
 cd Nethereum.Hex
 CALL :build
-echo "1"
-pause
+rem echo "1"
+rem pause
 cd ..
 
 cd Nethereum.ABI
 CALL :build
-echo "2"
-pause
+rem echo "2"
+rem pause
 cd ..
 
 cd Nethereum.JsonRpc.Client*
 CALL :build
-echo "3"
-pause
+rem echo "3"
+rem pause
 cd ..
 
 cd Nethereum.RPC
 CALL :build
-echo "4"
-pause
+rem echo "4"
+rem pause
 cd ..
 
 cd Nethereum.Web3
 CALL :build
-echo "5"
-pause
+rem echo "5"
+rem pause
 cd ..
 
 cd Nethereum.JsonRpc.IpcClient
 CALL :build
-echo "6"
-pause
+rem echo "6"
+rem pause
 cd ..
 
 cd Nethereum.JsonRpc.WebSocket*
 CALL :build
-echo "7"
-pause
+rem echo "7"
+rem pause
 cd ..
 
 cd Nethereum.JsonRpc.RpcClient
 CALL :build
-echo "8"
-pause
+rem echo "8"
+rem pause
 cd ..
 
 cd Nethereum.KeyStore
 CALL :build
-echo "9"
-pause
+rem echo "9"
+rem pause
 cd ..
 
 cd Nethereum.Quorum
 CALL :build
-echo "10"
-pause
+rem echo "10"
+rem pause
 cd ..
 
 cd Nethereum.Geth
 CALL :build
-echo "11"
-pause
+rem echo "11"
+rem pause
 cd ..
 
 cd Nethereum.Contracts
 CALL :build
-echo "12"
-pause
+rem echo "12"
+rem pause
 cd ..
 
 cd Nethereum.RLP
 CALL :build
-echo "13"
-pause
+rem echo "13"
+rem pause
 cd ..
 
 cd Nethereum.Signer
 CALL :build
-echo "14"
-pause
+rem echo "14"
+rem pause
 cd ..
 
 cd Nethereum.Util
 CALL :build
-echo "15"
-pause
+rem echo "15"
+rem pause
 cd ..
 
 cd Nethereum.HdWallet*
 CALL :build
-echo "16"
-pause
+rem echo "16"
+rem pause
 cd ..
 
 cd Nethereum.Parity*
 CALL :build
-echo "17"
-pause
+rem echo "17"
+rem pause
 cd ..
 
 cd Nethereum.Accounts
 CALL :build
-echo "18"
-pause
+rem echo "18"
+rem pause
 cd ..
 
 cd Nethereum.Unity
 CALL :build
-echo "19"
-pause
+rem echo "19"
+rem pause
+cd ..
+
+cd Nethereum.Unity.Metamask
+CALL :build
 cd ..
 
 cd Nethereum.RPC.Reactive
 CALL :build
-echo "20"
-pause
+rem echo "20"
+rem pause
 cd ..
 
 cd Nethereum.Besu
 CALL :build
-echo "21"
-pause
+rem echo "21"
+rem pause
 cd ..
 
 cd Nethereum.Signer.EIP712
 CALL :build
-echo "22"
-pause
+rem echo "22"
+rem pause
 cd..
 
 cd Nethereum.GnosisSafe
 CALL :build
-echo "23"
-pause
+rem echo "23"
+rem pause
 cd ..
 
 cd Nethereum.Siwe.Core
 CALL :build
-echo "24"
-pause
+rem echo "24"
+rem pause
 cd ..
 
 cd Nethereum.Siwe
 CALL :build
-echo "25"
-pause
+rem echo "25"
+rem pause
 cd ..
 
 cd Nethereum.BlockchainProcessing
 CALL :build
-echo "26"
-pause
+rem echo "26"
+rem pause
 cd ..
 
 cd Nethereum.Optimism
 CALL :build
-echo "27"
-pause
+rem echo "27"
+rem pause
 cd ..
 
 EXIT /B %ERRORLEVEL%
