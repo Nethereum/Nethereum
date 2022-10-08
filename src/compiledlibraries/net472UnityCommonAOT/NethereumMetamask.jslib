@@ -89,10 +89,12 @@
                 jsonrpc: "2.0",
                 id: parsedMessage.id,
                 error: {
-                    message: e,
+                    message: e.message,
                 }
             }
-            return JSON.stringify(rpcResonseError);
+            var json =  JSON.stringify(rpcResonseError);
+            nethereumUnityInstance.SendMessage(parsedObjectName, parsedFallback, json);
+            return json;
         }
     },
 
@@ -122,17 +124,20 @@
 
             return json;
         } catch (e) {
+            //console.log(e);
             let rpcResonseError = {
                 jsonrpc: "2.0",
                 id: parsedMessage.id,
                 error: {
-                    message: e,
+                    message: e.message,
                 }
             }
             var json = JSON.stringify(rpcResonseError);
+            //console.log(json);
             var len = lengthBytesUTF8(json) + 1;
             var strPtr = _malloc(len);
             stringToUTF8(json, strPtr, len);
+
             Module.dynCall_vi(callback, strPtr);
         }
     },
