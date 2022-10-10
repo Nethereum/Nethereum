@@ -19,7 +19,7 @@ namespace Nethereum.RPC.ClassesExtractor
 
             foreach (var type in types)
             {
-                if (typeof(IRpcRequestHandler).IsAssignableFrom(type))
+                if (typeof(IRpcRequestResponse).IsAssignableFrom(type))
                 {
 
                     if (!type.GetTypeInfo().IsGenericType)

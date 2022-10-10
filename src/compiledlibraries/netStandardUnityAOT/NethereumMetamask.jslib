@@ -27,8 +27,12 @@
             
         ethereum.on("accountsChanged",
                 function (accounts) {
-                   //console.log(accounts[0]);
-                    nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallbackAccountChange, accounts[0]);
+                    //console.log(accounts[0]);
+                    let account = "";
+                    if(account[0] !== undefined){
+                        account = account[0];
+                    }
+                    nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallbackAccountChange, account);
                 });
         ethereum.on("chainChanged",
                 function (chainId) {
@@ -140,38 +144,6 @@
 
             Module.dynCall_vi(callback, strPtr);
         }
-    },
-
-    Send: async function (message) {
-        return new Promise(function (resolve, reject) {
-            console.log(JSON.parse(message));
-            ethereum.send(JSON.parse(message), function (error, result) {
-                //console.log(result);
-                //console.log(error);
-                resolve(JSON.stringify(result));
-            });
-        });
-    },
-
-    Sign: async function (utf8HexMsg) {
-        return new Promise(function (resolve, reject) {
-            const from = ethereum.selectedAddress;
-            const params = [utf8HexMsg, from];
-            const method = 'personal_sign';
-            ethereum.send({
-                method,
-                params,
-                from,
-            }, function (error, result) {
-                if (error) {
-                    reject(error);
-                } else {
-                    //console.log(result.result);
-                    resolve(JSON.stringify(result.result));
-                }
-
-            });
-        });
     }
 
 });

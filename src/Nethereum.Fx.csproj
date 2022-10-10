@@ -169,6 +169,9 @@
 
 	  <Compile Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
 	  <None Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
+
+	  <Compile Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
+	  <None Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
@@ -189,7 +192,9 @@
 
     <Compile Remove="Nethereum.Signer.Trezor\**" />
 
-    <Compile Remove="Nethereum.Unity\**" />
+	  <Compile Remove="Nethereum.Unity\**" />
+	  
+	  <Compile Remove="Nethereum.Unity.Metamask\**" />
 
     <EmbeddedResource Remove="compiledlibraries\**" />
 
@@ -217,7 +222,8 @@
 
     <EmbeddedResource Remove="Nethereum.StandardTokenEIP20\**" />
 
-    <EmbeddedResource Remove="Nethereum.Unity\**" />
+	<EmbeddedResource Remove="Nethereum.Unity\**" />
+	<EmbeddedResource Remove="Nethereum.Unity.Metamask\**" />
 
     <None Remove="compiledlibraries\**" />
   
@@ -227,7 +233,8 @@
 	<None Remove="Nethereum.Signer.AWSKeyManagement\**" />
     <None Remove="Nethereum.Signer.Ledger\**" />
     <None Remove="Nethereum.Signer.Trezor\**" />
-    <None Remove="Nethereum.Unity\**" />
+	<None Remove="Nethereum.Unity\**" />
+	<None Remove="Nethereum.Unity.Metamask\**" />
 	<None Remove="Nethereum.Metamask\**" />
 	<None Remove="Nethereum.Metamask.Blazor\**" />
     <None Remove="packages\**" />

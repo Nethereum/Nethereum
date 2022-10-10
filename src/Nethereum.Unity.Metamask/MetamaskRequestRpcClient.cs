@@ -7,6 +7,8 @@ using System;
 using UnityEngine;
 using System.Collections;
 using Nethereum.Unity.Rpc;
+using Nethereum.RPC;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Unity.Metamask
 {
@@ -44,8 +46,30 @@ namespace Nethereum.Unity.Metamask
             var newUniqueRequestId = Guid.NewGuid().ToString();
             try
             {
+                if (request.Method == ApiMethods.eth_sendTransaction.ToString())
+                {
+                    var transaction = (TransactionInput)request.RawParameters[0];
+                    transaction.From = _account;
+                    request.RawParameters[0] = transaction;
+                }
+                else if (request.Method == ApiMethods.eth_estimateGas.ToString() || request.Method == ApiMethods.eth_call.ToString())
+                {
+
+                    var callinput = (CallInput)request.RawParameters[0];
+                    if (callinput.From == null)
+                    {
+                        callinput.From ??= _account;
+                        request.RawParameters[0] = callinput;
+                    }
+                }
+                else if (request.Method == ApiMethods.eth_signTypedData_v4.ToString() || request.Method == ApiMethods.personal_sign.ToString())
+                {
+                    var parameters = new object[] { _account, request.RawParameters[0] };
+                    request = new RpcRequest(newUniqueRequestId, request.Method, parameters);
+                }
+
                 var metamaskRpcRequest = new MetamaskRpcRequestMessage(newUniqueRequestId, request.Method, _account,
-                    request.RawParameters);
+                request.RawParameters);
 
                 MetamaskInterop.RequestRpcClientCallback(RequestCallBack, JsonConvert.SerializeObject(metamaskRpcRequest));
 

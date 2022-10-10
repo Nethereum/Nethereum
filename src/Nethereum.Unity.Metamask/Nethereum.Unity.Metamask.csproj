@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Unity.Metamask</AssemblyName>
     <PackageId>Nethereum.Unity.Metamasky</PackageId>
     <PackageTags>Netherum;Unity3d;Unity;Metamask;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+	  <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Unity\Nethereum.Unity.csproj" />

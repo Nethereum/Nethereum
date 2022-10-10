@@ -9,8 +9,6 @@ using Newtonsoft.Json;
 namespace Nethereum.Unity.FeeSuggestions
 {
 
-
-
     public class SimpleFeeSuggestionUnityRequestStrategy : UnityRequest<Fee1559>, IFee1559SuggestionUnityRequestStrategy
     {
         private EthGetBlockWithTransactionsHashesByNumberUnityRequest _ethGetBlockWithTransactionsHashes;
