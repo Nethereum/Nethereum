@@ -6,6 +6,7 @@
         Morden = 2,
         Ropsten = 3,
         Rinkeby = 4,
+        Goerli = 5,
         RootstockMainNet = 30,
         RootstockTestNet = 31,
         Kovan = 42,
