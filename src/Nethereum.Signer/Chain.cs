@@ -12,6 +12,8 @@
         Kovan = 42,
         ClassicMainNet = 61,
         ClassicTestNet = 62,
-        Private = 1337
+        Private = 1337,
+        Sepolia = 11155111,
+        Optimism = 10
     }
 }
