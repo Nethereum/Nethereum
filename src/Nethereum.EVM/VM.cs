@@ -192,7 +192,7 @@ namespace Nethereum.EVM
                     program.StackPush(result);
                     program.Step();
                     break;
-                case Instruction.SHA3:
+                case Instruction.KECCAK256:
                     break;
                 case Instruction.ADDRESS:
                     break;
@@ -340,14 +340,6 @@ namespace Nethereum.EVM
                     break;
                 case Instruction.LOG4:
                     break;
-                case Instruction.PUSHC:
-                    break;
-                case Instruction.JUMPV:
-                    break;
-                case Instruction.JUMPVI:
-                    break;
-                case Instruction.BAD:
-                    break;
                 case Instruction.CREATE:
                     break;
                 case Instruction.CALL:
@@ -358,7 +350,7 @@ namespace Nethereum.EVM
                     break;
                 case Instruction.DELEGATECALL:
                     break;
-                case Instruction.SUICIDE:
+                case Instruction.SELFDESTRUCT:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
