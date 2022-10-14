@@ -1,9 +1,11 @@
 ﻿using Nethereum.Contracts;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using System;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nethereum.WebSocketsStreamingTest
@@ -75,6 +77,14 @@ namespace Nethereum.WebSocketsStreamingTest
             await blockHeaderSubscription.SubscribeAsync();
             //don't pass any parameter if you want all
             await ethLogsTokenTransfer.SubscribeAsync(filterTransfers);
+
+            while (true) //pinging to keep alive infura
+            {
+                var handler = new EthBlockNumberObservableHandler(client);
+                handler.GetResponseAsObservable().Subscribe(x => Console.WriteLine(x.Value));
+                await handler.SendRequestAsync();
+                Thread.Sleep(30000);
+            }
 
             Console.ReadLine();
         }

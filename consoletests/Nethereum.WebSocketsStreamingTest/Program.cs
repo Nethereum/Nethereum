@@ -27,14 +27,14 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             //please dont use this infuraId think about the children
             //
-            var url = "wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c";
-           // var url = "ws://fullnode.dappnode:8546";
+            //var url = "wss://mainnet.infura.io/ws/v3/206cfadcef274b49a3a15c45c285211c";
+            var url = "ws://geth.dappnode:8546/";
             //var example = new ExamplePendingTransactionsWithTransactionsUsingSameClient(url);
             ///var example = new ExamplePendingTransactionsWithTransactionsUsingClientAndConcurrentQueue(url);
             //var example = new ExampleNewHeaderSubscription(url);
             //var example = new ExampleNormalRPCCalls(url);
-            //var example = new ExampleLogsERC20Subscriptions(url);
-             var example = new ExampleLogsUniswapSwapsSubscription(url);
+            var example = new ExampleLogsERC20Subscriptions(url);
+            // var example = new ExampleLogsUniswapSwapsSubscription(url);
             //var example = new ExampleLogsUniswapSyncSubscription(url);
 
             await example.SubscribeAndRunAsync();
