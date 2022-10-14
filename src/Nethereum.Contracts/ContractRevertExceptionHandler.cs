@@ -22,6 +22,20 @@ namespace Nethereum.Contracts
                     //throw custom error
                     throw new SmartContractCustomErrorRevertException(encodedErrorData);
                 }
+
+                if (rpcException.RpcError.Data["result"] != null)
+                {
+                     encodedErrorData = rpcException.RpcError.Data["result"].ToString();
+                    if (encodedErrorData.IsHex())
+                    {
+                        //check normal revert
+                        new FunctionCallDecoder().ThrowIfErrorOnOutput(encodedErrorData);
+
+                        //throw custom error
+                        throw new SmartContractCustomErrorRevertException(encodedErrorData);
+                    }
+                }
+              
             }
         }
 

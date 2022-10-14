@@ -32,7 +32,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         //    //RpcResponseException error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
         //    await web3.Eth.GetContractTransactionErrorReason.SendRequestAsync("0x9e2831c81b4e3f29a9fb420d50a288d3424b1dd53f7de6bdc423f5429e3be4fc");
         //        //);
-         
+
         //  //  Assert.Equal("execution reverted: ERC20: transfer amount exceeds balance: eth_call", error.Message);
         //}
 
@@ -56,29 +56,29 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-                var errorThrowDeployment = new ErrorThrowDeployment();
+                var errorThrowDeployment = new ErrorDeployment();
 
-                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorDeployment>()
                     .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
-                    await contractHandler.QueryAsync<ThrowItFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
+                    await contractHandler.QueryAsync<ThrowItQueryFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
                 Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-                var errorThrowDeployment = new ErrorThrowDeployment();
+                var errorThrowDeployment = new ErrorDeployment();
 
-                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorDeployment>()
                     .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
-                    await contractHandler.QueryAsync<ThrowItFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
+                    await contractHandler.QueryAsync<ThrowItQueryFunction, bool>().ConfigureAwait(false)).ConfigureAwait(false);
             }
         }
 
@@ -90,75 +90,72 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-                var errorThrowDeployment = new ErrorThrowDeployment();
+                var errorThrowDeployment = new ErrorDeployment();
 
-                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorDeployment>()
                     .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
-                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>().ConfigureAwait(false)).ConfigureAwait(false);
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItTxnFunction>().ConfigureAwait(false)).ConfigureAwait(false);
                 Assert.Equal("An error message", error.RevertMessage);
             }
             else // parity throws Rpc exception : "VM execution error."
             {
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-                var errorThrowDeployment = new ErrorThrowDeployment();
+                var errorThrowDeployment = new ErrorDeployment();
 
-                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorThrowDeployment>()
+                var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<ErrorDeployment>()
                     .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
                 var contractAddress = transactionReceiptDeployment.ContractAddress;
 
                 var contractHandler = web3.Eth.GetContractHandler(contractAddress);
                 var error = await Assert.ThrowsAsync<RpcResponseException>(async () =>
-                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItFunction>().ConfigureAwait(false)).ConfigureAwait(false);
+                    await contractHandler.SendRequestAndWaitForReceiptAsync<ThrowItTxnFunction>().ConfigureAwait(false)).ConfigureAwait(false);
             }
         }
 
 
-        public partial class ErrorThrowDeployment : ErrorThrowDeploymentBase
+        public partial class ErrorDeployment : ErrorDeploymentBase
         {
-            public ErrorThrowDeployment() : base(BYTECODE)
-            {
-            }
-
-            public ErrorThrowDeployment(string byteCode) : base(byteCode)
-            {
-            }
+            public ErrorDeployment() : base(BYTECODE) { }
+            public ErrorDeployment(string byteCode) : base(byteCode) { }
         }
 
-        public class ErrorThrowDeploymentBase : ContractDeploymentMessage
+        public class ErrorDeploymentBase : ContractDeploymentMessage
         {
-            public static string BYTECODE =
-                "6080604052348015600f57600080fd5b5060bf8061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063ab5c4ce514602d575b600080fd5b60336047565b604080519115158252519081900360200190f35b60006040805162461bcd60e51b815260206004820152601060248201526f416e206572726f72206d65737361676560801b604482015290519081900360640190fdfea2646970667358221220b8416f2f906bcee46dace86def6ec94c1f60821a9a5badffc0c374e542112d2564736f6c63430006010033";
+            public static string BYTECODE = "608060405234801561001057600080fd5b5061010c806100206000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c806351246563146037578063f88b5631146051575b600080fd5b603d6059565b604051901515815260200160405180910390f35b6057609c565b005b60405162461bcd60e51b815260206004820152601060248201526f416e206572726f72206d65737361676560801b60448201526000906064015b60405180910390fd5b60405162461bcd60e51b815260206004820152601060248201526f416e206572726f72206d65737361676560801b6044820152606401609356fea2646970667358221220f26c20ede67912c665386ca928fab378febc6fa989f204d778b967f6bed6f48264736f6c63430008110033";
+            public ErrorDeploymentBase() : base(BYTECODE) { }
+            public ErrorDeploymentBase(string byteCode) : base(byteCode) { }
 
-            public ErrorThrowDeploymentBase() : base(BYTECODE)
-            {
-            }
-
-            public ErrorThrowDeploymentBase(string byteCode) : base(byteCode)
-            {
-            }
         }
 
-        public partial class ThrowItFunction : ThrowItFunctionBase
+        public partial class ThrowItQueryFunction : ThrowItQueryFunctionBase { }
+
+        [Function("throwItQuery", "bool")]
+        public class ThrowItQueryFunctionBase : FunctionMessage
         {
+
         }
 
-        [Function("throwIt", "bool")]
-        public class ThrowItFunctionBase : FunctionMessage
+        public partial class ThrowItTxnFunction : ThrowItTxnFunctionBase { }
+
+        [Function("throwItTxn")]
+        public class ThrowItTxnFunctionBase : FunctionMessage
         {
+
         }
 
-        public partial class ThrowItOutputDTO : ThrowItOutputDTOBase
-        {
-        }
+        public partial class ThrowItQueryOutputDTO : ThrowItQueryOutputDTOBase { }
 
         [FunctionOutput]
-        public class ThrowItOutputDTOBase : IFunctionOutputDTO
+        public class ThrowItQueryOutputDTOBase : IFunctionOutputDTO
         {
-            [Parameter("bool", "result", 1)] public virtual bool Result { get; set; }
+            [Parameter("bool", "result", 1)]
+            public virtual bool Result { get; set; }
         }
+
     }
+
 }
