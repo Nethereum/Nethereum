@@ -23,5 +23,8 @@
         string TimeStamp { get;  }
         string TransactionIndex { get;  }
         string Value { get;  }
+        string MaxFeePerGas { get; }
+        string MaxPriorityFeePerGas { get; }
+
     }
 }

@@ -15,5 +15,6 @@
         string TotalDifficulty { get; }
         long TransactionCount { get; }
         string TimeStamp { get; }
+        string BaseFeePerGas { get;}
     }
 }
