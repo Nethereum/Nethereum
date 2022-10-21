@@ -29,8 +29,8 @@
                 function (accounts) {
                     //console.log(accounts[0]);
                     let account = "";
-                    if(account[0] !== undefined){
-                        account = account[0];
+                    if(accounts[0] !== undefined){
+                        account = accounts[0];
                     }
                     nethereumUnityInstance.SendMessage(parsedObjectName, parsedCallbackAccountChange, account);
                 });
