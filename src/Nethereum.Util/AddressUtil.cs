@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
@@ -37,6 +38,18 @@ namespace Nethereum.Util
             {
                 if (_current == null) _current = new AddressUtil();
                 return _current;
+            }
+        }
+
+        public string ConvertToChecksumAddress(byte[] address)
+        {
+            if (address.Length > 20)
+            {
+                return ConvertToChecksumAddress(address.Skip(address.Length - 20).ToArray().ToHex());
+            }
+            else
+            {
+                return ConvertToChecksumAddress(address.ToHex());
             }
         }
 

@@ -7,6 +7,11 @@
             return AddressUtil.Current.ConvertToChecksumAddress(address);
         }
 
+        public static string ConvertToEthereumChecksumAddress(this byte[] address)
+        {
+            return AddressUtil.Current.ConvertToChecksumAddress(address);
+        }
+
         public static bool IsEthereumChecksumAddress(this string address)
         {
             return AddressUtil.Current.IsChecksumAddress(address);
