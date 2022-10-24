@@ -59,9 +59,12 @@ namespace Nethereum.ABI.Encoders
             return EncodeInt(new BigInteger(value));
         }
 
-        public byte[] EncodeInt(BigInteger value, uint numberOfBytesArray)
+        public byte[] EncodeInt(BigInteger value, uint numberOfBytesArray, bool validate = true)
         {
-            ValidateValue(value);
+            if (validate)
+            {
+                ValidateValue(value);
+            }
             //It should always be Big Endian.
             var bytes = BitConverter.IsLittleEndian
                 ? value.ToByteArray().Reverse().ToArray()

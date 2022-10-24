@@ -1,18 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
-    <AssemblyName>Nethereum.EVM</AssemblyName>
-    <PackageId>Nethereum.EVM</PackageId>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-  </PropertyGroup>
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<PropertyGroup>
+	<Description>Nethereum.EVM EVM simulator (WIP) and Bytecode utils</Description>
+	<AssemblyTitle>Nethereum.EVM</AssemblyTitle>
+	<Version>0.2.0</Version>
+	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+	<AssemblyName>Nethereum.EVM</AssemblyName>
+	<PackageId>Nethereum.EVM</PackageId>
+	<PackageTags>Netherum;Ethereum;Blockchain;</PackageTags>
+</PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+﻿ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public class TransactionLog : TableRow, ITransactionLogView
     {

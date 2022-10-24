@@ -57,11 +57,11 @@
         SAR,
 
         ///<summary>compute SHA3-256 hash</summary>///
-        KECCAK256 = 0x20,        
+        KECCAK256 = 0x20,
 
-        ///<summary>get address of currently executing account</summary>///
+        ///<summary>address of executing contract (account)</summary>///
         ADDRESS = 0x30,     
-        ///<summary>get balance of the given account</summary>///
+        ///<summary>get balance of the given contract</summary>///
         BALANCE,            
         ///<summary>get execution origination address</summary>///
         ORIGIN,             
