@@ -5,7 +5,9 @@ namespace Nethereum.EVM
 {
     public class ProgramTrace
     {
-        public int TraceStep { get; set; }
+        public string ProgramAddress { get; set; }
+        public int VMTraceStep { get; set; }
+        public int ProgramTraceStep { get; set; }
         public List<string> Stack { get; set; }
         public ProgramInstruction Instruction { get; set; }
         public string Memory { get; set; }
@@ -14,8 +16,9 @@ namespace Nethereum.EVM
         public override string ToString()
         {
             var builder = new StringBuilder();
-           
-            builder.AppendLine("Trace step:" + TraceStep);
+            builder.AppendLine("Address:" + ProgramAddress);
+            builder.AppendLine("VMTraceStep Trace step:" + VMTraceStep);
+            builder.AppendLine("Program Trace step:" + ProgramTraceStep);
             builder.AppendLine(Instruction.ToDisassemblyLine());
             if (Stack != null)
             {
@@ -42,11 +45,13 @@ namespace Nethereum.EVM
             return builder.ToString();
         }
 
-        public static ProgramTrace CreateTraceFromCurrentProgram(int counter, Program program, ProgramInstruction programInstructionExecuted)
+        public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, Program program, ProgramInstruction programInstructionExecuted)
         {
             var trace = new ProgramTrace()
             {
-                TraceStep = counter,
+                ProgramAddress = programAddress,
+                VMTraceStep = vmTraceStep,
+                ProgramTraceStep = programTraceStep,
                 Instruction = programInstructionExecuted,
                 Stack = program.GetCurrentStackAsHex(),
                 Memory = program.GetCurrentMemoryAsHex(),

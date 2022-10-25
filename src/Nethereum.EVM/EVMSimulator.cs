@@ -12,29 +12,33 @@ namespace Nethereum.EVM
     /// </summary>
     public class EVMSimulator
     {
-        public async Task<List<ProgramTrace>> ExecuteAsync(Program program, bool traceEnabled = true)
+        public async Task<List<ProgramTrace>> ExecuteAsync(Program program, int vmExecutionCounter = 0, bool traceEnabled = true)
         {
             var traceResult = new List<ProgramTrace>();
-            var vmExecutionCounter = 0;
+            var programExecutionCounter = 0;
+            program.ProgramContext.InitialiaseContractBalanceFromCallInputValue();
+
             while(program.Stopped != true)
             {
                 var currentInstruction = program.GetCurrentInstruction();
                 if (traceEnabled)
                 {
                     
-                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(vmExecutionCounter, program, currentInstruction);
+                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, programExecutionCounter, vmExecutionCounter, program, currentInstruction);
                     traceResult.Add(trace);
 #if DEBUG
                     Debug.WriteLine(trace.ToString());
 #endif
                 }
-                await StepAsync(program);
-                vmExecutionCounter ++;
+                var innerTrace = await StepAsync(program, vmExecutionCounter, traceEnabled);
+                programExecutionCounter++;
+                vmExecutionCounter = vmExecutionCounter + 1 + innerTrace.Count;
             }
             return traceResult;
         }
-        public async Task StepAsync(Program program)
+        public async Task<List<ProgramTrace>> StepAsync(Program program, int vmExecutionCounter, bool traceEnabled = true)
         {
+            var innerTraceResult = new List<ProgramTrace>();
             if (!program.Stopped) 
             { 
                 var instruction = program.GetCurrentInstruction();
@@ -323,31 +327,48 @@ namespace Nethereum.EVM
                         case Instruction.RETURNDATACOPY:
                             program.ReturnDataCopy();
                             break;
-
+                        case Instruction.SELFBALANCE:
+                            await program.SelfBalanceAsync();
+                            break;
+                        case Instruction.GASPRICE:
+                            var gasPrice = program.ProgramContext.GasPrice;
+                            program.StackPush(gasPrice);
+                            program.Step();
+                            break;
+                        case Instruction.DIFFICULTY:
+                            var difficulty = program.ProgramContext.Difficulty;
+                            program.StackPush(difficulty);
+                            program.Step();
+                            break;
+                        case Instruction.GASLIMIT:
+                            var gaslimit = program.ProgramContext.GasLimit;
+                            program.StackPush(gaslimit);
+                            program.Step();
+                            break;
+                        case Instruction.GAS:
+                            var gas = program.ProgramContext.Gas;
+                            program.StackPush(gas);
+                            program.Step();
+                            break;
+                        case Instruction.CHAINID:
+                            var chainId = program.ProgramContext.ChainId;
+                            program.StackPush(chainId);
+                            program.Step();
+                            break;
+                        case Instruction.BASEFEE:
+                            var baseFee = program.ProgramContext.BaseFee;
+                            program.StackPush(baseFee);
+                            program.Step();
+                            break;
+                        case Instruction.BLOCKHASH:
+                            break;
                         case Instruction.SIGNEXTEND:
                             program.Stop();
                             throw new NotImplementedException();
                             break;
-                        case Instruction.GASPRICE:
-                            break;
-                        case Instruction.BLOCKHASH:
-                            break;
-                        case Instruction.DIFFICULTY:
-                            break;
-                        case Instruction.GASLIMIT:
-                            break;
-                        case Instruction.GAS:
-                            break;
                         case Instruction.SELFDESTRUCT:
                             break;
-                       
                         case Instruction.EXTCODEHASH:
-                            break;
-                        case Instruction.CHAINID:
-                            break;
-                        case Instruction.SELFBALANCE:
-                            break;
-                        case Instruction.BASEFEE:
                             break;
                         case Instruction.INVALID:
                             break;
@@ -357,6 +378,7 @@ namespace Nethereum.EVM
                         case Instruction.CREATE:
                             break;
                         case Instruction.CALL:
+                            innerTraceResult = await program.CallAsync(vmExecutionCounter, traceEnabled);
                             break;
                         case Instruction.CALLCODE:
                             break;
@@ -368,8 +390,9 @@ namespace Nethereum.EVM
                             throw new ArgumentOutOfRangeException();
                     }
                 }
+                
             }
-
+            return innerTraceResult;
 
         }
 

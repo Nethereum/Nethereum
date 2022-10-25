@@ -10,6 +10,8 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using System.Linq;
 using System.Diagnostics;
 using Nethereum.RLP;
+using Nethereum.Util;
+using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.EVM
 {
@@ -59,20 +61,87 @@ namespace Nethereum.EVM
             }
             else
             {
+                //ensure only 32 bytes
                 int size = Math.Min(dataInput.Length - index, 32);
-
-                byte[] buffer = new byte[32];
-                Array.Copy(dataInput, index, buffer, 0, size);
-                program.StackPush(buffer);
+                byte[] dataLoaded = new byte[32];
+                Array.Copy(dataInput, index, dataLoaded, 0, size);
+                program.StackPush(dataLoaded);
             }
             program.Step();
         }
 
+        public static async Task<List<ProgramTrace>> CallAsync(this Program program, int vmExecutionStep, bool traceEnabled = true)
+        {
+            var gas = program.StackPopAndConvertToBigInteger();
+            var codeAddress = program.StackPop();
+            var value = program.StackPopAndConvertToBigInteger(); 
+            //note if delagate call or with no value we can just set it to zero / static call
+            var dataInputIndex = (int)program.StackPopAndConvertToBigInteger();
+            var dataInputLength = (int)program.StackPopAndConvertToBigInteger();
+
+            var resultMemoryDataIndex = (int)program.StackPopAndConvertToBigInteger();
+            var resultMemoryDataLength = (int)program.StackPopAndConvertToBigInteger();
+
+            var dataInput = program.Memory.GetRange(dataInputIndex, dataInputLength).ToArray();
+            var callInput = new CallInput()
+            {
+                From = program.ProgramContext.AddressContract,
+                Value = new HexBigInteger(value),
+                To = codeAddress.ConvertToEthereumChecksumAddress(),
+                Data = dataInput.ToHex(),
+                Gas = new HexBigInteger(gas)
+            };
+
+            program.ProgramContext.AccountsExecutionBalanceState.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
+
+            var byteCode = await program.ProgramContext.NodeDataService.GetCodeAsync(codeAddress);
+
+            var programContext = new ProgramContext(callInput, program.ProgramContext.NodeDataService, program.ProgramContext.Storage,
+                program.ProgramContext.AccountsExecutionBalanceState, program.ProgramContext.AddressCaller,
+                (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
+            var callProgram = new Program(byteCode, programContext);
+            var vm = new EVMSimulator();
+            var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, traceEnabled);
+
+            if(callProgram.ProgramResult.IsRevert == false)
+            {
+                var result = callProgram.ProgramResult.Result;
+                WriteToMemory(program, resultMemoryDataIndex, resultMemoryDataLength, result);
+                program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
+                program.Step();
+            }
+            else
+            {
+                program.Stop();
+            }
+
+            return trace;
+
+        }
 
         public static async Task BalanceAsync(this Program program)
         {
             var address = program.StackPop();
-            var balance = await program.ProgramContext.NodeDataService.GetBalanceAsync(address);
+            await BalanceAsync(program, address);
+        }
+
+        public static async Task SelfBalanceAsync(this Program program)
+        {
+            var address = program.ProgramContext.AddressContractEncoded;
+            await BalanceAsync(program, address);
+        }
+
+        private static async Task BalanceAsync(Program program, byte[] address)
+        {
+            var addressHex = address.ConvertToEthereumChecksumAddress();
+            var accountsExecutionBalanceState = program.ProgramContext.AccountsExecutionBalanceState;
+            if (!accountsExecutionBalanceState.ContainsInitialChainBalanceForAddress(addressHex))
+            {
+                var balanceChain = await program.ProgramContext.NodeDataService.GetBalanceAsync(address);
+                accountsExecutionBalanceState.SetInitialChainBalance(addressHex, balanceChain);
+            }
+            var balance = accountsExecutionBalanceState.GetTotalBalance(addressHex);
+
             program.StackPush(balance);
             program.Step();
         }

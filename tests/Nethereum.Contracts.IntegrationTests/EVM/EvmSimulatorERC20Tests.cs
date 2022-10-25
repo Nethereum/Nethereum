@@ -13,17 +13,17 @@ using Xunit;
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 {
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
-    public class EvmSimulatorTests
+    public class EvmSimulatorERC20Tests    
     {
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
-        public EvmSimulatorTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        public EvmSimulatorERC20Tests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
         [Fact]
-        public async void EndtoEndDeploymentLocalCheckBalanceLocalCheckBalanceEvm()
+        public async void ShouldDeployToChain_CheckBalanceEvmSim_TransferSim()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var tokenDeployment = new TokenDeployment();

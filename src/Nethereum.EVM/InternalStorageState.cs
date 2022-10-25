@@ -1,9 +1,11 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 
 namespace Nethereum.EVM
 {
+
     public class InternalStorageState
     {
         public Dictionary<string, Dictionary<BigInteger, byte[]>> Storage { get; protected set; }
