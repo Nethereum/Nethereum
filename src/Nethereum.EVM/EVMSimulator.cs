@@ -7,7 +7,7 @@ namespace Nethereum.EVM
 {
     /// <summary>
     /// EVM simulator 
-    /// WIP, experimental, not all opcodes implemented yet (mainly call contracts / create)
+    /// Experimental needs more testing
     /// Gas calculation not implemented (this might be a future release)
     /// </summary>
     public class EVMSimulator
@@ -24,7 +24,7 @@ namespace Nethereum.EVM
                 if (traceEnabled)
                 {
                     
-                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, programExecutionCounter, vmExecutionCounter, program, currentInstruction);
+                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, program, currentInstruction);
                     traceResult.Add(trace);
 #if DEBUG
                     Debug.WriteLine(trace.ToString());
@@ -360,32 +360,40 @@ namespace Nethereum.EVM
                             program.StackPush(baseFee);
                             program.Step();
                             break;
-                        case Instruction.BLOCKHASH:
-                            break;
-                        case Instruction.SIGNEXTEND:
-                            program.Stop();
-                            throw new NotImplementedException();
-                            break;
-                        case Instruction.SELFDESTRUCT:
-                            break;
-                        case Instruction.EXTCODEHASH:
-                            break;
-                        case Instruction.INVALID:
-                            break;
-                        //Call / create
                         case Instruction.DELEGATECALL:
-                            break;
-                        case Instruction.CREATE:
+                            innerTraceResult = await program.DelegateCallAsync(vmExecutionCounter, traceEnabled);
                             break;
                         case Instruction.CALL:
                             innerTraceResult = await program.CallAsync(vmExecutionCounter, traceEnabled);
                             break;
                         case Instruction.CALLCODE:
-                            break;
-                        case Instruction.CREATE2:
+                            innerTraceResult = await program.CallCodeAsync(vmExecutionCounter, traceEnabled);
                             break;
                         case Instruction.STATICCALL:
+                            innerTraceResult = await program.StaticCallAsync(vmExecutionCounter, traceEnabled);
                             break;
+                        case Instruction.SELFDESTRUCT:
+                            await program.SelfDestructAsync();
+                            break;
+                        case Instruction.BLOCKHASH:
+                            await program.BlockHashAsync();
+                            break;
+                        case Instruction.SIGNEXTEND:
+                            throw new NotImplementedException();
+                            break;
+                        case Instruction.EXTCODEHASH:
+                            await program.ExtCodeHashAsync();
+                            break;
+                        case Instruction.INVALID:
+                            program.Stop();
+                            break;
+                        case Instruction.CREATE:
+                            innerTraceResult = await program.CreateAsync(vmExecutionCounter, traceEnabled);
+                            break;
+                        case Instruction.CREATE2:
+                            innerTraceResult = await program.Create2Async(vmExecutionCounter, traceEnabled);
+                            break;
+                       
                         default:
                             throw new ArgumentOutOfRangeException();
                     }

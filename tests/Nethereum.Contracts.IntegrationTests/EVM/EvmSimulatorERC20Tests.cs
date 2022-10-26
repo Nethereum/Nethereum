@@ -45,8 +45,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             callInput.From = EthereumClientIntegrationFixture.AccountAddress;
 
             var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
-            var internalStorageState = new InternalStorageState();
-            var programContext = new ProgramContext(callInput, nodeDataService, internalStorageState);
+            var executionStateService = new ExecutionStateService(nodeDataService);
+            var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
             await evmSimulator.ExecuteAsync(program);
@@ -59,7 +59,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             transferFunction.Value = 500;
             
             callInput = transferFunction.CreateCallInput(contractAddress);
-            programContext = new ProgramContext(callInput, nodeDataService, internalStorageState);
+            programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
             await evmSimulator.ExecuteAsync(program);
 
@@ -67,7 +67,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             callInput = balanceOfFunction.CreateCallInput(contractAddress);
             callInput.From = EthereumClientIntegrationFixture.AccountAddress;
             
-            programContext = new ProgramContext(callInput, nodeDataService, internalStorageState);
+            programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
             await evmSimulator.ExecuteAsync(program);
             resultEncoded = program.ProgramResult.Result;

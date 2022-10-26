@@ -26,12 +26,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         public async void ShouldDeployToChain_TransferEtherToContract_AndTransferSameToAnotherContract()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var payableTestSenderDeployment = new PayableTestSenderDeployment();
-
             var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<PayableTestSenderDeployment>().SendRequestAndWaitForReceiptAsync();
             var payableTestSenderContractAddress = transactionReceiptDeployment.ContractAddress;
-
-            var payableReceiverContractDeployment = new PayableReceiverContractDeployment();
             transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<PayableReceiverContractDeployment>().SendRequestAndWaitForReceiptAsync();
             var payableReceiverContractAddress = transactionReceiptDeployment.ContractAddress;
 
@@ -48,14 +44,26 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             callInput.From = EthereumClientIntegrationFixture.AccountAddress;
 
             var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
-            var internalStorageState = new InternalStorageState();
-            var programContext = new ProgramContext(callInput, nodeDataService, internalStorageState);
+            var executionStateService = new ExecutionStateService(nodeDataService);
+            var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
             await evmSimulator.ExecuteAsync(program);
-            //Assert.Equal(5000, programContext.AccountsExecutionBalanceState.GetTotalBalance(payableReceiverContractAddress));
-            //Assert.Equal(0, programContext.AccountsExecutionBalanceState.GetTotalBalance(payableTestSenderDeployment));
+            var totalBalanceReceiver = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableReceiverContractAddress).Balance.ExecutionBalance;
+            var totalBalanceSender = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableTestSenderContractAddress).Balance.ExecutionBalance;
+            Assert.Equal(5000, totalBalanceReceiver);
+            Assert.Equal(0, totalBalanceSender); //Sender sends the amount sent to the receiver..
 
+            var paidAmountFunction = new PaidAmountFunction();
+            callInput = paidAmountFunction.CreateCallInput(payableTestSenderContractAddress);
+            callInput.From = EthereumClientIntegrationFixture.AccountAddress;
+
+            programContext = new ProgramContext(callInput, executionStateService);
+            program = new Program(code.HexToByteArray(), programContext);
+            await evmSimulator.ExecuteAsync(program);
+            var resultEncoded = program.ProgramResult.Result;
+            var result = new PaidAmountOutputDTO().DecodeOutput(resultEncoded.ToHex());
+            Assert.Equal(5000, result.ReturnValue1);
         }
 
         /*
