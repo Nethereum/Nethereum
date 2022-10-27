@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 <PropertyGroup>
-	<Description>Nethereum.EVM EVM simulator (WIP) and Bytecode utils</Description>
+	<Description>Nethereum.EVM EVM Simulator and ByteCode utils</Description>
 	<AssemblyTitle>Nethereum.EVM</AssemblyTitle>
-	<Version>0.2.0</Version>
+	<Version>1.0.0-rc1</Version>
 	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
 	<AssemblyName>Nethereum.EVM</AssemblyName>
 	<PackageId>Nethereum.EVM</PackageId>
-	<PackageTags>Netherum;Ethereum;Blockchain;</PackageTags>
+	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
 </PropertyGroup>
 
   <ItemGroup>

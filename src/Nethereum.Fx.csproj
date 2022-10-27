@@ -58,7 +58,8 @@
     <Compile Remove="Nethereum.BigInteger.N351\**" />
     <Compile Remove="Nethereum.ClassDiagrams\**" />
     <Compile Remove="Nethereum.ENS\**" />
-    <Compile Remove="Nethereum.EVM\**" />
+    <Compile Remove="Nethereum.EVM\obj\**" />
+    <Compile Remove="Nethereum.EVM\Properties\**" />
     <Compile Remove="Nethereum.Generators.JavaScript\**" />
     <Compile Remove="Nethereum.GSN\**" />
     <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
@@ -69,9 +70,12 @@
     <None Remove="Nethereum.BigInteger.N351\**" />
     <None Remove="Nethereum.ClassDiagrams\**" />
     <None Remove="Nethereum.ENS\**" />
-    <None Remove="Nethereum.EVM\**" />
+
 
     <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
+
+
+  
 
     <None Remove="Nethereum.Generators.JavaScript\**" />
     <None Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
@@ -91,8 +95,11 @@
     <None Remove="Nethereum.StandardTokenEIP20\**" />
 
     <None Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
+	<None Remove="Nethereum.EVM\bin\**" />
+	<None Remove="Nethereum.EVM\obj\**" />
+	<None Remove="Nethereum.EVM\Properties\**" />
 
-    <Compile Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
+	  <Compile Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
     <None Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
 
     <Compile Remove="Nethereum.JsonRpc.Client\Properties\**;Nethereum.JsonRpc.Client\bin\**;Nethereum.JsonRpc.Client\obj\**" />
