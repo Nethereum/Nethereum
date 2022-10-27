@@ -62,20 +62,20 @@ namespace Nethereum.Metamask.Blazor
         [JSInvokable()]
         public static async Task MetamaskAvailableChanged(bool available)
         {
-            await MetamaskHostProvider.Current.ChangeMetamaskAvailableAsync(available).ConfigureAwait(false);
+            await MetamaskHostProvider.Current.ChangeMetamaskAvailableAsync(available);
         }
 
         [JSInvokable()]
         public static async Task SelectedAccountChanged(string selectedAccount)
         {
-            await MetamaskHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).ConfigureAwait(false);
+            await MetamaskHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount);
         }
 
         [JSInvokable()]
         public static async Task SelectedNetworkChanged(string chainId)
         {
             
-            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).ConfigureAwait(false);
+            await MetamaskHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value);
         }
 
         private T ConvertResponse<T>(string jsonResponseMessage)
