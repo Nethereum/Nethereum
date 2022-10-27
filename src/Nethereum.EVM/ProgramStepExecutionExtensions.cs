@@ -14,6 +14,7 @@ using Nethereum.Util;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json.Linq;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.EVM
 {
@@ -38,7 +39,9 @@ namespace Nethereum.EVM
 
         public static void WriteToMemory(this Program program, int index, int totalSize, byte[] data)
         {
+            if (totalSize == 0) return;
             //totalSize might be bigger than data length so memory will be extended to match
+
             if(data == null) data = new byte[0];
             int newSize = index + totalSize;
 
@@ -159,7 +162,6 @@ namespace Nethereum.EVM
                 program.Stop();
             }
 
-            program.Step();
             return trace;
         }
 
@@ -234,7 +236,13 @@ namespace Nethereum.EVM
             var resultMemoryDataIndex = (int)program.StackPopAndConvertToBigInteger();
             var resultMemoryDataLength = (int)program.StackPopAndConvertToBigInteger();
 
-            var dataInput = program.Memory.GetRange(dataInputIndex, dataInputLength).ToArray();
+            var dataInput = new byte[] { };
+            if (dataInputLength != 0)
+            {
+                dataInput = program.Memory.GetRange(dataInputIndex, dataInputLength).ToArray();
+            }
+           
+               
             var callInput = new CallInput()
             {
                 From = from,
@@ -247,30 +255,39 @@ namespace Nethereum.EVM
             program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
 
             var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(codeAddress.ConvertToEthereumChecksumAddress());
-
-            var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
-                (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
-            var callProgram = new Program(byteCode, programContext);
-            var vm = new EVMSimulator();
-            var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, traceEnabled);
-
-            if (callProgram.ProgramResult.IsRevert == false)
+            if (byteCode.Length == 0) // calling / transfering a non contract account
             {
+                program.ProgramContext.ExecutionStateService.UpsertInternalBalance(to, value);
                 program.StackPush(1);
-                var result = callProgram.ProgramResult.Result;
-                program.ProgramResult.Result = callProgram.ProgramResult.Result; 
-                WriteToMemory(program, resultMemoryDataIndex, resultMemoryDataLength, result);
-                program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
-                program.ProgramResult.InnerCalls.Add(callInput);
-                program.ProgramResult.InnerCalls.AddRange(callProgram.ProgramResult.InnerCalls);
                 program.Step();
+                return new List<ProgramTrace>();
             }
             else
             {
-                program.Stop();
-            }
+                var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
+                    (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
+                var callProgram = new Program(byteCode, programContext);
+                var vm = new EVMSimulator();
+                var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, traceEnabled);
 
-            return trace;
+                if (callProgram.ProgramResult.IsRevert == false)
+                {
+                    program.StackPush(1);
+                    var result = callProgram.ProgramResult.Result;
+                    program.ProgramResult.Result = callProgram.ProgramResult.Result;
+                    WriteToMemory(program, resultMemoryDataIndex, resultMemoryDataLength, result);
+                    program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
+                    program.ProgramResult.InnerCalls.Add(callInput);
+                    program.ProgramResult.InnerCalls.AddRange(callProgram.ProgramResult.InnerCalls);
+                    program.Step();
+                }
+                else
+                {
+                    program.Stop();
+                }
+                return trace;
+            }
+            
         }
 
         public static async Task BalanceAsync(this Program program)
@@ -388,19 +405,25 @@ namespace Nethereum.EVM
             var resultIndex = (int)program.StackPopAndConvertToBigInteger();
             var lengthResult = (int)program.StackPopAndConvertToBigInteger();
             var result = program.ProgramResult.Result;
-            if (result == null) throw new Exception("No result data");
-
-            var size = result.Length - resultIndex;
-
-            if (lengthResult < size)
+            if (result == null)
             {
-                size = lengthResult;
+                program.WriteToMemory(memoryIndex, lengthResult, new byte[] { });
             }
+            else
+            {
 
-            var dataToCopy = new byte[size];
-            Array.Copy(result, resultIndex, dataToCopy, 0, size);
+                var size = result.Length - resultIndex;
 
-            program.WriteToMemory(memoryIndex, lengthResult, dataToCopy);
+                if (lengthResult < size)
+                {
+                    size = lengthResult;
+                }
+
+                var dataToCopy = new byte[size];
+                Array.Copy(result, resultIndex, dataToCopy, 0, size);
+
+                program.WriteToMemory(memoryIndex, lengthResult, dataToCopy);
+            }
             program.Step();
         }
 

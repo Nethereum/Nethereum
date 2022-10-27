@@ -47,6 +47,10 @@ namespace Nethereum.EVM
                     var opcode = (Instruction)byteCodeArray[i];
                     var dataLength = currentByte - 0x60 + 1;
                     var dataBytes = new byte[dataLength];
+                    if(i + dataLength > byteCodeArray.Length)
+                    {
+                        dataLength = byteCodeArray.Length - i -1;
+                    }
                     for (int x = 0; x < dataLength; x++)
                     {
                         dataBytes[x] = byteCodeArray[i + x + 1];

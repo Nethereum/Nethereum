@@ -409,6 +409,12 @@ namespace Nethereum.Contracts
             return DecodeAllEvents<TEventDTO>(eventABI, logs);
         }
 
+        public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this List<FilterLog> logs) where TEventDTO : new()
+        {
+            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
+            return DecodeAllEvents<TEventDTO>(eventABI, logs.ToArray());
+        }
+
         public static List<EventLog<TEventDTO>> DecodeAllEvents<TEventDTO>(this TransactionReceipt transactionReceipt) where TEventDTO : new()
         {
             return transactionReceipt.Logs.DecodeAllEvents<TEventDTO>();
