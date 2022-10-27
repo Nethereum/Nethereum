@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Services;
@@ -21,6 +22,61 @@ namespace Nethereum.Contracts.Standards.ERC721
         {
             return new ERC721ContractService(_ethApiContractService, contractAddress);
         }
+
+        public List<FunctionABI> GetRequiredFunctionAbis()
+        {
+            var signatures = new List<FunctionABI>
+            {
+                ABITypedRegistry.GetFunctionABI<OwnerOfFunction>(),
+                ABITypedRegistry.GetFunctionABI<BalanceOfFunction>(),
+                ABITypedRegistry.GetFunctionABI<TransferFromFunction>(),
+                ABITypedRegistry.GetFunctionABI<SafeTransferFromFunction>(),
+                ABITypedRegistry.GetFunctionABI<SafeTransferFrom1Function>(),
+                ABITypedRegistry.GetFunctionABI<SetApprovalForAllFunction>(),
+                ABITypedRegistry.GetFunctionABI<ApproveFunction>(),
+                ABITypedRegistry.GetFunctionABI<IsApprovedForAllFunction>(),
+                ABITypedRegistry.GetFunctionABI<SupportsInterfaceFunction>()
+            };
+            return signatures;
+        }
+
+        public string[] GetRequiredFunctionSignatures()
+        {
+            return GetRequiredFunctionAbis().Select(x => x.Sha3Signature).ToArray();
+        }
+
+        public List<FunctionABI> GetOptionalMetadataExtensionsFunctionAbis()
+        {
+            var signatures = new List<FunctionABI>
+            {
+                ABITypedRegistry.GetFunctionABI<NameFunction>(),
+                ABITypedRegistry.GetFunctionABI<SymbolFunction>(),
+                ABITypedRegistry.GetFunctionABI<TokenURIFunction>(),
+            };
+            return signatures;
+        }
+
+        public List<FunctionABI> GetOptionalEnumerableExtensionFunctionAbis()
+        {
+            var signatures = new List<FunctionABI>
+            {
+                ABITypedRegistry.GetFunctionABI<TotalSupplyFunction>(),
+                ABITypedRegistry.GetFunctionABI<TokenByIndexFunction>(),
+                ABITypedRegistry.GetFunctionABI<TokenOfOwnerByIndexFunction>(),
+            };
+            return signatures;
+        }
+
+        public string[] GetOptionalMetadataFunctionSignatures()
+        {
+            return GetOptionalMetadataExtensionsFunctionAbis().Select(x => x.Sha3Signature).ToArray();
+        }
+
+        public string[] GetOptionalEnumerableExtensionFunctionSignatures()
+        {
+            return GetOptionalEnumerableExtensionFunctionAbis().Select(x => x.Sha3Signature).ToArray();
+        }
+
 #if !DOTNET35
         public async Task<List<ERC721TokenOwnerInfo>> GetAllTokenIdsOfOwnerUsingTokenOfOwnerByIndexAndMultiCallAsync(string ownerAddress, string[] contractAddresses, string multiCallAddress = CommonAddresses.MULTICALL_ADDRESS)
         {

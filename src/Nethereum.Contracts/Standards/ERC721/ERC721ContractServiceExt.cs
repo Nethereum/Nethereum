@@ -3,10 +3,12 @@ using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Standards.ERC721.ContractDefinition;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ERC721
@@ -14,7 +16,30 @@ namespace Nethereum.Contracts.Standards.ERC721
     public partial class ERC721ContractService
     {
 
+
 #if !DOTNET35
+
+
+        public Task<bool> SupportsErc721InterfaceQueryAsync()
+        {
+            var supportsInterfaceFunction = new SupportsInterfaceFunction();
+            supportsInterfaceFunction.InterfaceId = "0x80ac58cd".HexToByteArray();
+            return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction);
+        }
+
+        public Task<bool> SupportsErc721MetadataInterfaceQueryAsync()
+        {
+            var supportsInterfaceFunction = new SupportsInterfaceFunction();
+            supportsInterfaceFunction.InterfaceId = "0x5b5e139f".HexToByteArray();
+            return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction);
+        }
+
+        public Task<bool> SupportsErc721EnumberableInterfaceQueryAsync()
+        {
+            var supportsInterfaceFunction = new SupportsInterfaceFunction();
+            supportsInterfaceFunction.InterfaceId = "0x780e9d63".HexToByteArray();
+            return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction);
+        }
 
         public async Task<List<ERC721TokenOwnerInfo>> GetAllOwnersUsingTotalSupplyAndMultiCallAsync(int startTokenId = 0, int numberOfCallsPerRequest = MultiQueryHandler.DEFAULT_CALLS_PER_REQUEST, string multiCallAddress = CommonAddresses.MULTICALL_ADDRESS)
         {

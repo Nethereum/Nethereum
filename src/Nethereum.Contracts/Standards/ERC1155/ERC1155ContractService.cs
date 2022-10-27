@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ERC1155.ContractDefinition;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ERC1155
@@ -23,6 +24,15 @@ namespace Nethereum.Contracts.Standards.ERC1155
         }
 
 #if !DOTNET35
+
+        public Task<bool> SupportsErc1155InterfaceQueryAsync()
+        {
+            var supportsInterfaceFunction = new SupportsInterfaceFunction();
+            supportsInterfaceFunction.InterfaceId = "0xd9b67a26".HexToByteArray();
+            return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction);
+        }
+
+
         public Task<BigInteger> BalanceOfQueryAsync(BalanceOfFunction balanceOfFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
@@ -431,6 +441,8 @@ namespace Nethereum.Contracts.Standards.ERC1155
 
             return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction, blockParameter);
         }
+
+
 
         public Task<BigInteger> TotalSupplyQueryAsync(TotalSupplyFunction totalSupplyFunction, BlockParameter blockParameter = null)
         {

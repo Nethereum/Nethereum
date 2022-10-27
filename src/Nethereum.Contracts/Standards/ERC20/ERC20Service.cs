@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.ABI.Model;
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Services;
@@ -24,6 +25,41 @@ namespace Nethereum.Contracts.Standards.ERC20
         public ERC20ContractService GetContractService(string contractAddress)
         {
             return new ERC20ContractService(_ethApiContractService, contractAddress);
+        }
+
+        public List<FunctionABI> GetRequiredFunctionAbis()
+        {
+            var signatures = new List<FunctionABI>
+            {
+                ABITypedRegistry.GetFunctionABI<TransferFunction>(),
+                ABITypedRegistry.GetFunctionABI<TotalSupplyFunction>(),
+                ABITypedRegistry.GetFunctionABI<BalanceOfFunction>(),
+                ABITypedRegistry.GetFunctionABI<TransferFromFunction>(),
+                ABITypedRegistry.GetFunctionABI<ApproveFunction>(),
+                ABITypedRegistry.GetFunctionABI<AllowanceFunction>()
+            };
+            return signatures;
+        }
+
+        public string[] GetRequiredFunctionSignatures()
+        {
+            return GetRequiredFunctionAbis().Select(x => x.Sha3Signature).ToArray();
+        }
+
+        public List<FunctionABI> GetOptionalFunctionAbis()
+        {
+            var signatures = new List<FunctionABI>
+            {
+                ABITypedRegistry.GetFunctionABI<NameFunction>(),
+                ABITypedRegistry.GetFunctionABI<SymbolFunction>(),
+                ABITypedRegistry.GetFunctionABI<DecimalsFunction>(),
+            };
+            return signatures;
+        }
+
+        public string[] GetOptionalFunctionSignatures()
+        {
+            return GetOptionalFunctionAbis().Select(x => x.Sha3Signature).ToArray();
         }
 
 #if !DOTNET35

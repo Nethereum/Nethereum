@@ -28,7 +28,7 @@ namespace Nethereum.EVM
         }
 
         public async Task<byte[]> GetCodeAsync(string address)
-        {   //contracts start at 1 if zero?
+        {  
             var accountState = CreateOrGetAccountExecutionState(address);
             if (accountState.Code == null)
             {
