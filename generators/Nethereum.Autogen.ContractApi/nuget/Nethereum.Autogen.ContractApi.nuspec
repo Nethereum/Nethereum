@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Nethereum.Autogen.ContractApi</id>
-    <version>4.2.0</version>
+    <version>4.11.0</version>
     <authors>Juan Blanco, Dave Whiffin</authors>
     <owners>Juan Blanco</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -17,8 +17,8 @@
   </metadata>
 
   <files>
-    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.dll" target="tools" />
-    <file src="..\..\Nethereum.Generator.Console\bin\release\netcoreapp2.1\publish\*.json" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\net5.0\publish\*.dll" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\net5.0\publish\*.json" target="tools" />
 	<file src="..\..\..\LICENSE.md" target="" />
     <file src="Nethereum.Autogen.ContractApi.targets" target="build" />
   </files>

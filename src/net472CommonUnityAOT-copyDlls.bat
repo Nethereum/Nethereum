@@ -21,5 +21,6 @@ xcopy "compiledlibraries\net472dllsAOT\Nethereum.Unity.dll" "compiledlibraries\n
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Util.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Util.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Web3.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Web3.dll" /s /y
+xcopy "compiledlibraries\net472dllsAOT\*.jslib "compiledlibraries\net472UnityCommonAOT" /s /y
 
 EXIT /B 0

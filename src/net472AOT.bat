@@ -122,4 +122,5 @@ rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=
 rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=true /property:TargetNet35=false /property:TargetUnityNet472AOT=true
 dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet472=true /property:TargetNet35=false /property:TargetUnityNet472AOT=true
 xcopy bin\Release\net472\*.dll "..\compiledlibraries\net472dllsAOT" /s /y
+xcopy bin\Release\net472\*.jslib "..\compiledlibraries\net472dllsAOT" /s /y
 EXIT /B 0
