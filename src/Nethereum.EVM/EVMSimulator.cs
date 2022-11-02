@@ -196,7 +196,7 @@ namespace Nethereum.EVM
                             break;
                         case Instruction.JUMPI:
                             var desti = (int)program.StackPopAndConvertToBigInteger();
-                            var valid = (int)program.StackPopAndConvertToBigInteger();
+                            var valid = program.StackPopAndConvertToBigInteger();
                             if (valid != 0)
                             {
                                 program.GoToJumpDestination(desti);

@@ -314,21 +314,21 @@ namespace Nethereum.EVM.UnitTests
             await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH1.ToHex()}00{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000001", 4);
             await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000002", 4);
             await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH1.ToHex()}ff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
-            
-            ////overflow
-            ////await AssertSteps($"{Instruction.PUSH2.ToHex()}0100{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "0x0000000000000000000000000000000000000000000000000000000000000000", 4);
 
-            //await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
-            
-            //await AssertSteps($"{Instruction.PUSH1.ToHex()}ff{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
-            
-            ////overflow
-            ////await AssertSteps($"{Instruction.PUSH2.ToHex()}0100{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
-            
-            ////overflow
-            ////await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH32.ToHex()}0000000000000000000000000000000000000000000000000000000000000000{Instruction.SHL.ToHex()}", "x0000000000000000000000000000000000000000000000000000000000000000", 4);
+            //overflow
+            await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH2.ToHex()}0100{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000000", 4);
 
-            //await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH32.ToHex()}7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
+           //// await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
+
+           // await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}ff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
+
+           // //overflow
+           // await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH2.ToHex()}0100{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
+
+           // //overflow
+           // await AssertSteps($"{Instruction.PUSH32.ToHex()}0000000000000000000000000000000000000000000000000000000000000000{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000000", 4);
+
+           // await AssertSteps($"{Instruction.PUSH32.ToHex()}7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
         }
 
         private async Task AssertSteps(string hexBytes, string expected, int numberOfSteps = 1)

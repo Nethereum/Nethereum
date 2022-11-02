@@ -43,6 +43,7 @@ namespace Nethereum.EVM
             //totalSize might be bigger than data length so memory will be extended to match
 
             if(data == null) data = new byte[0];
+            //if (data.Length > totalSize) totalSize = data.Length;
             int newSize = index + totalSize;
 
             if (newSize > program.Memory.Count)
@@ -50,7 +51,7 @@ namespace Nethereum.EVM
                 program.Memory.AddRange(new byte[newSize - program.Memory.Count]);
             }
 
-            for (int i = 0; i < data.Length; i++)
+            for (int i = 0; i < totalSize; i++)
             {
                 program.Memory[index + i] = data[i];
             }
@@ -237,9 +238,19 @@ namespace Nethereum.EVM
             var resultMemoryDataLength = (int)program.StackPopAndConvertToBigInteger();
 
             var dataInput = new byte[] { };
+            
             if (dataInputLength != 0)
             {
-                dataInput = program.Memory.GetRange(dataInputIndex, dataInputLength).ToArray();
+                dataInput = new byte[dataInputLength];
+                if (dataInputIndex + dataInputLength > program.Memory.Count)
+                {
+                    var dataToCopy = program.Memory.Skip(dataInputIndex).ToArray();
+                    Array.Copy(dataToCopy, dataInput, dataToCopy.Length);
+                }
+                else
+                {
+                    dataInput = program.Memory.GetRange(dataInputIndex, dataInputLength).ToArray();
+                }
             }
            
                
@@ -546,7 +557,18 @@ namespace Nethereum.EVM
         public static void MLoad(this Program program)
         {
             var index = (int)program.StackPopAndConvertToBigInteger();
-            var data = program.Memory.GetRange(index, 32).ToArray();
+           
+            var data = new byte[32];
+            if (index + 32 > program.Memory.Count)
+            {
+                var dataToCopy = program.Memory.Skip(index).ToArray();
+                Array.Copy(dataToCopy, data, dataToCopy.Length);
+            }
+            else
+            {
+               data = program.Memory.GetRange(index, 32).ToArray();
+            }
+           
             program.StackPush(data);
             program.Step();
         }
@@ -661,8 +683,8 @@ namespace Nethereum.EVM
 
         public static void Not(this Program program)
         {
-            var first = program.StackPopAndConvertToUBigInteger();
-            program.StackPush(~first);
+            var value = program.StackPopAndConvertToBigInteger();
+            program.StackPush(~value);
             program.Step();
         }
 
@@ -772,8 +794,8 @@ namespace Nethereum.EVM
 
         public static void Div(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
             if (second == 0)
             {
                 program.StackPush(0);
@@ -830,7 +852,7 @@ namespace Nethereum.EVM
 
         public static void StackPush(this Program program, BigInteger value)
         {
-            program.StackPush(new IntTypeEncoder(false, 256).EncodeInt(value, 32, false));
+            program.StackPush(new IntTypeEncoder(false, 256).EncodeInt(value, 32, false, true));
         }
 
     }
