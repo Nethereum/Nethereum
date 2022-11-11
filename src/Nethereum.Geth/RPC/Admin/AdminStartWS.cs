@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Geth.RPC.Admin
@@ -14,7 +13,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     The method returns a boolean flag specifying whether the WebSocket RPC listener was opened or not. Please note,
     ///     only one WebSocket endpoint is allowed to be active at any time.
     /// </Summary>
-    public class AdminStartWS : RpcRequestResponseHandler<bool>
+    public class AdminStartWS : RpcRequestResponseHandler<bool>, IAdminStartWS
     {
         public AdminStartWS(IClient client) : base(client, ApiMethods.admin_startWS.ToString())
         {

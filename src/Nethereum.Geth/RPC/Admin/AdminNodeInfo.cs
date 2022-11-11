@@ -10,7 +10,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     P2P overlay protocol, as well as specialized information added by each of the running application protocols (e.g.
     ///     eth, les, shh, bzz).
     /// </Summary>
-    public class AdminNodeInfo : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class AdminNodeInfo : GenericRpcRequestResponseHandlerNoParam<JObject>, IAdminNodeInfo
     {
         public AdminNodeInfo(IClient client) : base(client, ApiMethods.admin_nodeInfo.ToString())
         {

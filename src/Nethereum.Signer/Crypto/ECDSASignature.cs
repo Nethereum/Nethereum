@@ -27,10 +27,10 @@ namespace Nethereum.Signer.Crypto
             {
                 var decoder = new Asn1InputStream(derSig);
                 var seq = decoder.ReadObject() as DerSequence;
-                if ((seq == null) || (seq.Count != 2))
+                if (seq == null || seq.Count != 2)
                     throw new FormatException(InvalidDERSignature);
-                R = ((DerInteger)seq[0]).Value;
-                S = ((DerInteger)seq[1]).Value;
+                R = ((DerInteger) seq[0]).Value;
+                S = ((DerInteger) seq[1]).Value;
             }
             catch (Exception ex)
             {
@@ -42,13 +42,9 @@ namespace Nethereum.Signer.Crypto
 
         public BigInteger S { get; }
 
+        public byte[] V { get; set; }
 
-        public byte V { get; set; }
-
-        public bool IsLowS
-        {
-            get { return S.CompareTo(ECKey.HALF_CURVE_ORDER) <= 0; }
-        }
+        public bool IsLowS => S.CompareTo(ECKey.HALF_CURVE_ORDER) <= 0;
 
         public static ECDSASignature FromDER(byte[] sig)
         {
@@ -66,7 +62,7 @@ namespace Nethereum.Signer.Crypto
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }

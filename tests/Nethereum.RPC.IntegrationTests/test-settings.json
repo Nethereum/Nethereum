@@ -1,0 +1,26 @@
+﻿{
+  "liveSettings": {
+    "rpcUrl": "https://mainnet.infura.io",
+    "wsUrl": "wss://mainnet.infura.io/ws"
+  },
+  "testSettings": {
+    "defaultAccount": "0x12890D2cce102216644c59daE5baed380d84830c",
+    "defaultAccountPassword": "password",
+    "rpcUrl": "http://localhost:8545/",
+    "debugLogLocation": "I:\\JuanFran\\Documents\\Source\\Repos\\Nethereum\\testchain\\log.txt",
+    "blockhash": "0x0b7f7e2151328f33dbb14a8285331a6fd0b1081d1f5edea1937b7bee4dce7c5b",
+    "blockNumber": "1",
+    "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
+    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4",
+    "defaultShhPrivateKey": "0x62e01471dbfe82393e163a371f771196b093eb2e3c9f5f75732059125d10b28a",
+    "defaultShhPublicKey": "0x04f6e2d64a00dfbb50c203bae416f073b9ba3b108d9ff30d962ed072173cb113fc53c4dc789a1ccb83afa7eeed6f3a9bed2fb01ff494af85b7fe9af479a70956dd"
+  },
+  "parityRopstenSettings": {
+    "defaultAccount": "0xe84a30306b0BEEfD34a13A8d20d333078Ba7792e",
+    "defaultAccountPassword": "password",
+    "rpcUrl": "http://localhost:8545/",
+    "blockhash": "0xe2d80e5134ae5ed9b900af89d275e32645f038e48b9d30411a25354901e6a3d0",
+    "blockNumber": "34153"
+  }
+
+}

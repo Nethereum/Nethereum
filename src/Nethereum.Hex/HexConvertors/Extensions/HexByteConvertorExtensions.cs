@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Nethereum.Hex.HexConvertors.Extensions
 {
     public static class HexByteConvertorExtensions
     {
+        //From article http://blogs.msdn.com/b/heikkiri/archive/2012/07/17/hex-string-to-corresponding-byte-array.aspx
+
+        private static readonly byte[] Empty = new byte[0];
+
         public static string ToHex(this byte[] value, bool prefix = false)
         {
             var strPrex = prefix ? "0x" : "";
-            return strPrex  + string.Concat(value.Select(b =>  b.ToString("x2")).ToArray());
+            return strPrex + string.Concat(value.Select(b => b.ToString("x2")).ToArray());
         }
 
         public static bool HasHexPrefix(this string value)
@@ -16,14 +21,29 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return value.StartsWith("0x");
         }
 
+        public static bool IsHex(this string value)
+        {
+            bool isHex;
+            foreach (var c in value.RemoveHexPrefix())
+            {
+                isHex = ((c >= '0' && c <= '9') ||
+                         (c >= 'a' && c <= 'f') ||
+                         (c >= 'A' && c <= 'F'));
+
+                if (!isHex)
+                    return false;
+            }
+            return true;
+        }
+
         public static string RemoveHexPrefix(this string value)
         {
-            return value.Replace("0x", "");
+            return value.Substring(value.StartsWith("0x") ? 2 : 0);
         }
 
         public static bool IsTheSameHex(this string first, string second)
         {
-            return String.Equals(EnsureHexPrefix(first).ToLower(), EnsureHexPrefix(second).ToLower(),
+            return string.Equals(EnsureHexPrefix(first).ToLower(), EnsureHexPrefix(second).ToLower(),
                 StringComparison.Ordinal);
         }
 
@@ -31,21 +51,15 @@ namespace Nethereum.Hex.HexConvertors.Extensions
         {
             if (value == null) return null;
             if (!value.HasHexPrefix())
-            {
                 return "0x" + value;
-            }
             return value;
         }
 
         public static string[] EnsureHexPrefix(this string[] values)
         {
             if (values != null)
-            {
                 foreach (var value in values)
-                {
                     value.EnsureHexPrefix();
-                }
-            }
             return values;
         }
 
@@ -53,43 +67,42 @@ namespace Nethereum.Hex.HexConvertors.Extensions
         {
             return ToHex(value).TrimStart('0');
         }
-        //From article http://blogs.msdn.com/b/heikkiri/archive/2012/07/17/hex-string-to-corresponding-byte-array.aspx
 
-        private static readonly byte[] Empty = new byte[0];
-
-        public static byte[] HexToByteArray(this string value)
+        private static byte[] HexToByteArrayInternal(string value)
         {
             byte[] bytes = null;
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
+            {
                 bytes = Empty;
+            }
             else
             {
-                int string_length = value.Length;
-                int character_index = (value.StartsWith("0x", StringComparison.Ordinal)) ? 2 : 0;
+                var string_length = value.Length;
+                var character_index = value.StartsWith("0x", StringComparison.Ordinal) ? 2 : 0;
                 // Does the string define leading HEX indicator '0x'. Adjust starting index accordingly.               
-                int number_of_characters = string_length - character_index;
+                var number_of_characters = string_length - character_index;
 
-                bool add_leading_zero = false;
-                if (0 != (number_of_characters%2))
+                var add_leading_zero = false;
+                if (0 != number_of_characters % 2)
                 {
                     add_leading_zero = true;
 
                     number_of_characters += 1; // Leading '0' has been striped from the string presentation.
                 }
 
-                bytes = new byte[number_of_characters/2]; // Initialize our byte array to hold the converted string.
+                bytes = new byte[number_of_characters / 2]; // Initialize our byte array to hold the converted string.
 
-                int write_index = 0;
+                var write_index = 0;
                 if (add_leading_zero)
                 {
                     bytes[write_index++] = FromCharacterToByte(value[character_index], character_index);
                     character_index += 1;
                 }
 
-                for (int read_index = character_index; read_index < value.Length; read_index += 2)
+                for (var read_index = character_index; read_index < value.Length; read_index += 2)
                 {
-                    byte upper = FromCharacterToByte(value[read_index], read_index, 4);
-                    byte lower = FromCharacterToByte(value[read_index + 1], read_index + 1);
+                    var upper = FromCharacterToByte(value[read_index], read_index, 4);
+                    var lower = FromCharacterToByte(value[read_index + 1], read_index + 1);
 
                     bytes[write_index++] = (byte) (upper | lower);
                 }
@@ -98,27 +111,40 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return bytes;
         }
 
+        public static byte[] HexToByteArray(this string value)
+        {
+            try {
+                return HexToByteArrayInternal(value);
+            }
+            catch (FormatException ex)
+            {
+                throw new FormatException(string.Format(
+                    "String '{0}' could not be converted to byte array (not hex?).", value), ex);
+            }
+        }
+
         private static byte FromCharacterToByte(char character, int index, int shift = 0)
         {
-            byte value = (byte)character;
-            if (((0x40 < value) && (0x47 > value)) || ((0x60 < value) && (0x67 > value)))
+            var value = (byte) character;
+            if (0x40 < value && 0x47 > value || 0x60 < value && 0x67 > value)
             {
                 if (0x40 == (0x40 & value))
-                {
                     if (0x20 == (0x20 & value))
-                        value = (byte)(((value + 0xA) - 0x61) << shift);
+                        value = (byte) ((value + 0xA - 0x61) << shift);
                     else
-                        value = (byte)(((value + 0xA) - 0x41) << shift);
-                }
+                        value = (byte) ((value + 0xA - 0x41) << shift);
             }
-            else if ((0x29 < value) && (0x40 > value))
-                value = (byte)((value - 0x30) << shift);
+            else if (0x29 < value && 0x40 > value)
+            {
+                value = (byte) ((value - 0x30) << shift);
+            }
             else
-                throw new InvalidOperationException(String.Format("Character '{0}' at index '{1}' is not valid alphanumeric character.", character, index));
+            {
+                throw new FormatException(string.Format(
+                    "Character '{0}' at index '{1}' is not valid alphanumeric character.", character, index));
+            }
 
             return value;
         }
-
-        
     }
 }

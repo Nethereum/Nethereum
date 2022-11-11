@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net50</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
+  </ItemGroup>
+
+</Project>

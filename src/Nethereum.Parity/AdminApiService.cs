@@ -1,11 +1,10 @@
 using Nethereum.JsonRpc.Client;
 using Nethereum.Parity.RPC.Admin;
 using Nethereum.RPC;
-using Nethereum.Web3;
 
 namespace Nethereum.Parity
 {
-    public class AdminApiService : RpcClientWrapper
+    public class AdminApiService : RpcClientWrapper, IAdminApiService
     {
         public AdminApiService(IClient client) : base(client)
         {
@@ -16,15 +15,16 @@ namespace Nethereum.Parity
             PendingTransactionsStats = new ParityPendingTransactionsStats(client);
             ReleasesInfo = new ParityReleasesInfo(client);
             VersionInfo = new ParityVersionInfo(client);
+            ParityListStorageKeys = new ParityListStorageKeys(client);
         }
 
-        public ParityConsensusCapability ConsensusCapability { get; private set; }
-        public ParityListOpenedVaults ListOpenedVaults { get; private set; }
-        public ParityListVaults ListVaults { get; private set; }
-        public ParityLocalTransactions LocalTransactions { get; private set; }
-        public ParityPendingTransactionsStats PendingTransactionsStats { get; private set; }
-        public ParityReleasesInfo ReleasesInfo { get; private set; }
-        public ParityVersionInfo VersionInfo { get; private set; }
-            
+        public IParityListStorageKeys   ParityListStorageKeys { get; }
+        public IParityConsensusCapability ConsensusCapability { get; }
+        public IParityListOpenedVaults ListOpenedVaults { get; }
+        public IParityListVaults ListVaults { get; }
+        public IParityLocalTransactions LocalTransactions { get; }
+        public IParityPendingTransactionsStats PendingTransactionsStats { get; }
+        public IParityReleasesInfo ReleasesInfo { get; }
+        public IParityVersionInfo VersionInfo { get; }
     }
 }

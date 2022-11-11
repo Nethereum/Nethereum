@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.RPC.Sample Console Application</Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Nethereum.RPC.Sample</AssemblyName>
+    <PackageId>Nethereum.RPC.Sample</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <ApplicationIcon />
+    <OutputType>Exe</OutputType>
+    <StartupObject>Nethereum.RPC.Sample.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC.IntegrationTests\Nethereum.RPC.IntegrationTests.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Reference Include="System.Numerics" />
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+</Project>

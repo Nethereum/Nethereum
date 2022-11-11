@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net50</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="ConfigurationTests\FactoryTests\FromTruffle\Samples\EIP20.json" />
+    <None Remove="ConfigurationTests\FactoryTests\FromTruffle\Samples\MetaCoin.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <PackageReference Include="Moq" Version="4.8.2" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ConfigurationTests\FactoryTests\FromTruffle\Samples\EIP20.json" />
+    <EmbeddedResource Include="ConfigurationTests\FactoryTests\FromTruffle\Samples\MetaCoin.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Generator.Console\Nethereum.Generator.Console.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj" />
+  </ItemGroup>
+
+</Project>

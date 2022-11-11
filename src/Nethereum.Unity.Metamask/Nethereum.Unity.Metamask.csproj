@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum.Unity.Metamask Nethereum Unity Class Library to interact with Ethereum from Unity3d and Metamask in the browser</Description>
+    <AssemblyTitle>Nethereum.Unity.Metamask</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(UnityFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.Unity.Metamask</AssemblyName>
+    <PackageId>Nethereum.Unity.Metamasky</PackageId>
+    <PackageTags>Netherum;Unity3d;Unity;Metamask;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+	  <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Unity\Nethereum.Unity.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.9f1\Editor\Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NethereumMetamask.jslib">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

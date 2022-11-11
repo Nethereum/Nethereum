@@ -28,7 +28,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     "result": "0xb" // 11
     ///     }
     /// </Summary>
-    public class EthGetBlockTransactionCountByHash : RpcRequestResponseHandler<HexBigInteger>
+    public class EthGetBlockTransactionCountByHash : RpcRequestResponseHandler<HexBigInteger>, IEthGetBlockTransactionCountByHash
     {
         public EthGetBlockTransactionCountByHash(IClient client)
             : base(client, ApiMethods.eth_getBlockTransactionCountByHash.ToString())

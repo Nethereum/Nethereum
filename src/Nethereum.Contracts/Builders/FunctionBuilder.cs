@@ -1,14 +1,17 @@
-﻿using Nethereum.ABI.Model;
+﻿using System.Runtime.InteropServices.ComTypes;
+using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.TransactionTypes;
 
 namespace Nethereum.Contracts
 {
     public class FunctionBuilder : FunctionBuilderBase
     {
-      
-        public FunctionBuilder(ContractBuilder contract, FunctionABI function)
-            : base(contract, function)
+
+        public FunctionBuilder(string contractAddress, FunctionABI function)
+            : base(contractAddress, function)
         {
         }
 
@@ -45,25 +48,44 @@ namespace Nethereum.Contracts
         }
 
         public TransactionInput CreateTransactionInput(string from, HexBigInteger gas, HexBigInteger gasPrice,
-           HexBigInteger value, params object[] functionInput)
+            HexBigInteger value, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
         }
 
+        public TransactionInput CreateTransactionInput(HexBigInteger type, string from, HexBigInteger gas,
+            HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(type, encodedInput, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
+
+        public TransactionInput CreateTransactionInput(string from, HexBigInteger gas,
+            HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas, params object[] functionInput)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(TransactionType.EIP1559.AsHexBigInteger(), encodedInput, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
 
         public TransactionInput CreateTransactionInput(TransactionInput input, params object[] functionInput)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, input);
         }
-  
     }
+
 
     public class FunctionBuilder<TFunctionInput> : FunctionBuilderBase
     {
-        public FunctionBuilder(ContractBuilder contract, FunctionABI function)
-           : base(contract, function)
+        public FunctionBuilder(string contractAddres):base(contractAddres)
+        {
+
+            FunctionABI = ABITypedRegistry.GetFunctionABI<TFunctionInput>();
+        }
+
+        public FunctionBuilder(string contractAddress, FunctionABI function)
+            : base(contractAddress, function)
         {
         }
 
@@ -90,23 +112,54 @@ namespace Nethereum.Contracts
             return FunctionCallEncoder.EncodeRequest(functionInput, FunctionABI.Sha3Signature);
         }
 
+        public byte[] GetDataAsBytes(TFunctionInput functionInput)
+        {
+            return GetData(functionInput).HexToByteArray();
+        }
+
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, TransactionInput transactionInput)
+        {
+            return FunctionCallDecoder.DecodeFunctionInput<TFunctionInput>(functionInput, FunctionABI.Sha3Signature, transactionInput.Data);
+        }
+
+        public TFunctionInput DecodeFunctionInput(TFunctionInput functionInput, string data)
+        {
+            return FunctionCallDecoder.DecodeFunctionInput<TFunctionInput>(functionInput, FunctionABI.Sha3Signature, data);
+        }
+
         public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, value);
         }
 
-        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas, HexBigInteger gasPrice, HexBigInteger value)
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger gasPrice, HexBigInteger value)
         {
             var encodedInput = GetData(functionInput);
             return base.CreateTransactionInput(encodedInput, from, gas, gasPrice, value);
         }
 
+
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput,  HexBigInteger type, string from, HexBigInteger gas,
+            HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(type, encodedInput, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
+
+        public TransactionInput CreateTransactionInput(TFunctionInput functionInput, string from, HexBigInteger gas,
+            HexBigInteger value, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            var encodedInput = GetData(functionInput);
+            return base.CreateTransactionInput(TransactionType.EIP1559.AsHexBigInteger(), encodedInput, from, gas, value, maxFeePerGas, maxPriorityFeePerGas);
+        }
     }
 }

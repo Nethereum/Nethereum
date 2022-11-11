@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net50</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+  </ItemGroup>
+
+</Project>

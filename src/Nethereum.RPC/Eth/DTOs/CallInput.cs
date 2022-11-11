@@ -1,13 +1,13 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
-
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Object - The transaction call object
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
+
     public class CallInput
     {
         private string _from;
@@ -40,6 +40,18 @@ namespace Nethereum.RPC.Eth.DTOs
             : this(data, addressTo, addressFrom, gas, value)
         {
             GasPrice = gasPrice;
+        }
+
+        public CallInput(string data, string addressTo, string addressFrom, HexBigInteger gas, HexBigInteger value, HexBigInteger type, HexBigInteger maxFeePerGas, HexBigInteger maxPriorityFeePerGas)
+        {
+            Data = data;
+            To = addressTo;
+            From = addressFrom;
+            Gas = gas;
+            Value = value;
+            Type = type;
+            MaxFeePerGas = maxFeePerGas;
+            MaxPriorityFeePerGas = maxPriorityFeePerGas;
         }
 
         public CallInput(string data, string addressFrom, HexBigInteger gas, HexBigInteger value)
@@ -96,7 +108,7 @@ namespace Nethereum.RPC.Eth.DTOs
         public HexBigInteger Value { get; set; }
 
         /// <summary>
-        ///     data: DATA - (optional) The compiled code of a contract
+        ///     data: DATA - (optional) The compiled code of a contract (note this should be "input" now but changed for backwards compatibility in many forks)
         /// </summary>
         [JsonProperty(PropertyName = "data")]
         public string Data
@@ -104,5 +116,30 @@ namespace Nethereum.RPC.Eth.DTOs
             get { return _data.EnsureHexPrefix(); }
             set { _data = value; }
         }
+
+        /// <summary>
+        ///   QUANTITY - Max Fee Per Gas provided by the sender in Wei.
+        /// </summary>
+       [JsonProperty(PropertyName = "maxFeePerGas")]
+        public HexBigInteger MaxFeePerGas { get; set; }
+
+        /// <summary>
+        ///   QUANTITY - Max Priority Fee Per Gas provided by the sender in Wei.
+        /// </summary>
+        [JsonProperty(PropertyName = "maxPriorityFeePerGas")]
+        public HexBigInteger MaxPriorityFeePerGas { get; set; }
+
+        /// <summary>
+        ///    QUANTITY - The transaction type.
+        /// </summary>
+        [JsonProperty(PropertyName = "type")]
+        public HexBigInteger Type { get; set; }
+
+        /// <summary>
+        /// chainId :Chain ID that this transaction is valid on.
+        /// </summary>
+        [JsonProperty(PropertyName = "chainId")]
+        public HexBigInteger ChainId { get; set; }
+
     }
 }

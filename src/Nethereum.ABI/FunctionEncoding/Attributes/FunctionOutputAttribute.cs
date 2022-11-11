@@ -9,7 +9,7 @@ namespace Nethereum.ABI.FunctionEncoding.Attributes
         public static FunctionOutputAttribute GetAttribute<T>()
         {
             var type = typeof(T);
-            return type.GetTypeInfo().GetCustomAttribute<FunctionOutputAttribute>();
+            return type.GetTypeInfo().GetCustomAttribute<FunctionOutputAttribute>(true);
         }
 
         public static bool IsFunctionType<T>()

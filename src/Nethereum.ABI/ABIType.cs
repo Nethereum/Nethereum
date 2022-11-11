@@ -33,6 +33,8 @@ namespace Nethereum.ABI
 
         public static ABIType CreateABIType(string typeName)
         {
+            if (typeName == "tuple") return new TupleType();
+
             if (typeName.Contains("["))
                 return ArrayType.CreateABIType(typeName);
             if ("bool".Equals(typeName))
@@ -51,9 +53,9 @@ namespace Nethereum.ABI
                 var size = Convert.ToInt32(typeName.Substring(5));
                 if (size == 32)
                     return new Bytes32Type(typeName);
-                else
-                    return new BytesElementaryType(typeName, size);
+                return new BytesElementaryType(typeName, size);
             }
+
             throw new ArgumentException("Unknown type: " + typeName);
         }
 
@@ -77,13 +79,14 @@ namespace Nethereum.ABI
             return Decoder.Decode<T>(encoded);
         }
 
-        /// <summary>
-        ///     Encodes the value according to specific type rules
-        /// </summary>
-        /// <param name="value"> </param>
         public byte[] Encode(object value)
         {
             return Encoder.Encode(value);
+        }
+
+        public byte[] EncodePacked(object value)
+        {
+            return Encoder.EncodePacked(value);
         }
 
         public Type GetDefaultDecodingType()

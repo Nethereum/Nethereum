@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
- 
+
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -28,7 +28,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     "result": "0xa" // 10
     ///     }
     /// </Summary>
-    public class EthGetBlockTransactionCountByNumber : RpcRequestResponseHandler<HexBigInteger>
+    public class EthGetBlockTransactionCountByNumber : RpcRequestResponseHandler<HexBigInteger>, IEthGetBlockTransactionCountByNumber
     {
         public EthGetBlockTransactionCountByNumber(IClient client)
             : base(client, ApiMethods.eth_getBlockTransactionCountByNumber.ToString())

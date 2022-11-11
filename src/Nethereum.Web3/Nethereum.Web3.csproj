@@ -2,20 +2,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Description>Nethereum.Web3 Ethereum Web3 Class Library to interact via RCP with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
-    <Copyright>Juan Blanco</Copyright>
+    <Description>Nethereum.Web3 Ethereum Web3 Class Library to interact via RPC with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
     <AssemblyTitle>Nethereum.Web3</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netstandard1.1;net451</TargetFrameworks>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Web3</AssemblyName>
     <PackageId>Nethereum.Web3</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
@@ -29,9 +28,20 @@
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <DefineConstants>$(DefineConstants);PCL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
     <Reference Include="System.Net.Http" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

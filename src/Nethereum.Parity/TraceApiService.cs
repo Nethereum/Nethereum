@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Nethereum.JsonRpc.Client;
-using Nethereum.Parity.RPC.Network;
+﻿using Nethereum.JsonRpc.Client;
 using Nethereum.Parity.RPC.Trace;
 using Nethereum.RPC;
 
 namespace Nethereum.Parity
 {
-    public class TraceApiService : RpcClientWrapper
+    public class TraceApiService : RpcClientWrapper, ITraceApiService
     {
         public TraceApiService(IClient client) : base(client)
         {
@@ -20,11 +16,11 @@ namespace Nethereum.Parity
             TraceTransaction = new TraceTransaction(client);
         }
 
-        public TraceBlock TraceBlock { get; }
-        public TraceCall TraceCall { get; }
-        public TraceFilter TraceFilter { get; }
-        public TraceGet TraceGet { get; }
-        public TraceRawTransaction TraceRawTransaction { get; }
-        public TraceTransaction TraceTransaction { get; }
+        public ITraceBlock TraceBlock { get; }
+        public ITraceCall TraceCall { get; }
+        public ITraceFilter TraceFilter { get; }
+        public ITraceGet TraceGet { get; }
+        public ITraceRawTransaction TraceRawTransaction { get; }
+        public ITraceTransaction TraceTransaction { get; }
     }
 }

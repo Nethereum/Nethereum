@@ -1,9 +1,15 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
+using Nethereum.Contracts.Extensions;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.StandardTokenEIP20.Events.DTO
 {
-    public class Approval
+    [Event("Approval")]
+    [Obsolete("Please use ApprovalEventDTO instead")]
+    public partial class Approval : IEventDTO
     {
         [Parameter("address", "owner", 1, true)]
         public string AddressOwner { get; set; }

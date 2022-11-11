@@ -1,0 +1,19 @@
+<Project>
+ <PropertyGroup>
+   <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+   <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
+   <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>
+   <RepositoryType>git</RepositoryType>
+   <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
+   <Description>Code generation of Nethereum integration classes using the Solidity Abi and Bin</Description>
+   <Copyright>Juan Blanco</Copyright>
+   <Version>4.11.0</Version>
+   <Authors>Juan Blanco,Nethereum contributors</Authors> 
+</PropertyGroup>
+<PropertyGroup>
+  <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+</PropertyGroup>
+<ItemGroup>
+  <None Include="..\..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+</ItemGroup>
+</Project>

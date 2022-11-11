@@ -1,10 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     ///     Block including transaction objects
     /// </summary>
+
     public class BlockWithTransactions : Block
     {
         /// <summary>

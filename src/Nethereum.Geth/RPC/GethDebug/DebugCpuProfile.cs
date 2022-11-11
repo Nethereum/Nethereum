@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Geth.RPC.Debug
@@ -7,7 +6,7 @@ namespace Nethereum.Geth.RPC.Debug
     /// <Summary>
     ///     Turns on CPU profiling for the given duration and writes profile data to disk.
     /// </Summary>
-    public class DebugCpuProfile : RpcRequestResponseHandler<object>
+    public class DebugCpuProfile : RpcRequestResponseHandler<object>, IDebugCpuProfile
     {
         public DebugCpuProfile(IClient client) : base(client, ApiMethods.debug_cpuProfile.ToString())
         {

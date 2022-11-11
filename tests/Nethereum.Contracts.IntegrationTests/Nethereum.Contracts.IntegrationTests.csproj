@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.Contracts.IntegrationTests </Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+	  <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+	  <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <Reference Include="System.Numerics" />
+    <Reference Include="System" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="ILogger.Moq" Version="1.1.10" />
+	  <PackageReference Include="IPLD.ContentIdentifier" Version="1.1.1" />
+	  <PackageReference Include="Multiformats.Codec" Version="1.1.2" />
+	  <PackageReference Include="Multiformats.Hash" Version="1.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+</Project>

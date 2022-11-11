@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5BBEAE99-333E-4B98-8453-C5667FB22184}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Nethereum.ClassDiagrams</RootNamespace>
+    <AssemblyName>Nethereum.ClassDiagrams</AssemblyName>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj">
+      <Project>{cd7d0813-c613-4788-a428-31dc5605cf7b}</Project>
+      <Name>Nethereum.ABI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj">
+      <Project>{28715b81-50fa-423b-9869-f85f0fb2367e}</Project>
+      <Name>Nethereum.Accounts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj">
+      <Project>{687fc7b7-9a07-4dc2-bdb2-5eaa3a58956a}</Project>
+      <Name>Nethereum.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Geth\Nethereum.Geth.csproj">
+      <Project>{d86eaf2f-a6be-4705-a9a7-e42cea94d3fb}</Project>
+      <Name>Nethereum.Geth</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.HDWallet\Nethereum.HdWallet.csproj">
+      <Project>{b998c26b-90bd-4aeb-93c3-9aa35f888c69}</Project>
+      <Name>Nethereum.HdWallet</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj">
+      <Project>{6e01ff7e-6178-466f-83d2-633e861b7617}</Project>
+      <Name>Nethereum.Hex</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj">
+      <Project>{84a6baa7-32b3-4d99-9280-87023bff0a5b}</Project>
+      <Name>Nethereum.JsonRpc.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.JsonRpc.IpcClient\Nethereum.JsonRpc.IpcClient.csproj">
+      <Project>{3d85110c-80c3-4136-a828-22cb066362a0}</Project>
+      <Name>Nethereum.JsonRpc.IpcClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj">
+      <Project>{3f8d6b13-b483-4873-8946-106d25bf6212}</Project>
+      <Name>Nethereum.JsonRpc.RpcClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj">
+      <Project>{9097c44c-1ca0-4c89-8baa-1054eaaa8ff1}</Project>
+      <Name>Nethereum.JsonRpc.WebSocketClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.KeyStore\Nethereum.KeyStore.csproj">
+      <Project>{1b8f4753-dde4-4b12-b45a-b26ec900a95a}</Project>
+      <Name>Nethereum.KeyStore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Parity\Nethereum.Parity.csproj">
+      <Project>{dc3eaaed-2e67-47ec-85a1-c1a140b5fbfa}</Project>
+      <Name>Nethereum.Parity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Quorum\Nethereum.Quorum.csproj">
+      <Project>{cf1e0de8-2609-4e5a-99a1-e7919abc2ee5}</Project>
+      <Name>Nethereum.Quorum</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj">
+      <Project>{d127b70b-fdd2-4057-aafe-989cda1b8e51}</Project>
+      <Name>Nethereum.RPC</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj">
+      <Project>{7e50b6de-499b-42f2-8419-6f87c71f8bb2}</Project>
+      <Name>Nethereum.Signer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj">
+      <Project>{032503eb-5c03-4c7a-851f-20886b43ed0d}</Project>
+      <Name>Nethereum.StandardTokenEIP20</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Unity\Nethereum.Unity.csproj">
+      <Project>{a295cba8-dbe4-44ef-a673-6372728cedb0}</Project>
+      <Name>Nethereum.Unity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj">
+      <Project>{6e54ca25-cf76-4eaf-b445-6087432d20a1}</Project>
+      <Name>Nethereum.Util</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj">
+      <Project>{ab3652f1-ac30-4522-a1ee-1758a6ef6f5c}</Project>
+      <Name>Nethereum.Web3</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AccountTransactionManagerNonceService.cd" />
+    <None Include="ContractQueryHandlers.cd" />
+    <None Include="ContractTransactionHandlers.cd" />
+    <None Include="EventExtensions.cd" />
+    <None Include="Web3.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Images\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

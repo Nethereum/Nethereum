@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.UI Common services to work with Nethereum and FrontEnds like EthereumHostProvider, SiweAuthenticationService</Description>
+		<AssemblyTitle>Nethereum.UI</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(UIFrameworks)</TargetFrameworks>
+		<AssemblyName>Nethereum.UI</AssemblyName>
+		<PackageId>Nethereum.UI</PackageId>
+		<PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="FluentValidation" Version="9.3.0" />
+
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.Siwe.Core\Nethereum.Siwe.Core.csproj" />
+		<ProjectReference Include="..\Nethereum.Siwe\Nethereum.Siwe.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+</Project>

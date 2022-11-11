@@ -19,11 +19,39 @@ namespace Nethereum.ABI.Encoders
             return Encode(value, false);
         }
 
+        public byte[] EncodePacked(object value)
+        {
+            if (_size == 1 && value is byte)
+            {
+                value = new byte[1] { (byte)value };
+            }
+
+            if (_size == 16 && value is Guid)
+            {
+                value = ((Guid)value).ToByteArray();
+            }
+
+            if (!(value is byte[]))
+                throw new Exception("byte[] value expected for type 'bytes'");
+            var byteArray = (byte[])value;
+
+            if (byteArray.Length != _size)
+                throw new Exception("byte[] size expected to be " + _size);
+
+            return byteArray;
+
+        }
+
         public byte[] Encode(object value, bool checkEndian)
         {
             if(_size == 1 && value is byte)
             {
                 value = new byte[1] { (byte)value };
+            }
+
+            if (_size == 16 && value is Guid)
+            {
+                value = ((Guid) value).ToByteArray();
             }
 
             if (!(value is byte[]))

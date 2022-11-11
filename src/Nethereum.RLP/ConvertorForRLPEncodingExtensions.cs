@@ -12,7 +12,12 @@ namespace Nethereum.RLP
         {
             if (bytes == null) return 0;
             if (BitConverter.IsLittleEndian)
-                return new BigInteger(bytes.Reverse().ToArray());
+            {
+                var listEncoded = bytes.ToList();
+                listEncoded.Insert(0, 0x00);
+                bytes = listEncoded.ToArray().Reverse().ToArray();
+                return new BigInteger(bytes);
+            }
             return new BigInteger(bytes);
         }
 
@@ -60,17 +65,22 @@ namespace Nethereum.RLP
             return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
         }
 
-        private static byte[] ToBytesFromNumber(byte[] bytes)
+        public static byte[] ToBytesFromNumber(byte[] bytes)
         {
             if (BitConverter.IsLittleEndian)
                 bytes = bytes.Reverse().ToArray();
 
+            return TrimZeroBytes(bytes);
+        }
+
+        public static byte[] TrimZeroBytes(this byte[] bytes)
+        {
             var trimmed = new List<byte>();
             var previousByteWasZero = true;
 
             for (var i = 0; i < bytes.Length; i++)
             {
-                if (previousByteWasZero && (bytes[i] == 0))
+                if (previousByteWasZero && bytes[i] == 0)
                     continue;
 
                 previousByteWasZero = false;

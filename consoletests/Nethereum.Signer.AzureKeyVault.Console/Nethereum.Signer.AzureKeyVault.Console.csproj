@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.5.0" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.19.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.AzureKeyVault\Nethereum.Signer.AzureKeyVault.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.Geth.RPC.Debug.DTOs;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
@@ -19,11 +18,11 @@ namespace Nethereum.Geth.RPC.Debug
     ///     which hasn't changed. This is a slow process and is therefor defaulted to false. By default it will only ever give
     ///     you the changed storage values.
     /// </Summary>
-    public class DebugTraceTransaction : RpcRequestResponseHandler<JObject>
+    public class DebugTraceTransaction : RpcRequestResponseHandler<JObject>, IDebugTraceTransaction
     {
         public DebugTraceTransaction(IClient client) : base(client, ApiMethods.debug_traceTransaction.ToString())
         {
-        }
+        } 
 
         public RpcRequest BuildRequest(string txnHash, TraceTransactionOptions options, object id = null)
         {

@@ -3,7 +3,7 @@ using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.RPC.Eth.Services
 {
-    public class EthApiBlockService : RpcClientWrapper
+    public class EthApiBlockService : RpcClientWrapper, IEthApiBlockService
     {
         public EthApiBlockService(IClient client) : base(client)
         {
@@ -16,12 +16,13 @@ namespace Nethereum.RPC.Eth.Services
             GetBlockWithTransactionsHashesByNumber = new EthGetBlockWithTransactionsHashesByNumber(client);
         }
 
-        public EthBlockNumber GetBlockNumber { get; private set; }
-        public EthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; private set; }
-        public EthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; private set; }
-        public EthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; private set; }
-        public EthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; private set; }
-        public EthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; private set; }
-        public EthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; private set; }
+        public IEthBlockNumber GetBlockNumber { get; private set; }
+        public IEthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; private set; }
+        public IEthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; private set; }
+        public IEthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; private set; }
+        
+        public IEthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; private set; }
+        public IEthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; private set; }
+        public IEthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; private set; }
     }
 }

@@ -1,0 +1,16 @@
+﻿{
+  "liveSettings": {
+    "rpcUrl": "https://mainnet.infura.io"
+  },
+  "testSettings": {
+    "defaultAccount": "0x12890D2cce102216644c59daE5baed380d84830c",
+    "defaultAccountPassword": "password",
+    "defaultNodeIrl": "enode://8c87ddc14f0f373b9444a5fd940168b7e99371a8b5793b7ed7b9694480fb2706e91e6b84cf794720d221e6f6a9fafea9ed033e8f9910c1e6a6b7d4accea88fcb@127.0.0.1:30306",
+    "rpcUrl": "http://localhost:8545/",
+    "debugLogLocation": "I:\\JuanFran\\Documents\\Source\\Repos\\Nethereum\\testchain\\log.txt",
+    "blockhash": "0x0b7f7e2151328f33dbb14a8285331a6fd0b1081d1f5edea1937b7bee4dce7c5b",
+    "blockNumber": "1",
+    "transactionHash": "0xc8459467a4f917ea9550e2d35a9a8faefcb9805de4be0cd29ce01471e9cedc29",
+    "contractAddress": "0x2a212f50a2a020010ea88cc33fc4c333e6a5c5c4"
+  }
+}

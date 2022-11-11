@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Net
     ///     "result":true
     ///     }
     /// </Summary>
-    public class NetListening : GenericRpcRequestResponseHandlerNoParam<bool>
+    public class NetListening : GenericRpcRequestResponseHandlerNoParam<bool>, INetListening
     {
         public NetListening(IClient client) : base(client, ApiMethods.net_listening.ToString())
         {

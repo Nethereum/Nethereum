@@ -1,5 +1,4 @@
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.Contracts
 {
@@ -11,7 +10,7 @@ namespace Nethereum.Contracts
             Log = log;
         }
 
-        public T Event { get; private set; }
+        public T Event { get; }
         public FilterLog Log { get; }
     }
 }

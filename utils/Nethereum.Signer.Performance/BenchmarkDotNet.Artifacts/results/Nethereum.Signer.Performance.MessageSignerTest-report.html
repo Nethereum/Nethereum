@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>Nethereum.Signer.Performance.MessageSignerTest-20220628-155458</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet=v0.12.1, OS=Windows 10.0.22000
+AMD Ryzen 9 3900X, 1 CPU, 24 logical and 12 physical cores
+.NET Core SDK=6.0.400-preview.22301.10
+  [Host]     : .NET Core 6.0.5 (CoreCLR 6.0.522.21309, CoreFX 6.0.522.21309), X64 RyuJIT
+  DefaultJob : .NET Core 6.0.5 (CoreCLR 6.0.522.21309, CoreFX 6.0.522.21309), X64 RyuJIT
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>             Method</th><th>   Mean</th><th>Error</th><th>StdDev</th>
+</tr>
+</thead><tbody><tr><td>MessageSigningRec</td><td>0.1944 ns</td><td>0.0028 ns</td><td>0.0025 ns</td>
+</tr><tr><td>MessageSigningBouncy</td><td>2.5965 ns</td><td>0.0275 ns</td><td>0.0257 ns</td>
+</tr><tr><td>Recovery</td><td>0.2177 ns</td><td>0.0035 ns</td><td>0.0033 ns</td>
+</tr><tr><td>RecoveryBouncy</td><td>1.7579 ns</td><td>0.0300 ns</td><td>0.0281 ns</td>
+</tr><tr><td>FullRoundRec</td><td>1.7343 ns</td><td>0.0069 ns</td><td>0.0061 ns</td>
+</tr><tr><td>FullRoundBouncy</td><td>6.7162 ns</td><td>0.1183 ns</td><td>0.1408 ns</td>
+</tr><tr><td>SignFunctionMessage</td><td>4,051.9825 ns</td><td>16.8164 ns</td><td>15.7300 ns</td>
+</tr><tr><td>SignFunctionMessageBouncy</td><td>4,051.6605 ns</td><td>17.6386 ns</td><td>15.6361 ns</td>
+</tr></tbody></table>
+</body>
+</html>

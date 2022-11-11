@@ -8,27 +8,29 @@ namespace Nethereum.RPC.TransactionReceipts
 {
     public interface ITransactionReceiptService
     {
-        Task<TransactionReceipt> SendRequestAsync(Func<Task<string>> transactionFunction,
-            CancellationTokenSource tokenSource = null);
+        Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(Func<Task<string>> transactionFunction,
+            CancellationToken cancellationToken = default);
 
-        Task<TransactionReceipt> DeployContractAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null);
+        Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Func<Task<string>> deployFunction,
+             CancellationToken cancellationToken = default);
 
-        Task<TransactionReceipt> DeployContractAsync(TransactionInput transactionInput,
-            CancellationTokenSource tokenSource = null);
+        Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(TransactionInput transactionInput,
+            CancellationToken cancellationToken = default);
 
         Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
-            CancellationTokenSource tokenSource = null);
+            CancellationToken cancellationToken = default);
 
-        Task<TransactionReceipt> SendRequestAsync(TransactionInput transactionInput,
-            CancellationTokenSource tokenSource = null);
+        Task<TransactionReceipt> SendRequestAndWaitForReceiptAsync(TransactionInput transactionInput,
+            CancellationToken cancellationToken = default);
 
-        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<TransactionInput> transactionInputs,
-            CancellationTokenSource tokenSource = null);
+        Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<TransactionInput> transactionInputs,
+            CancellationToken cancellationToken = default);
 
-        Task<List<TransactionReceipt>> SendRequestsAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
-          CancellationTokenSource tokenSource = null);
+        Task<List<TransactionReceipt>> SendRequestsAndWaitForReceiptAsync(IEnumerable<Func<Task<string>>> transactionFunctions,
+          CancellationToken cancellationToken = default);
+        Task<TransactionReceipt> PollForReceiptAsync(string transaction, CancellationToken cancellationToken = default);
 
-
+        int GetPollingRetryIntervalInMilliseconds();
+        void SetPollingRetryIntervalInMilliseconds(int retryMilliseconds);
     }
 }

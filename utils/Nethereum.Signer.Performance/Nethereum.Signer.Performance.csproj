@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

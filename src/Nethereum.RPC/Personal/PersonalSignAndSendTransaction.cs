@@ -11,7 +11,7 @@ namespace Nethereum.RPC.Personal
     ///     can be used to decrypt the private key belogging to tx.from the transaction is verified, signed and send onto the
     ///     network. The account is not unlocked globally in the node and cannot be used in other RPC calls.
     /// </Summary>
-    public class PersonalSignAndSendTransaction : RpcRequestResponseHandler<string>
+    public class PersonalSignAndSendTransaction : RpcRequestResponseHandler<string>, IPersonalSignAndSendTransaction
     {
         public PersonalSignAndSendTransaction(IClient client)
             : base(client, ApiMethods.personal_sendTransaction.ToString())

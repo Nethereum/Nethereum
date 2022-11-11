@@ -1,11 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
+﻿using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Quorum.RPC
 {
-    public class QuorumCanonicalHash : RpcRequestResponseHandler<string>
+    public class QuorumCanonicalHash : RpcRequestResponseHandler<string>, IQuorumCanonicalHash
     {
         public QuorumCanonicalHash(IClient client) : base(client, ApiMethods.quorum_canonicalHash.ToString())
         {

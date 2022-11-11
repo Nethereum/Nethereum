@@ -1,0 +1,18 @@
+<Project>
+
+  <PropertyGroup>
+    <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+  </PropertyGroup>
+  
+   <PropertyGroup>
+    <NugetVersion>4.11.0</NugetVersion>
+  </PropertyGroup> 
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generating dotnet files based on abi files in project and/or Nethereum.Generator.json" />
+    <Exec Condition = "$(IsWindows) == 'true' and $(NethereumGenerateCode) != 'false'" Command="dotnet &quot;%USERPROFILE%\.nuget\packages\nethereum.autogen.contractapi\$(NugetVersion)\tools\Nethereum.Generator.Console.dll&quot; generate from-project -p &quot;$(ProjectPath)&quot; -a &quot;$(TargetFileName)&quot;" />
+    <Exec Condition = "$(IsWindows) == ''  and $(NethereumGenerateCode) != 'false'" Command="dotnet ~/.nuget/packages/nethereum.autogen.contractapi/$(NugetVersion)/tools/Nethereum.Generator.Console.dll generate from-project -p &quot;$(ProjectPath)&quot; -a &quot;$(TargetFileName)&quot;" />
+    <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generation finished." />
+  </Target>
+
+</Project>

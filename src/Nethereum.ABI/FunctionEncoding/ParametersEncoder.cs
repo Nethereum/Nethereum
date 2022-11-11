@@ -11,32 +11,35 @@ using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
+
     public class ParametersEncoder
     {
         private readonly IntTypeEncoder intTypeEncoder;
+        private readonly AttributesToABIExtractor attributesToABIExtractor;
 
         public ParametersEncoder()
         {
             intTypeEncoder = new IntTypeEncoder();
+            attributesToABIExtractor = new AttributesToABIExtractor();
         }
 
-        public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
+        public byte[] EncodeAbiTypes(ABIType[] abiTypes, params object[] values)
         {
-            if ((values == null) && (parameters.Length > 0))
+            if ((values == null) && (abiTypes.Length > 0))
                 throw new ArgumentNullException(nameof(values), "No values specified for encoding");
 
-            if (values == null) return new byte[] {};
+            if (values == null) return new byte[] { };
 
-            if (values.Length > parameters.Length)
-                throw new Exception("Too many arguments: " + values.Length + " > " + parameters.Length);
+            if (values.Length > abiTypes.Length)
+                throw new Exception("Too many arguments: " + values.Length + " > " + abiTypes.Length);
 
             var staticSize = 0;
             var dynamicCount = 0;
             // calculating static size and number of dynamic params
             for (var i = 0; i < values.Length; i++)
             {
-                var parameter = parameters[i];
-                var parameterSize = parameter.ABIType.FixedSize;
+                var abiType = abiTypes[i];
+                var parameterSize = abiType.FixedSize;
                 if (parameterSize < 0)
                 {
                     dynamicCount++;
@@ -53,9 +56,12 @@ namespace Nethereum.ABI.FunctionEncoding
             var currentDynamicPointer = staticSize;
             var currentDynamicCount = 0;
             for (var i = 0; i < values.Length; i++)
-                if (parameters[i].ABIType.IsDynamic())
+            {
+                var abiType = abiTypes[i];
+                if (abiType.IsDynamic())
                 {
-                    var dynamicValueBytes = parameters[i].ABIType.Encode(values[i]);
+                   var  dynamicValueBytes = abiType.Encode(values[i]);
+                
                     encodedBytes[i] = intTypeEncoder.EncodeInt(currentDynamicPointer);
                     encodedBytes[values.Length + currentDynamicCount] = dynamicValueBytes;
                     currentDynamicCount++;
@@ -63,43 +69,108 @@ namespace Nethereum.ABI.FunctionEncoding
                 }
                 else
                 {
-                    encodedBytes[i] = parameters[i].ABIType.Encode(values[i]);
+                    try
+                    {
+                        encodedBytes[i] = abiType.Encode(values[i]);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new AbiEncodingException(i, abiType, values[i],
+                            $"An error occurred encoding abi value. Order: '{i + 1}', Type: '{abiType.Name}', Value: '{values[i] ?? "null"}'.  Ensure the value is valid for the abi type.",
+                            ex);
+                    }
                 }
+            }
             return ByteUtil.Merge(encodedBytes);
+        }
+
+        public byte[] EncodeParameters(Parameter[] parameters, params object[] values)
+        {
+            return EncodeAbiTypes(parameters.Select(x => x.ABIType).ToArray(), values);
         }
 
         public byte[] EncodeParametersFromTypeAttributes(Type type, object instanceValue)
         {
+            var parameterObjects = GetParameterAttributeValues(type, instanceValue);
+            var abiParameters = GetParametersInOrder(parameterObjects);
+            var objectValues = GetValuesInOrder(parameterObjects);
+            return EncodeParameters(abiParameters, objectValues);
+        }
 
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
+        public object[] GetValuesInOrder(List<ParameterAttributeValue> parameterObjects)
+        {
+            return parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
+        }
+
+        public Parameter[] GetParametersInOrder(List<ParameterAttributeValue> parameterObjects)
+        {
+            return parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
+                .Select(x => x.ParameterAttribute.Parameter)
+                .ToArray();
+        }
+
+        public List<ParameterAttributeValue> GetParameterAttributeValues(Type type, object instanceValue)
+        {
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             var parameterObjects = new List<ParameterAttributeValue>();
 
             foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
-                {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+            {
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
 #if DOTNET35
                     var propertyValue = property.GetValue(instanceValue, null);
 #else
-                     var propertyValue = property.GetValue(instanceValue);
+                var propertyValue = property.GetValue(instanceValue);
 #endif
-                    parameterObjects.Add(new ParameterAttributeValue
-                    {
-                        ParameterAttribute = parameterAttribute,
-                        Value = propertyValue
-                    });
+
+                attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(property.PropertyType, parameterAttribute.Parameter.ABIType);
+
+                if (parameterAttribute.Parameter.ABIType is TupleType tupleType)
+                {
+                    propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
                 }
 
-            var abiParameters =
-                parameterObjects.OrderBy(x => x.ParameterAttribute.Order)
-                    .Select(x => x.ParameterAttribute.Parameter)
-                    .ToArray();
-            var objectValues = parameterObjects.OrderBy(x => x.ParameterAttribute.Order).Select(x => x.Value).ToArray();
-            return EncodeParameters(abiParameters, objectValues);
+                parameterObjects.Add(new ParameterAttributeValue
+                {
+                    ParameterAttribute = parameterAttribute,
+                    Value = propertyValue
+                });
+            }
+
+            return parameterObjects;
         }
+
+        public object[] GetTupleComponentValuesFromTypeAttributes(Type type, object instanceValue)
+        {
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+
+            var propertiesInOrder = properties.Where(x => x.IsDefined(typeof(ParameterAttribute), true))
+                .OrderBy(x => x.GetCustomAttribute<ParameterAttribute>(true).Order);
+
+            var parameterObjects = new List<object>();
+
+            foreach (var property in propertiesInOrder)
+            {
+                var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>(true);
+
+#if DOTNET35
+                var propertyValue = property.GetValue(instanceValue, null);
+#else
+                var propertyValue = property.GetValue(instanceValue);
+#endif
+
+                if (parameterAttribute.Parameter.ABIType is TupleType)
+                {
+                    propertyValue = GetTupleComponentValuesFromTypeAttributes(property.PropertyType, propertyValue);
+                }
+
+                parameterObjects.Add(propertyValue);
+            }
+
+            return parameterObjects.ToArray();
+        }
+ 
     }
-}
+ }
+
+   

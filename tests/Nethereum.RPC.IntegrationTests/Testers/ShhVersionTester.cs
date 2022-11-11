@@ -1,0 +1,21 @@
+using System;
+using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Shh;
+
+namespace Nethereum.RPC.Tests.Testers
+{
+    public class ShhVersionTester : IRPCRequestTester
+    {
+        public async Task<object> ExecuteTestAsync(IClient client)
+        {
+            var shhVersion = new ShhVersion(client);
+            return await shhVersion.SendRequestAsync().ConfigureAwait(false);
+        }
+
+        public Type GetRequestType()
+        {
+            return typeof (ShhVersion);
+        }
+    }
+}

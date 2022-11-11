@@ -12,10 +12,8 @@ namespace Nethereum.Parity.RPC.Trace
         public static string[] ConvertToStringArray(this TraceType[] value)
         {
             var returnArray = new string[value.Length];
-            for (int i = 0; i < value.Length; i++)
-            {
+            for (var i = 0; i < value.Length; i++)
                 returnArray[i] = value[i].ToString();
-            }
 
             return returnArray;
         }

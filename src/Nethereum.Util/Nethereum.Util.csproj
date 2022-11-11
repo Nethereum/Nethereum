@@ -2,29 +2,25 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum Utilities library, including Sha3 Keccack encoding and Address Checksum</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Util</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Util</AssemblyName>
     <PackageId>Nethereum.Util</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain</PackageTags>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.1'">
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.1.1" />
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-   <PackageReference Include="BouncyCastle" Version="1.8.1" />
-  </ItemGroup>
-  
 </Project>

@@ -20,6 +20,13 @@ namespace Nethereum.ABI.Encoders
             return Encode(value, false);
         }
 
+        public byte[] EncodePacked(object value)
+        {
+            if (!(value is byte[]))
+                throw new Exception("byte[] value expected for type 'bytes'");
+            return (byte[])value;
+        }
+
         public byte[] Encode(object value, bool checkEndian)
         {
             if (!(value is byte[]))

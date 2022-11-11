@@ -1,66 +1,94 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
-using Org.BouncyCastle.Math;
 using Nethereum.Util;
+using Org.BouncyCastle.Math;
 
 namespace Nethereum.Signer
 {
     public class EthECDSASignature
     {
-        private readonly ECDSASignature _ecdsaSignature;
-        internal ECDSASignature ECDSASignature => _ecdsaSignature;
-
         internal EthECDSASignature(BigInteger r, BigInteger s)
         {
-            _ecdsaSignature = new ECDSASignature(r, s);
+            ECDSASignature = new ECDSASignature(r, s);
         }
 
-        public EthECDSASignature(BigInteger r, BigInteger s, byte v)
+        public EthECDSASignature(BigInteger r, BigInteger s, byte[] v)
         {
-            _ecdsaSignature = new ECDSASignature(r, s);
-            _ecdsaSignature.V = v;
+            ECDSASignature = new ECDSASignature(r, s);
+            ECDSASignature.V = v;
         }
 
         internal EthECDSASignature(ECDSASignature signature)
         {
-            _ecdsaSignature = signature;
+            ECDSASignature = signature;
         }
 
         internal EthECDSASignature(BigInteger[] rs)
         {
-            _ecdsaSignature = new ECDSASignature(rs);
+            ECDSASignature = new ECDSASignature(rs);
         }
 
         public EthECDSASignature(byte[] derSig)
         {
-            _ecdsaSignature = new ECDSASignature(derSig);
+            ECDSASignature = new ECDSASignature(derSig);
         }
 
-        public byte[] R => _ecdsaSignature.R.ToByteArrayUnsigned();
+        internal ECDSASignature ECDSASignature { get; }
 
-        public byte[] S => _ecdsaSignature.S.ToByteArrayUnsigned();
+        public byte[] R => ECDSASignature.R.ToByteArrayUnsigned();
 
+        public byte[] S => ECDSASignature.S.ToByteArrayUnsigned();
 
-        public byte V { get { return _ecdsaSignature.V; } set { _ecdsaSignature.V = value; } }
+        public byte[] V
+        {
+            get => ECDSASignature.V;
+            set => ECDSASignature.V = value;
+        }
 
-        public bool IsLowS => _ecdsaSignature.IsLowS;
-      
+        public bool IsLowS => ECDSASignature.IsLowS;
+
         public static EthECDSASignature FromDER(byte[] sig)
         {
             return new EthECDSASignature(sig);
         }
 
+        public static string CreateStringSignature(EthECDSASignature signature)
+        {
+            return "0x" + signature.R.ToHex().PadLeft(64, '0') +
+                   signature.S.ToHex().PadLeft(64, '0') +
+                   signature.V.ToHex();
+        }
+
         public byte[] ToDER()
         {
-           return _ecdsaSignature.ToDER();
+            return ECDSASignature.ToDER();
+        }
+
+        public bool IsVSignedForChain()
+        {
+            return V.ToBigIntegerFromRLPDecoded() >= 35;
+        }
+
+        public bool IsVSignedForLegacy()
+        {
+            var v = V.ToBigIntegerFromRLPDecoded();
+            return v >= 27;
+        }
+
+        public bool IsVSignedForYParity()
+        {
+            var v = V.ToBigIntegerFromRLPDecoded();
+            return v == 0 || v == 1;
         }
 
         public byte[] To64ByteArray()
         {
-            byte[] rsigPad = new byte[32];
+            var rsigPad = new byte[32];
             Array.Copy(R, 0, rsigPad, rsigPad.Length - R.Length, R.Length);
 
-            byte[] ssigPad = new byte[32];
+            var ssigPad = new byte[32];
             Array.Copy(S, 0, ssigPad, ssigPad.Length - S.Length, S.Length);
 
             return ByteUtil.Merge(rsigPad, ssigPad);
@@ -77,9 +105,8 @@ namespace Nethereum.Signer
             {
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //	Utils.error("Unexpected exception in ECDSASignature.IsValidDER " + ex.Message);
                 return false;
             }
         }

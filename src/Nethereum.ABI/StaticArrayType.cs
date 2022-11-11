@@ -11,20 +11,20 @@ namespace Nethereum.ABI
         public StaticArrayType(string name) : base(name)
         {
             IntialiseSize(name);
-            Decoder = new ArrayTypeDecoder(ElementType);
+            Decoder = new ArrayTypeDecoder(ElementType, Size);
             Encoder = new StaticArrayTypeEncoder(ElementType, Size);
         }
 
         public override string CanonicalName => ElementType.CanonicalName + "[" + Size + "]";
 
-        public override int FixedSize => ElementType.FixedSize*Size;
+        public override int FixedSize => ElementType.FixedSize * Size;
 
         private void IntialiseSize(string name)
         {
-            var indexFirstBracket = name.IndexOf("[", StringComparison.Ordinal);
+            var indexFirstBracket = name.LastIndexOf("[", StringComparison.Ordinal);
             var indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);
-            var dim = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
-            Size = int.Parse(dim);
+            var arraySize = name.Substring(indexFirstBracket + 1, indexSecondBracket - (indexFirstBracket + 1));
+            Size = int.Parse(arraySize);
         }
     }
 }

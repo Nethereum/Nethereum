@@ -18,7 +18,7 @@ namespace Nethereum.RPC.Eth
     ///     Example
     ///     Request
     ///     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sign","params":["0xd1ade25ccd3d550a7eb532ac759cac7be09c2719",
-    ///     "Schoolbus"],"id":1}'
+    ///     "0xdeadbeef"],"id":1}'
     ///     Result
     ///     {
     ///     "id":1,
@@ -27,7 +27,7 @@ namespace Nethereum.RPC.Eth
     ///     "0x2ac19db245478a06032e69cdbd2b54e648b78431d0a47bd1fbab18f79f820ba407466e37adbe9e84541cab97ab7d290f4a64a5825c876d22109f3bf813254e8601"
     ///     }
     /// </Summary>
-    public class EthSign : RpcRequestResponseHandler<string>
+    public class EthSign : RpcRequestResponseHandler<string>, IEthSign
     {
         public EthSign(IClient client) : base(client, ApiMethods.eth_sign.ToString())
         {

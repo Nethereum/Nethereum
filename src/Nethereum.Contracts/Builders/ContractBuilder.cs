@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.JsonDeserialisation;
+using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.ABI.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Contracts
 {
@@ -11,7 +12,7 @@ namespace Nethereum.Contracts
     {
         public ContractBuilder(string abi, string contractAddress)
         {
-            ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
+            ContractABI = ABIDeserialiserFactory.DeserialiseContractABI(abi);
             Address = contractAddress;
         }
 
@@ -31,39 +32,40 @@ namespace Nethereum.Contracts
 
         public ContractABI ContractABI { get; set; }
 
-        public BlockParameter DefaultBlock { get; set; }
-
         public string Address { get; set; }
 
         public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = new NewFilterInput
-            {
-                FromBlock = fromBlock,
-                ToBlock = toBlock ?? BlockParameter.CreateLatest(),
-                Address = new[] {Address}
-            };
-            return ethFilterInput;
-        }
-
-        public EventBuilder GetEventBuilder(string name)
-        {
-            return new EventBuilder(this, GetEventAbi(name));
+            return FilterInputBuilder.GetDefaultFilterInput(Address, fromBlock, toBlock);
         }
 
         public FunctionBuilder<TFunction> GetFunctionBuilder<TFunction>()
         {
             var function = FunctionAttribute.GetAttribute<TFunction>();
             if (function == null) throw new Exception("Invalid TFunction required a Function Attribute");
-            return new FunctionBuilder<TFunction>(this, GetFunctionAbi(function.Name));
+            return new FunctionBuilder<TFunction>(Address, GetFunctionAbi(function.Name));
         }
 
         public FunctionBuilder GetFunctionBuilder(string name)
         {
-            return new FunctionBuilder(this, GetFunctionAbi(name));
+            return new FunctionBuilder(Address, GetFunctionAbi(name));
         }
 
-        private EventABI GetEventAbi(string name)
+        public FunctionBuilder GetFunctionBuilderBySignature(string signature)
+        {
+            return new FunctionBuilder(Address, GetFunctionAbiBySignature(signature));
+        }
+
+        public ErrorABI GetErrorAbi(string name)
+        {
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var errorAbi = ContractABI.Errors.FirstOrDefault(x => x.Name == name);
+            if (errorAbi == null) throw new Exception("Error not found");
+            return errorAbi;
+        }
+
+
+        public EventABI GetEventAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Name == name);
@@ -71,11 +73,27 @@ namespace Nethereum.Contracts
             return eventAbi;
         }
 
-        private FunctionABI GetFunctionAbi(string name)
+        public EventABI GetEventAbiBySignature(string signature)
+        {
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Sha3Signature.ToLowerInvariant().EnsureHexPrefix() == signature.ToLowerInvariant().EnsureHexPrefix());
+            if (eventAbi == null) throw new Exception("Event not found for signature:" + signature);
+            return eventAbi;
+        }
+
+        public FunctionABI GetFunctionAbi(string name)
         {
             if (ContractABI == null) throw new Exception("Contract abi not initialised");
             var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
             if (functionAbi == null) throw new Exception("Function not found:" + name);
+            return functionAbi;
+        }
+
+        public FunctionABI GetFunctionAbiBySignature(string signature)
+        {
+            if (ContractABI == null) throw new Exception("Contract abi not initialised");
+            var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Sha3Signature.ToLowerInvariant().EnsureHexPrefix() == signature.ToLowerInvariant().EnsureHexPrefix());
+            if (functionAbi == null) throw new Exception("Function not found for signature:" + signature);
             return functionAbi;
         }
     }

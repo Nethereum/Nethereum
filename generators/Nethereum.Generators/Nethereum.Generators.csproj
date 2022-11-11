@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic-CodeGen.props" />
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="AllMessages\CSharp\" />
+    <Folder Include="AllMessages\FSharp\" />
+    <Folder Include="AllMessages\Vb\" />
+  </ItemGroup>
+
+</Project>

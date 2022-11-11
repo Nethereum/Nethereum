@@ -32,7 +32,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     "result": "0x0"
     ///     }
     /// </Summary>
-    public class EthCall : RpcRequestResponseHandler<string>, IDefaultBlock
+    public class EthCall : RpcRequestResponseHandler<string>, IDefaultBlock, IEthCall
     {
         public EthCall(IClient client) : base(client, ApiMethods.eth_call.ToString())
         {

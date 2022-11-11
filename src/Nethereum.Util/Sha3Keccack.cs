@@ -1,13 +1,15 @@
-﻿using System;
-using System.Linq;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Org.BouncyCastle.Crypto.Digests;
+﻿using System.Linq;
 using System.Text;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util.Keccak;
+
 
 namespace Nethereum.Util
 {
     public class Sha3Keccack
     {
+        public static Sha3Keccack Current { get; } = new Sha3Keccack();
+
         public string CalculateHash(string value)
         {
             var input = Encoding.UTF8.GetBytes(value);
@@ -17,7 +19,7 @@ namespace Nethereum.Util
 
         public string CalculateHashFromHex(params string[] hexValues)
         {
-            var joinedHex = String.Join("", hexValues.Select(x => x.RemoveHexPrefix()).ToArray());
+            var joinedHex = string.Join("", hexValues.Select(x => x.RemoveHexPrefix()).ToArray());
             return CalculateHash(joinedHex.HexToByteArray()).ToHex();
         }
 

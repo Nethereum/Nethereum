@@ -26,7 +26,7 @@ namespace Nethereum.RPC.Eth.Transactions
     ///     "result": "0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331"
     ///     }
     /// </Summary>
-    public class EthSendRawTransaction : RpcRequestResponseHandler<string>
+    public class EthSendRawTransaction : RpcRequestResponseHandler<string>, IEthSendRawTransaction
     {
         public EthSendRawTransaction(IClient client) : base(client, ApiMethods.eth_sendRawTransaction.ToString())
         {

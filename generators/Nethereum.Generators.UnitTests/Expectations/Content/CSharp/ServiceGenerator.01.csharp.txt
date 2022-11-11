@@ -1,0 +1,72 @@
+﻿using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Web3;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts;
+using System.Threading;
+using CQS;
+using Functions;
+
+namespace DefaultNamespace
+{
+    public partial class StandardContractService
+    {
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationTokenSource cancellationTokenSource = null)
+        {
+            return web3.Eth.GetContractDeploymentHandler<StandardContractDeployment>().SendRequestAndWaitForReceiptAsync(standardContractDeployment, cancellationTokenSource);
+        }
+
+        public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment)
+        {
+            return web3.Eth.GetContractDeploymentHandler<StandardContractDeployment>().SendRequestAsync(standardContractDeployment);
+        }
+
+        public static async Task<StandardContractService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, StandardContractDeployment standardContractDeployment, CancellationTokenSource cancellationTokenSource = null)
+        {
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, standardContractDeployment, cancellationTokenSource);
+            return new StandardContractService(web3, receipt.ContractAddress);
+        }
+
+        protected Nethereum.Web3.Web3 Web3{ get; }
+
+        public ContractHandler ContractHandler { get; }
+
+        public StandardContractService(Nethereum.Web3.Web3 web3, string contractAddress)
+        {
+            Web3 = web3;
+            ContractHandler = web3.Eth.GetContractHandler(contractAddress);
+        }
+
+        public Task<string> AddAdministratorRequestAsync(AddAdministratorFunction addAdministratorFunction)
+        {
+             return ContractHandler.SendRequestAsync(addAdministratorFunction);
+        }
+
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(AddAdministratorFunction addAdministratorFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
+        }
+
+        public Task<string> AddAdministratorRequestAsync(byte[] administratorId)
+        {
+            var addAdministratorFunction = new AddAdministratorFunction();
+                addAdministratorFunction.AdministratorId = administratorId;
+            
+             return ContractHandler.SendRequestAsync(addAdministratorFunction);
+        }
+
+        public Task<TransactionReceipt> AddAdministratorRequestAndWaitForReceiptAsync(byte[] administratorId, CancellationTokenSource cancellationToken = null)
+        {
+            var addAdministratorFunction = new AddAdministratorFunction();
+                addAdministratorFunction.AdministratorId = administratorId;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(addAdministratorFunction, cancellationToken);
+        }
+    }
+}

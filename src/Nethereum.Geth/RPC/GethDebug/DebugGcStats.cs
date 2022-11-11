@@ -22,7 +22,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     "PauseQuantiles": null
     ///     }}
     /// </Summary>
-    public class DebugGcStats : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class DebugGcStats : GenericRpcRequestResponseHandlerNoParam<JObject>, IDebugGcStats
     {
         public DebugGcStats(IClient client) : base(client, ApiMethods.debug_gcStats.ToString())
         {

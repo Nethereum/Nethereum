@@ -1,0 +1,93 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Nethereum.Blazor
+@using Nethereum.UI
+@implements IDisposable;
+@inject MetamaskHostProvider _metamaskHostProvider;
+@inject SelectedEthereumHostProviderService _selectedHostProvider;
+@inject AuthenticationStateProvider _authenticationStateProvider;
+
+<div>
+    @if (MetamaskAvailable)
+    {
+        <AuthorizeView Roles="EthereumConnected">
+            <Authorized>
+               <button type="button" class="btnMetamask btnMetamaskSelected">@Truncate(SelectedAccount, SelectedAccountTruncateLength)</button>
+            </Authorized>
+            <NotAuthorized>
+                <button type="button" class="btnMetamask" @onclick="@EnableEthereumAsync">@ConnectText</button>
+            </NotAuthorized>
+        </AuthorizeView>
+    }else{
+          <button class="btnMetamask" disabled>@InstallMetamaskText</button>
+    }
+</div>
+
+@code {
+
+    bool MetamaskAvailable { get; set; }
+    string SelectedAccount { get; set; }
+
+    [Parameter]
+    public string ConnectText { get; set; } = "Connect Metamask";
+
+    [Parameter]
+    public string InstallMetamaskText { get; set; } = "Please Install Metamask";
+
+    [Parameter]
+    public int SelectedAccountTruncateLength { get; set; } = 10;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _metamaskHostProvider.SelectedAccountChanged += MetamaskHostProvider_SelectedAccountChanged;
+            MetamaskAvailable = await _metamaskHostProvider.CheckProviderAvailabilityAsync();
+            if (MetamaskAvailable)
+            {
+                SelectedAccount = await _metamaskHostProvider.GetProviderSelectedAccountAsync();
+                if (!string.IsNullOrEmpty(SelectedAccount))
+                {
+                    await _selectedHostProvider.SetSelectedEthereumHostProvider(_metamaskHostProvider);
+                }
+
+            }
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        _metamaskHostProvider.SelectedAccountChanged -= MetamaskHostProvider_SelectedAccountChanged;
+    }
+
+    private async Task MetamaskHostProvider_SelectedAccountChanged(string account)
+    {
+        SelectedAccount = account;
+        await InvokeAsync(() => this.StateHasChanged());
+    }
+
+    protected async Task EnableEthereumAsync()
+    {
+       
+        SelectedAccount = await _metamaskHostProvider.EnableProviderAsync();
+        await _selectedHostProvider.SetSelectedEthereumHostProvider(_metamaskHostProvider);
+
+        if (_authenticationStateProvider is EthereumAuthenticationStateProvider)
+        {
+            ((EthereumAuthenticationStateProvider)_authenticationStateProvider)?.NotifyStateHasChanged();
+        }
+
+        StateHasChanged();
+        
+    }
+
+    public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
+    {
+        return value?.Length > maxLength
+            ? value.Substring(0, maxLength) + truncationSuffix
+            : value;
+    }
+   
+}
+

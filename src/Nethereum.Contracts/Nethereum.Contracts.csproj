@@ -2,7 +2,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>Nethereum Contracts is the core library to interact via RPC with Smart contracts in Ethereum</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Contracts</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
@@ -17,9 +16,13 @@
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+
 
 </Project>

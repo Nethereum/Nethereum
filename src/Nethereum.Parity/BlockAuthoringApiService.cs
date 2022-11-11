@@ -4,7 +4,7 @@ using Nethereum.RPC;
 
 namespace Nethereum.Parity
 {
-    public class BlockAuthoringApiService : RpcClientWrapper
+    public class BlockAuthoringApiService : RpcClientWrapper, IBlockAuthoringApiService
     {
         public BlockAuthoringApiService(IClient client) : base(client)
         {
@@ -16,11 +16,11 @@ namespace Nethereum.Parity
             TransactionsLimit = new ParityTransactionsLimit(client);
         }
 
-        public ParityDefaultExtraData DefaultExtraData { get; private set; }
-        public ParityExtraData ExtraData { get; private set; }
-        public ParityGasCeilTarget GasCeilTarget { get; private set; }
-        public ParityGasFloorTarget GasFloorTarget { get; private set; }
-        public ParityMinGasPrice MinGasPrice { get; private set; }
-        public ParityTransactionsLimit TransactionsLimit { get; private set; }
+        public IParityDefaultExtraData DefaultExtraData { get; }
+        public IParityExtraData ExtraData { get; }
+        public IParityGasCeilTarget GasCeilTarget { get; }
+        public IParityGasFloorTarget GasFloorTarget { get; }
+        public IParityMinGasPrice MinGasPrice { get; }
+        public IParityTransactionsLimit TransactionsLimit { get; }
     }
 }

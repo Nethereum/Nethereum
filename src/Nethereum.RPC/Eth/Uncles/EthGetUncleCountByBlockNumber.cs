@@ -27,7 +27,7 @@ namespace Nethereum.RPC.Eth.Uncles
     ///     "result": "0x1" // 1
     ///     }
     /// </Summary>
-    public class EthGetUncleCountByBlockNumber : RpcRequestResponseHandler<HexBigInteger>
+    public class EthGetUncleCountByBlockNumber : RpcRequestResponseHandler<HexBigInteger>, IEthGetUncleCountByBlockNumber
     {
         public EthGetUncleCountByBlockNumber(IClient client)
             : base(client, ApiMethods.eth_getUncleCountByBlockNumber.ToString())

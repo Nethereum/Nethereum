@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Trezor\Nethereum.Signer.Trezor.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

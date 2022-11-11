@@ -1,14 +1,13 @@
 <Project>
  <PropertyGroup>
-   <Authors>Juan Blanco</Authors>
+   <Authors>Juan Blanco;Nethereum contributors</Authors>
    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
    <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
-   <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
-   <PackageLicenseUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/LICENSE.md</PackageLicenseUrl>
+   <PackageIcon>images\logo64x64.png</PackageIcon>
+   <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>
    <RepositoryType>git</RepositoryType>
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
-   <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-   <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.1' ">$(PackageTargetFallback);dotnet52</PackageTargetFallback>
+   <Copyright>Nethereum.com (Juan Blanco) 2015-2022</Copyright>
    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -16,4 +15,14 @@
    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
  </PropertyGroup>
+ 
+<PropertyGroup>
+  <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+</PropertyGroup>
+<ItemGroup>
+  <None Condition="Exists('..\..\LICENSE.md')" Include="..\..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+</ItemGroup>
+<ItemGroup>
+    <None Condition="Exists('..\..\logos\logo64x64.png')"  Include="..\..\logos\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
+  </ItemGroup>
 </Project>

@@ -1,37 +1,90 @@
-﻿using System;
+﻿using Nethereum.ABI;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexTypes;
+using Nethereum.RPC;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Shh.KeyPair;
+using Nethereum.Util;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Nethereum.EVM
 {
+
     public class Program
     {
-        public Stack<byte[]> Stack { get; set; }
-        public byte[] Instructions { get; private set; }
+        private List<byte[]> stack { get; set; }
+        public List<byte> Memory { get; set; }
+        public List<ProgramInstruction> Instructions { get; private set; }
+
+        public ProgramResult ProgramResult { get; private set; }
+
+
+        public List<string> GetCurrentStackAsHex()
+        {
+            return stack.Select(x => x.ToHex()).ToList();
+        }
+
+        public string GetCurrentMemoryAsHex()
+        {
+            return Memory.ToArray().ToHex();
+        }
+
+        
 
         private int currentInstructionIndex = 0;
 
-        public Program(byte[] instructions)
+        public Program(byte[] bytecode, ProgramContext programContext = null)
         {
-            this.Instructions = instructions;
-            this.Stack = new Stack<byte[]>();
+            this.Instructions = ProgramInstructionsUtils.GetProgramInstructions(bytecode);
+            this.stack = new List<byte[]>();
+            this.Memory = new List<byte>();
+            ByteCode = bytecode;
+            ProgramContext = programContext;
+            ProgramResult = new ProgramResult();
         }
 
-        public byte GetCurrentInstruction()
+        public ProgramInstruction GetCurrentInstruction()
         {
-            return Instructions?[currentInstructionIndex] ?? 0;
+            return Instructions[currentInstructionIndex];
+        }
+
+        public void GoToJumpDestination(int step)
+        {
+            var jump = this.Instructions.Where(x => x.Step == step).FirstOrDefault();
+            if (jump != null && jump.Instruction == Instruction.JUMPDEST) 
+            {
+                 SetInstrunctionIndex(this.Instructions.IndexOf(jump));
+            }
+            else
+            {
+                throw new Exception("Invalid jump destination");
+            }
+
+        }
+
+        public int GetProgramCounter()
+        {
+            return GetCurrentInstruction().Step;
         }
 
         public virtual void SetInstrunctionIndex(int index)
         {
             currentInstructionIndex = index;
 
-            if (currentInstructionIndex >= Instructions.Length)
+            if (currentInstructionIndex >= Instructions.Count)
             {
                 Stop();
             }
         }
 
         public bool Stopped { get; private set; } = false;
+        public byte[] ByteCode { get; }
+        public ProgramContext ProgramContext { get; }
 
         public void Stop()
         {
@@ -48,25 +101,35 @@ namespace Nethereum.EVM
             SetInstrunctionIndex(currentInstructionIndex + steps);
         }
 
-        public byte[] Sweep(int number)
-        {
-            var lastInstrunction = currentInstructionIndex + number;
-            if (lastInstrunction > Instructions.Length)
-            {
-                Stop();
-            }
-
-            var data = new byte[number];
-            Array.Copy(Instructions, currentInstructionIndex, data, 0, number);
-            Step(number);
-
-            return data;
-        }
-
         public void StackPush(byte[] stackWord)
         {
             ThrowWhenPushStackOverflows(); 
-            Stack.Push(stackWord);
+            stack.Insert(0, stackWord);
+        }
+
+        public byte[] StackPeek()
+        {
+            return stack[0];
+        }
+
+        public void StackSwap(int index)
+        {
+            var swapTemp = stack[0];
+            stack[0] = stack[index];
+            stack[index] = swapTemp;
+        }
+
+        public void StackDup(int index)
+        {
+            var dup = stack[index - 1];
+            StackPush(dup);
+        }
+
+        public byte[] StackPop()
+        {
+            var popItem = stack[0];
+            stack.RemoveAt(0);
+            return popItem;
         }
 
         private void ThrowWhenPushStackOverflows()
@@ -76,7 +139,8 @@ namespace Nethereum.EVM
 
         public void VerifyStackOverflow(int args, int returns)
         {
-            if (Stack.Count - args + returns > MAX_STACKSIZE)
+            
+            if (stack.Count - args + returns > MAX_STACKSIZE)
             {
                 throw new Exception("Stack overflow, maximum size is " + MAX_STACKSIZE);
             }
@@ -84,36 +148,5 @@ namespace Nethereum.EVM
 
         public const int MAX_STACKSIZE = 1024;
 
-        public byte[] StackPop()
-        {
-            return Stack.Pop();
-        }
-
-
-
-        /*
-        public virtual void Precompile()
-        {
-            for (int i = 0; i < Ops.Length; ++i)
-            {
-
-                OpCode op = OpCode.code(Ops[i]);
-                if (op == null)
-                {
-                    continue;
-                }
-
-                if (op.Equals(OpCode.JUMPDEST))
-                {
-                    Jumpdest.Add(i);
-                }
-
-                if (op.asInt() >= OpCode.PUSH1.asInt() && op.asInt() <= OpCode.PUSH32.asInt())
-                {
-                    i += op.asInt() - OpCode.PUSH1.asInt() + 1;
-                }
-            }
-           
-        } */
     }
 }

@@ -38,7 +38,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": false
     ///     }
     /// </Summary>
-    public class EthSyncing : GenericRpcRequestResponseHandlerNoParam<object>
+    public class EthSyncing : GenericRpcRequestResponseHandlerNoParam<object>, IEthSyncing
     {
         public EthSyncing(IClient client) : base(client, ApiMethods.eth_syncing.ToString())
         {

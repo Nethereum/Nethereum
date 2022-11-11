@@ -4,7 +4,7 @@ using Nethereum.RPC.Eth.Transactions;
 
 namespace Nethereum.RPC.Eth.Services
 {
-    public class EthApiTransactionsService : RpcClientWrapper
+    public class EthApiTransactionsService : RpcClientWrapper, IEthApiTransactionsService
     {
         public EthApiTransactionsService(IClient client) : base(client)
         {
@@ -17,17 +17,18 @@ namespace Nethereum.RPC.Eth.Services
             GetTransactionReceipt = new EthGetTransactionReceipt(client);
             SendRawTransaction = new EthSendRawTransaction(client);
             SendTransaction = new EthSendTransaction(client);
+           
         }
 
-        public EthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; private set; }
-        public EthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; private set; }
-        public EthGetTransactionByHash GetTransactionByHash { get; private set; }
-        public EthGetTransactionCount GetTransactionCount { get; }
-        public EthGetTransactionReceipt GetTransactionReceipt { get; private set; }
-        public EthSendRawTransaction SendRawTransaction { get; private set; }
-        public EthSendTransaction SendTransaction { get; private set; }
-        public EthCall Call { get; }
-        public EthEstimateGas EstimateGas { get; private set; }
+        public IEthGetTransactionByBlockHashAndIndex GetTransactionByBlockHashAndIndex { get; }
+        public IEthGetTransactionByBlockNumberAndIndex GetTransactionByBlockNumberAndIndex { get; }
+        public IEthGetTransactionByHash GetTransactionByHash { get; }
+        public IEthGetTransactionCount GetTransactionCount { get; }
+        public IEthGetTransactionReceipt GetTransactionReceipt { get; }
+        public IEthSendRawTransaction SendRawTransaction { get; }
+        public IEthSendTransaction SendTransaction { get; }
+        public IEthCall Call { get; }
+        public IEthEstimateGas EstimateGas { get; }
 
         public void SetDefaultBlock(BlockParameter blockParameter)
         {

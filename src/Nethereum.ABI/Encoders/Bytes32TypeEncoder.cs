@@ -16,6 +16,11 @@ namespace Nethereum.ABI.Encoders
 
         public byte[] Encode(object value)
         {
+            if (value is BigInteger bigIntValue)
+            {
+                return _intTypeEncoder.EncodeInt(bigIntValue);
+            }
+
             if (value.IsNumber())
             {
                 var bigInt = BigInteger.Parse(value.ToString());
@@ -27,6 +32,7 @@ namespace Nethereum.ABI.Encoders
             {
                 var returnBytes = new byte[32];
                 var bytes = Encoding.UTF8.GetBytes(stringValue);
+                if(bytes.Length > 32) throw new ArgumentException("After retrieving the UTF8 bytes for the string, it is longer than 32 bytes, please using the string type, or a byte array if the string was a hex value");
                 Array.Copy(bytes, 0, returnBytes, 0, bytes.Length);
                 return returnBytes;
             }
@@ -35,10 +41,18 @@ namespace Nethereum.ABI.Encoders
             if (bytesValue != null)
             {
                 if (bytesValue.Length > 32) throw new ArgumentException("Expected byte array no bigger than 32 bytes");
-                return bytesValue;
+
+                var returnArray = new byte[((bytesValue.Length - 1) / 32 + 1) * 32];
+                Array.Copy(bytesValue, 0, returnArray, 0, bytesValue.Length);
+                return returnArray;
             }
 
             throw new ArgumentException("Expected Numeric Type or String to be Encoded as Bytes32");
+        }
+
+        public byte[] EncodePacked(object value)
+        {
+            return Encode(value);
         }
     }
 }

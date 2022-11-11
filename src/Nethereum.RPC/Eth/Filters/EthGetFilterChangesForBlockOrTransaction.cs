@@ -54,7 +54,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     }]
     ///     }
     /// </Summary>
-    public class EthGetFilterChangesForBlockOrTransaction : RpcRequestResponseHandler<string[]>
+    public class EthGetFilterChangesForBlockOrTransaction : RpcRequestResponseHandler<string[]>, IEthGetFilterChangesForBlockOrTransaction
     {
         public EthGetFilterChangesForBlockOrTransaction(IClient client)
             : base(client, ApiMethods.eth_getFilterChanges.ToString())

@@ -34,17 +34,17 @@ namespace Nethereum.JsonRpc.Client
 
     public class NullParamsValueProvider : IValueProvider
     {
-        private readonly PropertyInfo memberInfo;
+        private readonly PropertyInfo _memberInfo;
 
         public NullParamsValueProvider(PropertyInfo memberInfo)
         {
-            this.memberInfo = memberInfo;
+            this._memberInfo = memberInfo;
         }
 
         public object GetValue(object target)
         {
-            var result = memberInfo.GetValue(target);
-            if (memberInfo.Name == "RawParameters")
+            var result = _memberInfo.GetValue(target);
+            if (_memberInfo.Name == "RawParameters")
             {
                 var array = result as object[];
                 if (array != null && array.Length == 1 && array[0] == null)
@@ -55,7 +55,7 @@ namespace Nethereum.JsonRpc.Client
 
         public void SetValue(object target, object value)
         {
-            memberInfo.SetValue(target, value);
+            _memberInfo.SetValue(target, value);
         }
     }
 #endif

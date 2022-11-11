@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum.Web3Lite Ethereum Web3 Class Library (light browser version, with no reference to signing crypto libraries) to interact via RPC with an Ethereum client, for example geth. Including contract interaction, deployment, transaction, encoding / decoding and event filters </Description>
+    <AssemblyTitle>Nethereum.Web3Lite</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.Web3Lite</AssemblyName>
+    <PackageId>Nethereum.Web3Lite</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup >
+	  <DefineConstants>$(DefineConstants);LITE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+    <DefineConstants>$(DefineConstants);PCL</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <DefineConstants>$(DefineConstants);PCL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

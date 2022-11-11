@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth.Mining
     ///     "result": true
     ///     }
     /// </Summary>
-    public class EthMining : GenericRpcRequestResponseHandlerNoParam<bool>
+    public class EthMining : GenericRpcRequestResponseHandlerNoParam<bool>, IEthMining
     {
         public EthMining(IClient client) : base(client, ApiMethods.eth_mining.ToString())
         {

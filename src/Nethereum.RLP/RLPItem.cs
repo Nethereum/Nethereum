@@ -2,18 +2,18 @@ namespace Nethereum.RLP
 {
     public class RLPItem : IRLPElement
     {
-        private readonly byte[] rlpData;
+        private readonly byte[] _rlpData;
 
         public RLPItem(byte[] rlpData)
         {
-            this.rlpData = rlpData;
+            this._rlpData = rlpData;
         }
 
         public byte[] RLPData => GetRLPData();
 
         private byte[] GetRLPData()
         {
-            return rlpData.Length == 0 ? null : rlpData;
+            return _rlpData.Length == 0 ? null : _rlpData;
         }
     }
 }

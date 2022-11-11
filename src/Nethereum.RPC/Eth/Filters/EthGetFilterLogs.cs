@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     Request
     ///     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getFilterLogs","params":["0x16"],"id":74}'
     /// </Summary>
-    public class EthGetFilterLogsForBlockOrTransaction : RpcRequestResponseHandler<string[]>
+    public class EthGetFilterLogsForBlockOrTransaction : RpcRequestResponseHandler<string[]>, IEthGetFilterLogsForBlockOrTransaction
     {
         public EthGetFilterLogsForBlockOrTransaction(IClient client)
             : base(client, ApiMethods.eth_getFilterLogs.ToString())

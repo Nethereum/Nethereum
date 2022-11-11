@@ -22,7 +22,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     "result": "0x1" // 1
     ///     }
     /// </Summary>
-    public class EthNewBlockFilter : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class EthNewBlockFilter : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IEthNewBlockFilter
     {
         public EthNewBlockFilter(IClient client) : base(client, ApiMethods.eth_newBlockFilter.ToString())
         {

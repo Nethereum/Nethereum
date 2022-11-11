@@ -1,0 +1,25 @@
+﻿using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Numerics;
+using Nethereum.Hex.HexTypes;
+using Nethereum.Contracts;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+
+namespace DefaultNamespace
+{
+    public partial class StandardContractDeployment : StandardContractDeploymentBase
+    {
+        public StandardContractDeployment() : base(BYTECODE) { }
+        public StandardContractDeployment(string byteCode) : base(byteCode) { }
+    }
+
+    public class StandardContractDeploymentBase : ContractDeploymentMessage
+    {
+        public static string BYTECODE = "0x123456789";
+        public StandardContractDeploymentBase() : base(BYTECODE) { }
+        public StandardContractDeploymentBase(string byteCode) : base(byteCode) { }
+        [Parameter("uint256", "totalSupply", 1)]
+        public virtual BigInteger TotalSupply { get; set; }
+    }
+}

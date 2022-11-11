@@ -4,24 +4,56 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net.Sockets;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
     public class UnixIpcClient : IpcClientBase
     {
-        public UnixIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null) : base(ipcPath, jsonSerializerSettings)
+        private readonly object _lockingObject = new object();
+        private readonly ILogger _log;
+        public UnixIpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILogger log = null) : base(ipcPath, jsonSerializerSettings)
         {
+            _log = log;
+        }
 
+        private Socket _socket;
+
+        private Socket GetSocket()
+        {
+            try
+            {
+                if (_socket == null || !_socket.Connected)    
+                {
+                    var endPoint = new UnixDomainSocketEndPoint(IpcPath);
+                    _socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    if (!Task.Run(() =>
+                        _socket.Connect(endPoint)).Wait(ConnectionTimeout))
+                    {
+                        throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds");
+                    }
+                }
+            }
+            catch
+            {
+                //Connection error we want to allow to retry.
+                _socket = null;
+                throw;
+            }
+            return _socket;
         }
 
         public int ReceiveBufferedResponse(Socket client, byte[] buffer)
         {
-#if NET462
+#if NET461
             int bytesRead = 0;
             if (Task.Run(() => 
                     bytesRead = client.Receive(buffer, SocketFlags.None)
-                ).Wait(2000))
+                ).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }
@@ -33,7 +65,7 @@ namespace Nethereum.JsonRpc.IpcClient
              int bytesRead = 0;
             if (Task.Run(async () => 
                     bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
-                ).Wait(2000))
+.ConfigureAwait(false)).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }
@@ -69,33 +101,34 @@ namespace Nethereum.JsonRpc.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
+            var logger = new RpcLogger(_log);
             try
             {
-                var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
-                var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-
-                var endPoint = new UnixDomainSocketEndPoint(IpcPath);
-              
-
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                lock (_lockingObject)
                 {
-                    client.Connect(endPoint);
+                    var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
+                    var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
+                    logger.LogRequest(rpcRequestJson);
+                    var client = GetSocket();
                     client.SendBufferSize = requestBytes.Length;
-#if NET462
+#if NET461
                     var val = client.Send(requestBytes, SocketFlags.None);
 #else
-                    var val = await client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).ConfigureAwait(false);
+                    var val =
+ client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).Result;
 #endif
                     using (var memoryStream = ReceiveFullResponse(client))
                     {
                         memoryStream.Position = 0;
-                        using (StreamReader streamReader = new StreamReader(memoryStream))
-                        using (JsonTextReader reader = new JsonTextReader(streamReader))
+                        using (var streamReader = new StreamReader(memoryStream))
+                        using (var reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            return serializer.Deserialize<TResponse>(reader);
+                            var message = serializer.Deserialize<RpcResponseMessage>(reader);
+                            logger.LogResponse(message);
+                            return message;
                         }
                     }
                 }
@@ -103,19 +136,22 @@ namespace Nethereum.JsonRpc.IpcClient
             }
             catch (Exception ex)
             {
-                throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+
+                var exception = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s): " + request.Method, ex);
+                logger.LogException(exception);
+                throw exception;
             }
-        }
+        }    
 
 #region IDisposable Support
 
-        private bool disposedValue;
+        private bool _disposedValue;
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

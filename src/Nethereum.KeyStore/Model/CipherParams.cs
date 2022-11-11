@@ -7,7 +7,6 @@ namespace Nethereum.KeyStore.Model
     {
         public CipherParams()
         {
-
         }
 
         public CipherParams(byte[] iv)

@@ -1,0 +1,32 @@
+[
+  {
+    "fullName": "Accelist.FluentValidation.Blazor, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "Accelist.FluentValidation.Blazor",
+    "url": "ipfs://bafkreihcniejfjlvvycy7o2zh6nro73u7m6es42gvoxy34gla5y7qrogsm"
+  },
+  {
+    "fullName": "FluentValidation, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0",
+    "name": "FluentValidation",
+    "url": "ipfs://bafybeiaaoofkux675u5o6y2knkxfcgfowk2i2e7rgqtucdhcbblhovmhhe"
+  },
+  {
+    "fullName": "NetDapps.CommerceAdmin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "NetDapps.CommerceAdmin",
+    "url": "ipfs://bafkreihoe6k3r5ezdyyp47xjj3iovsfdvhikohnboszjss7mokerbxcvze"
+  },
+  {
+    "fullName": "NetDapps.ERC20Token, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "NetDapps.ERC20Token",
+    "url": "ipfs://bafkreifeedvcnm7axfevj3ue5gswjvq77dffqp5p2u4yyzpqpmuorja7ce"
+  },
+  {
+    "fullName": "NetDapps.Maker, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "NetDapps.Maker",
+    "url": "ipfs://bafkreihz5v4ypva7z4ui4wsjeoudy6f6qyyfbrwnmz7cj5kzrom4sf6yge"
+  },
+  {
+    "fullName": "Nethereum.Erc20.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "Nethereum.Erc20.Blazor",
+    "url": "ipfs://bafkreibatxhsoyzlq3xorm5ptho4xlu5h4djhrdzj6yjzl5qpkuag6t5eq"
+  }
+]

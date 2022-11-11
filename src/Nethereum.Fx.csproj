@@ -1,0 +1,269 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum Fx, a single package combining most of the main Nethereum libraries (Web3, ABI, Contracts, Accounts, Signers, RPC, WebSockets, IPC, RLP, HdWallet, Geth, Parity, Besu, Quorum, KeyStore, etc) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Description>
+    <Summary>Nethereum Fx, a single package that most of the main Nethereum libraries (Web3, ABI, Contracts, Accounts, Signers, RPC, WebSockets, IPC, RLP, HdWallet, Geth, Parity, Besu, Quorum, KeyStore, etc) and targetting: net5.0,netcoreapp3.1,netstandard2.0 and netstandard2.1</Summary>
+    <AssemblyTitle>Nethereum.Fx</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <AssemblyName>Nethereum.Fx</AssemblyName>
+    <PackageId>Nethereum.Fx</PackageId>
+	  <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+		<None Include="..\logos\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
+  </ItemGroup>
+
+	<ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>..\FxOutput\Nethereum.Fx\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <PackageReference Include="NBitcoin.Secp256k1">
+      <Version>1.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <PackageReference Include="NBitcoin.Secp256k1">
+      <Version>1.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+   
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+   </ItemGroup>
+ 
+	<ItemGroup>
+    <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
+    <PackageReference Include="NBitcoin" Version="7.0.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
+    <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+    <PackageReference Include="System.Reactive" Version="4.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Nethereum.BigInteger.N351\**" />
+    <Compile Remove="Nethereum.ClassDiagrams\**" />
+    <Compile Remove="Nethereum.ENS\**" />
+    <Compile Remove="Nethereum.EVM\obj\**" />
+    <Compile Remove="Nethereum.EVM\Properties\**" />
+    <Compile Remove="Nethereum.Generators.JavaScript\**" />
+    <Compile Remove="Nethereum.GSN\**" />
+    <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
+    <Compile Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
+    <Compile Remove="Nethereum.StandardNonFungibleTokenERC721\**" />
+    <Compile Remove="Nethereum.StandardTokenEIP20\**" />
+    
+    <None Remove="Nethereum.BigInteger.N351\**" />
+    <None Remove="Nethereum.ClassDiagrams\**" />
+    <None Remove="Nethereum.ENS\**" />
+
+
+    <Compile Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
+
+
+  
+
+    <None Remove="Nethereum.Generators.JavaScript\**" />
+    <None Remove="Nethereum.Hex\Properties\**;Nethereum.Hex\bin\**;Nethereum.Hex\obj\**" />
+
+    <Compile Remove="Nethereum.ABI\Properties\**;Nethereum.ABI\bin\**;Nethereum.ABI\obj\**" />
+    <None Remove="Nethereum.ABI\Properties\**;Nethereum.ABI\bin\**;Nethereum.ABI\obj\**" />
+
+    <Compile Remove="Nethereum.RPC\Properties\**;Nethereum.RPC\bin\**;Nethereum.RPC\obj\**" />
+
+    <None Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
+    <None Remove="Nethereum.RPC\Properties\**;Nethereum.RPC\bin\**;Nethereum.RPC\obj\**" />
+
+    <Compile Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
+
+    <None Remove="Nethereum.StandardNonFungibleTokenERC721\**" />
+
+    <None Remove="Nethereum.StandardTokenEIP20\**" />
+
+    <None Remove="Nethereum.Web3\Properties\**;Nethereum.Web3\bin\**;Nethereum.Web3\obj\**" />
+	<None Remove="Nethereum.EVM\bin\**" />
+	<None Remove="Nethereum.EVM\obj\**" />
+	<None Remove="Nethereum.EVM\Properties\**" />
+
+	  <Compile Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
+    <None Remove="Nethereum.Model\Properties\**;Nethereum.Model\bin\**;Nethereum.Model\obj\**" />
+
+    <Compile Remove="Nethereum.JsonRpc.Client\Properties\**;Nethereum.JsonRpc.Client\bin\**;Nethereum.JsonRpc.Client\obj\**" />
+    <None Remove="Nethereum.JsonRpc.Client\Properties\**;Nethereum.JsonRpc.Client\bin\**;Nethereum.JsonRpc.Client\obj\**" />
+
+    <Compile Remove="Nethereum.JsonRpc.RpcClient\Properties\**;Nethereum.JsonRpc.RpcClient\bin\**;Nethereum.JsonRpc.RpcClient\obj\**" />
+    <None Remove="Nethereum.JsonRpc.RpcClient\Properties\**;Nethereum.JsonRpc.RpcClient\bin\**;Nethereum.JsonRpc.RpcClient\obj\**" />
+
+    <Compile Remove="Nethereum.JsonRpc.IpcClient\Properties\**;Nethereum.JsonRpc.IpcClient\bin\**;Nethereum.JsonRpc.IpcClient\obj\**" />
+    <None Remove="Nethereum.JsonRpc.IpcClient\Properties\**;Nethereum.JsonRpc.IpcClient\bin\**;Nethereum.JsonRpc.IpcClient\obj\**" />
+
+    <Compile Remove="Nethereum.JsonRpc.WebSocketClient\Properties\**;Nethereum.JsonRpc.WebSocketClient\bin\**;Nethereum.JsonRpc.WebSocketClient\obj\**" />
+    <None Remove="Nethereum.JsonRpc.WebSocketClient\Properties\**;Nethereum.JsonRpc.WebSocketClient\bin\**;Nethereum.JsonRpc.WebSocketClient\obj\**" />
+
+    <Compile Remove="Nethereum.RPC.Reactive\Properties\**;Nethereum.RPC.Reactive\bin\**;Nethereum.RPC.Reactive\obj\**" />
+    <None Remove="Nethereum.RPC.Reactive\Properties\**;Nethereum.RPC.Reactive\bin\**;Nethereum.RPC.Reactive\obj\**" />
+
+    <Compile Remove="Nethereum.KeyStore\Properties\**;Nethereum.KeyStore\bin\**;Nethereum.KeyStore\obj\**" />
+    <None Remove="Nethereum.KeyStore\Properties\**;Nethereum.KeyStore\bin\**;Nethereum.KeyStore\obj\**" />
+
+    <Compile Remove="Nethereum.Quorum\Properties\**;Nethereum.Quorum\bin\**;Nethereum.Quorum\obj\**" />
+    <None Remove="Nethereum.Quorum\Properties\**;Nethereum.Quorum\bin\**;Nethereum.Quorum\obj\**" />
+
+    <Compile Remove="Nethereum.Geth\Properties\**;Nethereum.Geth\bin\**;Nethereum.Geth\obj\**" />
+    <None Remove="Nethereum.Geth\Properties\**;Nethereum.Geth\bin\**;Nethereum.Geth\obj\**" />
+
+    <Compile Remove="Nethereum.Contracts\Properties\**;Nethereum.Contracts\bin\**;Nethereum.Contracts\obj\**" />
+    <None Remove="Nethereum.Contracts\Properties\**;Nethereum.Contracts\bin\**;Nethereum.Contracts\obj\**" />
+
+    <Compile Remove="Nethereum.Util\Properties\**;Nethereum.Util\bin\**;Nethereum.Util\obj\**" />
+    <None Remove="Nethereum.Util\Properties\**;Nethereum.Util\bin\**;Nethereum.Util\obj\**" />
+
+    <Compile Remove="Nethereum.Signer\Properties\**;Nethereum.Signer\bin\**;Nethereum.Signer\obj\**" />
+    <None Remove="Nethereum.Signer\Properties\**;Nethereum.Signer\bin\**;Nethereum.Signer\obj\**" />
+
+    <Compile Remove="Nethereum.Signer.EIP712\Properties\**;Nethereum.Signer.EIP712\bin\**;Nethereum.Signer.EIP712\obj\**" />
+    <None Remove="Nethereum.Signer.EIP712\Properties\**;Nethereum.Signer.EIP712\bin\**;Nethereum.Signer.EIP712\obj\**" />
+
+    <Compile Remove="Nethereum.RLP\Properties\**;Nethereum.RLP\bin\**;Nethereum.RLP\obj\**" />
+    <None Remove="Nethereum.RLP\Properties\**;Nethereum.RLP\bin\**;Nethereum.RLP\obj\**" />
+
+    <Compile Remove="Nethereum.Parity\Properties\**;Nethereum.Parity\bin\**;Nethereum.Parity\obj\**" />
+    <None Remove="Nethereum.Parity\Properties\**;Nethereum.Parity\bin\**;Nethereum.Parity\obj\**" />
+
+    <Compile Remove="Nethereum.Parity.Reactive\Properties\**;Nethereum.Parity.Reactive\bin\**;Nethereum.Parity.Reactive\obj\**" />
+    <None Remove="Nethereum.Parity.Reactive\Properties\**;Nethereum.Parity.Reactive\bin\**;Nethereum.Parity.Reactive\obj\**" />
+
+    <Compile Remove="Nethereum.Accounts\Properties\**;Nethereum.Accounts\bin\**;Nethereum.Accounts\obj\**" />
+    <None Remove="Nethereum.Accounts\Properties\**;Nethereum.Accounts\bin\**;Nethereum.Accounts\obj\**" />
+
+    <Compile Remove="Nethereum.BlockchainProcessing\Properties\**;Nethereum.BlockchainProcessing\bin\**;Nethereum.BlockchainProcessing\obj\**" />
+    <None Remove="Nethereum.BlockchainProcessing\Properties\**;Nethereum.BlockchainProcessing\bin\**;Nethereum.BlockchainProcessing\obj\**" />
+
+    <Compile Remove="Nethereum.Besu\Properties\**;Nethereum.Besu\bin\**;Nethereum.Besu\obj\**" />
+    <None Remove="Nethereum.Besu\Properties\**;Nethereum.Besu\bin\**;Nethereum.Besu\obj\**" />
+
+    <Compile Remove="Nethereum.RSK\Properties\**;Nethereum.RSK\bin\**;Nethereum.RSK\obj\**" />
+    <None Remove="Nethereum.RSK\Properties\**;Nethereum.RSK\bin\**;Nethereum.RSK\obj\**" />
+
+    <Compile Remove="Nethereum.HdWallet\Properties\**;Nethereum.HdWallet\bin\**;Nethereum.HdWallet\obj\**" />
+    <None Remove="Nethereum.HdWallet\Properties\**;Nethereum.HdWallet\bin\**;Nethereum.HdWallet\obj\**" />
+
+    <Compile Remove="Nethereum.GnosisSafe\Properties\**;Nethereum.GnosisSafe\bin\**;Nethereum.GnosisSafe\obj\**" />
+    <None Remove="Nethereum.GnosisSafe\Properties\**;Nethereum.GnosisSafe\bin\**;Nethereum.GnosisSafe\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
+    <None Remove="Nethereum.Siwe.Core\Properties\**;Nethereum.Siwe.Core\bin\**;Nethereum.Siwe.Core\obj\**" />
+
+    <Compile Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
+    <None Remove="Nethereum.Siwe\Properties\**;Nethereum.Siwe\bin\**;Nethereum.Siwe\obj\**" />
+
+    <Compile Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
+    <None Remove="Nethereum.Optimism\Properties\**;Nethereum.Optimism\bin\**;Nethereum.Optimism\obj\**" />
+
+	  <Compile Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
+	  <None Remove="Nethereum.Metamask\Properties\**;Nethereum.Metamask\bin\**;Nethereum.Metamask\obj\**" />
+
+	  <Compile Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
+	  <None Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+
+    <Compile Remove="compiledlibraries\**" />
+
+    <Compile Remove="Nethereum.Signer.AzureKeyVault\**" />
+
+	<Compile Remove="Nethereum.Signer.AWSKeyManagement\**" />
+	
+	  <Compile Remove="Nethereum.UI\**" />
+
+	<Compile Remove="Nethereum.Metamask\**" />
+
+	<Compile Remove="Nethereum.Metamask.Blazor\**" />
+	  
+    <Compile Remove="Nethereum.Signer.Ledger\**" />
+
+    <Compile Remove="Nethereum.Signer.Trezor\**" />
+
+	  <Compile Remove="Nethereum.Unity\**" />
+	  
+	  <Compile Remove="Nethereum.Unity.Metamask\**" />
+
+    <EmbeddedResource Remove="compiledlibraries\**" />
+
+    <EmbeddedResource Remove="Nethereum.BigInteger.N351\**" />
+
+    <EmbeddedResource Remove="Nethereum.ClassDiagrams\**" />
+
+    <EmbeddedResource Remove="Nethereum.ENS\**" />
+
+    <EmbeddedResource Remove="Nethereum.EVM\**" />
+
+    <EmbeddedResource Remove="Nethereum.Generators.JavaScript\**" />
+
+    <EmbeddedResource Remove="Nethereum.GSN\**" />
+
+    <EmbeddedResource Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
+
+    <EmbeddedResource Remove="Nethereum.Signer.AzureKeyVault\**" />
+
+    <EmbeddedResource Remove="Nethereum.Signer.Ledger\**" />
+
+    <EmbeddedResource Remove="Nethereum.Signer.Trezor\**" />
+
+    <EmbeddedResource Remove="Nethereum.StandardNonFungibleTokenERC721\**" />
+
+    <EmbeddedResource Remove="Nethereum.StandardTokenEIP20\**" />
+
+	<EmbeddedResource Remove="Nethereum.Unity\**" />
+	<EmbeddedResource Remove="Nethereum.Unity.Metamask\**" />
+
+    <None Remove="compiledlibraries\**" />
+  
+    
+    <None Remove="Nethereum.GSN\**" />
+    <None Remove="Nethereum.Signer.AzureKeyVault\**" />
+	<None Remove="Nethereum.Signer.AWSKeyManagement\**" />
+    <None Remove="Nethereum.Signer.Ledger\**" />
+    <None Remove="Nethereum.Signer.Trezor\**" />
+	<None Remove="Nethereum.Unity\**" />
+	<None Remove="Nethereum.Unity.Metamask\**" />
+	<None Remove="Nethereum.Metamask\**" />
+	<None Remove="Nethereum.Metamask.Blazor\**" />
+    <None Remove="packages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="lognuget.txt" />
+    <None Remove="net461.bat" />
+    <None Remove="net461AOT.bat" />
+    <None Remove="net472.bat" />
+    <None Remove="net472AOT.bat" />
+    <None Remove="net472AOT.sh" />
+    <None Remove="nuget-verify.bat" />
+    <None Remove="nuget.bat" />
+    <None Remove="nugethd.bat" />
+    <None Remove="unitynet35.bat" />
+    <None Remove="vstsSimpleBuildCore.txt" />
+    <None Remove="vstsSimpleBuildGenerators.txt" />
+    <None Remove="vstsSimpleBuildGeneratorsPack.txt" />
+    <None Remove="vstsSimpleBuildPack.txt" />
+    <None Remove="vstsSimpleBuildTestProjects.txt" />
+  </ItemGroup>
+
+
+</Project>

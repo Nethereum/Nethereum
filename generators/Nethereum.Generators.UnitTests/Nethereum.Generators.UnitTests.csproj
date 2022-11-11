@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.Generator.Tests Class Library</Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFramework>net50</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Expectations\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\EventDTO.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
+    <None Remove="Expectations\Content\CSharp\ServiceGenerator.01.csharp.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\ServiceGenerator.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\ContractDeploymentCqsMessage.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\EventDTO.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\FunctionCQSMessage.01.csharp.txt" />
+    <EmbeddedResource Include="Expectations\Content\CSharp\FunctionOutputDTO.01.csharp.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <PackageReference Include="Nethereum.ABI" Version="2.5.1" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj" />
+    <!-- <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" /> -->
+    <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
+  </ItemGroup>
+
+</Project>

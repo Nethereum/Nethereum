@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>Nethereum.Autogen.ContractApi</id>
+    <version>4.11.0</version>
+    <authors>Juan Blanco, Dave Whiffin</authors>
+    <owners>Juan Blanco</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+	<license type="file">LICENSE.md</license>
+	<iconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</iconUrl>
+    <summary>Code Generates a Nethereum C#, Vb or F# Api for contracts based on Ethereum Abi files.</summary>
+    <description>Generates dot net code for Ethereum (Solidity) contracts.  
+      Will automatically create dot net files based on .abi files within the target project during pre build. 
+      The generated code language is derived from the project file extension (csproj, vbproj, fsproj).
+      More control can be gained by adding a Nethereum.Generator.config file to the root of the project.
+      This describes the abi contracts and the code generation options for each (output folders, namespaces etc).</description>
+  </metadata>
+
+  <files>
+    <file src="..\..\Nethereum.Generator.Console\bin\release\net5.0\publish\*.dll" target="tools" />
+    <file src="..\..\Nethereum.Generator.Console\bin\release\net5.0\publish\*.json" target="tools" />
+	<file src="..\..\..\LICENSE.md" target="" />
+    <file src="Nethereum.Autogen.ContractApi.targets" target="build" />
+  </files>
+</package>

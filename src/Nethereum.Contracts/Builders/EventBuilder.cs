@@ -1,107 +1,77 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
-using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Contracts.Extensions;
 using Nethereum.RPC.Eth.DTOs;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Contracts
 {
+    [Obsolete("Use the EventABI extensions instead")]
     public class EventBuilder
     {
-        private readonly EventTopicBuilder _eventTopicBuilder;
-        private readonly ContractBuilder _contract;
+        public string ContractAddress { get; set; }
 
-        public EventBuilder(ContractBuilder contract, EventABI eventAbi)
+        public EventBuilder(string contractAddress, EventABI eventAbi)
         {
-            _contract = contract;
+            ContractAddress = contractAddress;
             EventABI = eventAbi;
-            _eventTopicBuilder = new EventTopicBuilder(eventAbi);
         }
 
         public EventABI EventABI { get; }
 
         public NewFilterInput CreateFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = new[] { _eventTopicBuilder.GetSignaguteTopic() };
-            return ethFilterInput;
+            return EventABI.CreateFilterInput(ContractAddress, fromBlock, toBlock);
         }
 
         public NewFilterInput CreateFilterInput(object[] filterTopic1, BlockParameter fromBlock = null,
             BlockParameter toBlock = null)
         {
-            var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = _eventTopicBuilder.GetTopics(filterTopic1);
-            return ethFilterInput;
+            return EventABI.CreateFilterInput(ContractAddress, filterTopic1, fromBlock, toBlock);
         }
 
         public NewFilterInput CreateFilterInput(object[] filterTopic1, object[] filterTopic2,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = _eventTopicBuilder.GetTopics(filterTopic1, filterTopic2);
-            return ethFilterInput;
+            return EventABI.CreateFilterInput(ContractAddress, filterTopic1, filterTopic2, fromBlock, toBlock);
         }
 
         public NewFilterInput CreateFilterInput(object[] filterTopic1, object[] filterTopic2, object[] filterTopic3,
             BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = _contract.GetDefaultFilterInput(fromBlock, toBlock);
-            ethFilterInput.Topics = _eventTopicBuilder.GetTopics(filterTopic1, filterTopic2, filterTopic3);
-            return ethFilterInput;
+            return EventABI.CreateFilterInput(ContractAddress, filterTopic1, filterTopic2, filterTopic3, fromBlock, toBlock);
         }
 
         public bool IsLogForEvent(JToken log)
         {
-            return IsLogForEvent(JsonConvert.DeserializeObject<FilterLog>(log.ToString()));
+            return EventABI.IsLogForEvent(log);
         }
 
         public bool IsLogForEvent(FilterLog log)
         {
-            if ((log.Topics != null) && (log.Topics.Length > 0))
-            {
-                var eventtopic = log.Topics[0].ToString();
-                if (EventABI.Sha33Signature.IsTheSameHex(eventtopic))
-                    return true;
-            }
-            return false;
+            return EventABI.IsLogForEvent(log);
+        }
+
+        public bool IsFilterInputForEvent(NewFilterInput filterInput)
+        {
+            return EventABI.IsFilterInputForEvent(ContractAddress, filterInput);
         }
 
         public FilterLog[] GetLogsForEvent(JArray logs)
         {
-            var returnList = new List<FilterLog>();
-            foreach (JToken log in logs)
-            {
-                var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
-                if (IsLogForEvent(filterLog))
-                {
-                    returnList.Add(filterLog);
-                }
-            }
-            return returnList.ToArray();
+            return EventABI.GetLogsForEvent(logs);
         }
 
         public List<EventLog<T>> DecodeAllEventsForEvent<T>(FilterLog[] logs) where T : new()
         {
-            var result = new List<EventLog<T>>();
-            if (logs == null) return result;
-            var eventDecoder = new EventTopicDecoder();
-            foreach (var log in logs)
-            {
-                if (IsLogForEvent(log))
-                {
-                    var eventObject = eventDecoder.DecodeTopics<T>(log.Topics, log.Data);
-                    result.Add(new EventLog<T>(eventObject, log));
-                }
-            }
-            return result;
+            return EventABI.DecodeAllEvents<T>(logs);
         }
 
         public List<EventLog<T>> DecodeAllEventsForEvent<T>(JArray logs) where T : new()
         {
-            return DecodeAllEventsForEvent<T>(GetLogsForEvent(logs));
+            return EventABI.DecodeAllEvents<T>(logs);
         }
 
         public static List<EventLog<T>> DecodeAllEvents<T>(FilterLog[] logs) where T : new()

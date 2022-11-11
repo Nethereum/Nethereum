@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum.StandardNonFungibleTokenERC721 Ethereum Service to interact with ERC721 compliant contracts</Description>
+    <AssemblyTitle>Nethereum.StandardNonFungibleTokenERC721</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.StandardNonFungibleTokenERC721</AssemblyName>
+    <PackageId>Nethereum.StandardNonFungibleTokenERC721</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

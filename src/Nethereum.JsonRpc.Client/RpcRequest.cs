@@ -9,7 +9,7 @@
             RawParameters = parameterList;
         }
 
-        public object Id { get; private set; }
+        public object Id { get; set; }
         public string Method { get; private set; }
         public object[] RawParameters { get; private set; }
     }

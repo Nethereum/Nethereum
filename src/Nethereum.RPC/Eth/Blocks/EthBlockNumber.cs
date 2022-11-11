@@ -4,6 +4,7 @@ using Nethereum.RPC.Infrastructure;
 
 namespace Nethereum.RPC.Eth.Blocks
 {
+
     /// <Summary>
     ///     eth_blockNumber
     ///     Returns the number of most recent block.
@@ -21,7 +22,7 @@ namespace Nethereum.RPC.Eth.Blocks
     ///     "result": "0x4b7" // 1207
     ///     }
     /// </Summary>
-    public class EthBlockNumber : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class EthBlockNumber : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IEthBlockNumber
     {
         public EthBlockNumber(IClient client) : base(client, ApiMethods.eth_blockNumber.ToString())
         {

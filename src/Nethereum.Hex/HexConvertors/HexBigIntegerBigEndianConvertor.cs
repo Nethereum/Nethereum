@@ -3,9 +3,8 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Hex.HexConvertors
 {
-    public class HexBigIntegerBigEndianConvertor: IHexConvertor<BigInteger>
-    {  
-
+    public class HexBigIntegerBigEndianConvertor : IHexConvertor<BigInteger>
+    {
         public string ConvertToHex(BigInteger newValue)
         {
             return newValue.ToHex(false);
@@ -15,6 +14,5 @@ namespace Nethereum.Hex.HexConvertors
         {
             return hex.HexToBigInteger(false);
         }
-
     }
 }

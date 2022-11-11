@@ -2,16 +2,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Description>HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum</Description>
-    <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>Nethereum.Hex</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AssemblyName>Nethereum.Hex</AssemblyName>
+    <AssemblyName>Nethereum.Hex</AssemblyName> 
     <PackageId>Nethereum.Hex</PackageId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard1.1|AnyCPU'">
+  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -31,15 +30,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition=" '$(TargetFramework)' != 'net35'" Include="Newtonsoft.Json" Version="10.0.3" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
-    <Reference Include="System.Numerics" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="BigInteger\" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

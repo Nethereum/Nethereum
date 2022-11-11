@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Geth.RPC.Debug
@@ -17,7 +16,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     (eth/peer.go, eth/downloader/peer.go) as well as output from package p2p at level <= 5, use:
     ///     debug.vmodule("eth/*/peer.go=6,p2p=5")
     /// </Summary>
-    public class DebugVmodule : RpcRequestResponseHandler<object>
+    public class DebugVmodule : RpcRequestResponseHandler<object>, IDebugVmodule
     {
         public DebugVmodule(IClient client) : base(client, ApiMethods.debug_vmodule.ToString())
         {

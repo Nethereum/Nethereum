@@ -20,7 +20,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "54"
     ///     }
     /// </Summary>
-    public class EthProtocolVersion : GenericRpcRequestResponseHandlerNoParam<string>
+    public class EthProtocolVersion : GenericRpcRequestResponseHandlerNoParam<string>, IEthProtocolVersion
     {
         public EthProtocolVersion(IClient client) : base(client, ApiMethods.eth_protocolVersion.ToString())
         {

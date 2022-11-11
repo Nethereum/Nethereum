@@ -1,7 +1,7 @@
-﻿
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 #if DOTNET35
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +45,6 @@ namespace System.Numerics
             AssertValid();
         }
 
-        [CLSCompliant(false)]
         public BigInteger(uint value)
         {
             if (value <= int.MaxValue)
@@ -103,7 +102,6 @@ namespace System.Numerics
             AssertValid();
         }
 
-        [CLSCompliant(false)]
         public BigInteger(ulong value)
         {
             if (value <= int.MaxValue)
@@ -243,7 +241,6 @@ namespace System.Numerics
         /// Creates a BigInteger from a little-endian twos-complement byte array.
         /// </summary>
         /// <param name="value"></param>
-        [CLSCompliant(false)]
         public BigInteger(byte[] value)
         {
             if (value == null)
@@ -782,7 +779,8 @@ namespace System.Numerics
 
             if (trivialModulus)
             {
-                uint bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
+                uint bits =
+trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
                             trivialValue ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits, NumericsHelpers.Abs(modulus._sign)) :
                             trivialExponent ? BigIntegerCalculator.Pow(value._bits, NumericsHelpers.Abs(exponent._sign), NumericsHelpers.Abs(modulus._sign)) :
                             BigIntegerCalculator.Pow(value._bits, exponent._bits, NumericsHelpers.Abs(modulus._sign));
@@ -791,7 +789,8 @@ namespace System.Numerics
             }
             else
             {
-                uint[] bits = trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits) :
+                uint[] bits =
+trivialValue && trivialExponent ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent._sign), modulus._bits) :
                               trivialValue ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), exponent._bits, modulus._bits) :
                               trivialExponent ? BigIntegerCalculator.Pow(value._bits, NumericsHelpers.Abs(exponent._sign), modulus._bits) :
                               BigIntegerCalculator.Pow(value._bits, exponent._bits, modulus._bits);
@@ -871,7 +870,7 @@ namespace System.Numerics
             return NumericsHelpers.MakeUlong(_bits[1], _bits[0]) == uu;
         }
 
-        [CLSCompliant(false)]
+       
         public bool Equals(ulong other)
         {
             AssertValid();
@@ -923,7 +922,7 @@ namespace System.Numerics
             return _sign * uuTmp.CompareTo(uu);
         }
 
-        [CLSCompliant(false)]
+       
         public int CompareTo(ulong other)
         {
             AssertValid();
@@ -1249,7 +1248,6 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
         public static implicit operator BigInteger(sbyte value)
         {
             return new BigInteger(value);
@@ -1260,7 +1258,7 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
+       
         public static implicit operator BigInteger(ushort value)
         {
             return new BigInteger(value);
@@ -1271,7 +1269,7 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
+       
         public static implicit operator BigInteger(uint value)
         {
             return new BigInteger(value);
@@ -1282,7 +1280,6 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
         public static implicit operator BigInteger(ulong value)
         {
             return new BigInteger(value);
@@ -1308,7 +1305,7 @@ namespace System.Numerics
             return checked((byte)((int)value));
         }
 
-        [CLSCompliant(false)]
+     
         public static explicit operator sbyte(BigInteger value)
         {
             return checked((sbyte)((int)value));
@@ -1319,7 +1316,7 @@ namespace System.Numerics
             return checked((short)((int)value));
         }
 
-        [CLSCompliant(false)]
+     
         public static explicit operator ushort(BigInteger value)
         {
             return checked((ushort)((int)value));
@@ -1348,8 +1345,7 @@ namespace System.Numerics
             }
             return unchecked(-(int)value._bits[0]);
         }
-
-        [CLSCompliant(false)]
+        
         public static explicit operator uint(BigInteger value)
         {
             value.AssertValid();
@@ -1400,7 +1396,7 @@ namespace System.Numerics
             throw new OverflowException("Overflow_Int64");
         }
 
-        [CLSCompliant(false)]
+       
         public static explicit operator ulong(BigInteger value)
         {
             value.AssertValid();
@@ -1897,73 +1893,72 @@ namespace System.Numerics
             return !right.Equals(left);
         }
 
-        [CLSCompliant(false)]
         public static bool operator <(BigInteger left, ulong right)
         {
             return left.CompareTo(right) < 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <=(BigInteger left, ulong right)
         {
             return left.CompareTo(right) <= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >(BigInteger left, ulong right)
         {
             return left.CompareTo(right) > 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >=(BigInteger left, ulong right)
         {
             return left.CompareTo(right) >= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator ==(BigInteger left, ulong right)
         {
             return left.Equals(right);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator !=(BigInteger left, ulong right)
         {
             return !left.Equals(right);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <(ulong left, BigInteger right)
         {
             return right.CompareTo(left) > 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator <=(ulong left, BigInteger right)
         {
             return right.CompareTo(left) >= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >(ulong left, BigInteger right)
         {
             return right.CompareTo(left) < 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator >=(ulong left, BigInteger right)
         {
             return right.CompareTo(left) <= 0;
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator ==(ulong left, BigInteger right)
         {
             return right.Equals(left);
         }
 
-        [CLSCompliant(false)]
+       
         public static bool operator !=(ulong left, BigInteger right)
         {
             return !right.Equals(left);

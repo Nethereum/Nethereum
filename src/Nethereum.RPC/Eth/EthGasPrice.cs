@@ -21,7 +21,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "0x09184e72a000" // 10000000000000
     ///     }
     /// </Summary>
-    public class EthGasPrice : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>
+    public class EthGasPrice : GenericRpcRequestResponseHandlerNoParam<HexBigInteger>, IEthGasPrice
     {
         public EthGasPrice(IClient client) : base(client, ApiMethods.eth_gasPrice.ToString())
         {

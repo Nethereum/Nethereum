@@ -1,3 +1,4 @@
+
 using System;
 using System.Threading.Tasks;
  
@@ -20,7 +21,7 @@ namespace Nethereum.RPC.Personal
     ///     Example
     ///     personal.unlockAccount(eth.coinbase, "mypasswd", 300)
     /// </Summary>
-    public class PersonalUnlockAccount : RpcRequestResponseHandler<bool>
+    public class PersonalUnlockAccount : RpcRequestResponseHandler<bool>, IPersonalUnlockAccount
     {
         public PersonalUnlockAccount(IClient client) : base(client, ApiMethods.personal_unlockAccount.ToString())
         {
@@ -29,7 +30,7 @@ namespace Nethereum.RPC.Personal
         /// <summary>
         /// This is compatible with newer versions of Geth
         /// </summary>
-        public Task<bool> SendRequestAsync(string address, string passPhrase, int? durationInSeconds,
+        public Task<bool> SendRequestAsync(string address, string passPhrase, ulong? durationInSeconds,
             object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
@@ -58,7 +59,7 @@ namespace Nethereum.RPC.Personal
             if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
             return
                 await
-                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync(), passPhrase)
+                    base.SendRequestAsync(id, await coinbaseRequest.SendRequestAsync().ConfigureAwait(false), passPhrase)
                         .ConfigureAwait(false);
         }
 

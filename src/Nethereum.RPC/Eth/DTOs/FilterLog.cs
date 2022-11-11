@@ -1,4 +1,5 @@
 using Nethereum.Hex.HexTypes;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
@@ -13,19 +14,19 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     TAG - pending when the log is pending. mined if log is already mined..
         /// </summary>
-        [JsonProperty(PropertyName = "type")]
+       [JsonProperty(PropertyName = "type")]
         public string Type { get; set; }
 
         /// <summary>
         ///     QUANTITY - integer of the log index position in the block. null when its pending log.
         /// </summary>
-        [JsonProperty(PropertyName = "logIndex")]
+       [JsonProperty(PropertyName = "logIndex")]
         public HexBigInteger LogIndex { get; set; }
 
         /// <summary>
         ///     DATA, 32 Bytes - hash of the transactions this log was created from. null when its pending log.DATA, 32 Bytes -
         ///     hash of the transaction.
-        /// </summary>
+         /// </summary>
         [JsonProperty(PropertyName = "transactionHash")]
         public string TransactionHash { get; set; }
 

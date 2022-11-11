@@ -16,7 +16,9 @@ namespace Nethereum.ABI.Decoders
         {
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
             if (type == typeof(string)) return _stringTypeDecoder.Decode(encoded, type);
-            return encoded.Skip(32).Take(EncoderDecoderHelpers.GetNumberOfBytes(encoded)).ToArray();
+            var returnArray = encoded.Skip(32).Take(EncoderDecoderHelpers.GetNumberOfBytes(encoded)).ToArray();
+            if (type == typeof(byte)) return returnArray[0];
+            return returnArray;
         }
 
         public override Type GetDefaultDecodingType()
@@ -26,7 +28,8 @@ namespace Nethereum.ABI.Decoders
 
         public override bool IsSupportedType(Type type)
         {
-            return (type == typeof(string)) || (type == typeof(byte[])) || (type == typeof(object));
+            return type == typeof(string) || type == typeof(byte[]) || type == typeof(object)
+                   || type == typeof(byte);
         }
     }
 }

@@ -27,7 +27,7 @@ namespace Nethereum.RPC.Eth.Filters
     ///     "result": true
     ///     }
     /// </Summary>
-    public class EthUninstallFilter : RpcRequestResponseHandler<bool>
+    public class EthUninstallFilter : RpcRequestResponseHandler<bool>, IEthUninstallFilter
     {
         public EthUninstallFilter(IClient client) : base(client, ApiMethods.eth_uninstallFilter.ToString())
         {

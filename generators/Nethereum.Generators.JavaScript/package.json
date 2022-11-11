@@ -1,0 +1,37 @@
+{
+  "name": "nethereum-codegen",
+  "version": "1.0.24",
+  "description": "Code generator of Nethereum and Ethereum integration classes and projects ",
+  "main": "app.js",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "directories": {
+    "example": "examples"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^5.0.1",
+    "@types/node": "^9.6.2"
+  },
+  "dependencies": {
+    "fs-extra": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nethereum/Nethereum.git"
+  },
+  "keywords": [
+    "Ethereum",
+    "ABI",
+    "Code",
+    "generation",
+    "Nethereum"
+  ],
+  "author": "Juan Blanco",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Nethereum/Nethereum/issues"
+  },
+  "homepage": "https://nethereum.com"
+}

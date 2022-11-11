@@ -13,6 +13,7 @@
         parity_pendingTransactionsStats,
         parity_releasesInfo,
         parity_versionInfo,
+
         //Account Vaults
         parity_changeVault,
         parity_changeVaultPassword,
@@ -21,6 +22,7 @@
         parity_newVault,
         parity_openVault,
         parity_setVaultMeta,
+
         //Accounts (read-only) and Signatures
         parity_accountsInfo,
         parity_checkRequest,
@@ -31,6 +33,7 @@
         parity_phraseToAddress,
         parity_postSign,
         parity_postTransaction,
+
         //Block Authoring (aka "mining")
         parity_defaultExtraData,
         parity_extraData,
@@ -38,9 +41,11 @@
         parity_gasFloorTarget,
         parity_minGasPrice,
         parity_transactionsLimit,
+
         //Development
         parity_devLogs,
         parity_devLogsLevels,
+
         //Network Information
         parity_chainStatus,
         parity_gasPriceHistogram,
@@ -52,6 +57,7 @@
         parity_registryAddress,
         parity_rpcSettings,
         parity_unsignedTransactionsCount,
+
         //Node Settings
         parity_dappsInterface,
         parity_dappsPort,
@@ -64,6 +70,10 @@
         trace_transaction,
         trace_filter,
         trace_call,
-        trace_rawTransaction
+        trace_rawTransaction,
+
+        //pub sub
+        parity_unsubscribe,
+        parity_subscribe
     }
 }

@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth.DTOs
@@ -5,7 +6,6 @@ namespace Nethereum.RPC.Eth.DTOs
     /// <summary>
     ///     Object - The transaction object
     /// </summary>
-    [JsonObject(MemberSerialization.OptIn)]
     public class NewFilterInput
     {
         public NewFilterInput()

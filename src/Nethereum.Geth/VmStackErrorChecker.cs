@@ -10,7 +10,7 @@ namespace Nethereum.Geth
             if (structsLogs.Count > 0)
             {
                 var lastCall = structsLogs[structsLogs.Count - 1];
-                return lastCall["error"].Value<string>();
+                return lastCall["error"]?.Value<string>();
             }
             return null;
         }

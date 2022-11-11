@@ -28,7 +28,7 @@ namespace Nethereum.RPC.Eth.Uncles
     ///     curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getUncleByBlockNumberAndIndex","params":["0x29c",
     ///     "0x0"],"id":1}'
     /// </Summary>
-    public class EthGetUncleByBlockNumberAndIndex : RpcRequestResponseHandler<BlockWithTransactionHashes>
+    public class EthGetUncleByBlockNumberAndIndex : RpcRequestResponseHandler<BlockWithTransactionHashes>, IEthGetUncleByBlockNumberAndIndex
     {
         public EthGetUncleByBlockNumberAndIndex(IClient client)
             : base(client, ApiMethods.eth_getUncleByBlockNumberAndIndex.ToString())

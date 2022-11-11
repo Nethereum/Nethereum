@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic-CodeGen.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0;net7.0</TargetFrameworks>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <RuntimeIdentifiers>win-x64;osx-x64;linux-x64;</RuntimeIdentifiers>
+    <PackAsTool>true</PackAsTool>
+    <PackageId>Nethereum.Generator.Console</PackageId>
+    <Authors>Juan Blanco,Dave Whiffin,Nethereum contributors</Authors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj" />
+    <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
+  </ItemGroup>
+</Project>

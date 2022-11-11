@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 
 namespace Nethereum.Hex.HexConvertors.Extensions
@@ -11,11 +10,10 @@ namespace Nethereum.Hex.HexConvertors.Extensions
         }
 
 
-        public static String HexToUTF8String(this string hex)
+        public static string HexToUTF8String(this string hex)
         {
             var bytes = hex.HexToByteArray();
-            return System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            return Encoding.UTF8.GetString(bytes, 0, bytes.Length);
         }
-
     }
 }

@@ -3,7 +3,7 @@ using Nethereum.RPC.Eth.Filters;
 
 namespace Nethereum.RPC.Eth.Services
 {
-    public class EthApiFilterService : RpcClientWrapper
+    public class EthApiFilterService : RpcClientWrapper, IEthApiFilterService
     {
         public EthApiFilterService(IClient client) : base(client)
         {
@@ -18,16 +18,16 @@ namespace Nethereum.RPC.Eth.Services
             UninstallFilter = new EthUninstallFilter(client);
         }
 
-        public EthGetFilterChangesForBlockOrTransaction GetFilterChangesForBlockOrTransaction { get; private set; }
-        public EthGetFilterChangesForEthNewFilter GetFilterChangesForEthNewFilter { get; private set; }
-        public EthGetFilterLogsForBlockOrTransaction GetFilterLogsForBlockOrTransaction { get; private set; }
-        public EthGetFilterLogsForEthNewFilter GetFilterLogsForEthNewFilter { get; private set; }
+        public IEthGetFilterChangesForBlockOrTransaction GetFilterChangesForBlockOrTransaction { get; private set; }
+        public IEthGetFilterChangesForEthNewFilter GetFilterChangesForEthNewFilter { get; private set; }
+        public IEthGetFilterLogsForBlockOrTransaction GetFilterLogsForBlockOrTransaction { get; private set; }
+        public IEthGetFilterLogsForEthNewFilter GetFilterLogsForEthNewFilter { get; private set; }
 
-        public EthNewBlockFilter NewBlockFilter { get; private set; }
-        public EthNewFilter NewFilter { get; private set; }
-        public EthNewPendingTransactionFilter NewPendingTransactionFilter { get; private set; }
+        public IEthNewBlockFilter NewBlockFilter { get; private set; }
+        public IEthNewFilter NewFilter { get; private set; }
+        public IEthNewPendingTransactionFilter NewPendingTransactionFilter { get; private set; }
 
-        public EthUninstallFilter UninstallFilter { get; private set; }
-        public EthGetLogs GetLogs { get; private set; }
+        public IEthUninstallFilter UninstallFilter { get; private set; }
+        public IEthGetLogs GetLogs { get; private set; }
     }
 }

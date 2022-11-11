@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Geth.RPC.Debug
@@ -7,7 +6,7 @@ namespace Nethereum.Geth.RPC.Debug
     /// <Summary>
     ///     Retrieves and returns the RLP encoded block by number.
     /// </Summary>
-    public class DebugGetBlockRlp : RpcRequestResponseHandler<string>
+    public class DebugGetBlockRlp : RpcRequestResponseHandler<string>, IDebugGetBlockRlp
     {
         public DebugGetBlockRlp(IClient client) : base(client, ApiMethods.debug_getBlockRlp.ToString())
         {

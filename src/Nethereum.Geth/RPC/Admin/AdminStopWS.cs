@@ -8,7 +8,7 @@ namespace Nethereum.Geth.RPC.Admin
     ///     single WebSocket endpoint running, this method takes no parameters, returning a boolean whether the endpoint was
     ///     closed or not.
     /// </Summary>
-    public class AdminStopWS : GenericRpcRequestResponseHandlerNoParam<bool>
+    public class AdminStopWS : GenericRpcRequestResponseHandlerNoParam<bool>, IAdminStopWS
     {
         public AdminStopWS(IClient client) : base(client, ApiMethods.admin_stopWS.ToString())
         {

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RPC.Reactive\Nethereum.RPC.Reactive.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

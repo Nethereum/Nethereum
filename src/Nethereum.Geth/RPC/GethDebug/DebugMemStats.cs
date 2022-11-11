@@ -14,7 +14,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     "Frees": 0
     ///     },
     /// </Summary>
-    public class DebugMemStats : GenericRpcRequestResponseHandlerNoParam<JObject>
+    public class DebugMemStats : GenericRpcRequestResponseHandlerNoParam<JObject>, IDebugMemStats
     {
         public DebugMemStats(IClient client) : base(client, ApiMethods.debug_memStats.ToString())
         {

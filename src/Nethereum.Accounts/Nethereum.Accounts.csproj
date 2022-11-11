@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum.Accounts Ethereum Accounts and Transaction Managers Class Library  </Description>
+    <AssemblyTitle>Nethereum.Accounts</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.Accounts</AssemblyName>
+    <PackageId>Nethereum.Accounts</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.EIP712\Nethereum.Signer.EIP712.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\Nethereum.KeyStore\Nethereum.KeyStore.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+    <DefineConstants>$(DefineConstants);PCL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net451' ">
+    <Reference Include="System" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

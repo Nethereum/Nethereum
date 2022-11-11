@@ -1,5 +1,4 @@
-#if DOTNET35
-// Licensed to the .NET Foundation under one or more agreements.
+#if DOTNET35 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -281,7 +280,8 @@ namespace System.Numerics
 {
     internal static class BigNumber
     {
-        private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
+        private const NumberStyles InvalidNumberStyles =
+~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
@@ -546,7 +546,8 @@ namespace System.Numerics
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {
                     if (digits > 0)
-                        format = string.Format(CultureInfo.InvariantCulture, "D{0}", digits.ToString(CultureInfo.InvariantCulture));
+                        format =
+string.Format(CultureInfo.InvariantCulture, "D{0}", digits.ToString(CultureInfo.InvariantCulture));
                     else
                         format = "D";
                 }

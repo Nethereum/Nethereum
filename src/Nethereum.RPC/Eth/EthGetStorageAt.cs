@@ -1,13 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
- 
+
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Newtonsoft.Json;
 
 namespace Nethereum.RPC.Eth
 {
+
+
     /// <Summary>
     ///     eth_getStorageAt
     ///     Returns the value from a storage position at a given address.
@@ -35,7 +39,7 @@ namespace Nethereum.RPC.Eth
     ///     "result": "0x03"
     ///     }
     /// </Summary>
-    public class EthGetStorageAt : RpcRequestResponseHandler<string>, IDefaultBlock
+    public class EthGetStorageAt : RpcRequestResponseHandler<string>, IDefaultBlock, IEthGetStorageAt
     {
         public EthGetStorageAt(IClient client) : base(client, ApiMethods.eth_getStorageAt.ToString())
         {

@@ -2,141 +2,97 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
-    public class ParameterDecoder
-    {
-      
-        public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties)
-        {
-            if (output == "0x") return result;
-            var parameterObjects = new List<ParameterOutputProperty>();
-
-            foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
-                {
-
-#if DOTNET35
-                   var parameterAttribute = (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), false)[0];
-#else
-                   var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
-#endif
-                    parameterObjects.Add(new ParameterOutputProperty
-                    {
-                        Parameter = parameterAttribute.Parameter,
-                        PropertyInfo = property,
-                        DecodedType = property.PropertyType
-                    });
-                }
-            var orderedParameters = parameterObjects.OrderBy(x => x.Parameter.Order).ToArray();
-            var parameterResults = DecodeOutput(output, orderedParameters);
-
-            foreach (var parameterResult in parameterResults)
-            {
-                var parameter = (ParameterOutputProperty) parameterResult;
-                var propertyInfo = parameter.PropertyInfo;
-
-#if DOTNET35
-                propertyInfo.SetValue(result, parameter.Result, null);
-#else
-                propertyInfo.SetValue(result, parameter.Result);
-#endif
-            }
-
-            return result;
-        }
-
-        public List<ParameterOutput> DecodeDefaultData(string data, params Parameter[] inputParameters)
-        {
-            var parameterOutputs = new List<ParameterOutput>();
-
-            foreach (var inputParameter in inputParameters)
-                parameterOutputs.Add(new ParameterOutput
-                {
-                    Parameter = inputParameter,
-                    DecodedType = inputParameter.ABIType.GetDefaultDecodingType()
-                });
-
-            return DecodeOutput(data, parameterOutputs.ToArray());
-        }
-
-        public List<ParameterOutput> DecodeOutput(string output, params ParameterOutput[] outputParameters)
-        {
-            var outputBytes = output.HexToByteArray();
-
-            var currentIndex = 0;
-
-            foreach (var outputParam in outputParameters)
-            {
-                var param = outputParam.Parameter;
-                if (param.ABIType.IsDynamic())
-                {
-                    outputParam.DataIndexStart =
-                        EncoderDecoderHelpers.GetNumberOfBytes(outputBytes.Skip(currentIndex).ToArray());
-                    currentIndex = currentIndex + 32;
-                }
-                else
-                {
-                    var bytes = outputBytes.Skip(currentIndex).Take(param.ABIType.FixedSize).ToArray();
-                    outputParam.Result = param.ABIType.Decode(bytes, outputParam.DecodedType);
-
-                    currentIndex = currentIndex + param.ABIType.FixedSize;
-                }
-            }
-
-            ParameterOutput currentDataItem = null;
-            foreach (
-                var nextDataItem in outputParameters.Where(outputParam => outputParam.Parameter.ABIType.IsDynamic()))
-            {
-                if (currentDataItem != null)
-                {
-                    var bytes =
-                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart - currentDataItem.DataIndexStart).ToArray();
-                    currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.DecodedType);
-                }
-                currentDataItem = nextDataItem;
-            }
-
-            if (currentDataItem != null)
-            {
-                var bytes = outputBytes.Skip(currentDataItem.DataIndexStart).ToArray();
-                currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.DecodedType);
-            }
-            return outputParameters.ToList();
-        }
-
-        public PropertyInfo[] GetPropertiesWithParameterAttributes(params PropertyInfo[] properties)
-        {
-            var result = new List<PropertyInfo>();
-            foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
-                    result.Add(property);
-            return result.ToArray();
-        }
-    }
-
     public class FunctionCallDecoder : ParameterDecoder
     {
+        public bool IsDataForFunction(string sha3Signature, string data)
+        {
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
+            
+            if (data == "0x") return false;
+            
+            if(string.Equals(data.ToLower(), sha3Signature.ToLower(), StringComparison.Ordinal)) return true;
+
+            if (data.ToLower().StartsWith(sha3Signature.ToLower())) return true;
+
+            return false;
+        }
+
         public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
             params Parameter[] parameters)
         {
-            if (!sha3Signature.StartsWith("0x")) sha3Signature = "0x" + sha3Signature;
-            if (!data.StartsWith("0x")) data = "0x" + data;
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
 
-            if ((data == "0x") || (data == sha3Signature)) return null;
+            if (!IsDataForFunction(sha3Signature, data)) return null;
+
             if (data.StartsWith(sha3Signature))
                 data = data.Substring(sha3Signature.Length); //4 bytes?
             return DecodeDefaultData(data, parameters);
         }
 
+        public T DecodeFunctionInput<T>(string sha3Signature, string data) where T : new()
+        {
+            return DecodeFunctionInput(new T(), sha3Signature, data);
+        }
+
+        public T DecodeFunctionInput<T>(T functionInput, string sha3Signature, string data)
+        {
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
+
+            if ((data == "0x") || (data == sha3Signature)) return functionInput;
+
+            if (data.StartsWith(sha3Signature))
+                data = data.Substring(sha3Signature.Length);
+
+            var type = typeof(T);
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
+            DecodeAttributes(data, functionInput, properties.ToArray());
+            return functionInput;
+        }
+
+        public TError DecodeFunctionCustomError<TError>(TError error, string signature, string encodedErrorData)
+        {
+            return DecodeFunctionInput(error, signature, encodedErrorData);
+        }
+
+
+        public ErrorFunction DecodeFunctionError(string output)
+        {
+            if (ErrorFunction.IsErrorData(output))
+            {
+                return DecodeFunctionInput<ErrorFunction>(ErrorFunction.ERROR_FUNCTION_ID, output);
+            }
+
+            return null;
+        }
+
+        public string DecodeFunctionErrorMessage(string output)
+        {
+            var error = DecodeFunctionError(output);
+            return error?.Message;
+        }
+
+        public void ThrowIfErrorOnOutput(string output, Exception innerException = null)
+        {
+            var error = DecodeFunctionError(output);
+            if(error != null)
+            {
+                throw new SmartContractRevertException(error.Message, output, innerException);
+            }
+        }
+
         public T DecodeFunctionOutput<T>(string output) where T : new()
         {
             if (output == "0x") return default(T);
+            ThrowIfErrorOnOutput(output);
             var result = new T();
             DecodeFunctionOutput(result, output);
             return result;
@@ -146,18 +102,14 @@ namespace Nethereum.ABI.FunctionEncoding
         {
             if (output == "0x")
                 return functionOutputResult;
-
+            ThrowIfErrorOnOutput(output);
             var type = typeof(T);
 
             var function = FunctionOutputAttribute.GetAttribute<T>();
             if (function == null)
-                throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
+                throw new ArgumentException($"Unable to decode to '{typeof(T).Name}' because the type does not apply attribute '[{nameof(FunctionOutputAttribute)}]'.");
 
-#if DOTNET35
-            var properties = type.GetTypeInfo().DeclaredProperties();
-#else
-            var properties = type.GetTypeInfo().DeclaredProperties;
-#endif
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(type);
             DecodeAttributes(output, functionOutputResult, properties.ToArray());
 
             return functionOutputResult;
@@ -170,6 +122,7 @@ namespace Nethereum.ABI.FunctionEncoding
         public T DecodeOutput<T>(string output, params Parameter[] outputParameter) where T : new()
         {
             if (output == "0x") return default(T);
+            ThrowIfErrorOnOutput(output);
             var function = FunctionOutputAttribute.GetAttribute<T>();
 
             if (function == null)
@@ -191,19 +144,38 @@ namespace Nethereum.ABI.FunctionEncoding
         public T DecodeSimpleTypeOutput<T>(Parameter outputParameter, string output)
         {
             if (output == "0x") return default(T);
-
+            ThrowIfErrorOnOutput(output);
             if (outputParameter != null)
             {
+                outputParameter.DecodedType = typeof(T);
                 var parmeterOutput = new ParameterOutput
                 {
-                    DecodedType = typeof(T),
+                    
                     Parameter = outputParameter
                 };
 
-                var results = DecodeOutput(output, parmeterOutput);
+                if (outputParameter.ABIType is TupleType tupleType)
+                {
+                    if (typeof(T) == typeof(List<ParameterOutput>))
+                    {
+                        var results = DecodeOutput(output, parmeterOutput);
 
-                if (results.Any())
-                    return (T) results[0].Result;
+                        if (results.Any())
+                            return (T)results[0].Result;
+                    }
+                    else
+                    {
+                        return (T) DecodeAttributes(output.HexToByteArray().Skip(32).ToArray(), typeof(T));
+                    }
+                }
+                else
+                {
+                    var results = DecodeOutput(output, parmeterOutput);
+                    if (results.Any())
+                        return (T)results[0].Result;
+                }
+
+                
             }
 
             return default(T);
