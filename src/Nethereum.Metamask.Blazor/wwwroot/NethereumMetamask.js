@@ -2,6 +2,7 @@
 
 async function metamaskRequest(parsedMessage) {
     try {
+        sanitizeParams(parsedMessage);
         ensureInitilised();
         log(parsedMessage);
         const response = await ethereum.request(parsedMessage);
@@ -36,7 +37,7 @@ async function requestAccounts() {
 }
 
 async function getAddresses() {
-   return await metamaskRequest({ method: 'eth_accounts' });
+    return await metamaskRequest({ method: 'eth_accounts' });
 }
 
 function log(message) {
@@ -62,6 +63,17 @@ function ensureInitilised() {
             return null;
         }
     }
+}
+
+function sanitizeParams(parsedMessage) {
+    if (!Array.isArray(parsedMessage.params)) return;
+    parsedMessage.params.forEach(params => {
+        for (const i in params) {
+            if (params[i] === null) {
+                delete params[i];
+            }
+        }
+    });
 }
 
 initialised = false;
