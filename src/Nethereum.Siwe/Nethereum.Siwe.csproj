@@ -104,6 +104,6 @@
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Nethereum.Siwe.Recap\" />
+    <Folder Include="Recap\" />
   </ItemGroup>
 </Project>
