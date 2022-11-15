@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Nethereum.Siwe.Recap
+namespace Nethereum.Siwe.Core.Recap
 {
     public class SiweRecapException: Exception
     {

@@ -5,7 +5,7 @@ using System.Text;
 
 using Nethereum.Siwe.Core;
 
-namespace Nethereum.Siwe.Recap
+namespace Nethereum.Siwe.Core.Recap
 {
     using CapabilityMap = Dictionary<SiweNamespace, SiweRecapCapability>;
 

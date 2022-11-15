@@ -5,7 +5,7 @@ using System.Text;
 
 using Newtonsoft.Json;
 
-namespace Nethereum.Siwe.Recap
+namespace Nethereum.Siwe.Core.Recap
 {
     using NamespaceActionsMap = Dictionary<string, HashSet<string>>;
 

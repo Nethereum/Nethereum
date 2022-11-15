@@ -103,7 +103,4 @@
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Recap\" />
-  </ItemGroup>
 </Project>
