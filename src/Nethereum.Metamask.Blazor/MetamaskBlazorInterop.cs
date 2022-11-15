@@ -13,10 +13,11 @@ namespace Nethereum.Metamask.Blazor
     public class MetamaskBlazorInterop : IMetamaskInterop
     {
         private readonly IJSRuntime _jsRuntime;
-
+        public JsonSerializerSettings JsonSerializerSettings { get; set; }
         public MetamaskBlazorInterop(IJSRuntime jsRuntime)
         {
             _jsRuntime = jsRuntime;
+            JsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
         }
 
         public async ValueTask<string> EnableEthereumAsync()
@@ -31,13 +32,13 @@ namespace Nethereum.Metamask.Blazor
 
         public async ValueTask<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage)
         {
-            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage)).ConfigureAwait(false);
+            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage, JsonSerializerSettings)).ConfigureAwait(false);
             return JsonConvert.DeserializeObject<RpcResponseMessage>(response);
         }
 
         public async ValueTask<RpcResponseMessage> SendTransactionAsync(MetamaskRpcRequestMessage rpcRequestMessage)
         {
-            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage)).ConfigureAwait(false);
+            var response = await _jsRuntime.InvokeAsync<string>("NethereumMetamaskInterop.Request", JsonConvert.SerializeObject(rpcRequestMessage, JsonSerializerSettings)).ConfigureAwait(false);
             return JsonConvert.DeserializeObject<RpcResponseMessage>(response);
         }
 
@@ -80,7 +81,7 @@ namespace Nethereum.Metamask.Blazor
 
         private T ConvertResponse<T>(string jsonResponseMessage)
         {
-            var responseMessage = JsonConvert.DeserializeObject<RpcResponseMessage>(jsonResponseMessage);
+            var responseMessage = JsonConvert.DeserializeObject<RpcResponseMessage>(jsonResponseMessage, JsonSerializerSettings);
             return ConvertResponse<T>(responseMessage);
         }
 
