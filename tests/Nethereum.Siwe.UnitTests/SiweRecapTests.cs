@@ -75,24 +75,21 @@ namespace Nethereum.Siwe.UnitTests
             SiweNamespace credentialNamespace = new SiweNamespace("credential");
             SiweNamespace keplerNamespace     = new SiweNamespace("kepler");
 
-            SiweMessage recapMessage =
-                new SiweMessage()
-                {
-                    Domain = "example.com"
-                    , Address = "0x94618601fe6cb8912b274e5a00453949a57f8c1e"
-                    , Statement = string.Empty
-                    , Uri = SiweRecapUri
-                    , Version = "v1"
-                    , ChainId = "1"
-                    , Nonce = "MyNonce1"
-                    , IssuedAt = "2022-06-21T12:00:00.000Z"
-                    , ExpirationTime = string.Empty
-                    , NotBefore = string.Empty
-                    , RequestId = string.Empty
-                };
-
             SiweMessage recapMessageDeux =
-                SiweRecapMsgBuilder.Init(recapMessage)
+                SiweRecapMsgBuilder.Init(new SiweMessage()
+                                         {
+                                            Domain = "example.com"
+                                            , Address = "0x94618601fe6cb8912b274e5a00453949a57f8c1e"
+                                            , Statement = string.Empty
+                                            , Uri = SiweRecapUri
+                                            , Version = "v1"
+                                            , ChainId = "1"
+                                            , Nonce = "MyNonce1"
+                                            , IssuedAt = "2022-06-21T12:00:00.000Z"
+                                            , ExpirationTime = string.Empty
+                                            , NotBefore = string.Empty
+                                            , RequestId = string.Empty
+                                         })
                                    .AddDefaultActions(credentialNamespace, new HashSet<string>() { "present" })
                                    .AddTargetActions(credentialNamespace, "type:type1", new HashSet<string>() { "present" })
                                    .AddTargetActions(keplerNamespace, "kepler:ens:example.eth://default/kv", new HashSet<string>() { "list", "get", "metadata" })
@@ -100,18 +97,18 @@ namespace Nethereum.Siwe.UnitTests
                                    .AddTargetActions(keplerNamespace, "kepler:ens:example.eth://default/kv/dapp-space", new HashSet<string>() { "list", "get", "metadata", "put", "delete" })
                                    .Build();
 
-            bool canCredentialPresent = 
-                recapMessage.HasPermissions(credentialNamespace, string.Empty, "present");
+            bool canCredentialPresent =
+                recapMessageDeux.HasPermissions(credentialNamespace, string.Empty, "present");
 
             Assert.True(canCredentialPresent);
 
             bool canKeplerPublicMetadata =
-                recapMessage.HasPermissions(keplerNamespace, "kepler:ens:example.eth://default/kv/public", "metadata");
+                recapMessageDeux.HasPermissions(keplerNamespace, "kepler:ens:example.eth://default/kv/public", "metadata");
 
             Assert.True(canKeplerPublicMetadata);
 
             bool canKeplerPublicStargaze =
-                recapMessage.HasPermissions(keplerNamespace, "kepler:ens:example.eth://default/kv/public", "stargaze");
+                recapMessageDeux.HasPermissions(keplerNamespace, "kepler:ens:example.eth://default/kv/public", "stargaze");
 
             Assert.False(canKeplerPublicStargaze);
         }
