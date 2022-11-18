@@ -43,7 +43,7 @@ namespace Nethereum.EVM
             //totalSize might be bigger than data length so memory will be extended to match
 
             if(data == null) data = new byte[0];
-            //if (data.Length > totalSize) totalSize = data.Length;
+            if (data.Length < totalSize) totalSize = data.Length;
             int newSize = index + totalSize;
 
             if (newSize > program.Memory.Count)

@@ -24,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
         {
             //Scenario of complex uniswap clone to run end to end a previous transaction and see logs etc
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0x64af782b8cd2509eaf34b6fc5b938e50f09b7d091550ecdb1fcc752479c74417");
+            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0xb9f4e6e5c90329a43da70ced8e8974c3fa34e67e32283bfa82778296fa79dd98");
             var block = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(txn.BlockNumber);
             var code = await web3.Eth.GetCode.SendRequestAsync(txn.To); // runtime code;
             var instructions = ProgramInstructionsUtils.GetProgramInstructions(code);
@@ -34,8 +34,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             var programContext = new ProgramContext(txnInput, executionStateService, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
-            var trace = await evmSimulator.ExecuteAsync(program, 0, 0, false);
-            Assert.True(program.ProgramResult.Logs.Count == 8);
+            var trace = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+            Assert.True(program.ProgramResult.Logs.Count == 23);
         }
     }
 }
