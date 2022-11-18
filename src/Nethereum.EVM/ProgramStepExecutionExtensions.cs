@@ -133,7 +133,8 @@ namespace Nethereum.EVM
             {
                 From = contractAddress,
                 Value = new HexBigInteger(value),
-                To = newContractAddress
+                To = newContractAddress,
+                ChainId = new HexBigInteger(program.ProgramContext.ChainId)
             };
 
             program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
@@ -262,7 +263,8 @@ namespace Nethereum.EVM
                 Value = new HexBigInteger(value),
                 To = to,
                 Data = dataInput.ToHex(),
-                Gas = new HexBigInteger(gas)
+                Gas = new HexBigInteger(gas),
+                ChainId = new HexBigInteger(program.ProgramContext.ChainId)
             };
 
             program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
