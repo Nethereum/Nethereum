@@ -12,12 +12,14 @@ namespace Nethereum.EVM
         public ProgramInstruction Instruction { get; set; }
         public string Memory { get; set; }
         public Dictionary<string, string> Storage { get; set; }
-
+        public int Depth { get; set; }
         public override string ToString()
         {
             var builder = new StringBuilder();
             builder.AppendLine("Address:" + ProgramAddress);
             builder.AppendLine("VMTraceStep Trace step:" + VMTraceStep);
+            builder.AppendLine("Depth: " + Depth);
+
             builder.AppendLine("Program Trace step:" + ProgramTraceStep);
             builder.AppendLine(Instruction.ToDisassemblyLine());
             if (Stack != null)
@@ -45,7 +47,7 @@ namespace Nethereum.EVM
             return builder.ToString();
         }
 
-        public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, Program program, ProgramInstruction programInstructionExecuted)
+        public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, int depth, Program program, ProgramInstruction programInstructionExecuted)
         {
             var trace = new ProgramTrace()
             {
@@ -56,6 +58,7 @@ namespace Nethereum.EVM
                 Stack = program.GetCurrentStackAsHex(),
                 Memory = program.GetCurrentMemoryAsHex(),
                 Storage = program.ProgramContext.GetProgramContextStorageAsHex(),
+                Depth = depth
             };
             return trace;
         }

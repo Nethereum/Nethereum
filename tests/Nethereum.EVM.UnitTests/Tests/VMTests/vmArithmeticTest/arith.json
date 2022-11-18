@@ -1,0 +1,311 @@
+{
+  "arith": {
+    "pre": {
+      "0xcccccccccccccccccccccccccccccccccccccccc": {
+        "code": "0x600160019001600702600501600290046004906021900560170160030260059007600303600960110a60005560086000f3",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+        "code": "0x",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      }
+    },
+    "tests": {
+      "Berlin": [
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x1" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 144,
+              "stack": [ "0x1", "0x1" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 1,
+              "stack": [ "0x1", "0x1" ],
+              "pc": 5,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x2" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999988
+            },
+            {
+              "op": 2,
+              "stack": [ "0x2", "0x7" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999985
+            },
+            {
+              "op": 96,
+              "stack": [ "0xe" ],
+              "pc": 9,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999980
+            },
+            {
+              "op": 1,
+              "stack": [ "0xe", "0x5" ],
+              "pc": 11,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999977
+            },
+            {
+              "op": 96,
+              "stack": [ "0x13" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999974
+            },
+            {
+              "op": 144,
+              "stack": [ "0x13", "0x2" ],
+              "pc": 14,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999971
+            },
+            {
+              "op": 4,
+              "stack": [ "0x2", "0x13" ],
+              "pc": 15,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999968
+            },
+            {
+              "op": 96,
+              "stack": [ "0x9" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999963
+            },
+            {
+              "op": 144,
+              "stack": [ "0x9", "0x4" ],
+              "pc": 18,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999960
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0x9" ],
+              "pc": 19,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999957
+            },
+            {
+              "op": 144,
+              "stack": [ "0x4", "0x9", "0x21" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999954
+            },
+            {
+              "op": 5,
+              "stack": [ "0x4", "0x21", "0x9" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999951
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0x0" ],
+              "pc": 23,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999946
+            },
+            {
+              "op": 1,
+              "stack": [ "0x4", "0x0", "0x17" ],
+              "pc": 25,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999943
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0x17" ],
+              "pc": 26,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999940
+            },
+            {
+              "op": 2,
+              "stack": [ "0x4", "0x17", "0x3" ],
+              "pc": 28,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999937
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0x45" ],
+              "pc": 29,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999932
+            },
+            {
+              "op": 144,
+              "stack": [ "0x4", "0x45", "0x5" ],
+              "pc": 31,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999929
+            },
+            {
+              "op": 7,
+              "stack": [ "0x4", "0x5", "0x45" ],
+              "pc": 32,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999926
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0x4" ],
+              "pc": 33,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999921
+            },
+            {
+              "op": 3,
+              "stack": [ "0x4", "0x4", "0x3" ],
+              "pc": 35,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999918
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" ],
+              "pc": 36,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999915
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x9" ],
+              "pc": 38,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999912
+            },
+            {
+              "op": 10,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x9", "0x11" ],
+              "pc": 40,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999909
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x1b9c636491" ],
+              "pc": 41,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999849
+            },
+            {
+              "op": 85,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x1b9c636491", "0x0" ],
+              "pc": 43,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999846
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" ],
+              "pc": 44,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99977746
+            },
+            {
+              "op": 96,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x8" ],
+              "pc": 46,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99977743
+            },
+            {
+              "op": 243,
+              "stack": [ "0x4", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x8", "0x0" ],
+              "pc": 48,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99977740
+            },
+            { "return": "0x0000000000000000" }
+          ],
+          "id": "Berlin_0_0_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x00",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0xa"
+          }
+        }
+      ]
+    },
+    "env": {
+      "currentBaseFee": "0xa",
+      "previousHash": "0x5e20a0453cecd065ea59c37ac63e079ee08998b6045136a8ce6635c7912ec0b6",
+      "currentTimestamp": "0x3e8",
+      "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+      "currentNumber": "0x1",
+      "currentDifficulty": "0x20000",
+      "currentGasLimit": "0x5f5e100"
+    }
+  }
+}

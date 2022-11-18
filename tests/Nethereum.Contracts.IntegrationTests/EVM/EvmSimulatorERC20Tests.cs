@@ -6,12 +6,14 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
 using System;
 using System.Numerics;
-using Xunit; 
- // ReSharper disable ConsiderUsingConfigureAwait  
- // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
+using Xunit;
+// ReSharper disable ConsiderUsingConfigureAwait  
+// ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 {
+
+
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EvmSimulatorERC20Tests    
     {

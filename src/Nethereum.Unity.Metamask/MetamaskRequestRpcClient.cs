@@ -20,7 +20,7 @@ namespace Nethereum.Unity.Metamask
         [MonoPInvokeCallback(typeof(Action<string>))]
         public static void RequestCallBack(string responseMessage)
         {
-            var response = JsonConvert.DeserializeObject<RpcResponseMessage>(responseMessage);
+            var response = JsonConvert.DeserializeObject<RpcResponseMessage>(responseMessage, DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings());
             RequestResponses.TryAdd((string)response.Id, response);
         }
 
@@ -71,7 +71,7 @@ namespace Nethereum.Unity.Metamask
                 var metamaskRpcRequest = new MetamaskRpcRequestMessage(newUniqueRequestId, request.Method, _account,
                 request.RawParameters);
 
-                MetamaskInterop.RequestRpcClientCallback(RequestCallBack, JsonConvert.SerializeObject(metamaskRpcRequest));
+                MetamaskInterop.RequestRpcClientCallback(RequestCallBack, JsonConvert.SerializeObject(metamaskRpcRequest, JsonSerializerSettings));
 
             }
             catch (Exception ex)

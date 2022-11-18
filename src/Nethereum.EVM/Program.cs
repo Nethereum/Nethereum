@@ -104,7 +104,7 @@ namespace Nethereum.EVM
         public void StackPush(byte[] stackWord)
         {
             ThrowWhenPushStackOverflows(); 
-            stack.Insert(0, stackWord);
+            stack.Insert(0, stackWord.PadTo32Bytes());
         }
 
         public byte[] StackPeek()

@@ -1,0 +1,1664 @@
+{
+  "envInfo": {
+    "pre": {
+      "0x0000000000000000000000000000000000000108": {
+        "code": "0x3260005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0xcccccccccccccccccccccccccccccccccccccccc": {
+        "code": "0x600060006000600060106004356101000162fffffff100",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000107": {
+        "code": "0x3a60005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000109": {
+        "code": "0x3660005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000100": {
+        "code": "0x3060005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+        "code": "0x",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000102": {
+        "code": "0x6000600060003960005160005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000101": {
+        "code": "0x6007600060003960005160005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000104": {
+        "code": "0x3360005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000103": {
+        "code": "0x60087ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa60003960005160005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000106": {
+        "code": "0x3860005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      },
+      "0x0000000000000000000000000000000000000105": {
+        "code": "0x3460005500",
+        "balance": "0xba1a9ce0ba1a9ce",
+        "storage": {},
+        "nonce": "0x0"
+      }
+    },
+    "tests": {
+      "Berlin": [
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x0" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x0", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x100" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x100", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 48,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x100" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0x100", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_0_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000000",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x1" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x1", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x101" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x101", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x7" ],
+              "pc": 2,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779512
+            },
+            {
+              "op": 96,
+              "stack": [ "0x7", "0x0" ],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779509
+            },
+            {
+              "op": 57,
+              "stack": [ "0x7", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 1,
+              "stackSize": 3,
+              "gas": 16779506
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 7,
+              "depth": 1,
+              "memory": "0x6007600060003900~18~",
+              "stackSize": 0,
+              "gas": 16779497
+            },
+            {
+              "op": 81,
+              "stack": [ "0x0" ],
+              "pc": 9,
+              "depth": 1,
+              "memory": "0x6007600060003900~18~",
+              "stackSize": 1,
+              "gas": 16779494
+            },
+            {
+              "op": 96,
+              "stack": [ "0x6007600060003900000000000000000000000000000000000000000000000000" ],
+              "pc": 10,
+              "depth": 1,
+              "memory": "0x6007600060003900~18~",
+              "stackSize": 1,
+              "gas": 16779491
+            },
+            {
+              "op": 85,
+              "stack": [ "0x6007600060003900000000000000000000000000000000000000000000000000", "0x0" ],
+              "pc": 12,
+              "depth": 1,
+              "memory": "0x6007600060003900~18~",
+              "stackSize": 2,
+              "gas": 16779488
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 13,
+              "depth": 1,
+              "memory": "0x6007600060003900~18~",
+              "stackSize": 0,
+              "gas": 16757388
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968543
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_1_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000001",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x2" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x2", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x102" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x102", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779512
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779509
+            },
+            {
+              "op": 57,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 1,
+              "stackSize": 3,
+              "gas": 16779506
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 7,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779503
+            },
+            {
+              "op": 81,
+              "stack": [ "0x0" ],
+              "pc": 9,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779500
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 10,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 1,
+              "gas": 16779494
+            },
+            {
+              "op": 85,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 12,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 2,
+              "gas": 16779491
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 13,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 0,
+              "gas": 16777291
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99988446
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_2_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000002",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x3" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x3", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x103" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x103", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 127,
+              "stack": [ "0x8" ],
+              "pc": 2,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779512
+            },
+            {
+              "op": 96,
+              "stack": [ "0x8", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa" ],
+              "pc": 35,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779509
+            },
+            {
+              "op": 57,
+              "stack": [ "0x8", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa", "0x0" ],
+              "pc": 37,
+              "depth": 1,
+              "stackSize": 3,
+              "gas": 16779506
+            },
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 38,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 0,
+              "gas": 16779497
+            },
+            {
+              "op": 81,
+              "stack": [ "0x0" ],
+              "pc": 40,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 1,
+              "gas": 16779494
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 41,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 1,
+              "gas": 16779491
+            },
+            {
+              "op": 85,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 43,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 2,
+              "gas": 16779488
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 44,
+              "depth": 1,
+              "memory": "0x00~1f~",
+              "stackSize": 0,
+              "gas": 16777288
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99988443
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_3_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000003",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x104" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x104", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 51,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0xcccccccccccccccccccccccccccccccccccccccc" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0xcccccccccccccccccccccccccccccccccccccccc", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_4_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000004",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x5" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x5", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x105" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x105", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 52,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x10" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0x10", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_5_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000005",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x6" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x6", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x106" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x106", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 56,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x5" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0x5", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_6_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000006",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x7" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x7", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x107" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x107", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 58,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x1234" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0x1234", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_7_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000007",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x8" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x8", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x108" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x108", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 50,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16757410
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99968565
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_8_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000008",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        },
+        {
+          "expect": "OK",
+          "trace": [
+            {
+              "op": 96,
+              "stack": [],
+              "pc": 0,
+              "depth": 0,
+              "stackSize": 0,
+              "gas": 100000000
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 2,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99999997
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 4,
+              "depth": 0,
+              "stackSize": 2,
+              "gas": 99999994
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0" ],
+              "pc": 6,
+              "depth": 0,
+              "stackSize": 3,
+              "gas": 99999991
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0" ],
+              "pc": 8,
+              "depth": 0,
+              "stackSize": 4,
+              "gas": 99999988
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10" ],
+              "pc": 10,
+              "depth": 0,
+              "stackSize": 5,
+              "gas": 99999985
+            },
+            {
+              "op": 53,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x4" ],
+              "pc": 12,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999982
+            },
+            {
+              "op": 97,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x9" ],
+              "pc": 13,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999979
+            },
+            {
+              "op": 1,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x9", "0x100" ],
+              "pc": 16,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999976
+            },
+            {
+              "op": 98,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x109" ],
+              "pc": 17,
+              "depth": 0,
+              "stackSize": 6,
+              "gas": 99999973
+            },
+            {
+              "op": 241,
+              "stack": [ "0x0", "0x0", "0x0", "0x0", "0x10", "0x109", "0xffffff" ],
+              "pc": 21,
+              "depth": 0,
+              "stackSize": 7,
+              "gas": 99999970
+            },
+            {
+              "op": 54,
+              "stack": [],
+              "pc": 0,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16779515
+            },
+            {
+              "op": 96,
+              "stack": [ "0x0" ],
+              "pc": 1,
+              "depth": 1,
+              "stackSize": 1,
+              "gas": 16779513
+            },
+            {
+              "op": 85,
+              "stack": [ "0x0", "0x0" ],
+              "pc": 3,
+              "depth": 1,
+              "stackSize": 2,
+              "gas": 16779510
+            },
+            {
+              "op": 0,
+              "stack": [],
+              "pc": 4,
+              "depth": 1,
+              "stackSize": 0,
+              "gas": 16777310
+            },
+            {
+              "op": 0,
+              "stack": [ "0x1" ],
+              "pc": 22,
+              "depth": 0,
+              "stackSize": 1,
+              "gas": 99988465
+            },
+            { "return": "0x" }
+          ],
+          "id": "Berlin_0_9_0",
+          "transaction": {
+            "gasLimit": "0x4c4b400",
+            "input": "0x693c61390000000000000000000000000000000000000000000000000000000000000009",
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "nonce": "0x0",
+            "value": "0x1",
+            "gasPrice": "0x1234"
+          }
+        }
+      ]
+    },
+    "env": {
+      "currentBaseFee": "0xa",
+      "previousHash": "0x5e20a0453cecd065ea59c37ac63e079ee08998b6045136a8ce6635c7912ec0b6",
+      "currentTimestamp": "0x3e8",
+      "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+      "currentNumber": "0x1",
+      "currentDifficulty": "0x20000",
+      "currentGasLimit": "0x5f5e100"
+    }
+  }
+}

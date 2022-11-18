@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Util;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -63,7 +64,7 @@ namespace Nethereum.EVM
 
         public AccountExecutionState CreateOrGetAccountExecutionState(string address)
         {
-            address = address.ToLower();
+            address = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
             if (!AccountsState.ContainsKey(address))
             {
                 AccountsState.Add(address,

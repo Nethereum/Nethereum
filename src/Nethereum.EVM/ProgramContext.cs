@@ -31,8 +31,8 @@ namespace Nethereum.EVM
         public string Coinbase { get; }
         public BigInteger BaseFee { get; }
         public BigInteger GasPrice { get; internal set; } = 0;
-        public BigInteger GasLimit { get; internal set; } = 10000000;
-        public BigInteger Difficulty { get; internal set; } = 1;
+        public BigInteger GasLimit { get; set; } = 10000000;
+        public BigInteger Difficulty { get; set; } = 1;
 
         public ExecutionStateService ExecutionStateService { get; protected set; }
 

@@ -68,6 +68,11 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return ToHex(value).TrimStart('0');
         }
 
+        public static string ToHexCompact(this string value)
+        {
+            return value.RemoveHexPrefix().TrimStart('0');
+        }
+
         private static byte[] HexToByteArrayInternal(string value)
         {
             byte[] bytes = null;

@@ -20,7 +20,7 @@ namespace Nethereum.EVM
 {
     public static class ProgramStepExecutionExtensions
     {
-                
+        public static BigInteger Two256 = IntType.MAX_UINT256_VALUE + 1;
         public static byte[] PadTo32Bytes(this byte[] bytesToPad)
         {
             var ret = new byte[32];
@@ -97,7 +97,7 @@ namespace Nethereum.EVM
             program.Step();
         }
 
-        public static async Task<List<ProgramTrace>> CreateAsync(this Program program,int vmExecutionStep, bool traceEnabled)
+        public static async Task<List<ProgramTrace>> CreateAsync(this Program program,int vmExecutionStep, int depth, bool traceEnabled)
         {
             var value = program.StackPopAndConvertToBigInteger();
             var memoryIndex = (int)program.StackPopAndConvertToBigInteger();
@@ -107,10 +107,10 @@ namespace Nethereum.EVM
             var newContractAddress = ContractUtils.CalculateContractAddress(contractAddress, nonce);
             var byteCode = program.Memory.GetRange(memoryIndex, memoryLength).ToArray();
 
-            return await CreateContractAsync(program, vmExecutionStep, traceEnabled, value, contractAddress, nonce, newContractAddress, byteCode);
+            return await CreateContractAsync(program, vmExecutionStep, depth, traceEnabled, value, contractAddress, nonce, newContractAddress, byteCode);
         }
 
-        public static async Task<List<ProgramTrace>> Create2Async(this Program program, int vmExecutionStep, bool traceEnabled)
+        public static async Task<List<ProgramTrace>> Create2Async(this Program program, int vmExecutionStep, int depth, bool traceEnabled)
         {
             var value = program.StackPopAndConvertToBigInteger();
             var memoryIndex = (int)program.StackPopAndConvertToBigInteger();
@@ -121,10 +121,10 @@ namespace Nethereum.EVM
             
             var byteCode = program.Memory.GetRange(memoryIndex, memoryLength).ToArray();
             var newContractAddress = ContractUtils.CalculateCreate2Address(contractAddress, salt.ToHex(), byteCode.ToHex());
-            return await CreateContractAsync(program, vmExecutionStep, traceEnabled, value, contractAddress, nonce, newContractAddress, byteCode);
+            return await CreateContractAsync(program, vmExecutionStep, depth, traceEnabled, value, contractAddress, nonce, newContractAddress, byteCode);
         }
 
-        private static async Task<List<ProgramTrace>> CreateContractAsync(Program program, int vmExecutionStep, bool traceEnabled, BigInteger value, string contractAddress, BigInteger nonce, string newContractAddress, byte[] byteCode)
+        private static async Task<List<ProgramTrace>> CreateContractAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled, BigInteger value, string contractAddress, BigInteger nonce, string newContractAddress, byte[] byteCode)
         {
             program.ProgramContext.ExecutionStateService.SetNonce(contractAddress, nonce + 1);
 
@@ -141,9 +141,11 @@ namespace Nethereum.EVM
 
             var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
                 (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
+            programContext.Difficulty = program.ProgramContext.Difficulty;
+            programContext.GasLimit = program.ProgramContext.GasLimit;
             var callProgram = new Program(byteCode, programContext);
             var vm = new EVMSimulator();
-            var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, traceEnabled);
+            var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, depth +1, traceEnabled);
 
             if (callProgram.ProgramResult.IsRevert == false)
             {
@@ -187,37 +189,37 @@ namespace Nethereum.EVM
         }
 
 
-        public static async Task<List<ProgramTrace>> StaticCallAsync(this Program program, int vmExecutionStep, bool traceEnabled = true)
+        public static async Task<List<ProgramTrace>> StaticCallAsync(this Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
             var gas = program.StackPopAndConvertToBigInteger();
             var codeAddress = program.StackPop();
             var value = 0;
             var from = program.ProgramContext.AddressContract;
             var to = codeAddress.ConvertToEthereumChecksumAddress();
-            return await GenericCallAsync(program, vmExecutionStep, traceEnabled, gas, codeAddress, value, from, to);
+            return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
         }
 
-        public static async Task<List<ProgramTrace>> DelegateCallAsync(this Program program, int vmExecutionStep, bool traceEnabled = true)
+        public static async Task<List<ProgramTrace>> DelegateCallAsync(this Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
             var gas = program.StackPopAndConvertToBigInteger();
             var codeAddress = program.StackPop();
             var value = program.ProgramContext.Value; // value is the same
             var from = program.ProgramContext.AddressCaller; //sender is the original caller
             var to = program.ProgramContext.AddressContract; // keeping the same storage
-            return await GenericCallAsync(program, vmExecutionStep, traceEnabled, gas, codeAddress, value, from, to);
+            return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
         }
 
-        public static async Task<List<ProgramTrace>> CallCodeAsync(this Program program, int vmExecutionStep, bool traceEnabled = true)
+        public static async Task<List<ProgramTrace>> CallCodeAsync(this Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
             var gas = program.StackPopAndConvertToBigInteger();
             var codeAddress = program.StackPop();
             var value = program.StackPopAndConvertToBigInteger(); 
             var from = program.ProgramContext.AddressContract; //sender is the current contract
             var to = program.ProgramContext.AddressContract; // keeping the same storage
-            return await GenericCallAsync(program, vmExecutionStep, traceEnabled, gas, codeAddress, value, from, to);
+            return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
         }
 
-        public static async Task<List<ProgramTrace>> CallAsync(this Program program, int vmExecutionStep, bool traceEnabled = true)
+        public static async Task<List<ProgramTrace>> CallAsync(this Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
             var gas = program.StackPopAndConvertToBigInteger();
             var codeAddress = program.StackPop();
@@ -225,11 +227,11 @@ namespace Nethereum.EVM
             var from = program.ProgramContext.AddressContract;
             var to = codeAddress.ConvertToEthereumChecksumAddress();
 
-            return await GenericCallAsync(program, vmExecutionStep, traceEnabled, gas, codeAddress, value, from, to);
+            return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
 
         }
 
-        private static async Task<List<ProgramTrace>> GenericCallAsync(Program program, int vmExecutionStep, bool traceEnabled, BigInteger gas, byte[] codeAddress, BigInteger value, string from, string to)
+        private static async Task<List<ProgramTrace>> GenericCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled, BigInteger gas, byte[] codeAddress, BigInteger value, string from, string to)
         {
             var dataInputIndex = (int)program.StackPopAndConvertToBigInteger();
             var dataInputLength = (int)program.StackPopAndConvertToBigInteger();
@@ -276,10 +278,14 @@ namespace Nethereum.EVM
             else
             {
                 var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
-                    (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
+                    blockNumber:(long)program.ProgramContext.BlockNumber, timestamp: (long)program.ProgramContext.Timestamp, 
+                    coinbase:program.ProgramContext.Coinbase, 
+                    baseFee:(long)program.ProgramContext.BaseFee);
+                programContext.Difficulty = program.ProgramContext.Difficulty;
+                programContext.GasLimit = program.ProgramContext.GasLimit;
                 var callProgram = new Program(byteCode, programContext);
                 var vm = new EVMSimulator();
-                var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, traceEnabled);
+                var trace = await vm.ExecuteAsync(callProgram, vmExecutionStep, depth + 1, traceEnabled);
 
                 if (callProgram.ProgramResult.IsRevert == false)
                 {
@@ -482,9 +488,9 @@ namespace Nethereum.EVM
             var byteCode = program.ByteCode;
             var byteCodeLength = byteCode.Length;
 
-            int indexInMemory = (int)program.StackPopAndConvertToBigInteger();
-            int indexOfByteCode = (int)program.StackPopAndConvertToBigInteger();
-            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToBigInteger();
+            int indexInMemory = (int)program.StackPopAndConvertToUBigInteger();
+            int indexOfByteCode = (int)program.StackPopAndConvertToUBigInteger();
+            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToUBigInteger();
             CodeCopy(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
         }
 
@@ -516,8 +522,8 @@ namespace Nethereum.EVM
 
         public static void Return(this Program program)
         {
-            var index = (int)program.StackPopAndConvertToBigInteger();
-            var size = (int)program.StackPopAndConvertToBigInteger();
+            var index = (int)program.StackPopAndConvertToUBigInteger();
+            var size = (int)program.StackPopAndConvertToUBigInteger();
 
             byte[] result = program.Memory.GetRange(index, size).ToArray();
             program.ProgramResult.Result = result;
@@ -532,9 +538,9 @@ namespace Nethereum.EVM
             var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(address.ConvertToEthereumChecksumAddress());
 
             var byteCodeLength = byteCode.Length;
-            int indexInMemory = (int)program.StackPopAndConvertToBigInteger();
-            int indexOfByteCode = (int)program.StackPopAndConvertToBigInteger();
-            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToBigInteger();
+            int indexInMemory = (int)program.StackPopAndConvertToUBigInteger();
+            int indexOfByteCode = (int)program.StackPopAndConvertToUBigInteger();
+            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToUBigInteger();
 
             CodeCopy(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
         }
@@ -605,7 +611,7 @@ namespace Nethereum.EVM
             var byteBytes = program.StackPop();
             var word = PadTo32Bytes(byteBytes);
 
-            var result = pos < 32 ? new[] { word[(int)pos] } : new byte[0];
+            var result = pos < 32 ? new[] { word[(int)pos] } : new byte[1] { 0 };
             program.StackPush(result);
             program.Step();
         }
@@ -630,7 +636,6 @@ namespace Nethereum.EVM
         {
             var first = program.StackPopAndConvertToUBigInteger();
             var second = program.StackPopAndConvertToUBigInteger();
-            Debug.WriteLine((second >> (int)first).ToBytesForRLPEncoding().ToHex());
             program.StackPush(second >> (int)first);
             program.Step();
         }
@@ -654,7 +659,9 @@ namespace Nethereum.EVM
         public static void Or(this Program program)
         {
             var first = program.StackPop();
+           
             var second = program.StackPop();
+           
             var convertedValue = new byte[second.Length];
             for (int i = 0; i < second.Length; i++)
                 convertedValue[i] = (byte)(second[i] | first[i]);
@@ -683,7 +690,7 @@ namespace Nethereum.EVM
 
         public static void Not(this Program program)
         {
-            var value = program.StackPopAndConvertToBigInteger();
+            var value = program.StackPopAndConvertToUBigInteger();
             program.StackPush(~value);
             program.Step();
         }
@@ -698,15 +705,15 @@ namespace Nethereum.EVM
 
         public static void EQ(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
             program.StackPush(first == second ? 1 : 0);
             program.Step();
         }
 
         public static void IsZero(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
             program.StackPush(first == 0 ? 1 : 0);
             program.Step();
         }
@@ -737,57 +744,74 @@ namespace Nethereum.EVM
 
         public static void AddMod(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var third = program.StackPopAndConvertToBigInteger();
-            var result = (first + second) % third;
-            program.StackPush(result);
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var third = program.StackPopAndConvertToUBigInteger();
+            if (third == 0)
+            {
+                var result = 0;
+                program.StackPush(result);
+            }
+            else
+            {
+                var result = (first + second) % third;
+                program.StackPush(result);
+            }
             program.Step();
         }
 
         public static void MulMod(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var third = program.StackPopAndConvertToBigInteger();
-            var result = (first * second) % third;
-            program.StackPush(result);
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var third = program.StackPopAndConvertToUBigInteger();
+            if (third == 0)
+            {
+                var result = 0;
+                program.StackPush(result);
+            }
+            else
+            {
+                var result = (first * second) % third;
+                program.StackPush(result);
+            }
             program.Step();
         }
 
         public static void Add(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var result = first + second;
-            
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var result = (first + second) % Two256;
+
             program.StackPush(result);
             program.Step();
         }
 
         public static void Exp(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var result = BigInteger.ModPow(first, second, BigInteger.Pow(2, 256));
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var result = BigInteger.ModPow(first, second, Two256);
             program.StackPush(result);
             program.Step();
         }
 
         public static void Mul(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var result = first * second;
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var result = (first * second) % Two256 ;
+          
             program.StackPush(result);
             program.Step();
         }
 
         public static void Sub(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var result = first - second;
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            var result = (first - second) % Two256;
             program.StackPush(result);
             program.Step();
         }
@@ -799,10 +823,13 @@ namespace Nethereum.EVM
             if (second == 0)
             {
                 program.StackPush(0);
-                return;
+
             }
-            var result = first / second;
-            program.StackPush(result);
+            else
+            {
+                var result = first / second;
+                program.StackPush(result);
+            }
             program.Step();
         }
 
@@ -813,19 +840,33 @@ namespace Nethereum.EVM
             if (second == 0)
             {
                 program.StackPush(0);
-                return;
             }
-            var result = first / second;
-            program.StackPush(result);
+            else if(second == -1 && first == - IntType.MAX_UINT256_VALUE)
+            {
+                program.StackPush(-IntType.MAX_UINT256_VALUE);
+            }
+            else
+            {
+                var result = first / second;
+                program.StackPush(result);
+             
+            }
             program.Step();
         }
 
         public static void Mod(this Program program)
         {
-            var first = program.StackPopAndConvertToBigInteger();
-            var second = program.StackPopAndConvertToBigInteger();
-            var result = first % second;
-            program.StackPush(result);
+            var first = program.StackPopAndConvertToUBigInteger();
+            var second = program.StackPopAndConvertToUBigInteger();
+            if (second == 0)
+            {
+                program.StackPush(0);
+            }
+            else
+            {
+                var result = first % second;
+                program.StackPush(result);
+            }
             program.Step();
         }
 
@@ -833,15 +874,27 @@ namespace Nethereum.EVM
         {
             var first = program.StackPopAndConvertToBigInteger();
             var second = program.StackPopAndConvertToBigInteger();
-            var result = first % second;
-            program.StackPush(result);
+            if (second == 0)
+            {
+                program.StackPush(0);
+            }
+            else
+            {
+                var result = first % second;
+                program.StackPush(result);
+            }
             program.Step();
         }
 
         public static BigInteger StackPopAndConvertToBigInteger(this Program program)
         {
             var bytes = program.StackPop();
-            return new IntType("int256").Decode<BigInteger>(bytes);
+            var value =  new IntType("int256").Decode<BigInteger>(bytes);
+            if(value > IntType.MAX_INT256_VALUE)
+            {
+                value = 1 + IntType.MAX_UINT256_VALUE - value;
+            }
+            return value;
         }
 
         public static BigInteger StackPopAndConvertToUBigInteger(this Program program)
@@ -852,8 +905,10 @@ namespace Nethereum.EVM
 
         public static void StackPush(this Program program, BigInteger value)
         {
-            program.StackPush(new IntTypeEncoder(false, 256).EncodeInt(value, 32, false, true));
+            program.StackPush(IntTypeEncoder.EncodeSignedUnsigned256(value, 32, true));
         }
+
+        
 
     }
 }

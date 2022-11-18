@@ -78,7 +78,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM.WalletForwarderTests
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(factoryServiceCode.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
-            await evmSimulator.ExecuteAsync(program, 0, false);
+            await evmSimulator.ExecuteAsync(program, 0, 0, false);
 
             //var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(defaultForwaderContractAddress, salt);
             //var clonedAddress = txnReceipt.DecodeAllEvents<ForwarderClonedEventDTO>()[0].Event.ClonedAdress;
@@ -96,7 +96,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM.WalletForwarderTests
             programContext = new ProgramContext(destinationCallInput, executionStateService);
             var newCode = await executionStateService.GetCodeAsync(contractCalculatedAddress);
             program = new Program(newCode, programContext);
-            await evmSimulator.ExecuteAsync(program, 0, false);
+            await evmSimulator.ExecuteAsync(program, 0, 0, false);
 
             var destinationInContractCloned = new DestinationOutputDTO().DecodeOutput(program.ProgramResult.Result.ToHex()).ReturnValue1;
 

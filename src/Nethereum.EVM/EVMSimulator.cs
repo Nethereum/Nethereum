@@ -12,7 +12,7 @@ namespace Nethereum.EVM
     /// </summary>
     public class EVMSimulator
     {
-        public async Task<List<ProgramTrace>> ExecuteAsync(Program program, int vmExecutionCounter = 0, bool traceEnabled = true)
+        public async Task<List<ProgramTrace>> ExecuteAsync(Program program, int vmExecutionCounter = 0, int depth = 0, bool traceEnabled = true)
         {
             var traceResult = new List<ProgramTrace>();
             var programExecutionCounter = 0;
@@ -24,19 +24,20 @@ namespace Nethereum.EVM
                 if (traceEnabled)
                 {
                     
-                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, program, currentInstruction);
+                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, depth, program, currentInstruction);
                     traceResult.Add(trace);
 #if DEBUG
                     Debug.WriteLine(trace.ToString());
 #endif
                 }
-                var innerTrace = await StepAsync(program, vmExecutionCounter, traceEnabled);
+                var innerTrace = await StepAsync(program, vmExecutionCounter, depth, traceEnabled);
                 programExecutionCounter++;
                 vmExecutionCounter = vmExecutionCounter + 1 + innerTrace.Count;
+                traceResult.AddRange(innerTrace);
             }
             return traceResult;
         }
-        public async Task<List<ProgramTrace>> StepAsync(Program program, int vmExecutionCounter, bool traceEnabled = true)
+        public async Task<List<ProgramTrace>> StepAsync(Program program, int vmExecutionCounter, int depth = 0, bool traceEnabled = true)
         {
             var innerTraceResult = new List<ProgramTrace>();
             if (!program.Stopped) 
@@ -361,16 +362,16 @@ namespace Nethereum.EVM
                             program.Step();
                             break;
                         case Instruction.DELEGATECALL:
-                            innerTraceResult = await program.DelegateCallAsync(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.DelegateCallAsync(vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.CALL:
-                            innerTraceResult = await program.CallAsync(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.CallAsync(vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.CALLCODE:
-                            innerTraceResult = await program.CallCodeAsync(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.CallCodeAsync(vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.STATICCALL:
-                            innerTraceResult = await program.StaticCallAsync(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.StaticCallAsync(vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.SELFDESTRUCT:
                             await program.SelfDestructAsync();
@@ -388,10 +389,10 @@ namespace Nethereum.EVM
                             program.Stop();
                             break;
                         case Instruction.CREATE:
-                            innerTraceResult = await program.CreateAsync(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.CreateAsync(vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.CREATE2:
-                            innerTraceResult = await program.Create2Async(vmExecutionCounter, traceEnabled);
+                            innerTraceResult = await program.Create2Async(vmExecutionCounter, depth, traceEnabled);
                             break;
                        
                         default:
