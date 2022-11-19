@@ -22,7 +22,7 @@ namespace Nethereum.Siwe.Core.Recap
         {
             var PreviousCharWasAlphanum = false;
 
-            foreach (char c in nmspace.ToCharArray())
+            foreach (char c in nmspace)
             {
                 if (Char.IsLetterOrDigit(c))
                 {

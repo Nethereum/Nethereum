@@ -83,7 +83,7 @@ namespace Nethereum.Siwe.Core.Recap
 
                 hasPermissions =
                     capability.DefaultActions.Any(x => x.EqualsIgnoreCase(action)) ||
-                    capability.TargetedActions.Where(x => x.Key.EqualsIgnoreCase(target)).ToList()
+                    capability.TargetedActions.Where(x => x.Key.EqualsIgnoreCase(target))
                                               .Any(x => x.Value.ContainsIgnoreCase(action));
             }
 

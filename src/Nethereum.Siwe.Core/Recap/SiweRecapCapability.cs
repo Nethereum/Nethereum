@@ -40,6 +40,9 @@ namespace Nethereum.Siwe.Core.Recap
         [JsonProperty("tar")]
         public NamespaceActionsMap TargetedActions { get { return _targetedActions; } }
 
+        [JsonIgnore]
+        public Dictionary<string, string> ExtraFields { get { return _extraFields; } }
+
         public SiweRecapCapability(HashSet<string> defaultActions,
                                NamespaceActionsMap targetedActions,
                         Dictionary<string, string> extraFields)
@@ -98,12 +101,9 @@ namespace Nethereum.Siwe.Core.Recap
                                             , capabilitySeed.TargetedActions
                                             , new Dictionary<string, string>());
 
-                if ((capabilityMap != null) && (capability != null))
+                if ((capabilityMap != null) && !capabilityMap.ContainsKey(siweNamespace.ToString()))
                 {
-                    if (!capabilityMap.ContainsKey(siweNamespace.ToString()))
-                    {
-                        capabilityMap[siweNamespace.ToString()] = capability;
-                    }
+                    capabilityMap[siweNamespace.ToString()] = capability;
                 }
             }
 

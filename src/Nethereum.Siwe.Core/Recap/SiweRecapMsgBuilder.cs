@@ -11,9 +11,8 @@ namespace Nethereum.Siwe.Core.Recap
 
     public class SiweRecapMsgBuilder
     {
-        private CapabilitySeedMap _capabilitySeedMap = new CapabilitySeedMap();
-
-        private SiweMessage _siweMessage = new SiweMessage();
+        private readonly CapabilitySeedMap _capabilitySeedMap;
+        private readonly SiweMessage       _siweMessage;
 
         private SiweRecapMsgBuilder(SiweMessage siweMessage)
         {
