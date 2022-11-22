@@ -63,34 +63,34 @@ namespace Nethereum.Contracts.MessageEncodingServices
             return FunctionBuilder.IsTransactionInputDataForFunction(transaction.Input);
         }
 
-        public TContractFunction DecodeTransactionInput(TContractFunction contractMessageOuput, Transaction transaction)
+        public TContractFunction DecodeTransactionInput(TContractFunction contractMessageOutput, Transaction transaction)
         {
             if (!IsTransactionForFunction(transaction))
                 throw new ArgumentException("The transaction given is not for the current function",
                     nameof(transaction));
 
-            contractMessageOuput = DecodeInput(contractMessageOuput, transaction.Input);
-            contractMessageOuput.Nonce = transaction.Nonce?.Value;
-            contractMessageOuput.GasPrice = transaction.GasPrice?.Value;
-            contractMessageOuput.AmountToSend = transaction.Value == null ? 0 : transaction.Value.Value;
-            contractMessageOuput.Gas = transaction.Gas?.Value;
-            contractMessageOuput.FromAddress = transaction.From;
-            contractMessageOuput.MaxFeePerGas = transaction.MaxFeePerGas?.Value;
-            contractMessageOuput.MaxPriorityFeePerGas = transaction.MaxPriorityFeePerGas?.Value;    
+            contractMessageOutput = DecodeInput(contractMessageOutput, transaction.Input);
+            contractMessageOutput.Nonce = transaction.Nonce?.Value;
+            contractMessageOutput.GasPrice = transaction.GasPrice?.Value;
+            contractMessageOutput.AmountToSend = transaction.Value == null ? 0 : transaction.Value.Value;
+            contractMessageOutput.Gas = transaction.Gas?.Value;
+            contractMessageOutput.FromAddress = transaction.From;
+            contractMessageOutput.MaxFeePerGas = transaction.MaxFeePerGas?.Value;
+            contractMessageOutput.MaxPriorityFeePerGas = transaction.MaxPriorityFeePerGas?.Value;    
 
             if(transaction.Type == null)
             {
-                contractMessageOuput.TransactionType = null;
+                contractMessageOutput.TransactionType = null;
             }
             else
             {
-                contractMessageOuput.TransactionType = (byte)(transaction.Type.Value);
+                contractMessageOutput.TransactionType = (byte)(transaction.Type.Value);
             }
 
-            contractMessageOuput.AccessList = transaction.AccessList;
+            contractMessageOutput.AccessList = transaction.AccessList;
             
                  
-            return contractMessageOuput;
+            return contractMessageOutput;
         }
 
         public TReturn DecodeSimpleTypeOutput<TReturn>(string output)
