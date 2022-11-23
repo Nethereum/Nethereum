@@ -59,7 +59,7 @@ namespace Nethereum.ABI.Encoders
             return EncodeInt(new BigInteger(value));
         }
 
-        public static byte[] EncodeSignedUnsigned256(BigInteger value, uint numberOfBytesArray, bool overflowToDefault = false)
+        public static byte[] EncodeSignedUnsigned256(BigInteger value, uint numberOfBytesArray)
         {
             if (value <= (IntType.MAX_UINT256_VALUE*-1))
             {
@@ -81,24 +81,16 @@ namespace Nethereum.ABI.Encoders
             }
             else
             {
-                if(bytes.Length > 32)
+                if(bytes.Length > 32 && value < 0)
                 {
-                    if (overflowToDefault)
+                    value = 1 + IntType.MAX_UINT256_VALUE + (value);
+                    return EncodeSignedUnsigned256(value, numberOfBytesArray);
+                }
+                else
+                {
+                    if(bytes.Length > 32)
                     {
-                        var defaultValue = new byte[numberOfBytesArray];
-
-                        for (var i = 0; i < defaultValue.Length; i++)
-                            if (value.Sign < 0)
-                                defaultValue[i] = 0xFF;
-                            else
-                                defaultValue[i] = 0;
-
-                        return defaultValue;
-                    }
-                    else
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value),
-                            $"Unsigned SmartContract integer must not exceed maximum value for uint256: {IntType.MAX_UINT256_VALUE.ToString()}. Current value is: {value}");
+                        throw new OverflowException();
                     }
                 }
             }

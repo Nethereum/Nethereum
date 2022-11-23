@@ -1,16 +1,10 @@
 ﻿using Nethereum.ABI;
+using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Hex.HexTypes;
-using Nethereum.RPC;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Shh.KeyPair;
-using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nethereum.EVM
 {
@@ -20,7 +14,7 @@ namespace Nethereum.EVM
         private List<byte[]> stack { get; set; }
         public List<byte> Memory { get; set; }
         public List<ProgramInstruction> Instructions { get; private set; }
-
+        public List<ProgramTrace> Trace { get; private set; }
         public ProgramResult ProgramResult { get; private set; }
 
 
@@ -45,6 +39,7 @@ namespace Nethereum.EVM
             this.Memory = new List<byte>();
             ByteCode = bytecode;
             ProgramContext = programContext;
+            Trace = new List<ProgramTrace>();
             ProgramResult = new ProgramResult();
         }
 
@@ -147,6 +142,74 @@ namespace Nethereum.EVM
         }
 
         public const int MAX_STACKSIZE = 1024;
+
+
+
+        public void WriteToMemory(int index, byte[] data)
+        {
+            WriteToMemory(index, data.Length, data);
+        }
+
+
+        public void WriteToMemory(int index, int totalSize, byte[] data, bool extend = true)
+        {
+            if (totalSize == 0) return;
+            //totalSize might be bigger than data length so memory will be extended to match
+
+            if (data == null) data = new byte[0];
+
+
+            int newSize = index + totalSize;
+
+
+            if (newSize > Memory.Count)
+            {
+                if (extend)
+                {
+                    var extraSize = Math.Ceiling((double)(newSize - Memory.Count) / 32) * 32;
+                    Memory.AddRange(new byte[(int)extraSize]);
+                }
+            }
+
+            for (int i = 0; i < totalSize; i++)
+            {
+                if (i < data.Length)
+                {
+                    Memory[index + i] = data[i];
+                }
+                else
+                {
+                    Memory[index + i] = 0;
+                }
+
+            }
+        }
+
+        public BigInteger StackPopAndConvertToBigInteger()
+        {
+            return StackPop().ConvertToInt256();
+        }
+
+        public BigInteger StackPopAndConvertToUBigInteger()
+        {
+            return StackPop().ConvertToUInt256();
+        }
+
+        public void StackPushSigned(BigInteger value)
+        {
+            if (value < 0)
+            {
+                value = 1 + IntType.MAX_UINT256_VALUE + value;
+            }
+            StackPush(value);
+        }
+
+
+        public void StackPush(BigInteger value)
+        {
+            StackPush(IntTypeEncoder.EncodeSignedUnsigned256(value, 32));
+        }
+
 
     }
 }

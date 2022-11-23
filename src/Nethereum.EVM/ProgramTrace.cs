@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Nethereum.EVM
@@ -11,8 +13,10 @@ namespace Nethereum.EVM
         public List<string> Stack { get; set; }
         public ProgramInstruction Instruction { get; set; }
         public string Memory { get; set; }
+
         public Dictionary<string, string> Storage { get; set; }
         public int Depth { get; set; }
+        public List<string> MemoryAsArray { get; set; } = new List<string>();
         public override string ToString()
         {
             var builder = new StringBuilder();
@@ -47,6 +51,27 @@ namespace Nethereum.EVM
             return builder.ToString();
         }
 
+        public void InitialiseMemoryArray()
+        {
+            if (!string.IsNullOrEmpty(Memory))
+                MemoryAsArray = SplitMemory().ToList();
+        }
+
+        private IEnumerable<string> SplitMemory()
+        {
+            var size = 64;
+            if (!string.IsNullOrEmpty(Memory))
+            {
+                for (int i = 0; i < Memory.Length; i += size)
+                {
+                    if (size + i > Memory.Length)
+                        size = Memory.Length - i;
+
+                    yield return Memory.Substring(i, size);
+                }
+            }
+        }
+
         public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, int depth, Program program, ProgramInstruction programInstructionExecuted)
         {
             var trace = new ProgramTrace()
@@ -60,7 +85,9 @@ namespace Nethereum.EVM
                 Storage = program.ProgramContext.GetProgramContextStorageAsHex(),
                 Depth = depth
             };
+            trace.InitialiseMemoryArray();            
             return trace;
         }
     }
+
 }

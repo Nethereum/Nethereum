@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI;
+using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;

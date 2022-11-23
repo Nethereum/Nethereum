@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using Nethereum.EVM.BlockchainState;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 using System;
@@ -171,8 +172,6 @@ namespace Nethereum.EVM.UnitTests
                     foreach (var test in scenario.Tests.Berlin)
                     {
                         //Excluding errors and gas 
-                        //if(test.Id == "Berlin_0_15_0") { continue; }
-                        //if (test.Id != "Berlin_0_11_0") { continue; }
 
                         if (test.Trace.Exists(x => !string.IsNullOrEmpty(x.Error) || x.Op == 90)) { continue; }
                         Debug.WriteLine(scenarioName);
@@ -201,6 +200,7 @@ namespace Nethereum.EVM.UnitTests
                         transaction.Gas = new Hex.HexTypes.HexBigInteger(test.Transaction.GasLimit);
                         transaction.GasPrice = new Hex.HexTypes.HexBigInteger(test.Transaction.GasPrice);
                         transaction.Data = test.Transaction.Input;
+                        transaction.ChainId = new Hex.HexTypes.HexBigInteger(1);
 
 
 
@@ -212,7 +212,8 @@ namespace Nethereum.EVM.UnitTests
                         var byteCode = await executionState.GetCodeAsync(test.Transaction.To);
                         var program = new Program(byteCode, programContext);
                         var evmSimulator = new EVMSimulator();
-                        var trace = await evmSimulator.ExecuteAsync(program);
+                        program = await evmSimulator.ExecuteAsync(program);
+                        var trace = program.Trace;
 
                         //contains the result
                         //Assert.True(trace.Count + 1 == test.Trace.Count);
@@ -279,6 +280,15 @@ namespace Nethereum.EVM.UnitTests
             await RunTestsFromFolder("Tests/VMTests/vmBitwiseLogicOperation", null, null);
         }
 
+        [Fact]
+        public async Task TestvmArithmeticTest()
+        {
+            await RunTestsFromFolder("Tests/VMTests/vmArithmeticTest",
+            new string[] {
+                  "twoOps"});
+
+        }
+
         //This have gas so cannot be used yet.
         //[Fact]
         //public async Task TestvmIOandFlowOperations()
@@ -296,15 +306,7 @@ namespace Nethereum.EVM.UnitTests
         //}
 
 
-        [Fact]
-        public async Task TestvmArithmeticTest()
-        {
-            //to check arith, sdiv, sub, signextend
-            await RunTestsFromFolder("Tests/VMTests/vmArithmeticTest",
-            new string[] {
-                "signextend", "arith", "twoOps" });
 
-        }
 
     }
 }

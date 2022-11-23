@@ -1,4 +1,5 @@
 ﻿using Nethereum.RPC.Eth.DTOs;
+using System;
 using System.Collections.Generic;
 
 namespace Nethereum.EVM
@@ -12,6 +13,8 @@ namespace Nethereum.EVM
         public List<string> DeletedContractAccounts { get; set; } = new List<string>();
         public List<string> CreatedContractAccounts { get; set; } = new List<string>();
         public List<CallInput> InnerCalls { get; set; } = new List<CallInput>();
+
+        public Exception Exception { get; set; }
         
     }
 }

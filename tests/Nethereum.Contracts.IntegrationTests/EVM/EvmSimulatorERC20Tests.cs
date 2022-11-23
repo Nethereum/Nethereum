@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.EVM;
+using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -10,12 +11,12 @@ using Xunit;
 // ReSharper disable ConsiderUsingConfigureAwait  
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
-namespace Nethereum.Contracts.IntegrationTests.SmartContracts
+namespace Nethereum.Contracts.IntegrationTests.EVM
 {
 
 
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
-    public class EvmSimulatorERC20Tests    
+    public class EvmSimulatorERC20Tests
     {
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
@@ -35,7 +36,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             var contractHandler = web3.Eth.GetContractHandler(contractAddress);
 
             var balanceOfFunction = new BalanceOfFunction();
-            balanceOfFunction.Owner =  EthereumClientIntegrationFixture.AccountAddress;
+            balanceOfFunction.Owner = EthereumClientIntegrationFixture.AccountAddress;
             var balanceOfFunctionReturn = await contractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction);
             Console.WriteLine(balanceOfFunctionReturn);
 
@@ -45,6 +46,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 
             var callInput = balanceOfFunction.CreateCallInput(contractAddress);
             callInput.From = EthereumClientIntegrationFixture.AccountAddress;
+            callInput.ChainId = new HexBigInteger(EthereumClientIntegrationFixture.ChainId);
 
             var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
             var executionStateService = new ExecutionStateService(nodeDataService);
@@ -52,14 +54,14 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
             await evmSimulator.ExecuteAsync(program);
-            var resultEncoded  = program.ProgramResult.Result;
+            var resultEncoded = program.ProgramResult.Result;
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
 
             var transferFunction = new TransferFunction();
             transferFunction.FromAddress = EthereumClientIntegrationFixture.AccountAddress;
             transferFunction.To = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045";
             transferFunction.Value = 500;
-            
+
             callInput = transferFunction.CreateCallInput(contractAddress);
             programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
@@ -68,7 +70,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             balanceOfFunction.Owner = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045";
             callInput = balanceOfFunction.CreateCallInput(contractAddress);
             callInput.From = EthereumClientIntegrationFixture.AccountAddress;
-            
+
             programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
             await evmSimulator.ExecuteAsync(program);

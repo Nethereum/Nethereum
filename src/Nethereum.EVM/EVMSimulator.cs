@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Nethereum.EVM.Execution;
+using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Bcpg;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -12,9 +15,22 @@ namespace Nethereum.EVM
     /// </summary>
     public class EVMSimulator
     {
-        public async Task<List<ProgramTrace>> ExecuteAsync(Program program, int vmExecutionCounter = 0, int depth = 0, bool traceEnabled = true)
+#if DEBUG
+        public EVMSimulator(EvmProgramExecution evmProgramExecution, bool enableTraceToDebugOuptput = false) :this(evmProgramExecution)
         {
-            var traceResult = new List<ProgramTrace>();
+            EnableTraceToDebugOuptput = enableTraceToDebugOuptput;
+        }
+        public bool EnableTraceToDebugOuptput { get; }
+        public EvmProgramExecution EvmProgramExecution { get; }
+#endif
+        public EVMSimulator(EvmProgramExecution evmProgramExecution = null)
+       {
+            EvmProgramExecution = evmProgramExecution ?? new EvmProgramExecution();
+        }
+      
+        public async Task<Program> ExecuteAsync(Program program, int vmExecutionCounter = 0, int depth = 0, bool traceEnabled = true, bool staticCall = false)
+        {
+           
             var programExecutionCounter = 0;
             program.ProgramContext.InitialiaseContractBalanceFromCallInputValue();
 
@@ -25,17 +41,20 @@ namespace Nethereum.EVM
                 {
                     
                     var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, depth, program, currentInstruction);
-                    traceResult.Add(trace);
+                     program.Trace.Add(trace);
 #if DEBUG
-                    Debug.WriteLine(trace.ToString());
+                    if (EnableTraceToDebugOuptput)
+                    {
+                        Debug.WriteLine(trace.ToString());
+                    }
 #endif
                 }
                 var innerTrace = await StepAsync(program, vmExecutionCounter, depth, traceEnabled);
                 programExecutionCounter++;
                 vmExecutionCounter = vmExecutionCounter + 1 + innerTrace.Count;
-                traceResult.AddRange(innerTrace);
+                program.Trace.AddRange(innerTrace);
             }
-            return traceResult;
+            return program;
         }
         public async Task<List<ProgramTrace>> StepAsync(Program program, int vmExecutionCounter, int depth = 0, bool traceEnabled = true)
         {
@@ -45,179 +64,188 @@ namespace Nethereum.EVM
                 var instruction = program.GetCurrentInstruction();
                 if (instruction.Instruction != null)
                 {
-                    //var instructionInfo = GetInstructionInfo(instruction.Instruction.Value);
                     switch (instruction.Instruction.Value)
                     {
                         case Instruction.STOP:
                             program.Stop();
                             break;
                         case Instruction.ADD:
-                            program.Add();
+                            EvmProgramExecution.Arithmetic.Add(program);
                             break;
                         case Instruction.MUL:
-                            program.Mul();
+                            EvmProgramExecution.Arithmetic.Mul(program);
                             break;
                         case Instruction.SUB:
-                            program.Sub();
+                            EvmProgramExecution.Arithmetic.Sub(program);
                             break;
                         case Instruction.DIV:
-                            program.Div();
+                            EvmProgramExecution.Arithmetic.Div(program);
                             break;
                         case Instruction.SDIV:
-                            program.SDiv();
+                            EvmProgramExecution.Arithmetic.SDiv(program);
                             break;
                         case Instruction.MOD:
-                            program.Mod();
+                            EvmProgramExecution.Arithmetic.Mod(program);
                             break;
                         case Instruction.SMOD:
-                            program.SMod();
+                            EvmProgramExecution.Arithmetic.SMod(program);
+                            
                             break;
                         case Instruction.ADDMOD:
-                            program.AddMod();
+                            EvmProgramExecution.Arithmetic.AddMod(program);
                             break;
                         case Instruction.MULMOD:
-                            program.MulMod();
+                            EvmProgramExecution.Arithmetic.MulMod(program);
                             break;
                         case Instruction.EXP:
-                            program.Exp();
+                            EvmProgramExecution.Arithmetic.Exp(program);
                             break;
-                       
+                   //------------------------///    
                         case Instruction.LT:
-                            program.LT();
+                            EvmProgramExecution.Bitwise.LT(program);
                             break;
                         case Instruction.GT:
-                            program.GT();
+                            EvmProgramExecution.Bitwise.GT(program);
                             break;
                         case Instruction.SLT:
-                            program.SLT();
+                            EvmProgramExecution.Bitwise.SLT(program);
                             break;
                         case Instruction.SGT:
-                            program.SGT();
+                            EvmProgramExecution.Bitwise.SGT(program);
                             break;
                         case Instruction.EQ:
-                            program.EQ();
+                            EvmProgramExecution.Bitwise.EQ(program);
                             break;
                         case Instruction.ISZERO:
-                            program.IsZero();
+                            EvmProgramExecution.Bitwise.IsZero(program);
                             break;
                         case Instruction.AND:
-                            program.And();
+                            EvmProgramExecution.Bitwise.And(program);
                             break;
                         case Instruction.OR:
-                            program.Or();
+                            EvmProgramExecution.Bitwise.Or(program);
                             break;
                         case Instruction.XOR:
-                            program.Xor();
+                            EvmProgramExecution.Bitwise.Xor(program);
                             break;
                         case Instruction.NOT:
-                            program.Not();
+                            EvmProgramExecution.Bitwise.Not(program);
                             break;
                         case Instruction.BYTE:
-                            program.Byte();
+                            EvmProgramExecution.Bitwise.Byte(program);
                             break;
-                       
-                        case Instruction.KECCAK256:
-                            program.SHA3();
+                        case Instruction.SHL:
+                            EvmProgramExecution.Bitwise.ShiftLeft(program);
                             break;
-                        case Instruction.ADDRESS:
-                            program.Address();
+                        case Instruction.SHR:
+                            EvmProgramExecution.Bitwise.ShiftRight(program);
                             break;
-                        case Instruction.BALANCE:
-                            await program.BalanceAsync();
+                        case Instruction.SAR:
+                            EvmProgramExecution.Bitwise.ShiftSignedRight(program);
                             break;
+                        case Instruction.SIGNEXTEND:
+                            EvmProgramExecution.Bitwise.SignExtend(program);
+                            break;
+                    //-------------------///
                         case Instruction.ORIGIN:
-                            program.Origin();
+                            EvmProgramExecution.CallInput.Origin(program);
                             break;
                         case Instruction.CALLER:
-                            program.Caller();
+                            EvmProgramExecution.CallInput.Caller(program);
                             break;
                         case Instruction.CALLVALUE:
-                            program.CallValue();
+                            EvmProgramExecution.CallInput.CallValue(program);
+                      //--------------------//      
                             break;
                         case Instruction.CALLDATALOAD:
-                            program.CallDataLoad();
+                            EvmProgramExecution.CallData.CallDataLoad(program);
                             break;
                         case Instruction.CALLDATASIZE:
-                            program.CallDataSize();
+                            EvmProgramExecution.CallData.CallDataSize(program);
                             break;
                         case Instruction.CALLDATACOPY:
-                            program.CallDataCopy();
+                            EvmProgramExecution.CallData.CallDataCopy(program);
                             break;
+                        //--------------------//      
                         case Instruction.CODESIZE:
-                            program.CodeSize();
+                            EvmProgramExecution.Code.CodeSize(program);
                             break;
                         case Instruction.CODECOPY:
-                            program.CodeCopy();
+                            EvmProgramExecution.Code.CodeCopy(program);
                             break;
-                     
                         case Instruction.EXTCODESIZE:
-                            await program.ExtCodeSizeAsync();
+                            await EvmProgramExecution.Code.ExtCodeSizeAsync(program);
                             break;
                         case Instruction.EXTCODECOPY:
-                            await program.ExtCodeCopyAsync();
+                            await EvmProgramExecution.Code.ExtCodeCopyAsync(program);
                             break;
-                       
+                        case Instruction.EXTCODEHASH:
+                            await EvmProgramExecution.Code.ExtCodeHashAsync(program);
+                            break;
+                        //--------------------//      
+                        case Instruction.KECCAK256:
+                            EvmProgramExecution.BlockchainCurrentContractContext.SHA3(program);
+                            break;
+                        case Instruction.ADDRESS:
+                            EvmProgramExecution.BlockchainCurrentContractContext.Address(program);
+                            break;
+                        case Instruction.BALANCE:
+                            await EvmProgramExecution.BlockchainCurrentContractContext.BalanceAsync(program);
+                            break;
                         case Instruction.COINBASE:
-                            var coinbaseAddress = program.ProgramContext.AddressCoinbaseEncoded;
-                            program.StackPush(coinbaseAddress);
-                            program.Step();
+                            EvmProgramExecution.BlockchainCurrentContractContext.Coinbase(program);
                             break;
                         case Instruction.TIMESTAMP:
-                            var timestamp = program.ProgramContext.Timestamp;
-                            program.StackPush(timestamp);
-                            program.Step();
+                            EvmProgramExecution.BlockchainCurrentContractContext.TimeStamp(program);
                             break;
                         case Instruction.NUMBER:
-                            var blockNumber = program.ProgramContext.BlockNumber;
-                            program.StackPush(blockNumber);
-                            program.Step();
+                            EvmProgramExecution.BlockchainCurrentContractContext.BlockNumber(program);
                             break;
-                 
+                        case Instruction.SELFBALANCE:
+                            await EvmProgramExecution.BlockchainCurrentContractContext.SelfBalanceAsync(program);
+                            break;
+                        case Instruction.GASPRICE:
+                            EvmProgramExecution.BlockchainCurrentContractContext.GasPrice(program);
+                            break;
+                        case Instruction.GASLIMIT:
+                            EvmProgramExecution.BlockchainCurrentContractContext.GasLimit(program);
+                            break;
+                        case Instruction.GAS:
+                            EvmProgramExecution.BlockchainCurrentContractContext.Gas(program);
+                            
+                            break;
+                        case Instruction.DIFFICULTY:
+                            EvmProgramExecution.BlockchainCurrentContractContext.Difficulty(program);
+                            break;
+                       
+                        case Instruction.CHAINID:
+                            EvmProgramExecution.BlockchainCurrentContractContext.ChainId(program);
+                            
+                            break;
+                        case Instruction.BASEFEE:
+                            EvmProgramExecution.BlockchainCurrentContractContext.BaseFee(program);
+                            break;
+                        case Instruction.BLOCKHASH:
+                            await EvmProgramExecution.BlockchainCurrentContractContext.BlockHashAsync(program);
+                            break;
+                        //--------------------//      
                         case Instruction.POP:
-                            program.StackPop();
-                            program.Step();
+                             EvmProgramExecution.StackFlowExecution.Pop(program);
                             break;
-                        case Instruction.MLOAD:
-                            program.MLoad();
-                            break;
-                        case Instruction.MSTORE:
-                            program.MStore();
-                            break;
-                        case Instruction.MSTORE8:
-                            program.MStore8();
-                            break;
-                        case Instruction.MSIZE:
-                            program.StackPush(program.Memory.Count);
-                            program.Step();
-                            break;
-                      
                         case Instruction.JUMP:
-                            var dest = (int)program.StackPopAndConvertToBigInteger();
-                            program.GoToJumpDestination(dest);
+                            EvmProgramExecution.StackFlowExecution.Jump(program);
                             break;
                         case Instruction.JUMPI:
-                            var desti = (int)program.StackPopAndConvertToBigInteger();
-                            var valid = program.StackPopAndConvertToBigInteger();
-                            if (valid != 0)
-                            {
-                                program.GoToJumpDestination(desti);
-                            }
-                            else
-                            {
-                                program.Step();
-                            }
-                            
+                            EvmProgramExecution.StackFlowExecution.Jumpi(program);
                             break;
-                            
+
                         case Instruction.JUMPDEST:
-                            program.Step();
+                            EvmProgramExecution.StackFlowExecution.JumpDest(program);
+                            
                             break;
                         case Instruction.PC:
-                            var pc = program.GetProgramCounter();
-                            program.StackPush(pc);
-                            program.Step();
+                            EvmProgramExecution.StackFlowExecution.PC(program);
                             break;
-                      
                         case Instruction.PUSH1:
                         case Instruction.PUSH2:
                         case Instruction.PUSH3:
@@ -250,9 +278,7 @@ namespace Nethereum.EVM
                         case Instruction.PUSH30:
                         case Instruction.PUSH31:
                         case Instruction.PUSH32:
-                            var data = program.GetCurrentInstruction().Arguments;
-                            program.StackPush(data.PadTo32Bytes());
-                            program.Step();
+                            EvmProgramExecution.StackFlowExecution.Push(program);
                             break;
                         case Instruction.DUP1:
                         case Instruction.DUP2:
@@ -270,9 +296,7 @@ namespace Nethereum.EVM
                         case Instruction.DUP14:
                         case Instruction.DUP15:
                         case Instruction.DUP16:
-                            int dupIndex = (int)instruction.Instruction.Value - (int)Instruction.DUP1 + 1;
-                            program.StackDup(dupIndex);
-                            program.Step();
+                            EvmProgramExecution.StackFlowExecution.Dup(program);
                             break;
                         case Instruction.SWAP1:
                         case Instruction.SWAP2:
@@ -290,110 +314,75 @@ namespace Nethereum.EVM
                         case Instruction.SWAP14:
                         case Instruction.SWAP15:
                         case Instruction.SWAP16:
-                            int swapIndex = (int)instruction.Instruction.Value - (int)Instruction.SWAP1 + 1;
-                            program.StackSwap(swapIndex);
-                            program.Step();
+                            EvmProgramExecution.StackFlowExecution.Swap(program);
                             break;
+                        //--------------------//      
+                        case Instruction.MLOAD:
+                            EvmProgramExecution.StorageMemory.MLoad(program);
+                            break;
+                        case Instruction.MSTORE:
+                            EvmProgramExecution.StorageMemory.MStore(program);
+                            break;
+                        case Instruction.MSTORE8:
+                            EvmProgramExecution.StorageMemory.MStore8(program);
+                            break;
+                        case Instruction.MSIZE:
+                            EvmProgramExecution.StorageMemory.MSize(program);
+                            break;
+                        case Instruction.SLOAD:
+                            await EvmProgramExecution.StorageMemory.SLoad(program);
+                            break;
+                        case Instruction.SSTORE:
+                            EvmProgramExecution.StorageMemory.SStore(program);
+                            break;
+                        //--------------------//      
                         case Instruction.LOG0:
                         case Instruction.LOG1:
                         case Instruction.LOG2:
                         case Instruction.LOG3:
                         case Instruction.LOG4:
-                            program.Log(instruction.Instruction.Value - Instruction.LOG0);
+                            EvmProgramExecution.ReturnRevertLogExecution.Log(program);
                             break;
                         case Instruction.REVERT:
-                            program.Revert();
+                            EvmProgramExecution.ReturnRevertLogExecution.Revert(program);
                             break;
                         case Instruction.RETURN:
-                            program.Return();
+                            EvmProgramExecution.ReturnRevertLogExecution.Return(program);
                             break;
-                        case Instruction.SHL:
-                            program.ShiftLeft();
-                            break;
-                        case Instruction.SHR:
-                            program.ShiftRight();
-                            break;
-                        case Instruction.SAR:
-                            program.ShiftSignedRight();
-                            break;
-                        case Instruction.SLOAD:
-                            await program.SLoad();
-                            break;
-                        case Instruction.SSTORE:
-                            program.SStore();
-                            break;
+                       
                         case Instruction.RETURNDATASIZE:
-                            program.ReturnDataSize();
+                            EvmProgramExecution.ReturnRevertLogExecution.ReturnDataSize(program);
                             break;
                         case Instruction.RETURNDATACOPY:
-                            program.ReturnDataCopy();
+                            EvmProgramExecution.ReturnRevertLogExecution.ReturnDataCopy(program);
                             break;
-                        case Instruction.SELFBALANCE:
-                            await program.SelfBalanceAsync();
-                            break;
-                        case Instruction.GASPRICE:
-                            var gasPrice = program.ProgramContext.GasPrice;
-                            program.StackPush(gasPrice);
-                            program.Step();
-                            break;
-                        case Instruction.DIFFICULTY:
-                            var difficulty = program.ProgramContext.Difficulty;
-                            program.StackPush(difficulty);
-                            program.Step();
-                            break;
-                        case Instruction.GASLIMIT:
-                            var gaslimit = program.ProgramContext.GasLimit;
-                            program.StackPush(gaslimit);
-                            program.Step();
-                            break;
-                        case Instruction.GAS:
-                            var gas = program.ProgramContext.Gas;
-                            program.StackPush(gas);
-                            program.Step();
-                            break;
-                        case Instruction.CHAINID:
-                            var chainId = program.ProgramContext.ChainId;
-                            program.StackPush(chainId);
-                            program.Step();
-                            break;
-                        case Instruction.BASEFEE:
-                            var baseFee = program.ProgramContext.BaseFee;
-                            program.StackPush(baseFee);
-                            program.Step();
-                            break;
+                        //--------------------//      
                         case Instruction.DELEGATECALL:
-                            innerTraceResult = await program.DelegateCallAsync(vmExecutionCounter, depth, traceEnabled);
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.DelegateCallAsync(program, vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.CALL:
-                            innerTraceResult = await program.CallAsync(vmExecutionCounter, depth, traceEnabled);
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.CallAsync(program, vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.CALLCODE:
-                            innerTraceResult = await program.CallCodeAsync(vmExecutionCounter, depth, traceEnabled);
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.CallCodeAsync(program, vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.STATICCALL:
-                            innerTraceResult = await program.StaticCallAsync(vmExecutionCounter, depth, traceEnabled);
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.StaticCallAsync(program, vmExecutionCounter, depth, traceEnabled);
                             break;
                         case Instruction.SELFDESTRUCT:
-                            await program.SelfDestructAsync();
+                            await EvmProgramExecution.CallingCreation.SelfDestructAsync(program);
                             break;
-                        case Instruction.BLOCKHASH:
-                            await program.BlockHashAsync();
+                        case Instruction.CREATE:
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.CreateAsync(program, vmExecutionCounter, depth, traceEnabled);
                             break;
-                        case Instruction.SIGNEXTEND:
-                            throw new NotImplementedException();
+                        case Instruction.CREATE2:
+                            innerTraceResult = await EvmProgramExecution.CallingCreation.Create2Async(program, vmExecutionCounter, depth, traceEnabled);
                             break;
-                        case Instruction.EXTCODEHASH:
-                            await program.ExtCodeHashAsync();
-                            break;
+
                         case Instruction.INVALID:
                             program.Stop();
                             break;
-                        case Instruction.CREATE:
-                            innerTraceResult = await program.CreateAsync(vmExecutionCounter, depth, traceEnabled);
-                            break;
-                        case Instruction.CREATE2:
-                            innerTraceResult = await program.Create2Async(vmExecutionCounter, depth, traceEnabled);
-                            break;
+                      
                        
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -403,12 +392,6 @@ namespace Nethereum.EVM
             }
             return innerTraceResult;
 
-        }
-
-      
-        public InstructionInfo GetInstructionInfo(Instruction instruction)
-        {
-            return InstructionInfoCollection.Instructions[instruction];
         }
     }
 }

@@ -210,6 +210,18 @@ namespace Nethereum.Signer
             return _ethereumAddress;
         }
 
+        public byte[] GetPublicAddressAsBytes()
+        {
+            if (_ethereumAddress == null)
+            {
+                var initaddr = new Sha3Keccack().CalculateHash(GetPubKeyNoPrefix());
+                var addr = new byte[initaddr.Length - 12];
+                Array.Copy(initaddr, 12, addr, 0, initaddr.Length - 12);
+                return addr;
+            }
+            return _ethereumAddress.HexToByteArray();
+        }
+
         public static string GetPublicAddress(string privateKey)
         {
             var key = new EthECKey(privateKey.HexToByteArray(), true);
