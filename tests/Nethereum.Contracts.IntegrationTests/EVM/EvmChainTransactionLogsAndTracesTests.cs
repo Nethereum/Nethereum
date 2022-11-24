@@ -20,6 +20,8 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Nethereum.RPC.DebugNode;
+using Nethereum.Util;
 // ReSharper disable ConsiderUsingConfigureAwait  
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
@@ -106,6 +108,8 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             await RetrieveTransactionFromChainAndCompareToExternalTraces("0x6669284f4072af03600f95bc4c1ed3499e1658dab87615cfd03775fea13a82b7", "EVM/Traces/0x6669284f4072af03600f95bc4c1ed3499e1658dab87615cfd03775fea13a82b7.json", "54532", ConfigureStateUniswapV3);
 
         }
+
+      
 
         public void ConfigureStateUniswapV3(ExecutionStateService executionStateService)
         {
@@ -207,7 +211,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
-        public async Task RetrieveTransactionFromChainAndCompareToExternalTraces(string transactionHash, string externalTracePath, string gasValue, Action<ExecutionStateService> configureState = null)
+        public async Task RetrieveTransactionFromChainAndCompareToExternalTraces(string transactionHash, string externalTracePath, string gasValue, Action<ExecutionStateService> configureState = null, bool useDebugStorageAt = false)
         {
             var json = "";
             if(Path.GetExtension(externalTracePath) == ".zip")
@@ -226,7 +230,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var block = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(txn.BlockNumber);
             var code = await web3.Eth.GetCode.SendRequestAsync(txn.To); // runtime code;
 
-            Program program = await ExecuteProgramAsync(web3, txn, block, code, configureState);
+            Program program = await ExecuteProgramAsync(web3, txn, block, code, configureState, useDebugStorageAt);
             if (program.ProgramResult.Exception != null)
             {
                 Debug.WriteLine("Program failure, validating traces");
@@ -303,34 +307,44 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
-        public static async Task<Program> ExecuteProgramAsync(Web3.Web3 web3, Transaction txn, BlockWithTransactionHashes block, string code, Action<ExecutionStateService> configureState = null)
+        public static async Task<Program> ExecuteProgramAsync(Web3.Web3 web3, Transaction txn, BlockWithTransactionHashes block, string code, Action<ExecutionStateService> configureState = null, bool useDebugStorageAt = false)
         {
-            //var instructions = ProgramInstructionsUtils.GetProgramInstructions(code);
-            var txnInput = txn.ConvertToTransactionInput();
-            txnInput.ChainId = new HexBigInteger(1);
-            var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(new HexBigInteger(txn.BlockNumber.Value - 1)));
+           
+                //var instructions = ProgramInstructionsUtils.GetProgramInstructions(code);
+                var txnInput = txn.ConvertToTransactionInput();
+                txnInput.ChainId = new HexBigInteger(1);
 
-            var executionStateService = new ExecutionStateService(nodeDataService);
-            if (configureState != null)
-            {
-                configureState(executionStateService);
-            }
+                var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(new HexBigInteger(txn.BlockNumber.Value - 1)));
+                if (useDebugStorageAt)
+                {
+                    throw new Exception("Need an archive node configuration");
+                    var web32 = new Web3.Web3("https://rpc.archivenode.io/);
+                    nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(new HexBigInteger(txn.BlockNumber.Value - 1)), web32.Debug, block.BlockHash, (int)txn.TransactionIndex.Value);
+                }
 
-            var programContext = new ProgramContext(txnInput, executionStateService, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
-            var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
 
-            try
-            {
-                program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
-                return program;
+                var executionStateService = new ExecutionStateService(nodeDataService);
+                if (configureState != null)
+                {
+                    configureState(executionStateService);
+                }
 
-            }
-            catch (Exception ex)
-            {
-                program.ProgramResult.Exception = ex;
-                return program;
-            }
+                var programContext = new ProgramContext(txnInput, executionStateService, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
+                var program = new Program(code.HexToByteArray(), programContext);
+                var evmSimulator = new EVMSimulator();
+
+                try
+                {
+                    program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+                    return program;
+
+                }
+                catch (Exception ex)
+                {
+                    program.ProgramResult.Exception = ex;
+                    return program;
+                }
+          
         }
 
         public static string Unzip(string filePath)
@@ -369,5 +383,15 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 }
             }
         }
+        
+        //[Fact]
+        //Ignored for general testing as it needs an archive node key
+        public async void ShouldRetrieveUniswapV3TransactionFromChainAndValidateTracesDebugStorageAt()
+        {
+            //Uniswap v3 multicall
+            await RetrieveTransactionFromChainAndCompareToExternalTraces("0x6669284f4072af03600f95bc4c1ed3499e1658dab87615cfd03775fea13a82b7", "EVM/Traces/0x6669284f4072af03600f95bc4c1ed3499e1658dab87615cfd03775fea13a82b7.json", "54532", null, true);
+
+        }
+
     }
 }

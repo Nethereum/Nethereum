@@ -7,5 +7,6 @@
         IDebugGetRawHeader GetRawHeader { get; }
         IDebugGetRawReceipts GetRawReceipts { get; }
         IDebugGetRawTransaction GetRawTransaction { get; }
+        IDebugStorageRangeAt StorageRangeAt { get; }
     }
 }

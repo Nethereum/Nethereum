@@ -91,7 +91,7 @@
         debug_getRawBlock,
         debug_getRawHeader,
         debug_getRawReceipts,
-
+        debug_storageRangeAt,
 
         //wallet
         eth_requestAccounts,
@@ -102,6 +102,6 @@
         wallet_watchAsset,
         eth_signTypedData_v4,
         personal_sign
-        
+      
     }
 }

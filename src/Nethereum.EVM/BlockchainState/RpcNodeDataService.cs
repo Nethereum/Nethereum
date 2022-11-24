@@ -1,8 +1,11 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
+using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
+using System;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -14,10 +17,24 @@ namespace Nethereum.EVM.BlockchainState
         {
             EthApiService = ethApiService;
             CurrentBlock = currentBlock;
+            UseDebugStorageAt = false;
         }
+
+        public RpcNodeDataService(IEthApiService ethApiService, BlockParameter currentBlock, IDebugApiService debugApiService, string blockHash, int transactionIndex, bool useDebugStorageAt = true):this(ethApiService, currentBlock)
+        {
+            DebugApiService = debugApiService;
+            BlockHash = blockHash;
+            TransactionIndex = transactionIndex;
+            UseDebugStorageAt = useDebugStorageAt;
+        }
+
 
         public IEthApiService EthApiService { get; }
         public BlockParameter CurrentBlock { get; }
+        public IDebugApiService DebugApiService { get; }
+        public string BlockHash { get; }
+        public int TransactionIndex { get; }
+        public bool UseDebugStorageAt { get; }
 
         public async Task<BigInteger> GetBalanceAsync(string address)
         {
@@ -49,8 +66,27 @@ namespace Nethereum.EVM.BlockchainState
 
         public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
         {
-            var storage = await EthApiService.GetStorageAt.SendRequestAsync(address, new HexBigInteger(position), CurrentBlock);
-            return storage.HexToByteArray();
+            if (UseDebugStorageAt)
+            {
+               
+                var fullStorage = await DebugApiService.StorageRangeAt.SendRequestAsync(BlockHash, TransactionIndex, address, position, 1);
+                var foundStorage = fullStorage.Storage.Where(x => x.Value.Key.Value == position);
+                if (foundStorage.Any())
+                {
+                    return foundStorage.FirstOrDefault().Value.Value.HexToByteArray();
+                }
+                else
+                {
+                    var storage = await EthApiService.GetStorageAt.SendRequestAsync(address, new HexBigInteger(position), CurrentBlock);
+                    return storage.HexToByteArray();
+                }
+                
+            }
+            else
+            {
+                var storage = await EthApiService.GetStorageAt.SendRequestAsync(address, new HexBigInteger(position), CurrentBlock);
+                return storage.HexToByteArray();
+            }
         }
 
         public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)

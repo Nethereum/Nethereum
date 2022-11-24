@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Linq;
+using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
 {

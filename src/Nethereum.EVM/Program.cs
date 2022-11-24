@@ -1,6 +1,8 @@
 ﻿using Nethereum.ABI;
+using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;

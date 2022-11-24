@@ -11,6 +11,7 @@ namespace Nethereum.RPC.DebugNode
             GetRawHeader = new DebugGetRawHeader(client);
             GetRawReceipts = new DebugGetRawReceipts(client);
             GetRawTransaction = new DebugGetRawTransaction(client);
+            StorageRangeAt  = new DebugStorageRangeAt(client);
         }
 
         public IDebugGetBadBlocks GetBadBlocks { get; private set; }
@@ -22,5 +23,7 @@ namespace Nethereum.RPC.DebugNode
         public IDebugGetRawReceipts GetRawReceipts { get; private set; }
 
         public IDebugGetRawTransaction GetRawTransaction { get; private set; }
+
+        public IDebugStorageRangeAt StorageRangeAt { get; private set; }
     }
 }

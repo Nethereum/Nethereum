@@ -1,4 +1,6 @@
-﻿namespace Nethereum.EVM.Execution
+﻿using Nethereum.Util;
+
+namespace Nethereum.EVM.Execution
 {
     public class EvmBitwiseExecution
     {

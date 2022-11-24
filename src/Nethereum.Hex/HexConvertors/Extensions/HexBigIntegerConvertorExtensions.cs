@@ -8,6 +8,11 @@ namespace Nethereum.Hex.HexConvertors.Extensions
     {
         public static byte[] ToByteArray(this BigInteger value, bool littleEndian)
         {
+            return ConvertToByteArray(value, littleEndian);
+        }
+
+        public static byte[] ConvertToByteArray(this BigInteger value, bool littleEndian)
+        {
             byte[] bytes;
             if (BitConverter.IsLittleEndian != littleEndian)
                 bytes = value.ToByteArray().Reverse().ToArray();
@@ -24,7 +29,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 #if NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0_OR_GREATER
             var bytes = value.ToByteArray(true, !littleEndian);
 #else
-            var bytes = value.ToByteArray(littleEndian);
+            var bytes = value.ConvertToByteArray(littleEndian);
 #endif
 
             if (compact)
