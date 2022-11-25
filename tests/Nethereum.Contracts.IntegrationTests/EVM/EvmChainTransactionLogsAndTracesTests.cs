@@ -318,8 +318,8 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 if (useDebugStorageAt)
                 {
                     throw new Exception("Need an archive node configuration");
-                    var web32 = new Web3.Web3("https://rpc.archivenode.io/);
-                    nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(new HexBigInteger(txn.BlockNumber.Value - 1)), web32.Debug, block.BlockHash, (int)txn.TransactionIndex.Value);
+                    //var web32 = new Web3.Web3("https://rpc.archivenode.io/);
+                    //nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(new HexBigInteger(txn.BlockNumber.Value - 1)), web32.Debug, block.BlockHash, (int)txn.TransactionIndex.Value));
                 }
 
 

@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using Nethereum.EVM.SourceInfo;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.EVM
 {
@@ -8,6 +9,7 @@ namespace Nethereum.EVM
         public Instruction? Instruction { get; set; }
         public byte Value { get; set; }
         public byte[] Arguments { get; set; }
+        public SourceMap SourceMap { get; set; }
 
         public string ArgumentsAsHex(bool hexPrefixed = true)
         {
