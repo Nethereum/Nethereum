@@ -27,6 +27,7 @@ namespace Nethereum.EVM
         public BigInteger Gas => callInput.Gas;
         public BigInteger Value => callInput.Value;
         public string AddressOrigin { get; }
+        public string CodeAddress { get; }
         public BigInteger BlockNumber { get; }
         public BigInteger Timestamp { get; }
         public string Coinbase { get; }
@@ -34,11 +35,12 @@ namespace Nethereum.EVM
         public BigInteger GasPrice { get; internal set; } = 0;
         public BigInteger GasLimit { get; set; } = 10000000;
         public BigInteger Difficulty { get; set; } = 1;
+        public BigInteger Fee { get; set; }
 
         public ExecutionStateService ExecutionStateService { get; protected set; }
 
        
-        public ProgramContext(CallInput callInput, ExecutionStateService executionStateService, string addressOrigin = null, long blockNumber = 1, long timestamp = 1438269988, string coinbase = "0x0000000000000000000000000000000000000000", long baseFee = 1)
+        public ProgramContext(CallInput callInput, ExecutionStateService executionStateService, string addressOrigin = null, string codeAddress = null, long blockNumber = 1, long timestamp = 1438269988, string coinbase = "0x0000000000000000000000000000000000000000", long baseFee = 1)
         {
             if (addressOrigin == null) addressOrigin = callInput.From;
             AddressContractEncoded = new AddressType().Encode(callInput.To);
@@ -47,6 +49,15 @@ namespace Nethereum.EVM
             AddressCoinbaseEncoded = new AddressType().Encode(coinbase);
             DataInput = callInput.Data.HexToByteArray();
             AddressOrigin = addressOrigin;
+
+            //When delegating the state of the contract is not the same as the execution / program source one.
+            //The addressContractExecutionSource is the one matching the byteCode of the program, whilst To can be just the storage or both storage and execution
+            //so we have an extra field to track this.
+            if(string.IsNullOrEmpty(codeAddress))
+            {
+                codeAddress = callInput.To;
+            }
+            CodeAddress = codeAddress;
             ExecutionStateService = executionStateService;
            
             BlockNumber = blockNumber;

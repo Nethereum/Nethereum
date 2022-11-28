@@ -37,6 +37,7 @@ namespace Nethereum.EVM
         public Program(byte[] bytecode, ProgramContext programContext = null)
         {
             this.Instructions = ProgramInstructionsUtils.GetProgramInstructions(bytecode);
+            
             this.stack = new List<byte[]>();
             this.Memory = new List<byte>();
             ByteCode = bytecode;

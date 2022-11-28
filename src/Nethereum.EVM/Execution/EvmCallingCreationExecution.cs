@@ -62,7 +62,7 @@ namespace Nethereum.EVM.Execution
             program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
 
 
-            var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
+            var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller, null,
                 (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
             programContext.Difficulty = program.ProgramContext.Difficulty;
             programContext.GasLimit = program.ProgramContext.GasLimit;
@@ -166,7 +166,7 @@ namespace Nethereum.EVM.Execution
 
 
 
-        private async Task<List<ProgramTrace>> GenericCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled, BigInteger gas, byte[] codeAddress, BigInteger value, string from, string to, bool staticCall = false)
+        private async Task<List<ProgramTrace>> GenericCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled, BigInteger gas, byte[] codeAddress, BigInteger value, string from, string to,  bool staticCall = false)
         {
             var dataInputIndex = (int)program.StackPopAndConvertToBigInteger();
             var dataInputLength = (int)program.StackPopAndConvertToBigInteger();
@@ -202,8 +202,8 @@ namespace Nethereum.EVM.Execution
             };
 
             program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
-
-            var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(codeAddress.ConvertToEthereumChecksumAddress());
+            var codeAddressAsChecksum = codeAddress.ConvertToEthereumChecksumAddress();
+            var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(codeAddressAsChecksum);
             if (byteCode.Length == 0) // calling / transfering a non contract account
             {
                 try
@@ -236,7 +236,7 @@ namespace Nethereum.EVM.Execution
             {
 
 
-                var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller,
+                var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressCaller, codeAddress: codeAddressAsChecksum,
                         blockNumber: (long)program.ProgramContext.BlockNumber, timestamp: (long)program.ProgramContext.Timestamp,
                         coinbase: program.ProgramContext.Coinbase,
                         baseFee: (long)program.ProgramContext.BaseFee);
@@ -244,6 +244,7 @@ namespace Nethereum.EVM.Execution
                 programContext.GasLimit = program.ProgramContext.GasLimit;
                 var callProgram = new Program(byteCode, programContext);
                 var vm = new EVMSimulator(evmProgramExecutionParent);
+                program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeAddressAsChecksum, callProgram.Instructions);
                 try
                 {
                     callProgram = await vm.ExecuteAsync(callProgram, vmExecutionStep + 1, depth + 1, traceEnabled);
@@ -266,6 +267,10 @@ namespace Nethereum.EVM.Execution
                         program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
                         program.ProgramResult.InnerCalls.Add(callInput);
                         program.ProgramResult.InnerCalls.AddRange(callProgram.ProgramResult.InnerCalls);
+                        foreach(var codeItem in callProgram.ProgramResult.InnerContractCodeCalls)
+                        {
+                            program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeItem.Key, codeItem.Value);
+                        }
                         program.Step();
                     }
                     else

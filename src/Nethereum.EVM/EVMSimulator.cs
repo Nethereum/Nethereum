@@ -40,8 +40,8 @@ namespace Nethereum.EVM
                 if (traceEnabled)
                 {
                     
-                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, depth, program, currentInstruction);
-                     program.Trace.Add(trace);
+                    var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, depth, program, currentInstruction, program.ProgramContext.CodeAddress);
+                    program.Trace.Add(trace);
 #if DEBUG
                     if (EnableTraceToDebugOuptput)
                     {

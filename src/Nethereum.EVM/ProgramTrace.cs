@@ -8,6 +8,7 @@ namespace Nethereum.EVM
     public class ProgramTrace
     {
         public string ProgramAddress { get; set; }
+        public string CodeAddress { get; set; }
         public int VMTraceStep { get; set; }
         public int ProgramTraceStep { get; set; }
         public List<string> Stack { get; set; }
@@ -72,8 +73,12 @@ namespace Nethereum.EVM
             }
         }
 
-        public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, int depth, Program program, ProgramInstruction programInstructionExecuted)
+        public static ProgramTrace CreateTraceFromCurrentProgram(string programAddress, int vmTraceStep, int programTraceStep, int depth, Program program, ProgramInstruction programInstructionExecuted, string codeAddress = null)
         {
+            if (string.IsNullOrEmpty(codeAddress))
+            {
+                codeAddress = programAddress;
+            }
             var trace = new ProgramTrace()
             {
                 ProgramAddress = programAddress,
@@ -83,7 +88,8 @@ namespace Nethereum.EVM
                 Stack = program.GetCurrentStackAsHex(),
                 Memory = program.GetCurrentMemoryAsHex(),
                 Storage = program.ProgramContext.GetProgramContextStorageAsHex(),
-                Depth = depth
+                Depth = depth,
+                CodeAddress = codeAddress               
             };
             trace.InitialiseMemoryArray();            
             return trace;
