@@ -329,7 +329,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                     configureState(executionStateService);
                 }
 
-                var programContext = new ProgramContext(txnInput, executionStateService, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
+                var programContext = new ProgramContext(txnInput, executionStateService, null, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
                 var program = new Program(code.HexToByteArray(), programContext);
                 var evmSimulator = new EVMSimulator();
 

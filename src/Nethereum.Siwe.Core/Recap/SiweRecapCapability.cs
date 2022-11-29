@@ -65,14 +65,14 @@ namespace Nethereum.Siwe.Core.Recap
                 throw new SiweRecapException("Resource Urn is not of the SIWE Recap type.");
             }
 
-            string[] resourceUrnFields = resourceUrn.Split(':');
+            var resourceUrnFields = resourceUrn.Split(':');
             if (resourceUrnFields.Count() < 4)
             {
                 throw new SiweRecapException("Resource Urn has incorrect number of fields.");
             }
 
-            string siweNamespaceField    = resourceUrnFields[2];
-            string encodedJsonCapability = resourceUrnFields[3];
+            var siweNamespaceField    = resourceUrnFields[2];
+            var encodedJsonCapability = resourceUrnFields[3];
 
             if (string.IsNullOrEmpty(siweNamespaceField))
             {
@@ -84,15 +84,19 @@ namespace Nethereum.Siwe.Core.Recap
                 throw new SiweRecapException("Resource Urn has a null/empty Recap Object.");
             }
 
-            SiweNamespace siweNamespace = new SiweNamespace(siweNamespaceField);
-
-            string decodedJsonCapability =
-                Encoding.ASCII.GetString(Convert.FromBase64String(encodedJsonCapability));
-
-            SiweRecapCapabilitySeed? capabilitySeed =
+            var siweNamespace = new SiweNamespace(siweNamespaceField);
+            var base64EncodingCapability = Convert.FromBase64String(encodedJsonCapability);
+#if NETSTANDARD1_1
+            var decodedJsonCapability =
+               Encoding.UTF8.GetString(base64EncodingCapability, 0, base64EncodingCapability.Length);
+#else
+            var decodedJsonCapability =
+                   Encoding.ASCII.GetString(base64EncodingCapability, 0, base64EncodingCapability.Length);
+#endif
+            var capabilitySeed =
                  JsonConvert.DeserializeObject<SiweRecapCapabilitySeed?>(decodedJsonCapability);
 
-            SiweRecapCapability? capability = null;
+            SiweRecapCapability capability = null;
 
             if (capabilitySeed != null)
             {
@@ -110,16 +114,22 @@ namespace Nethereum.Siwe.Core.Recap
             return capability;
         }
 
-        public string Encode()
+        public string Encode(Formatting formatting = Formatting.Indented)
         {
-            string jsonCapability = JsonConvert.SerializeObject(this, Formatting.Indented);
+            var jsonCapability = JsonConvert.SerializeObject(this, formatting);
 
-            return Convert.ToBase64String(Encoding.ASCII.GetBytes(jsonCapability));
+#if NETSTANDARD1_1
+            var encodedJsonCapability = Encoding.UTF8.GetBytes(jsonCapability);
+#else
+            var encodedJsonCapability = Encoding.ASCII.GetBytes(jsonCapability);
+#endif
+
+            return Convert.ToBase64String(encodedJsonCapability);
         }
 
         public bool HasTargetPermission(string target, string action)
         {
-            HashSet<string>? targetActions = null;
+            HashSet<string> targetActions = null;
 
             return _targetedActions.TryGetValue(target, out targetActions) &&
                    (HasPermissionByDefault(action) || targetActions.Any(x => x.ToLower() == action.ToLower()));
@@ -147,7 +157,7 @@ namespace Nethereum.Siwe.Core.Recap
             return capabilityTextLines;
         }
 
-        #region Static Methods
+#region Static Methods
 
         static public string FormatDefaultActions(SiweNamespace siweNamespace, HashSet<string> actions)
         {
@@ -156,9 +166,13 @@ namespace Nethereum.Siwe.Core.Recap
 
         static public string FormatActions(SiweNamespace siweNamespace, string target, HashSet<string> actions)
         {
-            return string.Format("{0}: {1} for {2}.", siweNamespace, string.Join(", ", actions), target);
+#if DOTNET35
+            return string.Format("{0}: {1} for {2}.", siweNamespace, string.Join(", ", actions.ToArray()), target);
+#else
+            return string.Format("{0}: {1} for {2}.", siweNamespace, string.Join(", ", actions.ToArray()), target);
+#endif
         }
 
-        #endregion 
+        #endregion
     }
 }

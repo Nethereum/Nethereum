@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Nethereum.Siwe.Core;
-
 namespace Nethereum.Siwe.Core.Recap
 {
     using CapabilityMap = Dictionary<SiweNamespace, SiweRecapCapability>;
@@ -29,62 +27,68 @@ namespace Nethereum.Siwe.Core.Recap
             return lvalue.Equals(rvalue, StringComparison.OrdinalIgnoreCase);
         }
 
-        public static SiweMessage InitRecap(this SiweMessage msg, CapabilityMap capabilites, string delegateUri)
+        public static SiweMessage InitRecap(this SiweMessage siweMessage, CapabilityMap capabilites, string delegateUri)
         {
-            msg.InitRecapStatement(capabilites, delegateUri);
+            siweMessage.InitRecapStatement(capabilites, delegateUri);
 
-            msg.InitRecapResources(capabilites, delegateUri);
+            siweMessage.InitRecapResources(capabilites, delegateUri);
 
-            return msg;
+            return siweMessage;
         }
 
-        public static void InitRecapStatement(this SiweMessage msg, CapabilityMap capabilites, string delegateUri)
+        public static void InitRecapStatement(this SiweMessage siweMessage, CapabilityMap capabilites, string delegateUri)
         {
             var lineNum = 0;
 
-            StringBuilder recapStatementBuilder =
+            var recapStatementBuilder =
                 new StringBuilder(SiweRecapStatementPrefix + delegateUri + SiweRecapStatementSuffix);
 
             foreach (var siweNamespace in capabilites.Keys)
             {
                 var capability = capabilites[siweNamespace];
-
-                capability
-                    .ToStatementText(siweNamespace)
-                    .ToList()
-                    .ForEach(actionStmt =>
-                             recapStatementBuilder.Append(string.Format(" ({0}) {1}", ++lineNum, actionStmt)));
+                foreach (var actionStatement in capability
+                    .ToStatementText(siweNamespace))
+                {
+                    recapStatementBuilder.Append(string.Format(" ({0}) {1}", ++lineNum, actionStatement));
+                }
             }
 
-            msg.Statement = recapStatementBuilder.ToString();
+            siweMessage.Statement = recapStatementBuilder.ToString();
         }
 
-        public static void InitRecapResources(this SiweMessage msg, CapabilityMap capabilites, string delegateUri)
+        public static void InitRecapResources(this SiweMessage siweMessage, CapabilityMap capabilites, string delegateUri)
         {
-            msg.Resources = new List<string>();
+            siweMessage.Resources = new List<string>();
 
             foreach (var siweNamespace in capabilites.Keys)
             {
                 var capability = capabilites[siweNamespace];
 
-                msg.Resources.Add(string.Format("{0}:{1}:{2}"
+                siweMessage.Resources.Add(string.Format("{0}:{1}:{2}"
                                                 , SiweRecapResourcePrefix
                                                 , siweNamespace
                                                 , capability.Encode()));
             }
         }
 
-        public static bool HasPermissions(this SiweMessage msg, SiweNamespace ns, string target, string action)
+        public static bool HasPermissions(this SiweMessage siweMessage, SiweNamespace siweNamespace, string target, string action)
         {
-            bool hasPermissions = false;
+            var hasPermissions = false;
 
-            Dictionary<string, SiweRecapCapability>? capabilities = new Dictionary<string, SiweRecapCapability>();
-
-            msg.Resources?.ForEach(x => SiweRecapCapability.DecodeResourceUrn(x, capabilities));
-
-            if (capabilities.ContainsKey(ns.ToString()))
+            var capabilities = new Dictionary<string, SiweRecapCapability>();
+            
+            if(siweMessage.Resources!= null)
             {
-                SiweRecapCapability capability = capabilities[ns.ToString()];
+                foreach (var resource in siweMessage.Resources)
+                {
+                   capabilities.Add(resource, SiweRecapCapability.DecodeResourceUrn(resource, capabilities));
+                }
+            }
+
+            
+            if (capabilities.ContainsKey(siweNamespace.ToString()))
+            {
+                var capability = capabilities[siweNamespace.ToString()];
 
                 hasPermissions =
                     capability.DefaultActions.Any(x => x.EqualsIgnoreCase(action)) ||
@@ -95,45 +99,53 @@ namespace Nethereum.Siwe.Core.Recap
             return hasPermissions;
         }
 
-        public static bool HasStatementMatchingPermissions(this SiweMessage msg)
+        public static bool HasStatementMatchingPermissions(this SiweMessage siweMessage)
         {
-            bool matchingStmtAndPermissions = false;
+            var matchingStmtAndPermissions = false;
 
-            if (String.IsNullOrEmpty(msg.Statement) || !msg.Statement.Contains(SiweRecapStatementSuffix))
+            if (string.IsNullOrEmpty(siweMessage.Statement) || !siweMessage.Statement.Contains(SiweRecapStatementSuffix))
             {
                 throw new SiweRecapException("ERROR!  Invalid recap statement has been provided in the message.");
             }
 
-            if ((msg.Resources == null) || (msg.Resources.Count == 0))
+            if ((siweMessage.Resources == null) || (siweMessage.Resources.Count == 0))
             {
                 throw new SiweRecapException("ERROR!  No resources are contained in the message.");
             }
 
             var siweRecapCapabilitiesText
-                = msg.Statement.Substring(msg.Statement.IndexOf(SiweRecapStatementSuffix) + SiweRecapStatementSuffix.Length);
+                = siweMessage.Statement.Substring(siweMessage.Statement.IndexOf(SiweRecapStatementSuffix) + SiweRecapStatementSuffix.Length);
 
-            if (!String.IsNullOrEmpty(siweRecapCapabilitiesText))
+            if (!string.IsNullOrEmpty(siweRecapCapabilitiesText))
             {
-                bool matchesAllPermissions = true;
+                var matchesAllPermissions = true;
 
                 var capabilityPhrases       = new HashSet<string>();
                 var namespaceAndActionsList = new List<List<string>>();
 
-                siweRecapCapabilitiesText.Split('(')
-                                         .Where(x => x.Length > SiweRecapCapPhraseMinLength)
-                                         .ToList()
-                                         .ForEach(x => capabilityPhrases.Add(x.Replace(")", "")));
+                foreach(var minimumSiweRecapPhrase in siweRecapCapabilitiesText.Split('(')
+                                         .Where(x => x.Length > SiweRecapCapPhraseMinLength))
+                {
+                    capabilityPhrases.Add(minimumSiweRecapPhrase.Replace(")", ""));
+                }
 
-                capabilityPhrases
-                    .Select(x => Regex.Replace(x, @"^[\d-] ", ""))
-                    .Select(x => x.Remove(x.LastIndexOf("."), 1).Trim())
-                    .Where(x => x.Contains(":"))
-                    .Select(x => x.Split(':'))
-                    .ToList()
-                    .ForEach(x => namespaceAndActionsList.Add(new List<string>() {
-                                                                x[0],
-                                                                String.Join(':', x.Skip(1).Take(x.Length-1).ToArray()).Trim()
-                                                                }));
+                var nameSpaceAndActionItemsUntrimmed = capabilityPhrases
+                     .Select(x => Regex.Replace(x, @"^[\d-] ", ""))
+                     .Select(x => x.Remove(x.LastIndexOf("."), 1).Trim())
+                     .Where(x => x.Contains(":"))
+                     .Select(x => x.Split(':'));
+
+               foreach (var nameSpaceAndActionItemUntrimmed in nameSpaceAndActionItemsUntrimmed)
+                {
+                    namespaceAndActionsList.Add(
+                        new List<string>() {
+                        nameSpaceAndActionItemUntrimmed[0],
+                        string.Join(":", nameSpaceAndActionItemUntrimmed.Skip(1).Take(nameSpaceAndActionItemUntrimmed.Length-1).ToArray()).Trim()
+                      });
+                }
+
+              
+                    
                 if (namespaceAndActionsList.Count > 0)
                 {
                     foreach (var entry in namespaceAndActionsList)
@@ -141,9 +153,9 @@ namespace Nethereum.Siwe.Core.Recap
                         var tempNamespace       = new SiweNamespace(entry[0]);
                         var namespaceCapability = entry[1];
 
-                        if (!String.IsNullOrEmpty(namespaceCapability) && namespaceCapability.Contains(" for "))
+                        if (!string.IsNullOrEmpty(namespaceCapability) && namespaceCapability.Contains(" for "))
                         {
-                            var capabilitySplit = namespaceCapability.Split(" for ");
+                            var capabilitySplit = namespaceCapability.Split(new[] { " for " }, StringSplitOptions.None);
                             var actions         = capabilitySplit[0]?.Split(',');
                             var targets         = capabilitySplit[1]?.Split(',');
 
@@ -151,8 +163,13 @@ namespace Nethereum.Siwe.Core.Recap
                             {
                                 foreach (var action in actions)
                                 {
-                                    targets?.ToList()
-                                            .ForEach(x => matchesAllPermissions &= msg.HasPermissions(tempNamespace, x.Trim(), action.Trim()));
+                                    if (targets != null)
+                                    {
+                                        foreach (var target in targets)
+                                        {
+                                            matchesAllPermissions &= siweMessage.HasPermissions(tempNamespace, target.Trim(), action.Trim());
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -6,11 +6,11 @@ namespace Nethereum.Siwe.Core.Recap
     {
         private readonly string _namespace;
 
-        public SiweNamespace(string nmspace)
+        public SiweNamespace(string @namespace)
         {
-            Validate(nmspace);
+            Validate(@namespace);
 
-            _namespace = nmspace;
+            _namespace = @namespace;
         }
 
         public override string ToString()
@@ -18,13 +18,13 @@ namespace Nethereum.Siwe.Core.Recap
             return _namespace;
         }
 
-        private void Validate(string nmspace)
+        private void Validate(string @namespace)
         {
             var PreviousCharWasAlphanum = false;
 
-            foreach (char c in nmspace)
+            foreach (char c in @namespace)
             {
-                if (Char.IsLetterOrDigit(c))
+                if (char.IsLetterOrDigit(c))
                 {
                     PreviousCharWasAlphanum = true;
                     continue;

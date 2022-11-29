@@ -41,14 +41,14 @@ namespace Nethereum.Siwe.Core.Recap
 
         public SiweMessage Build()
         {
-            CapabilityMap capabilityMap = new CapabilityMap();
+            var capabilityMap = new CapabilityMap();
 
-            _capabilitySeedMap
-                .ToList()
-                .ForEach(x => capabilityMap[x.Key] = new SiweRecapCapability(x.Value.DefaultActions
-                                                                             , x.Value.TargetedActions
-                                                                             , new Dictionary<string, string>()));
-
+            foreach( var capability in _capabilitySeedMap)
+            {
+                capabilityMap[capability.Key] = new SiweRecapCapability(capability.Value.DefaultActions
+                                                                             , capability.Value.TargetedActions
+                                                                             , new Dictionary<string, string>());
+            }
             return _siweMessage.InitRecap(capabilityMap, _siweMessage.Uri);
         }
 
