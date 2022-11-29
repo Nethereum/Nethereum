@@ -244,15 +244,17 @@ namespace Nethereum.EVM.Execution
                 programContext.GasLimit = program.ProgramContext.GasLimit;
                 var callProgram = new Program(byteCode, programContext);
                 var vm = new EVMSimulator(evmProgramExecutionParent);
-                program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeAddressAsChecksum, callProgram.Instructions);
+                
                 try
                 {
+                    program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeAddressAsChecksum, callProgram.Instructions);
                     callProgram = await vm.ExecuteAsync(callProgram, vmExecutionStep + 1, depth + 1, traceEnabled);
                     if (callProgram.ProgramResult.IsRevert == false)
                     {
                         program.StackPush(1);
                         var result = callProgram.ProgramResult.Result;
                         program.ProgramResult.Result = callProgram.ProgramResult.Result;
+                        
 
                         if (program.ProgramResult.Result != null)
                         {
@@ -267,6 +269,7 @@ namespace Nethereum.EVM.Execution
                         program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
                         program.ProgramResult.InnerCalls.Add(callInput);
                         program.ProgramResult.InnerCalls.AddRange(callProgram.ProgramResult.InnerCalls);
+
                         foreach(var codeItem in callProgram.ProgramResult.InnerContractCodeCalls)
                         {
                             program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeItem.Key, codeItem.Value);
