@@ -24,7 +24,7 @@ namespace Nethereum.Signer
 
             if (signature != null && signature.V != null)
             {
-                if (signature.V[0] == 0)
+                if (signature.V.Length == 0 || signature.V[0] == 0)
                 {
                     v = DefaultValues.EMPTY_BYTE_ARRAY;
                 }

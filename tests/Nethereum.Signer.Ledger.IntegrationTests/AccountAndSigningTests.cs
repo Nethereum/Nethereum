@@ -29,59 +29,25 @@ namespace Nethereum.Ledger.IntegrationTests
 
         }
 
-        /* margin
-        multiply
-        license
-        alien
-        close
-        rain
-        master
-        violin
-        cheese
-        bonus
-        soccer
-        museum
-        eight
-        roof
-        defy
-        ghost
-        venue
-        obey
-        twelve
-        another
-        tattoo
-        inflict
-        sting
-        glue 
-
-        //legacy
-        m/44'/60'/0'/0
-        0x1996a57077877D38e18A1BE44A55100D77b8fA1D
-        0x128c6818917d98a3b933de1d400e777963424ce71f0a58755b092d1b670394eb 
-
-        //standard
-        m/44'/60'/0'/0/0
-        0x76579b7aD091747F9aF144C207e640136c47A6b8	
-        0x105023ddd0e214d9e79bd94639a896e5ef19d24e9cb9fe59baf12969ffe0101e
-        */
 
         [Fact]
-        public async Task TestSignatureLegacy()
+        public async Task TestSignatureStandard1559()
         {
-            var addressFrom = "0x1996a57077877D38e18A1BE44A55100D77b8fA1D";
-            var privateKey = "0x128c6818917d98a3b933de1d400e777963424ce71f0a58755b092d1b670394eb";
-
-            await Test(addressFrom, privateKey, true).ConfigureAwait(false);
+            var addressFrom = "0x07dCc60Ec5179f30ba30a2Ec25B683d5C5276025";
+            var privateKey = "0x32b28a67ec29294be914a356a9f439cf1fd8c56a400d897f75f46694fb06a9c9";
+            await Test1559(addressFrom, privateKey, false).ConfigureAwait(false);
         }
-        
-        public async Task Test(string addressFrom, string privateKey, bool legacy)
+
+
+        public async Task Test1559(string addressFrom, string privateKey, bool legacy)
         {
             var transfer = new TransferFunction();
             transfer.To = "0x12890d2cce102216644c59daE5baed380d848301";
             transfer.FromAddress = addressFrom;
             transfer.Value = 1;
             transfer.Nonce = 1;
-            transfer.GasPrice = 100;
+            transfer.MaxFeePerGas = 100;
+            transfer.MaxPriorityFeePerGas = 100;
             transfer.Gas = 1000;
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
@@ -104,6 +70,47 @@ namespace Nethereum.Ledger.IntegrationTests
             var signature3 = await externalAccount.TransactionManager.SignTransactionAsync(new TransactionInput()
             {
                 From = addressFrom,
+                MaxFeePerGas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_PRICE),
+                MaxPriorityFeePerGas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_PRICE),
+                Gas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_LIMIT),
+                Nonce = new HexBigInteger(1),
+                To = "0x12890d2cce102216644c59daE5baed380d848301",
+                Value = new HexBigInteger(100)
+
+            }).ConfigureAwait(false);
+        }
+
+        public async Task Test(string addressFrom, string privateKey, bool legacy)
+        {
+            var transfer = new TransferFunction();
+            transfer.To = "0x12890d2cce102216644c59daE5baed380d848301";
+            transfer.FromAddress = addressFrom;
+            transfer.Value = 1;
+            transfer.Nonce = 1;
+            transfer.GasPrice = 100;
+            transfer.Gas = 1000;
+            var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
+            var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
+
+            var account = new Account(privateKey, Chain.MainNet);
+
+            account.TransactionManager.Client = rpcClient;
+            var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
+
+            var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManagerAsync().ConfigureAwait(false);
+            var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), 1);
+            await externalAccount.InitialiseAsync().ConfigureAwait(false);
+            externalAccount.InitialiseDefaultTransactionManager(rpcClient);
+            //Ensure contract data is enable in the settings of ledger nano
+            externalAccount.TransactionManager.UseLegacyAsDefault = true;
+            var signature2 = await externalAccount.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
+
+            Assert.Equal(signature, signature2);
+
+            //Signing just transfer
+            var signature3 = await externalAccount.TransactionManager.SignTransactionAsync(new TransactionInput()
+            {
+                From = addressFrom,
                 GasPrice
                     = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_PRICE),
                 Gas = new HexBigInteger(LegacyTransaction.DEFAULT_GAS_LIMIT),
@@ -114,12 +121,11 @@ namespace Nethereum.Ledger.IntegrationTests
             }).ConfigureAwait(false);
         }
 
-
         [Fact]
         public async Task TestSignatureStandard()
         {
-            var addressFrom = "0x76579b7aD091747F9aF144C207e640136c47A6b8";
-            var privateKey = "0x105023ddd0e214d9e79bd94639a896e5ef19d24e9cb9fe59baf12969ffe0101e";
+            var addressFrom = "0x07dCc60Ec5179f30ba30a2Ec25B683d5C5276025";
+            var privateKey = "0x32b28a67ec29294be914a356a9f439cf1fd8c56a400d897f75f46694fb06a9c9";
 
             await Test(addressFrom, privateKey, false).ConfigureAwait(false);
 

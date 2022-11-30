@@ -80,10 +80,10 @@ namespace Nethereum.Ledger
 
         public override Task SignAsync(Transaction1559 transaction)
         {
-            throw new NotSupportedException();
+            return SignRLPTransactionAsync(transaction);
         }
 
-        public override bool Supported1559 { get; } = false;
+        public override bool Supported1559 { get; } = true;
         public byte[] GetPath()
         {
             if (!string.IsNullOrEmpty(_customPath))
