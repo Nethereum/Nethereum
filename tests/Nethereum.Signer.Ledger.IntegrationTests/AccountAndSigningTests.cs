@@ -80,7 +80,7 @@ namespace Nethereum.Ledger.IntegrationTests
             }).ConfigureAwait(false);
         }
 
-        public async Task Test(string addressFrom, string privateKey, bool legacy)
+        public async Task Test(string addressFrom, string privateKey, bool legacy, int chainId = 1)
         {
             var transfer = new TransferFunction();
             transfer.To = "0x12890d2cce102216644c59daE5baed380d848301";
@@ -92,13 +92,13 @@ namespace Nethereum.Ledger.IntegrationTests
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
 
-            var account = new Account(privateKey, Chain.MainNet);
+            var account = new Account(privateKey, chainId);
 
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
             var ledgerManager = await LedgerFactory.GetWindowsConnectedLedgerManagerAsync().ConfigureAwait(false);
-            var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), 1);
+            var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), chainId);
             await externalAccount.InitialiseAsync().ConfigureAwait(false);
             externalAccount.InitialiseDefaultTransactionManager(rpcClient);
             //Ensure contract data is enable in the settings of ledger nano
@@ -128,6 +128,26 @@ namespace Nethereum.Ledger.IntegrationTests
             var privateKey = "0x32b28a67ec29294be914a356a9f439cf1fd8c56a400d897f75f46694fb06a9c9";
 
             await Test(addressFrom, privateKey, false).ConfigureAwait(false);
+        }
+
+
+        [Fact]
+        public async Task TestSignatureStandardChainIdBigger109()
+        {
+            var addressFrom = "0x07dCc60Ec5179f30ba30a2Ec25B683d5C5276025";
+            var privateKey = "0x32b28a67ec29294be914a356a9f439cf1fd8c56a400d897f75f46694fb06a9c9";
+
+            await Test(addressFrom, privateKey, false, 43114).ConfigureAwait(false);
+        }
+
+        [Fact]
+        public async Task TestSignatureLegacyLedgerPath()
+        {
+           
+            var addressFrom = "0x169Bd01cdC01b9178EB8E53129469A598D7d840A";
+            var privateKey = "0x9ec15934765f15b8a52bca0c444e6effacdb1a82cfeae451ffbae1b679791e45";
+
+            await Test(addressFrom, privateKey, true).ConfigureAwait(false);
 
         }
     }

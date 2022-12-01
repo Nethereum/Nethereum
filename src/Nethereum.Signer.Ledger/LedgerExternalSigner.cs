@@ -22,8 +22,12 @@ namespace Nethereum.Ledger
         private readonly string _customPath;
         private readonly bool _legacyPath;
         public LedgerManager LedgerManager { get; }
-      
-        public override bool CalculatesV { get; protected set; } = true;
+        public  byte[] CurrentPublicKey { get; set;}
+
+        /// <summary>
+        /// Ledger does not support a V bigger than a byte, the response only returns 1 byte and r+s so calculations using the chainId will fail that result on something bigger than a byte.
+        /// </summary>
+        public override bool CalculatesV { get; protected set; } = false;
 
         public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.RLP;
 
@@ -45,14 +49,18 @@ namespace Nethereum.Ledger
 
         protected override async Task<byte[]> GetPublicKeyAsync()
         {
-            var path = GetPath();
-            var publicKeyResponse = await LedgerManager.SendRequestAsync<EthereumAppGetPublicKeyResponse, EthereumAppGetPublicKeyRequest>(new EthereumAppGetPublicKeyRequest(true, false, path)).ConfigureAwait(false);
-            if (publicKeyResponse.IsSuccess)
+            if (CurrentPublicKey == null)
             {
-                return publicKeyResponse.PublicKeyData;
+                var path = GetPath();
+                var publicKeyResponse = await LedgerManager.SendRequestAsync<EthereumAppGetPublicKeyResponse, EthereumAppGetPublicKeyRequest>(new EthereumAppGetPublicKeyRequest(true, false, path)).ConfigureAwait(false);
+                if (publicKeyResponse.IsSuccess)
+                {
+                    CurrentPublicKey = publicKeyResponse.PublicKeyData;
+                    return publicKeyResponse.PublicKeyData;
+                }
+                throw new Exception(publicKeyResponse.StatusMessage);
             }
-
-            throw new Exception(publicKeyResponse.StatusMessage);
+            return CurrentPublicKey;
         }
 
         protected override async Task<ECDSASignature> SignExternallyAsync(byte[] hash)

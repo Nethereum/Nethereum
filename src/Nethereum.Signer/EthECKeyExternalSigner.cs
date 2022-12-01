@@ -1,7 +1,9 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
+using Nethereum.Util;
 
 namespace Nethereum.Signer
 {
@@ -28,6 +30,10 @@ namespace Nethereum.Signer
             var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
 
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
+            {
+                rawBytes = new Sha3Keccack().CalculateHash(rawBytes);
+            }
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             var vChain = EthECKey.CalculateV(chainId, recId);
@@ -39,6 +45,11 @@ namespace Nethereum.Signer
         {
             var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
+
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
+            {
+                rawBytes = new Sha3Keccack().CalculateHash(rawBytes);
+            }
 
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
@@ -57,6 +68,11 @@ namespace Nethereum.Signer
         {
             var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
             if (CalculatesV) return new EthECDSASignature(signature);
+
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
+            {
+                rawBytes = new Sha3Keccack().CalculateHash(rawBytes);
+            }
 
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
             var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
@@ -93,6 +109,7 @@ namespace Nethereum.Signer
 
         protected async Task SignRLPTransactionAsync(LegacyTransactionChainId transaction)
         {
+        
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {
                 var signature = await SignAsync(transaction.GetRLPEncodedRaw(), transaction.GetChainIdAsBigInteger()).ConfigureAwait(false);
