@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Signer.Ledger</AssemblyName>
     <PackageId>Nethereum.Signer.Ledger</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Ledger</PackageTags>
+	 <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +17,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Ledger.Net" Version="2.0.0" />
+    <PackageReference Include="Ledger.Net" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
