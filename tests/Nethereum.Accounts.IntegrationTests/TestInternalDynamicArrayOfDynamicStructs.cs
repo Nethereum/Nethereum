@@ -17,6 +17,7 @@ using Newtonsoft.Json.Linq;
 using Nethereum.Hex.HexTypes;
 using System.Linq;
 
+
 namespace Nethereum.Accounts.IntegrationTests
 {
 
@@ -122,7 +123,7 @@ contract StructsSample2
 
 */
 
-        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+    private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
         public TestInternalDynamicArrayOfDynamicStructs(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
         {

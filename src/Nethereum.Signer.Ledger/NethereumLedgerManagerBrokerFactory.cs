@@ -16,7 +16,7 @@ using System.Linq;
 
 namespace Nethereum.Ledger
 {
-    public class LedgerManagerBrokerFactory
+    public class NethereumLedgerManagerBrokerFactory
     {
         public static LedgerManagerBroker CreateWindowsHidUsb()
         {

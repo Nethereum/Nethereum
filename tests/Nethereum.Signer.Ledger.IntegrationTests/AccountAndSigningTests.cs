@@ -52,7 +52,7 @@ namespace Nethereum.Ledger.IntegrationTests
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
-            var ledgerManagerBroker = LedgerManagerBrokerFactory.CreateWindowsHidUsb();
+            var ledgerManagerBroker = NethereumLedgerManagerBrokerFactory.CreateWindowsHidUsb();
             var ledgerManager = (LedgerManager)await ledgerManagerBroker.WaitForFirstDeviceAsync();
             var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), 1);
             await externalAccount.InitialiseAsync().ConfigureAwait(false);
@@ -104,7 +104,7 @@ namespace Nethereum.Ledger.IntegrationTests
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
-            var ledgerManagerBroker = LedgerManagerBrokerFactory.CreateWindowsHidUsb();
+            var ledgerManagerBroker = NethereumLedgerManagerBrokerFactory.CreateWindowsHidUsb();
             var ledgerManager = (LedgerManager)await ledgerManagerBroker.WaitForFirstDeviceAsync();
             var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), chainId);
             await externalAccount.InitialiseAsync().ConfigureAwait(false);
@@ -133,7 +133,7 @@ namespace Nethereum.Ledger.IntegrationTests
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
 
-            var ledgerManagerBroker = LedgerManagerBrokerFactory.CreateWindowsHidUsb();
+            var ledgerManagerBroker = NethereumLedgerManagerBrokerFactory.CreateWindowsHidUsb();
             var ledgerManager = (LedgerManager)await ledgerManagerBroker.WaitForFirstDeviceAsync();
             var externalAccount = new ExternalAccount(new LedgerExternalSigner(ledgerManager, 0, legacy), chainId);
             await externalAccount.InitialiseAsync().ConfigureAwait(false);
