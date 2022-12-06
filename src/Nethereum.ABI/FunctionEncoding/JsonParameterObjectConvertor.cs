@@ -23,7 +23,7 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (var parameter in parametersInOrder)
             {
                 var abiType = parameter.ABIType;
-                var jToken = jObject[parameter.Name];
+                var jToken = jObject[parameter.GetParameterNameUsingDefaultIfNotSet()];
 
                 AddJTokenValueInputParameters(output, abiType, jToken);
             }

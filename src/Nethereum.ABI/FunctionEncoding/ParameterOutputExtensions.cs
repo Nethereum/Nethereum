@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
+
     public static class ParameterOutputExtensions
     {
 
@@ -19,7 +21,7 @@ namespace Nethereum.ABI.FunctionEncoding
             {
                 if (item.Parameter.ABIType is ArrayType)
                 {
-                    AppendObjectTitle(stringBuilder, item.Parameter.Name, level);
+                    AppendObjectTitle(stringBuilder, item.Parameter.GetParameterNameUsingDefaultIfNotSet(), level);
                     stringBuilder.AppendLine(ConvertArrayToString((IEnumerable)item.Result, level + 1));
                 }
                 else
@@ -27,12 +29,13 @@ namespace Nethereum.ABI.FunctionEncoding
                     if (item.Parameter.ABIType is TupleType)
                     {
                         var itemTupleResult = (List<ParameterOutput>)item.Result;
-                        AppendObjectTitle(stringBuilder, item.Parameter.Name, level);
+                        AppendObjectTitle(stringBuilder, item.Parameter.
+                           GetParameterNameUsingDefaultIfNotSet(), level);
                         stringBuilder.AppendLine(ConvertToString(itemTupleResult, level + 1));
                     }
                     else
                     {
-                        AppendLevel(stringBuilder, item.Parameter.Name, item.Result, level);
+                        AppendLevel(stringBuilder, item.Parameter.GetParameterNameUsingDefaultIfNotSet(), item.Result, level);
                     }
                 }
             }
@@ -105,18 +108,18 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (item.Parameter.ABIType is ArrayType)
                 {
                     var innerItems = ConvertArrayToObjectDictionary((IEnumerable)item.Result);
-                    dictionary.Add(item.Parameter.Name, innerItems);
+                    dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), innerItems);
                 }
                 else
                 {
                     if (item.Parameter.ABIType is TupleType)
                     {
                         var itemTupleResult = (List<ParameterOutput>)item.Result;
-                        dictionary.Add(item.Parameter.Name, ConvertToObjectDictionary(itemTupleResult));
+                        dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), ConvertToObjectDictionary(itemTupleResult));
                     }
                     else
                     {
-                        dictionary.Add(item.Parameter.Name, item.Result);
+                        dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), item.Result);
                     }
                 }
             }
@@ -165,18 +168,18 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (item.Parameter.ABIType is ArrayType)
                 {
                     var innerItems = ConvertArrayToDynamicDictionary((IEnumerable)item.Result);
-                    dictionary.Add(item.Parameter.Name, innerItems);
+                    dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), innerItems);
                 }
                 else
                 {
                     if (item.Parameter.ABIType is TupleType)
                     {
                         var itemTupleResult = (List<ParameterOutput>)item.Result;
-                        dictionary.Add(item.Parameter.Name, ConvertToDynamicDictionary(itemTupleResult));
+                        dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), ConvertToDynamicDictionary(itemTupleResult));
                     }
                     else
                     {
-                        dictionary.Add(item.Parameter.Name, item.Result);
+                        dictionary.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), item.Result);
                     }
                 }
             }
@@ -223,14 +226,14 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (item.Parameter.ABIType is ArrayType)
                 {
                     var innerItems = ConvertToJArray((IEnumerable)item.Result);
-                    jObject.Add(item.Parameter.Name, innerItems);
+                    jObject.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), innerItems);
                 }
                 else
                 {
                     if (item.Parameter.ABIType is TupleType)
                     {
                         var itemTupleResult = (List<ParameterOutput>)item.Result;
-                        jObject.Add(item.Parameter.Name, ConvertToJObject(itemTupleResult));
+                        jObject.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), ConvertToJObject(itemTupleResult));
                     }
                     else
                     {
@@ -245,7 +248,8 @@ namespace Nethereum.ABI.FunctionEncoding
                             value = value.ToString();
                         }
 
-                        jObject.Add(item.Parameter.Name, JToken.FromObject(value));
+
+                        jObject.Add(item.Parameter.GetParameterNameUsingDefaultIfNotSet(), JToken.FromObject(value));
                         
                     }
                 }
