@@ -11,6 +11,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3.Accounts;
+using Org.BouncyCastle.Asn1.Ocsp;
 using Trezor.Net.Contracts.Ethereum;
 
 // ReSharper disable AsyncConverter.AsyncWait
@@ -23,7 +24,7 @@ namespace Nethereum.Signer.Trezor.Console
 
         static async Task Main(string[] args)
         {
-            // TestMessageSigning().Wait();
+            await TestMessageSigningAsync();
             await TestDeployment1559Async();
             await TestDeploymentAsync();
             await TestTransactionSigning();
@@ -56,23 +57,26 @@ namespace Nethereum.Signer.Trezor.Console
         limb
         knock
         */
-        //public static async Task TestMessageSigning()
-        //{
-        //    using (var trezorManager = await TrezorFactory.GetWindowsConnectedLedgerManagerAsync(GetPin))
-        //    {
-        //        await trezorManager.InitializeAsync();
-        //        var signer = new TrezorExternalSigner(trezorManager, 0);
-        //        var address = await signer.GetAddressAsync();
-        //        var messageSignature = await signer.SignAsync(Encoding.UTF8.GetBytes("Hello"));
+        public static async Task TestMessageSigningAsync()
+        {
+            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
+            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-        //        var nethereumMessageSigner = new Nethereum.Signer.EthereumMessageSigner();
-        //        var nethereumMessageSignature = nethereumMessageSigner.EncodeUTF8AndSign("Hello", new EthECKey(
-        //            "0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29"));
-        //        System.Console.WriteLine("Trezor: " + EthECDSASignature.CreateStringSignature(messageSignature));
-        //        System.Console.WriteLine("Nethereum: " + nethereumMessageSignature);
 
-        //    }
-        //}
+            await trezorManager.InitializeAsync();
+         
+                var signer = new TrezorExternalSigner(trezorManager, 0);
+                var address = await signer.GetAddressAsync();
+                var messageSignature = await signer.SignAsync(Encoding.UTF8.GetBytes("Hello"));
+
+                var nethereumMessageSigner = new Nethereum.Signer.EthereumMessageSigner();
+                var nethereumMessageSignature = nethereumMessageSigner.EncodeUTF8AndSign("Hello", new EthECKey(
+                    "0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29"));
+                System.Console.WriteLine("Trezor: " + EthECDSASignature.CreateStringSignature(messageSignature));
+                System.Console.WriteLine("Nethereum: " + nethereumMessageSignature);
+               System.Console.WriteLine(EthECDSASignature.CreateStringSignature(messageSignature).IsTheSameHex(nethereumMessageSignature));
+
+        }
 
         public class StandardTokenDeployment : ContractDeploymentMessage
         {
@@ -184,7 +188,8 @@ namespace Nethereum.Signer.Trezor.Console
             var signatureNethereum = await accountNethereum.TransactionManager.SignTransactionAsync(tx);
             System.Console.WriteLine("Trezor: " + signature);
             System.Console.WriteLine("Nethereum: " + signatureNethereum);
-            
+            System.Console.WriteLine(signature.IsTheSameHex(signatureNethereum));
+
         }
 
 
@@ -235,7 +240,8 @@ namespace Nethereum.Signer.Trezor.Console
                 
                 System.Console.WriteLine("Trezor: " + signature);
                 System.Console.WriteLine("Nethereum: " + signatureNethereum);
-            
+               System.Console.WriteLine(signature.IsTheSameHex(signatureNethereum));
+
         }
 
 
