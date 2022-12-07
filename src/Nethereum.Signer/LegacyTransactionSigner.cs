@@ -274,7 +274,7 @@ namespace Nethereum.Signer
             BigInteger gasLimit, string data)
         {
             var transaction = new LegacyTransactionChainId(to, amount, nonce, gasPrice, gasLimit, data, chainId);
-            return SignTransactionAsync(externalSigner, transaction);
+                return SignTransactionAsync(externalSigner, transaction);
         }
 #endif
 

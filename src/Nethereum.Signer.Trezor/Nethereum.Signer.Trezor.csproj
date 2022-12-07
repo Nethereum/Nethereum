@@ -5,7 +5,7 @@
     <Description>Netherum.Signer.Trezor provides the External Signing capability for Ethereum transactions and Messages using Trezor Hardware wallets</Description>
     <AssemblyTitle>Nethereum.Signer.Trezor</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net5.0;netstandard2.0</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.Trezor</AssemblyName>
     <PackageId>Nethereum.Signer.Trezor</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Trezor</PackageTags>
@@ -16,7 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Trezor.Net" Version="2.4.0" />
+    <PackageReference Include="Hid.Net" Version="4.3.0-beta" />
+    <PackageReference Include="Trezor.Net" Version="5.0.0-beta" />
+    <PackageReference Include="Usb.Net" Version="4.3.0-beta" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">

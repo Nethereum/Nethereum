@@ -1,28 +1,27 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Hid.Net;
+using Microsoft.Extensions.Logging;
 using Trezor.Net;
+using Hid.Net.Windows;
+using Usb.Net.Windows;
+using Trezor.Net.Manager;
+using Device.Net;
+using static Nethereum.Signer.Trezor.Internal.ExtendedMessageType;
+using Nethereum.Signer.Trezor.Internal;
 
 namespace Nethereum.Signer.Trezor
 {
-    public class TrezorFactory
+    public class NethereumTrezorManagerBrokerFactory
     {
-        public static async Task<IHidDevice> GetWindowsConnectedLedgerHidDeviceAsync()
+        public static ExtendedTrezorManagerBroker CreateWindowsHidUsb(EnterPinArgs enterPinCallback, EnterPinArgs enterPassPhrase, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
         {
-            var connectedDevices = WindowsHidDevice.GetConnectedDeviceInformations();
-
-            var trezorDevices = connectedDevices.Where(d => d.VendorId == TrezorManager.TrezorVendorId && TrezorManager.TrezorProductId == 1).ToList();
-            var trezorDeviceInformation = trezorDevices.FirstOrDefault(t => t.Product == TrezorManager.USBOneName);
-
-            var trezorHidDevice = new WindowsHidDevice(trezorDeviceInformation);
-            await trezorHidDevice.InitializeAsync().ConfigureAwait(false);
-            return trezorHidDevice;
-        }
-
-        public static async Task<TrezorManager> GetWindowsConnectedLedgerManagerAsync(EnterPinArgs enterPinCallback)
-        {
-            var trezorHidDevice = await GetWindowsConnectedLedgerHidDeviceAsync().ConfigureAwait(false);
-            return new TrezorManager(enterPinCallback, trezorHidDevice);
+            
+            var hidFactory = TrezorManager.DeviceDefinitions.CreateWindowsHidDeviceFactory();
+            var usbFactory = TrezorManager.DeviceDefinitions.CreateWindowsUsbDeviceFactory();
+            var aggregateFactory = usbFactory.Aggregate(hidFactory, loggerFactory);
+            return new ExtendedTrezorManagerBroker(enterPinCallback, enterPassPhrase, 2000, aggregateFactory, new DefaultCoinUtility(), loggerFactory);
         }
     }
+
+    
 }
