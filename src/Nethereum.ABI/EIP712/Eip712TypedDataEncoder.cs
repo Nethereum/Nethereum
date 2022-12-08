@@ -45,6 +45,15 @@ namespace Nethereum.ABI.EIP712
             return EncodeTypedDataRaw(typedDataRaw);
         }
 
+        /// <summary>
+        /// Encode typed data using a non standard json, which may not include the Domain type and uses a different key selector for message
+        /// </summary>
+         public byte[] EncodeTypedData<DomainType>(string json, string messageKeySelector = "message")
+        {
+            var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData<DomainType>(json, messageKeySelector);
+            return EncodeTypedDataRaw(typedDataRaw);
+        }
+
         public byte[] EncodeAndHashTypedData<T, TDomain>(T message, TypedData<TDomain> typedData)
         {
             var encodedData = EncodeTypedData(message, typedData);
@@ -170,7 +179,15 @@ namespace Nethereum.ABI.EIP712
                         }
                     case "bytes":
                         {
-                            var value = (byte[])memberValue.Value;
+                            byte[] value;
+                            if (memberValue.Value is string)
+                            {
+                                value = ((string)memberValue.Value).HexToByteArray();
+                            }
+                            else
+                            {
+                                value = (byte[])memberValue.Value;
+                            }
                             var abiValueEncoded = Sha3Keccack.Current.CalculateHash(value);
                             writer.Write(abiValueEncoded);
                             break;

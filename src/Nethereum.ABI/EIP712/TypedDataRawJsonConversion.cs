@@ -3,6 +3,8 @@ using System.Collections;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Nethereum.ABI.ABIDeserialisation;
+using System.Linq;
+using System;
 
 namespace Nethereum.ABI.EIP712
 {
@@ -25,16 +27,44 @@ namespace Nethereum.ABI.EIP712
             return SerialiseTypedDataToJson(typedData, message);
         }
 
-        public static TypedDataRaw DeserialiseJsonToRawTypedData(string json)
+        /// <summary>
+        /// Encode typed data using a non standard json (streamlined)
+        /// if a Domain type is not included in the json, the generic DomainType will be used
+        /// enables using a different message key selector
+        /// if a primary type is not set and it includes only a single type this will be used as the primary type
+        /// </summary>
+        public static TypedDataRaw DeserialiseJsonToRawTypedData<DomainType>(string json, string messageKeySelector = "message")
         {
             var convertor = new ExpandoObjectConverter();
             var jsonDeserialised = JsonConvert.DeserializeObject<IDictionary<string, object>>(json, convertor);
             var types = jsonDeserialised["types"] as IDictionary<string, object>;
             var typeMemberDescriptions = GetMemberDescriptions(types);
+            if (!typeMemberDescriptions.ContainsKey("EIP712Domain"))
+            {
+                var domainMemberDescription = MemberDescriptionFactory.GetTypesMemberDescription(typeof(DomainType)).FirstOrDefault();
+                typeMemberDescriptions.Add(domainMemberDescription.Key, domainMemberDescription.Value);
+            }
 
             var domainValues = GetMemberValues((IDictionary<string, object>)jsonDeserialised["domain"], "EIP712Domain", typeMemberDescriptions);
-            var primaryType = (string)jsonDeserialised["primaryType"];
-            var message = jsonDeserialised["message"];
+            var primaryType = string.Empty;
+
+            if (jsonDeserialised.ContainsKey("primaryType"))
+            {
+                primaryType = jsonDeserialised["primaryType"].ToString();
+            }
+            else
+            {
+                if (types.Count == 1)
+                {
+                    primaryType = types.First().Key;
+                }
+                else
+                {
+                    throw new Exception("Primary type not set");
+                }
+            }
+
+            var message = jsonDeserialised[messageKeySelector];
             var messageValues = GetMemberValues((IDictionary<string, object>)message, primaryType, typeMemberDescriptions);
 
             var rawTypedData = new TypedDataRaw()
@@ -46,6 +76,12 @@ namespace Nethereum.ABI.EIP712
             };
 
             return rawTypedData;
+        }
+
+
+        public static TypedDataRaw DeserialiseJsonToRawTypedData(string json)
+        {
+            return DeserialiseJsonToRawTypedData<Domain>(json);
         }
 
         public static string SerialiseTypedDataToJson<TMessage, TDomain>(TypedData<TDomain> typedData, TMessage message)

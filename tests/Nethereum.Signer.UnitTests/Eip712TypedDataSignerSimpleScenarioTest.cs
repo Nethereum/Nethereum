@@ -7,6 +7,7 @@ using Nethereum.ABI.EIP712;
 
 namespace Nethereum.Signer.UnitTests
 {
+
     public class Eip712TypedDataSignerSimpleScenarioTest
     {
         private readonly Eip712TypedDataSigner _signer = new Eip712TypedDataSigner();
