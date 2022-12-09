@@ -1,6 +1,4 @@
 ﻿using Nethereum.EVM.Execution;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Bcpg;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,8 +19,9 @@ namespace Nethereum.EVM
             EnableTraceToDebugOuptput = enableTraceToDebugOuptput;
         }
         public bool EnableTraceToDebugOuptput { get; }
-        public EvmProgramExecution EvmProgramExecution { get; }
+       
 #endif
+        public EvmProgramExecution EvmProgramExecution { get; }
         public EVMSimulator(EvmProgramExecution evmProgramExecution = null)
        {
             EvmProgramExecution = evmProgramExecution ?? new EvmProgramExecution();
