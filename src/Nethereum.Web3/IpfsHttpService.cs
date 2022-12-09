@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -70,6 +72,28 @@ namespace Nethereum.Web3
 
                     return message;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Cat returns the file as it is stored
+        /// </summary>
+        public async Task<Stream> CatAsync(string path)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
+                var query = new StringBuilder();
+                if (path != null)
+                {
+                    query.Append("?arg=");
+                    query.Append(WebUtility.UrlEncode(path));
+                }
+                var fullUrl = Url + "/cat" + query.ToString();
+
+                var httpResponseMessage = await httpClient.PostAsync(fullUrl, null).ConfigureAwait(false);
+                httpResponseMessage.EnsureSuccessStatusCode();
+                return await httpResponseMessage.Content.ReadAsStreamAsync();
             }
         }
 
