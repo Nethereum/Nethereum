@@ -19,7 +19,7 @@ namespace Nethereum.Generators.DTOs
             NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
         }
 
-        public bool CanGenerateOutputDTO()
+        public bool HasParameters()
         {
             return ErrorABI.InputParameters != null && ErrorABI.InputParameters.Length > 0;
         }
