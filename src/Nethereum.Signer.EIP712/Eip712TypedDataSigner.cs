@@ -12,8 +12,6 @@ namespace Nethereum.Signer.EIP712
     {
         
         private readonly EthereumMessageSigner _signer = new EthereumMessageSigner();
-        
-
         public static Eip712TypedDataSigner Current { get; } = new Eip712TypedDataSigner();
 
         /// <summary>
@@ -56,6 +54,18 @@ namespace Nethereum.Signer.EIP712
             return EthECDSASignature.CreateStringSignature(signature);
         }
 
+        /// <summary>
+        /// Sign typed data using a non standard json (streamlined)
+        /// if a Domain type is not included in the json, the generic DomainType will be used
+        /// enables using a different message key selector
+        /// if a primary type is not set and if it includes only a single type this will be used as the primary type
+        /// </summary>
+        public string SignTypedDataV4<TDomain>(string json, EthECKey key, string messageKeySelector = "message")
+        {
+            var encodedData = EncodeTypedData<TDomain>(json, messageKeySelector);
+            var signature = key.SignAndCalculateV(Sha3Keccack.Current.CalculateHash(encodedData));
+            return EthECDSASignature.CreateStringSignature(signature);
+        }
 
 
         /// <summary>
@@ -112,6 +122,18 @@ namespace Nethereum.Signer.EIP712
         public byte[] EncodeTypedData(string json)
         {
             return Eip712TypedDataEncoder.Current.EncodeTypedData(json);
+        }
+
+
+        /// <summary>
+        /// Encode typed data using a non standard json (streamlined)
+        /// if a Domain type is not included in the json, the generic DomainType will be used
+        /// enables using a different message key selector
+        /// if a primary type is not set and if it includes only a single type this will be used as the primary type
+        /// </summary>
+        public byte[] EncodeTypedData<TDomain>(string json, string messageKeySelector = "message")
+        {
+            return Eip712TypedDataEncoder.Current.EncodeTypedData<TDomain>(json, messageKeySelector);
         }
 
         public byte[] EncodeTypedData<T, TDomain>(T message, TypedData<TDomain> typedData)
