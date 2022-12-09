@@ -3,6 +3,7 @@ del /S compiledlibraries\net461dllsAOT\*.dll
 SET releaseSuffix=
 SET targetNet35=false
 
+
 cd Nethereum.Hex
 CALL :build
 cd ..
@@ -79,7 +80,11 @@ cd Nethereum.Accounts*
 CALL :build
 cd ..
 
-cd Nethereum.Unity*
+cd Nethereum.Unity
+CALL :build
+cd ..
+
+cd Nethereum.Unity.Metamask
 CALL :build
 cd ..
 

@@ -1,5 +1,5 @@
 rem packing web3 and dependencies
-del /S compiledlibraries\netStandardAOT\*.dll
+del /S compiledlibraries\netStandard\*.dll
 SET releaseSuffix=
 SET targetNet35=false
 
@@ -100,6 +100,10 @@ CALL :build
 cd..
 
 cd Nethereum.Optimism
+CALL :build
+cd ..
+
+cd Nethereum.EVM
 CALL :build
 cd ..
 

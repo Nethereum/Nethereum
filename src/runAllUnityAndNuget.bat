@@ -1,4 +1,4 @@
-
+start /wait cmd /k CALL  net461AOT.bat
 start /wait cmd /k CALL  netStandardUnityAOT.bat
 start /wait cmd /k CALL netStandardMinimalWebglUnityAOT-copyDlls.bat
 start /wait cmd /k CALL netStandardCommonUnityAOT-copyDlls.bat
