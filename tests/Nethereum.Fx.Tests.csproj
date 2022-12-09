@@ -182,6 +182,18 @@
     <None Update="appsettings.test.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Nethereum.Contracts.IntegrationTests\EVM\Traces\0x2ab5b72b40d8d004d40258e7a8296d512a0d805c1f73603ddba4069a80e40946.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Nethereum.Contracts.IntegrationTests\EVM\Traces\0x6669284f4072af03600f95bc4c1ed3499e1658dab87615cfd03775fea13a82b7.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Nethereum.Contracts.IntegrationTests\EVM\Traces\0x763774a4a954d0deccf9d054ed8164cef1e6762a45cdc30457b5c2770c833300.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Nethereum.Contracts.IntegrationTests\EVM\Traces\0xb9f4e6e5c90329a43da70ced8e8974c3fa34e67e32283bfa82778296fa79dd98.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Nethereum.RPC.UnitTests\openrpc.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	    <TargetPath>openrpc.json</TargetPath>

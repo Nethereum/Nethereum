@@ -95,6 +95,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM.WalletForwarderTests
             { 
                 FromAddress = EthereumClientIntegrationFixture.AccountAddress,
             }.CreateCallInput(contractCalculatedAddress);
+            destinationCallInput.ChainId = new HexBigInteger(EthereumClientIntegrationFixture.ChainId);
             programContext = new ProgramContext(destinationCallInput, executionStateService);
             var newCode = await executionStateService.GetCodeAsync(contractCalculatedAddress);
             program = new Program(newCode, programContext);
@@ -110,8 +111,9 @@ namespace Nethereum.Contracts.IntegrationTests.EVM.WalletForwarderTests
             {
                 From = EthereumClientIntegrationFixture.AccountAddress,
                 Value = new HexBigInteger(5000),
-                To = contractCalculatedAddress
-            };
+                To = contractCalculatedAddress,
+                ChainId = new HexBigInteger(EthereumClientIntegrationFixture.ChainId)
+        };
 
             programContext = new ProgramContext(callInputTransferEther, executionStateService);
             newCode = await executionStateService.GetCodeAsync(contractCalculatedAddress);
