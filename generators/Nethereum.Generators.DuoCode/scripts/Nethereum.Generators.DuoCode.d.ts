@@ -1149,7 +1149,7 @@ declare module Nethereum {
             // Nethereum.Generators.DTOs.ErrorDTOModel
             export interface ErrorDTOModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
                 get_ErrorABI(): Model.ErrorABI;
-                CanGenerateOutputDTO(): boolean;
+                HasParameters(): boolean;
             }
             export interface ErrorDTOModelTypeFunc extends TypeFunction {
                 (): ErrorDTOModelTypeFunc;
