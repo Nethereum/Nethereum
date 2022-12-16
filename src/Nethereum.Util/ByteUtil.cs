@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Nethereum.RLP;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Text;
 
 namespace Nethereum.Util
 {
@@ -115,6 +118,7 @@ namespace Nethereum.Util
 //#endif
         }
 
+       
         public static byte[] ShiftRight(this byte[] value, int shift)
         {
 //#if NETCOREAPP2_0_OR_GREATER
@@ -143,6 +147,77 @@ namespace Nethereum.Util
 
             return newValue;
 //#endif
+        }  
+    }
+
+    public class ByteBigEndianComparer : IComparer<byte[]>
+    {
+        public readonly static ByteBigEndianComparer Current = new ByteBigEndianComparer();
+
+        public int Compare(byte[] x, byte[] y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            if (BitConverter.IsLittleEndian) {
+                x = x.Reverse().ToArray();
+                y = y.Reverse().ToArray();
+            }
+            return new BigInteger(x).CompareTo(new BigInteger(y));
+        }
+
+       
+    }
+
+    public class ByteListBigEndianComparer : IComparer<IList<byte>>
+    {
+        public readonly static ByteBigEndianComparer Current = new ByteBigEndianComparer();
+
+        public int Compare(IList<byte> x, IList<byte> y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            if (BitConverter.IsLittleEndian)
+            {
+                x = x.Reverse().ToArray();
+                y = y.Reverse().ToArray();
+            }
+            return new BigInteger(x.ToArray()).CompareTo(new BigInteger(y.ToArray()));
+        }
+
+
+    }
+
+    public class ByteListComparer : IComparer<IList<byte>>
+    {
+        public readonly static ByteListComparer Current = new ByteListComparer();
+
+        public int Compare(byte[] x, byte[] y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            return Compare(x.ToList(), y.ToList());
+        }
+
+        public int Compare(IList<byte> x, IList<byte> y)
+        {
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+            
+            int result;
+            int min = Math.Min(x.Count, y.Count);
+            for (int index = 0; index < min; index++)
+            {
+                result = x[index].CompareTo(y[index]);
+                if (result != 0) return result;
+            }
+            return x.Count().CompareTo(y.Count());
         }
     }
 }

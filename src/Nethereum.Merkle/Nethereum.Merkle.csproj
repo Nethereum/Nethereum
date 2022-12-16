@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>Nethereum Merkle trees</Description>
+		<AssemblyTitle>Nethereum.Merkle</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+		<AssemblyName>Nethereum.Merkle</AssemblyName>
+		<PackageId>Nethereum.Merkle</PackageId>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+		<ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+		<ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Drop\" />
+	</ItemGroup>
+
+
+</Project>
