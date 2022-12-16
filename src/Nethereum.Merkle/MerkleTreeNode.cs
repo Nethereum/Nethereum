@@ -25,7 +25,7 @@ namespace Nethereum.Merkle
 
         public int Compare(byte[] hashOther)
         {
-            return ByteListComparer.Current.Compare(this.Hash, hashOther);
+            return ByteArrayComparer.Current.Compare(this.Hash, hashOther);
         }
 
         public bool Matches(byte[] hashOther)

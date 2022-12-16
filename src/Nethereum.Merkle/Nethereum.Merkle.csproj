@@ -21,9 +21,6 @@
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
 		<None Include="..\..\NethereumKey.snk" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Drop\" />
-	</ItemGroup>
 
 
 </Project>

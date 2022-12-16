@@ -6,16 +6,16 @@ namespace Nethereum.Merkle.StrategyOptions.PairingConcat
 {
     public class SortedPairConcatStrategy : IPairConcatStrategy
     {
-        private readonly ByteListComparer byteListComparer;
+        private readonly ByteArrayComparer byteComparer;
         public SortedPairConcatStrategy()
         {
-            byteListComparer = new ByteListComparer();
+            byteComparer = new ByteArrayComparer();
         }
 
         public byte[] Concat(byte[] left, byte[] right)
         {
-            var list = new[] { left.ToList(), right.ToList() };
-            Array.Sort(list, byteListComparer);
+            var list = new[] { left, right };
+            Array.Sort(list, byteComparer);
 
             return list.First().Concat(list.Last()).ToArray();
         }

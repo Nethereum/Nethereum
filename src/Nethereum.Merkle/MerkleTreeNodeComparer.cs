@@ -8,15 +8,15 @@ namespace Nethereum.Merkle
     {
         public static readonly MerkleTreeNodeComparer Current = new MerkleTreeNodeComparer();
         
-        private ByteListComparer byteListComparer;
+        private ByteArrayComparer byteComparer;
         
         public MerkleTreeNodeComparer()
         {
-            byteListComparer = new ByteListComparer();
+            byteComparer = new ByteArrayComparer();
         }
         public int Compare(MerkleTreeNode x, MerkleTreeNode y)
         {
-            return byteListComparer.Compare(x.Hash.ToList(), y.Hash.ToList());
+            return byteComparer.Compare(x.Hash, y.Hash);
         }
     }
 

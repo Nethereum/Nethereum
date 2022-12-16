@@ -68,7 +68,7 @@ namespace Nethereum.Merkle
                     
                     var left = nodes[i];
                     var right = i + 1 == nodes.Count ? left : nodes[i + 1];
-                    byte[] hash = ContactAndHashPair(left, right);
+                    byte[] hash = ConcatAndHashPair(left, right);
 
                     Layers[layerIndex].Add(new MerkleTreeNode(hash));
                 }
@@ -104,21 +104,16 @@ namespace Nethereum.Merkle
             return new MerkleTreeNode(hash);
         }
 
-        private byte[] ContactAndHashPair(MerkleTreeNode left, MerkleTreeNode right)
+        private byte[] ConcatAndHashPair(MerkleTreeNode left, MerkleTreeNode right)
         {
             return ConcatAndHashPair(left.Hash, right.Hash, _hashProvider, _pairingConcatType);
         }
         
         public static byte[] ConcatAndHashPair(byte[] left, byte[] right, IHashProvider hashProvider, PairingConcatType pairingConcatType = PairingConcatType.Sorted)
         {
-            var concat = PairingContactFactory.GetPairConcatStrategy(pairingConcatType).Concat(left, right);
+            var concat = PairingConcatFactory.GetPairConcatStrategy(pairingConcatType).Concat(left, right);
             var hash = hashProvider.ComputeHash(concat);
             return hash;
-        }
-
-        public List<byte[]> GetProof(T item)
-        {
-            return GetProof(_hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(item)));
         }
 
         public bool VerifyProof(IEnumerable<byte[]> proof, byte[] itemHash)
@@ -140,7 +135,11 @@ namespace Nethereum.Merkle
             }
             return hash.SequenceEqual(rootHash);
         }
-        
+
+        public List<byte[]> GetProof(T item)
+        {
+            return GetProof(_hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(item)));
+        }
 
         public List<byte[]> GetProof(byte[] hashLeaf)
         {

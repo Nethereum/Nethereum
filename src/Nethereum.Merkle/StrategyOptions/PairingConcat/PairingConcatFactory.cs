@@ -2,7 +2,7 @@
 
 namespace Nethereum.Merkle.StrategyOptions.PairingConcat
 {
-    public static class PairingContactFactory
+    public static class PairingConcatFactory
     {
         public static IPairConcatStrategy GetPairConcatStrategy(PairingConcatType type)
         {
