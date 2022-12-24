@@ -120,5 +120,12 @@ namespace Nethereum.Util.UnitTests
             Assert.Equal(value,((BigDecimal)decimal.Parse(value)).ToString());
             Assert.Equal(value,((BigDecimal)double.Parse(value)).ToString());
         }
+
+        [Fact]
+        public void ShouldPow()
+        {
+            var value = BigDecimal.Pow(10, 27);
+            Assert.Equal("1000000000000000000000000000", value.ToString());
+        }
     }
 }

@@ -227,17 +227,8 @@ namespace Nethereum.Util
 
         public static implicit operator BigDecimal(double value)
         {
-            var mantissa = (long)value;
-            var exponent = 0;
-            double scaleFactor = 1;
-            while (Math.Abs(value * scaleFactor - (double) mantissa) > 0)
-            {
-                exponent -= 1;
-                scaleFactor *= 10;
-                mantissa = (long)(value * scaleFactor);
-            }
+            return new BigDecimal(Convert.ToDecimal(value));         
 
-            return new BigDecimal(mantissa, exponent);
         }
 
         public static implicit operator BigDecimal(decimal value)
@@ -422,7 +413,7 @@ namespace Nethereum.Util
                 tmp *= Math.Pow(basis, diff);
                 exponent -= diff;
             }
-
+            
             return tmp * Math.Pow(basis, exponent);
         }
 
