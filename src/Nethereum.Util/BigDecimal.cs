@@ -404,6 +404,29 @@ namespace Nethereum.Util
             return tmp * Math.Exp(exponent);
         }
 
+        public static BigDecimal Pow(BigDecimal value, int exponent)
+        {
+            if (exponent < 0)
+                throw new ArgumentOutOfRangeException("exponent", "exp must be >= 0");
+            if (exponent == 0)
+                return new BigDecimal(1) ;
+            if (exponent == 1)
+                return value;
+
+            BigDecimal result = new BigDecimal(1);
+            while (exponent != 0)
+            {
+                if ((exponent & 1) != 0)
+                    result = result * value;
+                if (exponent == 1)
+                    break;
+
+                value = value * value;
+                exponent >>= 1;
+            }
+            return result;
+        }
+
         public static BigDecimal Pow(double basis, double exponent)
         {
             var tmp = (BigDecimal) 1;
