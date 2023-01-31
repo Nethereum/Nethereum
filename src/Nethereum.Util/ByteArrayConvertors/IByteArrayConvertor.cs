@@ -1,4 +1,4 @@
-﻿namespace Nethereum.Merkle.ByteConvertors
+﻿namespace Nethereum.Util.ByteArrayConvertors
 {
     public interface IByteArrayConvertor<T>
     {

@@ -1,4 +1,4 @@
-﻿namespace Nethereum.Merkle.HashProviders
+﻿namespace Nethereum.Util.HashProviders
 {
     public interface IHashProvider
     {

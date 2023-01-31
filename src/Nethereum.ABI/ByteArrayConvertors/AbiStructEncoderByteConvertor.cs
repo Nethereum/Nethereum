@@ -1,6 +1,6 @@
-﻿using Nethereum.ABI;
+﻿using Nethereum.Util.ByteArrayConvertors;
 
-namespace Nethereum.Merkle.ByteConvertors
+namespace Nethereum.ABI.ByteArrayConvertors
 {
     public class AbiStructEncoderByteConvertor<T> : IByteArrayConvertor<T>
     {

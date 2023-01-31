@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Nethereum.Merkle.ByteConvertors
+namespace Nethereum.Util.ByteArrayConvertors
 {
     public class StringByteArrayConvertor : IByteArrayConvertor<string>
     {

@@ -1,6 +1,6 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 
-namespace Nethereum.Merkle.ByteConvertors
+namespace Nethereum.Util.ByteArrayConvertors
 {
     public class HexToByteArrayConvertor : IByteArrayConvertor<string>
     {

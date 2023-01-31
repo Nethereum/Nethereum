@@ -1,3 +1,4 @@
+using Nethereum.Hex.HexTypes;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -6,6 +7,14 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 {
     public static class HexBigIntegerConvertorExtensions
     {
+        public static BigInteger? GetValue(this HexBigInteger hexBigInteger)
+        {
+            if (hexBigInteger == null)
+            {
+                return null;
+            }
+            return hexBigInteger.Value;
+        }
         public static byte[] ToByteArray(this BigInteger value, bool littleEndian)
         {
             return ConvertToByteArray(value, littleEndian);

@@ -151,7 +151,7 @@ namespace Nethereum.Util
     }
 
 
-    public class ByteArrayComparer : IComparer<byte[]>
+    public class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
     {
         public readonly static ByteArrayComparer Current = new ByteArrayComparer();
 
@@ -169,6 +169,16 @@ namespace Nethereum.Util
                 if (result != 0) return result;
             }
             return x.Count().CompareTo(y.Count());
+        }
+
+        public bool Equals(byte[] x, byte[] y)
+        {
+           return Compare(x, y) == 0;
+        }
+
+        public int GetHashCode(byte[] obj)
+        {
+            return new BigInteger(obj).GetHashCode();
         }
     }
 

@@ -1,7 +1,7 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle;
-using Nethereum.Merkle.ByteConvertors;
-using Nethereum.Merkle.HashProviders;
+using Nethereum.Util.ByteArrayConvertors;
+using Nethereum.Util.HashProviders;
 using System.Linq;
 using Xunit;
 

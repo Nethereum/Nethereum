@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Nethereum.Merkle.ByteConvertors;
-using Nethereum.Merkle.HashProviders;
 using Nethereum.Merkle.StrategyOptions.PairingConcat;
+using Nethereum.Util.ByteArrayConvertors;
+using Nethereum.Util.HashProviders;
 
 namespace Nethereum.Merkle
 {
+
     public class MerkleTree<T>
     {
         private readonly IHashProvider _hashProvider;
@@ -77,15 +78,14 @@ namespace Nethereum.Merkle
             return nodes[0];
         }
 
-        public void InsertLeaf(T item)
+        public virtual void InsertLeaf(T item)
         {
             var merkleTreeNode = CreateMerkleTreeNode(item);
             Leaves.Add(merkleTreeNode);
             InitialiseLeavesAndLayersAndBuildTree(Leaves);
-
         }
 
-        public void InsertLeaves(IEnumerable<T> items)
+        public virtual void InsertLeaves(IEnumerable<T> items)
         {
             var nodes = new List<MerkleTreeNode>();
             foreach (var item in items)
@@ -96,8 +96,8 @@ namespace Nethereum.Merkle
 
             Leaves.AddRange(nodes);
             InitialiseLeavesAndLayersAndBuildTree(Leaves);
-
         }
+
         protected virtual MerkleTreeNode CreateMerkleTreeNode(T item)
         {
             var hash = _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(item));

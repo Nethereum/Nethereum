@@ -1,6 +1,5 @@
-﻿using Nethereum.Util;
-
-namespace Nethereum.Merkle.HashProviders
+﻿
+namespace Nethereum.Util.HashProviders
 {
     public class Sha3KeccackHashProvider : IHashProvider
     {

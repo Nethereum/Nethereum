@@ -1,6 +1,6 @@
-﻿using Nethereum.Merkle.ByteConvertors;
-using Nethereum.Merkle.HashProviders;
+﻿using Nethereum.ABI.ByteArrayConvertors;
 using Nethereum.Merkle.StrategyOptions.PairingConcat;
+using Nethereum.Util.HashProviders;
 
 namespace Nethereum.Merkle
 {

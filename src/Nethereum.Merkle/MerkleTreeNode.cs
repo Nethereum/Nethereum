@@ -1,12 +1,4 @@
-﻿using Nethereum.ABI;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
+﻿using Nethereum.Util;
 
 namespace Nethereum.Merkle
 {
