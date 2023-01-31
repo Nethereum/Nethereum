@@ -7,6 +7,7 @@ using System;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.AccountSigning;
 using Nethereum.RPC.HostWallet;
+using Nethereum.RPC.Eth.ChainValidation;
 
 namespace Nethereum.RPC
 {
@@ -47,6 +48,7 @@ namespace Nethereum.RPC
             HostWallet = new HostWalletService(client);
             GetProof = new EthGetProof(client);
             CreateAccessList = new EthCreateAccessList(client);
+            ChainProofValidation =   new EthChainProofValidationService(client, this);
 
             DefaultBlock = BlockParameter.CreateLatest();
             TransactionManager = transactionManager;
@@ -125,6 +127,8 @@ namespace Nethereum.RPC
         public IEthGetProof GetProof { get; private set; }
 
         public IEthCreateAccessList CreateAccessList { get; private set; }
+
+        public IEthChainProofValidationService ChainProofValidation { get; private set; }
 
 #if !DOTNET35
         public virtual IEtherTransferService  GetEtherTransferService()

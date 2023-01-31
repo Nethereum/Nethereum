@@ -1,5 +1,6 @@
 ﻿using Nethereum.RPC.AccountSigning;
 using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.ChainValidation;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
 using Nethereum.RPC.Eth.Transactions;
@@ -33,6 +34,7 @@ namespace Nethereum.RPC
         IHostWalletService HostWallet { get; }
         IEthGetProof GetProof { get; }
         IEthCreateAccessList CreateAccessList { get; }
+        IEthChainProofValidationService ChainProofValidation { get; }
 
 #if !DOTNET35
         IEtherTransferService GetEtherTransferService();
