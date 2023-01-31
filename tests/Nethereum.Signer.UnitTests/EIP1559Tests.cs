@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Util;
@@ -65,7 +66,8 @@ namespace Nethereum.Signer.UnitTests
             ulong gasLimit, string receiverAddress, ulong amount, string data)
         {
             var transaction1559 = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, receiverAddress, amount, data, null);
-            transaction1559.Sign(new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var signer = new Transaction1559Signer();
+            signer.SignTransaction("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7", transaction1559);
             var encodedData = transaction1559.GetRLPEncodedRaw();
             var signedData = transaction1559.GetRLPEncoded();
             Debug.WriteLine(chainId + "," + nonce + "," + maxPriorityFeePerGas + "," + maxFeePerGas + "," + gasLimit + "," + receiverAddress + "," + amount + "," + data);
@@ -103,6 +105,7 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(transaction1559.Signature.S.ToHex(), decodedTransaction1559.Signature.S.ToHex());
 
             Assert.True(decodedTransaction1559.VerifyTransaction());
+            var address = decodedTransaction1559.GetSenderAddress();
             Assert.True(decodedTransaction1559.GetSenderAddress().IsTheSameAddress("0x12890D2cce102216644c59daE5baed380d84830c"));
         }
 
@@ -135,7 +138,9 @@ namespace Nethereum.Signer.UnitTests
             ));
 
             var transaction1559 = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, receiverAddress, amount, data, accessLists);
-            transaction1559.Sign(new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var signer = new Transaction1559Signer();
+            signer.SignTransaction("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7", transaction1559);
+
 
             var encodedData = transaction1559.GetRLPEncodedRaw();
             var signedData = transaction1559.GetRLPEncoded();

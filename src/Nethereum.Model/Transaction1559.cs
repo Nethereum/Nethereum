@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Model;
 using Nethereum.Util;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
-
     public class Transaction1559: SignedTypeTransaction
     {
         public Transaction1559(BigInteger chainId, BigInteger? nonce, BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
@@ -25,7 +25,7 @@ namespace Nethereum.Signer
         }
 
         public Transaction1559(BigInteger chainId, BigInteger nonce, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas,
-            BigInteger gasLimit, string receiverAddress, BigInteger amount, string data, List<AccessListItem> accessList, EthECDSASignature signature) :
+            BigInteger gasLimit, string receiverAddress, BigInteger amount, string data, List<AccessListItem> accessList, Signature signature) :
             this(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, receiverAddress, amount, data, accessList)
         {
             Signature = signature;
@@ -56,11 +56,5 @@ namespace Nethereum.Signer
             return Transaction1559Encoder.Current.EncodeRaw(this);
         }
 
-#if !DOTNET35
-        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
-        {
-           await  externalSigner.SignAsync(this).ConfigureAwait(false);
-        }
-#endif
     }
 }

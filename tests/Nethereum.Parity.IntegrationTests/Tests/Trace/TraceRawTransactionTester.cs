@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Model;
 using Nethereum.Parity.RPC.Trace;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
@@ -25,7 +26,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Trace
 
             var multiplier = 7;
 
-            var web3 = new Web3.Web3(new Account(privateKey), client);
+            var web3 = new Web3.Web3(new Web3.Accounts.Account(privateKey), client);
 
             var receipt = await
                 web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(abi, byteCode, senderAddress,

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Model;
 using Nethereum.Quorum.Enclave;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Transactions;
@@ -76,7 +77,7 @@ namespace Nethereum.Quorum
         {
             if (PrivateFor != null && PrivateFor.Count > 0)
             {
-                var signedData = RLPDecoder.DecodeSigned(txnSigned.HexToByteArray(), 6);
+                var signedData = RLPSignedDataDecoder.DecodeSigned(txnSigned.HexToByteArray(), 6);
 
                 if (signedData.V[0] == 28)
                 {
@@ -87,7 +88,7 @@ namespace Nethereum.Quorum
                     signedData.V[0] = 37;
                 }
 
-                return RLPEncoder.EncodeSigned(signedData, 6).ToHex();
+                return RLPSignedDataEncoder.EncodeSigned(signedData, 6).ToHex();
             }
 
             return txnSigned;

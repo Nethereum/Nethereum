@@ -15,6 +15,7 @@ using Nethereum.RPC.Accounts;
 using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.Model;
 #if !LITE
 using Nethereum.Signer;
 #endif

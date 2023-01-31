@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Security.KeyVault.Keys;
 using Azure.Security.KeyVault.Keys.Cryptography;
+using Nethereum.Model;
 using Nethereum.Signer.Crypto;
 
 namespace Nethereum.Signer.AzureKeyVault

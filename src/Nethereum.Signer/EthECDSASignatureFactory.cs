@@ -1,10 +1,22 @@
-﻿namespace Nethereum.Signer
+﻿using Nethereum.Model;
+
+namespace Nethereum.Signer
 {
-    public class EthECDSASignatureFactory
+    public static class EthECDSASignatureFactory
     {
         public static EthECDSASignature FromComponents(byte[] r, byte[] s)
         {
             return new EthECDSASignature(ECDSASignatureFactory.FromComponents(r, s));
+        }
+
+        public static EthECDSASignature FromSignature(ISignature signature)
+        {
+            return FromComponents(signature.R, signature.S, signature.V);
+        }
+
+        public static EthECDSASignature ToEthECDSASignature(this ISignature signature)
+        {
+            return FromComponents(signature.R, signature.S, signature.V);
         }
 
         public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte v)

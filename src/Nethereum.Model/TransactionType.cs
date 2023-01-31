@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
     public enum TransactionType
     {

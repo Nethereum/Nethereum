@@ -2,6 +2,7 @@
 using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
 using Amazon.Runtime;
+using Nethereum.Model;
 using Nethereum.Signer.Crypto;
 using System;
 using System.IO;

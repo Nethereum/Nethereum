@@ -1,5 +1,6 @@
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Xunit;
 
@@ -41,7 +42,9 @@ namespace Nethereum.Signer.UnitTests
 
             var privateKey = "4646464646464646464646464646464646464646464646464646464646464646";
             var key = new EthECKey(privateKey);
-            tx.Sign(key);
+            var signer = new LegacyTransactionSigner();
+            signer.SignTransaction(privateKey.HexToByteArray(), tx);
+            
 
             var rFromSignature = tx.Signature.R.ToBigIntegerFromRLPDecoded();
             var expectedRFromSignature = "18515461264373351373200002665853028612451056578545711640558177340181847433846";
@@ -60,9 +63,9 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(expectedSignedTx, tx.GetRLPEncoded().ToHex());
 
             var recoveryTransaction = new LegacyTransactionChainId(tx.GetRLPEncoded());
-            Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
+            Assert.True(recoveryTransaction.GetKey().VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature.ToEthECDSASignature()));
 
-            Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());
+            Assert.Equal(key.GetPublicAddress(), recoveryTransaction.GetKey().GetPublicAddress());
 
         }
 
@@ -85,12 +88,13 @@ namespace Nethereum.Signer.UnitTests
 
             var privateKey = "4646464646464646464646464646464646464646464646464646464646464646";
             var key = new EthECKey(privateKey);
-            tx.Sign(key);
+            var signer = new LegacyTransactionSigner();
+            signer.SignTransaction(privateKey.HexToByteArray(), tx);
 
             var recoveryTransaction = new LegacyTransactionChainId(tx.GetRLPEncoded());
-            Assert.True(recoveryTransaction.Key.VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature));
+            Assert.True(recoveryTransaction.GetKey().VerifyAllowingOnlyLowS(recoveryTransaction.RawHash, recoveryTransaction.Signature.ToEthECDSASignature()));
 
-            Assert.Equal(key.GetPublicAddress(), recoveryTransaction.Key.GetPublicAddress());
+            Assert.Equal(key.GetPublicAddress(), recoveryTransaction.GetKey().GetPublicAddress());
 
         }
     }

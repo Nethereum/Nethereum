@@ -2,10 +2,9 @@
 
 namespace Nethereum.Model
 {
+
     public class Account
     {
-
-        //TODO: https://github.com/ethereum/EIPs/issues/1186
 
         /// <summary>
         /// YP: 4.1

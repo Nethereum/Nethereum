@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Numerics;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Model;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
     public class LegacyTransaction : SignedLegacyTransaction
     {
@@ -13,17 +11,17 @@ namespace Nethereum.Signer
 
         public LegacyTransaction(byte[] rawData)
         {
-            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
-            ValidateValidV(SimpleRlpSigner);
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
+            ValidateValidV(RlpSignerEncoder);
         }
 
-        public LegacyTransaction(RLPSigner rlpSigner)
+        public LegacyTransaction(RLPSignedDataHashBuilder rlpSigner)
         {
             ValidateValidV(rlpSigner);
-            SimpleRlpSigner = rlpSigner;
+            RlpSignerEncoder = rlpSigner;
         }
 
-        private static void ValidateValidV(RLPSigner rlpSigner)
+        private static void ValidateValidV(RLPSignedDataHashBuilder rlpSigner)
         {
             if (rlpSigner.IsVSignatureForChain())
                 throw new Exception("TransactionChainId should be used instead of Transaction");
@@ -32,13 +30,13 @@ namespace Nethereum.Signer
         public LegacyTransaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data)
         {
-            SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data));
         }
 
         public LegacyTransaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] r, byte[] s, byte v)
         {
-            SimpleRlpSigner = new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data),
                 r, s, v);
         }
 
@@ -84,13 +82,5 @@ namespace Nethereum.Signer
             return new[] {nonce, gasPrice, gasLimit, receiveAddress, value, data};
         }
 
-        public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature, SimpleRlpSigner.RawHash);
-
-#if !DOTNET35
-        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
-        {
-           await externalSigner.SignAsync(this).ConfigureAwait(false);
-        }
-#endif
     }
 }

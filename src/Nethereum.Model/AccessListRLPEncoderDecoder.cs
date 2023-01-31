@@ -2,7 +2,7 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
     public class AccessListRLPEncoderDecoder
     {

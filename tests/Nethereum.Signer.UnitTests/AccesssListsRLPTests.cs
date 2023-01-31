@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.Util;
 using Xunit;
 

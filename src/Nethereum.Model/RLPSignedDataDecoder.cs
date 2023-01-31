@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
-    public class RLPDecoder
+    public class RLPSignedDataDecoder
     {
         public static SignedData DecodeSigned(byte[] rawdata, int numberOfEncodingElements)
         {
@@ -14,13 +14,13 @@ namespace Nethereum.Signer
             for (var i = 0; i < numberOfEncodingElements; i++)
                 decodedData.Add(decodedElements[i].RLPData);
             // only parse signature in case is signed
-            EthECDSASignature signature = DecodeSignature(decodedElements, numberOfEncodingElements);
+            var signature = DecodeSignature(decodedElements, numberOfEncodingElements);
             return new SignedData(decodedData.ToArray(), signature);
         }
 
-        public static EthECDSASignature DecodeSignature(RLPCollection decodedElements, int numberOfEncodingElements)
+        public static Signature DecodeSignature(RLPCollection decodedElements, int numberOfEncodingElements)
         {
-            EthECDSASignature signature = null;
+            Signature signature = null;
             if (decodedElements.Count > numberOfEncodingElements && decodedElements[numberOfEncodingElements + 1].RLPData != null)
             {
                 var v = new byte[] {0};
@@ -32,7 +32,7 @@ namespace Nethereum.Signer
 
                 var r = decodedElements[numberOfEncodingElements + 1].RLPData;
                 var s = decodedElements[numberOfEncodingElements + 2].RLPData;
-                signature = EthECDSASignatureFactory.FromComponents(r, s, v);
+                signature = new Signature(r, s, v);
             }
 
             return signature;

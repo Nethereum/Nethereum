@@ -1,5 +1,6 @@
 ﻿using Nethereum.GSN.Models;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.Signer;
 
 namespace Nethereum.GSN.Extensions

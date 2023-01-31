@@ -1,5 +1,8 @@
-﻿namespace Nethereum.Signer
+﻿using Nethereum.Model;
+
+namespace Nethereum.Signer
 {
+
     public static class TransactionVerificationAndRecovery
     {
         public static byte[] GetPublicKey(string rlp)
@@ -19,17 +22,18 @@
 
         public static byte[] GetPublicKey(this ISignedTransaction transaction)
         {
-            return transaction.Key.GetPubKey();
+            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPubKey();
         }
 
         public static string GetSenderAddress(this ISignedTransaction transaction)
         {
-            return transaction.Key.GetPublicAddress();
+            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPublicAddress();
         }
 
         public static bool VerifyTransaction(this ISignedTransaction transaction)
         {
-            return transaction.Key.VerifyAllowingOnlyLowS(transaction.RawHash, transaction.Signature);
+            var signature = EthECDSASignatureFactory.FromSignature(transaction.Signature);
+            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).VerifyAllowingOnlyLowS(transaction.RawHash, signature);
         }
     }
 }

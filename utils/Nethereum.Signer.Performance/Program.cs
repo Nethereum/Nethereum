@@ -9,6 +9,7 @@ using System.Diagnostics;
 using Nethereum.Web3.Accounts;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 using BenchmarkDotNet.Configs;
+using Nethereum.Model;
 
 namespace Nethereum.Signer.Performance
 {
@@ -139,7 +140,7 @@ AMD Ryzen 9 3900X, 1 CPU, 24 logical and 12 physical cores
         public string SignFunctionMessage()
         {
             EthECKey.SignRecoverable = true;
-            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var web3 = new Web3.Web3(new Web3.Accounts.Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
             var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
             var fromAddress = web3.TransactionManager.Account.Address;
             var transactionMessage = new TransferFunction
@@ -164,7 +165,7 @@ AMD Ryzen 9 3900X, 1 CPU, 24 logical and 12 physical cores
         public string SignFunctionMessageBouncy()
         {
             EthECKey.SignRecoverable = false;
-            var web3 = new Web3.Web3(new Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
+            var web3 = new Web3.Web3(new Web3.Accounts.Account("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"));
             var newAddress = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe";
             var fromAddress = web3.TransactionManager.Account.Address;
             var transactionMessage = new TransferFunction

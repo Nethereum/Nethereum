@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.XUnitEthereumClients;
@@ -47,11 +48,11 @@ namespace Nethereum.Accounts.IntegrationTests
             if (transaction is LegacyTransactionChainId)
             {
                 var txnChainId = transaction as LegacyTransactionChainId;
-                accountSenderRecovered = EthECKey.RecoverFromSignature(transaction.Signature, transaction.RawHash, txnChainId.GetChainIdAsBigInteger()).GetPublicAddress();
+                accountSenderRecovered = EthECKey.RecoverFromSignature(transaction.Signature.ToEthECDSASignature(), transaction.RawHash, txnChainId.GetChainIdAsBigInteger()).GetPublicAddress();
             }
             else
             {
-                accountSenderRecovered = EthECKey.RecoverFromSignature(transaction.Signature, transaction.RawHash).GetPublicAddress();
+                accountSenderRecovered = EthECKey.RecoverFromSignature(transaction.Signature.ToEthECDSASignature(), transaction.RawHash).GetPublicAddress();
             }
 
             Assert.Equal(rawTransaction, rawTransactionRecovered);

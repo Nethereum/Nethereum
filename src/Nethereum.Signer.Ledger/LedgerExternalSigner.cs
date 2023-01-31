@@ -12,6 +12,7 @@ using Ledger.Net.Exceptions;
 using Ledger.Net.Requests;
 using Ledger.Net.Responses;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.Signer.Crypto;

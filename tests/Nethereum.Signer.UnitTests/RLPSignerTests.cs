@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Xunit;
 
@@ -9,8 +10,8 @@ namespace Nethereum.Signer.UnitTests
 
     public static class RLPSignerExt
     {
-        public static EthECKey GetRecoveredKey(this RLPSigner signer) { 
-            return EthECKey.RecoverFromSignature(signer.Signature, signer.RawHash);
+        public static EthECKey GetRecoveredKey(this RLPSignedDataHashBuilder signer) { 
+            return EthECKey.RecoverFromSignature(EthECDSASignatureFactory.FromSignature(signer.Signature), signer.RawHash);
            
         }
     }
@@ -41,8 +42,9 @@ namespace Nethereum.Signer.UnitTests
 
 
             //Create a transaction from scratch
-            var tx = new RLPSigner(new[] {nonce, gasPrice, gasLimit, to, amount, data});
-            tx.SignLegacy(new EthECKey(privateKey.HexToByteArray(), true));
+            var tx = new RLPSignedDataHashBuilder(new[] {nonce, gasPrice, gasLimit, to, amount, data});
+            var signer = new LegacyTransactionSigner();
+            signer.SignTransaction(privateKey.HexToByteArray(), tx);
 
             var encoded = tx.GetRLPEncoded();
             var rlp =
@@ -54,12 +56,12 @@ namespace Nethereum.Signer.UnitTests
 
             Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx.GetRecoveredKey().GetPublicAddress());
 
-            var tx3 = new RLPSigner(rlp.HexToByteArray(), 6);
+            var tx3 = new RLPSignedDataHashBuilder(rlp.HexToByteArray(), 6);
             Assert.Equal(tx.Data[5], tx3.Data[5] ?? new byte[] { });
 
 
             var tx2 = new LegacyTransaction(tx.GetRLPEncoded());
-            Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx2.Key.GetPublicAddress());
+            Assert.Equal(EthECKey.GetPublicAddress(privateKey), tx2.GetSenderAddress());
             //gas limit order 3
             Assert.Equal(tx.Data[2].ToHex(), tx3.Data[2].ToHex());
             //nonce order 1
@@ -72,7 +74,8 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(tx3.GetRecoveredKey().GetPublicAddress(), tx.GetRecoveredKey().GetPublicAddress());
 
             Assert.Equal(tx2.RawHash.ToHex(), tx3.RawHash.ToHex());
-            Assert.Equal(tx2.Key.GetPublicAddress(), tx.GetRecoveredKey().GetPublicAddress());
+
+            Assert.Equal(tx2.GetSenderAddress(), tx.GetRecoveredKey().GetPublicAddress());
         }
 
         [Fact]
@@ -82,12 +85,12 @@ namespace Nethereum.Signer.UnitTests
             var rlp =
                 "0xf87c80018261a894095e7baea6a6c7c4c2dfeb977efac326af552d870a9d00000000000000000000000000010000000000000000000000000000001ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
 
-            var tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
+            var tx = new RLPSignedDataHashBuilder(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
             Assert.Equal("67719a47cf3e3fe77b89c994d85395ad0f899d86".EnsureHexPrefix().ToLower(),
                 tx.GetRecoveredKey().GetPublicAddress().ToLower());
             rlp =
                 "0xf85f800182520894095e7baea6a6c7c4c2dfeb977efac326af552d870a801ba048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a01fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804";
-            tx = new RLPSigner(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
+            tx = new RLPSignedDataHashBuilder(rlp.HexToByteArray(), NumberOfElementsInTrasaction);
             Assert.Equal("963f4a0d8a11b758de8d5b99ab4ac898d6438ea6".EnsureHexPrefix().ToLower(),
                 tx.GetRecoveredKey().GetPublicAddress().EnsureHexPrefix().ToLower());
         }
@@ -97,11 +100,13 @@ namespace Nethereum.Signer.UnitTests
         {
             var account = "12890d2cce102216644c59daE5baed380d84830c";
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-            var signedValue = new RLPSigner(new[] {"hello".ToBytesForRLPEncoding()});
-            signedValue.SignLegacy(new EthECKey(privateKey.HexToByteArray(), true));
+            var signedValue = new RLPSignedDataHashBuilder(new[] {"hello".ToBytesForRLPEncoding()});
+            var signer = new LegacyTransactionSigner();
+            signer.SignTransaction(privateKey.HexToByteArray(), signedValue);
+            
             var encoded = signedValue.GetRLPEncoded();
             var hexEncoded = encoded.ToHex();
-            var signedRecovery = new RLPSigner(encoded, 1);
+            var signedRecovery = new RLPSignedDataHashBuilder(encoded, 1);
             var value = signedRecovery.Data[0].ToStringFromRLPDecoded();
             Assert.Equal("hello", value);
             var addressSender = signedRecovery.GetRecoveredKey().GetPublicAddress();

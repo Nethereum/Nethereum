@@ -4,7 +4,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using System.Numerics;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
     public static class TransactionFactory
     {
@@ -64,11 +64,11 @@ namespace Nethereum.Signer
             var sBytes = s.HexToByteArray();
             var vBytes = v.HexToByteArray();
             
-            var signature = EthECDSASignatureFactory.FromComponents(rBytes, sBytes, vBytes);
+            var signature = new Signature(rBytes, sBytes, vBytes);
             if (signature.IsVSignedForChain())
             {
                 var vBigInteger = vBytes.ToBigIntegerFromRLPDecoded();
-                var chainId = EthECKey.GetChainFromVChain(vBigInteger);
+                var chainId = VRecoveryAndChainCalculations.GetChainFromVChain(vBigInteger);
                 return new LegacyTransactionChainId(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(), gas.ToBytesForRLPEncoding(),
                     to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray(), chainId.ToBytesForRLPEncoding(), rBytes, sBytes, vBytes);
             }
@@ -88,7 +88,7 @@ namespace Nethereum.Signer
             var sBytes = s.HexToByteArray();
             var vBytes = v.HexToByteArray();
 
-            var signature = EthECDSASignatureFactory.FromComponents(rBytes, sBytes, vBytes);
+            var signature = new Signature(rBytes, sBytes, vBytes);
             return new Transaction1559(chainId ?? 0, nonce ?? 0, maxPriorityFeePerGas ?? 0, maxFeePerGas ?? 0,
                 gasLimit ?? 0, to, amount ?? 0, data, accessList,
                 signature);
@@ -107,7 +107,7 @@ namespace Nethereum.Signer
                     data, accessList, r, s, v);
             }
             
-            if(!transactionType.HasValue)
+            if(!transactionType.HasValue || transactionType == 0)
             {
                 return CreateLegacyTransaction(to, gasLimit ?? 0, gasPrice ?? 0, amount ?? 0, data, nonce ?? 0, r, s,
                     v);
@@ -115,7 +115,6 @@ namespace Nethereum.Signer
 
             throw new NotImplementedException(
                 "Transaction type has not been implemented: " + transactionType.ToString());
-
 
         }
         

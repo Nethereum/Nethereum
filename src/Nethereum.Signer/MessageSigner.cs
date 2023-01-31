@@ -1,6 +1,7 @@
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
+using Nethereum.Model;
 
 namespace Nethereum.Signer
 {
@@ -73,7 +74,7 @@ namespace Nethereum.Signer
 
         private static string CreateStringSignature(EthECDSASignature signature)
         {
-            return EthECDSASignature.CreateStringSignature(signature);
+            return signature.CreateStringSignature();
         }
 
         public static EthECDSASignature ExtractEcdsaSignature(string signature)

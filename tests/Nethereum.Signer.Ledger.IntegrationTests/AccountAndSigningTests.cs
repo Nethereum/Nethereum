@@ -11,6 +11,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
 using Xunit;
 using Ledger.Net;
+using Nethereum.Model;
 
 namespace Nethereum.Ledger.IntegrationTests
 {
@@ -47,7 +48,7 @@ namespace Nethereum.Ledger.IntegrationTests
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
 
-            var account = new Account(privateKey, Chain.MainNet);
+            var account = new Web3.Accounts.Account(privateKey, Chain.MainNet);
 
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
@@ -99,7 +100,7 @@ namespace Nethereum.Ledger.IntegrationTests
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = deployment.CreateTransactionInput();
 
-            var account = new Account(privateKey, chainId);
+            var account = new Web3.Accounts.Account(privateKey, chainId);
 
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);
@@ -128,7 +129,7 @@ namespace Nethereum.Ledger.IntegrationTests
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             var transactionInput = transfer.CreateTransactionInput("0x12890d2cce102216644c59daE5baed380d84830c");
 
-            var account = new Account(privateKey, chainId);
+            var account = new Web3.Accounts.Account(privateKey, chainId);
 
             account.TransactionManager.Client = rpcClient;
             var signature = await account.TransactionManager.SignTransactionAsync(transactionInput).ConfigureAwait(false);

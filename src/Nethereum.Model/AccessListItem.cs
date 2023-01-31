@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
+
     public class AccessListItem
     {
         public string Address { get; set; }

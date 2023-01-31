@@ -251,7 +251,7 @@ namespace Nethereum.GSN
             string relayAddress)
         {
             var tx = returnedTx.ToTransaction();
-            var signer = tx.Key.GetPublicAddress();
+            var signer = tx.GetEthECKey().GetPublicAddress();
 
             var functionEncodingService = new FunctionMessageEncodingService<RelayCallFunction>();
             var relayCall = functionEncodingService.DecodeInput(new RelayCallFunction(), returnedTx.Input);

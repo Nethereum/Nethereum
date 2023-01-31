@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
@@ -78,7 +79,8 @@ namespace Nethereum.Signer.IntegrationTests
 
                 var transaction1559 = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, 45000,
                     "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", 10, "", accessLists);
-                transaction1559.Sign(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey));
+                var signer = new Transaction1559Signer();
+                signer.SignTransaction(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey), transaction1559);
 
 
                 var txnHash =
@@ -109,7 +111,8 @@ namespace Nethereum.Signer.IntegrationTests
                 var transaction1559 = new Transaction1559(chainId, nonce.Value, maxPriorityFeePerGas, maxFeePerGas,
                     45000,
                     "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", 10, "", null);
-                transaction1559.Sign(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey));
+                var signer = new Transaction1559Signer();
+                signer.SignTransaction(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey), transaction1559);
 
 
                 var txnHash =

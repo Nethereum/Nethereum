@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using NBitcoin.Secp256k1;
 #endif
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using Nethereum.Util;
@@ -13,11 +14,13 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Agreement;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Ocsp;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
 
 namespace Nethereum.Signer
 {
+
     public class EthECKey
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
@@ -230,38 +233,29 @@ namespace Nethereum.Signer
 
         public static int GetRecIdFromV(byte[] v)
         {
-            return GetRecIdFromV(v[0]);
+            return VRecoveryAndChainCalculations.GetRecIdFromV(v);
         }
 
 
         public static int GetRecIdFromV(byte v)
         {
-            var header = v;
-            // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
-            //                  0x1D = second key with even y, 0x1E = second key with odd y
-            if (header < 27 || header > 34)
-                throw new Exception("Header byte out of range: " + header);
-            if (header >= 31)
-                header -= 4;
-            return header - 27;
+            return VRecoveryAndChainCalculations.GetRecIdFromV(v);
         }
 
         public static int GetRecIdFromVChain(BigInteger vChain, BigInteger chainId)
         {
-            return (int)(vChain - chainId * 2 - 35);
+            return VRecoveryAndChainCalculations.GetRecIdFromVChain(vChain, chainId);
         }
 
         public static BigInteger GetChainFromVChain(BigInteger vChain)
         {
-            var start = vChain - 35;
-            var even = start % 2 == 0;
-            if (even) return start / 2;
-            return (start - 1) / 2;
+            return VRecoveryAndChainCalculations.GetChainFromVChain(vChain);
         }
 
         public static int GetRecIdFromVChain(byte[] vChain, BigInteger chainId)
         {
-            return GetRecIdFromVChain(vChain.ToBigIntegerFromRLPDecoded(), chainId);
+            return VRecoveryAndChainCalculations.GetRecIdFromVChain(vChain, chainId);
+            
         }
 
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash)
@@ -303,10 +297,10 @@ namespace Nethereum.Signer
             {
 #endif
             var signature = _ecKey.Sign(hash);
-                var recId = CalculateRecId(signature, hash);
-                var vChain = CalculateV(chainId, recId);
-                signature.V = vChain.ToBytesForRLPEncoding();
-                return new EthECDSASignature(signature);
+            var recId = CalculateRecId(signature, hash);
+            var vChain = CalculateV(chainId, recId);
+            signature.V = vChain.ToBytesForRLPEncoding();
+            return new EthECDSASignature(signature);
 
 #if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
@@ -327,9 +321,9 @@ namespace Nethereum.Signer
             {
 #endif
             var signature = _ecKey.Sign(hash);
-                var recId = CalculateRecId(signature, hash);
-                signature.V = new[] {(byte) (recId)};
-                return new EthECDSASignature(signature);
+            var recId = CalculateRecId(signature, hash);
+            signature.V = new[] { (byte)(recId) };
+            return new EthECDSASignature(signature);
 
 #if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
@@ -338,7 +332,7 @@ namespace Nethereum.Signer
 
         internal static BigInteger CalculateV(BigInteger chainId, int recId)
         {
-            return chainId * 2 + recId + 35;
+            return VRecoveryAndChainCalculations.CalculateV(chainId, recId);
         }
 
 
@@ -356,9 +350,9 @@ namespace Nethereum.Signer
             {
 #endif
             var signature = _ecKey.Sign(hash);
-                var recId = CalculateRecId(signature, hash);
-                signature.V = new[] {(byte) (recId + 27)};
-                return new EthECDSASignature(signature);
+            var recId = CalculateRecId(signature, hash);
+            signature.V = new[] { (byte)(recId + 27) };
+            return new EthECDSASignature(signature);
 #if NETCOREAPP3_1 || NET5_0_OR_GREATER
             }
 #endif
@@ -372,13 +366,15 @@ namespace Nethereum.Signer
 
         public bool Verify(byte[] hash, EthECDSASignature sig)
         {
-            return _ecKey.Verify(hash, sig.ECDSASignature);
+            var currentSignature = sig as EthECDSASignature;
+            return _ecKey.Verify(hash, currentSignature.ECDSASignature);
         }
 
         public bool VerifyAllowingOnlyLowS(byte[] hash, EthECDSASignature sig)
         {
+            var currentSignature = sig as EthECDSASignature;
             if (!sig.IsLowS) return false;
-            return _ecKey.Verify(hash, sig.ECDSASignature);
+            return _ecKey.Verify(hash, currentSignature.ECDSASignature);
         }
     }
 }

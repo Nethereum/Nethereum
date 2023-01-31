@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using Nethereum.Util;

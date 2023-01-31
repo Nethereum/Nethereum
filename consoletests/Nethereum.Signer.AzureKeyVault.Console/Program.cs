@@ -6,6 +6,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Model;
 using Nethereum.Web3.Accounts;
 
 namespace Nethereum.Signer.AzureKeyVault.Console

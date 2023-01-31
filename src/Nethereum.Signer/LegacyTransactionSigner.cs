@@ -1,12 +1,13 @@
 ﻿using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 
 namespace Nethereum.Signer
 {
+
     public class LegacyTransactionSigner
     {
-
         public string SignTransaction(string privateKey, string to, BigInteger amount, BigInteger nonce)
         {
             return SignTransaction(privateKey.HexToByteArray(), to, amount, nonce);
@@ -167,28 +168,37 @@ namespace Nethereum.Signer
             return SignTransaction(privateKey, transaction);
         }
 
-        private string SignTransaction(byte[] privateKey, LegacyTransaction transaction)
+        public string SignTransaction(byte[] privateKey, LegacyTransaction transaction)
         {
-            transaction.Sign(new EthECKey(privateKey, true));
+            var signature = new EthECKey(privateKey, true).SignAndCalculateV(transaction.RawHash);
+            transaction.SetSignature(new Signature() { R = signature.R, S = signature.S, V = signature.V });
             return transaction.GetRLPEncoded().ToHex();
         }
 
-        private string SignTransaction(byte[] privateKey, LegacyTransactionChainId transaction)
+        public string SignTransaction(byte[] privateKey, LegacyTransactionChainId transaction)
         {
-            transaction.Sign(new EthECKey(privateKey, true));
+            var signature = new EthECKey(privateKey, true).SignAndCalculateV(transaction.RawHash, transaction.GetChainIdAsBigInteger());
+            transaction.SetSignature(new Signature() { R = signature.R, S = signature.S, V = signature.V });
             return transaction.GetRLPEncoded().ToHex();
+        }
+
+        public string SignTransaction(byte[] privateKey, RLPSignedDataHashBuilder rLPSignedDataHashBuilder)
+        {
+            var signature = new EthECKey(privateKey, true).SignAndCalculateV(rLPSignedDataHashBuilder.RawHash);
+            rLPSignedDataHashBuilder.SetSignature(new Signature() { R = signature.R, S = signature.S, V = signature.V });
+            return rLPSignedDataHashBuilder.GetRLPEncoded().ToHex();
         }
 
 #if !DOTNET35
         private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, LegacyTransaction transaction)
         {
-            await transaction.SignExternallyAsync(externalSigner).ConfigureAwait(false);
+            await externalSigner.SignAsync(transaction).ConfigureAwait(false);
             return transaction.GetRLPEncoded().ToHex();
         }
 
         private async Task<string> SignTransactionAsync(IEthExternalSigner externalSigner, LegacyTransactionChainId transaction)
         {
-            await transaction.SignExternallyAsync(externalSigner).ConfigureAwait(false);
+            await externalSigner.SignAsync(transaction).ConfigureAwait(false);
             return transaction.GetRLPEncoded().ToHex();
         }
 

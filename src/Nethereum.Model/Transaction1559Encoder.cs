@@ -6,7 +6,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
 
     public interface ITransactionTypeDecoder
@@ -73,7 +73,7 @@ namespace Nethereum.Signer
         {
             var encodedData = GetEncodedElements(transaction);
 
-            RLPEncoder.AddSignatureToEncodedData(transaction.Signature, encodedData);
+            RLPSignedDataEncoder.AddSignatureToEncodedData(transaction.Signature, encodedData);
 
             var encodedBytes = RLP.RLP.EncodeList(encodedData.ToArray());
             var returnBytes = AddTypeToEncodedBytes(encodedBytes, Type);
@@ -102,7 +102,7 @@ namespace Nethereum.Signer
             var data = decodedElements[7].RLPData?.ToHex(true);
             var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
 
-            var signature = RLPDecoder.DecodeSignature(decodedElements, 9);
+            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 9);
 
             return new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
                 receiverAddress, amount, data, accessList, signature);

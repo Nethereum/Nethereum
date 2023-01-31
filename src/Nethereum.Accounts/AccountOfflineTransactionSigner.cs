@@ -2,7 +2,9 @@
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Signer;
 using Nethereum.Util;
 
@@ -11,15 +13,18 @@ namespace Nethereum.Web3.Accounts
     public class AccountOfflineTransactionSigner
     {
         private readonly LegacyTransactionSigner _legacyTransactionSigner;
+        private readonly Transaction1559Signer _transaction1559Signer;
 
-        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner)
+        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner, Transaction1559Signer transaction1559Signer)
         {
             _legacyTransactionSigner = legacyTransactionSigner;
+            _transaction1559Signer = transaction1559Signer;
         }
 
         public AccountOfflineTransactionSigner()
         {
             _legacyTransactionSigner = new LegacyTransactionSigner();
+            _transaction1559Signer = new Transaction1559Signer();
         }
 
         public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId = null)
@@ -53,7 +58,7 @@ namespace Nethereum.Web3.Accounts
                 var transaction1559 = new Transaction1559(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
                     gasLimit, transaction.To, value, transaction.Data,
                     transaction.AccessList.ToSignerAccessListItemArray());
-                transaction1559.Sign(new EthECKey(account.PrivateKey));
+                _transaction1559Signer.SignTransaction(new EthECKey(account.PrivateKey), transaction1559);
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
             }
             else

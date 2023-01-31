@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Numerics;
-using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Model;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
     public class LegacyTransactionChainId : SignedLegacyTransaction
     {
@@ -17,19 +15,19 @@ namespace Nethereum.Signer
         public LegacyTransactionChainId(byte[] rawData, BigInteger chainId)
         {
             //Instantiate and decode
-            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
-            ValidateValidV(SimpleRlpSigner);
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
+            ValidateValidV(RlpSignerEncoder);
             AppendDataForHashRecovery(chainId);
         }
 
-        public LegacyTransactionChainId(RLPSigner rlpSigner)
+        public LegacyTransactionChainId(RLPSignedDataHashBuilder rlpSigner)
         {
-            SimpleRlpSigner = rlpSigner;
-            ValidateValidV(SimpleRlpSigner);
+            RlpSignerEncoder = rlpSigner;
+            ValidateValidV(RlpSignerEncoder);
             GetChainIdFromVAndAppendDataForHashRecovery();
         }
 
-        private static void ValidateValidV(RLPSigner rlpSigner)
+        private static void ValidateValidV(RLPSignedDataHashBuilder rlpSigner)
         {
             if (!rlpSigner.IsVSignatureForChain())
                 throw new Exception("Transaction should be used instead of TransactionChainId, invalid V");
@@ -44,35 +42,35 @@ namespace Nethereum.Signer
         {
             //append the chainId, r and s so it can be recovered using the raw hash
             //the encoding has only the default 6 values
-            SimpleRlpSigner.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
+            RlpSignerEncoder.AppendData(chainId.ToBytesForRLPEncoding(), RHASH_DEFAULT,
                 SHASH_DEFAULT);
         }
 
         public LegacyTransactionChainId(byte[] rawData)
         {
             //Instantiate and decode
-            SimpleRlpSigner = new RLPSigner(rawData, NUMBER_ENCODING_ELEMENTS);
-            ValidateValidV(SimpleRlpSigner);
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
+            ValidateValidV(RlpSignerEncoder);
             GetChainIdFromVAndAppendDataForHashRecovery();
         }
 
         private BigInteger GetChainFromVChain()
         {
-            return EthECKey.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
+            return VRecoveryAndChainCalculations.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
         }
 
         public LegacyTransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId)
         {
-            SimpleRlpSigner =
-                new RLPSigner(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
+            RlpSignerEncoder =
+                new RLPSignedDataHashBuilder(GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
                     NUMBER_ENCODING_ELEMENTS);
         }
 
         public LegacyTransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
             byte[] data, byte[] chainId, byte[] r, byte[] s, byte[] v)
         {
-            SimpleRlpSigner = new RLPSigner(
+            RlpSignerEncoder = new RLPSignedDataHashBuilder(
                 GetElementsInOrder(nonce, gasPrice, gasLimit, receiveAddress, value, data, chainId),
                 r, s, v, NUMBER_ENCODING_ELEMENTS);
         }
@@ -107,18 +105,13 @@ namespace Nethereum.Signer
             return ChainId.ToBigIntegerFromRLPDecoded();
         }
 
-        public byte[] ChainId => SimpleRlpSigner.Data[6];
+        public byte[] ChainId => RlpSignerEncoder.Data[6];
 
-        public byte[] RHash => SimpleRlpSigner.Data[7];
+        public byte[] RHash => RlpSignerEncoder.Data[7];
 
-        public byte[] SHash => SimpleRlpSigner.Data[8];
+        public byte[] SHash => RlpSignerEncoder.Data[8];
 
-        /// <summary>
-        /// Recovered Key from Signature
-        /// </summary>
-        public override EthECKey Key => EthECKey.RecoverFromSignature(SimpleRlpSigner.Signature,
-            SimpleRlpSigner.RawHash,
-            ChainId.ToBigIntegerFromRLPDecoded());
+       
 
         public string ToJsonHex()
         {
@@ -130,10 +123,7 @@ namespace Nethereum.Signer
             return data + "]";
         }
 
-        public override void Sign(EthECKey key)
-        {
-            SimpleRlpSigner.SignLegacy(key, GetChainIdAsBigInteger());
-        }
+      
 
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,
             byte[] value,
@@ -149,12 +139,6 @@ namespace Nethereum.Signer
             };
         }
 
-#if !DOTNET35
-        public override async Task SignExternallyAsync(IEthExternalSigner externalSigner)
-        {
-           await externalSigner.SignAsync(this).ConfigureAwait(false);
-        }
-#endif
 
     }
 

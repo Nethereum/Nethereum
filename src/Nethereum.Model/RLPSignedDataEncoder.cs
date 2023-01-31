@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using Nethereum.Model;
 using Nethereum.RLP;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
-    public class RLPEncoder
+    public class RLPSignedDataEncoder
     {
         public static byte[] EncodeSigned(SignedData signedData, int numberOfElements)
         {
@@ -18,7 +18,7 @@ namespace Nethereum.Signer
         }
 
 
-        public static void AddSignatureToEncodedData(EthECDSASignature signature, List<byte[]> encodedData)
+        public static void AddSignatureToEncodedData(ISignature signature, List<byte[]> encodedData)
         {
             byte[] v, r, s;
 

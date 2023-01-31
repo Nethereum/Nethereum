@@ -1,14 +1,13 @@
-﻿namespace Nethereum.Signer
+﻿namespace Nethereum.Model
 {
     public interface ISignedTransaction
     {
         TransactionType TransactionType {get; }
-        EthECDSASignature Signature { get; }
-        EthECKey Key { get; }
+        ISignature Signature { get; }
         byte[] RawHash { get; }
         byte[] Hash { get; }
-        void Sign(EthECKey key);
         byte[] GetRLPEncoded();
         byte[] GetRLPEncodedRaw();
+        void SetSignature(ISignature signature);
     }
 }

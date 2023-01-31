@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Mappers;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
@@ -15,15 +17,16 @@ namespace Nethereum.Web3.Accounts
 {
     public class ExternalAccountSignerTransactionManager : TransactionManagerBase
     {
-        private readonly LegacyTransactionSigner _transactionSigner;
-
+        private readonly LegacyTransactionSigner _legacyTransactionSigner;
+        private readonly Transaction1559Signer _transaction1559Signer;
         public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account,
             BigInteger? chainId = null)
         {
             ChainId = chainId;
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
-            _transactionSigner = new LegacyTransactionSigner();
+            _legacyTransactionSigner = new LegacyTransactionSigner();
+            _transaction1559Signer = new Transaction1559Signer();
         }
 
 
@@ -72,18 +75,18 @@ namespace Nethereum.Web3.Accounts
                 var transaction1559 = new Transaction1559(ChainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
                     gasLimit, transaction.To, value, transaction.Data,
                     transaction.AccessList.ToSignerAccessListItemArray());
-                await transaction1559.SignExternallyAsync(externalSigner).ConfigureAwait(false);
+                await _transaction1559Signer.SignExternallyAsync(externalSigner, transaction1559).ConfigureAwait(false);
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
             }
             else
             {
                 if (ChainId == null)
-                    signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner,
+                    signedTransaction = await _legacyTransactionSigner.SignTransactionAsync(externalSigner,
                         transaction.To,
                         value.Value, nonce,
                         gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);
                 else
-                    signedTransaction = await _transactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
+                    signedTransaction = await _legacyTransactionSigner.SignTransactionAsync(externalSigner, ChainId.Value,
                         transaction.To,
                         value.Value, nonce,
                         gasPrice.Value, gasLimit.Value, transaction.Data).ConfigureAwait(false);

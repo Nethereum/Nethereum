@@ -18,6 +18,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using Nethereum.Unity.Contracts;
 using Nethereum.Unity.FeeSuggestions;
+using Nethereum.Model;
 
 namespace Nethereum.Unity.Rpc
 {
@@ -28,6 +29,7 @@ namespace Nethereum.Unity.Rpc
         private readonly string _account;
         private readonly BigInteger? _chainId;
         private readonly LegacyTransactionSigner _transactionSigner;
+        private readonly Transaction1559Signer _transaction1559Signer;
         private readonly EthGetTransactionCountUnityRequest _transactionCountRequest;
         private readonly EthSendRawTransactionUnityRequest _ethSendTransactionRequest;
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
@@ -43,6 +45,7 @@ namespace Nethereum.Unity.Rpc
             _account = EthECKey.GetPublicAddress(privateKey);
             _privateKey = privateKey;
             _transactionSigner = new LegacyTransactionSigner();
+            _transaction1559Signer = new Transaction1559Signer();
             _ethSendTransactionRequest = new EthSendRawTransactionUnityRequest(_url, jsonSerializerSettings, requestHeaders);
             _transactionCountRequest = new EthGetTransactionCountUnityRequest(_url, jsonSerializerSettings, requestHeaders);
             _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(_url, jsonSerializerSettings, requestHeaders);
@@ -219,8 +222,8 @@ namespace Nethereum.Unity.Rpc
                 var transaction1559 = new Transaction1559(_chainId.Value, nonce, transactionInput.MaxPriorityFeePerGas.Value, transactionInput.MaxFeePerGas.Value,
                     transactionInput.Gas.Value, transactionInput.To, value.Value, transactionInput.Data,
                     null);
-                transaction1559.Sign(new EthECKey(_privateKey));
-                signedTransaction = transaction1559.GetRLPEncoded().ToHex();
+                signedTransaction = _transaction1559Signer.SignTransaction(new EthECKey(_privateKey), transaction1559);
+                
             }
             else
             {

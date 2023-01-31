@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.RLP;
-using Nethereum.Signer;
+using Nethereum.Model;
 using Nethereum.Signer.Crypto;
 using Nethereum.Signer.Trezor.Internal;
 using Nethereum.Util;

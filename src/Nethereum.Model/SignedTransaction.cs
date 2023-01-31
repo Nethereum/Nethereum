@@ -1,22 +1,19 @@
-﻿using System;
-using System.Threading.Tasks;
-using Nethereum.Util;
+﻿using Nethereum.Util;
+using System.Numerics;
 
-namespace Nethereum.Signer
+namespace Nethereum.Model
 {
+    public class IndexedSignedTransaction
+    {
+        public BigInteger Index { get; set; }
+        public ISignedTransaction SignedTransaction { get; set; }
+
+    }
+
     public abstract class SignedTransaction : ISignedTransaction
     {
-        public virtual EthECDSASignature Signature { get; protected set; }
-
-        public virtual void SetSignature(EthECDSASignature signature)
-        {
-            Signature = signature;
-        }
         public abstract TransactionType TransactionType { get; }
-        public abstract void Sign(EthECKey key);
-        public abstract EthECKey Key { get; }
 
-        
         public virtual byte[] RawHash
         {
             get
@@ -39,8 +36,9 @@ namespace Nethereum.Signer
 
         public abstract byte[] GetRLPEncodedRaw();
 
-#if !DOTNET35
-        public abstract Task SignExternallyAsync(IEthExternalSigner externalSigner);
-#endif
+        public virtual ISignature Signature { get; protected set; }
+
+        public abstract void SetSignature(ISignature signature);
+       
     }
 }
