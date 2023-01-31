@@ -246,6 +246,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Merkle", "Merkle", "{A7397C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Merkle", "src\Nethereum.Merkle\Nethereum.Merkle.csproj", "{CCCC6E06-68C4-4F70-9949-CD01C9AA6F50}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Merkle.Patricia", "src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj", "{1997B6DA-03A1-426E-9ACB-1113F00D943B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1602,6 +1604,22 @@ Global
 		{CCCC6E06-68C4-4F70-9949-CD01C9AA6F50}.Release|x64.Build.0 = Release|Any CPU
 		{CCCC6E06-68C4-4F70-9949-CD01C9AA6F50}.Release|x86.ActiveCfg = Release|Any CPU
 		{CCCC6E06-68C4-4F70-9949-CD01C9AA6F50}.Release|x86.Build.0 = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|ARM.Build.0 = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|ARM.ActiveCfg = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|ARM.Build.0 = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|x64.Build.0 = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1726,6 +1744,7 @@ Global
 		{D2DDAACC-117E-4006-B90E-9216D50C067E} = {019335F4-59C6-4413-BC8E-E5332C1F35C6}
 		{A7397C7A-39EA-4145-9B28-AC84558B93A6} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{CCCC6E06-68C4-4F70-9949-CD01C9AA6F50} = {A7397C7A-39EA-4145-9B28-AC84558B93A6}
+		{1997B6DA-03A1-426E-9ACB-1113F00D943B} = {A7397C7A-39EA-4145-9B28-AC84558B93A6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}

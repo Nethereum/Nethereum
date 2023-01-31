@@ -8,6 +8,7 @@
 
   <ItemGroup>
 	  <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+	  <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Merkle\Nethereum.Merkle.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
