@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿#if NETCOREAPP3_1_OR_GREATER
+using FluentValidation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System;
@@ -38,3 +39,4 @@ namespace Nethereum.UI.Validation
     }
 
 }
+#endif

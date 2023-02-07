@@ -1,25 +1,27 @@
 ﻿using Nethereum.JsonRpc.Client.RpcMessages;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Nethereum.Unity.Metamask
 {
     public class WaitUntilRequestResponse
     {
-        public const int DefaultTimeOutMiliSeconds = 60000 * 60; // 1 hour
+        public const int DefaultTimeOutMilliSeconds = 60000 * 60; // 1 hour
         public string Id { get; }
-        public int TimeOuMiliseconds { get; }
+        public IDictionary<string, RpcResponseMessage> RequestResponses { get; }
+        public int TimeOutMilliseconds { get; }
         public bool HasTimedOut { get; private set; }
         private float _timeElapsed = 0;
-        public int TimeOutMiliseconds { get; }
-        public WaitUntilRequestResponse(string id, int timeOuMiliseconds = DefaultTimeOutMiliSeconds) 
+        public WaitUntilRequestResponse(string id, IDictionary<string, RpcResponseMessage> requestResponses, int timeOutMilliseconds = DefaultTimeOutMilliSeconds) 
         {
             Id = id;
-            TimeOuMiliseconds = timeOuMiliseconds;
+            RequestResponses = requestResponses;
+            TimeOutMilliseconds = timeOutMilliseconds;
         }
 
         public bool HasCompletedResponse()
         {
-            var completed = MetamaskRequestRpcClient.RequestResponses.ContainsKey(Id);
+            var completed = RequestResponses.ContainsKey(Id);
             if (completed)
             {
                 HasTimedOut = false;
@@ -27,7 +29,7 @@ namespace Nethereum.Unity.Metamask
             }
 
             _timeElapsed += (Time.deltaTime * 1000);
-            if(_timeElapsed > TimeOuMiliseconds)
+            if(_timeElapsed > TimeOutMilliseconds)
             {
                 HasTimedOut = true;
                 return true;

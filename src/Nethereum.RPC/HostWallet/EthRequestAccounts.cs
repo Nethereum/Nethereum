@@ -18,6 +18,9 @@ namespace Nethereum.RPC.HostWallet
     /// </summary>
     public class EthRequestAccounts : GenericRpcRequestResponseHandlerNoParam<string[]>, IEthRequestAccounts
     {
+        public EthRequestAccounts() : this(null)
+        {
+        }
         public EthRequestAccounts(IClient client) : base(client, ApiMethods.eth_requestAccounts.ToString())
         {
         }

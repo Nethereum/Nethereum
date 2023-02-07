@@ -22,6 +22,8 @@ namespace Nethereum.Metamask
             Func<RpcRequest, string, Task<T>> interceptedSendRequestAsync, RpcRequest request,
             string route = null)
         {
+            var newUniqueRequestId = Guid.NewGuid().ToString();
+            request.Id = newUniqueRequestId;
             if (request.Method == ApiMethods.eth_sendTransaction.ToString())
             {
                 var transaction = (TransactionInput)request.RawParameters[0];
@@ -74,6 +76,8 @@ namespace Nethereum.Metamask
             Func<string, string, object[], Task<T>> interceptedSendRequestAsync, string method,
             string route = null, params object[] paramList)
         {
+            var newUniqueRequestId = Guid.NewGuid().ToString();
+            route = newUniqueRequestId;
             if (method == ApiMethods.eth_sendTransaction.ToString())
             {
                 var transaction = (TransactionInput)paramList[0];
