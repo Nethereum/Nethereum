@@ -70,7 +70,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
         public async Task<byte[]> GetAndValidateValueFromStorage(string accountAddress, string storageKey, byte[] stateRoot = null, BlockParameter blockParameter = null)
         {
             var accountProof = await GetAndValidateAccountProof(accountAddress, stateRoot, new string[] { storageKey }, blockParameter);
-            var valid = ValidateValueFromStorageProof(accountProof.StorageProof[0], accountProof.StorageHash.HexToByteArray());
+            var valid = ValidateValueFromStorageProof(accountProof.StorageProof[0], accountProof.StorageHash.HexToByteArray()); 
             if (valid)
             {
                 return accountProof.StorageProof[0].Value;
@@ -80,7 +80,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
 
         public bool ValidateValueFromStorageProof(StorageProof storageProof, byte[] stateRoot)
         {
-            return StorageProofVerification.ValidateValueFromStorageProof(storageProof.Key, storageProof.Value, storageProof.Proof.Select(x => x.HexToByteArray()), stateRoot);
+            return StorageProofVerification.ValidateValueFromStorageProof(storageProof.Key.HexValue.HexToByteArray(), storageProof.Value.HexValue.HexToByteArray(), storageProof.Proof.Select(x => x.HexToByteArray()), stateRoot);
         }
 
         public async Task<Transaction[]> GetAndValidateTransactions(BlockParameter blockNumber, string transactionsRoot = null, BigInteger? chainId = null)

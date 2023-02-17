@@ -1,4 +1,5 @@
 ﻿using Nethereum.Util.HashProviders;
+using System;
 using System.Linq;
 
 
@@ -105,7 +106,7 @@ namespace Nethereum.Merkle.Patricia
             return Get(currentNode.Children[keyAsNibbles[0]], keyAsNibbles.Skip(1).ToArray(), storage);
         }
 
-        public Node Put(Node node, byte[] keyAsNibbles, byte[] value)
+        public Node Put(Node node, byte[] keyAsNibbles, byte[] value, ITrieStorage storage = null)
         {
             if (node is null || node is EmptyNode)
             {
@@ -127,8 +128,24 @@ namespace Nethereum.Merkle.Patricia
                 return PutOnAnExistingExtendedNode(extendedNode, keyAsNibbles, value);
             }
 
+            if (node is HashNode hashNode)
+            {
+                return PutOnAnExistingHashNode(hashNode, keyAsNibbles, value, storage);
+            }
+
             return null;
 
+        }
+
+        private Node PutOnAnExistingHashNode(HashNode hashNode, byte[] keyAsNibbles, byte[] value, ITrieStorage storage)
+        {
+            if(hashNode.InnerNode == null)
+            {
+                hashNode.DecodeInnerNode(storage, false);
+            }
+
+            hashNode.InnerNode = Put(hashNode.InnerNode, keyAsNibbles, value, storage);
+            return hashNode;
         }
 
         private Node PutOnAnExistingExtendedNode(ExtendedNode currentNode, byte[] keyAsNibbles, byte[] value)
@@ -281,9 +298,9 @@ namespace Nethereum.Merkle.Patricia
             return newLeafNode;
         }
 
-        public void Put(byte[] key, byte[] value)
+        public void Put(byte[] key, byte[] value, ITrieStorage storage = null)
         {
-            Root = Put(Root, key.ConvertToNibbles(), value);
+            Root = Put(Root, key.ConvertToNibbles(), value, storage);
         }
 
         public InMemoryTrieStorage GenerateProof(byte[] key)

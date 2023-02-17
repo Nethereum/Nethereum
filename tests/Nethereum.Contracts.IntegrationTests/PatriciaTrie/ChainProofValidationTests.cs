@@ -31,8 +31,9 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
    
-            var value = await web3.Eth.ChainProofValidation.GetAndValidateValueFromStorage("0x5E4e65926BA27467555EB562121fac00D24E9dD2", "0x0", null, new BlockParameter(16497712));
+            var value = await web3.Eth.ChainProofValidation.GetAndValidateValueFromStorage("0x5E4e65926BA27467555EB562121fac00D24E9dD2", "0x0", null, new BlockParameter(16648900));
             var libAddressManager = "0xdE1FCfB0851916CA5101820A69b13a4E276bd81F";
+            //de1fcfb0851916ca5101820a69b13a4e276bd81f
             //libAddressManager is at slot 0 as the contract inherits from Lib_AddressResolver
             Assert.True(value.ToHex().IsTheSameHex(libAddressManager));
         }

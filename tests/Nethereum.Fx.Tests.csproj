@@ -37,6 +37,7 @@
     <Compile Remove="Nethereum.ENS.UnitTests\**" />
     <Compile Remove="Nethereum.EVM.UnitTests\**" />
     <Compile Remove="Nethereum.Geth.IntegrationTests\**" />
+	<Compile Remove="Nethereum.Etherscan.IntegrationTests\**" />
     <Compile Remove="Nethereum.Geth.Tests\**" />
     <Compile Remove="Nethereum.GSN.UnitTests\**" />
     <Compile Remove="Nethereum.Parity.IntegrationTests\**" />
@@ -52,6 +53,8 @@
     <None Remove="Nethereum.EVM.UnitTests\**" />
 
     <None Remove="Nethereum.Geth.IntegrationTests\**" />
+
+	 <None Remove="Nethereum.Etherscan.IntegrationTests\**" />
 
     <None Remove="Nethereum.Geth.Tests\**" />
 

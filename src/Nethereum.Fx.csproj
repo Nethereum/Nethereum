@@ -58,6 +58,8 @@
     <Compile Remove="Nethereum.BigInteger.N351\**" />
     <Compile Remove="Nethereum.ClassDiagrams\**" />
     <Compile Remove="Nethereum.ENS\**" />
+	<Compile Remove="Nethereum.Etherscan\**" />
+	<None Remove="Nethereum.Etherscan\**" />
     <Compile Remove="Nethereum.EVM\obj\**" />
     <Compile Remove="Nethereum.EVM\Properties\**" />
     <Compile Remove="Nethereum.Generators.JavaScript\**" />
@@ -179,6 +181,12 @@
 
 	  <Compile Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
 	  <None Remove="Nethereum.Unity.Metamask\Properties\**;Nethereum.Unity.Metamask\bin\**;Nethereum.Unity.Metamask\obj\**" />
+
+	  <Compile Remove="Nethereum.Merkle\Properties\**;Nethereum.Merkle\bin\**;Nethereum.Merkle\obj\**" />
+	  <None Remove="Nethereum.Merkle\Properties\**;Nethereum.Merkle\bin\**;Nethereum.Merkle\obj\**" />
+
+	  <Compile Remove="Nethereum.Merkle.Patricia\Properties\**;Nethereum.Merkle.Patricia\bin\**;Nethereum.Merkle.Patricia\obj\**" />
+	  <None Remove="Nethereum.Merkle.Patricia\Properties\**;Nethereum.Merkle.Patricia\bin\**;Nethereum.Merkle.Patricia\obj\**" />
   </ItemGroup>
   
   <ItemGroup>
