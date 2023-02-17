@@ -57,7 +57,7 @@ namespace Nethereum.HdWallet
         public string Seed { get; private set; }
         public string[] Words { get; private set; }
 
-        public bool IsMneumonicValidChecksum { get; private set; }
+        public bool IsMnemonicValidChecksum { get; private set; }
 
         public string Path { get; }
 
@@ -65,20 +65,20 @@ namespace Nethereum.HdWallet
 
         private void InitialiseSeed(Wordlist wordlist, WordCount wordCount, string seedPassword = null)
         {
-            var mneumonic = new Mnemonic(wordlist, wordCount);
-            Seed = mneumonic.DeriveSeed(seedPassword).ToHex();
-            Words = mneumonic.Words;
-            IsMneumonicValidChecksum = mneumonic.IsValidChecksum;
+            var mnemonic = new Mnemonic(wordlist, wordCount);
+            Seed = mnemonic.DeriveSeed(seedPassword).ToHex();
+            Words = mnemonic.Words;
+            IsMnemonicValidChecksum = mnemonic.IsValidChecksum;
             var keyPath = new KeyPath(GetMasterPath());
             _masterKey = new ExtKey(Seed).Derive(keyPath);
         }
 
         private void InitialiseSeed(string words, string seedPassword = null)
         {
-            var mneumonic = new Mnemonic(words);
-            Seed = mneumonic.DeriveSeed(seedPassword).ToHex();
-            Words = mneumonic.Words;
-            IsMneumonicValidChecksum = mneumonic.IsValidChecksum;
+            var mnemonic = new Mnemonic(words);
+            Seed = mnemonic.DeriveSeed(seedPassword).ToHex();
+            Words = mnemonic.Words;
+            IsMnemonicValidChecksum = mnemonic.IsValidChecksum;
             var keyPath = new KeyPath(GetMasterPath());
             _masterKey = new ExtKey(Seed).Derive(keyPath);
         }
