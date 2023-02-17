@@ -36,6 +36,13 @@ namespace Nethereum.Util
 
         public static string CalculateCreate2Address(string address, string saltHex, string byteCodeHex)
         {
+            var sha3 = new Sha3Keccack();
+            return CalculateCreate2AddressUsingByteCodeHash(address, saltHex, sha3.CalculateHashFromHex(byteCodeHex));
+        }
+
+
+        public static string CalculateCreate2AddressUsingByteCodeHash(string address, string saltHex, string byteCodeHexHash)
+        {
             if (string.IsNullOrEmpty(address))
             {
                 throw new System.ArgumentException($"'{nameof(address)}' cannot be null or empty.", nameof(address));
@@ -50,9 +57,11 @@ namespace Nethereum.Util
             {
                 throw new System.ArgumentException($"'{nameof(saltHex)}' needs to be 32 bytes", nameof(saltHex));
             }
+            //ensure the address is a checksum address for hex hashing
+            address = address.ConvertToEthereumChecksumAddress();
 
             var sha3 = new Sha3Keccack();
-            return sha3.CalculateHashFromHex("0xff", address, saltHex, sha3.CalculateHashFromHex(byteCodeHex))
+            return sha3.CalculateHashFromHex("0xff", address, saltHex, byteCodeHexHash)
                 .Substring(24).ConvertToEthereumChecksumAddress();
         }
     }
