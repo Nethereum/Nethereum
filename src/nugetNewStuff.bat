@@ -5,9 +5,14 @@ SET targetNet35=false
 SET projectName=
 
 
-cd Nethereum.Optimism
+cd Nethereum.Merkle
 CALL :restorepack
 cd ..
+
+cd Nethereum.Merkle.Patricia
+CALL :restorepack
+cd ..
+
 
 setlocal
 set DIR=%~dp0

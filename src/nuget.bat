@@ -171,6 +171,15 @@ cd Nethereum.EVM
 CALL :restorepack
 cd ..
 
+cd Nethereum.Merkle
+CALL :restorepack
+cd ..
+
+cd Nethereum.Merkle.Patricia
+CALL :restorepack
+cd ..
+
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
