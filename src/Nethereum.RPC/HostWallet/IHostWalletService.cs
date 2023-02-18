@@ -6,6 +6,7 @@
         IWalletGetPermissions GetPermissions { get; }
         IEthRequestAccounts RequestAccounts { get; }
         IWalletRequestPermissions RequestPermissions { get; }
+        IWalletSwitchEthereumChain SwitchEthereumChain { get; }
         IWalletWatchAsset WatchAsset { get; }
     }
 }
