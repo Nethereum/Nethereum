@@ -1,5 +1,7 @@
-﻿using Nethereum.Util.HashProviders;
+﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util.HashProviders;
 using System;
+using System.Diagnostics;
 
 namespace Nethereum.Merkle.Patricia
 {

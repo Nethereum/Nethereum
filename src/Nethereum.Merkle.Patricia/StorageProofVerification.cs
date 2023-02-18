@@ -3,11 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Diagnostics;
+using System.Xml.Linq;
+using Nethereum.RLP;
+using Nethereum.Util;
+using Nethereum.Model;
 
 namespace Nethereum.Merkle.Patricia
 {
     public static class StorageProofVerification
     {
+
+       
         public static bool ValidateValueFromStorageProof(byte[] key, byte[] value, IEnumerable<byte[]> proofs, byte[] stateRoot = null)
         {
             var sha3Provider = new Sha3KeccackHashProvider();
@@ -27,21 +33,23 @@ namespace Nethereum.Merkle.Patricia
                 inMemoryStorage.Put(sha3Provider.ComputeHash(proofItem), proofItem);
             }
 
-            var valueFromTrie = trie.Get(key, inMemoryStorage);
+            var keyEncoded = AccountStorage.EncodeKeyForStorage(key, sha3Provider);
+            var valueEncoded = AccountStorage.EncodeValueForStorage(value);
 
-            if(valueFromTrie == null)
+
+            byte[] valueFromTrie = trie.Get(keyEncoded, inMemoryStorage);
+
+            if (valueFromTrie == null)
             {
-                //TODO (Do we want to do this?)
-                //trie.Put(key, value, inMemoryStorage); // setting the value and verifying the hash roots.
-                //valueFromTrie = value;
-
+                trie.Put(keyEncoded, valueEncoded, inMemoryStorage); // setting the value and verifying the hash roots.
+               
                 if (trie.Root.GetHash().AreTheSame(stateRoot))
                 {
                     return true;
                 }
             }
 
-            if (valueFromTrie.AreTheSame(value))
+            if (valueFromTrie.AreTheSame(valueEncoded))
             {
                 if (trie.Root.GetHash().AreTheSame(stateRoot))
                 {

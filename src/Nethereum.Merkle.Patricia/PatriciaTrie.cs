@@ -120,12 +120,12 @@ namespace Nethereum.Merkle.Patricia
 
             if (node is BranchNode branchNode)
             {
-                return PutOnAnExistingBranchNode(branchNode, keyAsNibbles, value);
+                return PutOnAnExistingBranchNode(branchNode, keyAsNibbles, value, storage);
             }
 
             if (node is ExtendedNode extendedNode)
             {
-                return PutOnAnExistingExtendedNode(extendedNode, keyAsNibbles, value);
+                return PutOnAnExistingExtendedNode(extendedNode, keyAsNibbles, value, storage);
             }
 
             if (node is HashNode hashNode)
@@ -148,7 +148,7 @@ namespace Nethereum.Merkle.Patricia
             return hashNode;
         }
 
-        private Node PutOnAnExistingExtendedNode(ExtendedNode currentNode, byte[] keyAsNibbles, byte[] value)
+        private Node PutOnAnExistingExtendedNode(ExtendedNode currentNode, byte[] keyAsNibbles, byte[] value, ITrieStorage storage = null)
         {
 
             var foundSameNibbles = currentNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
@@ -206,13 +206,13 @@ namespace Nethereum.Merkle.Patricia
             }
             else
             {
-                currentNode.InnerNode = Put(currentNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), value);
+                currentNode.InnerNode = Put(currentNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), value, storage);
                 return currentNode;
             }
 
         }
 
-        private Node PutOnAnExistingBranchNode(BranchNode currentNode, byte[] keyAsNibbles, byte[] value)
+        private Node PutOnAnExistingBranchNode(BranchNode currentNode, byte[] keyAsNibbles, byte[] value, ITrieStorage storage = null)
         {
             if(keyAsNibbles == null || keyAsNibbles.Length == 0)
             {
@@ -221,7 +221,7 @@ namespace Nethereum.Merkle.Patricia
             }
 
             var nibbleBranch = keyAsNibbles[0];
-            currentNode.Children[nibbleBranch] = Put(currentNode.Children[nibbleBranch], keyAsNibbles.Skip(1).ToArray(), value);
+            currentNode.Children[nibbleBranch] = Put(currentNode.Children[nibbleBranch], keyAsNibbles.Skip(1).ToArray(), value, storage);
             return currentNode;
         }
         
