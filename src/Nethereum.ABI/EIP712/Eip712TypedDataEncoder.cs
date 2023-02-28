@@ -8,6 +8,7 @@ using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Util;
 using System.Collections;
+using System.Numerics;
 
 namespace Nethereum.ABI.EIP712
 {
@@ -214,6 +215,21 @@ namespace Nethereum.ABI.EIP712
                                     writer.Write(Sha3Keccack.Current.CalculateHash(memoryStream.ToArray()));
                                 }
 
+                            }
+                            else if(memberValue.TypeName.StartsWith("int") || memberValue.TypeName.StartsWith("uint"))
+                            {
+                                object value;
+                                if (memberValue.Value is string)
+                                {
+                                    value = BigInteger.Parse((string)memberValue.Value);
+                                }
+                                else
+                                {
+                                    value = memberValue.Value;
+                                }
+                                var abiValue = new ABIValue(memberValue.TypeName, value);
+                                var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
+                                writer.Write(abiValueEncoded);
                             }
                             else
                             {
