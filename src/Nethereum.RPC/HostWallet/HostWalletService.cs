@@ -11,6 +11,7 @@ namespace Nethereum.RPC.HostWallet
             RequestPermissions = new WalletRequestPermissions(client);
             WatchAsset = new WalletWatchAsset(client);
             AddEthereumChain = new WalletAddEthereumChain(client);
+            SwitchEthereumChain = new WalletSwitchEthereumChain(client);
         }
 
         /// <summary>
@@ -28,5 +29,7 @@ namespace Nethereum.RPC.HostWallet
         public IWalletWatchAsset WatchAsset { get; private set; }
 
         public IWalletAddEthereumChain AddEthereumChain { get; private set; }
+
+        public IWalletSwitchEthereumChain SwitchEthereumChain { get; private set; }
     }
 }
