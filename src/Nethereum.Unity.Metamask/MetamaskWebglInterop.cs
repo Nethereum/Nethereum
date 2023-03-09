@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Nethereum.Unity.Metamask
 {
 
-    public  class MetamaskInterop
+    public  class MetamaskWebglInterop
     {
         [DllImport("__Internal")]
         public static extern string EnableEthereum(string gameObjectName, string callback, string fallback);

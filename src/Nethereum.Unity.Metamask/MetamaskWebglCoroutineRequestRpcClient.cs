@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace Nethereum.Unity.Metamask
 {
-    public class MetamaskRequestRpcClient : UnityRequest<RpcResponseMessage>, IUnityRpcRequestClient
+    public class MetamaskWebglCoroutineRequestRpcClient : UnityRequest<RpcResponseMessage>, IUnityRpcRequestClient
     {
 
         public static ConcurrentDictionary<string, RpcResponseMessage> RequestResponses = new ConcurrentDictionary<string, RpcResponseMessage>();
@@ -32,7 +32,7 @@ namespace Nethereum.Unity.Metamask
 
         private string _account;
 
-        public MetamaskRequestRpcClient(string account, JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds)
+        public MetamaskWebglCoroutineRequestRpcClient(string account, JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds)
         {
             if (jsonSerializerSettings == null)
                 jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
@@ -74,7 +74,7 @@ namespace Nethereum.Unity.Metamask
                 var metamaskRpcRequest = new MetamaskRpcRequestMessage(newUniqueRequestId, request.Method, _account,
                 request.RawParameters);
 
-                MetamaskInterop.RequestRpcClientCallback(RequestCallBack, JsonConvert.SerializeObject(metamaskRpcRequest, JsonSerializerSettings));
+                MetamaskWebglInterop.RequestRpcClientCallback(RequestCallBack, JsonConvert.SerializeObject(metamaskRpcRequest, JsonSerializerSettings));
 
             }
             catch (Exception ex)
@@ -89,7 +89,7 @@ namespace Nethereum.Unity.Metamask
             yield return new WaitUntil(waitUntilRequestResponse.HasCompletedResponse);
             RpcResponseMessage responseMessage = null;
 
-            if (MetamaskRequestRpcClient.RequestResponses.TryRemove(newUniqueRequestId, out responseMessage))
+            if (MetamaskWebglCoroutineRequestRpcClient.RequestResponses.TryRemove(newUniqueRequestId, out responseMessage))
             {
                 Result = responseMessage;
             }

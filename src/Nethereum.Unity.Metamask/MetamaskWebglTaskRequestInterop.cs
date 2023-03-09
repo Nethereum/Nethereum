@@ -15,7 +15,7 @@ namespace Nethereum.Unity.Metamask
     using Nethereum.RPC.HostWallet;
     using UnityEngine;
 
-    public class MetamaskTaskRequestInterop : IMetamaskInterop
+    public class MetamaskWebglTaskRequestInterop : IMetamaskInterop
     {
         public static Dictionary<string, RpcResponseMessage> RequestResponses = new Dictionary<string, RpcResponseMessage>();
 
@@ -29,13 +29,13 @@ namespace Nethereum.Unity.Metamask
         [MonoPInvokeCallback(typeof(Action<string>))]
         public static void SelectedAccountChanged(string selectedAccount)
         {
-            MetamaskWebGlHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).RunSynchronously();
+            MetamaskWebglHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).RunSynchronously();
         }
 
         [MonoPInvokeCallback(typeof(Action<string>))]
         public static void SelectedNetworkChanged(string chainId)
         {
-            MetamaskWebGlHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).RunSynchronously();
+            MetamaskWebglHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).RunSynchronously();
         }
 
         public const int DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS = 1000;
@@ -44,7 +44,7 @@ namespace Nethereum.Unity.Metamask
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
         public bool InitialisedAccountChainEvents { get; set; } = false;
 
-        public MetamaskTaskRequestInterop(JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds, int delayBetweenResponseCheckMilliseconds = DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS)
+        public MetamaskWebglTaskRequestInterop(JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds, int delayBetweenResponseCheckMilliseconds = DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS)
         {
             TimeOutMilliseconds = timeOutMilliseconds;
 
@@ -71,7 +71,7 @@ namespace Nethereum.Unity.Metamask
             var accounts = ConvertResponse<string[]>(response);
             if (!InitialisedAccountChainEvents)
             {
-                MetamaskInterop.EthereumInitRpcClientCallback(SelectedAccountChanged, SelectedNetworkChanged);
+                MetamaskWebglInterop.EthereumInitRpcClientCallback(SelectedAccountChanged, SelectedNetworkChanged);
                 InitialisedAccountChainEvents = true;
             }
             if (accounts != null && accounts.Length > 0)
@@ -83,12 +83,12 @@ namespace Nethereum.Unity.Metamask
 
         public async Task<bool> CheckMetamaskAvailability()
         {
-            return MetamaskInterop.IsMetamaskAvailable();
+            return MetamaskWebglInterop.IsMetamaskAvailable();
         }
 
         public async Task<string> GetSelectedAddress()
         {
-            return MetamaskInterop.GetSelectedAddress();
+            return MetamaskWebglInterop.GetSelectedAddress();
         }
 
         public async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request)
@@ -97,7 +97,7 @@ namespace Nethereum.Unity.Metamask
             try
             {
                 request.Id = newUniqueRequestId;
-                MetamaskInterop.RequestRpcClientCallback(MetamaskTaskRequestInteropCallBack, JsonConvert.SerializeObject(request, JsonSerializerSettings));
+                MetamaskWebglInterop.RequestRpcClientCallback(MetamaskTaskRequestInteropCallBack, JsonConvert.SerializeObject(request, JsonSerializerSettings));
             }
             catch (Exception ex)
             {
@@ -112,9 +112,9 @@ namespace Nethereum.Unity.Metamask
             RpcResponseMessage responseMessage = null;
 
 
-            if (MetamaskTaskRequestInterop.RequestResponses.ContainsKey(newUniqueRequestId))
+            if (MetamaskWebglTaskRequestInterop.RequestResponses.ContainsKey(newUniqueRequestId))
             {
-                responseMessage = MetamaskTaskRequestInterop.RequestResponses[newUniqueRequestId];
+                responseMessage = MetamaskWebglTaskRequestInterop.RequestResponses[newUniqueRequestId];
                 RequestResponses.Remove(newUniqueRequestId);
                 return responseMessage;
             }

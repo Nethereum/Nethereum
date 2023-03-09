@@ -3,16 +3,16 @@
 #if !DOTNET35
     using Nethereum.Metamask;
 
-    public class MetamaskWebGlHostProvider : MetamaskHostProvider
+    public class MetamaskWebglHostProvider : MetamaskHostProvider
     {
         public static MetamaskHostProvider CreateOrGetCurrentInstance()
         {
             //instantiation sets the current instance
-            if (Current == null) return new MetamaskWebGlHostProvider();
+            if (Current == null) return new MetamaskWebglHostProvider();
             return Current;
         }
 
-        public MetamaskWebGlHostProvider() : base(new MetamaskTaskRequestInterop())
+        public MetamaskWebglHostProvider() : base(new MetamaskWebglTaskRequestInterop())
         {
 
         }

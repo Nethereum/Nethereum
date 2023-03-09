@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace Nethereum.Unity.Metamask
 {
-    public class MetamaskTransactionUnityRequest : UnityRequest<string>, IContractTransactionUnityRequest
+    public class MetamaskTransactionCoroutineUnityRequest : UnityRequest<string>, IContractTransactionUnityRequest
     {
         private readonly EthEstimateGasUnityRequest _ethEstimateGasUnityRequest;
         private readonly EthSendTransactionUnityRequest _ethSendTransactionUnityRequest;
@@ -20,7 +20,7 @@ namespace Nethereum.Unity.Metamask
         public bool EstimateGas { get; set; } = true;
         public bool UseLegacyAsDefault { get; set; }
 
-        public MetamaskTransactionUnityRequest(string account, IUnityRpcRequestClientFactory unityRpcRequestClientFactory)
+        public MetamaskTransactionCoroutineUnityRequest(string account, IUnityRpcRequestClientFactory unityRpcRequestClientFactory)
         {
 
             _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(unityRpcRequestClientFactory);
