@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.JsonRpc.Client;
 using Nethereum.UI;
+using Nethereum.Web3;
 
 namespace Nethereum.Metamask
 {
@@ -14,6 +16,7 @@ namespace Nethereum.Metamask
         public string SelectedAccount { get; private set; }
         public long SelectedNetworkChainId { get; private set; }
         public bool Enabled { get; private set; }
+        public IClient Client { get; }
 
         private MetamaskInterceptor _metamaskInterceptor;
 
@@ -28,11 +31,19 @@ namespace Nethereum.Metamask
             return result;
         }
 
-
         public Task<Web3.IWeb3> GetWeb3Async()
         {
-            var web3 = new Nethereum.Web3.Web3 {Client = {OverridingRequestInterceptor = _metamaskInterceptor}};
-            return Task.FromResult((Web3.IWeb3)web3);
+            IWeb3 web3 = null;
+            if (Client == null)
+            {
+                web3 = new Web3.Web3();
+            }
+            else
+            {
+                web3 = new Web3.Web3(Client);
+            } 
+            web3.Client.OverridingRequestInterceptor = _metamaskInterceptor;
+            return Task.FromResult(web3);
         }
 
         public async Task<string> EnableProviderAsync()
@@ -66,9 +77,10 @@ namespace Nethereum.Metamask
             return await _metamaskInterop.SignAsync(message.ToHexUTF8()).ConfigureAwait(false);
         }
 
-        public MetamaskHostProvider(IMetamaskInterop metamaskInterop)
+        public MetamaskHostProvider(IMetamaskInterop metamaskInterop, IClient client = null)
         {
             _metamaskInterop = metamaskInterop;
+            Client = client;
             _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, this);
             Current = this;
         }
