@@ -77,11 +77,11 @@ namespace Nethereum.Metamask
             return await _metamaskInterop.SignAsync(message.ToHexUTF8()).ConfigureAwait(false);
         }
 
-        public MetamaskHostProvider(IMetamaskInterop metamaskInterop, IClient client = null)
+        public MetamaskHostProvider(IMetamaskInterop metamaskInterop, IClient client = null, bool useOnlySigningWalletTransactionMethods = false)
         {
             _metamaskInterop = metamaskInterop;
             Client = client;
-            _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, this);
+            _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, this, useOnlySigningWalletTransactionMethods);
             Current = this;
         }
         
