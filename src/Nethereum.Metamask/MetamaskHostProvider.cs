@@ -7,18 +7,27 @@ using Nethereum.Web3;
 
 namespace Nethereum.Metamask
 {
-    public class MetamaskHostProvider: IEthereumHostProvider
+    public class MetamaskHostProvider : IEthereumHostProvider
     {
         private readonly IMetamaskInterop _metamaskInterop;
         public static MetamaskHostProvider Current { get; private set; }
         public string Name { get; } = "Metamask";
         public bool Available { get; private set; }
-        public string SelectedAccount { get; private set; }
+        public string SelectedAccount
+        {
+            get => _selectedAccount; 
+            private set
+            {
+                _selectedAccount = value;
+                _metamaskInterceptor.SelectedAccount = value;
+            }
+        }
         public long SelectedNetworkChainId { get; private set; }
         public bool Enabled { get; private set; }
         public IClient Client { get; }
 
         private MetamaskInterceptor _metamaskInterceptor;
+        private string _selectedAccount;
 
         public event Func<string, Task> SelectedAccountChanged;
         public event Func<long, Task> NetworkChanged;
@@ -41,7 +50,7 @@ namespace Nethereum.Metamask
             else
             {
                 web3 = new Web3.Web3(Client);
-            } 
+            }
             web3.Client.OverridingRequestInterceptor = _metamaskInterceptor;
             return Task.FromResult(web3);
         }
@@ -81,10 +90,10 @@ namespace Nethereum.Metamask
         {
             _metamaskInterop = metamaskInterop;
             Client = client;
-            _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, this, useOnlySigningWalletTransactionMethods);
+            _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, useOnlySigningWalletTransactionMethods);
             Current = this;
         }
-        
+
         public async Task ChangeSelectedAccountAsync(string selectedAccount)
         {
             if (SelectedAccount != selectedAccount)

@@ -11,7 +11,6 @@ namespace Nethereum.Metamask
     public class MetamaskInterceptor : RequestInterceptor
     {
         private readonly IMetamaskInterop _metamaskInterop;
-        private readonly MetamaskHostProvider _metamaskHostProvider;
         private readonly bool _useOnlySigningWalletTransactionMethods;
 
         public static List<string> SigningWalletTransactionsMethods { get; protected set; } = new List<string>() {
@@ -27,10 +26,11 @@ namespace Nethereum.Metamask
             "wallet_switchEthereumChain"
         };
 
-        public MetamaskInterceptor(IMetamaskInterop metamaskInterop, MetamaskHostProvider metamaskHostProvider, bool useOnlySigningWalletTransactionMethods = false)
+        public string SelectedAccount { get; set; }
+
+        public MetamaskInterceptor(IMetamaskInterop metamaskInterop, bool useOnlySigningWalletTransactionMethods = false)
         {
             _metamaskInterop = metamaskInterop;
-            _metamaskHostProvider = metamaskHostProvider;
             _useOnlySigningWalletTransactionMethods = useOnlySigningWalletTransactionMethods;
         }
 
@@ -46,9 +46,9 @@ namespace Nethereum.Metamask
                 if (request.Method == ApiMethods.eth_sendTransaction.ToString())
                 {
                     var transaction = (TransactionInput)request.RawParameters[0];
-                    transaction.From = _metamaskHostProvider.SelectedAccount;
+                    transaction.From = SelectedAccount;
                     request.RawParameters[0] = transaction;
-                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, SelectedAccount,
                         request.RawParameters)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
@@ -57,7 +57,7 @@ namespace Nethereum.Metamask
                     var callinput = (CallInput)request.RawParameters[0];
                     if (callinput.From == null)
                     {
-                        callinput.From ??= _metamaskHostProvider.SelectedAccount;
+                        callinput.From ??= SelectedAccount;
                         request.RawParameters[0] = callinput;
                     }
                     var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(request.Id,
@@ -67,17 +67,17 @@ namespace Nethereum.Metamask
                 }
                 else if (request.Method == ApiMethods.eth_signTypedData_v4.ToString())
                 {
-                    var account = GetSelectedAccount();
+                    var account = SelectedAccount;
                     var parameters = new object[] { account, request.RawParameters[0] };
-                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, SelectedAccount,
                        parameters)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
                 else if (request.Method == ApiMethods.personal_sign.ToString())
                 {
-                    var account = GetSelectedAccount();
+                    var account = SelectedAccount;
                     var parameters = new object[] { request.RawParameters[0], account };
-                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, GetSelectedAccount(),
+                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(request.Id, request.Method, SelectedAccount,
                        parameters)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
@@ -108,9 +108,9 @@ namespace Nethereum.Metamask
                 if (method == ApiMethods.eth_sendTransaction.ToString())
                 {
                     var transaction = (TransactionInput)paramList[0];
-                    transaction.From = GetSelectedAccount();
+                    transaction.From = SelectedAccount;
                     paramList[0] = transaction;
-                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(),
+                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, SelectedAccount,
                         paramList)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
@@ -119,7 +119,7 @@ namespace Nethereum.Metamask
                     var callinput = (CallInput)paramList[0];
                     if (callinput.From == null)
                     {
-                        callinput.From ??= _metamaskHostProvider.SelectedAccount;
+                        callinput.From ??= SelectedAccount;
                         paramList[0] = callinput;
                     }
                     var response = await _metamaskInterop.SendAsync(new RpcRequestMessage(route, method,
@@ -128,9 +128,9 @@ namespace Nethereum.Metamask
                 }
                 else if (method == ApiMethods.eth_signTypedData_v4.ToString() || method == ApiMethods.personal_sign.ToString())
                 {
-                    var account = GetSelectedAccount();
+                    var account = SelectedAccount;
                     var parameters = new object[] { account, paramList[0] };
-                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, GetSelectedAccount(),
+                    var response = await _metamaskInterop.SendAsync(new MetamaskRpcRequestMessage(route, method, SelectedAccount,
                        parameters)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
@@ -146,11 +146,6 @@ namespace Nethereum.Metamask
                 return await base.InterceptSendRequestAsync(interceptedSendRequestAsync, method, route, paramList).ConfigureAwait(false);
             }
           
-        }
-
-        private string GetSelectedAccount()
-        {
-            return _metamaskHostProvider.SelectedAccount;
         }
 
         protected void HandleRpcError(RpcResponseMessage response)
