@@ -186,3 +186,4 @@ This video provides an introduction on how to store and retrieve data from struc
   @djsowa Marcin Sowa for his help on IPC in Linux.
 * Everyone in the Ethereum, Consensys and the blockchain community. 
 * Huge shout out to everyone developing all the different Ethereum implementations Geth, Parity, EthereumJ, EthCpp, ethereum-js (and every other utility around it), python (in the different shapes), ruby (digix guys), solidity, vyper, serpent, web3 implementations (web3js the first) and ethjs, web3j, etc, etc and last but not least the .Net Bitcoin implementation.
+* And many thanks to all you that keep helping and encouraging directly or indirectily.
