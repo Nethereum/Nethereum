@@ -179,8 +179,9 @@ This video provides an introduction on how to store and retrieve data from struc
 
 ## Thanks and Credits
 
-* Many thanks to Cass for the fantastic logo (https://github.com/cassiopaia) and everyone in Maker for providing very early feedback.
-* Many thanks to everyone who has submitted a request for extra features, help or bugs either here in github, gitter or other channels, you are continuously shaping this project. 
+* Many thanks to Cass for the fantastic logo (https://github.com/c055) and recreating one of the @ethereumjs logo ideas for Nethereum https://github.com/ethereumjs/organization/issues/1
+* Many thanks to everyone in Maker for providing very early feedback.
+* Many thanks to everyone who has submitted a request for extra features, help or bugs either here in github, gitter/discord or other channels, you are continuously shaping this project. 
   A big shout out specially to @slothbag, @matt.tan, @knocte, @TrekDev, @raymens, @rickzanux, @naddison36, @bobsummerwill, @brendan87, @dylanmckendry that were using Nethereum and providing great feedback from the beginning.
   @djsowa Marcin Sowa for his help on IPC in Linux.
 * Everyone in the Ethereum, Consensys and the blockchain community. 
