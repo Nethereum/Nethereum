@@ -39,5 +39,27 @@ namespace Nethereum.ABI.UnitTests
             // should be no link placeholders now
             ByteCodeLibraryLinker.EnsureDoesNotContainPlaceholders(contractByteCodeLinked);
         }
+
+        [Fact]
+        public void LinksLibraries2()
+        {
+            const string LIBRARY_ADDRESS = "";
+
+            var libFullPath =
+                "h:/JuanFran/Documents/Source/Repos/vscode-test-issue/libraryMath.sol";
+            var libName = "Math";
+            var libraryMapping = ByteCodeLibrary.CreateFromPath(libFullPath, libName, LIBRARY_ADDRESS);
+            var libraryExpectedPlaceholderKey = "36dbad20f0cfdb63858bfff354836cc543";
+            Assert.Equal(libraryExpectedPlaceholderKey, libraryMapping.PlaceholderKey);
+
+            // Link main contract byte code with the library, in preparation for deployment
+            var contractByteCode =
+                "608060405234801561001057600080fd5b5061012e806100206000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80636039b0bd14602d575b600080fd5b603c603836600460c8565b604e565b60405190815260200160405180910390f35b6040516333b9a16760e11b81526004810182905260009073__$36dbad20f0cfdb63858bfff354836cc543$__9063677342ce90602401602060405180830381865af415801560a0573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019060c2919060e0565b92915050565b60006020828403121560d957600080fd5b5035919050565b60006020828403121560f157600080fd5b505191905056fea264697066735822122041bec357755b8846eded76c806a9e0bceffa6b70e8e4e4e594aaeb5f924d22d364736f6c63430008130033";
+            var libraryMappings = new[] { libraryMapping };
+            var libraryLinker = new ByteCodeLibraryLinker();
+            var contractByteCodeLinked = libraryLinker.LinkByteCode(contractByteCode, libraryMappings);
+            // should be no link placeholders now
+            ByteCodeLibraryLinker.EnsureDoesNotContainPlaceholders(contractByteCodeLinked);
+        }
     }
 }

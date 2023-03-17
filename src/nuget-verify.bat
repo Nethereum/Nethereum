@@ -1,1 +1,1 @@
-nuget verify -All .\*.nupkg
+dotnet nuget verify --all .\*.nupkg
