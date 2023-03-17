@@ -130,9 +130,9 @@ namespace Nethereum.Contracts.Services
         /// </summary>
         public ProofOfHumanityService ProofOfHumanity { get; private set; }
 
-        public ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)
+        public ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ensCCIPService = null)
         {
-            return new ENSService(this, ensRegistryAddress);
+            return new ENSService(this, ensRegistryAddress, ensCCIPService);
         }
 
         public EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)

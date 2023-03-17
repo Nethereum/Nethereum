@@ -1,3 +1,4 @@
+using Nethereum.Contracts.Standards.ENS;
 using Nethereum.ENS.ENSRegistry.ContractDefinition;
 using Nethereum.ENS.FIFSRegistrar.ContractDefinition;
 using Nethereum.ENS.PublicResolver.ContractDefinition;

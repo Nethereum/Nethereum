@@ -1,6 +1,7 @@
 using System.Linq;
 using Multiformats.Codec;
 using Multiformats.Hash;
+using Nethereum.Contracts.Standards.ENS;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
@@ -42,7 +43,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldBeAbleToSetTextExample()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var txn = await ensService.SetTextRequestAsync("nethereum.eth", TextDataKey.url, "https://nethereum.com").ConfigureAwait(false);
         }
 
@@ -50,7 +51,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldBeAbleToResolveText()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var url = await ensService.ResolveTextAsync("nethereum.eth", TextDataKey.url).ConfigureAwait(false);
             Assert.Equal("https://nethereum.com", url);
         }
@@ -92,7 +93,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldResolveAddressFromMainnet()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var theAddress = await ensService.ResolveAddressAsync("nick.eth").ConfigureAwait(false);     
             var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
             Assert.True(expectedAddress.IsTheSameAddress(theAddress));   
@@ -103,7 +104,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldRetrieveTheContentHashAndDecodeIt()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth").ConfigureAwait(false);
             var storage = content[0];
             //This depends on IPLD.ContentIdentifier, Multiformats Hash and Codec
@@ -125,7 +126,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
             var ipfsStoragePrefix = new byte[] { 0xe3, 0x01 };
             var fullContentHash = ipfsStoragePrefix.Concat(cid.ToBytes()).ToArray();
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var content = await ensService.GetContentHashAsync("3-7-0-0.web3.nethereum.dotnet.netdapps.eth").ConfigureAwait(false);
             //e301017012202febb4a7c84c8079f78844e50150d97ad33e2a3a0d680d54e7211e30ef13f08d
             Assert.Equal(content.ToHex(), fullContentHash.ToHex());
@@ -135,7 +136,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldSetSubnodeExample()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var txn = await ensService.SetSubnodeOwnerRequestAsync("yoursupername.eth", "subdomainName", "addressOwner").ConfigureAwait(false);
         }
 
@@ -143,7 +144,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         public async void ShouldReverseResolveAddressFromMainnet()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = new ENSService(web3);
+            var ensService = new ENSService(web3.Eth);
             var name = await ensService.ReverseResolveAsync("0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb").ConfigureAwait(false);
             var expectedName = "alex.vandesande.eth";
             Assert.Equal(expectedName, name);

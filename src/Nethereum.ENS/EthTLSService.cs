@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Contracts.Standards.ENS;
 using Nethereum.ENS.ETHRegistrarController.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;

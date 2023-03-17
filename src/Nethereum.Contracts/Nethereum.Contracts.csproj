@@ -24,5 +24,9 @@
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
+
 
 </Project>

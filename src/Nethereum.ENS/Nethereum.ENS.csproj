@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Nethereum.ENS Ethereum Name service library</Description>
+    <Description>Nethereum.ENS Ethereum Name service library with old ENS interfaces not included in Nethereum.Contracts.Standards.ENS, if in doubt use Nethereum.Contracts</Description>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(ENSFrameworks)</TargetFrameworks>

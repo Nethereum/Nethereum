@@ -62,5 +62,20 @@ namespace Nethereum.Contracts.UnitTests
             Assert.Equal(expected, output);
         }
 
+
+        [Theory]
+        [InlineData("vitalik.eth", "0x07766974616c696b0365746800")]
+        [InlineData("vitalik.wallet.eth", "0x07766974616c696b0677616c6c65740365746800")]
+        [InlineData("ViTalIk.WALlet.Eth", "0x07766974616c696b0677616c6c65740365746800")]
+        [InlineData("123.eth", "0x033132330365746800")]
+        [InlineData("öbb.at", "0x04c3b6626202617400")]
+        [InlineData("Ⓜ", "0x016d00")]
+        [InlineData("💩💩︎💩️", "0x0cf09f92a9f09f92a9f09f92a900")]
+        public void ShouldDnsEncode(string domain, string expected)
+        {
+            var encoded = new EnsUtil().DnsEncode(domain);
+            Assert.Equal(expected, encoded);
+        }
+
     }
 }
