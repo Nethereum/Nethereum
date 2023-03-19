@@ -58,7 +58,7 @@ namespace Nethereum.Contracts.Services
         /// https://eips.ethereum.org/EIPS/eip-1271
         /// </summary>
         ERC1271Service ERC1271 { get; }
-        ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
+        ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ensCCIPService = null);
 
         /// <summary>
         /// Service to interact with the Proof of Humanity registry smart contract
