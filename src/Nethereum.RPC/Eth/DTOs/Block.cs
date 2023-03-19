@@ -143,6 +143,17 @@ namespace Nethereum.RPC.Eth.DTOs
         [JsonProperty(PropertyName = "baseFeePerGas")]
         public HexBigInteger BaseFeePerGas { get; set; }
 
+        /// <summary>
+        ///     DATA, 32 Bytes - the root of the withdrawals trie of the block.
+        /// </summary>
+        [JsonProperty(PropertyName = "withdrawalsRoot")]
+        public HexBigInteger WithdrawalsRoot { get; set; }
+
+        /// <summary>
+        ///     Array - Array of withdrawals objects
+        /// </summary>
+        [JsonProperty(PropertyName = "withdrawals")]
+        public Withdrawal[] Withdrawals { get; set; }
 
     }
 }
