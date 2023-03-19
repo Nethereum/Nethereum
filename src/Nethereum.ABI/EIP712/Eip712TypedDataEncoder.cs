@@ -221,7 +221,15 @@ namespace Nethereum.ABI.EIP712
                                 object value;
                                 if (memberValue.Value is string)
                                 {
-                                    value = BigInteger.Parse((string)memberValue.Value);
+                                    BigInteger parsedOutput;
+                                    if(BigInteger.TryParse((string)memberValue.Value, out parsedOutput))
+                                    {
+                                        value = parsedOutput;
+                                    }
+                                    else
+                                    {
+                                        value = memberValue.Value;
+                                    }
                                 }
                                 else
                                 {
