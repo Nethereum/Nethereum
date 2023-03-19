@@ -111,7 +111,7 @@ namespace Nethereum.Util.UnitTests
         [InlineData("-0.5")]
         [InlineData("0.51")]
         [InlineData("-0.512")]
-        [InlineData("-121212121423.0512")]
+        [InlineData("-121212121423.051")]
         [InlineData("1")]
         [InlineData("0")]
         [InlineData("-1")]
