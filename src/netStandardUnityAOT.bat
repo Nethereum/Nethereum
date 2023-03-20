@@ -171,7 +171,34 @@ rem echo "27"
 rem pause
 cd ..
 
-EXIT /B %ERRORLEVEL%
+cd Nethereum.UI
+CALL :build
+cd ..
+
+cd Nethereum.EVM
+CALL :build
+cd ..
+
+cd Nethereum.Merkle
+CALL :build
+cd ..
+
+cd Nethereum.Merkle.Patricia
+CALL :build
+cd ..
+
+cd Nethereum.Metamask
+CALL :build
+cd ..
+
+cd Nethereum.UI.Host
+CALL :build
+cd ..
+
+cd Nethereum.Model
+CALL :build
+cd ..
+
 
 :build
 rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true

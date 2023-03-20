@@ -21,6 +21,14 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.dll" "compiledlibra
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Util.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Web3.dll" /s /y
-xcopy "compiledlibraries\netStandardUnityAOT\*.jslib "compiledlibraries\netStandardUnityCommonAOT" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.UI.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.Host.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.UI.Host.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Merkle.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.Patricia.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Merkle.Patricia.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Metamask.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Metamask.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\NethereumMetamask.jslib "compiledlibraries\netStandardUnityCommonAOT\NethereumMetamask.jslib" /s /y
+
+
+
 
 EXIT /B 0
