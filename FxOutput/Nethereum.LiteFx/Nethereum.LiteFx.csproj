@@ -84,5 +84,12 @@
 		  <Link>Siwe.Core\%(RecursiveDir)%(FileName)%(Extension)</Link>
 	  </Compile>
 
+	  <Compile Include="..\..\src\Nethereum.Merkle\**\*.cs" Exclude="..\..\src\Nethereum.Merkle\Properties\**;..\..\src\Nethereum.Merkle\bin\**;..\..\src\Nethereum.Merkle\obj\**">
+		  <Link>Merkle\%(RecursiveDir)%(FileName)%(Extension)</Link>
+	  </Compile>
+
+	  <Compile Include="..\..\src\Nethereum.Merkle.Patricia\**\*.cs" Exclude="..\..\src\Nethereum.Merkle.Patricia\Properties\**;..\..\src\Nethereum.Merkle.Patricia\bin\**;..\..\src\Nethereum.Merkle.Patricia\obj\**">
+		  <Link>Merkle.Patricia\%(RecursiveDir)%(FileName)%(Extension)</Link>
+	  </Compile>
 </ItemGroup>
 </Project>
