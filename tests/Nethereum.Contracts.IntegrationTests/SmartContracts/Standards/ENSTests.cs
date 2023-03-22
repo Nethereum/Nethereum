@@ -242,5 +242,15 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(description));
         }
 
+        [Fact]
+        public async void ShouldResolveAddressOfflineMatoken()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var ensService = web3.Eth.GetEnsService();
+            var theAddress = await ensService.ResolveAddressAsync("matoken.lens.xyz").ConfigureAwait(false);
+            var expected = "0x5A384227B65FA093DEC03Ec34e111Db80A040615";
+            Assert.True(expected.IsTheSameAddress(theAddress));
+        }
+
     }
 }
