@@ -17,4 +17,10 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.dll" "compiledlibra
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Util.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\*.jslib "compiledlibraries\netStandardMinimalWebglUnityAOT" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Web3.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.UI.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.Host.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.UI.Host.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Merkle.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.Patricia.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Merkle.Patricia.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Metamask.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Metamask.dll" /s /y
 EXIT /B 0

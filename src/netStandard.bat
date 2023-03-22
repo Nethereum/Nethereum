@@ -107,6 +107,27 @@ cd Nethereum.EVM
 CALL :build
 cd ..
 
+cd Nethereum.UI
+CALL :build
+cd ..
+
+
+cd Nethereum.Merkle
+CALL :build
+cd ..
+
+cd Nethereum.Merkle.Patricia
+CALL :build
+cd ..
+
+cd Nethereum.Metamask
+CALL :build
+cd ..
+
+cd Nethereum.Model
+CALL :build
+cd ..
+
 EXIT /B %ERRORLEVEL%
 
 :build
