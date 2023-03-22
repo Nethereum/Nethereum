@@ -21,7 +21,7 @@
     <DefaultFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
-    <UIFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0</UIFrameworks>
+    <UIFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0;net472</UIFrameworks>
     <UIFrameworksCore>netcoreapp3.1;net5.0;net6.0</UIFrameworksCore>
    <UIFrameworksBlazor>net6.0</UIFrameworksBlazor>
     <ENSFrameworks>net451;net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</ENSFrameworks>

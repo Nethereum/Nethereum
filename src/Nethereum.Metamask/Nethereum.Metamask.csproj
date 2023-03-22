@@ -6,7 +6,7 @@
 		<Description>Nethereum.Metamask Nethereum Metamask core integration</Description>
 		<AssemblyTitle>Nethereum.Metamask</AssemblyTitle>
 		<Version>$(NethereumVersion)</Version>
-		<TargetFrameworks>$(UIFrameworksCore);netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>$(UIFrameworksCore);netstandard2.0;net472</TargetFrameworks>
 		<AssemblyName>Nethereum.Metamask</AssemblyName>
 		<PackageId>Nethereum.Metamask</PackageId>
 		<PackageTags>Netherum;Metamask;Ethereum;Blockchain</PackageTags>
