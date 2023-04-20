@@ -148,5 +148,13 @@ namespace Nethereum.Util.UnitTests
             var value = BigDecimal.Pow((double)10,(double)27);
             Assert.Equal("1000000000000000000000000000", value.ToString());
         }
+
+        [Fact]
+        public void ShouldNotHangFromDouble()
+        {
+            var converted = (BigDecimal)double.Epsilon; // hangs
+        }
+
+
     }
 }

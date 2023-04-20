@@ -26,7 +26,7 @@ namespace Nethereum.RPC.Eth.Transactions
         /// <param name="rewardPercentiles">A monotonically increasing list of percentile values to sample from each block's effective priority fees per gas in ascending order, weighted by gas used.
         /// Floating point value between 0 and 100.</param>
         /// <returns></returns>
-        public Task<FeeHistoryResult> SendRequestAsync(HexBigInteger blockCount, BlockParameter highestBlockNumber, double[] rewardPercentiles = null, object id = null)
+        public Task<FeeHistoryResult> SendRequestAsync(HexBigInteger blockCount, BlockParameter highestBlockNumber, decimal[] rewardPercentiles = null, object id = null)
         {
             ValidateBlockCountRange(blockCount);
             if (highestBlockNumber == null) throw new ArgumentNullException(nameof(highestBlockNumber));
@@ -62,7 +62,7 @@ namespace Nethereum.RPC.Eth.Transactions
                 "Reward percentiles need to be in a range of 1 - 1024, current value: " + blockCount);
         }
 
-        private static void ValidateRewardPercentiles(double[] rewardPercentiles)
+        private static void ValidateRewardPercentiles(decimal[] rewardPercentiles)
         {
             if (rewardPercentiles != null)
             {
@@ -83,7 +83,7 @@ namespace Nethereum.RPC.Eth.Transactions
         /// <param name="rewardPercentiles">A monotonically increasing list of percentile values to sample from each block's effective priority fees per gas in ascending order, weighted by gas used.
         /// Floating point value between 0 and 100.</param>
         /// <returns></returns>
-        public RpcRequest BuildRequest(HexBigInteger blockCount, BlockParameter highestBlockNumber, double[] rewardPercentiles = null, object id = null)
+        public RpcRequest BuildRequest(HexBigInteger blockCount, BlockParameter highestBlockNumber, decimal[] rewardPercentiles = null, object id = null)
         {
             ValidateBlockCountRange(blockCount);
             if (highestBlockNumber == null) throw new ArgumentNullException(nameof(highestBlockNumber));

@@ -23,10 +23,10 @@ namespace Nethereum.RPC.Fee1559Suggestions
     /// </summary>
     public class TimePreferenceFeeSuggestionStrategy:IFee1559SuggestionStrategy
     {
-        public double SampleMin { get; set; } = 0.1;
-        public double SampleMax { get; set; }  = 0.3;
-        public int MaxTimeFactor { get; set; } = 15;
-        public double ExtraTipRatio { get; set; } = 0.25;
+        public decimal SampleMin { get; set; } = 0.1M;
+        public decimal SampleMax { get; set; }  = 0.3M;
+        public double MaxTimeFactor { get; set; } = 15;
+        public decimal ExtraTipRatio { get; set; } = 0.25M;
         public BigInteger FallbackTip { get; set; } = 2000000000;
 
         public TimePreferenceFeeSuggestionStrategy()
@@ -73,7 +73,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 if (blockCount > 0)
                 {
                     // feeHistory API call with reward percentile specified is expensive and therefore is only requested for a few non-full recent blocks.
-                    var feeHistory = await ethFeeHistory.SendRequestAsync(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new double[] { 0 }).ConfigureAwait(false);
+                    var feeHistory = await ethFeeHistory.SendRequestAsync(blockCount.ToHexBigInteger(), new BlockParameter(new HexBigInteger(firstBlock + ptr)), new decimal[] { 0 }).ConfigureAwait(false);
                     for (var i = 0; i < feeHistory.Reward.Length; i++)
                     {
                         rewards.Add(feeHistory.Reward[i][0]);
@@ -221,19 +221,19 @@ public static class Comparer
         /// <summary>
         /// // suggestBaseFee calculates an average of base fees in the sampleMin to sampleMax percentile range of recent base fee history, each block weighted with an exponential time function based on timeFactor.
         /// </summary>
-        protected BigDecimal SuggestBaseFee(BigInteger[] baseFee, int[] order, int timeFactor)
+        protected BigDecimal SuggestBaseFee(BigInteger[] baseFee, int[] order, double timeFactor)
         { 
-            if (timeFactor < 1e-6)
+            if ((int)timeFactor < 1e-6)
             {
                 return new BigDecimal(baseFee[baseFee.Length - 1], 0);
             }
-            var pendingWeight = (1 - Math.Exp(-1 / timeFactor)) / (1 - Math.Exp(-baseFee.Length / timeFactor));
-            double sumWeight = 0;
+            var pendingWeight = ((1 - (decimal)Math.Exp(-1 / timeFactor)) / (1 - (decimal)Math.Exp(-baseFee.Length / timeFactor)));
+            decimal sumWeight = 0;
             BigDecimal result = 0;
-            double samplingCurveLast = 0;
+            decimal samplingCurveLast = 0;
             for (var i = 0; i < order.Length; i++)
             {
-                sumWeight += pendingWeight * Math.Exp((order[i] - baseFee.Length + 1) / timeFactor);
+                sumWeight += pendingWeight * (decimal)Math.Exp((order[i] - baseFee.Length + 1) / timeFactor);
                 var samplingCurveValue = SamplingCurve(sumWeight);
                 result += (samplingCurveValue - samplingCurveLast) * new BigDecimal(baseFee[order[i]], 0);
                 if (samplingCurveValue >= 1)
@@ -247,7 +247,7 @@ public static class Comparer
         }
 
         // samplingCurve is a helper function for the base fee percentile range calculation.
-        protected double SamplingCurve(double sumWeight)
+        protected decimal SamplingCurve(decimal sumWeight)
         {
             if (sumWeight <= SampleMin)
             {
@@ -257,7 +257,8 @@ public static class Comparer
             {
                 return 1;
             }
-            return (1 - Math.Cos((sumWeight - SampleMin) * 2 * Math.PI / (SampleMax - SampleMin))) / 2;
+            var val = (sumWeight - SampleMin) * 2 * BigDecimal.PI / (SampleMax - SampleMin);
+            return 1 - (decimal)Math.Cos((double)(val)) / 2;
         }
 
 

@@ -22,7 +22,7 @@ namespace Nethereum.Util
         ///     If AlwaysTruncate is set to true all operations are affected.
         /// </summary>
         public const int Precision = 50;
-
+        public const decimal PI = 3.14159265358979323846264338327950288419716939937510M;
         public BigDecimal(BigDecimal bigDecimal, bool alwaysTruncate = false) : this(bigDecimal.Mantissa,
             bigDecimal.Exponent, alwaysTruncate)
         {

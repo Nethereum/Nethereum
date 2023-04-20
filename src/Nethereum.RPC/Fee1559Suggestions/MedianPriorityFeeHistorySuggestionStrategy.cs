@@ -27,7 +27,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
         ///<summary>
         // Which percentile of effective priority fees to include
         /// </summary>
-        public static double FEE_HISTORY_PERCENTILE = 5;
+        public static decimal FEE_HISTORY_PERCENTILE = 5;
         // Which base fee to trigger priority fee estimation at
         public static long PRIORITY_FEE_ESTIMATION_TRIGGER = 100_000_000_000; // GWEI
                                                          // Returned if above trigger is not met
@@ -61,7 +61,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
                 return DefaultPriorityFee;
             }
 
-            var feeHistory = await _ethFeeHistory.SendRequestAsync(new HexBigInteger(FeeHistoryNumberOfBlocks), new BlockParameter(blockNumber), new double[] {
+            var feeHistory = await _ethFeeHistory.SendRequestAsync(new HexBigInteger(FeeHistoryNumberOfBlocks), new BlockParameter(blockNumber), new decimal[] {
               FEE_HISTORY_PERCENTILE }
             ).ConfigureAwait(false);
 
