@@ -32,15 +32,24 @@ namespace Nethereum.ABI.Encoders
             if (!(value is byte[]))
                 throw new Exception("byte[] value expected for type 'bytes'");
             var bb = (byte[]) value;
-            var ret = new byte[((bb.Length - 1)/32 + 1)*32]; // padding 32 bytes
 
-            //It should always be Big Endian.
-            if (BitConverter.IsLittleEndian && checkEndian)
-                bb = bb.Reverse().ToArray();
+            if (bb.Length == 0)
+            {
+                var ret = new byte[] { };
+                return ByteUtil.Merge(_intTypeEncoder.EncodeInt(bb.Length), ret);
+            }
+            else
+            {
 
-            Array.Copy(bb, 0, ret, 0, bb.Length);
+                var ret = new byte[((bb.Length - 1) / 32 + 1) * 32]; // padding 32 bytes
+                //It should always be Big Endian.
+                if (BitConverter.IsLittleEndian && checkEndian)
+                    bb = bb.Reverse().ToArray();
 
-            return ByteUtil.Merge(_intTypeEncoder.EncodeInt(bb.Length), ret);
+                Array.Copy(bb, 0, ret, 0, bb.Length);
+
+                return ByteUtil.Merge(_intTypeEncoder.EncodeInt(bb.Length), ret);
+            }
         }
     }
 }
