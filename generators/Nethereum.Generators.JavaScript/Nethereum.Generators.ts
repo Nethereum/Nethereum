@@ -1683,13 +1683,13 @@ class ContractDeploymentServiceMethodsCSharpTemplate extends NObject
 		var typeName: string = this._contractDeploymentCQSMessageModel.GetTypeName();
 		var variableName: string = this._contractDeploymentCQSMessageModel.GetVariableName();
 		var text: string = NString.Concat([
-			SpaceUtils.TwoTabs, "public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, ", typeName, " ", variableName, ", CancellationTokenSource cancellationTokenSource = null)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "return web3.Eth.GetContractDeploymentHandler<", typeName, ">().SendRequestAndWaitForReceiptAsync(", variableName, ", cancellationTokenSource);\r\n", SpaceUtils.TwoTabs, "}"
+			SpaceUtils.TwoTabs, "public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, ", typeName, " ", variableName, ", CancellationTokenSource cancellationTokenSource = null)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "return web3.Eth.GetContractDeploymentHandler<", typeName, ">().SendRequestAndWaitForReceiptAsync(", variableName, ", cancellationTokenSource);\r\n", SpaceUtils.TwoTabs, "}"
 		]);
 		var text2: string = NString.Concat([
-			SpaceUtils.TwoTabs, "public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, ", typeName, " ", variableName, ")\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "return web3.Eth.GetContractDeploymentHandler<", typeName, ">().SendRequestAsync(", variableName, ");\r\n", SpaceUtils.TwoTabs, "}"
+			SpaceUtils.TwoTabs, "public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, ", typeName, " ", variableName, ")\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "return web3.Eth.GetContractDeploymentHandler<", typeName, ">().SendRequestAsync(", variableName, ");\r\n", SpaceUtils.TwoTabs, "}"
 		]);
 		var text3: string = NString.Concat([
-			SpaceUtils.TwoTabs, "public static async Task<", this._serviceModel.GetTypeName(), "> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ", typeName, " ", variableName, ", CancellationTokenSource cancellationTokenSource = null)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "var receipt = await DeployContractAndWaitForReceiptAsync(web3, ", variableName, ", cancellationTokenSource);\r\n", SpaceUtils.ThreeTabs, "return new ", this._serviceModel.GetTypeName(), "(web3, receipt.ContractAddress);\r\n", SpaceUtils.TwoTabs, 
+			SpaceUtils.TwoTabs, "public static async Task<", this._serviceModel.GetTypeName(), "> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, ", typeName, " ", variableName, ", CancellationTokenSource cancellationTokenSource = null)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "var receipt = await DeployContractAndWaitForReceiptAsync(web3, ", variableName, ", cancellationTokenSource);\r\n", SpaceUtils.ThreeTabs, "return new ", this._serviceModel.GetTypeName(), "(web3, receipt.ContractAddress);\r\n", SpaceUtils.TwoTabs, 
 			"}"
 		]);
 		return NString.Join(ContractDeploymentServiceMethodsCSharpTemplate.SpaceFollowingFunction, [
@@ -1823,8 +1823,8 @@ class ServiceCSharpTemplate extends ClassTemplateBase<ServiceModel>
 	GenerateClass(): string
 	{
 		return NString.Concat([
-			SpaceUtils.OneTab, "public partial class ", this.Model.GetTypeName(), "\r\n", SpaceUtils.OneTab, "{\r\n", this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), "\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, "protected Nethereum.Web3.Web3 Web3{ get; }\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, "public ContractHandler ContractHandler { get; }\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, 
-			"public ", this.Model.GetTypeName(), "(Nethereum.Web3.Web3 web3, string contractAddress)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "Web3 = web3;\r\n", SpaceUtils.ThreeTabs, "ContractHandler = web3.Eth.GetContractHandler(contractAddress);\r\n", SpaceUtils.TwoTabs, "}\r\n", SpaceUtils.NoTabs, "\r\n", this._functionServiceMethodCSharpTemplate.GenerateMethods(), "\r\n", SpaceUtils.OneTab, "}"
+			SpaceUtils.OneTab, "public partial class ", this.Model.GetTypeName(), "\r\n", SpaceUtils.OneTab, "{\r\n", this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), "\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, "protected Nethereum.Web3.IWeb3 Web3 { get; }\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, "public ContractHandler ContractHandler { get; }\r\n", SpaceUtils.NoTabs, "\r\n", SpaceUtils.TwoTabs, 
+			"public ", this.Model.GetTypeName(), "(Nethereum.Web3.IWeb3 web3, string contractAddress)\r\n", SpaceUtils.TwoTabs, "{\r\n", SpaceUtils.ThreeTabs, "Web3 = web3;\r\n", SpaceUtils.ThreeTabs, "ContractHandler = web3.Eth.GetContractHandler(contractAddress);\r\n", SpaceUtils.TwoTabs, "}\r\n", SpaceUtils.NoTabs, "\r\n", this._functionServiceMethodCSharpTemplate.GenerateMethods(), "\r\n", SpaceUtils.OneTab, "}"
 		]);
 	}
 }
