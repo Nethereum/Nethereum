@@ -252,5 +252,18 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(theAddress));
         }
 
+
+        [Fact]
+        public async void ShouldReverseResolveAddressMatoken()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var ensService = web3.Eth.GetEnsService();
+            var addressToResolve = "0x5A384227B65FA093DEC03Ec34e111Db80A040615";
+            var reverse = await ensService.ReverseResolveAsync(addressToResolve);
+            var address = await ensService.ResolveAddressAsync(reverse).ConfigureAwait(false);
+            Assert.True(address.IsTheSameAddress(addressToResolve));
+        }
+
+
     }
 }
