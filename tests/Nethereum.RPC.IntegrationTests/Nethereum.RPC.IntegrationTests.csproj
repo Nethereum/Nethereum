@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>1.0.2</VersionPrefix>
-    <TargetFrameworks>netcoreapp3.1;net461;net5.0</TargetFrameworks>
+	  <TargetFrameworks>net6.0</TargetFrameworks>
     <AssemblyName>Nethereum.RPC.Tests</AssemblyName>
     <PackageId>Nethereum.RPC.Tests</PackageId>
   </PropertyGroup>

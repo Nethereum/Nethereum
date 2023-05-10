@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.RLP.UnitTests Class Library</Description>
     <Authors>JuanFran</Authors>
-    <TargetFrameworks>netcoreapp3.1;net461;net5.0</TargetFrameworks>
+	 <TargetFrameworks>net6.0</TargetFrameworks>
     <AssemblyName>Nethereum.RLP.UnitTests</AssemblyName>
     <PackageId>Nethereum.RLP.UnitTests</PackageId>
   </PropertyGroup>

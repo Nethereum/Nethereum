@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Nethereum.Ledger.IntegrationTests </Description>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+	  <TargetFrameworks>net6.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
