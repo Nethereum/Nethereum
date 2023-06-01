@@ -245,6 +245,9 @@ namespace Nethereum.EVM
                         case Instruction.PC:
                             EvmProgramExecution.StackFlowExecution.PC(program);
                             break;
+                        case Instruction.PUSH0:
+                            EvmProgramExecution.StackFlowExecution.PushZero(program);
+                            break;
                         case Instruction.PUSH1:
                         case Instruction.PUSH2:
                         case Instruction.PUSH3:

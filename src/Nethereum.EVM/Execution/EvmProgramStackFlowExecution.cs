@@ -42,6 +42,12 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        public void PushZero(Program program)
+        {
+            program.StackPush(0);
+            program.Step();
+        }
+
         public void Push(Program program)
         {
             var data = program.GetCurrentInstruction().Arguments;

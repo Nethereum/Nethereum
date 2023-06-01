@@ -134,8 +134,9 @@
         ///<summary>get the amount of available gas</summary>///
         GAS,                
         ///<summary>set a potential jump destination</summary>///
-        JUMPDEST,           
-
+        JUMPDEST,
+        ///<summary>place 0 byte item on stack</summary>///
+        PUSH0 = 0x5f,
         ///<summary>place 1 byte item on stack</summary>///
         PUSH1 = 0x60,       
         ///<summary>place 2 byte item on stack</summary>///
