@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.Decoders;
 using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts.ContractStorage;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ERC20
@@ -22,6 +24,8 @@ namespace Nethereum.Contracts.Standards.ERC20
             ContractHandler = ethApiContractService.GetContractHandler(contractAddress);
 #endif
         }
+
+      
 
         public Event<ApprovalEventDTO> GetApprovalEvent()
         {
@@ -123,6 +127,14 @@ namespace Nethereum.Contracts.Standards.ERC20
             BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
+        }
+
+        public async Task<BigInteger> GetBalanceFromStorageAsync(string address, ulong slot, BlockParameter blockParameter = null)
+        {
+            var key = StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(address, slot);
+            var value = await ContractHandler.EthApiContractService.GetStorageAt.SendRequestAsync(this.ContractAddress, new HexBigInteger(key), blockParameter);
+            var intTypeDecoder = new IntTypeDecoder();
+            return intTypeDecoder.DecodeBigInteger(value);
         }
 
         public Task<BigInteger> BalancesQueryAsync(string address, BlockParameter blockParameter = null)

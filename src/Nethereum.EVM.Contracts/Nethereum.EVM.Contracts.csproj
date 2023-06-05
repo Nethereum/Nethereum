@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<PropertyGroup>
+	<Description>Nethereum.EVM.Contracts EVM Simulation of Standard Contracts and Common contracts</Description>
+	<AssemblyTitle>Nethereum.EVM.Contracts</AssemblyTitle>
+	<Version>1.0.0-rc4</Version>
+	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+	<AssemblyName>Nethereum.EVM.Contracts</AssemblyName>
+	<PackageId>Nethereum.EVM.Contracts</PackageId>
+	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+</PropertyGroup>
+<ItemGroup>
+  <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+  <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+  <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+  <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+  <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
+  <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+</ItemGroup>
+
+</Project>

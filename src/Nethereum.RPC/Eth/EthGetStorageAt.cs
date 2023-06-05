@@ -51,9 +51,10 @@ namespace Nethereum.RPC.Eth
         public Task<string> SendRequestAsync(string address, HexBigInteger position, BlockParameter block,
             object id = null)
         {
+
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (position == null) throw new ArgumentNullException(nameof(position));
-            if (block == null) throw new ArgumentNullException(nameof(block));
+            if (block == null) block = DefaultBlock;
             return base.SendRequestAsync(id, address.EnsureHexPrefix(), position, block);
         }
 

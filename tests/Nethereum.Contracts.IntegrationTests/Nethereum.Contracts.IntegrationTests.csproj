@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <ProjectReference Include="..\..\src\Nethereum.EVM.Contracts\Nethereum.EVM.Contracts.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Merkle\Nethereum.Merkle.csproj" />

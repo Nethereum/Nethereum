@@ -5,14 +5,21 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Util;
 using System;
+using System.Globalization;
 using System.Numerics;
 using Xunit;
+using System.Xml.Linq;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 // ReSharper disable ConsiderUsingConfigureAwait  
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
 namespace Nethereum.Contracts.IntegrationTests.EVM
 {
+
+
+
 
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EvmSimulatorERC20Tests820PushZero

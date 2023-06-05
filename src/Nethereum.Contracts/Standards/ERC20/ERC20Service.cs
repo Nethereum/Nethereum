@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.ABI;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
@@ -61,6 +62,8 @@ namespace Nethereum.Contracts.Standards.ERC20
         {
             return GetOptionalFunctionAbis().Select(x => x.Sha3Signature).ToArray();
         }
+
+      
 
 #if !DOTNET35
 
@@ -131,6 +134,8 @@ namespace Nethereum.Contracts.Standards.ERC20
 #endif
 
     }
+
+
 
     public class TokenOwnerInfo
     {
