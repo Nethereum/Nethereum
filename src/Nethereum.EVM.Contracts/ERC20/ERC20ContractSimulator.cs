@@ -16,14 +16,15 @@ using Nethereum.ABI.Decoders;
 
 namespace Nethereum.EVM.Contracts.ERC20
 {
-    public class ERC20Simulator
+    public class ERC20ContractSimulator
+
     {
         public IWeb3 Web3 { get; }
         public BigInteger ChainId { get; }
         public string ContractAddress { get; }
         private byte[] Code { get; set; }
 
-        public ERC20Simulator(IWeb3 web3, BigInteger chainId, string contractAddress, byte[] code = null)
+        public ERC20ContractSimulator(IWeb3 web3, BigInteger chainId, string contractAddress, byte[] code = null)
         {
             Web3 = web3;
             ChainId = chainId;
