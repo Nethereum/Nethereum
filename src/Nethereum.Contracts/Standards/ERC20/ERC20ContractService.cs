@@ -129,7 +129,7 @@ namespace Nethereum.Contracts.Standards.ERC20
             return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
         }
 
-        public async Task<BigInteger> GetBalanceFromStorageAsync(string address, ulong slot, BlockParameter blockParameter = null)
+        public async Task<BigInteger> GetBalanceFromStorageAsync(string address, BigInteger slot, BlockParameter blockParameter = null)
         {
             var key = StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(address, slot);
             var value = await ContractHandler.EthApiContractService.GetStorageAt.SendRequestAsync(this.ContractAddress, new HexBigInteger(key), blockParameter);

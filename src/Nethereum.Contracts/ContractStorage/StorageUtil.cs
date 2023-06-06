@@ -10,12 +10,12 @@ namespace Nethereum.Contracts.ContractStorage
 {
     public class StorageUtil
     {
-        public static byte[] CalculateMappingAddressStorageKey(string address, ulong slot)
+        public static byte[] CalculateMappingAddressStorageKey(string address, BigInteger slot)
         {
             return new ABIEncode().GetSha3ABIEncoded(new ABIValue("address", address), new ABIValue("int", slot));
         }
 
-        public static BigInteger CalculateMappingAddressStorageKeyAsBigInteger(string address, ulong slot)
+        public static BigInteger CalculateMappingAddressStorageKeyAsBigInteger(string address, BigInteger slot)
         {
             return CalculateMappingAddressStorageKey(address, slot).ToHex().HexToBigInteger(false);
         }
