@@ -18,6 +18,19 @@ namespace Nethereum.EVM.Contracts.ERC20
 {
     public class ERC20Simulator
     {
+        public IWeb3 Web3 { get; }
+        public BigInteger ChainId { get; }
+        public string ContractAddress { get; }
+        private byte[] Code { get; set; }
+
+        public ERC20Simulator(IWeb3 web3, BigInteger chainId, string contractAddress, byte[] code = null)
+        {
+            Web3 = web3;
+            ChainId = chainId;
+            ContractAddress = contractAddress;
+            Code = code;
+        }
+
         public class TransferSimulationResult 
         {
             public BigInteger BalanceSenderBefore { get; set; }
@@ -32,35 +45,45 @@ namespace Nethereum.EVM.Contracts.ERC20
 
         }
 
-        public async Task<TransferSimulationResult> SimulateTransferAndBalanceStateAsync(string contractAddress, string addressSender, string addressReceiver, BigInteger amount, IWeb3 web3, BigInteger chainId)
+        protected async Task<byte[]> GetCodeAsync()
+        {
+            if (Code == null)
+            {
+                var code = await Web3.Eth.GetCode.SendRequestAsync(ContractAddress); // runtime code;
+                Code = code.HexToByteArray();
+            }
+            return Code;
+        }
+
+        public async Task<TransferSimulationResult> SimulateTransferAndBalanceStateAsync(string addressSender, string addressReceiver, BigInteger amount)
         {
 
             var transferSimulationResult = new TransferSimulationResult();
-            var blockNumber = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
-            var erc20Service = web3.Eth.ERC20.GetContractService(contractAddress);
+            var blockNumber = await Web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var erc20Service = Web3.Eth.ERC20.GetContractService(ContractAddress);
             var balanceSenderBefore = await erc20Service.BalanceOfQueryAsync(addressSender);
             var balanceReceiverBefore = await erc20Service.BalanceOfQueryAsync(addressReceiver);
 
             transferSimulationResult.BalanceSenderBefore = balanceSenderBefore;
             transferSimulationResult.BalanceReceiverBefore = balanceReceiverBefore;
 
-            var slot = await CalculateMappingBalanceSlotAsync(contractAddress, addressSender, chainId, web3, 10000, blockNumber);
-            var code = await web3.Eth.GetCode.SendRequestAsync(contractAddress); // runtime code;
+            var slot = await CalculateMappingBalanceSlotAsync(addressSender, 10000, blockNumber);
           
-            var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
+          
+            var nodeDataService = new RpcNodeDataService(Web3.Eth, new BlockParameter(blockNumber));
             var executionStateService = new ExecutionStateService(nodeDataService);
 
-            var programResult = await SimulateTransferAsync(contractAddress, addressSender, addressReceiver, amount, code, chainId, executionStateService);
+            var programResult = await SimulateTransferAsync(addressSender, addressReceiver, amount, executionStateService);
             transferSimulationResult.TransferLogs = programResult.Logs;
 
-            var balanceSenderAfter = await SimulateGetBalanceAsync(contractAddress, addressSender, code, chainId, executionStateService);
-            var balanceReceiverAfter = await SimulateGetBalanceAsync(contractAddress, addressReceiver, code, chainId, executionStateService);
+            var balanceSenderAfter = await SimulateGetBalanceAsync(addressSender, executionStateService);
+            var balanceReceiverAfter = await SimulateGetBalanceAsync(addressReceiver, executionStateService);
 
             transferSimulationResult.BalanceSenderAfter = balanceSenderAfter;
             transferSimulationResult.BalanceReceiverAfter = balanceReceiverAfter;
 
-            var balanceStorageSenderAfter = await executionStateService.GetFromStorageAsync(contractAddress, StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(addressSender, (ulong)slot));
-            var balanceStorageReceiverAfter = await executionStateService.GetFromStorageAsync(contractAddress, StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(addressReceiver, (ulong)slot));
+            var balanceStorageSenderAfter = await executionStateService.GetFromStorageAsync(ContractAddress, StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(addressSender, (ulong)slot));
+            var balanceStorageReceiverAfter = await executionStateService.GetFromStorageAsync(ContractAddress, StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(addressReceiver, (ulong)slot));
 
             transferSimulationResult.BalanceReceiverStorageAfter = new IntTypeDecoder().DecodeBigInteger(balanceStorageReceiverAfter);
             transferSimulationResult.BalanceSenderStorageAfter = new IntTypeDecoder().DecodeBigInteger(balanceStorageSenderAfter);
@@ -69,7 +92,7 @@ namespace Nethereum.EVM.Contracts.ERC20
 
         }
 
-        private static async Task<ProgramResult> SimulateTransferAsync(string contractAddress, string addressSender, string addressReceiver, BigInteger amount, string code, BigInteger chainId, ExecutionStateService executionStateService)
+        public async Task<ProgramResult> SimulateTransferAsync(string addressSender, string addressReceiver, BigInteger amount, ExecutionStateService executionStateService)
         {
             var transferFunction = new TransferFunction();
             transferFunction.FromAddress = addressSender;
@@ -77,26 +100,28 @@ namespace Nethereum.EVM.Contracts.ERC20
             transferFunction.Value = amount;
 
 
-            var callInput = transferFunction.CreateCallInput(contractAddress);
-            callInput.ChainId = new HexBigInteger(chainId);
+            var callInput = transferFunction.CreateCallInput(ContractAddress);
+            callInput.ChainId = new HexBigInteger(ChainId);
             var programContext = new ProgramContext(callInput, executionStateService);
-            var program = new Program(code.HexToByteArray(), programContext);
+            var code = await GetCodeAsync();
+            var program = new Program(code, programContext);
             var evmSimulator = new EVMSimulator();
             await evmSimulator.ExecuteAsync(program);
             return program.ProgramResult;
            
         }
 
-        public async Task<BigInteger> SimulateGetBalanceAsync(string contractAddress, string addressOwner, string code, BigInteger chainId, ExecutionStateService executionStateService)
+        public async Task<BigInteger> SimulateGetBalanceAsync(string addressOwner, ExecutionStateService executionStateService)
         {
             var balanceOfFunction = new BalanceOfFunction();
             balanceOfFunction.Owner = addressOwner;
-            var callInput = balanceOfFunction.CreateCallInput(contractAddress);
+            var callInput = balanceOfFunction.CreateCallInput(ContractAddress);
             callInput.From = addressOwner;
-            callInput.ChainId = new HexBigInteger(chainId);
+            callInput.ChainId = new HexBigInteger(ChainId);
 
             var programContext = new ProgramContext(callInput, executionStateService);
-            var program = new Program(code.HexToByteArray(), programContext);
+            var code = await GetCodeAsync();
+            var program = new Program(code, programContext);
             var evmSimulator = new EVMSimulator();
             await evmSimulator.ExecuteAsync(program);
             var resultEncoded = program.ProgramResult.Result;
@@ -105,30 +130,30 @@ namespace Nethereum.EVM.Contracts.ERC20
         }
 
 
-        public async Task<BigInteger> CalculateMappingBalanceSlotAsync(string contractAddress, string addressWithAmount, BigInteger chainId, IWeb3 web3, ulong numberOfSlotsToTry = 10000, HexBigInteger blockNumber = null)
+        public async Task<BigInteger> CalculateMappingBalanceSlotAsync(string addressWithAmount, ulong numberOfSlotsToTry = 10000, HexBigInteger blockNumber = null)
         {
             //current block number
             if (blockNumber == null)
             {
-                blockNumber = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+                blockNumber = await Web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
             }
-            var code = await web3.Eth.GetCode.SendRequestAsync(contractAddress); // runtime code;
 
             //Creating a balance function to simulate in the evm using the state of mainnet
             var balanceOfFunction = new BalanceOfFunction();
             balanceOfFunction.Owner = addressWithAmount;
-            var callInput = balanceOfFunction.CreateCallInput(contractAddress);
+            var callInput = balanceOfFunction.CreateCallInput(ContractAddress);
             callInput.From = addressWithAmount;
-            callInput.ChainId = new HexBigInteger(chainId);
+            callInput.ChainId = new HexBigInteger(ChainId);
 
             //setting up the nodeDataService to communicate with mainnet to get storage, code, etc
-            var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
+            var nodeDataService = new RpcNodeDataService(Web3.Eth, new BlockParameter(blockNumber));
             //setting up our local execution state service (this stores our execution and loads data from the node if required)
             var executionStateService = new ExecutionStateService(nodeDataService);
             //context with the call input and the state
             var programContext = new ProgramContext(callInput, executionStateService);
             //program with the code
-            var program = new Program(code.HexToByteArray(), programContext);
+            var code = await GetCodeAsync();
+            var program = new Program(code, programContext);
             var evmSimulator = new EVMSimulator();
 
             //execute the program
@@ -139,7 +164,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             //decoding the result
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
 
-            var contractStorage = executionStateService.CreateOrGetAccountExecutionState(contractAddress).GetContractStorageAsHex();
+            var contractStorage = executionStateService.CreateOrGetAccountExecutionState(ContractAddress).GetContractStorageAsHex();
 
             foreach (var storageItem in contractStorage)
             {

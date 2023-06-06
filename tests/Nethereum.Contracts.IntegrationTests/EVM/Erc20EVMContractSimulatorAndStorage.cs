@@ -35,8 +35,8 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var contractAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
             var senderAddress = "0x0000000000000000000000000000000000000001";
-            var simulator = new Nethereum.EVM.Contracts.ERC20.ERC20Simulator();
-            var slot = await simulator.CalculateMappingBalanceSlotAsync(contractAddress, senderAddress, 1, web3, 100);
+            var simulator = new Nethereum.EVM.Contracts.ERC20.ERC20Simulator(web3, 1, contractAddress);
+            var slot = await simulator.CalculateMappingBalanceSlotAsync(senderAddress, 100);
             Assert.Equal(9, slot);
         }
 
@@ -47,8 +47,8 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var contractAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
             var senderAddress = "0x0000000000000000000000000000000000000001";
             var receiverAddress = "0x0000000000000000000000000000000000000025";
-            var simulator = new Nethereum.EVM.Contracts.ERC20.ERC20Simulator();
-            var simulationResult = await simulator.SimulateTransferAndBalanceStateAsync(contractAddress, senderAddress, receiverAddress, 100, web3, 1);
+            var simulator = new Nethereum.EVM.Contracts.ERC20.ERC20Simulator(web3, 1, contractAddress);
+            var simulationResult = await simulator.SimulateTransferAndBalanceStateAsync(senderAddress, receiverAddress, 100);
             Assert.Equal(simulationResult.BalanceSenderAfter, simulationResult.BalanceSenderBefore - 100);
             Assert.Equal(simulationResult.BalanceSenderStorageAfter, simulationResult.BalanceSenderBefore - 100);
             Assert.Equal(simulationResult.BalanceReceiverAfter, simulationResult.BalanceReceiverBefore + 100);
@@ -69,6 +69,8 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             Assert.Equal(balanceSmartContract, balanceStorage);
         }
 
+      
     }
-       
+
 }
+       
