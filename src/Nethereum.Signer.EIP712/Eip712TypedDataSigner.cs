@@ -92,9 +92,9 @@ namespace Nethereum.Signer.EIP712
             return  new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
         }
 
-        public string RecoverFromSignatureV4(string json, string signature)
+        public string RecoverFromSignatureV4(string json, string signature, string messageKeySelector = "message")
         {
-            var encodedData = EncodeTypedData(json);
+            var encodedData = EncodeTypedData<Domain>(json, messageKeySelector);
             return new MessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedData), signature);
         }
 
