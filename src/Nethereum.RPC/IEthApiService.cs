@@ -9,7 +9,7 @@ using Nethereum.RPC.TransactionManagers;
 
 namespace Nethereum.RPC
 {
-    public interface IEthApiService
+    public interface IEthApiService: IRpcClientWrapper
     {
         IEthChainId ChainId { get; }
         IEthAccounts Accounts { get; }

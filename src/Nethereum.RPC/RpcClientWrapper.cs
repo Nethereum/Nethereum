@@ -2,7 +2,7 @@ using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC
 {
-    public class RpcClientWrapper
+    public class RpcClientWrapper : IRpcClientWrapper
     {
         public RpcClientWrapper(IClient client)
         {
