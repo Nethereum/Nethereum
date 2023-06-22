@@ -15,25 +15,25 @@ namespace Nethereum.Unity.FeeSuggestions
         private readonly EthFeeHistoryUnityRequest _ethFeeHistory;
         private readonly TimePreferenceFeeSuggestionStrategy _timePreferenceFeeSuggestionStrategy;
         private readonly SuggestTipUnityRequestStrategy _suggestTipUnityRequest;
-        public double SampleMin
+        public decimal SampleMin
         {
             get => _timePreferenceFeeSuggestionStrategy.SampleMin;
             set => _timePreferenceFeeSuggestionStrategy.SampleMin = value;
         }
 
-        public double SampleMax
+        public decimal SampleMax
         {
             get => _timePreferenceFeeSuggestionStrategy.SampleMax;
             set => _timePreferenceFeeSuggestionStrategy.SampleMax = value;
         }
 
-        public int MaxTimeFactor
+        public double MaxTimeFactor
         {
             get => _timePreferenceFeeSuggestionStrategy.MaxTimeFactor;
             set => _timePreferenceFeeSuggestionStrategy.MaxTimeFactor = value;
         }
 
-        public double ExtraTipRatio
+        public decimal ExtraTipRatio
         {
             get => _timePreferenceFeeSuggestionStrategy.ExtraTipRatio;
             set => _timePreferenceFeeSuggestionStrategy.ExtraTipRatio = value;

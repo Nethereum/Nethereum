@@ -53,7 +53,7 @@ namespace Nethereum.Unity.FeeSuggestions
                         }
                         else
                         {
-                            yield return _ethFeeHistory.SendRequest(new HexBigInteger(MedianPriorityFeeHistorySuggestionStrategy.FeeHistoryNumberOfBlocks), new BlockParameter(lastBlock.Number), new double[] {
+                            yield return _ethFeeHistory.SendRequest(new HexBigInteger(MedianPriorityFeeHistorySuggestionStrategy.FeeHistoryNumberOfBlocks), new BlockParameter(lastBlock.Number), new decimal[] {
                                                                         MedianPriorityFeeHistorySuggestionStrategy.FEE_HISTORY_PERCENTILE });
                             if (_ethFeeHistory.Exception != null)
                             {

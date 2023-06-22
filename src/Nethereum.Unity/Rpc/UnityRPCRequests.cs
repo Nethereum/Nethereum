@@ -1151,7 +1151,7 @@ public class EthFeeHistoryUnityRequest : UnityRpcRequest<Nethereum.RPC.Eth.DTOs.
         _ethFeeHistory = new RPC.Eth.Transactions.EthFeeHistory(null);
     }
 
-    public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger blockCount, Nethereum.RPC.Eth.DTOs.BlockParameter highestBlockNumber, System.Double[] rewardPercentiles = null)
+    public IEnumerator SendRequest(Nethereum.Hex.HexTypes.HexBigInteger blockCount, Nethereum.RPC.Eth.DTOs.BlockParameter highestBlockNumber, decimal[] rewardPercentiles = null)
     {
         var request = _ethFeeHistory.BuildRequest(blockCount, highestBlockNumber, rewardPercentiles);
         yield return SendRequest(request);
