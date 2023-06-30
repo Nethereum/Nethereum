@@ -9,25 +9,26 @@ namespace Nethereum.Unity.Contracts
     {
         private readonly BigInteger _chainId;
         private readonly string _privateKey;
-        private readonly IUnityRpcRequestClientFactory _unityRpcClientFactory;
+
+        public IUnityRpcRequestClientFactory UnityRpcClientFactory { get; }
 
         public ContractTransactionUnityRequestFactory(string url, BigInteger chainId, string privateKey = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null)
         {
             _chainId = chainId;
             _privateKey = privateKey;
-            _unityRpcClientFactory = new UnityWebRequestRpcClientFactory(url, jsonSerializerSettings, requestHeaders);
+            UnityRpcClientFactory = new UnityWebRequestRpcClientFactory(url, jsonSerializerSettings, requestHeaders);
         }
 
         public ContractTransactionUnityRequestFactory(IUnityRpcRequestClientFactory unityRpcClientFactory, BigInteger chainId, string privateKey)
         {
             _chainId = chainId;
             _privateKey = privateKey;
-            _unityRpcClientFactory = unityRpcClientFactory;
+            UnityRpcClientFactory = unityRpcClientFactory;
         }
 
         public IContractTransactionUnityRequest CreateContractTransactionUnityRequest()
         {
-            return new TransactionSignedUnityRequest(_privateKey, _chainId, _unityRpcClientFactory);
+            return new TransactionSignedUnityRequest(_privateKey, _chainId, UnityRpcClientFactory);
         }
     }
 }
