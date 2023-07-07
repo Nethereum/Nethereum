@@ -131,10 +131,6 @@ cd Nethereum.Metamask
 CALL :build
 cd ..
 
-cd Nethereum.UI.Host
-CALL :build
-cd ..
-
 cd Nethereum.Model
 CALL :build
 cd ..
