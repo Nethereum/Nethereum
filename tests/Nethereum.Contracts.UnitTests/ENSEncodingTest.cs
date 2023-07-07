@@ -1,4 +1,5 @@
-﻿using Nethereum.Contracts.Standards.ENS;
+﻿using ADRaffy.ENSNormalize;
+using Nethereum.Contracts.Standards.ENS;
 using Xunit;
 
 namespace Nethereum.Contracts.UnitTests
@@ -36,13 +37,16 @@ namespace Nethereum.Contracts.UnitTests
 
 
         [Fact]
-        public void ShouldNormaliseInternationalDomain()
+        public void ShouldNotNormaliseMixtureOfCharactersDomain()
         {
             var input = "fоо.eth"; // with cyrillic 'o'
             var expected = "fоо.eth";
-            var output = new EnsUtil().Normalise(input);
-            Assert.Equal(expected, output);
+
+            Assert.Throws<InvalidLabelException>( () => 
+                    new EnsUtil().Normalise(input));
+            //Invalid label "fоо‎": illegal mixture: Latin + Cyrillic о‎ {43E}
         }
+
 
         [Fact]
         public void ShouldNormaliseToLowerDomain()

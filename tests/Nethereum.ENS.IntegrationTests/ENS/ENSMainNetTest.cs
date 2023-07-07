@@ -44,7 +44,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3.Eth);
-            var txn = await ensService.SetTextRequestAsync("nethereum.eth", TextDataKey.url, "https://nethereum.com").ConfigureAwait(false);
+            var txn = await ensService.SetTextRequestAsync("nethereum.eth", (Contracts.Standards.ENS.TextDataKey)TextDataKey.url, "https://nethereum.com").ConfigureAwait(false);
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace Nethereum.ENS.IntegrationTests.ENS
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var ensService = new ENSService(web3.Eth);
-            var url = await ensService.ResolveTextAsync("nethereum.eth", TextDataKey.url).ConfigureAwait(false);
+            var url = await ensService.ResolveTextAsync("nethereum.eth", (Contracts.Standards.ENS.TextDataKey)TextDataKey.url).ConfigureAwait(false);
             Assert.Equal("https://nethereum.com", url);
         }
 

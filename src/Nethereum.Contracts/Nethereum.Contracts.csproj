@@ -28,5 +28,10 @@
 		<Reference Include="System.Net.Http" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference  Condition=" '$(TargetFramework)' != 'net35'" Include="ADRaffy.ENSNormalize">
+	    <Version>0.1.2</Version>
+	  </PackageReference>
+	</ItemGroup>
 
 </Project>

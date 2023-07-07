@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using ADRaffy.ENSNormalize;
 using Multiformats.Codec;
 using Multiformats.Hash;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -185,12 +186,14 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
 
         [Fact]
-        public void ShouldNormaliseInternationalDomain()
+        public void ShouldNotNormaliseMixtureOfCharactersDomain()
         {
             var input = "fоо.eth"; // with cyrillic 'o'
             var expected = "fоо.eth";
-            var output = new EnsUtil().Normalise(input);
-            Assert.Equal(expected, output);
+
+            Assert.Throws<InvalidLabelException>(() =>
+                    new EnsUtil().Normalise(input));
+            //Invalid label "fоо‎": illegal mixture: Latin + Cyrillic о‎ {43E}
         }
 
         [Fact]

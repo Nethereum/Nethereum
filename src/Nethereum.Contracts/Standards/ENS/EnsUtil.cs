@@ -17,7 +17,7 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public string GetNameHash(string name)
         {
-#if !DOTNET35 && !NETSTANDARD1_1           
+#if !DOTNET3          
             var node = "0x0000000000000000000000000000000000000000000000000000000000000000";
             var kecckak = new Sha3Keccack();
             if (!string.IsNullOrEmpty(name))
@@ -38,22 +38,8 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public string Normalise(string name)
         {
-#if !DOTNET35 && !NETSTANDARD1_1
-            try
-            {
-                var idn = new IdnMapping
-                {
-                    UseStd3AsciiRules = true,
-                    AllowUnassigned = true
-                };
-                var puny = idn.GetAscii(name).ToLower();
-                return idn.GetUnicode(puny);
-
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentOutOfRangeException("Invalid ENS name", ex);
-            }
+#if !DOTNET35
+            return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.Normalize(name);
 #else
             throw new Exception("Normalise unsupported for the current .net version");
 #endif
