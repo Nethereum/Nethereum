@@ -29,8 +29,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference  Condition=" '$(TargetFramework)' != 'net35'" Include="ADRaffy.ENSNormalize">
-	    <Version>0.1.2</Version>
+	  <PackageReference Include="ADRaffy.ENSNormalize">
+	    <Version>0.1.3</Version>
 	  </PackageReference>
 	</ItemGroup>
 

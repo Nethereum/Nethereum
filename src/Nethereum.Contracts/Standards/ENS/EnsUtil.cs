@@ -16,8 +16,7 @@ namespace Nethereum.Contracts.Standards.ENS
         }
 
         public string GetNameHash(string name)
-        {
-#if !DOTNET3          
+        {       
             var node = "0x0000000000000000000000000000000000000000000000000000000000000000";
             var kecckak = new Sha3Keccack();
             if (!string.IsNullOrEmpty(name))
@@ -31,18 +30,11 @@ namespace Nethereum.Contracts.Standards.ENS
                 }
             }
             return node.EnsureHexPrefix();
-#else
-            throw new Exception("GetNameHash unsupported for the current .net version");
-#endif
         }
 
         public string Normalise(string name)
         {
-#if !DOTNET35
             return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.Normalize(name);
-#else
-            throw new Exception("Normalise unsupported for the current .net version");
-#endif
         }
 
         public string DnsEncode(string name)
