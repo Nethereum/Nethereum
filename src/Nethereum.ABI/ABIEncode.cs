@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Nethereum.ABI.Decoders;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.ABI.Util;
@@ -151,6 +153,39 @@ namespace Nethereum.ABI
         {
             var abiValues = ConvertValuesToDefaultABIValues(values);
             return GetABIEncodedPacked(abiValues.ToArray());
+        }
+
+        /// <summary>
+        /// If you have multiple parameters encoded use a custom type with Parameter attributes to decode them, similar to a FunctionMessage
+        /// </summary>
+        public T DecodeEncodedComplexType<T>(byte[] encoded)
+        {
+            var tupleDecoder = new TupleTypeDecoder();
+            return tupleDecoder.DecodeComplexType<T>(encoded);
+        }
+
+        public BigInteger DecodeEncodedBigInteger(byte[] encoded)
+        {
+            var intTypeDecoder = new IntTypeDecoder();
+            return intTypeDecoder.Decode<BigInteger>(encoded);
+        }
+
+        public string DecodeEncodedAddress(byte[] encoded)
+        {
+            var decoder = new AddressTypeDecoder();
+            return decoder.Decode<string>(encoded);
+        }
+
+        public bool DecodeEncodedBoolean(byte[] encoded)
+        {
+            var decoder = new BoolTypeDecoder();
+            return decoder.Decode<bool>(encoded);
+        }
+
+        public string DecodeEncodedString(byte[] encoded)
+        {
+            var decoder = new StringBytes32Decoder();
+            return decoder.Decode(encoded);
         }
 
     }
