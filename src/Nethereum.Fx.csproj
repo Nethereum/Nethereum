@@ -63,6 +63,7 @@
    </ItemGroup>
  
 	<ItemGroup>
+    <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.3" />
     <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="NBitcoin" Version="7.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
@@ -203,6 +204,13 @@
 
 	  <Compile Remove="Nethereum.Merkle.Patricia\Properties\**;Nethereum.Merkle.Patricia\bin\**;Nethereum.Merkle.Patricia\obj\**" />
 	  <None Remove="Nethereum.Merkle.Patricia\Properties\**;Nethereum.Merkle.Patricia\bin\**;Nethereum.Merkle.Patricia\obj\**" />
+
+	  <Compile Remove="Nethereum.EVM.Contracts\Properties\**;Nethereum.EVM.Contracts\bin\**;Nethereum.EVM.Contracts\obj\**" />
+	  <None Remove="Nethereum.EVM.Contracts\Properties\**;Nethereum.EVM.Contracts\bin\**;Nethereum.EVM.Contracts\obj\**" />
+
+	  <Compile Remove="Nethereum.RPC.Extensions\Properties\**;Nethereum.RPC.Extensions\bin\**;Nethereum.RPC.Extensions\obj\**" />
+	  <None Remove="Nethereum.RPC.Extensions\Properties\**;Nethereum.RPC.Extensions\bin\**;Nethereum.RPC.Extensions\obj\**" />
+	  
   </ItemGroup>
   
   <ItemGroup>
