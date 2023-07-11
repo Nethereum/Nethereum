@@ -15,6 +15,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatMine : RpcRequestResponseHandler<string>
     {
+        public HardhatMine(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatMine(IClient client) : base(client,ApiMethods.hardhat_mine.ToString()) { }
 
         public Task SendRequestAsync(HexBigInteger blocks, HexBigInteger interval = null, object id = null)

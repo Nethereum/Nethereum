@@ -10,6 +10,8 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatDropTransaction : RpcRequestResponseHandler<bool>
     {
+
+        public HardhatDropTransaction(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatDropTransaction(IClient client) : base(client, ApiMethods.hardhat_dropTransaction.ToString()) { }
 
         public Task<bool> SendRequestAsync(string txnHash, object id = null)

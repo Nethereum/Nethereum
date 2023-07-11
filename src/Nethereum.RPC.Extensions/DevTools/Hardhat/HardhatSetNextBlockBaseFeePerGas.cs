@@ -11,6 +11,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetNextBlockBaseFeePerGas : RpcRequestResponseHandler<string>
     {
+        public HardhatSetNextBlockBaseFeePerGas(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetNextBlockBaseFeePerGas(IClient client) : base(client,ApiMethods.hardhat_setNextBlockBaseFeePerGas.ToString()) { }
 
         public Task SendRequestAsync(HexBigInteger baseFeePerGas, object id = null)

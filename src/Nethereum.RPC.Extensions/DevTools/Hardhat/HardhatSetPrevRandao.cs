@@ -13,6 +13,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetPrevRandao : RpcRequestResponseHandler<string>
     {
+        public HardhatSetPrevRandao(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetPrevRandao(IClient client) : base(client,ApiMethods.hardhat_setPrevRandao.ToString()) { }
 
         public Task SendRequestAsync(BigInteger prevRandao, object id = null)

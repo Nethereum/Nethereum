@@ -33,6 +33,20 @@ namespace Nethereum.RPC.Extensions
         hardhat_setNextBlockBaseFeePerGas,
         hardhat_dropTransaction,
         hardhat_stopImpersonatingAccount,
-        hardhat_setCoinbase
+        hardhat_setCoinbase,
+
+        //anvil
+        anvil_impersonateAccount,
+        anvil_mine,
+        anvil_reset,
+        anvil_setBalance,
+        anvil_setCode,
+        anvil_setStorageAt,
+        anvil_setNonce,
+        anvil_setPrevRandao,
+        anvil_setNextBlockBaseFeePerGas,
+        anvil_dropTransaction,
+        anvil_stopImpersonatingAccount,
+        anvil_setCoinbase
     }
 }

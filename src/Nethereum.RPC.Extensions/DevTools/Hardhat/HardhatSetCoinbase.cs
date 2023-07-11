@@ -10,6 +10,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetCoinbase : RpcRequestResponseHandler<string>
     {
+        public HardhatSetCoinbase(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetCoinbase(IClient client) : base(client,ApiMethods.hardhat_setCoinbase.ToString()) { }
 
         public Task SendRequestAsync(string address, object id = null)

@@ -6,21 +6,26 @@ using Nethereum.RPC.Extensions.DevTools.Hardhat;
 
 namespace Nethereum.RPC.Extensions
 {
+
     public class HardhatService
     {
-        public HardhatDropTransaction DropTransaction { get; private set; }
-        public HardhatImpersonateAccount ImpersonateAccount { get; private set; }
-        public HardhatMine Mine { get; private set; }
-        public HardhatReset Reset { get; private set; }
-        public HardhatSetBalance SetBalance { get; private set; }
-        public HardhatSetCode SetCode { get; private set; }
-        public HardhatSetCoinbase SetCoinbase { get; private set; }
-        public HardhatSetNextBlockBaseFeePerGas SetNextBlockBaseFeePerGas { get; private set; }
-        public HardhatSetNonce SetNonce { get; private set; }
-        public HardhatSetPrevRandao SetPrevRandao { get; private set; }
-        public HardhatSetStorageAt SetStorageAt { get; private set; }
-        public HardhatStopImpersonatingAccount StopImpersonatingAccount { get; private set; }
+        public HardhatDropTransaction DropTransaction { get; protected set; }
+        public HardhatImpersonateAccount ImpersonateAccount { get; protected set; }
+        public HardhatMine Mine { get; protected set; }
+        public HardhatReset Reset { get; protected set; }
+        public HardhatSetBalance SetBalance { get; protected set; }
+        public HardhatSetCode SetCode { get; protected set; }
+        public HardhatSetCoinbase SetCoinbase { get; protected set; }
+        public HardhatSetNextBlockBaseFeePerGas SetNextBlockBaseFeePerGas { get; protected set; }
+        public HardhatSetNonce SetNonce { get; protected set; }
+        public HardhatSetPrevRandao SetPrevRandao { get; protected set; }
+        public HardhatSetStorageAt SetStorageAt { get; protected set; }
+        public HardhatStopImpersonatingAccount StopImpersonatingAccount { get; protected set; }
 
+        protected HardhatService()
+        {
+
+        }
         public HardhatService(IEthApiService ethApiService)
         {
             EthApiService = ethApiService;
@@ -39,7 +44,7 @@ namespace Nethereum.RPC.Extensions
         }
 
 
-        public IEthApiService EthApiService { get; }
+        public IEthApiService EthApiService { get; protected set; }
 #if !DOTNET35
         public async Task<HexBigInteger> IncreaseTimeAsync(uint numberInSeconds)
         {

@@ -9,6 +9,4 @@ namespace Nethereum.RPC.Extensions
             return new HardhatService(ethApiService);
         }
     }
-
-
 }

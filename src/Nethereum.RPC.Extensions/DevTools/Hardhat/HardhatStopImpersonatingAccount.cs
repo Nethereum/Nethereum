@@ -10,6 +10,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatStopImpersonatingAccount : RpcRequestResponseHandler<string>
     {
+        public HardhatStopImpersonatingAccount(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatStopImpersonatingAccount(IClient client) : base(client,ApiMethods.hardhat_stopImpersonatingAccount.ToString()) { }
 
         public Task SendRequestAsync(string address, object id = null)

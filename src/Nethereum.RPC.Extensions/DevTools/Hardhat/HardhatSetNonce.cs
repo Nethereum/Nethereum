@@ -11,6 +11,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetNonce : RpcRequestResponseHandler<string>
     {
+        public HardhatSetNonce(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetNonce(IClient client) : base(client,ApiMethods.hardhat_setNonce.ToString()) { }
 
         public Task SendRequestAsync(string address, HexBigInteger nonce, object id = null)

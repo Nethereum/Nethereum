@@ -13,6 +13,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatReset : RpcRequestResponseHandler<string>
     {
+        public HardhatReset(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatReset(IClient client) : base(client, ApiMethods.hardhat_reset.ToString()) { }
 
         public Task SendRequestAsync(object id = null)

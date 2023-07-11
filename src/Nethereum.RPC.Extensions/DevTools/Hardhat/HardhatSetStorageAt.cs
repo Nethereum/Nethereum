@@ -1,4 +1,5 @@
 
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Util;
@@ -12,15 +13,16 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetStorageAt : RpcRequestResponseHandler<string>
     {
+        public HardhatSetStorageAt(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetStorageAt(IClient client) : base(client,ApiMethods.hardhat_setStorageAt.ToString()) { }
 
         public Task SendRequestAsync(string address, HexBigInteger position, byte[] value, object id = null)
         {
-            return base.SendRequestAsync(id, address, position, value.PadTo32Bytes());
+            return base.SendRequestAsync(id, address, position, value.PadTo32Bytes().ToHex());
         }
         public RpcRequest BuildRequest(string address, HexBigInteger position, byte[] value, object id = null)
         {
-            return base.BuildRequest(id, address, position, value.PadTo32Bytes());
+            return base.BuildRequest(id, address, position, value.PadTo32Bytes().ToHex());
         }
     }
 

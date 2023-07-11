@@ -11,6 +11,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetBalance : RpcRequestResponseHandler<string>
     {
+        public HardhatSetBalance(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetBalance(IClient client) : base(client,ApiMethods.hardhat_setBalance.ToString()) { }
 
         public Task<string> SendRequestAsync(string address, HexBigInteger balance, object id = null)

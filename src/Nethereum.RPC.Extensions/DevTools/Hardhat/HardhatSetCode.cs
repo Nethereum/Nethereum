@@ -10,6 +10,7 @@ namespace Nethereum.RPC.Extensions.DevTools.Hardhat
 ///</Summary>
     public class HardhatSetCode : RpcRequestResponseHandler<string>
     {
+        public HardhatSetCode(IClient client, ApiMethods apiMethod) : base(client, apiMethod.ToString()) { }
         public HardhatSetCode(IClient client) : base(client,ApiMethods.hardhat_setCode.ToString()) { }
 
         public Task SendRequestAsync(string address, string code, object id = null)
