@@ -183,6 +183,10 @@ cd Nethereum.RPC.Extensions
 CALL :restorepack
 cd ..
 
+cd Nethereum.EVM.Contracts
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages

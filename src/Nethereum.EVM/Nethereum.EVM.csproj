@@ -3,7 +3,7 @@
 <PropertyGroup>
 	<Description>Nethereum.EVM EVM Simulator and ByteCode utils</Description>
 	<AssemblyTitle>Nethereum.EVM</AssemblyTitle>
-	<Version>1.0.0-rc4</Version>
+	<Version>$(NethereumVersion)</Version>
 	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
 	<AssemblyName>Nethereum.EVM</AssemblyName>
 	<PackageId>Nethereum.EVM</PackageId>
