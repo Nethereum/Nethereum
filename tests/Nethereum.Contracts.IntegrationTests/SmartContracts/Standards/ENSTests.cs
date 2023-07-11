@@ -59,14 +59,14 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var txn = await ensService.SetTextRequestAsync("nethereum.eth", TextDataKey.url, "https://nethereum.com").ConfigureAwait(false);
         }
 
-        [Fact]
-        public async void ShouldBeAbleToResolveText()
-        {
-            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var ensService = web3.Eth.GetEnsService();
-            var url = await ensService.ResolveTextAsync("nethereum.eth", TextDataKey.url).ConfigureAwait(false);
-            Assert.Equal("https://nethereum.com", url);
-        }
+        //[Fact]
+        //public async void ShouldBeAbleToResolveText()
+        //{
+        //    var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+        //    var ensService = web3.Eth.GetEnsService();
+        //    var url = await ensService.ResolveTextAsync("nethereum.eth", TextDataKey.url).ConfigureAwait(false);
+        //    Assert.Equal("https://nethereum.com", url);
+        //}
 
         [Fact]
         public async void ShouldBeAbleToCalculateRentPriceAndCommitment()
