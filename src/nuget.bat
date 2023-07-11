@@ -179,6 +179,9 @@ cd Nethereum.Merkle.Patricia
 CALL :restorepack
 cd ..
 
+cd Nethereum.RPC.Extensions
+CALL :restorepack
+cd ..
 
 setlocal
 set DIR=%~dp0
