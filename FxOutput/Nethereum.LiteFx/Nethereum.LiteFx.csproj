@@ -27,6 +27,8 @@
 
   <ItemGroup>
 
+    <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.3" />
+
     <PackageReference Include="Common.Logging.Core">
       <Version>3.4.1</Version>
     </PackageReference>
