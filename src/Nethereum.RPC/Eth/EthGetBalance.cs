@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
  
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -59,11 +61,32 @@ namespace Nethereum.RPC.Eth
             return base.SendRequestAsync(id, address.EnsureHexPrefix(), DefaultBlock);
         }
 
+#if !DOTNET35
+        public async Task<List<HexBigInteger>> SendBatchRequestAsync(string[] addresses, BlockParameter block)
+        {
+            var batchRequest = new RpcRequestResponseBatch();
+            for (int i = 0; i < addresses.Length; i++)
+            {
+                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger>(this, BuildRequest(addresses[i], block, i)));
+            }
+
+            var response = await Client.SendBatchRequestAsync(batchRequest);
+            return response.BatchItems.Select(x => ((RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger>)x).Response).ToList();
+
+        }
+
+        public Task<List<HexBigInteger>> SendBatchRequestAsync(params string[] addresses)
+        {
+            return SendBatchRequestAsync(addresses, DefaultBlock);    
+        }
+#endif
+
         public RpcRequest BuildRequest(string address, BlockParameter block, object id = null)
         {
             if (address == null) throw new ArgumentNullException(nameof(address));
             if (block == null) throw new ArgumentNullException(nameof(block));
             return base.BuildRequest(id, address.EnsureHexPrefix(), block);
         }
+
     }
 }

@@ -34,7 +34,7 @@ namespace Nethereum.JsonRpc.Client
             catch
             {
                 this.HasError = true;
-                this.RpcError = new RpcError(-1, "Invalid format excecption");
+                this.RpcError = new RpcError(-1, "Invalid format exception");
             }
         }
     }

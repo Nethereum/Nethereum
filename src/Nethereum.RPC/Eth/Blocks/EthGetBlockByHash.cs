@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
@@ -81,6 +83,21 @@ namespace Nethereum.RPC.Eth.Blocks
         {
             return base.SendRequestAsync(id, blockHash.EnsureHexPrefix(), true);
         }
+
+#if !DOTNET35
+        public async Task<List<BlockWithTransactions>> SendBatchRequestAsync(params string[] blockHashes)
+        {
+            var batchRequest = new RpcRequestResponseBatch();
+            for (int i = 0; i < blockHashes.Length; i++)
+            {
+                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions>(this, BuildRequest(blockHashes[i], i)));
+            }
+
+            var response = await Client.SendBatchRequestAsync(batchRequest);
+            return response.BatchItems.Select(x => ((RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions>)x).Response).ToList();
+
+        }
+#endif
 
         public RpcRequest BuildRequest(string blockHash, object id = null)
         {
@@ -165,6 +182,22 @@ namespace Nethereum.RPC.Eth.Blocks
             if (blockHash == null) throw new ArgumentNullException(nameof(blockHash));
             return base.SendRequestAsync(id, blockHash.EnsureHexPrefix(), false);
         }
+
+
+#if !DOTNET35
+        public async Task<List<BlockWithTransactionHashes>> SendBatchRequestAsync(params string[] blockHashes)
+        {
+            var batchRequest = new RpcRequestResponseBatch();
+            for (int i = 0; i < blockHashes.Length; i++)
+            {
+                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByHash, BlockWithTransactionHashes>(this, BuildRequest(blockHashes[i], i)));
+            }
+
+            var response = await Client.SendBatchRequestAsync(batchRequest);
+            return response.BatchItems.Select(x => ((RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByHash, BlockWithTransactionHashes>)x).Response).ToList();
+
+        }
+#endif
 
         public RpcRequest BuildRequest(string blockHash, object id = null)
         {

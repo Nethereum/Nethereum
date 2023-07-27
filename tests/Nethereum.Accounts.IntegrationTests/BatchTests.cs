@@ -5,6 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+using System.Linq;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -18,8 +19,9 @@ namespace Nethereum.Accounts.IntegrationTests
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
+        
         [Fact]
-        public async void ShoulBatchGetBalances()
+        public async void ShouldBatchGetBalances()
         {
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -33,9 +35,44 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.Equal(batchItem1.Response.Value, batchItem2.Response.Value);
         }
 
+        [Fact]
+        public async void ShouldBatchGetBalancesRpc()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var balances = await web3.Eth.GetBalance.SendBatchRequestAsync(EthereumClientIntegrationFixture.AccountAddress, EthereumClientIntegrationFixture.AccountAddress);
+            Assert.Equal(balances[0], balances[1]);
+        }
 
         [Fact]
-        public async void ShoulBatchGetBlocks()
+        public async void ShouldBatchGetBlocksWithTransactionHashesRpc()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var blocks = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendBatchRequestAsync(
+                new HexBigInteger(1000000), new HexBigInteger(1000001), new HexBigInteger(1000002));
+            Assert.Equal(3, blocks.Count);
+        }
+
+        [Fact]
+        public async void ShouldBatchGetBlocksWithTransactionsRpc()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var blocks = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendBatchRequestAsync(
+                new HexBigInteger(1000000), new HexBigInteger(1000001), new HexBigInteger(1000002));
+            Assert.Equal(3, blocks.Count);
+        }
+
+        [Fact]
+        public async void ShouldBatchGetTransactionReceiptsRpc()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var block = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(
+                new HexBigInteger(1000000));
+            var receipts = await web3.Eth.Transactions.GetTransactionReceipt.SendBatchRequestAsync(block.Transactions.Select(x => x.TransactionHash).ToArray());
+            Assert.Equal(2, receipts.Count);
+        }
+
+        [Fact]
+        public async void ShouldBatchGetBlocks()
         {
 
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);

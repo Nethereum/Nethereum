@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
  
 using Nethereum.Hex.HexTypes;
@@ -95,6 +97,21 @@ namespace Nethereum.RPC.Eth.Blocks
             if (number == null) throw new ArgumentNullException(nameof(number));
             return base.SendRequestAsync(id, number, true);
         }
+
+#if !DOTNET35
+        public async Task<List<BlockWithTransactions>> SendBatchRequestAsync(params HexBigInteger[] numbers)
+        {
+            var batchRequest = new RpcRequestResponseBatch();
+            for (int i = 0; i < numbers.Length; i++)
+            {
+                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByNumber, BlockWithTransactions>(this, BuildRequest(numbers[i], i)));
+            }
+
+            var response = await Client.SendBatchRequestAsync(batchRequest);
+            return response.BatchItems.Select(x => ((RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByNumber, BlockWithTransactions>)x).Response).ToList();
+
+        }
+#endif
 
         public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
