@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum DataServices Etherscan library, provides client access to Etherscan rest apis</Description>
+    <AssemblyTitle>Nethereum.DataServices.Etherscan</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.DataServices.Etherscan</AssemblyName>
+    <PackageId>Nethereum.DataServices.Etherscan</PackageId>
+    <PackageTags>Netherum;Ethereum;Blockchain;Etherscan</PackageTags>
+	<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+      </PropertyGroup>
+      <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+        <None Include="..\..\NethereumKey.snk" />
+      </ItemGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+	    <Reference Include="System.Net.Http" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+    </ItemGroup>
+
+
+</Project>
