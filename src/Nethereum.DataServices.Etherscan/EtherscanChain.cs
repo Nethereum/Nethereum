@@ -5,9 +5,12 @@ namespace Nethereum.DataServices.Etherscan
     public enum EtherscanChain
     {
         Mainnet,
-
+        Binance,
+        Optimism
     }
 
+
+   
     public enum EtherscanResultSort
     {
         Ascending,

@@ -17,6 +17,12 @@ namespace Nethereum.DataServices.Etherscan
             {
                 case EtherscanChain.Mainnet:
                     return "https://api.etherscan.io/";
+
+                case EtherscanChain.Binance:
+                    return "https://api.bscscan.com/";
+
+                case EtherscanChain.Optimism:
+                    return "https://api-optimistic.etherscan.io/";
             }
             throw new NotImplementedException();
         }

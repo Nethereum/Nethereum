@@ -98,6 +98,34 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         }
 
         [Fact]
+        public async void ShouldGetAccountTransactionsBinance()
+        {
+            await ThrottleEtherscanCallAsync(async () =>
+            {
+                var etherscanService = new EtherscanApiService(EtherscanChain.Binance);
+                var result = await etherscanService.Accounts.GetAccountTransactionsAsync("0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82");
+                Assert.Equal("1", result.Status);
+                Assert.Equal(10, result.Result.Count);
+
+            });
+        }
+
+        [Fact]
+        public async void ShouldGetAccountTransactionsOptimism()
+        {
+            await ThrottleEtherscanCallAsync(async () =>
+            {
+                var etherscanService = new EtherscanApiService(EtherscanChain.Optimism);
+                var result = await etherscanService.Accounts.GetAccountTransactionsAsync("0x6fd9d7AD17242c41f7131d257212c54A0e816691");
+                Assert.Equal("1", result.Status);
+                Assert.Equal(10, result.Result.Count);
+
+            });
+        }
+
+        //
+
+        [Fact]
         public async void ShouldGetAccountInternalTransactions()
         {
             await ThrottleEtherscanCallAsync(async () =>
