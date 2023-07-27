@@ -35,6 +35,11 @@ namespace Nethereum.Contracts.Services
         MultiQueryHandler GetMultiQueryHandler(string multiContractAdress = CommonAddresses.MULTICALL_ADDRESS);
         
         /// <summary>
+        /// Creates a multi query handler, to enable execute a single request combining multiple queries to multiple contracts batching the calls using rpc 
+        /// </summary>
+        MultiQueryBatchRpcHandler GetMultiQueryBatchRpcHandler();
+
+        /// <summary>
         /// ERC20 Standard Token Service to interact with smart contracts compliant with the standard interface
         /// https://ethereum.org/en/developers/docs/standards/tokens/erc-20/
         /// </summary>

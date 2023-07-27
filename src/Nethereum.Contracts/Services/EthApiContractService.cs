@@ -101,6 +101,15 @@ namespace Nethereum.Contracts.Services
         }
 
         /// <summary>
+        /// Multicall using rpc batch
+        /// </summary>
+        public MultiQueryBatchRpcHandler GetMultiQueryBatchRpcHandler()
+        {
+            return new MultiQueryBatchRpcHandler(Client, TransactionManager?.Account?.Address,
+                DefaultBlock);
+        }
+
+        /// <summary>
         /// ERC20 Standard Token Service to interact with smart contracts compliant with the standard interface
         /// https://ethereum.org/en/developers/docs/standards/tokens/erc-20/
         /// </summary>

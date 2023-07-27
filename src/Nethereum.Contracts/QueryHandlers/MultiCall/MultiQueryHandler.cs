@@ -4,8 +4,11 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.Constants;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Util;
 
 namespace Nethereum.Contracts.QueryHandlers.MultiCall
@@ -113,6 +116,7 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
     }
 
 #if !DOTNET35
+
     /// <summary>
     /// Creates a multi query handler, to enable execute a single request combining multiple queries to multiple contracts using the multicall contract https://github.com/makerdao/multicall/blob/master/src/Multicall.sol
     /// This is deployed at https://etherscan.io/address/0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441#code

@@ -40,10 +40,33 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
             var balanceOfMessage2 = new BalanceOfFunction()
                 {Owner = "0x6c6bc977e13df9b0de53b251522280bb72383700"}; //uni
-            var call2 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(balanceOfMessage1,
+            var call2 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(balanceOfMessage2,
                 "0x6b175474e89094c44da98b954eedeac495271d0f"); //dai
 
             await web3.Eth.GetMultiQueryHandler().MultiCallAsync(call1, call2);
+            Assert.True(call1.Output.Balance > 0);
+            Assert.True(call2.Output.Balance > 0);
+        }
+
+
+        [Fact]
+        public async void ShouldCheckBalanceOfMultipleAccountsUsingRpcBatch()
+        {
+            //Connecting to Ethereum mainnet using Infura
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+
+            //Setting the owner https://etherscan.io/tokenholdings?a=0x8ee7d9235e01e6b42345120b5d270bdb763624c7
+            var balanceOfMessage1 = new BalanceOfFunction()
+            { Owner = "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643" }; //compound
+            var call1 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(balanceOfMessage1,
+                "0x6b175474e89094c44da98b954eedeac495271d0f"); //dai
+
+            var balanceOfMessage2 = new BalanceOfFunction()
+            { Owner = "0x6c6bc977e13df9b0de53b251522280bb72383700" }; //uni
+            var call2 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(balanceOfMessage2,
+                "0x6b175474e89094c44da98b954eedeac495271d0f"); //dai
+
+            await web3.Eth.GetMultiQueryBatchRpcHandler().MultiCallAsync(call1, call2);
             Assert.True(call1.Output.Balance > 0);
             Assert.True(call2.Output.Balance > 0);
         }
