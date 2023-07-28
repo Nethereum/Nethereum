@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;net461;net5.0</TargetFrameworks>
-    <AssemblyName>Nethereum.DataServices.Etherscan.IntegrationTests</AssemblyName>
-    <PackageId>Nethereum.DataServices.Etherscan.IntegrationTests</PackageId>
+    <AssemblyName>Nethereum.DataServices.IntegrationTests</AssemblyName>
+    <PackageId>Nethereum.DataServices.IntegrationTests</PackageId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netcoreapp3.1|AnyCPU'">
@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nethereum.DataServices.Etherscan\Nethereum.DataServices.Etherscan.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DataServices\Nethereum.DataServices.csproj" />
   </ItemGroup>
 
 </Project>
