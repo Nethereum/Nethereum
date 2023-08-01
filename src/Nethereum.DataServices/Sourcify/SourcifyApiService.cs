@@ -32,7 +32,7 @@ namespace Nethereum.DataServices.Sourcify
             return "partial_match";
         }
 
-        public Task<CompilationMetadata> GetCompilationMetadataAsync(long chain, string address,bool fullMatch = true) 
+        public Task<CompilationMetadata> GetCompilationMetadataAsync(long chain, string address, bool fullMatch = true)
         {
             var url = $"{BaseUrlMeta}/contracts/{GetFullOrPartialMatch(fullMatch)}/{chain}/{address}/metadata.json";
             return GetDataAsync<CompilationMetadata>(url);
@@ -47,11 +47,11 @@ namespace Nethereum.DataServices.Sourcify
 
         public async Task<T> GetDataAsync<T>(string url)
         {
-            var  request = new HttpRequestMessage(
+            var request = new HttpRequestMessage(
                     HttpMethod.Get,
                     url);
             request.Headers.Add("accept", "application/json");
-   
+
             var httpResponseMessage = await HttpClient.SendAsync(request).ConfigureAwait(false);
             httpResponseMessage.EnsureSuccessStatusCode();
             var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -65,6 +65,6 @@ namespace Nethereum.DataServices.Sourcify
             }
         }
 
-        
+
     }
 }
