@@ -5,7 +5,6 @@ using Nethereum.Contracts.Standards.ProofOfHumanity.ContractDefinition;
 using System.Collections.Generic;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Constants;
-using Nethereum.Contracts;
 using System.Linq;
 using System.Numerics;
 #if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER

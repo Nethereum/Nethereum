@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.Constants;
-using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ERC721.ContractDefinition;
 
