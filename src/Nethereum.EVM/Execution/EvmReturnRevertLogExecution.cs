@@ -82,9 +82,16 @@ namespace Nethereum.EVM.Execution
 
         public void Revert(Program program)
         {
-            program.ProgramResult.IsRevert = true;
-            program.Step();
-            program.Stop();
+            try
+            {
+                program.ProgramResult.IsRevert = true;
+                Return(program);
+            }
+            catch
+            {
+                program.Step();
+                program.Stop();
+            }
         }
 
         public  void Return(Program program)

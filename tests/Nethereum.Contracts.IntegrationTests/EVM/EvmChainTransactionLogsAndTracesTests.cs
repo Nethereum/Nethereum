@@ -176,6 +176,20 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Fact]
+        public async Task TestRevert()
+        {
+            var transactionHash = "0xf3d2a323110370a4dc72c04c738bf9b45d14b03603ed70372128a3966c54fca6";
+
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(transactionHash);
+            var txnReceipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
+            var block = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(txn.BlockNumber);
+            var code = await web3.Eth.GetCode.SendRequestAsync(txn.To); // runtime code;
+            Program program = await ExecuteProgramAsync(web3, txn, block, code, null);
+            Assert.NotNull(program.ProgramResult.GetRevertMessage());
+        }
+
         public async Task ShouldRetrieveTransactionFromChainSimulateItAndValidateLogs(string transactionHash, Action<ExecutionStateService> configureState = null)
         {
             //Scenario of complex uniswap clone to run end to end a previous transaction and see logs etc
