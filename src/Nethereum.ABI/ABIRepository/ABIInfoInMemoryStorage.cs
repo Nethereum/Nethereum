@@ -1,17 +1,19 @@
 ﻿using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
 namespace Nethereum.ABI.ABIRepository
 {
-    public class ABIInfoInMemoryStorage 
-    { 
+    public class ABIInfoInMemoryStorage : IABIInfoStorage
+    {
         private List<ABIInfo> _abiInfos = new List<ABIInfo>();
-        private IDictionary<string, List<FunctionABI>> _signatureToFunctionABIDictionary { get; set; }  = new Dictionary<string, List<FunctionABI>>();
-        private IDictionary<string, List<ErrorABI>> _signatureToErrorABIDictionary { get; set; }  = new Dictionary<string, List<ErrorABI>>();
-        private IDictionary<string, List<EventABI>> _signatureToEventABIDictionary { get; set; }  = new Dictionary<string, List<EventABI>>();
+        private IDictionary<string, List<FunctionABI>> _signatureToFunctionABIDictionary { get; set; } = new Dictionary<string, List<FunctionABI>>();
+        private IDictionary<string, List<ErrorABI>> _signatureToErrorABIDictionary { get; set; } = new Dictionary<string, List<ErrorABI>>();
+        private IDictionary<string, List<EventABI>> _signatureToEventABIDictionary { get; set; } = new Dictionary<string, List<EventABI>>();
+
 
         public ABIInfo GetABIInfo(BigInteger chainId, string contractAddress)
         {
@@ -19,11 +21,18 @@ namespace Nethereum.ABI.ABIRepository
             return _abiInfos.FirstOrDefault(x => x.Address == contractAddress && chainId == x.ChainId);
         }
 
-        public FunctionABI FindFunctionABI(BigInteger chainId, string contractAddress, string signature) 
-        { 
+        public FunctionABI FindFunctionABI(BigInteger chainId, string contractAddress, string signature)
+        {
             var abiInfo = GetABIInfo(chainId, contractAddress);
-            if(abiInfo == null) return null;
+            if (abiInfo == null) return null;
             return abiInfo.ContractABI.FindFunctionABI(signature);
+        }
+
+        public FunctionABI FindFunctionABIFromInputData(BigInteger chainId, string contractAddress, string inputData)
+        {
+            var abiInfo = GetABIInfo(chainId, contractAddress);
+            if (abiInfo == null) return null;
+            return abiInfo.ContractABI.FindFunctionABIFromInputData(inputData);
         }
 
         public ErrorABI FindErrorABI(BigInteger chainId, string contractAddress, string signature)
@@ -42,7 +51,7 @@ namespace Nethereum.ABI.ABIRepository
 
         public List<FunctionABI> FindFunctionABI(string signature)
         {
-           return _signatureToFunctionABIDictionary[signature];
+            return _signatureToFunctionABIDictionary[signature];
         }
 
         public List<ErrorABI> FindErrorABI(string signature)
@@ -60,21 +69,21 @@ namespace Nethereum.ABI.ABIRepository
             _abiInfos.Add(abiInfo);
             abiInfo.InitialiseContractABI();
 
-            foreach(var functionABI in abiInfo.ContractABI.Functions)
+            foreach (var functionABI in abiInfo.ContractABI.Functions)
             {
                 if (_signatureToFunctionABIDictionary.ContainsKey(functionABI.Sha3Signature))
                 {
                     var functionABIs = _signatureToFunctionABIDictionary[functionABI.Sha3Signature];
-                    if(!functionABIs.Any(x => x.HasTheSameSignatureValues(functionABI)))
+                    if (!functionABIs.Any(x => x.HasTheSameSignatureValues(functionABI)))
                     {
                         functionABIs.Add(functionABI);
                     }
                 }
                 else
                 {
-                    this._signatureToFunctionABIDictionary.Add(functionABI.Sha3Signature, new List<FunctionABI>{functionABI});
+                    this._signatureToFunctionABIDictionary.Add(functionABI.Sha3Signature, new List<FunctionABI> { functionABI });
                 }
-                
+
             }
 
             foreach (var errorABI in abiInfo.ContractABI.Errors)

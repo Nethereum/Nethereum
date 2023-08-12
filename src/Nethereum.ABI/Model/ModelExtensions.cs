@@ -9,6 +9,15 @@ namespace Nethereum.ABI.Model
 {
     public static class ModelExtensions
     {
+        public static string GetSignatureFromData(string data)
+        {
+            if (string.IsNullOrEmpty(data)) throw new Exception("Invalid data cannot be null");
+
+            data = data.EnsureHexPrefix();
+            if (data.Length < 10) throw new Exception("Invalid data cannot be less than 4 bytes or 8 hex characters");
+            return data.Substring(0, 10);
+        }
+
         public static FunctionABI FindFunctionABI(this ContractABI contractABI, string signature) 
         {
             foreach (var functionABI in contractABI.Functions)
@@ -69,9 +78,7 @@ namespace Nethereum.ABI.Model
         public static FunctionABI FindFunctionABIFromInputData(this ContractABI contractABI, string inputData)
         {
             if (string.IsNullOrEmpty(inputData)) return null;
-            inputData = inputData.EnsureHexPrefix();
-            if(inputData.Length < 10) return null;
-            var signature = inputData.Substring(0, 10);
+            var signature = GetSignatureFromData(inputData);
             return contractABI.FindFunctionABI(signature); 
         }
 
@@ -98,6 +105,17 @@ namespace Nethereum.ABI.Model
                 }
             }
             return null;
+        }
+
+        public static bool IsDataForFunction(this FunctionABI functionABI, string data)
+        {
+            var sha3Signature = GetSignatureFromData(data);
+            var functionSignature = functionABI.Sha3Signature.EnsureHexPrefix();
+
+            if (sha3Signature == "0x") return false;
+
+            if (string.Equals(sha3Signature.ToLower(), functionSignature.ToLower(), StringComparison.Ordinal)) return true;
+            return false;
         }
 
         public static bool IsSignatureForFunction(this FunctionABI functionABI, string sha3Signature)
