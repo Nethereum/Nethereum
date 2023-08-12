@@ -2,6 +2,7 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Nethereum.ABI.Model
@@ -18,6 +19,51 @@ namespace Nethereum.ABI.Model
                 }
             }
             return null;
+        }
+
+        public static bool HasTheSameSignatureValues(this FunctionABI first, FunctionABI other)
+        {
+            if (first.Sha3Signature.ToLowerInvariant() != other.Sha3Signature.ToLowerInvariant()) return false;
+            if(first.Name != other.Name) return false;
+            if(!first.InputParameters.AreTheSameSignatureValues(other.InputParameters)) return false;
+            if (!first.OutputParameters.AreTheSameSignatureValues(other.OutputParameters)) return false;
+            return true;
+        }
+
+        public static bool HasTheSameSignatureValues(this EventABI first, EventABI other)
+        {
+            if (first.Sha3Signature.ToLowerInvariant() != other.Sha3Signature.ToLowerInvariant()) return false;
+            if (first.Name != other.Name) return false;
+            if (!first.InputParameters.AreTheSameSignatureValues(other.InputParameters)) return false;
+            return true;
+        }
+
+        public static bool HasTheSameSignatureValues(this ErrorABI first, ErrorABI other)
+        {
+            if (first.Sha3Signature.ToLowerInvariant() != other.Sha3Signature.ToLowerInvariant()) return false;
+            if (first.Name != other.Name) return false;
+            if (!first.InputParameters.AreTheSameSignatureValues(other.InputParameters)) return false;
+            return true;
+        }
+
+        public static bool AreTheSameSignatureValues(this IEnumerable<Parameter> first, IEnumerable<Parameter> other)
+        {   
+            if (first.Count() != other.Count()) return false;
+            foreach (var parameter in first)
+            {
+                var otherParameter = other.FirstOrDefault(x => x.Name == parameter.Name);
+                if(otherParameter == null) return false;
+                if(!parameter.HasTheSameSignatureValues(otherParameter)) return false;
+            }
+            return true;
+        }
+
+        public static bool HasTheSameSignatureValues(this Parameter parameter, Parameter other)
+        {
+            if (parameter.Order != other.Order) return false;
+            if (parameter.ABIType != other.ABIType) return false;
+            if (parameter.Indexed != other.Indexed) return false;
+            return true;
         }
 
         public static FunctionABI FindFunctionABIFromInputData(this ContractABI contractABI, string inputData)
