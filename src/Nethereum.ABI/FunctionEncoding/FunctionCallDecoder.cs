@@ -10,6 +10,23 @@ namespace Nethereum.ABI.FunctionEncoding
 {
     public class FunctionCallDecoder : ParameterDecoder
     {
+        public bool IsDataForFunction(FunctionABI functionABI, string data)
+        {
+            return IsDataForFunction(functionABI.Sha3Signature, data);
+        }
+
+        public List<ParameterOutput> DecodeInput(FunctionABI functionABI, string data)
+        {
+            return DecodeFunctionInput(functionABI.Sha3Signature, data,
+                functionABI.InputParameters);
+        }
+
+        public List<ParameterOutput> DecodeError(ErrorABI errorABI, string data)
+        {
+            return DecodeFunctionInput(errorABI.Sha3Signature, data,
+                errorABI.InputParameters);
+        }
+
         public bool IsDataForFunction(string sha3Signature, string data)
         {
             sha3Signature = sha3Signature.EnsureHexPrefix();
