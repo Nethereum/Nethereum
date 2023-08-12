@@ -138,18 +138,7 @@ namespace Nethereum.ABI.FunctionEncoding
                     }
                     else if (parameterAttribute.Parameter.ABIType is ArrayType arrayType)
                     {
-                        if (arrayType.ElementType is TupleType tupleTypeElement)
-                        {
-#if NETSTANDARD1_1 || PCL && !NET35
-                            var type = property.PropertyType.GenericTypeArguments.FirstOrDefault();
-#else
-                            var type = property.PropertyType.GetGenericArguments().FirstOrDefault();
-#endif
-                            if (type == null) throw new Exception("Tuple array has to decode to a IList<T>: " + parameterAttribute.Parameter.Name);
-
-                            attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(type,
-                                tupleTypeElement);
-                        }
+                        InitTupleElementFromArray(property, parameterAttribute, arrayType);
 
                         parameterAttribute.Parameter.DecodedType = property.PropertyType;
                     }
@@ -164,6 +153,41 @@ namespace Nethereum.ABI.FunctionEncoding
             return parameterObjects;
         }
 
+        private void InitTupleElementFromArray(PropertyInfo property, ParameterAttribute parameterAttribute, ArrayType arrayType, int depth = 1)
+        {
+            if (arrayType.ElementType is TupleType tupleTypeElement)
+            {
+                var type = GetListElementType(property.PropertyType, depth);
+                if (type == null) throw new Exception("Tuple array has to decode to a IList<T>: " + parameterAttribute.Parameter.Name);
+
+                attributesToABIExtractor.InitTupleComponentsFromTypeAttributes(type,
+                    tupleTypeElement);
+            }
+
+            if(arrayType.ElementType is ArrayType arrayElementType)
+            {
+                InitTupleElementFromArray(property, parameterAttribute, arrayElementType, depth + 1);
+            }
+        }
+
+        private Type GetListElementType(Type startType, int depthOfLists)
+        {
+#if NETSTANDARD1_1 || PCL && !NET35
+            var type = startType.GenericTypeArguments.FirstOrDefault();
+#else
+            var type = startType.GetGenericArguments().FirstOrDefault();
+#endif
+            for(int i = 1; i < depthOfLists; i++)
+            {
+#if NETSTANDARD1_1 || PCL && !NET35
+                type = type.GenericTypeArguments.FirstOrDefault();
+#else
+                type = type.GetGenericArguments().FirstOrDefault();
+#endif
+            }
+            return type;
+
+        }
 
         public List<ParameterOutputProperty> GetParameterOutputsFromAttributes(Type type)
         {
