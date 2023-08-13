@@ -64,6 +64,8 @@ namespace Nethereum.ABI.ABIRepository
             return _signatureToEventABIDictionary[signature];
         }
 
+
+
         public void AddABIInfo(ABIInfo abiInfo)
         {
             _abiInfos.Add(abiInfo);
@@ -71,52 +73,74 @@ namespace Nethereum.ABI.ABIRepository
 
             foreach (var functionABI in abiInfo.ContractABI.Functions)
             {
-                if (_signatureToFunctionABIDictionary.ContainsKey(functionABI.Sha3Signature))
-                {
-                    var functionABIs = _signatureToFunctionABIDictionary[functionABI.Sha3Signature];
-                    if (!functionABIs.Any(x => x.HasTheSameSignatureValues(functionABI)))
-                    {
-                        functionABIs.Add(functionABI);
-                    }
-                }
-                else
-                {
-                    this._signatureToFunctionABIDictionary.Add(functionABI.Sha3Signature, new List<FunctionABI> { functionABI });
-                }
+                AddFunctionABI(functionABI);
 
             }
 
             foreach (var errorABI in abiInfo.ContractABI.Errors)
             {
-                if (_signatureToErrorABIDictionary.ContainsKey(errorABI.Sha3Signature))
-                {
-                    var errorABIs = _signatureToErrorABIDictionary[errorABI.Sha3Signature];
-                    if (!errorABIs.Any(x => x.HasTheSameSignatureValues(errorABI)))
-                    {
-                        errorABIs.Add(errorABI);
-                    }
-                }
-                else
-                {
-                    this._signatureToErrorABIDictionary.Add(errorABI.Sha3Signature, new List<ErrorABI> { errorABI });
-                }
+                AddErrorABI(errorABI);
 
             }
 
             foreach (var eventABI in abiInfo.ContractABI.Events)
             {
-                if (_signatureToEventABIDictionary.ContainsKey(eventABI.Sha3Signature))
+                AddEventABI(eventABI);
+            }
+        }
+        
+        public List<FunctionABI> FindFunctionABIFromInputData(string inputData)
+        {
+            if (!ModelExtensions.ValiInputDataSignature(inputData)) return null;
+            var signature = ModelExtensions.GetSignatureFromData(inputData);
+            return FindFunctionABI(signature);
+        }
+
+        public void AddEventABI(EventABI eventABI)
+        {
+            if (_signatureToEventABIDictionary.ContainsKey(eventABI.Sha3Signature))
+            {
+                var eventABIs = _signatureToEventABIDictionary[eventABI.Sha3Signature];
+                if (!eventABIs.Any(x => x.HasTheSameSignatureValues(eventABI)))
                 {
-                    var eventABIs = _signatureToEventABIDictionary[eventABI.Sha3Signature];
-                    if (!eventABIs.Any(x => x.HasTheSameSignatureValues(eventABI)))
-                    {
-                        eventABIs.Add(eventABI);
-                    }
+                    eventABIs.Add(eventABI);
                 }
-                else
+            }
+            else
+            {
+                this._signatureToEventABIDictionary.Add(eventABI.Sha3Signature, new List<EventABI> { eventABI });
+            }
+        }
+
+        public void AddErrorABI(ErrorABI errorABI)
+        {
+            if (_signatureToErrorABIDictionary.ContainsKey(errorABI.Sha3Signature))
+            {
+                var errorABIs = _signatureToErrorABIDictionary[errorABI.Sha3Signature];
+                if (!errorABIs.Any(x => x.HasTheSameSignatureValues(errorABI)))
                 {
-                    this._signatureToEventABIDictionary.Add(eventABI.Sha3Signature, new List<EventABI> { eventABI });
+                    errorABIs.Add(errorABI);
                 }
+            }
+            else
+            {
+                this._signatureToErrorABIDictionary.Add(errorABI.Sha3Signature, new List<ErrorABI> { errorABI });
+            }
+        }
+
+        public void AddFunctionABI(FunctionABI functionABI)
+        {
+            if (_signatureToFunctionABIDictionary.ContainsKey(functionABI.Sha3Signature))
+            {
+                var functionABIs = _signatureToFunctionABIDictionary[functionABI.Sha3Signature];
+                if (!functionABIs.Any(x => x.HasTheSameSignatureValues(functionABI)))
+                {
+                    functionABIs.Add(functionABI);
+                }
+            }
+            else
+            {
+                this._signatureToFunctionABIDictionary.Add(functionABI.Sha3Signature, new List<FunctionABI> { functionABI });
             }
         }
     }

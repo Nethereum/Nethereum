@@ -1,5 +1,10 @@
-﻿using Nethereum.Contracts.MessageEncodingServices;
+﻿using Nethereum.ABI.ABIRepository;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
+using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.RPC.Eth.DTOs;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace Nethereum.Contracts
 {
@@ -73,6 +78,49 @@ namespace Nethereum.Contracts
         public static bool IsTransactionForFunctionMessage<TFunctionMessage>(this TransactionVO transactionVo) where TFunctionMessage : FunctionMessage, new()
         {
             return transactionVo.Transaction?.IsTransactionForFunctionMessage<TFunctionMessage>() ?? false;
+        }
+
+        public static bool IsTransactionForFunction(this
+           Transaction transaction, FunctionABI functionABI) 
+        {
+            return functionABI.IsDataForFunction(transaction.Input);
+        }
+
+        public static bool IsTransactionForFunction(this
+           FunctionABI functionABI, Transaction transaction)
+        {
+           return functionABI.IsDataForFunction(transaction.Input);
+        }
+
+        public static bool IsTransactionForFunction(this
+            FunctionABI functionABI, string inputData)
+        {
+            return functionABI.IsDataForFunction(inputData);
+        }
+        
+
+        public static FunctionABI FindFunctionABIFromTransactionInputDataAndContractAddress(this
+          IABIInfoStorage abiInfoStorage, Transaction transaction, BigInteger chainId)
+        {
+            return abiInfoStorage.FindFunctionABIFromInputData(chainId, transaction.To, transaction.Input);
+        }
+
+        public static FunctionABI FindFunctionABIFromTransactionInputDataAndContractAddress(this
+        Transaction transaction, IABIInfoStorage abiInfoStorage, BigInteger chainId)
+        {
+            return abiInfoStorage.FindFunctionABIFromInputData(chainId, transaction.To, transaction.Input);
+        }
+
+        public static List<FunctionABI> FindFunctionABIFromTransactionInputData(this
+          IABIInfoStorage abiInfoStorage, Transaction transaction)
+        {
+            return abiInfoStorage.FindFunctionABIFromInputData(transaction.Input);
+        }
+
+        public static List<FunctionABI> FindFunctionABIFromTransactionInputData(this Transaction transaction,
+          IABIInfoStorage abiInfoStorage)
+        {
+            return abiInfoStorage.FindFunctionABIFromInputData(transaction.Input);
         }
     }
 }

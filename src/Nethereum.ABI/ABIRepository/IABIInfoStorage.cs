@@ -14,6 +14,7 @@ namespace Nethereum.ABI.ABIRepository
         FunctionABI FindFunctionABI(BigInteger chainId, string contractAddress, string signature);
         List<FunctionABI> FindFunctionABI(string signature);
         FunctionABI FindFunctionABIFromInputData(BigInteger chainId, string contractAddress, string inputData);
+        List<FunctionABI> FindFunctionABIFromInputData(string inputData);
         ABIInfo GetABIInfo(BigInteger chainId, string contractAddress);
     }
 }
