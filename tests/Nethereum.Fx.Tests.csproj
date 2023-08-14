@@ -32,6 +32,10 @@
   
     <Compile Remove="Nethereum.Besu.IntegrationTests\**" />
   
+    <Compile Remove="Nethereum.DataServices.IntegrationTests\bin\**" />
+  
+    <Compile Remove="Nethereum.DataServices.IntegrationTests\obj\**" />
+  
     <Compile Remove="Nethereum.ENS.IntegrationTests\**" />
   
     <Compile Remove="Nethereum.ENS.UnitTests\**" />
@@ -47,6 +51,8 @@
     <Compile Remove="Nethereum.Signer.Ledger.IntegrationTests\**" />
     <Compile Remove="Nethereum.StandardTokenEIP20.IntegrationTests\**" />
     <None Remove="Nethereum.Besu.IntegrationTests\**" />
+    <None Remove="Nethereum.DataServices.IntegrationTests\bin\**" />
+    <None Remove="Nethereum.DataServices.IntegrationTests\obj\**" />
     <None Remove="Nethereum.ENS.IntegrationTests\**" />
     <None Remove="Nethereum.ENS.UnitTests\**" />
     
@@ -70,6 +76,10 @@
     <None Remove="Nethereum.RPC.Sample\**" />
 
     <EmbeddedResource Remove="Nethereum.Besu.IntegrationTests\**" />
+
+    <EmbeddedResource Remove="Nethereum.DataServices.IntegrationTests\bin\**" />
+
+    <EmbeddedResource Remove="Nethereum.DataServices.IntegrationTests\obj\**" />
 
     <EmbeddedResource Remove="Nethereum.ENS.IntegrationTests\**" />
 

@@ -211,6 +211,9 @@
 	  <Compile Remove="Nethereum.RPC.Extensions\Properties\**;Nethereum.RPC.Extensions\bin\**;Nethereum.RPC.Extensions\obj\**" />
 	  <None Remove="Nethereum.RPC.Extensions\Properties\**;Nethereum.RPC.Extensions\bin\**;Nethereum.RPC.Extensions\obj\**" />
 	  
+      <Compile Remove="Nethereum.DataServices\Properties\**;Nethereum.DataServices\bin\**;Nethereum.DataServices\obj\**" />
+	  <None Remove="Nethereum.DataServices\Properties\**;Nethereum.DataServices\bin\**;Nethereum.DataServices\obj\**" />
+	  
   </ItemGroup>
   
   <ItemGroup>
@@ -286,9 +289,18 @@
     <None Remove="net472.bat" />
     <None Remove="net472AOT.bat" />
     <None Remove="net472AOT.sh" />
+    <None Remove="net472CommonUnityAOT-copyDlls.bat" />
+    <None Remove="netStandard.bat" />
+    <None Remove="netStandardCommonUnityAOT-copyDlls.bat" />
+    <None Remove="netStandardMinimalWebglUnityAOT-copyDlls.bat" />
+    <None Remove="netStandardUnityAOT.bat" />
     <None Remove="nuget-verify.bat" />
     <None Remove="nuget.bat" />
+    <None Remove="nugetFx.bat" />
     <None Remove="nugethd.bat" />
+    <None Remove="nugetNewStuff.bat" />
+    <None Remove="readmeBatchIssues.txt" />
+    <None Remove="runAllUnityAndNuget.bat" />
     <None Remove="unitynet35.bat" />
     <None Remove="vstsSimpleBuildCore.txt" />
     <None Remove="vstsSimpleBuildGenerators.txt" />
