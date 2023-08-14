@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,23 +10,6 @@ namespace Nethereum.ABI.Model
 {
     public static class ModelExtensions
     {
-        public static string GetSignatureFromData(string data)
-        {
-            if (string.IsNullOrEmpty(data)) throw new Exception("Invalid data cannot be null");
-
-            data = data.EnsureHexPrefix();
-            if (data.Length < 10) throw new Exception("Invalid data cannot be less than 4 bytes or 8 hex characters");
-            return data.Substring(0, 10);
-        }
-
-        public static bool ValiInputDataSignature(string data)
-        {
-            if (string.IsNullOrEmpty(data)) return false;
-            data = data.EnsureHexPrefix();
-            if (data.Length < 10) return false;
-            return true;
-        }
-
         public static FunctionABI FindFunctionABI(this ContractABI contractABI, string signature) 
         {
             foreach (var functionABI in contractABI.Functions)
@@ -49,7 +33,7 @@ namespace Nethereum.ABI.Model
 
         public static bool HasTheSameSignatureValues(this EventABI first, EventABI other)
         {
-            if (first.Sha3Signature.ToLowerInvariant() != other.Sha3Signature.ToLowerInvariant()) return false;
+            if (!SignatureEncoder.AreSignaturesTheSame(first.Sha3Signature, other.Sha3Signature)) return false;
             if (first.Name != other.Name) return false;
             if (!first.InputParameters.AreTheSameSignatureValues(other.InputParameters)) return false;
             return true;
@@ -57,7 +41,7 @@ namespace Nethereum.ABI.Model
 
         public static bool HasTheSameSignatureValues(this ErrorABI first, ErrorABI other)
         {
-            if (first.Sha3Signature.ToLowerInvariant() != other.Sha3Signature.ToLowerInvariant()) return false;
+            if (!SignatureEncoder.AreSignaturesTheSame(first.Sha3Signature, other.Sha3Signature)) return false;
             if (first.Name != other.Name) return false;
             if (!first.InputParameters.AreTheSameSignatureValues(other.InputParameters)) return false;
             return true;
@@ -85,11 +69,43 @@ namespace Nethereum.ABI.Model
 
         public static FunctionABI FindFunctionABIFromInputData(this ContractABI contractABI, string inputData)
         {
-            if (!ValiInputDataSignature(inputData)) return null;
-            var signature = GetSignatureFromData(inputData);
+            if (!SignatureEncoder.ValiInputDataSignature(inputData)) return null;
+            var signature = SignatureEncoder.GetSignatureFromData(inputData);
             return contractABI.FindFunctionABI(signature); 
         }
 
+        public static List<ParameterOutput> DecodeInputDataToDefault(this FunctionABI functionABI, string inputData)
+        {
+            var functionCallDecoder = new FunctionCallDecoder();
+            return functionCallDecoder.DecodeInput(functionABI, inputData);
+        }
+
+        public static List<ParameterOutput> DecodeOutputDataToDefault(this FunctionABI functionABI, string outputData)
+        {
+            var functionCallDecoder = new FunctionCallDecoder();
+            return functionCallDecoder.DecodeDefaultData(outputData.HexToByteArray(), functionABI.OutputParameters);
+        }
+
+        public static JObject DecodeOutputToJObject(this FunctionABI functionABI, string data)
+        {
+            return DecodeOutputDataToDefault(functionABI, data).ConvertToJObject();
+        }
+
+        public static List<ParameterOutput> DecodeErrorDataToDefault(this ErrorABI errorABI, string data)
+        {
+            var functionCallDecoder = new FunctionCallDecoder();
+            return functionCallDecoder.DecodeError(errorABI, data);
+        }
+
+        public static JObject DecodeErrorDataToDefaultToJObject(this ErrorABI errorABI, string data)
+        {
+            return DecodeErrorDataToDefault(errorABI, data).ConvertToJObject();
+        }
+
+        public static JObject DecodeInputToJObject(this FunctionABI functionABI, string inputData)
+        {
+            return DecodeInputDataToDefault(functionABI, inputData).ConvertToJObject();
+        }
 
         public static EventABI FindEventABI(this ContractABI contractABI, string signature)
         {
@@ -117,47 +133,24 @@ namespace Nethereum.ABI.Model
 
         public static bool IsDataForFunction(this FunctionABI functionABI, string data)
         {
-            if (!ValiInputDataSignature(data)) return false;
-            var sha3Signature = GetSignatureFromData(data);
-            var functionSignature = functionABI.Sha3Signature.EnsureHexPrefix();
-
-            if (sha3Signature == "0x") return false;
-
-            if (string.Equals(sha3Signature.ToLower(), functionSignature.ToLower(), StringComparison.Ordinal)) return true;
-            return false;
+            if (!SignatureEncoder.ValiInputDataSignature(data)) return false;
+            var sha3Signature = SignatureEncoder.GetSignatureFromData(data);
+            return SignatureEncoder.AreSignaturesTheSame(functionABI.Sha3Signature, sha3Signature);
         }
 
         public static bool IsSignatureForFunction(this FunctionABI functionABI, string sha3Signature)
         {
-            sha3Signature = sha3Signature.EnsureHexPrefix();
-            var functionSignature = functionABI.Sha3Signature.EnsureHexPrefix();
-
-            if (sha3Signature == "0x") return false;
-
-            if (string.Equals(sha3Signature.ToLower(), functionSignature.ToLower(), StringComparison.Ordinal)) return true;
-            return false;
+            return SignatureEncoder.AreSignaturesTheSame(functionABI.Sha3Signature, sha3Signature);
         }
 
         public static bool IsSignatureForEvent(this EventABI eventABI, string sha3Signature)
         {
-            sha3Signature = sha3Signature.EnsureHexPrefix();
-            var eventSignature = eventABI.Sha3Signature.EnsureHexPrefix();
-
-            if (sha3Signature == "0x") return false;
-
-            if (string.Equals(sha3Signature.ToLower(), eventSignature.ToLower(), StringComparison.Ordinal)) return true;
-            return false;
+            return SignatureEncoder.AreSignaturesTheSame(eventABI.Sha3Signature, sha3Signature);
         }
 
         public static bool IsSignatureForError(this ErrorABI errorABI, string sha3Signature)
         {
-            sha3Signature = sha3Signature.EnsureHexPrefix();
-            var errorSignature = errorABI.Sha3Signature.EnsureHexPrefix();
-
-            if (sha3Signature == "0x") return false;
-
-            if (string.Equals(sha3Signature.ToLower(), errorSignature.ToLower(), StringComparison.Ordinal)) return true;
-            return false;
+            return SignatureEncoder.AreSignaturesTheSame(errorABI.Sha3Signature, sha3Signature);
         }
     }
 }

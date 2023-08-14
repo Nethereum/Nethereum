@@ -34,7 +34,7 @@ namespace Nethereum.Contracts
 
         public bool IsTransactionInputDataForFunction(string data)
         {
-            return FunctionCallDecoder.IsDataForFunction(FunctionABI.Sha3Signature, data);
+            return SignatureEncoder.IsDataForSignature(FunctionABI.Sha3Signature, data);
         }
 
         public List<ParameterOutput> DecodeInput(string data)
@@ -61,8 +61,7 @@ namespace Nethereum.Contracts
 
         public List<ParameterOutput> DecodeOutput(string data)
         {
-            return FunctionCallDecoder.DecodeDefaultData(data,
-                FunctionABI.OutputParameters);
+            return FunctionABI.DecodeOutputDataToDefault(data);
         }
 
         public TReturn DecodeTypeOutput<TReturn>(string output)

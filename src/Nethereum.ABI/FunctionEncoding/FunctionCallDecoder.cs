@@ -12,7 +12,12 @@ namespace Nethereum.ABI.FunctionEncoding
     {
         public bool IsDataForFunction(FunctionABI functionABI, string data)
         {
-            return IsDataForFunction(functionABI.Sha3Signature, data);
+            return SignatureEncoder.IsDataForSignature(functionABI.Sha3Signature, data);
+        }
+
+        public bool IsDataForError(ErrorABI errorABI, string data)
+        {
+            return SignatureEncoder.IsDataForSignature(errorABI.Sha3Signature, data);
         }
 
         public List<ParameterOutput> DecodeInput(FunctionABI functionABI, string data)
@@ -27,19 +32,7 @@ namespace Nethereum.ABI.FunctionEncoding
                 errorABI.InputParameters);
         }
 
-        public bool IsDataForFunction(string sha3Signature, string data)
-        {
-            sha3Signature = sha3Signature.EnsureHexPrefix();
-            data = data.EnsureHexPrefix();
-            
-            if (data == "0x") return false;
-            
-            if(string.Equals(data.ToLower(), sha3Signature.ToLower(), StringComparison.Ordinal)) return true;
-
-            if (data.ToLower().StartsWith(sha3Signature.ToLower())) return true;
-
-            return false;
-        }
+       
 
         public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
             params Parameter[] parameters)
@@ -47,7 +40,7 @@ namespace Nethereum.ABI.FunctionEncoding
             sha3Signature = sha3Signature.EnsureHexPrefix();
             data = data.EnsureHexPrefix();
 
-            if (!IsDataForFunction(sha3Signature, data)) return null;
+            if (!SignatureEncoder.IsDataForSignature(sha3Signature, data)) return null;
 
             if (data.StartsWith(sha3Signature))
                 data = data.Substring(sha3Signature.Length); //4 bytes?
@@ -191,8 +184,6 @@ namespace Nethereum.ABI.FunctionEncoding
                     if (results.Any())
                         return (T)results[0].Result;
                 }
-
-                
             }
 
             return default(T);

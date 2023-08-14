@@ -13,6 +13,8 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Nethereum.ABI.ABIRepository;
+using System.Numerics;
 
 namespace Nethereum.Contracts
 {
@@ -475,6 +477,16 @@ namespace Nethereum.Contracts
             return DecodeEventDefaultTopics(eventABI, JsonConvert.DeserializeObject<FilterLog>(log.ToString()));
         }
 
+        public static JObject DecodeEventToJObject(this EventABI eventABI, JToken log)
+        {
+            return DecodeEventDefaultTopics(eventABI, JsonConvert.DeserializeObject<FilterLog>(log.ToString())).Event.ConvertToJObject();
+        }
+
+        public static JObject DecodeEventToJObject(this EventABI eventABI, FilterLog log)
+        {
+            return DecodeEventDefaultTopics(eventABI, log).Event.ConvertToJObject();
+        }
+
         public static EventLog<TEventDTO> DecodeEvent<TEventDTO>(this EventABI eventABI, FilterLog log) where TEventDTO : new()
         {
             if (!IsLogForEvent(eventABI, log)) return null;
@@ -574,6 +586,60 @@ namespace Nethereum.Contracts
             return events.Sort<TEventDTO>();
         }
 
+
+        public static EventABI FindEventABIFromLogAndContractAddress(this
+          IABIInfoStorage abiInfoStorage, FilterLog filterLog, BigInteger chainId)
+        {
+            return abiInfoStorage.FindEventABI(chainId, filterLog.Address, filterLog.EventSignature());
+        }
+
+        public static EventABI FindEventABIFromLogAndContractAddress(this
+         IABIInfoStorage abiInfoStorage, JToken log, BigInteger chainId)
+        {
+            var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
+            return abiInfoStorage.FindEventABI(chainId, filterLog.Address, filterLog.EventSignature());
+        }
+
+        public static EventABI FindEventABIFromLogAndContractAddress(this
+        FilterLog filterLog, IABIInfoStorage abiInfoStorage, BigInteger chainId)
+        {
+            return abiInfoStorage.FindEventABIFromLogAndContractAddress(filterLog, chainId);
+        }
+
+        public static EventABI FindEventABIFromLogAndContractAddress(this
+                        JToken log, IABIInfoStorage abiInfoStorage, BigInteger chainId)
+        {
+            return abiInfoStorage.FindEventABIFromLogAndContractAddress(log, chainId);
+        }
+
+        public static List<EventABI> FindEventABIFromLog(this
+          IABIInfoStorage abiInfoStorage, FilterLog log)
+        {
+            var events = abiInfoStorage.FindEventABI(log.EventSignature());
+            return events.Where(x => x.IsLogForEvent(log)).ToList();
+        }
+
+        public static List<EventABI> FindEventABIFromLog(this
+          IABIInfoStorage abiInfoStorage, JToken log)
+        {
+            var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
+            return abiInfoStorage.FindEventABIFromLog(filterLog);
+        }
+
+        public static List<EventABI> FindEventABIFromLog(this FilterLog log,
+          IABIInfoStorage abiInfoStorage)
+        {
+
+            var events = abiInfoStorage.FindEventABI(log.EventSignature());
+            return events.Where(x => x.IsLogForEvent(log)).ToList();
+        }
+
+        public static List<EventABI> FindEventABIFromLog(this JToken log,
+          IABIInfoStorage abiInfoStorage )
+        {
+            var filterLog = JsonConvert.DeserializeObject<FilterLog>(log.ToString());
+            return abiInfoStorage.FindEventABIFromLog(filterLog);
+        }
 
         public static string EventSignature(this FilterLog log) => log.GetTopic(0);
         public static string IndexedVal1(this FilterLog log) => log.GetTopic(1);

@@ -1,4 +1,5 @@
-﻿using Nethereum.ABI.FunctionEncoding;
+﻿using Nethereum.ABI.ABIRepository;
+using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
@@ -19,7 +20,7 @@ namespace Nethereum.Contracts
 
         public static bool IsExceptionEncodedDataForError(this string data, string signature)
         {
-            return _functionCallDecoder.IsDataForFunction(signature, data);
+            return SignatureEncoder.IsDataForSignature(signature, data);
         }
 
         public static bool IsErrorABIForErrorType<TError>(this ErrorABI errorABI)
@@ -39,8 +40,12 @@ namespace Nethereum.Contracts
 
         public static List<ParameterOutput> DecodeExceptionEncodedDataToDefault(this ErrorABI errorABI, string data)
         {
-            return _functionCallDecoder.DecodeFunctionInput(errorABI.Sha3Signature, data,
-                errorABI.InputParameters);
+            return errorABI.DecodeErrorDataToDefault(data);
+        }
+
+        public static JObject DecodeExceptionEncodedDataToJObject(this ErrorABI errorABI, string data)
+        {
+            return errorABI.DecodeExceptionEncodedDataToJObject(data);
         }
 
         public static bool IsExceptionEncodedDataForError(this ErrorABI errorABI, string data)
@@ -54,6 +59,16 @@ namespace Nethereum.Contracts
             var encodedData = exception.RpcError.Data.ToString();
             if (!encodedData.IsHex()) return false;
             return encodedData.IsExceptionEncodedDataForError(errorABI.Sha3Signature);
+        }
+
+        public static List<ErrorABI> FindErrorABIFromRpcResponseException(this
+         RpcResponseException exception, IABIInfoStorage abiInfoStorage)
+        {
+            if(exception.RpcError.Data == null) return null;
+            var encodedData = exception.RpcError.Data.ToString();
+            if (!encodedData.IsHex()) return null;
+            var signature = SignatureEncoder.GetSignatureFromData(encodedData);
+            return abiInfoStorage.FindErrorABI(signature);
         }
 
     }

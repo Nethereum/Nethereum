@@ -1,4 +1,5 @@
-﻿using Nethereum.ABI.Model;
+﻿using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System;
 using System.Collections.Generic;
@@ -51,16 +52,19 @@ namespace Nethereum.ABI.ABIRepository
 
         public List<FunctionABI> FindFunctionABI(string signature)
         {
+            signature = SignatureEncoder.ConvertToStringKey(signature);
             return _signatureToFunctionABIDictionary[signature];
         }
 
         public List<ErrorABI> FindErrorABI(string signature)
         {
+            signature = SignatureEncoder.ConvertToStringKey(signature);
             return _signatureToErrorABIDictionary[signature];
         }
 
         public List<EventABI> FindEventABI(string signature)
         {
+            signature = SignatureEncoder.ConvertToStringKey(signature);
             return _signatureToEventABIDictionary[signature];
         }
 
@@ -91,16 +95,17 @@ namespace Nethereum.ABI.ABIRepository
         
         public List<FunctionABI> FindFunctionABIFromInputData(string inputData)
         {
-            if (!ModelExtensions.ValiInputDataSignature(inputData)) return null;
-            var signature = ModelExtensions.GetSignatureFromData(inputData);
+            if (!SignatureEncoder.ValiInputDataSignature(inputData)) return null;
+            var signature = SignatureEncoder.GetSignatureFromData(inputData);
             return FindFunctionABI(signature);
         }
 
         public void AddEventABI(EventABI eventABI)
         {
-            if (_signatureToEventABIDictionary.ContainsKey(eventABI.Sha3Signature))
+            var signature = SignatureEncoder.ConvertToStringKey(eventABI.Sha3Signature);
+            if (_signatureToEventABIDictionary.ContainsKey(signature))
             {
-                var eventABIs = _signatureToEventABIDictionary[eventABI.Sha3Signature];
+                var eventABIs = _signatureToEventABIDictionary[signature];
                 if (!eventABIs.Any(x => x.HasTheSameSignatureValues(eventABI)))
                 {
                     eventABIs.Add(eventABI);
@@ -108,15 +113,16 @@ namespace Nethereum.ABI.ABIRepository
             }
             else
             {
-                this._signatureToEventABIDictionary.Add(eventABI.Sha3Signature, new List<EventABI> { eventABI });
+                this._signatureToEventABIDictionary.Add(signature, new List<EventABI> { eventABI });
             }
         }
 
         public void AddErrorABI(ErrorABI errorABI)
         {
-            if (_signatureToErrorABIDictionary.ContainsKey(errorABI.Sha3Signature))
+            var signature = SignatureEncoder.ConvertToStringKey(errorABI.Sha3Signature);
+            if (_signatureToErrorABIDictionary.ContainsKey(signature))
             {
-                var errorABIs = _signatureToErrorABIDictionary[errorABI.Sha3Signature];
+                var errorABIs = _signatureToErrorABIDictionary[signature];
                 if (!errorABIs.Any(x => x.HasTheSameSignatureValues(errorABI)))
                 {
                     errorABIs.Add(errorABI);
@@ -124,15 +130,16 @@ namespace Nethereum.ABI.ABIRepository
             }
             else
             {
-                this._signatureToErrorABIDictionary.Add(errorABI.Sha3Signature, new List<ErrorABI> { errorABI });
+                this._signatureToErrorABIDictionary.Add(signature, new List<ErrorABI> { errorABI });
             }
         }
 
         public void AddFunctionABI(FunctionABI functionABI)
         {
-            if (_signatureToFunctionABIDictionary.ContainsKey(functionABI.Sha3Signature))
+            var signature = SignatureEncoder.ConvertToStringKey(functionABI.Sha3Signature);
+            if (_signatureToFunctionABIDictionary.ContainsKey(signature))
             {
-                var functionABIs = _signatureToFunctionABIDictionary[functionABI.Sha3Signature];
+                var functionABIs = _signatureToFunctionABIDictionary[signature];
                 if (!functionABIs.Any(x => x.HasTheSameSignatureValues(functionABI)))
                 {
                     functionABIs.Add(functionABI);
@@ -140,7 +147,7 @@ namespace Nethereum.ABI.ABIRepository
             }
             else
             {
-                this._signatureToFunctionABIDictionary.Add(functionABI.Sha3Signature, new List<FunctionABI> { functionABI });
+                this._signatureToFunctionABIDictionary.Add(signature, new List<FunctionABI> { functionABI });
             }
         }
     }

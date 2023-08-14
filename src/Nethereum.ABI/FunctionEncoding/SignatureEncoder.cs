@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Text;
 using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 
 namespace Nethereum.ABI.FunctionEncoding
@@ -8,6 +10,53 @@ namespace Nethereum.ABI.FunctionEncoding
     public class SignatureEncoder
     {
         private readonly Sha3Keccack sha3Keccack;
+
+        public static string ConvertToStringKey(string signature)
+        {
+            signature = signature.EnsureHexPrefix();
+            return signature.ToLower();
+        }
+        public static bool IsDataForSignature(string sha3Signature, string data)
+        {
+            sha3Signature = ConvertToStringKey(sha3Signature);
+            if (sha3Signature.Length < 10) return false; //not a valid signature length
+            data = data.EnsureHexPrefix();
+
+            if (data == "0x") return false;
+
+            if (data.IsTheSameHex(sha3Signature)) return true;
+
+            if (data.ToLower().StartsWith(sha3Signature.ToLower())) return true;
+
+            return false;
+        }
+
+        public static bool AreSignaturesTheSame(string sha3Signature, string otherSignature)
+        {
+            return sha3Signature.IsTheSameHex(otherSignature);
+        }
+
+        public static bool ValiSignatureLengthFunction(string sha3Signature)
+        {
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            return sha3Signature.Length == 10;
+        }
+        public static string GetSignatureFromData(string data)
+        {
+            if (string.IsNullOrEmpty(data)) throw new Exception("Invalid data cannot be null");
+
+            data = data.EnsureHexPrefix();
+            if (data.Length < 10) throw new Exception("Invalid data cannot be less than 4 bytes or 8 hex characters");
+            return data.Substring(0, 10);
+        }
+
+        public static bool ValiInputDataSignature(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return false;
+            data = data.EnsureHexPrefix();
+            if (data.Length < 10) return false;
+            return true;
+        }
 
         public SignatureEncoder()
         {
