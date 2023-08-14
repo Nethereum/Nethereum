@@ -187,6 +187,10 @@ cd Nethereum.EVM.Contracts
 CALL :restorepack
 cd ..
 
+cd Nethereum.DataServices
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
