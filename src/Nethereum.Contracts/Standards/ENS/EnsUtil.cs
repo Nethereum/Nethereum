@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using ADRaffy.ENSNormalize;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 
@@ -35,6 +36,11 @@ namespace Nethereum.Contracts.Standards.ENS
         public string Normalise(string name)
         {
             return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.Normalize(name);
+        }
+
+        public NormDetails NormaliseDetails(string name)
+        {
+            return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.NormalizeDetails(name);
         }
 
         public string DnsEncode(string name)
