@@ -68,7 +68,22 @@ namespace Nethereum.ABI.ABIRepository
             return _signatureToEventABIDictionary[signature];
         }
 
+        public void AddABIInfo(string abi) {
+            var abiInfo = ABIInfo.FromABI(abi);
+            AddABIInfo(abiInfo);
+        }
 
+        public void AddABIInfo(string abi, string address, string contractName, string contractType, long? chainId)
+        {
+            var abiInfo = ABIInfo.FromABI(abi, address, contractName, contractType, chainId);
+            AddABIInfo(abiInfo);
+        }
+
+        public void AddABIInfo(CompilationMetadata.CompilationMetadata compilationMetadata, string address, string contractName, string contractType, long? chainId)
+        {
+            var abiInfo = ABIInfo.FromCompilationMetadata(compilationMetadata, address, contractName, contractType, chainId);
+            AddABIInfo(abiInfo);
+        }
 
         public void AddABIInfo(ABIInfo abiInfo)
         {

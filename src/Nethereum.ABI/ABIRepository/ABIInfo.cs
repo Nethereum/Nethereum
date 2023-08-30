@@ -29,19 +29,23 @@ namespace Nethereum.ABI.ABIRepository
         [JsonProperty("metadata")]
         public CompilationMetadata.CompilationMetadata Metadata { get; set; }
 
-        public void InitialiseContractABI()
+        public void InitialiseContractABI(bool force = false)
         {
-            if(!string.IsNullOrEmpty(ABI))
+            if (ContractABI == null || force == true)
             {
-               ContractABI = ABIDeserialiserFactory.DeserialiseContractABI(ABI);
-            }
-            else
-            {
-                if (Metadata.Output.Abi != null)
+                if (!string.IsNullOrEmpty(ABI))
                 {
-                    ABI = Metadata.Output.Abi.ToString(Formatting.None);
                     ContractABI = ABIDeserialiserFactory.DeserialiseContractABI(ABI);
                 }
+                else
+                {
+                    if (Metadata?.Output?.Abi != null)
+                    {
+                        ABI = Metadata.Output.Abi.ToString(Formatting.None);
+                        ContractABI = ABIDeserialiserFactory.DeserialiseContractABI(ABI);
+                    }
+                }
+
             }
         }
 
@@ -68,6 +72,14 @@ namespace Nethereum.ABI.ABIRepository
             contractABIInformation.Address = address;
             contractABIInformation.ContractType = contractType;
             contractABIInformation.ChainId = chainId;
+            return contractABIInformation;
+        }
+
+        public static ABIInfo FromABI(string abi)
+        {
+            var contractABIInformation = new ABIInfo();
+            if (abi == null) throw new ArgumentNullException(nameof(abi));
+            contractABIInformation.ABI = abi;
             return contractABIInformation;
         }
     }
