@@ -78,6 +78,10 @@ namespace Nethereum.RPC.Eth.Blocks
             : base(client, ApiMethods.eth_getBlockByHash.ToString())
         {
         }
+        public RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions> CreateBatchItem(string blockHash, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions>(this, BuildRequest(blockHash, id));
+        }
 
         public Task<BlockWithTransactions> SendRequestAsync(string blockHash, object id = null)
         {
@@ -90,7 +94,7 @@ namespace Nethereum.RPC.Eth.Blocks
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < blockHashes.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions>(this, BuildRequest(blockHashes[i], i)));
+                batchRequest.BatchItems.Add(CreateBatchItem(blockHashes[i], i));
             }
 
             var response = await Client.SendBatchRequestAsync(batchRequest);
@@ -183,6 +187,10 @@ namespace Nethereum.RPC.Eth.Blocks
             return base.SendRequestAsync(id, blockHash.EnsureHexPrefix(), false);
         }
 
+        public RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByHash, BlockWithTransactionHashes> CreateBatchItem(string blockHash, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByHash, BlockWithTransactionHashes>(this, BuildRequest(blockHash, id));
+        }
 
 #if !DOTNET35
         public async Task<List<BlockWithTransactionHashes>> SendBatchRequestAsync(params string[] blockHashes)
@@ -190,7 +198,7 @@ namespace Nethereum.RPC.Eth.Blocks
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < blockHashes.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByHash, BlockWithTransactionHashes>(this, BuildRequest(blockHashes[i], i)));
+                batchRequest.BatchItems.Add(CreateBatchItem(blockHashes[i], i));
             }
 
             var response = await Client.SendBatchRequestAsync(batchRequest);

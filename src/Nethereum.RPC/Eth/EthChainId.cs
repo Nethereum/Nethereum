@@ -28,6 +28,8 @@ namespace Nethereum.RPC.Eth
     {
         public EthChainId(IClient client) : base(client, ApiMethods.eth_chainId.ToString())
         {
+            
         }
+
     }
 }

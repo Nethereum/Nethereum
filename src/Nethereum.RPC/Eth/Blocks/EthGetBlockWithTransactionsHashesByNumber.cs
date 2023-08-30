@@ -98,13 +98,24 @@ namespace Nethereum.RPC.Eth.Blocks
             return base.SendRequestAsync(id, blockParameter, false);
         }
 
+        public RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes> CreateBatchItem(HexBigInteger number, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes>(this, BuildRequest(number, id));
+        }
+
+        public RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes> CreateBatchItem(BlockParameter blockParameter, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes>(this, BuildRequest(blockParameter, id));
+        }
+
 #if !DOTNET35
         public async Task<List<BlockWithTransactionHashes>> SendBatchRequestAsync(params HexBigInteger[] numbers)
         {
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < numbers.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes>(this, BuildRequest(numbers[i], i)));
+                batchRequest.BatchItems.Add(
+                    CreateBatchItem(numbers[i], i));
             }
 
             var response = await Client.SendBatchRequestAsync(batchRequest);

@@ -10,6 +10,8 @@ namespace Nethereum.RPC.Eth.Blocks
     {
         RpcRequest BuildRequest(BlockParameter blockParameter, object id = null);
         RpcRequest BuildRequest(HexBigInteger number, object id = null);
+        RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes> CreateBatchItem(HexBigInteger number, object id);
+        RpcRequestResponseBatchItem<EthGetBlockWithTransactionsHashesByNumber, BlockWithTransactionHashes> CreateBatchItem(BlockParameter blockParameter, object id);
 #if !DOTNET35
         Task<List<BlockWithTransactionHashes>> SendBatchRequestAsync(params HexBigInteger[] numbers);
 #endif

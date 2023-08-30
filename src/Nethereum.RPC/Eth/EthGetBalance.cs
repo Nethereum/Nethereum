@@ -61,13 +61,23 @@ namespace Nethereum.RPC.Eth
             return base.SendRequestAsync(id, address.EnsureHexPrefix(), DefaultBlock);
         }
 
+        public RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger> CreateBatchItem(string address, BlockParameter block, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger>(this, BuildRequest(address, block, id));
+        }
+
+        public RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger> CreateBatchItem(string address, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger>(this, BuildRequest(address, DefaultBlock, id));
+        }
+
 #if !DOTNET35
         public async Task<List<HexBigInteger>> SendBatchRequestAsync(string[] addresses, BlockParameter block)
         {
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < addresses.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger>(this, BuildRequest(addresses[i], block, i)));
+                batchRequest.BatchItems.Add(CreateBatchItem(addresses[i], block, i));
             }
 
             var response = await Client.SendBatchRequestAsync(batchRequest);

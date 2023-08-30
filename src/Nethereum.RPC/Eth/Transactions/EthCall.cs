@@ -56,6 +56,18 @@ namespace Nethereum.RPC.Eth.Transactions
             return base.SendRequestAsync(id, callInput, DefaultBlock);
         }
 
+        public RpcRequestResponseBatchItem<EthCall, string> CreateBatchItem(CallInput callInput, object id)
+        {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
+            return new RpcRequestResponseBatchItem<EthCall, string>(this, BuildRequest(callInput, DefaultBlock, id));
+        }
+
+        public RpcRequestResponseBatchItem<EthCall, string> CreateBatchItem(CallInput callInput, BlockParameter block, object id)
+        {
+            if (callInput == null) throw new ArgumentNullException(nameof(callInput));
+            return new RpcRequestResponseBatchItem<EthCall, string>(this, BuildRequest(callInput, block, id));
+        }
+
 #if !DOTNET35
         public Task<List<string>> SendBatchRequestAsync(params CallInput[] callInputs)
         {
@@ -67,7 +79,7 @@ namespace Nethereum.RPC.Eth.Transactions
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < callInputs.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthCall, string>(this, BuildRequest(callInputs[i], block, i)));
+                batchRequest.BatchItems.Add(CreateBatchItem(callInputs[i], block, i));
             }
 
             var response = await Client.SendBatchRequestAsync(batchRequest).ConfigureAwait(false);

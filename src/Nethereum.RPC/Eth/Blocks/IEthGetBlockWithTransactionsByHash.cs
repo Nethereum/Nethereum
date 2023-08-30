@@ -8,6 +8,7 @@ namespace Nethereum.RPC.Eth.Blocks
     public interface IEthGetBlockWithTransactionsByHash
     {
         RpcRequest BuildRequest(string blockHash, object id = null);
+        RpcRequestResponseBatchItem<EthGetBlockWithTransactionsByHash, BlockWithTransactions> CreateBatchItem(string blockHash, object id);
 #if !DOTNET35
         Task<List<BlockWithTransactions>> SendBatchRequestAsync(params string[] blockHashes);
 #endif

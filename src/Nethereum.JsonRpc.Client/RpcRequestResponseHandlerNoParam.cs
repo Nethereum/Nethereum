@@ -23,6 +23,11 @@ namespace Nethereum.JsonRpc.Client
             return Client.SendRequestAsync<TResponse>(BuildRequest(id));
         }
 
+        public RpcRequestResponseBatchItem<RpcRequestResponseHandlerNoParam<TResponse>, TResponse> CreateBatchItem(object id)
+        {
+            return new RpcRequestResponseBatchItem<RpcRequestResponseHandlerNoParam<TResponse>, TResponse>(this, BuildRequest(id));
+        }
+
         public RpcRequest BuildRequest(object id = null)
         {
             return RpcRequestBuilder.BuildRequest(id);

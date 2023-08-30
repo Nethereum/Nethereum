@@ -36,6 +36,22 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        public async void ShouldBatchGetBalancesCreate()
+        {
+
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+
+            var batchRequest = new RpcRequestResponseBatch();
+            var batchItem1 = web3.Eth.GetBalance.CreateBatchItem(EthereumClientIntegrationFixture.AccountAddress, BlockParameter.CreateLatest(), 1);
+            var batchItem2 = web3.Eth.GetBalance.CreateBatchItem(EthereumClientIntegrationFixture.AccountAddress, BlockParameter.CreateLatest(), 2);
+            batchRequest.BatchItems.Add(batchItem1);
+            batchRequest.BatchItems.Add(batchItem2);
+            var response = await web3.Client.SendBatchRequestAsync(batchRequest);
+            Assert.Equal(batchItem1.Response.Value, batchItem2.Response.Value);
+        }
+
+
+        [Fact]
         public async void ShouldBatchGetBalancesRpc()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();

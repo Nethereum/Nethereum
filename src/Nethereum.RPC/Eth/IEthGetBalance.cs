@@ -11,6 +11,8 @@ namespace Nethereum.RPC.Eth
         BlockParameter DefaultBlock { get; set; }
 
         RpcRequest BuildRequest(string address, BlockParameter block, object id = null);
+        RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger> CreateBatchItem(string address, BlockParameter block, object id);
+        RpcRequestResponseBatchItem<EthGetBalance, HexBigInteger> CreateBatchItem(string address, object id);
 #if !DOTNET35
         Task<List<HexBigInteger>> SendBatchRequestAsync(string[] addresses, BlockParameter block);
         Task<List<HexBigInteger>> SendBatchRequestAsync(params string[] addresses);

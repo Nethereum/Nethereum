@@ -62,16 +62,22 @@ namespace Nethereum.RPC.Eth.Transactions
             return base.SendRequestAsync(id, transactionHash.EnsureHexPrefix());
         }
 
+        public RpcRequestResponseBatchItem<EthGetTransactionReceipt, TransactionReceipt> CreateBatchItem(string transactionHash, object id)
+        {
+            return new RpcRequestResponseBatchItem<EthGetTransactionReceipt, TransactionReceipt>(this, BuildRequest(transactionHash, id));
+        }
+
 #if !DOTNET35
         public async Task<List<TransactionReceipt>> SendBatchRequestAsync(string[] transactionHashes)
         {
             var batchRequest = new RpcRequestResponseBatch();
             for (int i = 0; i < transactionHashes.Length; i++)
             {
-                batchRequest.BatchItems.Add(new RpcRequestResponseBatchItem<EthGetTransactionReceipt, TransactionReceipt>(this, BuildRequest(transactionHashes[i], i)));
-            }
+                batchRequest.BatchItems.Add(CreateBatchItem(transactionHashes[i], i));
 
+            }
             var response = await Client.SendBatchRequestAsync(batchRequest);
+
             return response.BatchItems.Select(x => ((RpcRequestResponseBatchItem<EthGetTransactionReceipt, TransactionReceipt>)x).Response).ToList();
 
         }
