@@ -34,7 +34,10 @@ namespace Nethereum.Model
                     
                 case TransactionType.EIP1559:
                     return new Transaction1559Encoder();
-                    
+
+                case TransactionType.LegacyEIP2930:
+                    return new Transaction2930Encoder();
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(transactionType), transactionType, null);
             }
@@ -94,6 +97,21 @@ namespace Nethereum.Model
                 signature);
         }
 
+        public static ISignedTransaction Create2930Transaction(BigInteger? chainId, BigInteger? nonce,
+           BigInteger? gasPrice,
+           BigInteger? gasLimit, string to, BigInteger? amount, string data,
+           List<AccessListItem> accessList, string r, string s, string v)
+        {
+            var rBytes = r.HexToByteArray();
+            var sBytes = s.HexToByteArray();
+            var vBytes = v.HexToByteArray();
+
+            var signature = new Signature(rBytes, sBytes, vBytes);
+            return new Transaction2930(chainId ?? 0, nonce ?? 0, gasPrice ?? 0,
+                gasLimit ?? 0, to, amount ?? 0, data, accessList,
+                signature);
+        }
+
 
 
         public static ISignedTransaction CreateTransaction(BigInteger? chainId, byte? transactionType, BigInteger? nonce,
@@ -106,8 +124,14 @@ namespace Nethereum.Model
                 return Create1559Transaction(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, amount,
                     data, accessList, r, s, v);
             }
-            
-            if(!transactionType.HasValue || transactionType == 0)
+
+            if (transactionType.HasValue && transactionType == (int)TransactionType.LegacyEIP2930)
+            {
+                return Create2930Transaction(chainId, nonce, gasPrice, gasLimit, to, amount,
+                    data, accessList, r, s, v);
+            }
+
+            if (!transactionType.HasValue || transactionType == 0)
             {
                 return CreateLegacyTransaction(to, gasLimit ?? 0, gasPrice ?? 0, amount ?? 0, data, nonce ?? 0, r, s,
                     v);

@@ -1,27 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Model;
 using Nethereum.RLP;
 
 namespace Nethereum.Model
 {
-
-    public class Transaction1559Encoder:TransactionTypeEncoder<Transaction1559>
+    public class Transaction2930Encoder : TransactionTypeEncoder<Transaction2930>
     {
-        public static Transaction1559Encoder Current { get; } = new Transaction1559Encoder();
-        public byte Type = TransactionType.EIP1559.AsByte();
+        public static Transaction2930Encoder Current { get; } = new Transaction2930Encoder();
+        public byte Type = TransactionType.LegacyEIP2930.AsByte();
 
-        public List<byte[]> GetEncodedElements(Transaction1559 transaction)
+        public List<byte[]> GetEncodedElements(Transaction2930 transaction)
         {
             var encodedData = new List<byte[]>
             {
                 RLP.RLP.EncodeElement(transaction.ChainId.ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.Nonce)),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.MaxPriorityFeePerGas)),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.MaxFeePerGas)),
+                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.GasPrice)),
                 RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.GasLimit)),
                 RLP.RLP.EncodeElement(transaction.ReceiverAddress.HexToByteArray()),
                 RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.Amount)),
@@ -31,7 +26,7 @@ namespace Nethereum.Model
             return encodedData;
         }
 
-        public override byte[] EncodeRaw(Transaction1559 transaction)
+        public override byte[] EncodeRaw(Transaction2930 transaction)
         {
             var encodedBytes = RLP.RLP.EncodeList(GetEncodedElements(transaction).ToArray());
             var returnBytes = AddTypeToEncodedBytes(encodedBytes, Type);
@@ -39,7 +34,7 @@ namespace Nethereum.Model
         }
 
 
-        public override byte[] Encode(Transaction1559 transaction)
+        public override byte[] Encode(Transaction2930 transaction)
         {
             var encodedData = GetEncodedElements(transaction);
 
@@ -52,7 +47,7 @@ namespace Nethereum.Model
         }
 
 
-        public override Transaction1559 Decode(byte[] rplData)
+        public override Transaction2930 Decode(byte[] rplData)
         {
             if (rplData[0] == Type)
             {
@@ -60,21 +55,19 @@ namespace Nethereum.Model
             }
 
             var decodedList = RLP.RLP.Decode(rplData);
-            var decodedData = new List<byte[]>();
             var decodedElements = (RLPCollection)decodedList;
             var chainId = decodedElements[0].RLPData.ToBigIntegerFromRLPDecoded();
             var nonce = decodedElements[1].RLPData.ToBigIntegerFromRLPDecoded();
-            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToBigIntegerFromRLPDecoded();
-            var maxFeePerGas = decodedElements[3].RLPData.ToBigIntegerFromRLPDecoded();
-            var gasLimit = decodedElements[4].RLPData.ToBigIntegerFromRLPDecoded();
-            var receiverAddress = decodedElements[5].RLPData?.ToHex(true);
-            var amount = decodedElements[6].RLPData.ToBigIntegerFromRLPDecoded();
-            var data = decodedElements[7].RLPData?.ToHex(true);
-            var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
+            var gasPrice = decodedElements[2].RLPData.ToBigIntegerFromRLPDecoded();
+            var gasLimit = decodedElements[3].RLPData.ToBigIntegerFromRLPDecoded();
+            var receiverAddress = decodedElements[4].RLPData?.ToHex(true);
+            var amount = decodedElements[5].RLPData.ToBigIntegerFromRLPDecoded();
+            var data = decodedElements[6].RLPData?.ToHex(true);
+            var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[7].RLPData);
 
-            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 9);
+            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 8);
 
-            return new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
+            return new Transaction2930(chainId, nonce, gasPrice, gasLimit,
                 receiverAddress, amount, data, accessList, signature);
         }
 

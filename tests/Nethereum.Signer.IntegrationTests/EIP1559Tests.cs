@@ -4,6 +4,7 @@ using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Mappers;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.Web3;
@@ -79,16 +80,18 @@ namespace Nethereum.Signer.IntegrationTests
 
                 var transaction1559 = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, 45000,
                     "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", 10, "", accessLists);
+               
                 var signer = new Transaction1559Signer();
                 signer.SignTransaction(new EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey), transaction1559);
-
-
+                //02f8e385677af40754
+                //02f8de80
                 var txnHash =
                     await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync(transaction1559.GetRLPEncoded()
                         .ToHex()).ConfigureAwait(false);
+                await web3.TransactionReceiptPolling.PollForReceiptAsync(txnHash);
                 // create recover signature
                 var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txnHash).ConfigureAwait(false);
-
+                Assert.True(txn.ToSignedTransaction(chainId).SignedTransaction.GetRLPEncodedRaw().ToHex().IsTheSameHex(transaction1559.GetRLPEncodedRaw().ToHex()));
                 Assert.True(txn.To.IsTheSameAddress("0x1ad91ee08f21be3de0ba2ba6918e714da6b45836"));
                 Assert.Equal(10, txn.Value.Value);
 

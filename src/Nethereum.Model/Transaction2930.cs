@@ -1,24 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Numerics;
-using System.Threading.Tasks;
-using Nethereum.Model;
-using Nethereum.Util;
 
 namespace Nethereum.Model
 {
-
-
-    public class Transaction1559: SignedTypeTransaction
+    public class Transaction2930: SignedTypeTransaction
     {
-        public Transaction1559(BigInteger chainId, BigInteger? nonce, BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
+        public Transaction2930(BigInteger chainId, BigInteger? nonce, BigInteger? gasPrice,
             BigInteger? gasLimit, string receiverAddress, BigInteger? amount, string data, List<AccessListItem> accessList)
         {
             ChainId = chainId;
             Nonce = nonce;
-            MaxPriorityFeePerGas = maxPriorityFeePerGas;
-            MaxFeePerGas = maxFeePerGas;
+            GasPrice = gasPrice;
             GasLimit = gasLimit;
             ReceiverAddress = receiverAddress;
             Amount = amount;
@@ -26,18 +18,16 @@ namespace Nethereum.Model
             AccessList = accessList;
         }
 
-        public Transaction1559(BigInteger chainId, BigInteger nonce, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas,
+        public Transaction2930(BigInteger chainId, BigInteger nonce, BigInteger gasPrice,
             BigInteger gasLimit, string receiverAddress, BigInteger amount, string data, List<AccessListItem> accessList, Signature signature) :
-            this(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, receiverAddress, amount, data, accessList)
+            this(chainId, nonce, gasPrice, gasLimit, receiverAddress, amount, data, accessList)
         {
             Signature = signature;
         }
 
         public BigInteger ChainId { get; private set; }
         public BigInteger? Nonce { get; private set; }
-        public BigInteger? MaxPriorityFeePerGas { get; private set; }
-
-        public BigInteger? MaxFeePerGas { get; private set; }
+        public BigInteger? GasPrice { get; private set; }
         public BigInteger? GasLimit { get; private set; }
 
         public string ReceiverAddress { get; private set; }
@@ -46,16 +36,16 @@ namespace Nethereum.Model
         public string Data { get; private set; }
         public List<AccessListItem> AccessList { get; private set; }
 
-        public override TransactionType TransactionType => TransactionType.EIP1559;
+        public override TransactionType TransactionType => TransactionType.LegacyEIP2930;
 
         public override byte[] GetRLPEncoded()
         {
-            return Transaction1559Encoder.Current.Encode(this);
+            return Transaction2930Encoder.Current.Encode(this);
         }
 
         public override byte[] GetRLPEncodedRaw()
         {
-            return Transaction1559Encoder.Current.EncodeRaw(this);
+            return Transaction2930Encoder.Current.EncodeRaw(this);
         }
 
     }

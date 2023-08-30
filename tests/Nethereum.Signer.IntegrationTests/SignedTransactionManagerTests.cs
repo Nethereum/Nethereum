@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Model;
+using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Signer.IntegrationTests;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -17,7 +23,39 @@ namespace Nethereum.Signer.IntegrationTests
         {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
-     
+
+        [Fact]
+        public async Task ShouldGetTransactionAndRecover2930WithAccessList()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0x684520054478e3559989f993142e20d38b3774cd907cea52c081bb28bac897d4");
+            var signedTransaction = txn.ToSignedTransaction(1);
+            var address = TransactionVerificationAndRecovery.GetSenderAddress(signedTransaction.SignedTransaction.GetRLPEncoded().ToHex());
+            Assert.True(address.IsTheSameAddress(txn.From));
+        }
+
+
+        [Fact]
+        public async Task ShouldGetTransactionAndRecover2930NoAccessList()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0xfeeeb1492b3b05d0eecbc86bd65304b7dfb0602ab599393d2b752897fcc46038");
+            var signedTransaction = txn.ToSignedTransaction(1);
+            var address = TransactionVerificationAndRecovery.GetSenderAddress(signedTransaction.SignedTransaction);
+            Assert.True(address.IsTheSameAddress(txn.From));
+        }
+
+
+        [Fact]
+        public async Task ShouldGetTransactionAndRecover1559()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0xe54f51bdd033a4f407f898c564d23729e60b0cd5ad035a6db9c27355f44f65eb");
+            var signedTransaction = txn.ToSignedTransaction(1);
+            var address = TransactionVerificationAndRecovery.GetSenderAddress(signedTransaction.SignedTransaction);
+            Assert.True(address.IsTheSameAddress(txn.From));
+        }
+
         [Fact]
         public async Task ShouldSendSignTransaction()
         {
