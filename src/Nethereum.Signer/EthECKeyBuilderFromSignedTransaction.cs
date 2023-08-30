@@ -25,6 +25,11 @@ namespace Nethereum.Signer
                 return EthECKey.RecoverFromParityYSignature(signature, transaction.RawHash);
             }
 
+            if (transaction is Transaction2930 transaction2930)
+            {
+                return EthECKey.RecoverFromParityYSignature(signature, transaction.RawHash);
+            }
+
             if (transaction is LegacyTransactionChainId legacyTransactionChainId)
             {
                 return EthECKey.RecoverFromSignature(signature,
