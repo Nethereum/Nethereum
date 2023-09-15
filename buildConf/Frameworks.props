@@ -64,7 +64,7 @@
   <ItemGroup>
      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>	
-   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityAOT)' != 'true' And '$(MSBuildProjectName)' != 'Nethereum.HdWallet'">
+   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityAOT)' != 'true' And '$(MSBuildProjectName)' != 'Nethereum.HdWallet'  And '$(MSBuildProjectName)' != 'Nethereum.WalletConnect'">
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
   </ItemGroup>
   

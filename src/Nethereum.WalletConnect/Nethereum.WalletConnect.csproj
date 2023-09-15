@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.WalletConnect Nethereum WalletConnect integration</Description>
+		<AssemblyTitle>Nethereum.WalletConnect</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>netstandard2.1;net6.0;</TargetFrameworks>
+		<AssemblyName>Nethereum.WalletConnect</AssemblyName>
+		<PackageId>Nethereum.WalletConnect</PackageId>
+		<PackageTags>Netherum;WalletConnect;Ethereum;Blockchain</PackageTags>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+		<PackageReference Include="Newtonsoft.Json" Version="[13.0.3,14)" />
+		<PackageReference Include="WalletConnect.Sign" Version="2.1.0" />
+
+		
+	</ItemGroup>
+
+	
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+</Project>
