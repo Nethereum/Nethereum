@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:NethereumWCAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="NethereumWCAvalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="NethereumWCAvalonia">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+	<Grid>
+		<Grid ColumnDefinitions="600" RowDefinitions="300" IsVisible="{Binding !Connected}" Margin="4">
+			<Button Content="Init (Generate QR Code)" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Command="{Binding OnInitCommand}" Grid.Row="0" Grid.Column="0" />
+			<Image Source="{Binding QRCode}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.RowSpan="5"></Image>
+		
+		</Grid>
+
+		<Grid ColumnDefinitions="Auto,Auto" IsVisible="{Binding Connected}" Margin="20">
+			<Grid.RowDefinitions>
+				<RowDefinition  Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+			</Grid.RowDefinitions>
+			<TextBlock VerticalAlignment="Center" Text="Address: " Grid.Row="0" Grid.Column="0"/>
+			<TextBlock VerticalAlignment="Center" Text="ChainId: " Grid.Row="1" Grid.Column="0"/>
+			
+			<TextBlock VerticalAlignment="Center" Text="Response:" Grid.Row="3" Grid.Column="0"/>
+			<TextBlock VerticalAlignment="Center"  Text="Recovered Account:" Grid.Row="4" Grid.Column="0"/>
+			
+			<TextBlock VerticalAlignment="Center" Text="{Binding Address}" Grid.Row="0" Grid.Column="1"/>
+			<TextBlock VerticalAlignment="Center" Text="{Binding ChainId}" Grid.Row="1" Grid.Column="1"/>
+			<Button  VerticalAlignment="Center"  Content="Sign Typed Data" HorizontalAlignment="Stretch" Command="{Binding OnSignedTypedDataCommand}" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" />
+			<TextBlock VerticalAlignment="Center"  Text="{Binding Response}" Grid.Row="3" Grid.Column="1"/>
+			<TextBlock VerticalAlignment="Center"  Text="{Binding RecoveredAccount}" Grid.Row="4" Grid.Column="1"/>
+
+		</Grid>
+	</Grid>
+</Window>
