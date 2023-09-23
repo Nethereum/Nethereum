@@ -1,0 +1,131 @@
+﻿@page "/"
+@using Nethereum.WalletConnect;
+@using QRCoder;
+@using WalletConnectSharp.Sign;
+@using WalletConnectSharp.Sign.Models;
+@using WalletConnectSharp.Core;
+@using System.Drawing.Imaging;
+@using Nethereum.Web3;
+@using Nethereum.Signer.EIP712;
+@using Nethereum.ABI.EIP712;
+
+<PageTitle>Index</PageTitle>
+
+@if (walletConnectConnectedSession == null)
+{
+     <MudButton Variant="Variant.Outlined" @onclick="InitAsync">Init Wallet Connect (Get QR Code)</MudButton>
+     <img src="@QRByte" Width="400" />   
+}
+else
+{
+    <MudField>Address: @walletConnectConnectedSession.Address</MudField>
+    <MudField>ChainId: @walletConnectConnectedSession.ChainId</MudField>
+    <MudButton Variant="Variant.Outlined" @onclick="SignTypedDataAsync">Sign Typed Data</MudButton>
+    <MudField>Response: @response</MudField>
+    <MudField>Recovered Account: @recoveredAccount</MudField>
+}
+
+
+
+
+@code{
+    WalletConnectSignClient client;
+    public string QRByte = "";
+    NethereumWalletConnectService walletConnectService;
+    WalletConnectConnectedSession walletConnectConnectedSession;
+    public string response;
+    public string recoveredAccount;
+
+    public async Task InitAsync()
+    {
+        Console.WriteLine("Hi");
+        var options = new SignClientOptions()
+            {
+                ProjectId = "",
+                Metadata = new Metadata()
+                {
+                    Description = "An example project to showcase WalletConnectSharpv2",
+                    Icons = new[] { "https://walletconnect.com/meta/favicon.ico" },
+                    Name = "WC Example",
+                    Url = "https://walletconnect.com"
+                }
+            };
+
+        if (client == null)
+        {
+            client = await WalletConnectSignClient.Init(options);
+        }
+
+
+        var connectData = await client.Connect(NethereumWalletConnectService.GetDefaultConnectOptions());
+        if (!string.IsNullOrEmpty(connectData.Uri))
+        {
+            using MemoryStream ms = new();
+            QRCodeGenerator qrCodeGenerate = new();
+            QRCodeData qrCodeData = qrCodeGenerate.CreateQrCode(connectData.Uri, QRCodeGenerator.ECCLevel.Q);
+            PngByteQRCode qRCode = new PngByteQRCode(qrCodeData);
+            byte[] qrCodeBytes = qRCode.GetGraphic(20);
+            string base64 = Convert.ToBase64String(qrCodeBytes);
+            QRByte = string.Format("data:image/png;base64,{0}", base64);
+            await InvokeAsync(StateHasChanged);
+            await connectData.Approval;
+            walletConnectService = new NethereumWalletConnectService(client);
+            walletConnectConnectedSession = walletConnectService.GetWalletConnectConnectedSession();
+
+        }
+
+    }
+
+    public async Task SignTypedDataAsync()
+    {
+        var web3 = new Web3();
+        web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);
+
+        var typedData = GetMailTypedDefinition();
+
+        var mail = new Mail
+            {
+                From = new Person
+                {
+                    Name = "Cow",
+                    Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" }
+                },
+                To = new List<Person>
+                {
+                    new Person
+                    {
+                        Name = "Bob",
+                        Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" }
+                    }
+                },
+                Contents = "Hello, Bob!"
+            };
+
+        typedData.Domain.ChainId = 1;
+        typedData.SetMessage(mail);
+
+
+        
+        response = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+        recoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, response);
+            
+        
+    }
+
+    //The generic EIP712 Typed schema defintion for this message
+    public TypedData<Domain> GetMailTypedDefinition()
+    {
+        return new TypedData<Domain>
+            {
+                Domain = new Domain
+                {
+                    Name = "Ether Mail",
+                    Version = "1",
+                    ChainId = 1,
+                    VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+                },
+                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(Domain), typeof(Group), typeof(Mail), typeof(Person)),
+                PrimaryType = nameof(Mail),
+            };
+    }
+}
