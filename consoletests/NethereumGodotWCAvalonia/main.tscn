@@ -1,0 +1,92 @@
+[gd_scene load_steps=11 format=3 uid="uid://cy7yp8x3nfiva"]
+
+[ext_resource type="Script" path="res://UserInterface.cs" id="1_intl0"]
+[ext_resource type="Texture2D" uid="uid://vbp54an5411" path="res://icon.svg" id="1_wmsuv"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xuun1"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_q6syq"]
+sky_material = SubResource("ProceduralSkyMaterial_xuun1")
+
+[sub_resource type="Environment" id="Environment_imgjg"]
+background_mode = 2
+sky = SubResource("Sky_q6syq")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6jp7y"]
+albedo_texture = ExtResource("1_wmsuv")
+roughness = 0.5
+uv1_scale = Vector3(3, 2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qchun"]
+material = SubResource("StandardMaterial3D_6jp7y")
+
+[sub_resource type="Animation" id="Animation_krov7"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 3.14159, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_wwi7v"]
+resource_name = "cube_rotation"
+length = 8.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 4, 8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 3.14159, 0), Vector3(0, 6.28319, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_jucv5"]
+_data = {
+"RESET": SubResource("Animation_krov7"),
+"cube_rotation": SubResource("Animation_wwi7v")
+}
+
+[node name="Root" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_imgjg")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.885816, -0.121258, 0.447913, 0, 0.965255, 0.261311, -0.464037, -0.231474, 0.855038, 2.43753, 1.42204, 4.65308)
+
+[node name="Cube" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4, 0, 1.01407e-05, 0, 4, 0, -1.01407e-05, 0, -4, 0, 0.25, 0)
+mesh = SubResource("BoxMesh_qchun")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+root_node = NodePath("../Cube")
+autoplay = "cube_rotation"
+libraries = {
+"": SubResource("AnimationLibrary_jucv5")
+}
+
+[node name="UserInterface" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 2
+script = ExtResource("1_intl0")

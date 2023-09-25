@@ -1,0 +1,37 @@
+<Project Sdk="Godot.NET.Sdk/4.1.1">
+  <PropertyGroup>
+    <AssemblyTitle>NethereumGodotAvalonia</AssemblyTitle>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <!-- Create an executable for Avalonia designer support -->
+  <PropertyGroup Condition="$(Configuration) == 'Debug'">
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <PackageReference PrivateAssets="all" />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <PackageReference Include="JLeb.Estragonia" Version="1.0.1" Condition="$(SolutionName) != 'JLeb.Estragonia'" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="[11.0.0]" />
+	<PackageReference Include="Avalonia.ReactiveUI" Version="11.0.2" />
+	 <PackageReference Include="QRCoder" Version="1.4.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <ProjectReference Include="..\..\src\Nethereum.WalletConnect\Nethereum.WalletConnect.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="*.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Properties/launchSettings.json" />
+    <None Include="readme.md" />
+  </ItemGroup>
+
+</Project>
