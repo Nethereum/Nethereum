@@ -95,7 +95,7 @@ namespace Nethereum.ABI.EIP712
                 if (component.ABIType is TupleType tupleTypeComponent)
                 {
                     structInnerValue.TypeName = component.StructTypeName;
-                    structInnerValue.Value = CreateFromTuple(component, input[i]);
+                    structInnerValue.Value = CreateFromTuple(tupleTypeComponent, input[i]);
                     structValue.Add(structInnerValue);
                 } 
                 else if (component.ABIType is ArrayType arrayType)
