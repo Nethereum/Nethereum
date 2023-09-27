@@ -35,12 +35,12 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public string Normalise(string name)
         {
-            return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.Normalize(name);
+            return ENSNormalize.ENSIP15.Normalize(name);
         }
 
         public NormDetails NormaliseDetails(string name)
         {
-            return ADRaffy.ENSNormalize.ENSNormalize.ENSIP15.NormalizeDetails(name);
+            return ENSNormalize.ENSIP15.NormalizeDetails(name);
         }
 
         public string DnsEncode(string name)
