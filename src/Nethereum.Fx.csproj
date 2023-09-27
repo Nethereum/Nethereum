@@ -63,7 +63,7 @@
    </ItemGroup>
  
 	<ItemGroup>
-    <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.3" />
+    <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.5" />
     <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="NBitcoin" Version="7.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
@@ -213,7 +213,8 @@
 	  
       <Compile Remove="Nethereum.DataServices\Properties\**;Nethereum.DataServices\bin\**;Nethereum.DataServices\obj\**" />
 	  <None Remove="Nethereum.DataServices\Properties\**;Nethereum.DataServices\bin\**;Nethereum.DataServices\obj\**" />
-	  
+
+
   </ItemGroup>
   
   <ItemGroup>
@@ -227,6 +228,8 @@
 	  <Compile Remove="Nethereum.UI\**" />
 
 	<Compile Remove="Nethereum.Metamask\**" />
+
+	<Compile Remove="Nethereum.WalletConnect\**" />
 
 	<Compile Remove="Nethereum.Metamask.Blazor\**" />
 	  
