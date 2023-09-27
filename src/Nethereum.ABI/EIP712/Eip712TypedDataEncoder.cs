@@ -9,6 +9,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Util;
 using System.Collections;
 using System.Numerics;
+using System;
 
 namespace Nethereum.ABI.EIP712
 {
@@ -89,6 +90,38 @@ namespace Nethereum.ABI.EIP712
                 var result = memoryStream.ToArray();
                 return result;
             }
+        }
+
+        public byte[] HashDomainSeparator<TDomain>(TypedData<TDomain> typedData)
+        {
+            typedData.EnsureDomainRawValuesAreInitialised();
+            using (var memoryStream = new MemoryStream())
+            using (var writer = new BinaryWriter(memoryStream))
+            {
+                writer.Write(HashStruct(typedData.Types, "EIP712Domain", typedData.DomainRawValues));
+                writer.Flush();
+                var result = memoryStream.ToArray();
+                return result;
+            }
+        }
+
+        public byte[] HashStruct<T>(T message, string primaryType, params Type[] types)
+        {
+            var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
+            var memberValue = MemberValueFactory.CreateFromMessage(message);
+            return HashStruct(memberDescriptions, primaryType, memberValue);
+        }
+
+        public string GetEncodedType(string primaryType, params Type[] types)
+        {
+            var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
+            return EncodeType(memberDescriptions, primaryType);
+        }
+
+        public string GetEncodedTypeDomainSeparator<TDomain>(TypedData<TDomain> typedData)
+        {
+            typedData.EnsureDomainRawValuesAreInitialised();
+            return EncodeType(typedData.Types, "EIP712Domain");
         }
 
         private byte[] HashStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
