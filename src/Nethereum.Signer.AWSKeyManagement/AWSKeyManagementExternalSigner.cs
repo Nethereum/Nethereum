@@ -82,7 +82,7 @@ namespace Nethereum.Signer.AWSKeyManagement
 
                 var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
                 var recId = CalculateRecId(signature, hashBytes, publicKey);
-                signature.V = new[] { (byte)(recId + 10) };
+                signature.V = new[] { (byte)(recId + 27) };
 
 				return signature;
 			}
