@@ -82,29 +82,11 @@ namespace Nethereum.Signer.AWSKeyManagement
 
                 var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
                 var recId = CalculateRecId(signature, hashBytes, publicKey);
-                signature.V = new[] { (byte)(recId + 27) };
+                signature.V = new[] { (byte)(recId + 37) };
 
 				return signature;
 			}
 		}
-
-		protected override int CalculateRecId(ECDSASignature signature, byte[] message, byte[] publicKey)
-		{
-            var possibleValues = new short[] { 10, 11 };
-
-            foreach (var candidate in possibleValues)
-            {
-                var rec = ECKey.RecoverFromSignature(candidate, signature, message, false);
-				if (rec == null)
-					continue;
-
-                var k = rec.GetPubKey(false);
-                if (k != null && k.SequenceEqual(publicKey))
-					return candidate;
-            }
-
-            throw new ArgumentException("Could not construct a recoverable key. This should never happen.");
-        }
 
 		public override Task SignAsync(LegacyTransaction transaction) => SignHashTransactionAsync(transaction);
 
