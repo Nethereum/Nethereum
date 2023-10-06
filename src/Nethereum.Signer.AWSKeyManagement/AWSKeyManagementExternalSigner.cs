@@ -1,12 +1,10 @@
 ﻿using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
-using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nethereum.Signer.AWSKeyManagement
@@ -19,8 +17,6 @@ namespace Nethereum.Signer.AWSKeyManagement
 
 		public string KeyId { get; }
 
-		public bool IsPrivateTransaction { get; }
-
 		#endregion
 
 		#region Constructors
@@ -28,15 +24,15 @@ namespace Nethereum.Signer.AWSKeyManagement
 		public AWSKeyManagementExternalSigner(IAmazonKeyManagementService keyClient, string keyId, bool isPrivateTransaction)
 		{
 			KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
-			IsPrivateTransaction = isPrivateTransaction;
-			KeyClient = keyClient;
-		}
+			KeyClient = keyClient ?? throw new ArgumentNullException(nameof(keyClient));
+            CalculatesV = isPrivateTransaction;
+        }
 
-		#endregion
+        #endregion
 
-		#region Abstract Implementations
+        #region Abstract Implementations
 
-		protected override async Task<byte[]> GetPublicKeyAsync()
+        protected override async Task<byte[]> GetPublicKeyAsync()
 		{
 			var request = new GetPublicKeyRequest()
 			{
@@ -79,24 +75,36 @@ namespace Nethereum.Signer.AWSKeyManagement
 
 				var result = await KeyClient.SignAsync(request).ConfigureAwait(false);
 
-				var signature = EthECDSASignature.FromDER(result.Signature.ToArray());
+				var signature = ECDSASignature.FromDER(result.Signature.ToArray());
 
-				byte[] r = signature.R;
-				byte[] s = signature.S;
+				if (!CalculatesV)
+                    return signature;
 
-				var secp256k1N = new HexBigInteger("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+                var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
+                var recId = CalculateRecId(signature, hashBytes, publicKey);
+                signature.V = new[] { (byte)(recId + 10) };
 
-				if (!signature.IsLowS)
-					s = new HexBigInteger(System.Numerics.BigInteger.Subtract(secp256k1N, s.ToBigIntegerFromRLPDecoded()));
-
-				var v = FindRightKey(hashBytes, r, s, await GetAddressAsync());
-
-				if (IsPrivateTransaction)
-					v = new HexBigInteger(System.Numerics.BigInteger.Add(new HexBigInteger(v.ToHex(true)), new HexBigInteger(10).Value));
-
-				return ECDSASignatureFactory.FromComponents(r, s, v);
+				return signature;
 			}
 		}
+
+		protected override int CalculateRecId(ECDSASignature signature, byte[] message, byte[] publicKey)
+		{
+            var possibleValues = new short[] { 10, 11 };
+
+            foreach (var candidate in possibleValues)
+            {
+                var rec = ECKey.RecoverFromSignature(candidate, signature, message, false);
+				if (rec == null)
+					continue;
+
+                var k = rec.GetPubKey(false);
+                if (k != null && k.SequenceEqual(publicKey))
+					return candidate;
+            }
+
+            throw new ArgumentException("Could not construct a recoverable key. This should never happen.");
+        }
 
 		public override Task SignAsync(LegacyTransaction transaction) => SignHashTransactionAsync(transaction);
 
@@ -109,39 +117,6 @@ namespace Nethereum.Signer.AWSKeyManagement
 		public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
 
 		public override bool Supported1559 { get; } = true;
-
-		#endregion
-
-		#region Private methods
-
-		private byte[] FindRightKey(byte[] msgHash, byte[] r, byte[] s, string ethereumAddress)
-		{
-			var possibleValues = new short[] { 27, 28 };
-			foreach (var candidate in possibleValues)
-			{
-				var v = new HexBigInteger(candidate);
-				if (RecoverPubKeyFromSig(msgHash, r, s, v) == ethereumAddress)
-					return v;
-			}
-
-			throw new ArgumentException("There was no v value found for the ethereum address", nameof(ethereumAddress));
-		}
-
-		private string RecoverPubKeyFromSig(byte[] msgHash, byte[] r, byte[] s, byte[] v)
-		{
-			return GetSignature(msgHash, r, s, v).GetPublicAddress();
-		}
-
-		private EthECKey GetSignature(byte[] msgHash, byte[] r, byte[] s, byte[] v)
-		{
-			EthECDSASignature ethECDSASignature = EthECDSASignatureFactory.FromComponents(r, s, v);
-			return GetSignature(msgHash, ethECDSASignature);
-		}
-
-		private EthECKey GetSignature(byte[] msgHash, EthECDSASignature signature)
-		{
-			return EthECKey.RecoverFromSignature(signature, msgHash);
-		}
 
 		#endregion
     }
