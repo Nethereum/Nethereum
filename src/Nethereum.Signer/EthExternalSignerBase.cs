@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Model;
 using Nethereum.RLP;
@@ -25,11 +26,6 @@ namespace Nethereum.Signer
             return new EthECKey(publicKey, false).GetPublicAddress();
         }
 
-        protected virtual int CalculateRecId(ECDSASignature signature, byte[] message, byte[] publicKey)
-        {
-            return EthECKey.CalculateRecId(signature, message, publicKey);
-        }
-
         public async Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId)
         {
             var signature = await SignExternallyAsync(rawBytes).ConfigureAwait(false);
@@ -40,7 +36,7 @@ namespace Nethereum.Signer
                 rawBytes = new Sha3Keccack().CalculateHash(rawBytes);
             }
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
-            var recId = CalculateRecId(signature, rawBytes, publicKey);
+            var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             var vChain = EthECKey.CalculateV(chainId, recId);
             signature.V = vChain.ToBytesForRLPEncoding();
             return new EthECDSASignature(signature);
@@ -57,7 +53,7 @@ namespace Nethereum.Signer
             }
 
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
-            var recId = CalculateRecId(signature, rawBytes, publicKey);
+            var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             signature.V = new[] {(byte) (recId + 27)};
             return new EthECDSASignature(signature);
         }
@@ -80,7 +76,7 @@ namespace Nethereum.Signer
             }
 
             var publicKey = await GetPublicKeyAsync().ConfigureAwait(false);
-            var recId = CalculateRecId(signature, rawBytes, publicKey);
+            var recId = EthECKey.CalculateRecId(signature, rawBytes, publicKey);
             signature.V = new[] { (byte)(recId) };
             return new EthECDSASignature(signature);
         }
