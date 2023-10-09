@@ -98,7 +98,7 @@ namespace Nethereum.Signer.AWSKeyManagement
         {
             await SignHashTransactionAsync(transaction);
 
-            if (IsPrivateTransaction)
+            if (!CalculatesV && IsPrivateTransaction)
 			{
 				var v = transaction.Signature.V.First() + 10;
 				transaction.Signature.V = new byte[] { (byte)v };
