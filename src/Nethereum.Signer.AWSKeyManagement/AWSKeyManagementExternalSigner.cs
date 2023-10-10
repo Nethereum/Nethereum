@@ -6,7 +6,6 @@ using Nethereum.Model;
 using Nethereum.Signer.Crypto;
 using System;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
