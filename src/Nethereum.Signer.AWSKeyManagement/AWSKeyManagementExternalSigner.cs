@@ -1,5 +1,7 @@
-﻿using Amazon.KeyManagementService;
+﻿using Amazon;
+using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
+using Amazon.Runtime;
 using Nethereum.Model;
 using Nethereum.Signer.Crypto;
 using System;
@@ -18,8 +20,6 @@ namespace Nethereum.Signer.AWSKeyManagement
 
         public string KeyId { get; }
 
-        public bool IsPrivateTransaction { get; }
-
         #endregion
 
         #region Constructors
@@ -34,13 +34,9 @@ namespace Nethereum.Signer.AWSKeyManagement
             : this(new AmazonKeyManagementServiceClient(region), keyId) { }
 
         public AWSKeyManagementExternalSigner(IAmazonKeyManagementService keyClient, string keyId)
-            : this(keyClient, keyId, false) { }
-
-        public AWSKeyManagementExternalSigner(IAmazonKeyManagementService keyClient, string keyId, bool isPrivateTransaction)
         {
             KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
             KeyClient = keyClient ?? throw new ArgumentNullException(nameof(keyClient));
-            IsPrivateTransaction = isPrivateTransaction;
         }
 
         #endregion
@@ -94,16 +90,7 @@ namespace Nethereum.Signer.AWSKeyManagement
             }
         }
         
-        public override async Task SignAsync(LegacyTransaction transaction)
-        {
-            await SignHashTransactionAsync(transaction);
-
-            if (!CalculatesV && IsPrivateTransaction)
-			{
-				var v = transaction.Signature.V.First() + 10;
-				transaction.Signature.V = new byte[] { (byte)v };
-			}
-        }
+        public override Task SignAsync(LegacyTransaction transaction) => SignHashTransactionAsync(transaction);
 
         public override Task SignAsync(LegacyTransactionChainId transaction) => SignHashTransactionAsync(transaction);
 
