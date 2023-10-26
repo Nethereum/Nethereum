@@ -13,24 +13,23 @@ namespace Nethereum.Signer.AWSKeyManagement
 {
     public class AWSKeyManagementExternalSigner : EthExternalSignerBase
     {
-        public AmazonKeyManagementServiceClient KeyClient { get;}
+        protected IAmazonKeyManagementService KeyClient { get; private set; }
+
         public string KeyId { get; }
 
         public AWSKeyManagementExternalSigner(string keyId, string accessKeyId, string accessKey, RegionEndpoint region)
-        {
-            KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
-            KeyClient = new AmazonKeyManagementServiceClient(accessKeyId, accessKey, region);
-        }
+            : this(new AmazonKeyManagementServiceClient(accessKeyId, accessKey, region), keyId) { }
+
         public AWSKeyManagementExternalSigner(string keyId, AWSCredentials credentials)
-        {
-            KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
-            KeyClient = new AmazonKeyManagementServiceClient(credentials);
-        }
+            : this(new AmazonKeyManagementServiceClient(credentials), keyId) { }
 
         public AWSKeyManagementExternalSigner(string keyId, RegionEndpoint region)
+            : this(new AmazonKeyManagementServiceClient(region), keyId) { }
+
+        public AWSKeyManagementExternalSigner(IAmazonKeyManagementService keyClient, string keyId)
         {
             KeyId = keyId ?? throw new ArgumentNullException(nameof(keyId));
-            KeyClient = new AmazonKeyManagementServiceClient(region);
+            KeyClient = keyClient ?? throw new ArgumentNullException(nameof(keyClient));
         }
 
         protected override async Task<byte[]> GetPublicKeyAsync()
@@ -57,27 +56,29 @@ namespace Nethereum.Signer.AWSKeyManagement
             offset = offset + xLen;
             Buffer.BlockCopy(y, 0, publicKey, offset, yLen);
             return publicKey;
-            
         }
-
 
         protected override async Task<ECDSASignature> SignExternallyAsync(byte[] hashBytes)
         {
             if (hashBytes == null)
                 throw new ArgumentNullException(nameof(hashBytes));
-            var request = new SignRequest()
-            {
-                Message = new MemoryStream(hashBytes),
-                KeyId = this.KeyId,
-                MessageType = MessageType.DIGEST,
-                SigningAlgorithm = SigningAlgorithmSpec.ECDSA_SHA_256
-            };
-            var result = await KeyClient.SignAsync(request).ConfigureAwait(false);
-             
-            return ECDSASignature.FromDER(result.Signature.ToArray());
-           
-        }
 
+            using (MemoryStream message = new (hashBytes))
+            {
+                var request = new SignRequest()
+                {
+                    Message = message,
+                    KeyId = this.KeyId,
+                    MessageType = MessageType.DIGEST,
+                    SigningAlgorithm = SigningAlgorithmSpec.ECDSA_SHA_256
+                };
+
+                var result = await KeyClient.SignAsync(request).ConfigureAwait(false);
+
+                return ECDSASignature.FromDER(result.Signature.ToArray());
+            }
+        }
+        
         public override Task SignAsync(LegacyTransaction transaction) => SignHashTransactionAsync(transaction);
 
         public override Task SignAsync(LegacyTransactionChainId transaction) => SignHashTransactionAsync(transaction);
