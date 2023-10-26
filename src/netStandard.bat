@@ -20,7 +20,9 @@ CALL :build
 cd ..
 
 cd Nethereum.Web3
+SET projectName=Nethereum.Web3.csproj
 CALL :build
+SET projectName=
 cd ..
 
 cd Nethereum.JsonRpc.IpcClient*
@@ -133,6 +135,6 @@ EXIT /B %ERRORLEVEL%
 :build
 rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
 rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
-dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
+dotnet build %projectName% -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=false
 xcopy bin\Release\netstandard2.0\*.dll "..\compiledlibraries\netStandard" /s /y
 EXIT /B 0
