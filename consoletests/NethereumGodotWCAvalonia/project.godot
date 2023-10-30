@@ -1,0 +1,30 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="NethereumGodotAvalonia"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.1", "C#", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+AvaloniaLoader="res://AvaloniaLoader.cs"
+
+[dotnet]
+
+project/assembly_name="NethereumGodotAvalonia"
+NethereumGodotAvaloniaproject/assembly_name="NethereumGodotAvalonia"
+
+[rendering]
+
+renderer/rendering_method="mobile"
+anti_aliasing/quality/screen_space_aa=1

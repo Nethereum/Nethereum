@@ -10,7 +10,8 @@ Backup/
 *.user
 *.userosscache
 *.sln.docstates
-*.godot
+
+.godot/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
