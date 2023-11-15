@@ -18,9 +18,9 @@
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.0,8)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.0,9)" />
   </ItemGroup>
-		
+
 
 
 </Project>
