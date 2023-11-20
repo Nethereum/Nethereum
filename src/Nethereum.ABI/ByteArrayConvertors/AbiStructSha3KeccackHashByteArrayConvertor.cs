@@ -8,7 +8,7 @@ using Nethereum.Util.HashProviders;
 
 namespace Nethereum.ABI.ByteArrayConvertors
 {
-    internal class AbiStructSha3KeccackHashByteArrayConvertor<T> : IByteArrayConvertor<T>
+    public class AbiStructSha3KeccackHashByteArrayConvertor<T> : IByteArrayConvertor<T>
     {
         private readonly ABIEncode _abiEncode;
         public AbiStructSha3KeccackHashByteArrayConvertor()
