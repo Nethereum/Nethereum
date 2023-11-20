@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -34,6 +34,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net5.0|AnyCPU'">
     <Optimize>True</Optimize>
   </PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
+		<Optimize>True</Optimize>
+	</PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
     <Optimize>True</Optimize>
@@ -49,20 +53,27 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <PackageReference Include="NBitcoin.Secp256k1">
-      <Version>1.0.3</Version>
+		<Version>3.1.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="NBitcoin.Secp256k1">
-      <Version>1.0.3</Version>
+		<Version>3.1.1</Version>
     </PackageReference>
   </ItemGroup>
-   
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
-   </ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+	<PackageReference Include="NBitcoin.Secp256k1">
+		<Version>3.1.1</Version>
+	</PackageReference>
+</ItemGroup>
+
+
+<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1,9)" />
+</ItemGroup>
+
  
-	<ItemGroup>
+<ItemGroup>
     <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.5" />
     <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="NBitcoin" Version="7.0.6" />

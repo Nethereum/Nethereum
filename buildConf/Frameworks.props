@@ -10,24 +10,24 @@
     <TargetUnityAOT>false</TargetUnityAOT>
     <TargetUnityAOT Condition="'$(TargetUnityNet461AOT)' == 'true' Or '$(TargetUnityNet472AOT)' == 'true'">true</TargetUnityAOT>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' != 'netstandard1.1'">1.6.1</NetStandardImplicitPackageVersion>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;net461;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetStandard)'== 'true'">netstandard2.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>netstandard1.1;net451;net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworks>
+    <DefaultFrameworks>netstandard1.1;net451;net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworks>
-    <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</DefaultFrameworks>
+    <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
-    <UIFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0;net472</UIFrameworks>
-    <UIFrameworksCore>netcoreapp3.1;net5.0;net6.0</UIFrameworksCore>
-   <UIFrameworksBlazor>net6.0</UIFrameworksBlazor>
-    <ENSFrameworks>net451;net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</ENSFrameworks>
+    <UIFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net6.0;net472;net8.0</UIFrameworks>
+    <UIFrameworksCore>netcoreapp3.1;net5.0;net6.0;net8.0</UIFrameworksCore>
+    <UIFrameworksBlazor>net6.0;net8.0</UIFrameworksBlazor>
+    <ENSFrameworks>net451;net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</ENSFrameworks>
-    <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ENSFrameworks>
+    <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</ENSFrameworks>
     
     <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;net461;</HdWalletFrameworks>
@@ -35,25 +35,25 @@
     <HdWalletFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netstandard2.0</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</HdWalletFrameworks>
-    <ExternalSignerFrameworks>netstandard2.0;net461;netcoreapp3.1;net5.0</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks>netstandard2.0;net461;netcoreapp3.1;net5.0;net8.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ExternalSignerFrameworks>
-    <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ExternalSignerFrameworks>
     <UnityFrameworks>net461;net35;net472;netstandard2.0</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</UnityFrameworks>
-    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</IpcWebSocketsFrameworks>
-    <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</IpcWebSocketsFrameworks>
 	
     <ReactiveFrameworks>net461;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ReactiveFrameworks>
-    <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0</ReactiveFrameworks>
+    <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ReactiveFrameworks>
 	
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -79,7 +79,7 @@
     </Reference>
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'net5.0' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' Or  '$(TargetFramework)' == 'netstandard2.0' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'net5.0' Or '$(TargetFramework)' == 'net8.0' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' Or  '$(TargetFramework)' == 'netstandard2.0' ">
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
