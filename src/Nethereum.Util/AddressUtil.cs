@@ -31,6 +31,7 @@ namespace Nethereum.Util
     {
         private static AddressUtil _current;
         public const string AddressEmptyAsHex = "0x0";
+        public const string ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
         public static AddressUtil Current
         {
