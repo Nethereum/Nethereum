@@ -21,4 +21,5 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Run
-        cmd /c "START /b src/nuget.bat"
+      run:
+         cmd /c "START /b src/nuget.bat"
