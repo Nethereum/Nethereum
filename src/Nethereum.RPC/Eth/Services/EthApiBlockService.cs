@@ -14,6 +14,7 @@ namespace Nethereum.RPC.Eth.Services
             GetBlockWithTransactionsByNumber = new EthGetBlockWithTransactionsByNumber(client);
             GetBlockWithTransactionsHashesByHash = new EthGetBlockWithTransactionsHashesByHash(client);
             GetBlockWithTransactionsHashesByNumber = new EthGetBlockWithTransactionsHashesByNumber(client);
+            GetBlockReceiptsByNumber = new EthGetBlockReceiptsByNumber(client);
         }
 
         public IEthBlockNumber GetBlockNumber { get; private set; }
@@ -24,5 +25,6 @@ namespace Nethereum.RPC.Eth.Services
         public IEthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; private set; }
         public IEthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; private set; }
         public IEthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; private set; }
+        public IEthGetBlockReceiptsByNumber GetBlockReceiptsByNumber { get; private set; }
     }
 }

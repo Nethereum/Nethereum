@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -45,14 +46,21 @@ namespace Nethereum.RPC.UnitTests
         {
             var openRpc = GetOpenRpc();
             JArray methods = (JArray) openRpc["methods"];
+            var failed = false;
             foreach (var method in methods)
             {
                 var methodName = method["name"].ToString();
                 if (!Enum.TryParse(methodName, out UnsupportedApiMethods unsupportedApiMethod))
                 {
-                    Assert.True(Enum.TryParse(methodName, out ApiMethods apiMethod));
+                    if (!Enum.TryParse(methodName, out ApiMethods apiMethod))
+                    {
+                        Debug.WriteLine(methodName);
+                        failed = true;
+                    };
                 }
             }
+
+            Assert.False(failed);
         }
 
         [Fact]
@@ -70,7 +78,7 @@ namespace Nethereum.RPC.UnitTests
                 if (!simpleMappings.ContainsKey(schemaName))
                 {
                     var complexValidators = complexMappings.Where(x => x.Name == schemaName);
-                    if(!complexValidators.Any()) throw new Exception("Complex Object Not Mapped");
+                    if(!complexValidators.Any()) throw new Exception("Complex Object Not Mapped: " + schemaName);
                     foreach (var complexTypeValidation in complexValidators)
                     {
                         if (!complexTypeValidation.Ignored)
@@ -210,6 +218,7 @@ namespace Nethereum.RPC.UnitTests
             list.Add(new ComplexTypeValidation { Name = "StorageProof", Type = typeof(StorageProof), Ignored = false });
             list.Add(new ComplexTypeValidation { Name = "Access list result", Type = typeof(AccessListGasUsed), Ignored = true });
             list.Add(new ComplexTypeValidation { Name = "BadBlock", Type = typeof(BadBlock), Ignored = false });
+            list.Add(new ComplexTypeValidation { Name = "notFound", Ignored = true });
 
             return list;
 
@@ -222,11 +231,14 @@ namespace Nethereum.RPC.UnitTests
             mappings.Add("address", typeof(string));
             mappings.Add("addresses", typeof(string[]));
             mappings.Add("byte", typeof(string));
-            mappings.Add("bytes", typeof(string));
+            mappings.Add("bytesMax32", typeof(string));
+            mappings.Add("bytes", typeof(string)); 
+            mappings.Add("bytes48", typeof(string));
             mappings.Add("bytes8", typeof(string));
             mappings.Add("bytes32", typeof(string));
             mappings.Add("bytes256", typeof(string));
             mappings.Add("bytes65", typeof(string));
+            mappings.Add("ratio", typeof(HexBigInteger));
             mappings.Add("uint", typeof(HexBigInteger));
             mappings.Add("uint64", typeof(HexBigInteger));
             mappings.Add("uint256", typeof(HexBigInteger));

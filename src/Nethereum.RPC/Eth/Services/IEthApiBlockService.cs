@@ -11,5 +11,6 @@ namespace Nethereum.RPC.Eth.Services
         IEthGetBlockWithTransactionsByNumber GetBlockWithTransactionsByNumber { get; }
         IEthGetBlockWithTransactionsHashesByHash GetBlockWithTransactionsHashesByHash { get; }
         IEthGetBlockWithTransactionsHashesByNumber GetBlockWithTransactionsHashesByNumber { get; }
+        IEthGetBlockReceiptsByNumber GetBlockReceiptsByNumber { get; }
     }
 }
