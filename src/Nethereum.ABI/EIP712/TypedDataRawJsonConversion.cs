@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Nethereum.ABI.ABIDeserialisation;
 using System.Linq;
 using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.EIP712
 {
@@ -25,7 +26,7 @@ namespace Nethereum.ABI.EIP712
         public static string ToJson<TMessage, TDomain>(this TypedData<TDomain> typedData, TMessage message)
         {
             return SerialiseTypedDataToJson(typedData, message);
-        }
+        }        
 
         /// <summary>
         /// Encode typed data using a non standard json (streamlined)
@@ -117,40 +118,51 @@ namespace Nethereum.ABI.EIP712
             }
             else
             {
-                if (memberType.Contains("["))
-                {
-                    var items = (IList)memberValue;
-                    var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
-                    if (Eip712TypedDataEncoder.IsReferenceType(innerType))
-                    {
-                        var itemsMemberValues = new List<MemberValue[]>();
-                        foreach (var item in items)
-                        {
-                            itemsMemberValues.Add(GetMemberValues((IDictionary<string, object>)item, innerType, typeMemberDescriptions).ToArray());
-                        }
-
-                        return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
-                    }
-                    else
-                    {
-                        var itemsMemberValues = new List<object>();
-
-                        foreach (var item in items)
-                        {
-                            itemsMemberValues.Add(item);
-                        }
-
-                        return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
-                    }
-
-                }
-                else
+                if (memberType.StartsWith("bytes"))
                 {
                     return new MemberValue()
                     {
                         TypeName = memberType,
-                        Value = memberValue
+                        Value = ((string)memberValue).HexToByteArray()
                     };
+                }
+                else
+                {
+                    if (memberType.Contains("["))
+                    {
+                        var items = (IList)memberValue;
+                        var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
+                        if (Eip712TypedDataEncoder.IsReferenceType(innerType))
+                        {
+                            var itemsMemberValues = new List<MemberValue[]>();
+                            foreach (var item in items)
+                            {
+                                itemsMemberValues.Add(GetMemberValues((IDictionary<string, object>)item, innerType, typeMemberDescriptions).ToArray());
+                            }
+
+                            return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
+                        }
+                        else
+                        {
+                            var itemsMemberValues = new List<object>();
+
+                            foreach (var item in items)
+                            {
+                                itemsMemberValues.Add(item);
+                            }
+
+                            return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
+                        }
+
+                    }
+                    else
+                    {
+                        return new MemberValue()
+                        {
+                            TypeName = memberType,
+                            Value = memberValue
+                        };
+                    }
                 }
             }
         }
@@ -216,49 +228,67 @@ namespace Nethereum.ABI.EIP712
                 }
                 else
                 {
-                    if (memberType.Contains("["))
+                    if (memberType.StartsWith("bytes"))
                     {
-                        var memberProperty = new JProperty(memberName);
-                        var memberValueArray = new JArray();
-                        var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
-                        if (values[i].Value == null)
+                        var name = memberName;
+                        if (values[i].Value is byte[])
                         {
-                            memberProperty.Value = null;
-                            properties.Add(memberProperty);
+                            var value = ((byte[])values[i].Value).ToHex();
+                            properties.Add(new JProperty(name, value));
                         }
                         else
                         {
-                            if (Eip712TypedDataEncoder.IsReferenceType(innerType))
+                            var value = values[i].Value;
+                            properties.Add(new JProperty(name, value));
+                        }
+                    }
+                    else
+                    {
+                        if (memberType.Contains("["))
+                        {
+                            var memberProperty = new JProperty(memberName);
+                            var memberValueArray = new JArray();
+                            var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
+                            if (values[i].Value == null)
                             {
-                                var items = (List<MemberValue[]>)values[i].Value;
-
-                                foreach (var item in items)
-                                {
-                                    memberValueArray.Add(new JObject(GetJProperties(innerType, item, typedDataRaw).ToArray()));
-                                }
-                                memberProperty.Value = memberValueArray;
+                                memberProperty.Value = null;
                                 properties.Add(memberProperty);
                             }
                             else
                             {
-                                var items = (IList)values[i].Value;
-
-                                foreach (var item in items)
+                                if (Eip712TypedDataEncoder.IsReferenceType(innerType))
                                 {
-                                    memberValueArray.Add(item);
+                                    var items = (List<MemberValue[]>)values[i].Value;
+
+                                    foreach (var item in items)
+                                    {
+                                        memberValueArray.Add(new JObject(GetJProperties(innerType, item, typedDataRaw).ToArray()));
+                                    }
+                                    memberProperty.Value = memberValueArray;
+                                    properties.Add(memberProperty);
                                 }
+                                else
+                                {
+                                    var items = (IList)values[i].Value;
 
-                                memberProperty.Value = memberValueArray;
-                                properties.Add(memberProperty);
+                                    foreach (var item in items)
+                                    {
+                                        memberValueArray.Add(item);
+                                    }
+
+                                    memberProperty.Value = memberValueArray;
+                                    properties.Add(memberProperty);
+                                }
                             }
-                        }
 
-                    }
-                    else
-                    {
-                        var name = memberName;
-                        var value = values[i].Value;
-                        properties.Add(new JProperty(name, value));
+                        }
+                        else
+                        {
+
+                            var name = memberName;
+                            var value = values[i].Value;
+                            properties.Add(new JProperty(name, value));
+                        }
                     }
                 }
             }

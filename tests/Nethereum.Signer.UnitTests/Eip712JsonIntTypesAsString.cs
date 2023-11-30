@@ -5,6 +5,7 @@ using Xunit;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.ABI.EIP712;
 using System.Numerics;
+using FluentAssertions;
 
 namespace Nethereum.Signer.UnitTests
 {
@@ -49,7 +50,7 @@ namespace Nethereum.Signer.UnitTests
         public void ShouldEncodeJsonAsBigInteger()
         {
 
-            var typedData = @"{
+            var json = @"{
   types: {
     Order: [
       {
@@ -162,12 +163,17 @@ namespace Nethereum.Signer.UnitTests
     nonce: ""0""
   }}";
             var encoder = new Eip712TypedDataEncoder();
-            var encoded = encoder.EncodeTypedData(typedData);
+            var encoded = encoder.EncodeTypedData(json);
             var hash = Nethereum.Util.Sha3Keccack.Current.CalculateHash(encoded);
             Assert.Equal("4f08a7bb9d951d28787f2103ccb0e018bce02fbf08819953942ea013ccf208d5", hash.ToHex());
-        
 
-    }
+           
+           var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData(json);
+           var newJson = TypedDataRawJsonConversion.SerialiseRawTypedDataToJson(typedDataRaw);
+           var encodedReversed = encoder.EncodeTypedData(newJson);
+           var hashnew = Nethereum.Util.Sha3Keccack.Current.CalculateHash(encodedReversed);
+           Assert.Equal("4f08a7bb9d951d28787f2103ccb0e018bce02fbf08819953942ea013ccf208d5", hashnew.ToHex());
+        }
 
         public static TypedData<Domain> GetOrderTypedDefinition()
         {
