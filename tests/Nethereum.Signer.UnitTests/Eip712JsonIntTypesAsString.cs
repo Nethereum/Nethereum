@@ -5,7 +5,6 @@ using Xunit;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.ABI.EIP712;
 using System.Numerics;
-using FluentAssertions;
 
 namespace Nethereum.Signer.UnitTests
 {

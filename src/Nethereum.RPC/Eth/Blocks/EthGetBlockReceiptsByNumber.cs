@@ -19,13 +19,13 @@ namespace Nethereum.RPC.Eth.Blocks
         public Task<TransactionReceipt[]> SendRequestAsync(BlockParameter blockParameter, object id = null)
         {
             if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
-            return base.SendRequestAsync(id, blockParameter, true);
+            return base.SendRequestAsync(id, blockParameter);
         }
 
         public Task<TransactionReceipt[]> SendRequestAsync(HexBigInteger number, object id = null)
         {
             if (number == null) throw new ArgumentNullException(nameof(number));
-            return base.SendRequestAsync(id, number, true);
+            return base.SendRequestAsync(id, number);
         }
 
         public RpcRequestResponseBatchItem<EthGetBlockReceiptsByNumber, TransactionReceipt[]> CreateBatchItem(HexBigInteger number, object id)
@@ -51,13 +51,13 @@ namespace Nethereum.RPC.Eth.Blocks
         public RpcRequest BuildRequest(HexBigInteger number, object id = null)
         {
             if (number == null) throw new ArgumentNullException(nameof(number));
-            return base.BuildRequest(id, number, true);
+            return base.BuildRequest(id, number);
         }
 
         public RpcRequest BuildRequest(BlockParameter blockParameter, object id = null)
         {
             if (blockParameter == null) throw new ArgumentNullException(nameof(blockParameter));
-            return base.BuildRequest(id, blockParameter, true);
+            return base.BuildRequest(id, blockParameter);
         }
     }
 }
