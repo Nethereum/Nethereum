@@ -5,6 +5,7 @@ using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -67,7 +68,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 }
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 progress.Exception = ex;
             }
@@ -77,14 +78,13 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private async Task InvokeLogProcessorsAsync(FilterLog[] logs)
         {
-            //TODO: Add parallel execution strategy
-            foreach (var logProcessor in _logProcessors)
-            {
-                foreach (var log in logs)
-                {
-                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
-                }
-            }
+            await _logProcessors.ForEachAsync(async logProcessor =>
+                  {
+                     foreach (var log in logs)
+                     {
+                         await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
+                     }
+                  });
         }
 
         struct GetLogsResponse
@@ -96,14 +96,14 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 To = to;
             }
 
-            public FilterLog[] Logs { get;set;}
+            public FilterLog[] Logs { get; set; }
             public BigInteger From { get; set; }
-            public BigInteger To { get; set;}
+            public BigInteger To { get; set; }
         }
 
         private async Task<GetLogsResponse?> GetLogsAsync(OrchestrationProgress progress, BigInteger fromBlock, BigInteger toBlock, CancellationToken cancellationToken = default(CancellationToken), int retryRequestNumber = 0, int retryNullLogsRequestNumber = 0)
         {
-            try 
+            try
             {
 
 
@@ -129,9 +129,9 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 return new GetLogsResponse(fromBlock, adjustedToBlock, logs);
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                
+
                 if (retryRequestNumber >= MaxGetLogsRetries || cancellationToken.IsCancellationRequested)
                 {
                     progress.Exception = ex;
