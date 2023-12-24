@@ -13,21 +13,23 @@ namespace Nethereum.DataServices.Etherscan
 
         public static string GetBaseUrl(EtherscanChain chain)
         {
-            switch (chain) 
+            switch (chain)
             {
                 case EtherscanChain.Mainnet:
                     return "https://api.etherscan.io/";
-
                 case EtherscanChain.Binance:
                     return "https://api.bscscan.com/";
-
                 case EtherscanChain.Optimism:
                     return "https://api-optimistic.etherscan.io/";
+                case EtherscanChain.Polygon:
+                    return "https://api.polygonscan.com/";
+                case EtherscanChain.Arbitrum:
+                    return "https://api.arbiscan.io/";
             }
             throw new NotImplementedException();
         }
 
-        public EtherscanRequestService(HttpClient httpClient, string baseUrl, string apiKey= DefaultToken)
+        public EtherscanRequestService(HttpClient httpClient, string baseUrl, string apiKey = DefaultToken)
         {
             HttpClient = httpClient;
             BaseUrl = baseUrl;
