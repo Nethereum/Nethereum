@@ -47,7 +47,11 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeDynamicElementType(byte[] encoded, Type type, int size)
         {
+            if (size * 32 > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
+
             var decodedListOutput = (IList) Activator.CreateInstance(type);
+
+
 
             if (decodedListOutput == null)
                 throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
@@ -115,6 +119,8 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeStaticElementType(byte[] encoded, Type type, int size)
         {
+            if (size * 32 > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
+
             var decodedListOutput = (IList) Activator.CreateInstance(type);
 
             if (decodedListOutput == null)
