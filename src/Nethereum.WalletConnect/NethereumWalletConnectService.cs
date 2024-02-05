@@ -4,7 +4,7 @@ using Nethereum.WalletConnect.DTOs;
 using Nethereum.WalletConnect.Requests;
 using System.Linq;
 using System.Threading.Tasks;
-using WalletConnectSharp.Sign;
+using WalletConnectSharp.Sign.Interfaces;
 using WalletConnectSharp.Sign.Models;
 using WalletConnectSharp.Sign.Models.Engine;
 
@@ -15,14 +15,14 @@ namespace Nethereum.WalletConnect
         public const string MAINNET = "eip155:1";
         public static readonly string[] DEFAULT_CHAINS = { MAINNET };
 
-        public WalletConnectSignClient WalletConnectClient { get; }
+        public ISignClient WalletConnectClient { get; }
 
         public static ConnectOptions GetDefaultConnectOptions()
         {
             return GetDefaultConnectOptions(DEFAULT_CHAINS);
         }
 
-        public NethereumWalletConnectService(WalletConnectSignClient walletConnectClient)
+        public NethereumWalletConnectService(ISignClient walletConnectClient)
         {
             WalletConnectClient = walletConnectClient;
         }

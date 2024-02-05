@@ -1,12 +1,12 @@
 ﻿using Nethereum.RPC.Eth.DTOs;
 using System.Threading.Tasks;
-using WalletConnectSharp.Sign;
+using WalletConnectSharp.Sign.Interfaces;
 
 namespace Nethereum.WalletConnect
 {
     public interface INethereumWalletConnectService
     {
-        WalletConnectSignClient WalletConnectClient { get; }
+        ISignClient WalletConnectClient { get; }
 
         WalletConnectConnectedSession GetWalletConnectConnectedSession();
         Task<string> PersonalSignAsync(string hexUtf8);

@@ -17,7 +17,8 @@
 		<ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
 		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
 		<PackageReference Include="Newtonsoft.Json" Version="[13.0.3,14)" />
-		<PackageReference Include="WalletConnect.Sign" Version="2.1.0" />
+		<PackageReference Include="WalletConnect.Core" Version="2.2.0" />
+		<PackageReference Include="WalletConnect.Sign" Version="2.2.0" />
 
 		
 	</ItemGroup>
