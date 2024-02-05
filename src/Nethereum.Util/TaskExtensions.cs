@@ -11,6 +11,7 @@ namespace Nethereum.Util
     /// </summary>
     public static class TaskExtensions
     {
+#if !DOTNET35
         /// <summary>
         /// Enumerates a collection in parallel and calls an async method on each item. Useful for making 
         /// parallel async calls, e.g. independent web requests when the degree of parallelism needs to be
@@ -34,5 +35,7 @@ namespace Nethereum.Util
                         await action(partition.Current);
             })));
         }
+#endif
     }
+
 }
