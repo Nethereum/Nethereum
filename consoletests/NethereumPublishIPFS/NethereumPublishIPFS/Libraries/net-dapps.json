@@ -12,17 +12,22 @@
   {
     "fullName": "NetDapps.CommerceAdmin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
     "name": "NetDapps.CommerceAdmin",
-    "url": "ipfs://bafkreihoe6k3r5ezdyyp47xjj3iovsfdvhikohnboszjss7mokerbxcvze"
+    "url": "ipfs://bafkreifx5xqj7v3twlt4q2jvsm2dppnenpwsk23duegtk5fyjjzlrwtsfu"
   },
   {
     "fullName": "NetDapps.ERC20Token, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
     "name": "NetDapps.ERC20Token",
-    "url": "ipfs://bafkreifeedvcnm7axfevj3ue5gswjvq77dffqp5p2u4yyzpqpmuorja7ce"
+    "url": "ipfs://bafkreia3dvwj64b5ghgocncf2qs6umlrigdmkes6flyfnnsz6erw3nzojm"
   },
   {
     "fullName": "NetDapps.Maker, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
     "name": "NetDapps.Maker",
-    "url": "ipfs://bafkreihz5v4ypva7z4ui4wsjeoudy6f6qyyfbrwnmz7cj5kzrom4sf6yge"
+    "url": "ipfs://bafkreif5abs3qstsjnn4syz74cjynn7wefp5mcysnmg6gqfwurkej2sakq"
+  },
+  {
+    "fullName": "NetDapps.MessageSigning, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "name": "NetDapps.MessageSigning",
+    "url": "ipfs://bafkreifhnb32nks7lx6uuy3fqrloilupcq7anb46x4gsdcavpuveg3wpju"
   },
   {
     "fullName": "Nethereum.Erc20.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
