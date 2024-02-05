@@ -3,6 +3,7 @@ using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+
 namespace Nethereum.ABI.ABIDeserialisation
 {
     public class ABIJsonDeserialiser
@@ -114,10 +115,18 @@ namespace Nethereum.ABI.ABIDeserialisation
 
         public ContractABI DeserialiseContract(string abi) 
         {
+          
+#if NET6_0_OR_GREATER
+            var contract = System.Text.Json.JsonSerializer.Deserialize<List<IDictionary<string, object>>>
+                (abi);
+#else
             var convertor = new ExpandoObjectConverter();
             var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, convertor);
+#endif
+
             return DeserialiseContractBody(contract);
         }
+
         public ContractABI DeserialiseContract(JArray abi) {
             var convertor = new JObjectToExpandoConverter();
             return DeserialiseContractBody(convertor.JObjectArray(abi));
