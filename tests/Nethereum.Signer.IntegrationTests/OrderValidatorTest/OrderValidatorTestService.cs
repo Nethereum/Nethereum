@@ -32,7 +32,7 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return new OrderValidatorTestService(web3, receipt.ContractAddress);
         }
 
-        protected Nethereum.Web3.IWeb3 Web3{ get; }
+        protected Nethereum.Web3.IWeb3 Web3 { get; }
 
         public ContractHandler ContractHandler { get; }
 
@@ -53,7 +53,7 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<EIP712NameHashFunction, byte[]>(eIP712NameHashFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> EIP712NameHashQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<EIP712NameHashFunction, byte[]>(null, blockParameter);
@@ -64,7 +64,7 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<EIP712VersionHashFunction, byte[]>(eIP712VersionHashFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> EIP712VersionHashQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<EIP712VersionHashFunction, byte[]>(null, blockParameter);
@@ -72,22 +72,22 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
 
         public Task<string> OrdervalidatortestInitRequestAsync(OrdervalidatortestInitFunction ordervalidatortestInitFunction)
         {
-             return ContractHandler.SendRequestAsync(ordervalidatortestInitFunction);
+            return ContractHandler.SendRequestAsync(ordervalidatortestInitFunction);
         }
 
         public Task<string> OrdervalidatortestInitRequestAsync()
         {
-             return ContractHandler.SendRequestAsync<OrdervalidatortestInitFunction>();
+            return ContractHandler.SendRequestAsync<OrdervalidatortestInitFunction>();
         }
 
         public Task<TransactionReceipt> OrdervalidatortestInitRequestAndWaitForReceiptAsync(OrdervalidatortestInitFunction ordervalidatortestInitFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(ordervalidatortestInitFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(ordervalidatortestInitFunction, cancellationToken);
         }
 
         public Task<TransactionReceipt> OrdervalidatortestInitRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync<OrdervalidatortestInitFunction>(null, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync<OrdervalidatortestInitFunction>(null, cancellationToken);
         }
 
         public Task<byte[]> DomainSeparatorV4QueryAsync(DomainSeparatorV4Function domainSeparatorV4Function, BlockParameter blockParameter = null)
@@ -95,7 +95,7 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<DomainSeparatorV4Function, byte[]>(domainSeparatorV4Function, blockParameter);
         }
 
-        
+
         public Task<byte[]> DomainSeparatorV4QueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<DomainSeparatorV4Function, byte[]>(null, blockParameter);
@@ -106,7 +106,7 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<GetChainIdFunction, BigInteger>(getChainIdFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> GetChainIdQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetChainIdFunction, BigInteger>(null, blockParameter);
@@ -117,12 +117,12 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<HashAssetFunction, byte[]>(hashAssetFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> HashAssetQueryAsync(Asset asset, BlockParameter blockParameter = null)
         {
             var hashAssetFunction = new HashAssetFunction();
-                hashAssetFunction.Asset = asset;
-            
+            hashAssetFunction.Asset = asset;
+
             return ContractHandler.QueryAsync<HashAssetFunction, byte[]>(hashAssetFunction, blockParameter);
         }
 
@@ -131,12 +131,12 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<HashOrderFunction, byte[]>(hashOrderFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> HashOrderQueryAsync(Order order, BlockParameter blockParameter = null)
         {
             var hashOrderFunction = new HashOrderFunction();
-                hashOrderFunction.Order = order;
-            
+            hashOrderFunction.Order = order;
+
             return ContractHandler.QueryAsync<HashOrderFunction, byte[]>(hashOrderFunction, blockParameter);
         }
 
@@ -145,41 +145,28 @@ namespace ProtocolContracts.Contracts.OrderValidatorTest
             return ContractHandler.QueryAsync<HashTypedDataV4Function, byte[]>(hashTypedDataV4Function, blockParameter);
         }
 
-        
+
         public Task<byte[]> HashTypedDataV4QueryAsync(Order order, BlockParameter blockParameter = null)
         {
             var hashTypedDataV4Function = new HashTypedDataV4Function();
-                hashTypedDataV4Function.Order = order;
-            
+            hashTypedDataV4Function.Order = order;
+
             return ContractHandler.QueryAsync<HashTypedDataV4Function, byte[]>(hashTypedDataV4Function, blockParameter);
         }
 
-        public Task<string> ValidateOrderTest2RequestAsync(ValidateOrderTest2Function validateOrderTest2Function)
+        public Task<bool> ValidateOrderTestQueryAsync(ValidateOrderTestFunction validateOrderTestFunction, BlockParameter blockParameter = null)
         {
-             return ContractHandler.SendRequestAsync(validateOrderTest2Function);
+            return ContractHandler.QueryAsync<ValidateOrderTestFunction, bool>(validateOrderTestFunction, blockParameter);
         }
 
-        public Task<TransactionReceipt> ValidateOrderTest2RequestAndWaitForReceiptAsync(ValidateOrderTest2Function validateOrderTest2Function, CancellationTokenSource cancellationToken = null)
-        {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(validateOrderTest2Function, cancellationToken);
-        }
 
-        public Task<string> ValidateOrderTest2RequestAsync(Order order, byte[] signature)
+        public Task<bool> ValidateOrderTestQueryAsync(Order order, byte[] signature, BlockParameter blockParameter = null)
         {
-            var validateOrderTest2Function = new ValidateOrderTest2Function();
-                validateOrderTest2Function.Order = order;
-                validateOrderTest2Function.Signature = signature;
-            
-             return ContractHandler.SendRequestAsync(validateOrderTest2Function);
-        }
+            var validateOrderTestFunction = new ValidateOrderTestFunction();
+            validateOrderTestFunction.Order = order;
+            validateOrderTestFunction.Signature = signature;
 
-        public Task<TransactionReceipt> ValidateOrderTest2RequestAndWaitForReceiptAsync(Order order, byte[] signature, CancellationTokenSource cancellationToken = null)
-        {
-            var validateOrderTest2Function = new ValidateOrderTest2Function();
-                validateOrderTest2Function.Order = order;
-                validateOrderTest2Function.Signature = signature;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(validateOrderTest2Function, cancellationToken);
+            return ContractHandler.QueryAsync<ValidateOrderTestFunction, bool>(validateOrderTestFunction, blockParameter);
         }
     }
 }
