@@ -116,13 +116,8 @@ namespace Nethereum.ABI.ABIDeserialisation
         public ContractABI DeserialiseContract(string abi) 
         {
           
-#if NET6_0_OR_GREATER
-            var contract = System.Text.Json.JsonSerializer.Deserialize<List<IDictionary<string, object>>>
-                (abi);
-#else
             var convertor = new ExpandoObjectConverter();
             var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, convertor);
-#endif
 
             return DeserialiseContractBody(contract);
         }
