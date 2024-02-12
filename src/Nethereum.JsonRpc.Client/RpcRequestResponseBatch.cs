@@ -15,11 +15,24 @@ namespace Nethereum.JsonRpc.Client
 
         public void UpdateBatchItemResponses(IEnumerable<RpcResponseMessage> responses)
         {
+            var errors = new List<RpcError>();
             foreach(var response in responses)
             {
                 var batchItem = BatchItems.First(x => x.RpcRequestMessage.Id.ToString() == response.Id.ToString());
-                batchItem.DecodeResponse(response);
+                if (response.HasError)
+                {
+                    errors.Add(new RpcError(response.Error.Code, response.Error.Message + ": " + batchItem.RpcRequestMessage.Method,
+                     response.Error.Data));
+                }
+                else
+                {
+                    batchItem.DecodeResponse(response);
+                }
             }
+
+            if(errors.Any())
+                throw new RpcResponseBatchException(errors.ToArray());
         }
+
     }
 }
