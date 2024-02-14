@@ -70,8 +70,8 @@ namespace Nethereum.JsonRpc.Client
 #elif NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0_OR_GREATER
                 return new SocketsHttpHandler
                 {
-                    PooledConnectionLifetime = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
-                    PooledConnectionIdleTimeout = new TimeSpan(0, NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT, 0),
+                    PooledConnectionLifetime = TimeSpan.FromSeconds(NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT),
+                    PooledConnectionIdleTimeout = TimeSpan.FromSeconds(NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT),
                     MaxConnectionsPerServer = MaximumConnectionsPerServer
                 };
 #else
