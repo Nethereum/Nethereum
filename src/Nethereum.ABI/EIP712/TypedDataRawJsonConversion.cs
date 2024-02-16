@@ -118,7 +118,7 @@ namespace Nethereum.ABI.EIP712
             }
             else
             {
-                if (memberType.StartsWith("bytes"))
+                if (memberType.StartsWith("bytes") && !memberType.Contains("["))
                 {
                     return new MemberValue()
                     {
