@@ -12,7 +12,10 @@ namespace Nethereum.Model
         public LegacyTransaction(byte[] rawData)
         {
             RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
-            ValidateValidV(RlpSignerEncoder);
+            if (Signature != null)
+            {
+                ValidateValidV(RlpSignerEncoder);
+            }
         }
 
         public LegacyTransaction(RLPSignedDataHashBuilder rlpSigner)

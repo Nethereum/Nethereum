@@ -113,6 +113,14 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        public void ShouldDecodeATransactionWithoutSignature()
+        {
+            var rlp = "0xec808504a817c80082520894be18a9048ba3138fc430ca1a574ad113218ff79a8806f05b59d3b2000080808080";
+            var tx = new LegacyTransaction(rlp.HexToByteArray());
+            Assert.NotNull(tx);
+        }
+
+        [Fact]
         public void ShouldSignEncodeTransactionAndRecoverPublicAddress()
         {
             var privateKey = "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";

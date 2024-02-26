@@ -16,7 +16,10 @@ namespace Nethereum.Model
         {
             //Instantiate and decode
             RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
-            ValidateValidV(RlpSignerEncoder);
+            if (Signature != null)
+            {
+                ValidateValidV(RlpSignerEncoder);
+            }
             AppendDataForHashRecovery(chainId);
         }
 
