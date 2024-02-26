@@ -116,5 +116,46 @@ namespace Nethereum.Signer.UnitTests
             string result = signer.RecoverFromSignatureV4(json, signature, "value");
             Assert.Equal(result, key.GetPublicAddress());
         }
+
+        [Fact]
+        public void TestEncodingWithBytes32()
+        {
+            var domainSchema = @"{
+        ""types"": {
+                ""eip712domain"": [
+                    {""name"": ""name"", ""type"": ""string""},
+                    {""name"": ""version"", ""type"": ""string""},
+                    {""name"": ""chainId"", ""type"": ""uint256""},
+                    {""name"": ""verifyingContract"", ""type"": ""address""}
+                ],
+                ""Agent"": [
+                     {""name"": ""source"", ""type"": ""string""},
+                     {""name"": ""connectionId"", ""type"": ""bytes32""} 
+                ]
+            },
+            ""domain"": {
+                ""name"": ""yourdapp"",
+                ""version"": ""1"",
+                ""chainId"": 1,
+                ""verifyingContract"": ""0xcccccccccccccccccccccccccccccccccccccccc""
+            },
+            ""message"": {
+                ""source"": ""b"",
+                ""connectionId"": ""e9d4fad2244749f8e85e3ffd5d7a9b97""
+            },
+            ""primaryType"": ""Agent""
+       }";
+            var typedEncoder = new Eip712TypedDataSigner();
+            var encoder = typedEncoder.EncodeTypedData(domainSchema);
+
+            var signer = new Eip712TypedDataSigner();
+            var key = new EthECKey("94e001d6adf3a3275d5dd45971c2a5f6637d3e9c51f9693f2e678f649e164fa5");
+            string signature = signer.SignTypedDataV4<Domain>(domainSchema, key);
+
+            string result = signer.RecoverFromSignatureV4(domainSchema, signature);
+            Assert.Equal(result, key.GetPublicAddress());
+        }
     }
+
+   
 }
