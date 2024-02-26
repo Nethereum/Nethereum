@@ -191,10 +191,6 @@ cd Nethereum.Metamask
 CALL :build
 cd ..
 
-cd Nethereum.UI.Host
-CALL :build
-cd ..
-
 cd Nethereum.Model
 CALL :build
 cd ..
@@ -209,4 +205,6 @@ rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetS
 dotnet build  -c Release /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
 xcopy bin\Release\netstandard2.0\*.dll "..\compiledlibraries\netStandardUnityAOT" /s /y
 xcopy bin\Release\netstandard2.0\*.jslib "..\compiledlibraries\netStandardUnityAOT" /s /y
+xcopy bin\Release\netstandard2.1\*.dll "..\compiledlibraries\netStandardUnityAOT" /s /y
+xcopy bin\Release\netstandard2.1\*.jslib "..\compiledlibraries\netStandardUnityAOT" /s /y
 EXIT /B 0

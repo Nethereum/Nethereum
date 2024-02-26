@@ -22,7 +22,7 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "comp
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Util.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Web3.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.UI.dll" /s /y
-xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.Host.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.UI.Host.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.WalletConnect.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.WalletConnect.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Merkle.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Merkle.Patricia.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Merkle.Patricia.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Metamask.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Metamask.dll" /s /y
