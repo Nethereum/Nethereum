@@ -40,10 +40,10 @@
     <ExternalSignerFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ExternalSignerFrameworks>
-    <UnityFrameworks>net461;net35;net472;netstandard2.0</UnityFrameworks>
+    <UnityFrameworks>net461;net35;net472;netstandard2.1</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
-    <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</UnityFrameworks>
+    <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.1;</UnityFrameworks>
     <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0;net8.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</IpcWebSocketsFrameworks>
