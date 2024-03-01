@@ -10,13 +10,13 @@ namespace Nethereum.Web3
 {
         public class ContractServiceBase
         {
-            public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync<TDeploymentMessage>(Nethereum.Web3.Web3 web3, TDeploymentMessage deploymentMessage, CancellationTokenSource cancellationTokenSource = null)
+            public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync<TDeploymentMessage>(Nethereum.Web3.IWeb3 web3, TDeploymentMessage deploymentMessage, CancellationTokenSource cancellationTokenSource = null)
             where TDeploymentMessage : Nethereum.Contracts.ContractDeploymentMessage, new()
             {
                 return web3.Eth.GetContractDeploymentHandler<TDeploymentMessage>().SendRequestAndWaitForReceiptAsync(deploymentMessage, cancellationTokenSource);
             }
 
-            public static Task<string> DeployContractAsync<TDeploymentMessage>(Nethereum.Web3.Web3 web3, TDeploymentMessage deploymentMessage)
+            public static Task<string> DeployContractAsync<TDeploymentMessage>(Nethereum.Web3.IWeb3 web3, TDeploymentMessage deploymentMessage)
             where TDeploymentMessage : Nethereum.Contracts.ContractDeploymentMessage, new()
             {
                 return web3.Eth.GetContractDeploymentHandler<TDeploymentMessage>().SendRequestAsync(deploymentMessage);
