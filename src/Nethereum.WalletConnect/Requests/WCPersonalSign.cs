@@ -7,7 +7,7 @@ namespace Nethereum.WalletConnect.Requests
     [RpcMethod("personal_sign"), RpcRequestOptions(Clock.ONE_MINUTE, 99998)]
     public class WCPersonalSign : List<string>
     {
-        public WCPersonalSign(string account, string hexUtf8) : base(new string[] { account, hexUtf8 })
+        public WCPersonalSign(string hexUtf8, string account) : base(new string[] { hexUtf8, account })
         {
 
         }
