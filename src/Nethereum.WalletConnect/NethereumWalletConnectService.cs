@@ -60,8 +60,7 @@ namespace Nethereum.WalletConnect
             var connectedSession = GetWalletConnectConnectedSession();
             if (connectedSession != null)
             {
-                var request = new WCPersonalSign(
-                        connectedSession.Address, hexUtf8);
+                var request = new WCPersonalSign(hexUtf8, connectedSession.Address);
 
                 return await WalletConnectClient.Request<WCPersonalSign, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
             }
