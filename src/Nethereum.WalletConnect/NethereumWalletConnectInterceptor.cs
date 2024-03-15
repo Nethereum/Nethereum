@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WalletConnectSharp.Sign;
+using Nethereum.RPC.HostWallet;
 
 namespace Nethereum.WalletConnect
 {
@@ -21,6 +22,8 @@ namespace Nethereum.WalletConnect
              ApiMethods.eth_sign.ToString(),
              ApiMethods.personal_sign.ToString(),
              ApiMethods.eth_signTypedData_v4.ToString(),
+             ApiMethods.wallet_switchEthereumChain.ToString(),
+             ApiMethods.wallet_addEthereumChain.ToString()
         };
 
         public NethereumWalletConnectInterceptor(INethereumWalletConnectService walletConnectService)
@@ -61,6 +64,16 @@ namespace Nethereum.WalletConnect
                     else if (request.Method == ApiMethods.personal_sign.ToString())
                     {
                         var response = await _walletConnectService.PersonalSignAsync((string)request.RawParameters[0]);
+                        return (object)response;
+                    }
+                    else if(request.Method == ApiMethods.wallet_switchEthereumChain.ToString())
+                    {
+                        var response = await _walletConnectService.SwitchEthereumChainAsync((SwitchEthereumChainParameter)request.RawParameters[0]);
+                        return (object)response;
+                    }
+                    else if (request.Method == ApiMethods.wallet_addEthereumChain.ToString())
+                    {
+                        var response = await _walletConnectService.AddEthereumChainAsync((AddEthereumChainParameter)request.RawParameters[0]);
                         return (object)response;
                     }
 
@@ -107,6 +120,16 @@ namespace Nethereum.WalletConnect
                     else if (method == ApiMethods.personal_sign.ToString())
                     {
                         var response = await _walletConnectService.PersonalSignAsync((string)paramList[0]);
+                        return (object)response;
+                    }
+                    else if (method == ApiMethods.wallet_switchEthereumChain.ToString())
+                    {
+                        var response = await _walletConnectService.SwitchEthereumChainAsync((SwitchEthereumChainParameter)paramList[0]);
+                        return (object)response;
+                    }
+                    else if (method == ApiMethods.wallet_addEthereumChain.ToString())
+                    {
+                        var response = await _walletConnectService.AddEthereumChainAsync((AddEthereumChainParameter)paramList[0]);
                         return (object)response;
                     }
 

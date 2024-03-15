@@ -17,6 +17,10 @@ using Nethereum.ABI.EIP712;
 using Avalonia.Media.Imaging;
 using System.Windows.Input;
 using Avalonia.Threading;
+using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.HostWallet;
+using System.Diagnostics;
+using Nethereum.RPC.Chain;
 
 namespace NethereumWCAvalonia.ViewModels
 {
@@ -27,12 +31,19 @@ namespace NethereumWCAvalonia.ViewModels
 
             OnInitCommand = ReactiveCommand.CreateFromTask(InitAsync);
             OnSignedTypedDataCommand = ReactiveCommand.CreateFromTask(SignTypedDataAsync);
+            OnSwitchChainCommand = ReactiveCommand.CreateFromTask(SwitchChainAsync);
+            OnAddChainCommand = ReactiveCommand.CreateFromTask(AddEthereumChainAsync);
+            OnPersonalSignCommand = ReactiveCommand.CreateFromTask(PersonalSignAsync);
             Connected = false;
 
         }
 
         public ICommand OnInitCommand { get; }
         public ICommand OnSignedTypedDataCommand { get; }
+        public ICommand OnSwitchChainCommand { get; }
+        public ICommand OnAddChainCommand { get; }
+
+        public ICommand OnPersonalSignCommand { get; }
 
 
         WalletConnectSignClient client;
@@ -149,7 +160,7 @@ namespace NethereumWCAvalonia.ViewModels
                 client = await WalletConnectSignClient.Init(options);
             }
 
-            var connectData = await client.Connect(NethereumWalletConnectService.GetDefaultConnectOptions());
+            var connectData = await client.Connect(NethereumWalletConnectService.GetDefaultConnectOptions(8453));
             if (!string.IsNullOrEmpty(connectData.Uri))
             {
                 using MemoryStream ms = new();
@@ -206,6 +217,67 @@ namespace NethereumWCAvalonia.ViewModels
             Response = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
             RecoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, Response);
 
+
+        }
+
+        public async Task SwitchChainAsync()
+        {
+            try
+            {
+                var web3 = new Web3();
+                web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);
+
+                var response = await web3.Eth.HostWallet.SwitchEthereumChain.SendRequestAsync(new SwitchEthereumChainParameter()
+                {
+                    ChainId = 1.ToHexBigInteger()
+                });
+               
+                Response = response;
+            }
+            catch(Exception ex)
+            {
+                Response = ex.Message;
+                Debug.WriteLine(ex.ToString());
+            }
+
+        }
+
+        public async Task PersonalSignAsync()
+        {
+            try
+            {
+                var web3 = new Web3();
+                web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);
+
+                var response = await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(new HexUTF8String("Hello World"));
+                Response = response;
+            }
+            catch (Exception ex)
+            {
+                Response = ex.Message;
+                Debug.WriteLine(ex.ToString());
+            }
+
+        }
+
+        public async Task AddEthereumChainAsync()
+        {
+            try
+            {
+                var web3 = new Web3();
+                web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);
+                var chainFeature = ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(Nethereum.Signer.Chain.Optimism);
+                var addParameter = chainFeature.ToAddEthereumChainParameter();
+                var response = await web3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(addParameter);
+               
+
+                Response = response;
+            }
+            catch (Exception ex)
+            {
+                Response = ex.Message;
+                Debug.WriteLine(ex.ToString());
+            }
 
         }
 
