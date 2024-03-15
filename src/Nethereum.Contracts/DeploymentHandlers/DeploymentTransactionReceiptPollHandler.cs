@@ -34,8 +34,11 @@ namespace Nethereum.Contracts.DeploymentHandlers
             if (deploymentMessage == null) deploymentMessage = new TContractDeploymentMessage();
             var transactionHash = await _deploymentTransactionHandler.SendTransactionAsync(deploymentMessage)
                 .ConfigureAwait(false);
-            return await TransactionManager.TransactionReceiptService
+            var receipt = await TransactionManager.TransactionReceiptService
                 .PollForReceiptAsync(transactionHash, cancellationToken).ConfigureAwait(false);
+            await TransactionManager.TransactionReceiptService
+                .ValidateDeploymentTransactionReceipt(receipt).ConfigureAwait(false);
+            return receipt;
         }
 
         public Task<TransactionReceipt> SendTransactionAsync(TContractDeploymentMessage deploymentMessage = null,
@@ -45,6 +48,8 @@ namespace Nethereum.Contracts.DeploymentHandlers
                 ? SendTransactionAsync(deploymentMessage, CancellationToken.None)
                 : SendTransactionAsync(deploymentMessage, cancellationTokenSource.Token);
         }
+
+      
     }
 #endif
 }

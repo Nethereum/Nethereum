@@ -102,6 +102,12 @@ namespace Nethereum.ABI.Model
             return DecodeErrorDataToDefault(errorABI, data).ConvertToJObject();
         }
 
+        public static object DecodeErrorData(this Type type, string data)
+        {
+            var functionCallDecoder = new FunctionCallDecoder();
+            return functionCallDecoder.DecodeError(type, data);
+        }
+
         public static JObject DecodeInputToJObject(this FunctionABI functionABI, string inputData)
         {
             return DecodeInputDataToDefault(functionABI, inputData).ConvertToJObject();

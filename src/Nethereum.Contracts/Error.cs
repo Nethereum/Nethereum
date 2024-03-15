@@ -4,6 +4,7 @@ using Nethereum.ABI.Model;
 
 namespace Nethereum.Contracts
 {
+
     public class Error<TError> : ErrorBase where TError : class, IErrorDTO, new()
     {
         public Error() : base(typeof(TError))

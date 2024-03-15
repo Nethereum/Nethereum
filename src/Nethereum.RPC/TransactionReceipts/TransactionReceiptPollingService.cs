@@ -117,7 +117,12 @@ namespace Nethereum.RPC.TransactionReceipts
            CancellationToken cancellationToken = default)
         {
             var transactionReceipt = await SendRequestAndWaitForReceiptAsync(deployFunction, cancellationToken).ConfigureAwait(false);
-            if (transactionReceipt.Status.Value != 1 )
+            return await ValidateDeploymentTransactionReceipt(transactionReceipt).ConfigureAwait(false);
+        }
+
+        public async Task<TransactionReceipt> ValidateDeploymentTransactionReceipt(TransactionReceipt transactionReceipt)
+        {
+            if (transactionReceipt.Status.Value != 1)
             {
                 var contractAddress = transactionReceipt.ContractAddress;
                 var ethGetCode = new EthGetCode(_transactionManager.Client);
