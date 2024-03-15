@@ -61,7 +61,7 @@ namespace Nethereum.Contracts
         public Error FindError(string exceptionEncodedData)
         {
             var errors = ContractBuilder.ContractABI.Errors;
-            var errorAbi =  errors.FirstOrDefault(x => x.IsExceptionEncodedDataForError(exceptionEncodedData));
+            var errorAbi = errors.FirstOrDefault(x => x.IsExceptionEncodedDataForError(exceptionEncodedData));
             if (errorAbi == null) return null;
             return new Error(errorAbi);
         }
@@ -71,7 +71,7 @@ namespace Nethereum.Contracts
             return new Event(this, ContractBuilder.GetEventAbiBySignature(signature));
         }
 
-        public Event<T> GetEvent<T>() where T: IEventDTO, new()
+        public Event<T> GetEvent<T>() where T : IEventDTO, new()
         {
             return new Event<T>(this);
         }
