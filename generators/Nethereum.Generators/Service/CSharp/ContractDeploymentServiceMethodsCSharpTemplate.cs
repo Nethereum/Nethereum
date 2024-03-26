@@ -22,8 +22,8 @@ namespace Nethereum.Generators.Service
             var messageVariableName =
                 _contractDeploymentCQSMessageModel.GetVariableName();
 
-            var sendRequestReceipt =
-                $@"{SpaceUtils.TwoTabs}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
+            var sendRequestReceipt = 
+            $@"{SpaceUtils.TwoTabs}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
 {SpaceUtils.TwoTabs}{{
 {SpaceUtils.ThreeTabs}return web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSource);
 {SpaceUtils.TwoTabs}}}";

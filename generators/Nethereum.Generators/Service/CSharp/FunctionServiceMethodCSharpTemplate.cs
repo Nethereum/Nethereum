@@ -8,6 +8,8 @@ using Nethereum.Generators.Model;
 namespace Nethereum.Generators.Service
 {
 
+
+
     public class FunctionServiceMethodCSharpTemplate
     {
         private readonly ServiceModel _model;
@@ -26,7 +28,53 @@ namespace Nethereum.Generators.Service
         public string GenerateMethods()
         {
             var functions = _model.ContractABI.Functions;
-            return string.Join(GenerateLineBreak(), functions.Select(GenerateMethod));
+            var allFunctions = functions.Select(GenerateMethod).ToList();
+            allFunctions.Add(GenerateGetFunctionTypes());
+            allFunctions.Add(GenerateGetEventTypes());
+            allFunctions.Add(GenerateGetErrorTypes());
+            return string.Join(GenerateLineBreak(), allFunctions);
+        }
+
+        public string GenerateGetFunctionTypes()
+        {
+            var functions = _model.ContractABI.Functions;
+            var funtionTypesMethod =
+$@"{SpaceUtils.TwoTabs}public override List<Type> GetAllFunctionTypes()
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}return new List<Type>
+{SpaceUtils.ThreeTabs}{{
+{string.Join($",{Environment.NewLine}", functions.Select(x => $"{SpaceUtils.FourTabs}typeof({new FunctionCQSMessageModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{SpaceUtils.ThreeTabs}}};
+{SpaceUtils.TwoTabs}}}";
+            return funtionTypesMethod;
+        }
+
+        public string GenerateGetEventTypes()
+        {
+            var events = _model.ContractABI.Events;
+            var eventTypesMethod =
+$@"{SpaceUtils.TwoTabs}public override List<Type> GetAllEventTypes()
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}return new List<Type>
+{SpaceUtils.ThreeTabs}{{
+{string.Join($",{Environment.NewLine}", events.Select(x => $"{SpaceUtils.FourTabs}typeof({new EventDTOModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{SpaceUtils.ThreeTabs}}};
+{SpaceUtils.TwoTabs}}}";
+            return eventTypesMethod;
+        }
+
+        public string GenerateGetErrorTypes()
+        {
+            var errors = _model.ContractABI.Errors;
+            var errorsMethod =
+$@"{SpaceUtils.TwoTabs}public override List<Type> GetAllErrorTypes()
+{SpaceUtils.TwoTabs}{{
+{SpaceUtils.ThreeTabs}return new List<Type>
+{SpaceUtils.ThreeTabs}{{
+{string.Join($",{Environment.NewLine}", errors.Select(x => $"{SpaceUtils.FourTabs}typeof({new ErrorDTOModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{SpaceUtils.ThreeTabs}}};
+{SpaceUtils.TwoTabs}}}";
+            return errorsMethod;
         }
 
         public string GenerateMethod(FunctionABI functionABI)

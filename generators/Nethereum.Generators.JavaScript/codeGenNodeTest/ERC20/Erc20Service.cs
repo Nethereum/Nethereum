@@ -14,38 +14,26 @@ using Nethereum.Unity.Contracts.Standards.ERC20.ContractDefinition;
 
 namespace Nethereum.Unity.Contracts.Standards.ERC20
 {
-    public partial class Erc20Service
+    public partial class Erc20Service: ContractWeb3ServiceBase
     {
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
             return web3.Eth.GetContractDeploymentHandler<Erc20Deployment>().SendRequestAndWaitForReceiptAsync(erc20Deployment, cancellationTokenSource);
         }
 
-        public static Task<string> DeployContractAsync(Nethereum.Web3.Web3 web3, Erc20Deployment erc20Deployment)
+        public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment)
         {
             return web3.Eth.GetContractDeploymentHandler<Erc20Deployment>().SendRequestAsync(erc20Deployment);
         }
 
-        public static async Task<Erc20Service> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<Erc20Service> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
         {
             var receipt = await DeployContractAndWaitForReceiptAsync(web3, erc20Deployment, cancellationTokenSource);
             return new Erc20Service(web3, receipt.ContractAddress);
         }
 
-        protected Nethereum.Web3.IWeb3 Web3{ get; }
-
-        public ContractHandler ContractHandler { get; }
-
-        public Erc20Service(Nethereum.Web3.Web3 web3, string contractAddress)
+        public Erc20Service(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
-            Web3 = web3;
-            ContractHandler = web3.Eth.GetContractHandler(contractAddress);
-        }
-
-        public Erc20Service(Nethereum.Web3.IWeb3 web3, string contractAddress)
-        {
-            Web3 = web3;
-            ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
 
         public Task<string> NameQueryAsync(NameFunction nameFunction, BlockParameter blockParameter = null)
@@ -205,6 +193,39 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
                 allowanceFunction.Spender = spender;
             
             return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);
+        }
+
+        public override List<Type> GetAllFunctionTypes()
+        {
+            return new List<Type>
+            {
+                typeof(NameFunction),
+                typeof(ApproveFunction),
+                typeof(TotalSupplyFunction),
+                typeof(TransferFromFunction),
+                typeof(DecimalsFunction),
+                typeof(BalanceOfFunction),
+                typeof(SymbolFunction),
+                typeof(TransferFunction),
+                typeof(AllowanceFunction)
+            };
+        }
+
+        public override List<Type> GetAllEventTypes()
+        {
+            return new List<Type>
+            {
+                typeof(ApprovalEventDTO),
+                typeof(TransferEventDTO)
+            };
+        }
+
+        public override List<Type> GetAllErrorTypes()
+        {
+            return new List<Type>
+            {
+
+            };
         }
     }
 }

@@ -704,6 +704,9 @@ declare module Nethereum {
             // Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate
             export interface FunctionServiceMethodCSharpTemplate extends System.Object {
                 GenerateMethods(): string;
+                GenerateGetFunctionTypes(): string;
+                GenerateGetEventTypes(): string;
+                GenerateGetErrorTypes(): string;
                 GenerateMethod(functionABI: Model.FunctionABI): string;
             }
             export interface FunctionServiceMethodCSharpTemplateTypeFunc extends TypeFunction {
