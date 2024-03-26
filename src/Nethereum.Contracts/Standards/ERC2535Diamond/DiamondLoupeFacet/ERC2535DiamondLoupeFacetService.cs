@@ -4,16 +4,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet.ContractDefinition;
 using System;
-using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.Services;
-
 
 namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet
 {
-    public partial class DiamondLoupeFacetContractService : ContractServiceBase
+    public partial class ERC2535DiamondLoupeFacetService : ContractServiceBase
     {
 
-        public DiamondLoupeFacetContractService(IEthApiContractService ethApiContractService, string contractAddress)
+        public ERC2535DiamondLoupeFacetService(IEthApiContractService ethApiContractService, string contractAddress)
         {
 #if !DOTNET35
             ContractHandler = ethApiContractService.GetContractHandler(contractAddress);
