@@ -9,6 +9,7 @@ using WalletConnectSharp.Sign.Interfaces;
 using WalletConnectSharp.Sign.Models;
 using WalletConnectSharp.Sign.Models.Engine;
 using Nethereum.RPC.HostWallet;
+using System.Collections.Generic;
 
 namespace Nethereum.WalletConnect
 {
@@ -48,29 +49,46 @@ namespace Nethereum.WalletConnect
 
         public static ConnectOptions GetDefaultConnectOptions(string[] chainIds)
         {
-            return new ConnectOptions()
+            var requiredNamespace = new ProposedNamespace()
             {
-                RequiredNamespaces = new RequiredNamespaces()
-                {
-                    {
-                        "eip155", new ProposedNamespace()
-                        {
-                            Methods = new[]
+                Methods = new[]
                             {
                                 ApiMethods.eth_sendTransaction.ToString(),
+                            },
+                Chains = new[] { MAINNET } ,
+                Events = new[]
+                            {
+                                "chainChanged", "accountsChanged", "connect", "disconnect"
+                            }
+            };
+
+            var optionalNamespace = new ProposedNamespace()
+            {
+                Methods = new[]
+                           {
                                 ApiMethods.eth_sign.ToString(),
                                 ApiMethods.personal_sign.ToString(),
                                 ApiMethods.eth_signTypedData_v4.ToString(),
                                 ApiMethods.wallet_switchEthereumChain.ToString(),
                                 ApiMethods.wallet_addEthereumChain.ToString()
                             },
-                            Chains = chainIds,
-                            Events = new[]
-                            {
-                                "chainChanged", "accountsChanged"
+                Chains = chainIds,
+                Events = new[]
+                           {
+                                "chainChanged", "accountsChanged", "connect", "disconnect"
                             }
-                        }
-                    }
+            };
+
+
+            return new ConnectOptions()
+            {
+                RequiredNamespaces =
+                {
+                    { "eip155", requiredNamespace }
+                },
+                OptionalNamespaces =  
+                {
+                    { "eip155", optionalNamespace }
                 }
             };
         }
