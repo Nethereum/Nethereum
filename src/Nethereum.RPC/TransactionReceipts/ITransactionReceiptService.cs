@@ -32,5 +32,6 @@ namespace Nethereum.RPC.TransactionReceipts
 
         int GetPollingRetryIntervalInMilliseconds();
         void SetPollingRetryIntervalInMilliseconds(int retryMilliseconds);
+        Task<TransactionReceipt> ValidateDeploymentTransactionReceipt(TransactionReceipt transactionReceipt);
     }
 }

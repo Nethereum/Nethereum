@@ -17,5 +17,4 @@ namespace Nethereum.WalletConnect.Requests
         }
     }
 
-
 }

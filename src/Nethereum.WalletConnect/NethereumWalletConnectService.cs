@@ -1,5 +1,6 @@
 ﻿using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
+
 using Nethereum.WalletConnect.DTOs;
 using Nethereum.WalletConnect.Requests;
 using System.Linq;
@@ -7,12 +8,14 @@ using System.Threading.Tasks;
 using WalletConnectSharp.Sign.Interfaces;
 using WalletConnectSharp.Sign.Models;
 using WalletConnectSharp.Sign.Models.Engine;
+using Nethereum.RPC.HostWallet;
 
 namespace Nethereum.WalletConnect
 {
     public class NethereumWalletConnectService : INethereumWalletConnectService
     {
         public const string MAINNET = "eip155:1";
+        
         public static readonly string[] DEFAULT_CHAINS = { MAINNET };
 
         public ISignClient WalletConnectClient { get; }
@@ -25,6 +28,22 @@ namespace Nethereum.WalletConnect
         public NethereumWalletConnectService(ISignClient walletConnectClient)
         {
             WalletConnectClient = walletConnectClient;
+           
+        }
+
+        public static string GetEIP155ChainId(long chainId)
+        {
+            return $"eip155:{chainId}";
+        }
+
+        public static string[] GetEIP155ChainIds(params long[] chainIds)
+        {
+            return chainIds.Select(GetEIP155ChainId).ToArray();
+        }
+
+        public static ConnectOptions GetDefaultConnectOptions(params long[] eip155chainIds)
+        {
+           return GetDefaultConnectOptions(GetEIP155ChainIds(eip155chainIds));
         }
 
         public static ConnectOptions GetDefaultConnectOptions(string[] chainIds)
@@ -42,6 +61,8 @@ namespace Nethereum.WalletConnect
                                 ApiMethods.eth_sign.ToString(),
                                 ApiMethods.personal_sign.ToString(),
                                 ApiMethods.eth_signTypedData_v4.ToString(),
+                                ApiMethods.wallet_switchEthereumChain.ToString(),
+                                ApiMethods.wallet_addEthereumChain.ToString()
                             },
                             Chains = chainIds,
                             Events = new[]
@@ -52,6 +73,39 @@ namespace Nethereum.WalletConnect
                     }
                 }
             };
+        }
+
+        public async Task<string> SwitchEthereumChainAsync(SwitchEthereumChainParameter chainId)
+        {
+
+            var connectedSession = GetWalletConnectConnectedSession();
+            if (connectedSession != null)
+            {
+                var param = new WCSwitchEthereumChainParameter()
+                {
+                    ChainId = chainId.ChainId.HexValue
+                };
+
+                var request = new WCWalletSwitchEthereumChainRequest(param);
+
+                return await WalletConnectClient.Request<WCWalletSwitchEthereumChainRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+            }
+            throw new InvalidWalletConnectSessionException();
+        }
+
+        public async Task<string> AddEthereumChainAsync(AddEthereumChainParameter addEthereumChainParameter)
+        {
+
+            var connectedSession = GetWalletConnectConnectedSession();
+            if (connectedSession != null)
+            {
+                var param = ConvertAddEthereumChainParameter(addEthereumChainParameter, connectedSession);
+
+                var request = new WCWalletAddEthereumChainRequest(param);
+
+                return await WalletConnectClient.Request<WCWalletAddEthereumChainRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+            }
+            throw new InvalidWalletConnectSessionException();
         }
 
 
@@ -152,6 +206,29 @@ namespace Nethereum.WalletConnect
                 Data = transaction.Data
             };
         }
+
+        private static WCAddEthereumChainParameter ConvertAddEthereumChainParameter(AddEthereumChainParameter addEthereumChainParameter, WalletConnectConnectedSession connectedSession)
+        {
+            return new WCAddEthereumChainParameter()
+            {
+                ChainId = addEthereumChainParameter.ChainId.HexValue,
+                BlockExplorerUrls = addEthereumChainParameter.BlockExplorerUrls.ToArray(),
+                ChainName = addEthereumChainParameter.ChainName,
+                IconUrls = addEthereumChainParameter.IconUrls.ToArray(),
+                NativeCurrency = ConvertNativeCurrency(addEthereumChainParameter.NativeCurrency),
+                RpcUrls = addEthereumChainParameter.RpcUrls.ToArray()
+            };
+        }
+
+        private static WCNativeCurrency ConvertNativeCurrency(NativeCurrency nativeCurrency)
+        {
+            return new WCNativeCurrency()
+            {
+                Name = nativeCurrency.Name,
+                Symbol = nativeCurrency.Symbol,
+                Decimals = nativeCurrency.Decimals.ToString()
+            };
+        }   
 
         public WalletConnectConnectedSession GetWalletConnectConnectedSession()
         {

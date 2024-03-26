@@ -4,7 +4,9 @@ using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Nethereum.Contracts
 {
@@ -51,6 +53,34 @@ namespace Nethereum.Contracts
         public static bool IsExceptionEncodedDataForError(this ErrorABI errorABI, string data)
         {
             return data.IsExceptionEncodedDataForError(errorABI.Sha3Signature);
+        }
+
+        public static ErrorABI FindErrorABIForExceptionData(this List<ErrorABI> errorABIs, string data)
+        {
+            return errorABIs.FirstOrDefault(x => x.IsExceptionEncodedDataForError(data));
+        }
+
+        public static object FindAndDecodeToErrorExceptionData(this List<Type> errorTypes, string data)
+        {
+            foreach (var errorType in errorTypes)
+            {
+                var errorABI = ABITypedRegistry.GetError(errorType);
+                if (errorABI.IsExceptionEncodedDataForError(data))
+                {
+                  return errorType.DecodeErrorData(data);
+                }
+            }
+            return null;
+        }
+
+        public static JObject FindAndDecodeExceptionDataToJObject(this List<ErrorABI> errorABIs, string data)
+        {
+            var errorABI = errorABIs.FindErrorABIForExceptionData(data);
+            if (errorABI != null)
+            {
+                return errorABI.DecodeExceptionEncodedDataToJObject(data);
+            }
+            return null;
         }
 
         public static bool IsExceptionForError(this ErrorABI errorABI, RpcResponseException exception)

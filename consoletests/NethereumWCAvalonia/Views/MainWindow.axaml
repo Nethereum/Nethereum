@@ -29,6 +29,9 @@
 				<RowDefinition Height="50"></RowDefinition>
 				<RowDefinition Height="50"></RowDefinition>
 				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
+				<RowDefinition Height="50"></RowDefinition>
 			</Grid.RowDefinitions>
 			<TextBlock VerticalAlignment="Center" Text="Address: " Grid.Row="0" Grid.Column="0"/>
 			<TextBlock VerticalAlignment="Center" Text="ChainId: " Grid.Row="1" Grid.Column="0"/>
@@ -41,7 +44,10 @@
 			<Button  VerticalAlignment="Center"  Content="Sign Typed Data" HorizontalAlignment="Stretch" Command="{Binding OnSignedTypedDataCommand}" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" />
 			<TextBlock VerticalAlignment="Center"  Text="{Binding Response}" Grid.Row="3" Grid.Column="1"/>
 			<TextBlock VerticalAlignment="Center"  Text="{Binding RecoveredAccount}" Grid.Row="4" Grid.Column="1"/>
-
+			<Button  VerticalAlignment="Center"  Content="Switch Chain" HorizontalAlignment="Stretch" Command="{Binding OnSwitchChainCommand}" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" />
+			<Button  VerticalAlignment="Center"  Content="Add Chain" HorizontalAlignment="Stretch" Command="{Binding OnAddChainCommand}" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" />
+			<Button  VerticalAlignment="Center"  Content="Personal Sign" HorizontalAlignment="Stretch" Command="{Binding OnPersonalSignCommand}" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" />
+			
 		</Grid>
 	</Grid>
 </Window>
