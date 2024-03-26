@@ -232,25 +232,21 @@ namespace Nethereum.WalletConnect
 
         public WalletConnectConnectedSession GetWalletConnectConnectedSession()
         {
-            var currentSession = WalletConnectClient.Session.Get(WalletConnectClient.Session.Keys[0]);
-
-            var defaultChain = currentSession.Namespaces.Keys.FirstOrDefault();
-
-            if (string.IsNullOrWhiteSpace(defaultChain))
+            var currentSession = WalletConnectClient.AddressProvider.DefaultSession;
+            
+            if (string.IsNullOrWhiteSpace(currentSession.Topic))
                 return null;
 
-            var defaultNamespace = currentSession.Namespaces[defaultChain];
+            var defaultChainId = WalletConnectClient.AddressProvider.DefaultChainId;
 
-            if (defaultNamespace.Accounts.Length == 0)
-                return null;
+            var caip25Address = currentSession.CurrentAddress(defaultChainId);
 
-            var fullAddress = defaultNamespace.Accounts[0];
-            var addressParts = fullAddress.Split(":");
-
-            var address = addressParts[2];
-            var chainId = string.Join(':', addressParts.Take(2));
-
-            return new WalletConnectConnectedSession() { Session = currentSession, Address = address, ChainId = chainId };
+            return new WalletConnectConnectedSession
+            {
+                Session = currentSession, 
+                Address = caip25Address.Address, 
+                ChainId = caip25Address.ChainId
+            };
         }
     }
 
