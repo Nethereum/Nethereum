@@ -20,6 +20,7 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet
 #endif
         }
 
+#if !DOTNET35
         public Task<string> FacetAddressQueryAsync(FacetAddressFunction facetAddressFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<FacetAddressFunction, string>(facetAddressFunction, blockParameter);
@@ -82,6 +83,7 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet
             
             return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction, blockParameter);
         }
+#endif
 
         public override List<Type> GetAllFunctionTypes()
         {
@@ -104,5 +106,6 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet
         {
             return new List<Type>();
         }
+
     }
 }

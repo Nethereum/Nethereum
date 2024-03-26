@@ -30,6 +30,7 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
 #endif
         }
 
+#if !DOTNET35
         public Task<string> DiamondCutRequestAsync(DiamondCutFunction diamondCutFunction)
         {
             return ContractHandler.SendRequestAsync(diamondCutFunction);
@@ -60,6 +61,17 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
             return ContractHandler.SendRequestAsync(diamondCutFunction);
         }
 
+        public Task<TransactionReceipt> DiamondCutRequestAndWaitForReceiptAsync(List<FacetCut> diamondCut, string init, byte[] calldata, CancellationTokenSource cancellationToken = null)
+        {
+            var diamondCutFunction = new DiamondCutFunction();
+            diamondCutFunction.DiamondCut = diamondCut;
+            diamondCutFunction.Init = init;
+            diamondCutFunction.Calldata = calldata;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(diamondCutFunction, cancellationToken);
+        }
+#endif
+
         public static void InitialiseAddressAndCallData(string addressInit, byte[] callData, DiamondCutFunction diamondCutFunction)
         {
             if (!string.IsNullOrEmpty(addressInit))
@@ -82,16 +94,6 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
             }
         }
 
-        public Task<TransactionReceipt> DiamondCutRequestAndWaitForReceiptAsync(List<FacetCut> diamondCut, string init, byte[] calldata, CancellationTokenSource cancellationToken = null)
-        {
-            var diamondCutFunction = new DiamondCutFunction();
-            diamondCutFunction.DiamondCut = diamondCut;
-            diamondCutFunction.Init = init;
-            diamondCutFunction.Calldata = calldata;
-
-            return ContractHandler.SendRequestAndWaitForReceiptAsync(diamondCutFunction, cancellationToken);
-        }
-
         public override List<Type> GetAllFunctionTypes()
         {
            return new List<Type>
@@ -112,5 +114,6 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
         {
             return new List<Type>();
         }
+
     }
 }
