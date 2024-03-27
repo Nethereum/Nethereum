@@ -10,6 +10,9 @@ using WalletConnectSharp.Sign.Models;
 using WalletConnectSharp.Sign.Models.Engine;
 using Nethereum.RPC.HostWallet;
 using System.Collections.Generic;
+using System;
+using WalletConnectSharp.Sign.Controllers;
+using System.Diagnostics;
 
 namespace Nethereum.WalletConnect
 {
@@ -20,16 +23,97 @@ namespace Nethereum.WalletConnect
         public static readonly string[] DEFAULT_CHAINS = { MAINNET };
 
         public ISignClient WalletConnectClient { get; }
+        public string SelectedChainId { get => _selectedChainId; 
+            protected set => _selectedChainId = value; }
+        public string SelectedAccount { get => _selectedAccount; 
+            protected set => _selectedAccount = value; }
 
         public static ConnectOptions GetDefaultConnectOptions()
         {
             return GetDefaultConnectOptions(DEFAULT_CHAINS);
         }
 
+        private string _selectedAccount;
+        private string _selectedChainId;
+        private ConnectedData _connectedData;
+
         public NethereumWalletConnectService(ISignClient walletConnectClient)
         {
             WalletConnectClient = walletConnectClient;
-           
+            
+        }
+
+        public async Task<string> WaitForConnectionApprovalAndGetSelectedAccountAsync()
+        {
+            if(_connectedData == null)
+            {
+                throw new InvalidOperationException("Connection not initialised");
+            }
+
+           var session = await _connectedData.Approval;
+           var address =  session.CurrentAddress(SelectedChainId);
+           SelectedAccount = address.Address;
+           await SetHostProviderSelectedAccountAsync();
+            return address.Address;
+        }
+
+        public async Task<string> InitialiseConnectionAndGetQRUriAsync(ConnectOptions connectionOptions = null)
+        {
+            if (connectionOptions == null)
+            {
+                connectionOptions = GetDefaultConnectOptions(DEFAULT_CHAINS);
+            }
+            //ensure we are disconnected
+            try
+            {
+                await WalletConnectClient.Core.Storage.Clear();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+
+            SelectedChainId = MAINNET;
+            await SetHostProviderSelectedChainAsync();
+
+            _connectedData = await WalletConnectClient.Connect(connectionOptions);
+            //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(MAINNET); //default to mainnet we can set this to any chain id parameter
+
+
+            WalletConnectClient.SubscribeToSessionEvent("chainChanged", (sender, session) =>
+            {
+                if (session.ChainId != null && session.ChainId != "eip155:0" && session.ChainId.StartsWith("eip155"))
+                {
+                    SelectedChainId = session.ChainId;
+                    SetHostProviderSelectedChainAsync().Wait();
+                }
+
+
+            });
+
+            WalletConnectClient.SubscribeToSessionEvent("accountsChanged", (sender, session) =>
+            {
+                SelectedAccount = SessionStruct.CreateCaip25Address(session.Event.Data[0].ToString()).Address;
+                SetHostProviderSelectedAccountAsync().Wait();
+            });
+
+            return _connectedData.Uri;
+        }
+
+        private async Task SetHostProviderSelectedAccountAsync()
+        {
+            if (NethereumWalletConnectHostProvider.Current != null)
+            {
+                await NethereumWalletConnectHostProvider.Current.ChangeSelectedAccountAsync(SelectedAccount);
+                }
+        }
+
+        private async Task SetHostProviderSelectedChainAsync()
+        {
+            if (NethereumWalletConnectHostProvider.Current != null)
+            {
+                await NethereumWalletConnectHostProvider.Current.ChangeSelectedNetworkAsync(GetChainIdFromEip155(SelectedChainId));
+            }
         }
 
         public static string GetEIP155ChainId(long chainId)
@@ -37,18 +121,28 @@ namespace Nethereum.WalletConnect
             return $"eip155:{chainId}";
         }
 
+        public static long GetChainIdFromEip155(string chainId )
+        {
+            return long.Parse(chainId.Replace("eip155:", ""));
+        }
+
         public static string[] GetEIP155ChainIds(params long[] chainIds)
         {
             return chainIds.Select(GetEIP155ChainId).ToArray();
         }
 
-        public static ConnectOptions GetDefaultConnectOptions(params long[] eip155chainIds)
+        public static ConnectOptions GetDefaultConnectOptions(params long[] optionalEIP155chainIds)
         {
-           return GetDefaultConnectOptions(GetEIP155ChainIds(eip155chainIds));
+           return GetDefaultConnectOptions(GetEIP155ChainIds(optionalEIP155chainIds));
         }
 
-        public static ConnectOptions GetDefaultConnectOptions(string[] chainIds)
+        public static ConnectOptions GetDefaultConnectOptions(params string[] optionalEIP155chainIds)
         {
+            if(optionalEIP155chainIds == null)
+            {
+                optionalEIP155chainIds = DEFAULT_CHAINS;
+            }
+
             var requiredNamespace = new ProposedNamespace()
             {
                 Methods = new[]
@@ -72,7 +166,7 @@ namespace Nethereum.WalletConnect
                                 ApiMethods.wallet_switchEthereumChain.ToString(),
                                 ApiMethods.wallet_addEthereumChain.ToString()
                             },
-                Chains = chainIds,
+                Chains = optionalEIP155chainIds,
                 Events = new[]
                            {
                                 "chainChanged", "accountsChanged", "connect", "disconnect"
@@ -105,8 +199,8 @@ namespace Nethereum.WalletConnect
                 };
 
                 var request = new WCWalletSwitchEthereumChainRequest(param);
-
-                return await WalletConnectClient.Request<WCWalletSwitchEthereumChainRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await  WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCWalletSwitchEthereumChainRequest, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -120,8 +214,8 @@ namespace Nethereum.WalletConnect
                 var param = ConvertAddEthereumChainParameter(addEthereumChainParameter, connectedSession);
 
                 var request = new WCWalletAddEthereumChainRequest(param);
-
-                return await WalletConnectClient.Request<WCWalletAddEthereumChainRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCWalletAddEthereumChainRequest, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -133,8 +227,8 @@ namespace Nethereum.WalletConnect
             if (connectedSession != null)
             {
                 var request = new WCPersonalSign(hexUtf8, connectedSession.Address);
-
-                return await WalletConnectClient.Request<WCPersonalSign, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCPersonalSign, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -146,8 +240,8 @@ namespace Nethereum.WalletConnect
             {
                 var request = new WCEthSign(
                         connectedSession.Address, hexUtf8);
-
-                return await WalletConnectClient.Request<WCEthSign, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCEthSign, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -159,8 +253,8 @@ namespace Nethereum.WalletConnect
             {
                 var request = new WCEthSignTypedData(
                         connectedSession.Address, hexUtf8);
-
-                return await WalletConnectClient.Request<WCEthSignTypedData, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCEthSignTypedData, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -172,8 +266,8 @@ namespace Nethereum.WalletConnect
             {
                 var request = new WCEthSignTypedDataV4(
                         connectedSession.Address, hexUtf8);
-
-                return await WalletConnectClient.Request<WCEthSignTypedDataV4, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+                //await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCEthSignTypedDataV4, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
         }
@@ -186,8 +280,8 @@ namespace Nethereum.WalletConnect
             {
                 var txn = ConvertTransactionInputToWC(transaction, connectedSession);
                 var request = new WCEthSendTransactionRequest(txn);
-                
-                return await WalletConnectClient.Request<WCEthSendTransactionRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+               // await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCEthSendTransactionRequest, string>(connectedSession.Session.Topic, request,SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
 
@@ -200,8 +294,8 @@ namespace Nethereum.WalletConnect
             {
                 var txn = ConvertTransactionInputToWC(transaction, connectedSession);
                 var request = new WCEthSignTransactionRequest(txn);
-
-                return await WalletConnectClient.Request<WCEthSignTransactionRequest, string>(connectedSession.Session.Topic, request, connectedSession.ChainId);
+               // await WalletConnectClient.AddressProvider.SetDefaultChainIdAsync(SelectedChainId);
+                return await WalletConnectClient.Request<WCEthSignTransactionRequest, string>(connectedSession.Session.Topic, request, SelectedChainId);
             }
             throw new InvalidWalletConnectSessionException();
 
@@ -255,15 +349,15 @@ namespace Nethereum.WalletConnect
             if (string.IsNullOrWhiteSpace(currentSession.Topic))
                 return null;
 
-            var defaultChainId = WalletConnectClient.AddressProvider.DefaultChainId;
+            //var defaultChainId = WalletConnectClient.AddressProvider.DefaultChainId;
 
-            var caip25Address = currentSession.CurrentAddress(defaultChainId);
+            // var caip25Address = currentSession.CurrentAddress(defaultChainId);
 
             return new WalletConnectConnectedSession
             {
                 Session = currentSession, 
-                Address = caip25Address.Address, 
-                ChainId = caip25Address.ChainId
+                Address = SelectedAccount, 
+                ChainId = SelectedChainId,
             };
         }
     }

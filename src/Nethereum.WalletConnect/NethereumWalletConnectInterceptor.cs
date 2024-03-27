@@ -25,6 +25,7 @@ namespace Nethereum.WalletConnect
              ApiMethods.wallet_switchEthereumChain.ToString(),
              ApiMethods.wallet_addEthereumChain.ToString()
         };
+        public string SelectedAccount { get; internal set; }
 
         public NethereumWalletConnectInterceptor(INethereumWalletConnectService walletConnectService)
         {

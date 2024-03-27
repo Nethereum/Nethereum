@@ -4,10 +4,17 @@
 @using WalletConnectSharp.Sign;
 @using WalletConnectSharp.Sign.Models;
 @using WalletConnectSharp.Core;
+@using WalletConnectSharp.Storage;
 @using System.Drawing.Imaging;
 @using Nethereum.Web3;
 @using Nethereum.Signer.EIP712;
 @using Nethereum.ABI.EIP712;
+@using Nethereum.Hex.HexTypes;
+@using Nethereum.RPC.Chain;
+@using Nethereum.RPC.HostWallet;
+@using Nethereum.Signer.EIP712;
+@using Nethereum.WalletConnect;
+@using Nethereum.Web3;
 
 <PageTitle>Index</PageTitle>
 
@@ -18,11 +25,15 @@
 }
 else
 {
-    <MudField>Address: @walletConnectConnectedSession.Address</MudField>
-    <MudField>ChainId: @walletConnectConnectedSession.ChainId</MudField>
+    <MudField>Address: @Address</MudField>
+    <MudField>ChainId: @ChainId</MudField>
     <MudButton Variant="Variant.Outlined" @onclick="SignTypedDataAsync">Sign Typed Data</MudButton>
-    <MudField>Response: @response</MudField>
-    <MudField>Recovered Account: @recoveredAccount</MudField>
+    <MudField>Response: @Response</MudField>
+    <MudField>Recovered Account: @RecoveredAccount</MudField>
+    <MudButton Variant="Variant.Outlined" @onclick="PersonalSignAsync">Personal Sign</MudButton>
+    <MudButton Variant="Variant.Outlined" @onclick="SwitchChainAsync">Switch Chain</MudButton>
+    <MudButton Variant="Variant.Outlined" @onclick="AddEthereumChainAsync">Add Chain</MudButton>
+
 }
 
 
@@ -33,64 +44,96 @@ else
     public string QRByte = "";
     NethereumWalletConnectService walletConnectService;
     WalletConnectConnectedSession walletConnectConnectedSession;
-    public string response;
-    public string recoveredAccount;
+    NethereumWalletConnectHostProvider walletConnectHostProvider;
+    public string Response;
+    public string Address;
+    public string ChainId;
+    public string RecoveredAccount;
 
     public async Task InitAsync()
     {
-        Console.WriteLine("Hi");
-        var options = new SignClientOptions()
-            {
-                ProjectId = "",
-                Metadata = new Metadata()
+        try
+        {
+            var options = new SignClientOptions()
                 {
-                    Description = "An example project to showcase WalletConnectSharpv2",
-                    Icons = new[] { "https://walletconnect.com/meta/favicon.ico" },
-                    Name = "WC Example",
-                    Url = "https://walletconnect.com"
-                }
+                    ProjectId = "",
+                    Metadata = new Metadata()
+                    {
+                        Description = "An example project to showcase WalletConnectSharpv2",
+                        Icons = new[] { "https://walletconnect.com/meta/favicon.ico" },
+                        Name = "WC Example",
+                        Url = "https://walletconnect.com"
+                    },
+                    Storage = new InMemoryStorage()
+
+                };
+            var connectionOptions = NethereumWalletConnectService.GetDefaultConnectOptions();
+
+            if (client == null)
+            {
+
+                client = await WalletConnectSignClient.Init(options);
+            }
+
+            walletConnectService = new NethereumWalletConnectService(client);
+            walletConnectHostProvider = new NethereumWalletConnectHostProvider(walletConnectService); // This needs to be initialise straight away to hook up the events
+
+            walletConnectHostProvider.SelectedAccountChanged += async (address) =>
+            {
+              
+                 Address = address;
+                 await InvokeAsync(StateHasChanged);
             };
 
-        if (client == null)
-        {
-            client = await WalletConnectSignClient.Init(options);
+            walletConnectHostProvider.NetworkChanged += async (chainId) =>
+            {
+                ChainId = chainId.ToString();
+                await InvokeAsync(StateHasChanged);;
+            };
+
+            var connectionUri = await walletConnectService.InitialiseConnectionAndGetQRUriAsync(connectionOptions);
+
+
+            if (!string.IsNullOrEmpty(connectionUri))
+            {
+                using MemoryStream ms = new();
+                QRCodeGenerator qrCodeGenerate = new();
+                QRCodeData qrCodeData = qrCodeGenerate.CreateQrCode(connectionUri, QRCodeGenerator.ECCLevel.Q);
+                PngByteQRCode qRCode = new PngByteQRCode(qrCodeData);
+                byte[] qrCodeBytes = qRCode.GetGraphic(20);
+                string base64 = Convert.ToBase64String(qrCodeBytes);
+                QRByte = string.Format("data:image/png;base64,{0}", base64);
+                await InvokeAsync(StateHasChanged);
+                var selectedAddress = await walletConnectService.WaitForConnectionApprovalAndGetSelectedAccountAsync();
+                walletConnectConnectedSession = walletConnectService.GetWalletConnectConnectedSession();
+
+            }
         }
-
-
-        var connectData = await client.Connect(NethereumWalletConnectService.GetDefaultConnectOptions());
-        if (!string.IsNullOrEmpty(connectData.Uri))
+        catch (Exception ex)
         {
-            using MemoryStream ms = new();
-            QRCodeGenerator qrCodeGenerate = new();
-            QRCodeData qrCodeData = qrCodeGenerate.CreateQrCode(connectData.Uri, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qRCode = new PngByteQRCode(qrCodeData);
-            byte[] qrCodeBytes = qRCode.GetGraphic(20);
-            string base64 = Convert.ToBase64String(qrCodeBytes);
-            QRByte = string.Format("data:image/png;base64,{0}", base64);
-            await InvokeAsync(StateHasChanged);
-            await connectData.Approval;
-            walletConnectService = new NethereumWalletConnectService(client);
-            walletConnectConnectedSession = walletConnectService.GetWalletConnectConnectedSession();
-
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
         }
 
     }
 
     public async Task SignTypedDataAsync()
     {
-        var web3 = new Web3();
-        web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);
+        try
+        {
+            // var web3 = new Web3();
+            // web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(walletConnectService);
+            var web3 = await walletConnectHostProvider.GetWeb3Async();
+            var typedData = GetMailTypedDefinition();
 
-        var typedData = GetMailTypedDefinition();
-
-        var mail = new Mail
-            {
-                From = new Person
+            var mail = new Mail
                 {
-                    Name = "Cow",
-                    Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" }
-                },
-                To = new List<Person>
+                    From = new Person
+                    {
+                        Name = "Cow",
+                        Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" }
+                    },
+                    To = new List<Person>
                 {
                     new Person
                     {
@@ -98,18 +141,83 @@ else
                         Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" }
                     }
                 },
-                Contents = "Hello, Bob!"
-            };
+                    Contents = "Hello, Bob!"
+                };
 
-        typedData.Domain.ChainId = 1;
-        typedData.SetMessage(mail);
+            typedData.Domain.ChainId = 1;
+            typedData.SetMessage(mail);
 
 
-        
-        response = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
-        recoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, response);
+
+            Response = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+            RecoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, Response);
+        }
+        catch (Exception ex)
+        {
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+
+    public async Task SwitchChainAsync()
+    {
+        try
+        {
+            var web3 = await walletConnectHostProvider.GetWeb3Async();
+
+            var response = await web3.Eth.HostWallet.SwitchEthereumChain.SendRequestAsync(new SwitchEthereumChainParameter()
+                {
+                    ChainId = 1.ToHexBigInteger()
+                });
+
+            Response = response;
             
-        
+        }
+        catch (Exception ex)
+        {
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+
+    public async Task PersonalSignAsync()
+    {
+        try
+        {
+            var web3 = await walletConnectHostProvider.GetWeb3Async();
+
+            var response = await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(new HexUTF8String("Hello World"));
+            Response = response;
+        }
+        catch (Exception ex)
+        {
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
+        }
+
+    }
+
+    public async Task AddEthereumChainAsync()
+    {
+        try
+        {
+            var web3 = new Web3();
+            web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(walletConnectService);
+            var chainFeature = ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(Nethereum.Signer.Chain.Optimism);
+            var addParameter = chainFeature.ToAddEthereumChainParameter();
+            var response = await web3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(addParameter);
+
+            Response = response;
+            
+        }
+        catch (Exception ex)
+        {
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
+        }
+
     }
 
     //The generic EIP712 Typed schema defintion for this message
