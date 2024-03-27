@@ -7,6 +7,7 @@ using Nethereum.Contracts.Standards.ENS;
 using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
+using Nethereum.Contracts.Standards.ERC2535Diamond;
 using Nethereum.Contracts.Standards.ERC721;
 using Nethereum.Contracts.Standards.ProofOfHumanity;
 using Nethereum.RPC;
@@ -69,6 +70,12 @@ namespace Nethereum.Contracts.Services
         /// Service to interact with the Proof of Humanity registry smart contract
         /// </summary>
         ProofOfHumanityService ProofOfHumanity { get; }
+
+        /// <summary>
+        /// Service to interact with the ERC2535 Diamond standard smart contract
+        /// </summary>
+        ERC2535DiamondService ERC2535Diamond { get; }
+
         EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
 #endif
 
