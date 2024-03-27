@@ -10,6 +10,7 @@ using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC721;
 using Nethereum.Contracts.Standards.ProofOfHumanity;
+using Nethereum.Contracts.Standards.ERC2535Diamond;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
@@ -27,6 +28,7 @@ namespace Nethereum.Contracts.Services
             ERC20 = new ERC20Service(this);
             ERC1155 = new ERC1155Service(this);
             ERC1271 = new ERC1271Service(this);
+            ERC2535Diamond = new ERC2535DiamondService(this);
             ProofOfHumanity = new ProofOfHumanityService(this);
 
 #endif
@@ -133,6 +135,7 @@ namespace Nethereum.Contracts.Services
         /// https://eips.ethereum.org/EIPS/eip-1271
         /// </summary>
         public ERC1271Service ERC1271 { get; private set; }
+        public ERC2535DiamondService ERC2535Diamond { get; private set; }
 
         /// <summary>
         /// Service to interact with the Proof of Humanity registry smart contract

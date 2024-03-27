@@ -8,10 +8,10 @@ using Nethereum.Contracts.Services;
 
 namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet
 {
-    public partial class ERC2535DiamondLoupeFacetService : ContractServiceBase
+    public partial class ERC2535DiamondLoupeFacetContractService : ContractServiceBase
     {
 
-        public ERC2535DiamondLoupeFacetService(IEthApiContractService ethApiContractService, string contractAddress)
+        public ERC2535DiamondLoupeFacetContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {
 #if !DOTNET35
             ContractHandler = ethApiContractService.GetContractHandler(contractAddress);

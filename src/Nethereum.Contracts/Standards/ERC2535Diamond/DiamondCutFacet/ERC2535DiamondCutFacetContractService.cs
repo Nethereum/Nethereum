@@ -10,9 +10,11 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System.Runtime.CompilerServices;
 using System;
+using Nethereum.Contracts.Standards.ERC2535Diamond.DiamondLoupeFacet;
 
 namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
 {
+
     public enum FacetCutAction
     {
         Add = 0,
@@ -20,10 +22,10 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
         Remove = 2
     }
 
-    public class DiamondCutFacetContractService: ContractServiceBase
+    public class ERC2535DiamondCutFacetContractService: ContractServiceBase
     {
 
-        public DiamondCutFacetContractService(IEthApiContractService ethApiContractService, string contractAddress)
+        public ERC2535DiamondCutFacetContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {
 #if !DOTNET35
             ContractHandler = ethApiContractService.GetContractHandler(contractAddress);
