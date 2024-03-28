@@ -26,9 +26,13 @@ namespace Nethereum.Util
                         await action(partition.Current);
             })));
         }
-        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action)
+        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action, int? partitions = null)
         {
-            return Task.WhenAll(Partitioner.Create(source).GetPartitions(Environment.ProcessorCount).Select(partition => Task.Run(async () =>
+            if(partitions == null)
+            {
+                partitions = Environment.ProcessorCount;    
+            }
+            return Task.WhenAll(Partitioner.Create(source).GetPartitions(partitions.Value).Select(partition => Task.Run(async () =>
             {
                 using (partition)
                     while (partition.MoveNext())

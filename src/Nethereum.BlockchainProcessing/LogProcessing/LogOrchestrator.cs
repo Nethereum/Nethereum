@@ -14,6 +14,37 @@ using System.Threading.Tasks;
 
 namespace Nethereum.BlockchainProcessing.LogProcessing
 {
+    public class LogProcessParallelStrategy : ILogProcessStrategy
+    {
+        public int Partitions { get; set; } = 2;
+        public async Task ProcessLogs(FilterLog[] logs, IEnumerable<ProcessorHandler<FilterLog>> logProcessors)
+        {
+            await logProcessors.ForEachAsync(async logProcessor =>
+            {
+                foreach (var log in logs)
+                {
+                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
+                }
+            }, Partitions);
+        }
+
+    }
+
+    public class LogProcessSequentialStrategy : ILogProcessStrategy
+    {
+        public async Task ProcessLogs(FilterLog[] logs, IEnumerable<ProcessorHandler<FilterLog>> logProcessors)
+        {
+            foreach (var logProcessor in logProcessors)
+            {
+                foreach (var log in logs)
+                {
+                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
+                }
+            }
+        }
+    }
+
+
     public class LogOrchestrator : IBlockchainProcessingOrchestrator
     {
         public const int MaxGetLogsRetries = 10;
@@ -22,6 +53,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
         private BlockRangeRequestStrategy _blockRangeRequestStrategy;
+        public ILogProcessStrategy LogProcessStrategy { get; set; } = new LogProcessParallelStrategy();
 
         protected IEthApiContractService EthApi { get; set; }
 
@@ -78,13 +110,18 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private async Task InvokeLogProcessorsAsync(FilterLog[] logs)
         {
+            await NewMethod(logs);
+        }
+
+        private async Task NewMethod(FilterLog[] logs)
+        {
             await _logProcessors.ForEachAsync(async logProcessor =>
-                  {
-                     foreach (var log in logs)
-                     {
-                         await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
-                     }
-                  });
+            {
+                foreach (var log in logs)
+                {
+                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
+                }
+            });
         }
 
         struct GetLogsResponse
