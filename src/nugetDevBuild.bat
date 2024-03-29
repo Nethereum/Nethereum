@@ -1,7 +1,15 @@
 rem packing web3 and dependencies
+
+for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
+
+set "YY=%dt:~2,2%" & set "YYYY=%dt:~0,4%" & set "MM=%dt:~4,2%" & set "DD=%dt:~6,2%"
+set "HH=%dt:~8,2%" & set "Min=%dt:~10,2%" & set "Sec=%dt:~12,2%"
+set "fullstamp=%YYYY%%MM%%DD%%HH%%Min%%Sec%"
+
+
 del /S *.*.nupkg
 del /S *.*.snupkg
-SET releaseSuffix=
+SET releaseSuffix=devbuildsecurityrisk%fullstamp%
 SET targetNet35=false
 SET projectName=
 
@@ -199,10 +207,10 @@ setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0packages\
 for /R %DIR% %%a in (*.nupkg) do xcopy "%%a" "%OUTPUTDIR%"
-xcopy *.nupkg packages /y /s
+xcopy *.nupkg packages /y
 
 for /R %DIR% %%a in (*.snupkg) do xcopy "%%a" "%OUTPUTDIR%"
-xcopy *.snupkg packages /y /s
+xcopy *.snupkg packages /y
 
 EXIT /B %ERRORLEVEL%
 
