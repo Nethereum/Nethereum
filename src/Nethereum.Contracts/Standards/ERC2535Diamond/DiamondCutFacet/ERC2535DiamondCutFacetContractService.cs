@@ -43,12 +43,11 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
             return ContractHandler.SendRequestAndWaitForReceiptAsync(diamondCutFunction, cancellationToken);
         }
 
-        public Task<string> DiamondCutRequestAsync(List<FacetCut> diamondCut, string init, byte[] calldata)
+        public Task<string> DiamondCutRequestAsync(List<FacetCut> diamondCut, string addressInit = null, byte[] callData = null)
         {
             var diamondCutFunction = new DiamondCutFunction();
             diamondCutFunction.DiamondCut = diamondCut;
-            diamondCutFunction.Init = init;
-            diamondCutFunction.Calldata = calldata;
+            InitialiseAddressAndCallData(addressInit, callData, diamondCutFunction);
 
             return ContractHandler.SendRequestAsync(diamondCutFunction);
         }
@@ -63,12 +62,11 @@ namespace Nethereum.Contracts.Standards.ERC2535Diamond.DiamondCutFacet
             return ContractHandler.SendRequestAsync(diamondCutFunction);
         }
 
-        public Task<TransactionReceipt> DiamondCutRequestAndWaitForReceiptAsync(List<FacetCut> diamondCut, string init, byte[] calldata, CancellationTokenSource cancellationToken = null)
+        public Task<TransactionReceipt> DiamondCutRequestAndWaitForReceiptAsync(List<FacetCut> diamondCut, string addressInit = null, byte[] callData = null, CancellationTokenSource cancellationToken = null)
         {
             var diamondCutFunction = new DiamondCutFunction();
             diamondCutFunction.DiamondCut = diamondCut;
-            diamondCutFunction.Init = init;
-            diamondCutFunction.Calldata = calldata;
+            InitialiseAddressAndCallData(addressInit, callData, diamondCutFunction);
 
             return ContractHandler.SendRequestAndWaitForReceiptAsync(diamondCutFunction, cancellationToken);
         }
