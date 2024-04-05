@@ -14,7 +14,7 @@ namespace Nethereum.BlockchainProcessing
 {
     public class BlockchainProcessor
     {
-        protected IBlockchainProcessingOrchestrator BlockchainProcessingOrchestrator { get; set; }
+        public IBlockchainProcessingOrchestrator BlockchainProcessingOrchestrator { get; protected set; }
         private IBlockProgressRepository _blockProgressRepository;
         private ILastConfirmedBlockNumberService _lastConfirmedBlockNumberService;
         private ILogger _log;
