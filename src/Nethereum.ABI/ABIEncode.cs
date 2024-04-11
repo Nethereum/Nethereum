@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Nethereum.ABI.Decoders;
@@ -115,9 +116,7 @@ namespace Nethereum.ABI
                         abiValues.Add(new ABIValue(new IntType("int256"), bigIntValue));
                     }
                 }
-
-
-                if (value.IsNumber())
+                else if (value.IsNumber())
                 {
                     var bigInt = BigInteger.Parse(value.ToString());
                     if (bigInt >= 0)
@@ -129,23 +128,28 @@ namespace Nethereum.ABI
                         abiValues.Add(new ABIValue(new IntType("int256"), value));
                     }
                 }
-
-                if (value is string)
+                else if (value is string)
                 {
                     abiValues.Add(new ABIValue(new StringType(), value));
                 }
-
-                if (value is bool)
+                else if (value is bool)
                 {
                     abiValues.Add(new ABIValue(new BoolType(), value));
                 }
-
-                if (value is byte[])
+                else if (value is byte[])
                 {
                     abiValues.Add(new ABIValue(new BytesType(), value));
                 }
+                else if (value is BigInteger[])
+                {
+                    abiValues.Add(new ABIValue(new DynamicArrayType("uint[]"), value));
+                }
+                else
+                {
+                    throw new InvalidDataException($"Unexpected data type: {value.GetType()}");
+                }
             }
-
+            
             return abiValues;
         }
 
