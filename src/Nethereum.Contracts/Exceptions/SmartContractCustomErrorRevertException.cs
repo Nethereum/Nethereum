@@ -17,6 +17,11 @@ namespace Nethereum.Contracts
             return this.ExceptionEncodedData.IsExceptionEncodedDataForError<TError>();
         }
 
+        public bool IsCustomErrorFor(Type errorType)
+        {
+            return this.ExceptionEncodedData.IsExceptionEncodedDataForError(errorType);
+        }
+
         public TError DecodeError<TError>() where TError: class, new()
         {
             return this.ExceptionEncodedData.DecodeExceptionEncodedData<TError>();

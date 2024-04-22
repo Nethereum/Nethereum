@@ -5,6 +5,8 @@ namespace Nethereum.ABI
 {
     public class AddressType : ABIType
     {
+        public override int StaticSize => 20;
+
         public AddressType() : base("address")
         {
             //this will need to be only a string type one, converting to hex

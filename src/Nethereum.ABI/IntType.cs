@@ -18,10 +18,14 @@ namespace Nethereum.ABI
 
         public static BigInteger MIN_UINT_VALUE = 0;
 
+        public override int StaticSize { get; }
+
         public IntType(string name) : base(name)
         {
+            var size = GetSize(CanonicalName);
+            StaticSize = (int) size / 8;
             Decoder = new IntTypeDecoder(IsSigned(CanonicalName));
-            Encoder = new IntTypeEncoder(IsSigned(CanonicalName), GetSize(CanonicalName));
+            Encoder = new IntTypeEncoder(IsSigned(CanonicalName), size);
         }
 
         public override string CanonicalName

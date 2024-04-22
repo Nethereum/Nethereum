@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="node_modules\**" />
+    <EmbeddedResource Remove="node_modules\**" />
+    <None Remove="node_modules\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Mud\Nethereum.Mud.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="nethereum-gen.settings">
+      <Generator></Generator>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="StoreEvents\" />
+  </ItemGroup>
+
+</Project>

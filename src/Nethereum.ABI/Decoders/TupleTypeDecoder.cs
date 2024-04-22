@@ -49,13 +49,6 @@ namespace Nethereum.ABI
             return decodingDefaultComponents.ToArray();
         }
 
-       
-
-        public List<ParameterOutput> Decode(byte[] encoded)
-        {
-            return Decode<List<ParameterOutput>>(encoded);
-        }
-
         public override Type GetDefaultDecodingType()
         {
             return typeof(List<ParameterOutput>);
@@ -64,6 +57,11 @@ namespace Nethereum.ABI
         public override bool IsSupportedType(Type type)
         {
             return type == typeof(List<ParameterOutput>);
+        }
+
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            throw new NotImplementedException();
         }
     }
 }
