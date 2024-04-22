@@ -1,0 +1,8 @@
+{
+  "name": "nethereum.mud.contracts",
+  "devDependencies": {
+    "@latticexyz/store": "^2.0.4",
+    "@latticexyz/world": "^2.0.4",
+    "@latticexyz/world-modules": "^2.0.4"
+  }
+}

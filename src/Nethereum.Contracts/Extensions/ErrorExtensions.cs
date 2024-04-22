@@ -20,6 +20,18 @@ namespace Nethereum.Contracts
             return errorABI.IsExceptionEncodedDataForError(data);
         }
 
+        public static bool IsExceptionEncodedDataForError(this string data, Type errorType)
+        {
+            var errorABI = ABITypedRegistry.GetError(errorType);
+            return errorABI.IsExceptionEncodedDataForError(data);
+        }
+
+        public static bool IsExceptionEncodedDataForError(this Type errorType, string data)
+        {
+            var errorABI = ABITypedRegistry.GetError(errorType);
+            return errorABI.IsExceptionEncodedDataForError(data);
+        }
+
         public static bool IsExceptionEncodedDataForError(this string data, string signature)
         {
             return SignatureEncoder.IsDataForSignature(signature, data);

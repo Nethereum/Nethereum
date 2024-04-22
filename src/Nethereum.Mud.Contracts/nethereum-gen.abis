@@ -1,0 +1,13 @@
+[
+  "node_modules/@latticexyz/world/out/AccessManagementSystem.sol/AccessManagementSystem.json",
+  "node_modules/@latticexyz/world/out/BalanceTransferSystem.sol/BalanceTransferSystem.json",
+  "node_modules/@latticexyz/world/out/BatchCallSystem.sol/BatchCallSystem.json",
+  "node_modules/@latticexyz/world/out/RegistrationSystem.sol/RegistrationSystem.json",
+  "node_modules/@latticexyz/world/out/InitModule.sol/InitModule.json",
+  "node_modules/@latticexyz/world/out/WorldFactory.sol/WorldFactory.json",
+  "node_modules/@latticexyz/world-modules/out/KeysWithValueModule.sol/KeysWithValueModule.json",
+  "node_modules/@latticexyz/world-modules/out/KeysInTableModule.sol/KeysInTableModule.json",
+  "node_modules/@latticexyz/world-modules/out/UniqueEntityModule.sol/UniqueEntityModule.json",
+  "node_modules/@latticexyz/world-modules/out/Unstable_DelegationWithSignatureModule.sol/Unstable_DelegationWithSignatureModule.json",
+  "node_modules/@latticexyz/world/out/World.sol/World.json"
+]
