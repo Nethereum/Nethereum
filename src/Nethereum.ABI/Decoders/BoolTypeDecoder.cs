@@ -1,3 +1,4 @@
+using Nethereum.Hex.HexConvertors.Extensions;
 using System;
 
 namespace Nethereum.ABI.Decoders
@@ -19,6 +20,14 @@ namespace Nethereum.ABI.Decoders
         public override object Decode(byte[] encoded, Type type)
         {
             if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
+            var decoded = _intTypeDecoder.DecodeInt(encoded);
+            return Convert.ToBoolean(decoded);
+        }
+
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
+            if (encoded.Length != 1) throw new Exception("Invalid bool (should be 1 bytes length): " + encoded.ToHex());
             var decoded = _intTypeDecoder.DecodeInt(encoded);
             return Convert.ToBoolean(decoded);
         }

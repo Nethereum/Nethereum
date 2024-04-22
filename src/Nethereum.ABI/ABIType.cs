@@ -31,6 +31,9 @@ namespace Nethereum.ABI
         /// <returns> fixed size in bytes or negative value if the type is dynamic </returns>
         public virtual int FixedSize => 32;
 
+        /// <returns> static size in bytes or negative value if the type is dynamic </returns>
+        public virtual int StaticSize => FixedSize;
+
         public static ABIType CreateABIType(string typeName)
         {
             if (typeName == "tuple") return new TupleType();
@@ -102,6 +105,21 @@ namespace Nethereum.ABI
         public override string ToString()
         {
             return Name;
+        }
+
+        public object DecodePacked(byte[] encodedElement, Type elementType)
+        {
+           return Decoder.DecodePacked(encodedElement, elementType);
+        }
+
+        public T DecodePacked<T>(string encoded)
+        {
+            return Decoder.DecodePacked<T>(encoded);
+        }
+
+        public T DecodePacked<T>(byte[] encoded)
+        {
+            return Decoder.DecodePacked<T>(encoded);
         }
     }
 }

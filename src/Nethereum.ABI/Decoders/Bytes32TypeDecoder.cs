@@ -33,6 +33,12 @@ namespace Nethereum.ABI.Decoders
             throw new NotSupportedException();
         }
 
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            //32 bytes already
+            return Decode(encoded, type);
+        }
+
         public override Type GetDefaultDecodingType()
         {
             return typeof(byte[]);

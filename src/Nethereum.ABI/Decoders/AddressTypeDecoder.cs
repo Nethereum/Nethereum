@@ -21,6 +21,13 @@ namespace Nethereum.ABI.Decoders
             return output.ToHex(true).ConvertToEthereumChecksumAddress();
         }
 
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
+            if(encoded.Length != 20) throw new Exception("Invalid address (should be 20 bytes length): " + encoded.ToHex());
+            return encoded.ToHex(true).ConvertToEthereumChecksumAddress();
+        }
+
         public override Type GetDefaultDecodingType()
         {
             return typeof(string);

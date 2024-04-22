@@ -21,6 +21,14 @@ namespace Nethereum.ABI.Decoders
             return returnArray;
         }
 
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            if (!IsSupportedType(type)) throw new NotSupportedException(type + " is not supported");
+            if (type == typeof(string)) return _stringTypeDecoder.DecodePacked(encoded, type);
+            if (type == typeof(byte)) return encoded[0];
+            return encoded;
+        }
+
         public override Type GetDefaultDecodingType()
         {
             return typeof(byte[]);

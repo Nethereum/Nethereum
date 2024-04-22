@@ -24,5 +24,6 @@ namespace Nethereum.ABI.Encoders
 
         public abstract byte[] EncodeList(IList l);
         public abstract byte[] EncodeListPacked(IList l);
+        public abstract byte[] EncodeListPackedUsingElementPacked(IList l);
     }
 }

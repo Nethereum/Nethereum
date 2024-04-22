@@ -140,7 +140,13 @@ namespace Nethereum.ABI.Decoders
                    type == typeof(short) || type == typeof(ushort) ||
                    type == typeof(byte) || type == typeof(sbyte) ||
                    type == typeof(BigInteger) || type == typeof(object)
+                   
                    || type.GetTypeInfo().IsEnum;
+        }
+
+        public override object DecodePacked(byte[] encoded, Type type)
+        { 
+           return Decode(encoded, type);
         }
     }
 }

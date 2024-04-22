@@ -11,6 +11,10 @@ namespace Nethereum.ABI
             InitialiseElementType(name);
         }
 
+        public abstract object DecodePackedUsingElementPacked(byte[] encoded, Type type);
+        public abstract byte[] EncodePackedUsingElementPacked(object value);
+        
+
         public new static ArrayType CreateABIType(string typeName)
         {
             var indexFirstBracket = typeName.LastIndexOf("[", StringComparison.Ordinal);

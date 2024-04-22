@@ -25,6 +25,12 @@ namespace Nethereum.ABI.Decoders
             return returnArray;
         }
 
+        public override object DecodePacked(byte[] encoded, Type type)
+        {
+            //packed is the same as normal as we take the first _size bytes
+            return Decode(encoded, type);
+        }
+
         public override Type GetDefaultDecodingType()
         {
             return typeof(byte[]);
