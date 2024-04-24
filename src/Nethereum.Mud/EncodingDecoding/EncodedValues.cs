@@ -1,4 +1,4 @@
-﻿namespace Nethereum.Mud
+﻿namespace Nethereum.Mud.EncodingDecoding
 {
     public class EncodedValues
     {

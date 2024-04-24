@@ -5,7 +5,7 @@ namespace Nethereum.Mud
 {
     public class FieldInfo
     {
-        public string Name { get; private set; }
+        public string Name { get; set; }
         public string Type { get; private set; }
         public ABIType ABIType { get; private set; }
         public int Order { get; private set; }

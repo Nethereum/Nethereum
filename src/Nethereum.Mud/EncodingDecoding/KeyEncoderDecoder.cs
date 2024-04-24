@@ -7,14 +7,14 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Exceptions;
 
-namespace Nethereum.Mud
+namespace Nethereum.Mud.EncodingDecoding
 {
     public class KeyEncoderDecoder
     {
         public static List<byte[]> EncodeKey<T>(T key)
         {
-            if(key == null) return new List<byte[]>();
-            var parametersEncoder = new ABI.FunctionEncoding.ParametersEncoder();
+            if (key == null) return new List<byte[]>();
+            var parametersEncoder = new ParametersEncoder();
             var keys = parametersEncoder.GetParameterAttributeValues(typeof(T), key);
             keys = keys.OrderBy(x => x.ParameterAttribute.Order).ToList();
             var fieldValues = new List<FieldValue>();
@@ -114,7 +114,7 @@ namespace Nethereum.Mud
                 var fieldSize = abiType.FixedSize;
                 var bytes = outputBytes[currentIndex];
                 var value = abiType.Decode(bytes, field.Parameter.DecodedType);
-                currentIndex ++;
+                currentIndex++;
                 field.Result = value;
             }
             return outputParameters.ToList();
@@ -155,7 +155,7 @@ namespace Nethereum.Mud
 
         public static List<object> DecodeKey(byte[] outputBytes, List<FieldInfo> fields)
         {
-            return DecodeKeyToFieldValues(outputBytes, fields).Select(f => f.Value).ToList();    
+            return DecodeKeyToFieldValues(outputBytes, fields).Select(f => f.Value).ToList();
         }
 
         public static List<object> DecodeKey(List<byte[]> outputBytes, List<FieldInfo> fields)

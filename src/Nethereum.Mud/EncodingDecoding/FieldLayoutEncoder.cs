@@ -1,7 +1,7 @@
 ﻿using Nethereum.RLP;
 using Nethereum.Util;
 
-namespace Nethereum.Mud
+namespace Nethereum.Mud.EncodingDecoding
 {
     public static class FieldLayoutEncoder
     {

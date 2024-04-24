@@ -1,14 +1,16 @@
-﻿namespace Nethereum.Mud
+﻿using Nethereum.Mud.EncodingDecoding;
+
+namespace Nethereum.Mud
 {
-    public abstract class TableRecordSingleton<TValue> where TValue : class, new()
+
+    public abstract class TableRecordSingleton<TValue>: ITableRecordSingleton where TValue : class, new()
     {
-        public static byte[] TableResourceId { get; protected set; }
         public TableRecordSingleton(string nameSpace, string tableName)
         {
             Namespace = nameSpace;
             TableName = tableName;
             Values = new TValue();
-            TableResourceId = ResourceId;
+           
         }
 
         public TableRecordSingleton(string name)
@@ -16,7 +18,7 @@
             Namespace = String.Empty;
             TableName = name;
             Values = new TValue();
-            TableResourceId = ResourceId;
+          
         }
         public string Namespace { get; protected set; }
         public string TableName { get; protected set; }

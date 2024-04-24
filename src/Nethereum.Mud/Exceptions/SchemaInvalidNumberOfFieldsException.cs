@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Mud.Exceptions
+﻿using Nethereum.Mud.EncodingDecoding;
+
+namespace Nethereum.Mud.Exceptions
 {
     public class SchemaInvalidNumberOfFieldsException : Exception
     {

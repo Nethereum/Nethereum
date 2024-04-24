@@ -3,11 +3,11 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Exceptions;
 using Nethereum.RLP;
 
-namespace Nethereum.Mud
+namespace Nethereum.Mud.EncodingDecoding
 {
 
     public static class SchemaEncoder
-    { 
+    {
         public const int MAX_NUMBER_OF_FIELDS = 28;
         public const int MAX_NUMBER_OF_DYNAMIC_FIELDS = 5;
 
@@ -19,7 +19,7 @@ namespace Nethereum.Mud
         //need to validate if it is the same if not use index position 92?
         public static bool IsDynamic(int index)
         {
-           return GetABIType(index).IsDynamic();
+            return GetABIType(index).IsDynamic();
         }
 
         public static bool IsStatic(int index)
@@ -45,7 +45,7 @@ namespace Nethereum.Mud
             startIndex += numStaticFields;
             for (var i = 0; i < numDynamicFields; i++)
             {
-                fieldCount = i + 1;
+                fieldCount = fieldCount + 1;
                 var abiType = SchemaAbiTypes[schema[i + startIndex]];
                 fieldInfos.Add(new FieldInfo(abiType, isKeySchema, null, fieldCount));
             }
@@ -108,7 +108,7 @@ namespace Nethereum.Mud
 
         public static string EncodeTypesToHex(params string[] schemaTypes)
         {
-           return EncodeTypesToByteArray(schemaTypes).ToHex();
+            return EncodeTypesToByteArray(schemaTypes).ToHex();
         }
 
 

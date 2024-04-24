@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Mud.EncodingDecoding;
 using static Nethereum.Mud.Contracts.Tables.World.FunctionSelectorsTableRecord;
 
 namespace Nethereum.Mud.Contracts.Tables.World
@@ -21,6 +22,11 @@ namespace Nethereum.Mud.Contracts.Tables.World
             public byte[] SystemId { get; set; }
             [Parameter("bytes4", "systemFunctionSelector", 2)]
             public byte[] SystemFunctionSelector { get; set; }
+
+            public Resource GetSystemIdResource()
+            {
+                return ResourceEncoder.Decode(SystemId);
+            }
         }
     }
 

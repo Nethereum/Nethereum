@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Mud.EncodingDecoding;
 using static Nethereum.Mud.Contracts.Tables.World.SystemHooksTableRecord;
 
 namespace Nethereum.Mud.Contracts.Tables.World
@@ -13,7 +14,13 @@ namespace Nethereum.Mud.Contracts.Tables.World
         {
             [Parameter("bytes32", "systemId", 1)]
             public byte[] SystemId { get; set; }
+
+            public Resource GetSystemIdResource()
+            {
+                return ResourceEncoder.Decode(SystemId);
+            }
         }
+    
 
         public class SystemHooksValue
         {

@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Mud.EncodingDecoding;
 
 namespace Nethereum.Mud.UnitTests
 {

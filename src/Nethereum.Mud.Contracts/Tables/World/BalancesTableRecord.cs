@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Mud.EncodingDecoding;
 using System.Numerics;
 using static Nethereum.Mud.Contracts.Tables.World.BalancesTableRecord;
 
@@ -15,6 +16,11 @@ namespace Nethereum.Mud.Contracts.Tables.World
         {
             [Parameter("bytes32", "namespaceId", 1)]
             public byte[] NamespaceId { get; set; }
+
+            public Resource GetNamespaceIdResource()
+            {
+                return ResourceEncoder.Decode(NamespaceId);
+            }
         }
 
         public class BalancesValue

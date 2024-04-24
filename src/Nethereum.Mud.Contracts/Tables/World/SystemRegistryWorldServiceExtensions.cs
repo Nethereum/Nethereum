@@ -1,6 +1,7 @@
 ﻿using Nethereum.Mud.Contracts.World;
 using Nethereum.RPC.Eth.DTOs;
 using static Nethereum.Mud.Contracts.Tables.World.SystemRegistryTableRecord;
+using static Nethereum.Mud.Contracts.Tables.World.SystemRegistryTableRecord.SystemRegistryKey;
 
 
 namespace Nethereum.Mud.Contracts.Tables.World

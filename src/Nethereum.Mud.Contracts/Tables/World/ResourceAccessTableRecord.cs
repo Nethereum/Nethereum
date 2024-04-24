@@ -1,5 +1,6 @@
 ﻿using static Nethereum.Mud.Contracts.Tables.World.ResourceAccessTableRecord;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Mud.EncodingDecoding;
 
 namespace Nethereum.Mud.Contracts.Tables.World
 {
@@ -25,7 +26,13 @@ namespace Nethereum.Mud.Contracts.Tables.World
             public byte[] ResourceId { get; set; }
             [Parameter("address", "caller", 2)]
             public string Caller { get; set; }
+
+            public Resource GetResourceIdResource()
+            {
+                return ResourceEncoder.Decode(ResourceId);
+            }
         }
+    
 
         public class ResourceAccessValue
         {

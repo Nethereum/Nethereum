@@ -2,6 +2,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using System.Diagnostics;
 using System.Numerics;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Mud.EncodingDecoding;
 
 
 namespace Nethereum.Mud.UnitTests

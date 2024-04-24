@@ -6,7 +6,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Exceptions;
 
-namespace Nethereum.Mud
+namespace Nethereum.Mud.EncodingDecoding
 {
 
     public class ValueEncoderDecoder
@@ -27,7 +27,7 @@ namespace Nethereum.Mud
 
         public static byte[] EncodeValuesAsyByteArray<T>(T value)
         {
-            var parametersEncoder = new ABI.FunctionEncoding.ParametersEncoder();
+            var parametersEncoder = new ParametersEncoder();
             var values = parametersEncoder.GetParameterAttributeValues(typeof(T), value);
             values = values.OrderBy(x => x.ParameterAttribute.Order).ToList();
             var fieldValues = new List<FieldValue>();
@@ -46,7 +46,7 @@ namespace Nethereum.Mud
 
         public static EncodedValues EncodedValues<T>(T value)
         {
-            var parametersEncoder = new ABI.FunctionEncoding.ParametersEncoder();
+            var parametersEncoder = new ParametersEncoder();
             var values = parametersEncoder.GetParameterAttributeValues(typeof(T), value);
             values = values.OrderBy(x => x.ParameterAttribute.Order).ToList();
             var fieldValues = new List<FieldValue>();
@@ -68,7 +68,7 @@ namespace Nethereum.Mud
                 throw new SchemaInvalidNumberOfFieldsException();
             }
 
-            if ((valueFields.Length + dynamicFields.Length) > SchemaEncoder.MAX_NUMBER_OF_FIELDS)
+            if (valueFields.Length + dynamicFields.Length > SchemaEncoder.MAX_NUMBER_OF_FIELDS)
             {
                 throw new SchemaInvalidNumberOfFieldsException();
             }
@@ -82,7 +82,7 @@ namespace Nethereum.Mud
                 EncodedLengths = encodedLengths,
                 DynamicData = ByteUtil.Merge(dynamicFieldsBytes)
             };
-           
+
         }
 
         public static List<object> DecodeValues(byte[] outputBytes, List<FieldInfo> fields)
@@ -97,7 +97,7 @@ namespace Nethereum.Mud
 
         public static T DecodeValues<T>(byte[] staticData, byte[] encodedLengths, byte[] dynamicData) where T : new()
         {
-           return DecodeValues<T>(new EncodedValues { StaticData = staticData, EncodedLengths = encodedLengths, DynamicData = dynamicData });
+            return DecodeValues<T>(new EncodedValues { StaticData = staticData, EncodedLengths = encodedLengths, DynamicData = dynamicData });
         }
 
         public static T DecodeValues<T>(byte[] outputBytes) where T : new()
@@ -144,7 +144,7 @@ namespace Nethereum.Mud
             var currentIndex = 0;
 
             foreach (var field in staticFields)
-            { 
+            {
                 var abiType = field.Parameter.ABIType;
                 var fieldSize = abiType.StaticSize;
                 var bytes = outputBytes.Skip(currentIndex).Take(abiType.StaticSize).ToArray();
@@ -170,7 +170,7 @@ namespace Nethereum.Mud
 
                 if (dynamicFields[i].Parameter.ABIType is ArrayType arrayAbiType)
                 {
-                   
+
                     value = arrayAbiType.DecodePackedUsingElementPacked(bytes, dynamicFields[i].Parameter.DecodedType);
 
                 }
@@ -205,12 +205,12 @@ namespace Nethereum.Mud
             var dynamicFields = fields.Where(f => f.ABIType.IsDynamic() == true && f.IsKey == false).OrderBy(f => f.Order).ToArray();
             var encodedLengths = EncodedLengthsEncoderDecoder.Decode(outputBytes.Skip(currentIndex).ToArray());
             currentIndex += 32;
-            for(int i = 0; i < dynamicFields.Length; i++)
+            for (int i = 0; i < dynamicFields.Length; i++)
             {
                 var fieldSize = encodedLengths.Lengths[i];
                 var bytes = outputBytes.Skip(currentIndex).Take(fieldSize).ToArray();
                 object value;
-                if(bytes.Length == 0)
+                if (bytes.Length == 0)
                 {
                     //check what direction is the padding or just empty
                     bytes = bytes.PadBytes(fieldSize);
@@ -218,19 +218,19 @@ namespace Nethereum.Mud
 
                 if (dynamicFields[i].ABIType is ArrayType arrayAbiType)
                 {
-                   value = arrayAbiType.DecodePackedUsingElementPacked(bytes, arrayAbiType.GetDefaultDecodingType());
-                   
+                    value = arrayAbiType.DecodePackedUsingElementPacked(bytes, arrayAbiType.GetDefaultDecodingType());
+
                 }
                 else
                 {
-                   value = dynamicFields[i].ABIType.DecodePacked(bytes, dynamicFields[i].ABIType.GetDefaultDecodingType());
-                    
+                    value = dynamicFields[i].ABIType.DecodePacked(bytes, dynamicFields[i].ABIType.GetDefaultDecodingType());
+
                 }
 
                 fieldValues.Add(new FieldValue(dynamicFields[i].Type, value, dynamicFields[i].Name, dynamicFields[i].Order));
                 currentIndex += fieldSize;
             }
-        
+
             return fieldValues;
         }
 
