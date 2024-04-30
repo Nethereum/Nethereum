@@ -18,12 +18,14 @@ namespace Nethereum.Web3.Accounts.Basic
         {
             Account = account;
             Client = client;
+            TransactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
         }
 
         public BasicAccountTransactionManager(IClient client, string accountAddress)
         {
             Account = new BasicAccount(accountAddress, this);
             Client = client;
+            TransactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
         }
 
         public BasicAccountTransactionManager(string accountAddress) : this(null, accountAddress

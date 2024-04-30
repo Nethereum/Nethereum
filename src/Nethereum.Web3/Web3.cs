@@ -28,17 +28,30 @@ namespace Nethereum.Web3
         private static readonly AddressUtil AddressUtil = new AddressUtil();
         private static readonly Sha3Keccack Sha3Keccack = new Sha3Keccack();
 
+        private void InitialiseDefaultTransactionVerificationAndRecovery()
+        {
+#if !LITE
+            if (TransactionManager.TransactionVerificationAndRecovery == null)
+            {
+                TransactionManager.TransactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
+            }
+#endif
+        }
+
         public Web3(IClient client)
         {
             Client = client;
             InitialiseInnerServices();
             InitialiseDefaultGasAndGasPrice();
+            InitialiseDefaultTransactionVerificationAndRecovery();
         }
 
         public Web3(IAccount account, IClient client) : this(client)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
+            InitialiseDefaultTransactionVerificationAndRecovery();
+
         }
 
         public Web3(string url = @"http://localhost:8545/", ILogger log = null, AuthenticationHeaderValue authenticationHeader = null)
@@ -46,12 +59,14 @@ namespace Nethereum.Web3
             InitialiseDefaultRpcClient(url, log, authenticationHeader);
             InitialiseInnerServices();
             InitialiseDefaultGasAndGasPrice();
+            InitialiseDefaultTransactionVerificationAndRecovery();
         }
 
         public Web3(IAccount account, string url = @"http://localhost:8545/", ILogger log = null, AuthenticationHeaderValue authenticationHeader = null) : this(url, log, authenticationHeader)
         {
             TransactionManager = account.TransactionManager;
             TransactionManager.Client = Client;
+            InitialiseDefaultTransactionVerificationAndRecovery();
         }
 
         public ITransactionManager TransactionManager
@@ -98,8 +113,7 @@ namespace Nethereum.Web3
         public static string GetAddressFromPrivateKey(string privateKey)
         {
 
-            return EthECKey.GetPublicAddress(privateKey);
-            
+            return EthECKey.GetPublicAddress(privateKey);  
 
         }
 #endif

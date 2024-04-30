@@ -5,35 +5,37 @@ namespace Nethereum.Signer
 
     public static class TransactionVerificationAndRecovery
     {
+
+        private static ITransactionVerificationAndRecovery _transactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
+
         public static byte[] GetPublicKey(string rlp)
         {
-            return TransactionFactory.CreateTransaction(rlp).GetPublicKey();
+            return _transactionVerificationAndRecovery.GetPublicKey(rlp);
         }
 
         public static string GetSenderAddress(string rlp)
         {
-            return TransactionFactory.CreateTransaction(rlp).GetSenderAddress();
+           return _transactionVerificationAndRecovery.GetSenderAddress(rlp);
         }
 
         public static bool VerifyTransaction(string rlp)
         {
-            return TransactionFactory.CreateTransaction(rlp).VerifyTransaction();
+            return _transactionVerificationAndRecovery.VerifyTransaction(rlp);
         }
 
         public static byte[] GetPublicKey(this ISignedTransaction transaction)
         {
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPubKey();
+           return _transactionVerificationAndRecovery.GetPublicKey(transaction);
         }
 
         public static string GetSenderAddress(this ISignedTransaction transaction)
         {
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPublicAddress();
+           return _transactionVerificationAndRecovery.GetSenderAddress(transaction);
         }
 
         public static bool VerifyTransaction(this ISignedTransaction transaction)
         {
-            var signature = EthECDSASignatureFactory.FromSignature(transaction.Signature);
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).VerifyAllowingOnlyLowS(transaction.RawHash, signature);
+           return _transactionVerificationAndRecovery.VerifyTransaction(transaction);
         }
     }
 }

@@ -12,6 +12,7 @@ using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.TransactionTypes;
 using Nethereum.RPC.Chain;
+using Nethereum.Model;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -26,12 +27,14 @@ namespace Nethereum.RPC.TransactionManagers
         public bool EstimateOrSetDefaultGasIfNotSet { get; set; } = true;
         protected ChainFeature ChainFeature { get; set; }
 
+        public ITransactionVerificationAndRecovery TransactionVerificationAndRecovery { get; set; }
+
         public BigInteger? ChainId { get; protected set; }
 
         public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
         {
             if (ChainFeature != null && !ChainFeature.SupportEIP1559) return false;
-            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionType.EIP1559.AsByte());
+            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionTypes.TransactionType.EIP1559.AsByte());
         }
 
 #if !DOTNET35
@@ -60,7 +63,7 @@ namespace Nethereum.RPC.TransactionManagers
 
                 if (IsTransactionToBeSendAsEIP1559(transaction))
                 {
-                    transaction.Type = new HexBigInteger(TransactionType.EIP1559.AsByte());
+                    transaction.Type = new HexBigInteger(TransactionTypes.TransactionType.EIP1559.AsByte());
                     if (transaction.MaxPriorityFeePerGas != null)
                     {
                         if (transaction.MaxFeePerGas == null)
@@ -148,6 +151,8 @@ namespace Nethereum.RPC.TransactionManagers
                 _transactionReceiptService = value;
             }
         }
+
+       
 
         public Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default)
         {

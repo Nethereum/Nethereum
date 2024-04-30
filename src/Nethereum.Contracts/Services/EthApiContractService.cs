@@ -9,12 +9,13 @@ using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC721;
-using Nethereum.Contracts.Standards.ProofOfHumanity;
 using Nethereum.Contracts.Standards.ERC2535Diamond;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.TransactionManagers;
+using Nethereum.Contracts.Identity.ProofOfHumanity;
+using Nethereum.Contracts.Create2Deployment;
 
 namespace Nethereum.Contracts.Services
 {
@@ -30,7 +31,8 @@ namespace Nethereum.Contracts.Services
             ERC1271 = new ERC1271Service(this);
             ERC2535Diamond = new ERC2535DiamondService(this);
             ProofOfHumanity = new ProofOfHumanityService(this);
-
+     
+            Create2DeterministicDeploymentProxyService = new Create2DeterministicDeploymentProxyService(this);
 #endif
         }
 
@@ -138,7 +140,7 @@ namespace Nethereum.Contracts.Services
         public ERC2535DiamondService ERC2535Diamond { get; private set; }
 
         /// <summary>
-        /// Service to interact with the Proof of Humanity registry smart contract
+        /// Service to interact with the Identity Proof of Humanity registry smart contract
         /// </summary>
         public ProofOfHumanityService ProofOfHumanity { get; private set; }
 
@@ -151,6 +153,8 @@ namespace Nethereum.Contracts.Services
         {
             return new EthTLSService(this, ensRegistryAddress);
         }
+
+        public Create2DeterministicDeploymentProxyService Create2DeterministicDeploymentProxyService { get; private set; }
 
         public IEthGetContractTransactionErrorReason GetContractTransactionErrorReason { get; }
 

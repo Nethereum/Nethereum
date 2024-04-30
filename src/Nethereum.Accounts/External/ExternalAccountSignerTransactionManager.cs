@@ -27,6 +27,7 @@ namespace Nethereum.Web3.Accounts
             Client = rpcClient;
             _legacyTransactionSigner = new LegacyTransactionSigner();
             _transaction1559Signer = new Transaction1559Signer();
+            TransactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
         }
 
 

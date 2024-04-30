@@ -103,6 +103,15 @@ namespace Nethereum.Model
         {
         }
 
+        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
+          BigInteger gasLimit, string data, BigInteger chainId, byte[] r, byte[] s, byte[] v) : this(nonce.ToBytesForRLPEncoding(),
+          gasPrice.ToBytesForRLPEncoding(),
+          gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(),
+          data.HexToByteArray(), chainId.ToBytesForRLPEncoding(), r, s, v
+      )
+        {
+        }
+
         public BigInteger GetChainIdAsBigInteger()
         {
             return ChainId.ToBigIntegerFromRLPDecoded();

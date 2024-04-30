@@ -2,6 +2,7 @@
 using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.Identity.ProofOfHumanity;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Standards.ENS;
 using Nethereum.Contracts.Standards.ERC1155;
@@ -9,9 +10,9 @@ using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC2535Diamond;
 using Nethereum.Contracts.Standards.ERC721;
-using Nethereum.Contracts.Standards.ProofOfHumanity;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
+using Nethereum.Contracts.Create2Deployment;
 
 namespace Nethereum.Contracts.Services
 {
@@ -77,6 +78,10 @@ namespace Nethereum.Contracts.Services
         ERC2535DiamondService ERC2535Diamond { get; }
 
         EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS);
+
+        Create2DeterministicDeploymentProxyService Create2DeterministicDeploymentProxyService { get; }
+
+      
 #endif
 
 

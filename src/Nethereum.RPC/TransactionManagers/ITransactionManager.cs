@@ -7,6 +7,7 @@ using System.Threading;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.RPC.TransactionReceipts;
+using Nethereum.Model;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -17,6 +18,7 @@ namespace Nethereum.RPC.TransactionManagers
         BigInteger DefaultGas { get; set; }
         IAccount Account { get; }
         bool UseLegacyAsDefault { get; set; }
+        ITransactionVerificationAndRecovery TransactionVerificationAndRecovery { get; set; }
 #if !DOTNET35
         IFee1559SuggestionStrategy Fee1559SuggestionStrategy { get; set; }
 
@@ -28,6 +30,8 @@ namespace Nethereum.RPC.TransactionManagers
         bool CalculateOrSetDefaultGasPriceFeesIfNotSet { get; set; }
         bool EstimateOrSetDefaultGasIfNotSet { get; set; }
         Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default);
+
+       
 #endif
 
     }
