@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Model
+namespace Nethereum.Contracts.Identity.ProofOfHumanity.Model
 {
     public partial class RegistrationEvidence
     {

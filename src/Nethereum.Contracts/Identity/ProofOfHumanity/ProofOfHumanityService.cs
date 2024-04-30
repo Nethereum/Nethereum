@@ -1,7 +1,8 @@
 ﻿using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.Services;
+using Nethereum.Contracts.Identity.ProofOfHumanity;
 
-namespace Nethereum.Contracts.Standards.ProofOfHumanity
+namespace Nethereum.Contracts.Identity.ProofOfHumanity
 {
     public class ProofOfHumanityService
     {

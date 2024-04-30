@@ -3,13 +3,13 @@ using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.Services;
-using Nethereum.Contracts.Standards.ProofOfHumanity.ContractDefinition;
 using Nethereum.Contracts.Constants;
 using System.Collections.Generic;
 using System.Numerics;
 using Newtonsoft.Json;
+using Nethereum.Contracts.Identity.ProofOfHumanity.ContractDefinition;
 
-namespace Nethereum.Contracts.Standards.ProofOfHumanity
+namespace Nethereum.Contracts.Identity.ProofOfHumanity
 {
     public partial class ProofOfHumanityContractService
     {

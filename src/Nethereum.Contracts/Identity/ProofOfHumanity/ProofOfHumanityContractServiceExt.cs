@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Contracts.Standards.ProofOfHumanity.ContractDefinition;
+using Nethereum.Contracts.Identity.ProofOfHumanity.ContractDefinition;
 using System.Collections.Generic;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Constants;
@@ -12,9 +12,11 @@ using System.Net.Http;
 #endif
 using System;
 using Newtonsoft.Json;
-using Nethereum.Fx.Nethereum.Contracts.Standards.ProofOfHumanity.Model;
+using Nethereum.Contracts.Identity.ProofOfHumanity.Model;
+using Nethereum.Contracts.Identity.ProofOfHumanity;
 
-namespace Nethereum.Contracts.Standards.ProofOfHumanity
+
+namespace Nethereum.Contracts.Identity.ProofOfHumanity
 {
     public partial class ProofOfHumanityContractService
     {

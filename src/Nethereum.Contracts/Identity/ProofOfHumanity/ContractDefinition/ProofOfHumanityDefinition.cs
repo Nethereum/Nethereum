@@ -1,7 +1,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using System.Numerics;
 
-namespace Nethereum.Contracts.Standards.ProofOfHumanity.ContractDefinition
+namespace Nethereum.Contracts.Identity.ProofOfHumanity.ContractDefinition
 {
 
     public partial class IsRegisteredFunction : IsRegisteredFunctionBase { }
