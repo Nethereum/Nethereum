@@ -16,7 +16,7 @@ namespace Nethereum.Contracts.Create2Deployment
     /// 
     /// Use in combination with the Create2DeterministicDeployment object to create EIP155 create2 deployments or the default legacy deployments
     /// 
-    /// EIP155 support is added by using the ChainId to calculate the V value and Legacy transaction signing
+    /// EIP155 support is added by using the ChainId to calculate the V value and Legacy transaction signing, note this will not provide the same address for all chains as per the legacy deployment
     /// </summary>
     public class Create2DeterministicDeploymentProxyService
     {
@@ -35,14 +35,71 @@ namespace Nethereum.Contracts.Create2Deployment
                
         }
 
-        public async Task<Create2DeterministicDeploymentProxyDeployment> GenerateEIP155Create2DeterministicDeploymentProxyDeploymentForCurrentChainAsync()
+        /// <summary>
+        /// Create a deterministic deployment EIP155 using the predefined Create2DeterministicDeploymentProxyDeployment ByteCode and the current Account and chainId
+        /// configured in Web3 as the signer
+        /// </summary>
+        public async Task<Create2DeterministicDeploymentProxyDeployment> GenerateEIP155DeterministicDeploymentAsync
+            (
+                long gasPrice = Create2DeterministicDeploymentProxyDeployment.DefaultGasPrice,
+                long gasLimit = Create2DeterministicDeploymentProxyDeployment.DefaultGasLimit,
+                long nonce =0
+            )
         {
-            var chainId = await _ethApiContractService.ChainId.SendRequestAsync();
-            return GenerateEIP155Create2DeterministicDeploymentProxyDeployment(chainId);
+            var chainId = _ethApiContractService.TransactionManager.ChainId;
+            if (chainId == null)
+            {
+                chainId = await _ethApiContractService.ChainId.SendRequestAsync();
+            }
+            var transactionInput = new TransactionInput()
+            {
+                From = _ethApiContractService.TransactionManager.Account.Address,
+                GasPrice = new HexBigInteger(gasPrice),
+                Gas = new HexBigInteger(gasLimit),
+                Data = Create2DeterministicDeploymentProxyDeployment.ByteCode,
+                Value = new HexBigInteger(0),
+                Nonce = new HexBigInteger(nonce)
+            };
+
+            var rawTransaction = await _ethApiContractService.TransactionManager.SignTransactionAsync(transactionInput);
+            var contractAddress = ContractUtils.CalculateContractAddress(transactionInput.From, (int)nonce);
+            return new Create2DeterministicDeploymentProxyDeployment()
+            {
+                GasLimit = gasLimit,
+                GasPrice = gasPrice,
+                RawTransaction = rawTransaction,
+                SignerAddress = transactionInput.From,
+                Address = contractAddress,
+                ChainId = chainId
+            };
+            
         }
 
 
-        public Create2DeterministicDeploymentProxyDeployment GenerateEIP155Create2DeterministicDeploymentProxyDeployment(BigInteger chainId)
+
+        /// <summary>
+        /// Create a deterministic deployment EIP155 for the current chain using the predefined Create2DeterministicDeploymentProxyDeployment ByteCode and recovery signature
+        /// </summary>
+        /// <remarks>
+        /// The proxy address and signer address will be different depending on the chain, use GenerateEIP155DeterministicDeploymentAsync with your own private key to get the same address for all chains
+        /// </remarks>
+        public async Task<Create2DeterministicDeploymentProxyDeployment> GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync()
+        {
+            var chainId = _ethApiContractService.TransactionManager.ChainId;
+            if(chainId == null)
+            {
+                 chainId = await _ethApiContractService.ChainId.SendRequestAsync();
+            }
+            return GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync(chainId.Value);
+        }
+
+        /// <summary>
+        /// Create a deterministic deployment for a chain using the predefined Create2DeterministicDeploymentProxyDeployment ByteCode and recovery signature
+        /// </summary>
+        /// <remarks>
+        /// The proxy address and signer address will be different depending on the chain, use GenerateEIP155DeterministicDeploymentAsync with your own private key to get the same address for all chains
+        /// </remarks>
+        public Create2DeterministicDeploymentProxyDeployment GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync(BigInteger chainId)
         {
             var nonce = 0;
             var legacyTransactionChainId = new LegacyTransactionChainId(

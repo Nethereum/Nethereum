@@ -26,7 +26,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
         public async Task ShouldDeployDeterministicDeployer()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-            var deployment = await web3.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155Create2DeterministicDeploymentProxyDeploymentForCurrentChainAsync();
+            var deployment = await web3.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
             var existDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.HasProxyBeenDeployedAsync(deployment.Address);
             if(!existDeployer)
             {
@@ -39,13 +39,44 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
         }
 
         [Fact]
+        public async Task ShouldDeployDeterministicDeployerUsingACustomSigner()
+        {
+            var privateKeyCustomSigner = "541dbf545002f8832bcabbe05dd5dd86ee11a3f21ea6711b2ed192afc103fa41";
+            var accountSignerDeployerCurrentChain = new Nethereum.Web3.Accounts.Account(privateKeyCustomSigner, EthereumClientIntegrationFixture.ChainId);
+            var web3SignerDeployerCurrentChain = new Web3.Web3(accountSignerDeployerCurrentChain);
+            var deploymentProxyCurrentChain = await web3SignerDeployerCurrentChain.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentAsync();
+
+            var accountSignerDeployerDifferentChain = new Nethereum.Web3.Accounts.Account(privateKeyCustomSigner, 1);
+            var web3SignerDeployerDifferentChain = new Web3.Web3(accountSignerDeployerDifferentChain);
+            var deploymentProxyDifferentChain = await web3SignerDeployerDifferentChain.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentAsync();
+
+            Assert.True(deploymentProxyCurrentChain.Address.IsTheSameAddress(deploymentProxyDifferentChain.Address));
+            Assert.True(deploymentProxyCurrentChain.SignerAddress.IsTheSameAddress(deploymentProxyDifferentChain.SignerAddress));
+
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+           
+            var existDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.HasProxyBeenDeployedAsync(deploymentProxyCurrentChain.Address);
+            if (!existDeployer)
+            {
+                var addressDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(deploymentProxyCurrentChain);
+                Assert.True(addressDeployer.IsTheSameAddress(deploymentProxyCurrentChain.Address));
+
+                var existDeployerAfter = await web3.Eth.Create2DeterministicDeploymentProxyService.HasProxyBeenDeployedAsync(deploymentProxyCurrentChain.Address);
+                Assert.True(existDeployerAfter);
+            }
+        }
+
+
+
+        [Fact]
         public async Task ShouldDeployCreate2UsingDeterministicDeployer()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            //var web3 = new Web3.Web3(new Nethereum.Web3.Accounts.Account(EthereumClientIntegrationFixture.AccountPrivateKey));
             var salt = "0x1234567890123456789012345678901234567890123456789012345678901234";
             var create2DeterministicDeploymentProxyService = web3.Eth.Create2DeterministicDeploymentProxyService;
 
-            var deployment = await create2DeterministicDeploymentProxyService.GenerateEIP155Create2DeterministicDeploymentProxyDeploymentForCurrentChainAsync();
+            var deployment = await create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
             var addressDeployer = await create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(deployment);
             
             var contractByteCode =
