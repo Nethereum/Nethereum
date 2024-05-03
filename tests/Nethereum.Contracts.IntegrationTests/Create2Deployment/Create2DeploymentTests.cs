@@ -1,4 +1,5 @@
-﻿using Nethereum.Util;
+﻿using Nethereum.Contracts.IntegrationTests.CQS;
+using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var deployment = await web3.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
             var existDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.HasProxyBeenDeployedAsync(deployment.Address);
-            if(!existDeployer)
+            if (!existDeployer)
             {
                 var addressDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(deployment);
                 Assert.True(addressDeployer.IsTheSameAddress(deployment.Address));
@@ -54,7 +55,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
             Assert.True(deploymentProxyCurrentChain.SignerAddress.IsTheSameAddress(deploymentProxyDifferentChain.SignerAddress));
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
-           
+
             var existDeployer = await web3.Eth.Create2DeterministicDeploymentProxyService.HasProxyBeenDeployedAsync(deploymentProxyCurrentChain.Address);
             if (!existDeployer)
             {
@@ -78,7 +79,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
             var deployment = await create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
             var addressDeployer = await create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(deployment);
-            
+
             var contractByteCode =
                "0x606060405260728060106000396000f360606040526000357c010000000000000000000000000000000000000000000000000000000090048063c6888fa1146037576035565b005b604b60048080359060200190919050506061565b6040518082815260200191505060405180910390f35b6000600782029050606d565b91905056";
 
@@ -98,6 +99,36 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
         }
 
+
+        [Fact]
+        public async Task ShouldDeployCreate2UsingDeterministicDeployerUsingTypedDeployment()
+        {
+            var privateKeyCustomSigner = "541dbf545002f8832bcabbe05dd5dd86ee11a3f21ea6711b2ed192afc103fa41";
+            var accountSignerDeployerCurrentChain = new Nethereum.Web3.Accounts.Account(privateKeyCustomSigner, EthereumClientIntegrationFixture.ChainId);
+            var web3SignerDeployerCurrentChain = new Web3.Web3(accountSignerDeployerCurrentChain);
+            var deploymentProxyCurrentChain = await web3SignerDeployerCurrentChain.Eth.Create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentAsync();
+
+
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            //var web3 = new Web3.Web3(new Nethereum.Web3.Accounts.Account(EthereumClientIntegrationFixture.AccountPrivateKey));
+            var salt = "0x1234567890123456789012345678901234567890123456789012345678901234";
+            var create2DeterministicDeploymentProxyService = web3.Eth.Create2DeterministicDeploymentProxyService;
+            var addressDeployer = await create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(deploymentProxyCurrentChain);
+
+            var deploymentMessage = new StandardTokenDeployment
+            {
+                TotalSupply = 10000
+            };
+
+            var address = create2DeterministicDeploymentProxyService.CalculateCreate2Address(deploymentMessage, deploymentProxyCurrentChain.Address, salt);
+            var receipt = await create2DeterministicDeploymentProxyService.DeployContractRequestAndWaitForReceiptAsync(deploymentMessage, deploymentProxyCurrentChain.Address, salt);
+            Assert.True(await create2DeterministicDeploymentProxyService.CheckContractAlreadyDeployedAsync(address));
+
+            //the "owner" of the contract is the deployment proxy so the total supply is allocated to it
+            var balance = await web3.Eth.ERC20.GetContractService(address).BalanceOfQueryAsync(deploymentProxyCurrentChain.Address);
+            Assert.Equal(10000, balance);
+
+        }
     }
 
 }
