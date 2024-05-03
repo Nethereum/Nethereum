@@ -13,16 +13,18 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Mud.Contracts.StoreEvents
 {
-    public class StoreEventsLogProcessing
+    public class StoreEventsLogProcessingService
         {
         private readonly IBlockchainLogProcessingService _blockchainLogProcessing;
         private readonly IEthApiContractService _ethApiContractService;
 
-        public StoreEventsLogProcessing(IWeb3 web3)
+        public StoreEventsLogProcessingService(IWeb3 web3)
         {
             _blockchainLogProcessing = web3.Processing.Logs;
             _ethApiContractService = web3.Eth;
         }
+
+
 
         public Task<List<EventLog<StoreSetRecordEventDTO>>> GetAllSetRecordForContract(string contractAddress,
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
@@ -160,6 +162,16 @@ namespace Nethereum.Mud.Contracts.StoreEvents
             await ProcessAllStoreChangesAsync(tableRepository, fromBlockNumber, toBlockNumber, numberOfBlocksPerRequest, retryWeight, filterInput, cancellationToken);
         }
 
+        public async Task<IEnumerable<TTableRecord>> GetTableRecordsFromLogsAsync<TTableRecord>(string contractAddress, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+                       int retryWeight = BlockchainLogProcessingService.RetryWeight)
+            where TTableRecord : ITableRecord, new()
+        {
+            var tableId = new TTableRecord().ResourceId;
+            var tableRepository = new InMemoryTableRepository();
+            await ProcessAllStoreChangesAsync(tableRepository, contractAddress, tableId, fromBlockNumber, toBlockNumber, cancellationToken, numberOfBlocksPerRequest, retryWeight);
+            return await tableRepository.GetTableRecordsAsync<TTableRecord>(tableId);
+        }
+
         private async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, int numberOfBlocksPerRequest, int retryWeight, NewFilterInput filterInput, CancellationToken cancellationToken)
         {
             var logs = await _blockchainLogProcessing.GetAllEvents(filterInput, fromBlockNumber, toBlockNumber,
@@ -186,6 +198,13 @@ namespace Nethereum.Mud.Contracts.StoreEvents
                     var spliceDynamicDataEventLog = log.DecodeEvent<StoreSpliceDynamicDataEventDTO>();
                     var spliceDynamicDataEvent = spliceDynamicDataEventLog.Event;
                     await tableRepository.SetSpliceDynamicDataAsync(spliceDynamicDataEvent.TableId, spliceDynamicDataEvent.KeyTuple, spliceDynamicDataEvent.Start, spliceDynamicDataEvent.Data, spliceDynamicDataEvent.DeleteCount, spliceDynamicDataEvent.EncodedLengths);
+                }
+
+                if(log.IsLogForEvent<StoreDeleteRecordEventDTO>())
+                {
+                    var deleteRecordEventLog = log.DecodeEvent<StoreDeleteRecordEventDTO>();
+                    var deleteRecordEvent = deleteRecordEventLog.Event;
+                    await tableRepository.DeleteRecordAsync(deleteRecordEvent.TableId, deleteRecordEvent.KeyTuple);
                 }
             }
         }

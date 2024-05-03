@@ -1,9 +1,15 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.Mud.Contracts.Tables.World
 {
-    public class FunctionSignaturesTableRecord
+    public class FunctionSignaturesTableRecord: TableRecord
+        <FunctionSignaturesTableRecord.FunctionSignaturesKey, FunctionSignaturesTableRecord.FunctionSignaturesValue>
     {
+        public FunctionSignaturesTableRecord() : base("world", "FunctionSignatures")
+        {
+        }
+
         public class FunctionSignaturesKey
         {
             [Parameter("bytes4", "functionSelector", 1)]
