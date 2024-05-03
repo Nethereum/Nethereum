@@ -4,6 +4,16 @@ namespace Nethereum.Mud.EncodingDecoding
 {
     public static class ResourceEncoder
     {
+
+        public static string TrimNameAsValidSize(string name)
+        {
+            if (name.Length > 16)
+            {
+                return name.Substring(0, 16);
+            }
+            return name;
+        }
+
         public static Resource Decode(byte[] resourceBytes)
         {
             var resource = new Resource();
