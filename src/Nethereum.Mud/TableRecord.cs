@@ -4,7 +4,7 @@ namespace Nethereum.Mud
 {
     public abstract class TableRecord<TKey, TValue> : TableRecordSingleton<TValue>, ITableRecord where TValue : class, new() where TKey : class, new()
     {
-        public TableRecord(string nameSpace, string tableName) : base(nameSpace, tableName)
+        public TableRecord(string nameSpace, string tableName, bool isOffChainTable = false) : base(nameSpace, tableName, isOffChainTable)
         {
             Keys = new TKey();
         }
@@ -24,6 +24,11 @@ namespace Nethereum.Mud
         public virtual void DecodeKey(List<byte[]> encodedKey)
         {
             Keys = KeyEncoderDecoder.DecodeKey<TKey>(encodedKey);
+        }
+
+        public override SchemaEncoded GetSchemaEncoded()
+        {
+            return SchemaEncoder.GetSchemaEncoded<TKey, TValue>(ResourceId);
         }
 
 

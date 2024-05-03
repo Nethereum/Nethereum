@@ -5,10 +5,11 @@ namespace Nethereum.Mud
 
     public abstract class TableRecordSingleton<TValue>: ITableRecordSingleton where TValue : class, new()
     {
-        public TableRecordSingleton(string nameSpace, string tableName)
+        public TableRecordSingleton(string nameSpace, string tableName, bool isOffChainTable = false)
         {
             Namespace = nameSpace;
             TableName = tableName;
+            IsOffChain = isOffChainTable;
             Values = new TValue();
            
         }
@@ -23,6 +24,12 @@ namespace Nethereum.Mud
         public string Namespace { get; protected set; }
         public string TableName { get; protected set; }
 
+        public string GetTableNameTrimmedForResource()
+        {
+            return ResourceEncoder.TrimNameAsValidSize(TableName);
+        }
+        public bool IsOffChain { get; protected set; }
+
         private byte[] _resourceId;
         public byte[] ResourceId
         {
@@ -30,13 +37,26 @@ namespace Nethereum.Mud
             {
                 if (_resourceId == null)
                 {
-                    _resourceId = ResourceEncoder.EncodeTable(Namespace, TableName);
+                    if (IsOffChain)
+                    {
+                        _resourceId = ResourceEncoder.EncodeOffchainTable(Namespace, GetTableNameTrimmedForResource());
+                    }
+                    else
+                    {
+                        _resourceId = ResourceEncoder.EncodeTable(Namespace, GetTableNameTrimmedForResource());
+                    }
+                    
                 }
                 return _resourceId;
             }
         }
       
         public TValue Values { get; set; }
+
+        public virtual SchemaEncoded GetSchemaEncoded()
+        {
+            return SchemaEncoder.GetSchemaEncodedSingleton<TValue>(ResourceId);
+        }
 
         public virtual EncodedValues  GetEncodeValues()
         {
