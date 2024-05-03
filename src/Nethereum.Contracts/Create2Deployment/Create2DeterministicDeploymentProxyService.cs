@@ -7,6 +7,11 @@ using Nethereum.Hex.HexTypes;
 using System.Numerics;
 using Nethereum.Model;
 using Nethereum.Util;
+using Nethereum.Contracts.Extensions;
+using Nethereum.Contracts.CQS;
+using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts.MessageEncodingServices;
+
 using System.Diagnostics;
 
 namespace Nethereum.Contracts.Create2Deployment
@@ -167,6 +172,14 @@ namespace Nethereum.Contracts.Create2Deployment
             }
         }
 
+        public string CalculateCreate2Address<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt) where TDeploymentMessage : ContractDeploymentMessage
+        {
+            var deploymentEncodingService = new DeploymentMessageEncodingService<TDeploymentMessage>();
+            var deploymentData = deploymentEncodingService.GetDeploymentData(deploymentMessage);
+
+            return CalculateCreate2Address(deployerProxyAddress, salt, deploymentData);
+        }
+
         public string CalculateCreate2Address(string deployerProxyAddress, string salt, string contractByteCode)
         {
             return ContractUtils.CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
@@ -174,7 +187,15 @@ namespace Nethereum.Contracts.Create2Deployment
 
         public async Task<bool> CheckContractAlreadyDeployedAsync(string deployerProxyAddress, string salt, string contractByteCode)
         {
-            var create2Address = ContractUtils.CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
+            var create2Address = CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
+            var code = await _ethApiContractService.GetCode.SendRequestAsync(create2Address);
+            return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
+        }
+
+        public async Task<bool> CheckContractAlreadyDeployedAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
+            where TDeploymentMessage : ContractDeploymentMessage
+        {
+            var create2Address = CalculateCreate2Address(deploymentMessage, deployerProxyAddress, salt);
             var code = await _ethApiContractService.GetCode.SendRequestAsync(create2Address);
             return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
         }
@@ -183,6 +204,40 @@ namespace Nethereum.Contracts.Create2Deployment
         {
             var code = await _ethApiContractService.GetCode.SendRequestAsync(address);
             return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
+        }
+
+        public async Task<string> DeployContractRequestAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
+            where TDeploymentMessage : ContractDeploymentMessage
+        {
+            if (await CheckContractAlreadyDeployedAsync(deploymentMessage, deployerProxyAddress, salt))
+                throw new Exception("Contract already deployed");
+            
+            var deploymentEncodingService = new DeploymentMessageEncodingService<TDeploymentMessage>();
+            var deploymentData = deploymentEncodingService.GetDeploymentData(deploymentMessage);
+
+
+            var transactionInput = new TransactionInput()
+            {
+                From = _ethApiContractService.TransactionManager.Account.Address,
+                Data = salt.EnsureHexPrefix() + deploymentData.RemoveHexPrefix(),
+                To = deployerProxyAddress
+            };
+
+            var gas = await _ethApiContractService.Transactions.EstimateGas.SendRequestAsync(transactionInput);
+            transactionInput.Gas = gas;
+            return await _ethApiContractService.TransactionManager.SendTransactionAsync(transactionInput);
+        }
+
+        public async Task<TransactionReceipt> DeployContractRequestAndWaitForReceiptAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
+            where TDeploymentMessage : ContractDeploymentMessage
+        {
+            var txnHash = await DeployContractRequestAsync(deploymentMessage, deployerProxyAddress, salt);
+            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(txnHash);
+            if (await CheckContractAlreadyDeployedAsync(deploymentMessage, deployerProxyAddress, salt))
+            {
+                return receipt;
+            }
+            throw new Exception("Contract not deployed");
         }
 
         public async Task<string> DeployContractRequestAsync(string deployerProxyAddress, string salt, string contractByteCode)
