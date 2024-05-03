@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Mud\Nethereum.Mud.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
   </ItemGroup>
 
   <ItemGroup>

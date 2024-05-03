@@ -197,7 +197,7 @@ namespace Nethereum.Mud.IntegrationTests
 
         }
 
-      
+
 
         public class CounterTable : TableRecordSingleton<CounterValue>
         {
@@ -207,7 +207,7 @@ namespace Nethereum.Mud.IntegrationTests
             }
             public class CounterValue
             {
-                [Parameter("uint32", 1)]
+                [Parameter("uint32", "value", 1)]
                 public int Value { get; set; }
             }
 
@@ -224,19 +224,19 @@ namespace Nethereum.Mud.IntegrationTests
 
             public class ItemKey
             {
-                [Parameter("uint32", 1)]
+                [Parameter("uint32", "id", 1)]
                 public int Id { get; set; }
             }
 
             public class ItemValue
             {
-                [Parameter("uint32", 1)]
+                [Parameter("uint32", "price", 1)]
                 public int Price { get; set; }
-                [Parameter("string", 2)]
+                [Parameter("string", "name", 2)]
                 public string Name { get; set; }
-                [Parameter("string", 3)]
+                [Parameter("string", "description", 3)]
                 public string Description { get; set; }
-                [Parameter("string", 4)]
+                [Parameter("string", "owner", 4)]
                 public string Owner { get; set; }
             }
         }   
@@ -287,7 +287,7 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldGetSetRecordsFromLogs()
         {
             var web3 = GetWeb3();
-            var storeLogProcessingService = new StoreEventsLogProcessing(web3);
+            var storeLogProcessingService = new StoreEventsLogProcessingService(web3);
             var setRecords = await storeLogProcessingService.GetAllSetRecordForTableAndContract(WorldAddress, "Counter", null, null, CancellationToken.None);
 
             var counterTable0 = new CounterTable();
@@ -313,7 +313,7 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldGetAllChanges()
         {
             var web3 = GetWeb3();
-            var storeLogProcessingService = new StoreEventsLogProcessing(web3);
+            var storeLogProcessingService = new StoreEventsLogProcessingService(web3);
             var inMemoryStore = new InMemoryTableRepository();
             var tableId = new CounterTable().ResourceId;
             await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, WorldAddress, null, null, CancellationToken.None);
@@ -366,7 +366,7 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldGetAllChangesForASingleTable()
         {
             var web3 = GetWeb3();
-            var storeLogProcessingService = new StoreEventsLogProcessing(web3);
+            var storeLogProcessingService = new StoreEventsLogProcessingService(web3);
             var inMemoryStore = new InMemoryTableRepository();
             var tableId = new CounterTable().ResourceId;
             await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, WorldAddress, tableId, null, null, CancellationToken.None);
@@ -380,7 +380,7 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldGetAllTablesRegistered()
         {
             var web3 = GetWeb3();
-            var storeLogProcessingService = new StoreEventsLogProcessing(web3);
+            var storeLogProcessingService = new StoreEventsLogProcessingService(web3);
             var inMemoryStore = new InMemoryTableRepository();
             var tableId = new TablesTableRecord().ResourceId;
             await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, WorldAddress, tableId, null, null, CancellationToken.None);
