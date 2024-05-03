@@ -3,8 +3,28 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Exceptions;
 using Nethereum.RLP;
 
+using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+
+using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Crypto.Prng;
+
 namespace Nethereum.Mud.EncodingDecoding
 {
+    public class SchemaEncoded
+    {
+        public byte[] TableId { get; set; }
+        
+        public byte[] FieldLayout { get; set; }
+        
+        public byte[] KeySchema { get; set; }
+        
+        public byte[] ValueSchema { get; set; }
+        
+        public List<string> KeyNames { get; set; }
+        
+        public List<string> FieldNames { get; set; }
+    }
 
     public static class SchemaEncoder
     {
@@ -51,6 +71,96 @@ namespace Nethereum.Mud.EncodingDecoding
             }
 
             return fieldInfos;
+        }
+
+        public static SchemaEncoded GetSchemaEncoded<TTableRecord, TKey, TValue>() where TTableRecord: TableRecord<TKey, TValue>, new()
+            where TValue : class, new()
+            where TKey : class, new()
+        { 
+            var tableRecord = new TTableRecord();
+            var tableResourceId = tableRecord.ResourceId;
+            return GetSchemaEncoded<TKey, TValue>(tableResourceId);
+        }
+
+        public static SchemaEncoded GetSchemaEncoded<TKey, TValue>(byte[] tableResourceId)
+        {
+            var schemaEncoded = GetSchemaEncodedSingleton<TValue>(tableResourceId);
+            var keyFields = GetFieldsFromType<TKey>(true);
+            var keySchema = EncodeTypesToByteArray(keyFields);
+            var keyNames = keyFields.OrderBy(x => x.Order).Select(x => x.Name).ToList();
+            schemaEncoded.KeySchema = keySchema;
+            schemaEncoded.KeyNames = keyNames;
+            return schemaEncoded;
+        }
+
+        public static SchemaEncoded GetSchemaEncodedSingleton<TValue>(byte[] tableResourceId)
+        {
+            var valueFieldInfos = GetFieldsFromType<TValue>();
+            var valueSchema = EncodeTypesToByteArray(valueFieldInfos);
+            var fieldLayout = FieldLayoutEncoder.EncodeFieldLayout(valueFieldInfos);
+
+            var valueNames = valueFieldInfos.OrderBy(x => x.Order).Select(x => x.Name).ToList();
+            return new SchemaEncoded
+            {
+                TableId = tableResourceId,
+                FieldLayout = fieldLayout,
+                KeyNames = new List<string>(),
+                KeySchema = new byte[0],
+                ValueSchema = valueSchema,
+                FieldNames = valueNames
+            };
+        }
+
+        public static SchemaEncoded GetSchemaEncodedSingleton<TTableRecord, TValue>() where TTableRecord : TableRecordSingleton<TValue>, new()
+            where TValue : class, new()
+           
+        {
+            var tableRecord = new TTableRecord();
+            var tableResourceId = tableRecord.ResourceId;
+            return GetSchemaEncodedSingleton<TValue>(tableResourceId);
+        }
+
+        public static SchemaEncoded GetSchemaEncoded(byte[] tableResourceId,  List<FieldInfo> valueFields, List<FieldInfo>? keyFields = null)
+        {
+            var keyNames = new List<string>();
+            var keySchema = new byte[0];
+            if (keyFields != null)
+            {
+                keySchema = EncodeTypesToByteArray(keyFields);
+                keyNames = keyFields.OrderBy(x => x.Order).Select(x => x.Name).ToList();
+            }
+          
+            var valueSchema = EncodeTypesToByteArray(valueFields);
+            var fieldLayout = FieldLayoutEncoder.EncodeFieldLayout(valueFields);
+            var valueNames = valueFields.OrderBy(x => x.Order).Select(x => x.Name).ToList();
+            return new SchemaEncoded
+            {
+                TableId = tableResourceId,
+                FieldLayout = fieldLayout,
+                KeyNames = keyNames,
+                KeySchema = keySchema,
+                ValueSchema = valueSchema,
+                FieldNames = valueNames
+            };
+        }
+
+
+        public static List<FieldInfo> GetFieldsFromType<TType>(bool isKey = false)
+        {
+            var attributesToABIExtractor = new AttributesToABIExtractor();
+            var parameters = attributesToABIExtractor.ExtractParametersFromAttributes(typeof(TType));
+            var fieldInfos = new List<FieldInfo>();
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                fieldInfos.Add(new FieldInfo(parameters[i].ABIType.Name, isKey, parameters[i].Name, parameters[i].Order));
+            }
+            return fieldInfos;
+        }
+
+        public static byte[] EncodeTypesToByteArray(List<FieldInfo> fieldInfos)
+        {
+            var fieldTypes = fieldInfos.OrderBy(x => x.Order).Select(x => x.Type).ToArray();
+            return EncodeTypesToByteArray(fieldTypes);
         }
 
         public static byte[] EncodeTypesToByteArray(params string[] schemaTypes)
