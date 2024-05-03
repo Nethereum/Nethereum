@@ -7,6 +7,7 @@ namespace Nethereum.ABI.Model
     {
         private readonly SignatureEncoder signatureEncoder;
         private string sha3Signature;
+        private string signature;
         private int? numberOfIndexes;
 
         public EventABI(string name) : this(name, false)
@@ -33,6 +34,18 @@ namespace Nethereum.ABI.Model
                 sha3Signature = signatureEncoder.GenerateSha3Signature(Name, InputParameters);
                 return sha3Signature;
             }
+        }
+
+        public string Signature
+        {
+
+            get
+            {
+                if (signature != null) return signature;
+                signature = signatureEncoder.GenerateSignature(Name, InputParameters);
+                return signature;
+            }
+
         }
 
         public int NumberOfIndexes

@@ -6,6 +6,7 @@ namespace Nethereum.ABI.Model
     {
         private readonly SignatureEncoder signatureEncoder;
         private string sha3Signature;
+        private string signature;
 
         public FunctionABI(string name, bool constant, bool serpent = false)
         {
@@ -33,5 +34,18 @@ namespace Nethereum.ABI.Model
                 return sha3Signature;
             }
         }
+
+        public string Signature {
+
+            get
+            {
+                if (signature != null) return signature;
+                signature = signatureEncoder.GenerateSignature(Name, InputParameters);
+                return signature;
+            }
+
+        }
+
+
     }
 }
