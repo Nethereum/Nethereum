@@ -92,16 +92,22 @@ namespace Nethereum.Util
         {
             if(numberOfBytes < bytesToPad.Length) throw new ArgumentException("Cannot pad to a size smaller than the original size");
 
+            return PadBytes(bytesToPad, numberOfBytes);
+        }
+
+        public static byte[] PadBytesRight(this byte[] bytesToPad, int numberOfBytes)
+        {
             var ret = new byte[numberOfBytes];
 
-           for(var i = 0; i < ret.Length; i++)
+            for (var i = 0; i < ret.Length; i++)
                 ret[i] = 0;
-            Array.Copy(bytesToPad, 0, ret, numberOfBytes - bytesToPad.Length, bytesToPad.Length);
+            Array.Copy(bytesToPad, 0, ret, 0, bytesToPad.Length);
 
             return ret;
         }
 
-        public static byte[] ShiftLeft(this byte[] value, int shift)
+
+            public static byte[] ShiftLeft(this byte[] value, int shift)
         {
 //#if NETCOREAPP2_0_OR_GREATER
 
