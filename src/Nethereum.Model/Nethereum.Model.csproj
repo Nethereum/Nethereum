@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Nethereum.Model Ethereum Core Moel Class Library</Description>
+    <Description>Nethereum.Model Ethereum Core Model Class Library</Description>
     <AssemblyTitle>Nethereum.Model</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>

@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Mud
+﻿using System;
+
+namespace Nethereum.Mud
 {
     public class Resource
     {

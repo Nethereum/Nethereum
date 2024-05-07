@@ -1,18 +1,51 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Description>Nethereum.Mud.Contracts Nethereum Web3 Class Library integrate with the Mud framework contracts https://mud.dev/ World, WorldFactory, Core systems and deployment</Description>
+		<AssemblyTitle>Nethereum.Mud.Contracts</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
+		<AssemblyName>Nethereum.Mud.Contracts</AssemblyName>
+		<PackageId>Nethereum.Mud.Contracts</PackageId>
+		<PackageTags>Netherum;Ethereum;Blockchain;Mud</PackageTags>
+		<LangVersion>Latest</LangVersion>
+	</PropertyGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
 
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+		<DefineConstants>$(DefineConstants);PCL</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+		<DefineConstants>$(DefineConstants);PCL</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
+
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+	
+	
   <ItemGroup>
     <Compile Remove="node_modules\**" />
     <EmbeddedResource Remove="node_modules\**" />
     <None Remove="node_modules\**" />
   </ItemGroup>
-
-  <ItemGroup>
+  
+    <ItemGroup>
     <ProjectReference Include="..\Nethereum.Mud\Nethereum.Mud.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>

@@ -1,6 +1,8 @@
 ﻿using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Mud.EncodingDecoding;
+using System.Collections.Generic;
+using System.Linq;
 using static Nethereum.Mud.Contracts.Tables.Store.TablesTableRecord;
 
 namespace Nethereum.Mud.Contracts.Tables.Store

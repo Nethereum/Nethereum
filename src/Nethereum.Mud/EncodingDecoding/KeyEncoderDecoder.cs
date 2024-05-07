@@ -6,6 +6,9 @@ using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Exceptions;
+using System.Collections.Generic;
+using System.Linq;
+using System;
 
 namespace Nethereum.Mud.EncodingDecoding
 {

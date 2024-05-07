@@ -20,12 +20,12 @@ namespace Nethereum.Mud.Contracts
 {
     public class WorldFactoryContractAddresses
     {
-        public required string AccessManagementSystemAddress { get; set; }
-        public required string BalanceTransferSystemAddress { get; set; }
-        public required string BatchCallSystemAddress { get; set; }
-        public required string RegistrationSystemAddress { get; set; }
-        public required string InitModuleAddress { get; set; }
-        public required string WorldFactoryAddress { get; set; }
+        public string AccessManagementSystemAddress { get; set; }
+        public string BalanceTransferSystemAddress { get; set; }
+        public string BatchCallSystemAddress { get; set; }
+        public string RegistrationSystemAddress { get; set; }
+        public string InitModuleAddress { get; set; }
+        public string WorldFactoryAddress { get; set; }
     }
 
     public class WorldFactoryDeployService

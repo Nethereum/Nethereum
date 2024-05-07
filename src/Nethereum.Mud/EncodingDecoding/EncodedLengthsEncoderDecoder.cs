@@ -1,5 +1,7 @@
 ﻿using Nethereum.ABI;
 using Nethereum.Util;
+using System.Collections.Generic;
+using System.Linq;
 
 
 namespace Nethereum.Mud.EncodingDecoding

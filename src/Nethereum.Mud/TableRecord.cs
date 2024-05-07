@@ -1,4 +1,5 @@
 ﻿using Nethereum.Mud.EncodingDecoding;
+using System.Collections.Generic;
 
 namespace Nethereum.Mud
 {

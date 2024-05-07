@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Mud.EncodingDecoding;
+using System.Collections.Generic;
 using static Nethereum.Mud.Contracts.Tables.World.SystemHooksTableRecord;
 
 namespace Nethereum.Mud.Contracts.Tables.World

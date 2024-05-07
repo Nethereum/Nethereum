@@ -1,10 +1,10 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace Nethereum.Mud.EncodingDecoding
 {
     public static class ResourceEncoder
     {
-
         public static string TrimNameAsValidSize(string name)
         {
             if (name.Length > 16)
@@ -23,8 +23,13 @@ namespace Nethereum.Mud.EncodingDecoding
             Array.Copy(resourceBytes, 0, resourceId, 0, 2);
             Array.Copy(resourceBytes, 2, namespaceBytes, 0, 14);
             Array.Copy(resourceBytes, 16, nameBytes, 0, 16);
+#if NETSTANDARD1_1
+            resource.Namespace = Encoding.UTF8.GetString(namespaceBytes, 0, namespaceBytes.Length).TrimEnd('\0');
+            resource.Name = Encoding.UTF8.GetString(nameBytes, 0, nameBytes.Length).TrimEnd('\0');
+#else
             resource.Namespace = Encoding.UTF8.GetString(namespaceBytes).TrimEnd('\0');
             resource.Name = Encoding.UTF8.GetString(nameBytes).TrimEnd('\0');
+#endif
             resource.ResourceId = resourceId;
             return resource;
         }

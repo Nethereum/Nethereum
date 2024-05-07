@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Mud
+﻿using System.Collections.Generic;
+
+namespace Nethereum.Mud
 {
     public interface ITableRecord: ITableRecordSingleton
     {

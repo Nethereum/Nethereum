@@ -7,7 +7,9 @@ using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 
 using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Crypto.Prng;
+using System.Collections.Generic;
+using System.Linq;
+using System;
 
 namespace Nethereum.Mud.EncodingDecoding
 {
@@ -120,7 +122,7 @@ namespace Nethereum.Mud.EncodingDecoding
             return GetSchemaEncodedSingleton<TValue>(tableResourceId);
         }
 
-        public static SchemaEncoded GetSchemaEncoded(byte[] tableResourceId,  List<FieldInfo> valueFields, List<FieldInfo>? keyFields = null)
+        public static SchemaEncoded GetSchemaEncoded(byte[] tableResourceId,  List<FieldInfo> valueFields, List<FieldInfo> keyFields = null)
         {
             var keyNames = new List<string>();
             var keySchema = new byte[0];
@@ -222,7 +224,7 @@ namespace Nethereum.Mud.EncodingDecoding
         }
 
 
-        public static readonly string[] SchemaAbiTypes = [
+        public static readonly string[] SchemaAbiTypes = new[] {
                                                              "uint8",
                                                               "uint16",
                                                               "uint24",
@@ -421,7 +423,7 @@ namespace Nethereum.Mud.EncodingDecoding
                                                               "address[]",
                                                               "bytes",
                                                               "string",
-                                                    ];
+        };
 
     }
 }

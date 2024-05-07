@@ -1,5 +1,6 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Nethereum.Mud.Contracts.World.ContractDefinition

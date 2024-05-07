@@ -1,4 +1,7 @@
-﻿namespace Nethereum.Mud
+﻿using System;
+using System.Collections.Generic;
+
+namespace Nethereum.Mud
 {
     public class TableTypeRegistry
     {

@@ -203,6 +203,16 @@ cd Nethereum.WalletConnect
 CALL :restorepack
 cd ..
 
+cd Nethereum.Mud
+CALL :restorepack
+cd ..
+
+cd Nethereum.Mud.Contracts
+CALL :restorepack
+cd ..
+
+
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0packages\

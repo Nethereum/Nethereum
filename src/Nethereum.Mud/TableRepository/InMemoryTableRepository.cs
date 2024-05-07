@@ -1,5 +1,9 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.EncodingDecoding;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Threading;
+using System.Linq;
 
 
 namespace Nethereum.Mud.TableRepository
@@ -101,7 +105,11 @@ namespace Nethereum.Mud.TableRepository
                 Tables[tableIdHex] = new Dictionary<string, EncodedValues>();
             }
             Tables[tableIdHex][keyHex] = encodedValues;
+#if NET451 || NETSTANDARD1_1
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public static string ConvertKeyToCommaSeparatedHex(List<byte[]> key)
@@ -136,7 +144,11 @@ namespace Nethereum.Mud.TableRepository
                 DynamicData = dynamicData
             };
 
+#if NET451 || NETSTANDARD1_1
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public byte[] SpliceBytes(byte[] data, int start, int deleteCount, byte[] newData)
@@ -217,7 +229,11 @@ namespace Nethereum.Mud.TableRepository
                     Tables[tableIdHex].Remove(keyHex);
                 }
             }
+#if NET451 || NETSTANDARD1_1
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
         public Task DeleteTableAsync(string tableIdHex)
@@ -229,7 +245,11 @@ namespace Nethereum.Mud.TableRepository
             {
                 Tables.Remove(tableIdHex);
             }
+#if NET451 || NETSTANDARD1_1
+            return Task.FromResult(0);
+#else
             return Task.CompletedTask;
+#endif
         }
 
     }

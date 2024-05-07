@@ -130,6 +130,14 @@ cd Nethereum.Model
 CALL :build
 cd ..
 
+cd Nethereum.Mud
+CALL :build
+cd ..
+
+cd Nethereum.Mud.Contracts
+CALL :build
+cd ..
+
 EXIT /B %ERRORLEVEL%
 
 :build

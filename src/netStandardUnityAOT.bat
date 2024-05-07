@@ -199,6 +199,14 @@ cd Nethereum.WalletConnect
 CALL :build
 cd ..
 
+cd Nethereum.Mud
+CALL :build
+cd ..
+
+cd Nethereum.Mud.Contracts
+CALL :build
+cd ..
+
 :build
 rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
 rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
