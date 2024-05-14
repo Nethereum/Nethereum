@@ -1,10 +1,7 @@
 ﻿using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Mud.Contracts.AccessManagementSystem.ContractDefinition;
-using Nethereum.Mud.Contracts.BalanceTransferSystem.ContractDefinition;
-using Nethereum.Mud.Contracts.BatchCallSystem.ContractDefinition;
-using Nethereum.Mud.Contracts.InitModule.ContractDefinition;
-using Nethereum.Mud.Contracts.RegistrationSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.Contracts.World.ContractDefinition;
 using Nethereum.Mud.Contracts.WorldFactory;
 using Nethereum.Mud.Contracts.WorldFactory.ContractDefinition;
@@ -14,10 +11,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Systems.BalanceTransferSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Modules.InitModule.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
+
+using Nethereum.Web3;
+
 
 
 namespace Nethereum.Mud.Contracts
 {
+
     public class WorldFactoryContractAddresses
     {
         public string AccessManagementSystemAddress { get; set; }

@@ -9,7 +9,7 @@ namespace Nethereum.Mud
         public TableRecordSingleton(string nameSpace, string tableName, bool isOffChainTable = false)
         {
             Namespace = nameSpace;
-            TableName = tableName;
+            Name = tableName;
             IsOffChain = isOffChainTable;
             Values = new TValue();
            
@@ -18,45 +18,60 @@ namespace Nethereum.Mud
         public TableRecordSingleton(string name)
         {
             Namespace = String.Empty;
-            TableName = name;
+            Name = name;
             Values = new TValue();
           
         }
         public string Namespace { get; protected set; }
-        public string TableName { get; protected set; }
+        public string Name { get; protected set; }
 
         public string GetTableNameTrimmedForResource()
         {
-            return ResourceEncoder.TrimNameAsValidSize(TableName);
+            return ResourceEncoder.TrimNameAsValidSize(Name);
         }
         public bool IsOffChain { get; protected set; }
 
-        private byte[] _resourceId;
-        public byte[] ResourceId
+        private byte[] _resourceEncoded;
+        public byte[] ResourceIdEncoded
         {
             get
             {
-                if (_resourceId == null)
+                if (_resourceEncoded == null)
                 {
                     if (IsOffChain)
                     {
-                        _resourceId = ResourceEncoder.EncodeOffchainTable(Namespace, GetTableNameTrimmedForResource());
+                        _resourceEncoded = ResourceEncoder.EncodeOffchainTable(Namespace, GetTableNameTrimmedForResource());
                     }
                     else
                     {
-                        _resourceId = ResourceEncoder.EncodeTable(Namespace, GetTableNameTrimmedForResource());
+                        _resourceEncoded = ResourceEncoder.EncodeTable(Namespace, GetTableNameTrimmedForResource());
                     }
                     
                 }
-                return _resourceId;
+                return _resourceEncoded;
             }
         }
       
         public TValue Values { get; set; }
 
+        public byte[] ResourceTypeId
+        {
+            get
+            {
+                if (IsOffChain)
+                {
+                    return Resource.RESOURCE_OFFCHAIN_TABLE;
+                }
+                else
+                {
+                    return Resource.RESOURCE_TABLE;
+                }
+            }
+        }
+
         public virtual SchemaEncoded GetSchemaEncoded()
         {
-            return SchemaEncoder.GetSchemaEncodedSingleton<TValue>(ResourceId);
+            return SchemaEncoder.GetSchemaEncodedSingleton<TValue>(ResourceIdEncoded);
         }
 
         public virtual EncodedValues  GetEncodeValues()

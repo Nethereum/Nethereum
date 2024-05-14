@@ -1,8 +1,46 @@
-﻿using System;
+﻿using Nethereum.Mud.EncodingDecoding;
+using System;
 
 namespace Nethereum.Mud
 {
-    public class Resource
+    public interface IResource
+    {
+        string Name { get; }
+        string Namespace { get; }
+        byte[] ResourceIdEncoded { get; }
+        byte[] ResourceTypeId { get; }
+    }
+
+
+    public static class IResourceExtensions
+    {
+        public static bool IsNamespace(this IResource resource)
+        {
+            return resource.ResourceTypeId[0] == Resource.RESOURCE_NAMESPACE[0] && resource.ResourceTypeId[1] == Resource.RESOURCE_NAMESPACE[1];
+        }
+
+        public static bool IsTable(this IResource resource)
+        {
+            return resource.ResourceTypeId[0] == Resource.RESOURCE_TABLE[0] && resource.ResourceTypeId[1] == Resource.RESOURCE_TABLE[1];
+        }
+
+        public static bool IsOffchainTable(this IResource resource)
+        {
+            return resource.ResourceTypeId[0] == Resource.RESOURCE_OFFCHAIN_TABLE[0] && resource.ResourceTypeId[1] == Resource.RESOURCE_OFFCHAIN_TABLE[1];
+        }
+
+        public static bool IsSystem(this IResource resource)
+        {
+            return resource.ResourceTypeId[0] == Resource.RESOURCE_SYSTEM[0] && resource.ResourceTypeId[1] == Resource.RESOURCE_SYSTEM[1];
+        }
+
+        public static bool IsRoot(this IResource resource)
+        {
+            return string.IsNullOrEmpty(resource.Namespace);
+        }
+    }
+
+    public class Resource : IResource
     {
         //bytes2 constant RESOURCE_TABLE = "tb";
         public static readonly byte[] RESOURCE_TABLE = { 0x74, 0x62 };
@@ -18,35 +56,10 @@ namespace Nethereum.Mud
         //bytes2 constant RESOURCE_SYSTEM = "sy";
         public static readonly byte[] RESOURCE_SYSTEM = { 0x73, 0x79 };
 
-        public byte[] ResourceId { get; set; }
+        public byte[] ResourceTypeId { get; set; }
         public string Namespace { get; set; } = String.Empty;
-        public string Name { get; set; } 
-        public bool IsNamespace => ResourceId[0] == RESOURCE_NAMESPACE[0] && ResourceId[1] == RESOURCE_NAMESPACE[1];
-        public bool IsTable => ResourceId[0] == RESOURCE_TABLE[0] && ResourceId[1] == RESOURCE_TABLE[1];    
-        public bool IsOffchainTable => ResourceId[0] == RESOURCE_OFFCHAIN_TABLE[0] && ResourceId[1] == RESOURCE_OFFCHAIN_TABLE[1];
-        public bool IsSystem => ResourceId[0] == RESOURCE_SYSTEM[0] && ResourceId[1] == RESOURCE_SYSTEM[1];
-        public bool IsRoot => string.IsNullOrEmpty(Namespace);
-
-        public void SetAsNamespace()
-        {
-            ResourceId = RESOURCE_NAMESPACE;
-        }
-
-        public void SetAsTable()
-        {
-            ResourceId = RESOURCE_TABLE;
-        }
-        public void SetAsOffchainTable()
-        {
-            ResourceId = RESOURCE_OFFCHAIN_TABLE;
-        }
-        public void SetAsSystem()
-        {
-            ResourceId = RESOURCE_SYSTEM;
-        }
-        public void SetAsRoot()
-        {
-            Namespace = string.Empty;
-        }   
+        public string Name { get; set; }
+        public byte[] ResourceIdEncoded { get; set; }
+       
     }
 }

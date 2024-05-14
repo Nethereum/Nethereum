@@ -14,6 +14,15 @@ namespace Nethereum.Mud.EncodingDecoding
             return name;
         }
 
+        public static string TrimNamespaceNameAsValidSize(string namespaceName)
+        {
+            if (namespaceName.Length > 14)
+            {
+                return namespaceName.Substring(0, 14);
+            }
+            return namespaceName;
+        }
+
         public static Resource Decode(byte[] resourceBytes)
         {
             var resource = new Resource();
@@ -30,7 +39,7 @@ namespace Nethereum.Mud.EncodingDecoding
             resource.Namespace = Encoding.UTF8.GetString(namespaceBytes).TrimEnd('\0');
             resource.Name = Encoding.UTF8.GetString(nameBytes).TrimEnd('\0');
 #endif
-            resource.ResourceId = resourceId;
+            resource.ResourceTypeId = resourceId;
             return resource;
         }
 
@@ -70,6 +79,10 @@ namespace Nethereum.Mud.EncodingDecoding
         }
 
 
+        public static byte[] Encode(IResource resource)
+        {
+            return Encode(resource.ResourceTypeId, resource.Namespace, resource.Name);
+        }
 
         public static byte[] Encode(byte[] typeId, string @namespace, string name = "")
         {

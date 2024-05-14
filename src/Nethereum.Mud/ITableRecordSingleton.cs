@@ -1,13 +1,12 @@
-﻿using Nethereum.Mud.EncodingDecoding;
+﻿using Nethereum.Contracts;
+using Nethereum.Mud.EncodingDecoding;
+using Nethereum.Web3;
+using System;
 
 namespace Nethereum.Mud
 {
-    public interface ITableRecordSingleton
+    public interface ITableRecordSingleton: IResource 
     {
-        byte[] ResourceId { get; }
-        string Namespace { get; }
-        string TableName { get; }
-
         void DecodeValues(byte[] staticData, byte[] encodedLengths, byte[] dynamicData);
         EncodedValues GetEncodeValues();
         void DecodeValues(EncodedValues encodedValues);

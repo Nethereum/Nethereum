@@ -29,7 +29,7 @@ namespace Nethereum.Mud
 
         public override SchemaEncoded GetSchemaEncoded()
         {
-            return SchemaEncoder.GetSchemaEncoded<TKey, TValue>(ResourceId);
+            return SchemaEncoder.GetSchemaEncoded<TKey, TValue>(ResourceIdEncoded);
         }
 
 

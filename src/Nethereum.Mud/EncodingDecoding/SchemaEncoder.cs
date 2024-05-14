@@ -80,7 +80,7 @@ namespace Nethereum.Mud.EncodingDecoding
             where TKey : class, new()
         { 
             var tableRecord = new TTableRecord();
-            var tableResourceId = tableRecord.ResourceId;
+            var tableResourceId = tableRecord.ResourceIdEncoded;
             return GetSchemaEncoded<TKey, TValue>(tableResourceId);
         }
 
@@ -118,7 +118,7 @@ namespace Nethereum.Mud.EncodingDecoding
            
         {
             var tableRecord = new TTableRecord();
-            var tableResourceId = tableRecord.ResourceId;
+            var tableResourceId = tableRecord.ResourceIdEncoded;
             return GetSchemaEncodedSingleton<TValue>(tableResourceId);
         }
 

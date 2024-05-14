@@ -15,6 +15,7 @@ namespace Nethereum.Mud.TableRepository
         Task<IEnumerable<EncodedTableRecord>> GetRecordsAsync(byte[] tableId);
         Task<IEnumerable<EncodedTableRecord>> GetRecordsAsync(string tableIdHex);
         Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>(string tableIdHex) where TTableRecord : ITableRecordSingleton, new();
+        Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>() where TTableRecord : ITableRecordSingleton, new();
         Task SetRecordAsync(byte[] tableId, byte[] key, EncodedValues encodedValues);
         Task SetRecordAsync(byte[] tableId, List<byte[]> key, byte[] staticData, byte[] encodedLengths, byte[] dynamicData);
         Task SetRecordAsync(string tableIdHex, string keyHex, byte[] staticData, byte[] encodedLengths, byte[] dynamicData);

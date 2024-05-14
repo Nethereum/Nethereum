@@ -52,7 +52,6 @@
 
   <ItemGroup>
     <None Update="nethereum-gen.settings">
-      <Generator></Generator>
     </None>
   </ItemGroup>
 

@@ -69,6 +69,12 @@ namespace Nethereum.Mud.TableRepository
             return await GetTableRecordsAsync<TTableRecord>(tableId.ToHex(true));
         }
 
+        public async Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>() where TTableRecord : ITableRecordSingleton, new()
+        {
+            var resourceIdEncoded = ResourceRegistry.GetResourceEncoded<TTableRecord>();
+            return await GetTableRecordsAsync<TTableRecord>(resourceIdEncoded.ToHex(true));
+        }
+
         public async Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>(string tableIdHex) where TTableRecord : ITableRecordSingleton, new()
         {
             tableIdHex.EnsureHexPrefix();

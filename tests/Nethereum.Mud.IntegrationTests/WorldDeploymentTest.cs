@@ -1,9 +1,7 @@
 ﻿using Nethereum.Contracts;
 using Nethereum.Mud.Contracts;
 using Nethereum.Mud.Contracts.RegistrationSystem;
-using Nethereum.Mud.Contracts.RegistrationSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.StoreEvents;
-using Nethereum.Mud.Contracts.Tables.World;
 using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Mud.TableRepository;
@@ -52,11 +50,11 @@ namespace Nethereum.Mud.IntegrationTests
             var version = await worldService.StoreVersionQueryAsStringAsync();
             Assert.Equal("2.0.0", version);
 
-            var storeLogProcessingService = new StoreEventsLogProcessingService(web3);
+            var storeLogProcessingService = new StoreEventsLogProcessingService(web3, worldAddress);
             var inMemoryStore = new InMemoryTableRepository();
-            await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, worldAddress, null, null, CancellationToken.None);
+            await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, null, null, CancellationToken.None);
 
-            var resultsSystems = await inMemoryStore.GetTableRecordsAsync<SystemsTableRecord>(new SystemsTableRecord().ResourceId);
+            var resultsSystems = await inMemoryStore.GetTableRecordsAsync<SystemsTableRecord>(new SystemsTableRecord().ResourceIdEncoded);
             Assert.True(resultsSystems.ToList().Count > 0);
 
             var registrationSystemService = new RegistrationSystemService(web3, worldAddress);
@@ -92,21 +90,21 @@ namespace Nethereum.Mud.IntegrationTests
 
             }
 
-            var storeLogProcessor = new StoreEventsLogProcessingService(web3);
+            var storeLogProcessor = new StoreEventsLogProcessingService(web3, worldAddress);
 
-            var tables = await storeLogProcessingService.GetTablesTableRecordsFromLogsAsync(worldAddress, null, null, CancellationToken.None);
+            var tables = await storeLogProcessingService.GetTablesTableRecordsFromLogsAsync(null, null, CancellationToken.None);
             var counterTableSchema = tables.Where(x => x.Keys.GetTableIdResource().Name == "Counter").FirstOrDefault();
             var itemTableSchema = tables.Where(x => x.Keys.GetTableIdResource().Name == "Item").FirstOrDefault();
 
             var counterTableResourceId = counterTableSchema.Keys.GetTableIdResource();
-            Assert.True(counterTableResourceId.IsRoot);
+            Assert.True(counterTableResourceId.IsRoot());
             var field = counterTableSchema.Values.GetValueSchemaFields().ToList()[0];
             Assert.Equal("uint32", field.Type);
             Assert.Equal(1, field.Order);
             Assert.Equal("value", field.Name);
 
             var itemTableResource = itemTableSchema.Keys.GetTableIdResource();
-            Assert.True(itemTableResource.IsRoot);
+            Assert.True(itemTableResource.IsRoot());
             var itemFields = itemTableSchema.Values.GetValueSchemaFields().ToList();
             var itemKeys = itemTableSchema.Values.GetKeySchemaFields().ToList();
 
@@ -137,7 +135,7 @@ namespace Nethereum.Mud.IntegrationTests
             var registrationIncrementSystemReceipt = await registrationSystemService.RegisterSystemRequestAndWaitForReceiptAsync(incrementSystemId, incrementSystemAddress, true);
             
 
-            var registeredFunctions = await storeLogProcessingService.GetFunctionSelectorsTableRecordsFromLogsAsync(worldAddress, null, null, CancellationToken.None);
+            var registeredFunctions = await storeLogProcessingService.GetFunctionSelectorsTableRecordsFromLogsAsync(null, null, CancellationToken.None);
             var registeredSelectors = registeredFunctions.Select(x => x.Values.SystemFunctionSelector.ToString()).ToList();
             registeredSelectors.AddRange(new SystemDefaultFunctions().GetAllFunctionSignatures().ToList());
             var incrementSystemService = new IncrementSystemService(web3, worldAddress);
@@ -152,7 +150,6 @@ namespace Nethereum.Mud.IntegrationTests
                 registerFunction.SystemId = incrementSystemId;
                 
                 await registrationSystemService.RegisterRootFunctionSelectorRequestAndWaitForReceiptAsync(registerFunction);
-                
             }
 
             await incrementSystemService.IncrementRequestAndWaitForReceiptAsync();

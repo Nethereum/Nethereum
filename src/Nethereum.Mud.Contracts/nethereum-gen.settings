@@ -1,6 +1,6 @@
 {
     "projectName": "Nethereum.Mud.Contracts",
-    "namespace": "Nethereum.Mud.Contracts",
+    "namespace": "Nethereum.Mud.Contracts.WorldNamespace",
     "lang": 0,
     "autoCodeGen": true,
     "projectPath": "." 
