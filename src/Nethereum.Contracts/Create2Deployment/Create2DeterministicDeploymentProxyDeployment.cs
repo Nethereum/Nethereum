@@ -46,11 +46,11 @@ namespace Nethereum.Contracts.Create2Deployment
 
         public static byte[] CalculateVForChainIdAsBytes(BigInteger chainId)
         {
-            return CalculateVForChainId(chainId).ToBytesForRLPEncoding();  
+            return CalculateVForChainId(chainId).ToBytesForRLPEncoding();
         }
         public static readonly byte[] DefaultR = "2222222222222222222222222222222222222222222222222222222222222222".HexToByteArray();
         public static readonly byte[] DefaultS = "2222222222222222222222222222222222222222222222222222222222222222".HexToByteArray();
-       
+
         public const string ByteCode = "604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3";
         public const string RuntimeByteCode = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3";
         public string RawTransaction { get; set; }
@@ -69,5 +69,19 @@ namespace Nethereum.Contracts.Create2Deployment
                 Address = DefaultAddress
             };
         }
+    }
+
+    public class Create2ContractDeploymentTransactionResult
+    { 
+       public bool AlreadyDeployed { get; set; }
+       public string TransactionHash { get; set; }
+       public string Address { get; set; }
+    }
+
+    public class Create2ContractDeploymentTransactionReceiptResult
+    {
+        public bool AlreadyDeployed { get; set; }
+        public string Address { get; set; }
+        public TransactionReceipt TransactionReceipt { get; set; }
     }
 }

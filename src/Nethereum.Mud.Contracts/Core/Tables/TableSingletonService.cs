@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
 using Nethereum.Mud.Contracts.Core.StoreEvents;
+using Nethereum.Mud.Contracts.Store;
 
 namespace Nethereum.Mud.Contracts.Core.Tables
 {
@@ -12,7 +13,7 @@ namespace Nethereum.Mud.Contracts.Core.Tables
         where TValue : class, new()
     {
 
-        protected TableSingletonService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
+        protected TableSingletonService(WorldNamespace world) : base(world)
         {
 
         }

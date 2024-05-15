@@ -15,9 +15,7 @@ namespace Nethereum.Mud.Contracts.World.Tables
 {
     public partial class NamespaceOwnerTableService : TableService<NamespaceOwnerTableRecord, NamespaceOwnerKey, NamespaceOwnerValue>
     {
-        public NamespaceOwnerTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
+     
 
         public NamespaceOwnerTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {

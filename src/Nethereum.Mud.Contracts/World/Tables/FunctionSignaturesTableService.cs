@@ -16,10 +16,7 @@ namespace Nethereum.Mud.Contracts.World.Tables
 
     public partial class FunctionSignaturesTableService : TableService<FunctionSignaturesTableRecord, FunctionSignaturesKey, FunctionSignaturesValue>
     {
-        public FunctionSignaturesTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
-
+       
         public FunctionSignaturesTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
         }

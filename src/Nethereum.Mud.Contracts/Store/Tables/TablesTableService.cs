@@ -16,10 +16,7 @@ namespace Nethereum.Mud.Contracts.Store.Tables
   
     public partial class TablesTableService : TableService<TablesTableRecord, TablesKey, TablesValue>
     {
-        public TablesTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-
-        }
+      
 
         public TablesTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {

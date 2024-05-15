@@ -15,9 +15,7 @@ namespace Nethereum.Mud.Contracts.World.Tables
 {
     public partial class ResourceAccessTableService : TableService<ResourceAccessTableRecord, ResourceAccessKey, ResourceAccessValue>
     {
-        public ResourceAccessTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
+      
 
         public ResourceAccessTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {

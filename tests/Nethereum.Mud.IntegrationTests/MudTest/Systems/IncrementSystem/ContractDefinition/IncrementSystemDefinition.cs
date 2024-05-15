@@ -9,7 +9,7 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
 using System.Threading;
 
-namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
+namespace Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem.ContractDefinition
 {
 
 
@@ -73,13 +73,13 @@ namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
     [Event("Store_SpliceStaticData")]
     public class StoreSplicestaticdataEventDTOBase : IEventDTO
     {
-        [Parameter("bytes32", "tableId", 1, true )]
+        [Parameter("bytes32", "tableId", 1, true)]
         public virtual byte[] TableId { get; set; }
-        [Parameter("bytes32[]", "keyTuple", 2, false )]
+        [Parameter("bytes32[]", "keyTuple", 2, false)]
         public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint48", "start", 3, false )]
+        [Parameter("uint48", "start", 3, false)]
         public virtual ulong Start { get; set; }
-        [Parameter("bytes", "data", 4, false )]
+        [Parameter("bytes", "data", 4, false)]
         public virtual byte[] Data { get; set; }
     }
 
@@ -99,7 +99,7 @@ namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
     public partial class MsgSenderOutputDTO : MsgSenderOutputDTOBase { }
 
     [FunctionOutput]
-    public class MsgSenderOutputDTOBase : IFunctionOutputDTO 
+    public class MsgSenderOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("address", "sender", 1)]
         public virtual string Sender { get; set; }
@@ -108,7 +108,7 @@ namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
     public partial class MsgValueOutputDTO : MsgValueOutputDTOBase { }
 
     [FunctionOutput]
-    public class MsgValueOutputDTOBase : IFunctionOutputDTO 
+    public class MsgValueOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "value", 1)]
         public virtual BigInteger Value { get; set; }
@@ -117,7 +117,7 @@ namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
     public partial class WorldOutputDTO : WorldOutputDTOBase { }
 
     [FunctionOutput]
-    public class WorldOutputDTOBase : IFunctionOutputDTO 
+    public class WorldOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("address", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -128,7 +128,7 @@ namespace Mud.IntegrationTests.IncrementSystem.ContractDefinition
     public partial class SupportsInterfaceOutputDTO : SupportsInterfaceOutputDTOBase { }
 
     [FunctionOutput]
-    public class SupportsInterfaceOutputDTOBase : IFunctionOutputDTO 
+    public class SupportsInterfaceOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bool", "", 1)]
         public virtual bool ReturnValue1 { get; set; }

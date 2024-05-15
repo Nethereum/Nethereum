@@ -2,6 +2,7 @@
 using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.Contracts.Extensions
 {
@@ -18,22 +19,22 @@ namespace Nethereum.Contracts
 
     public static class DeploymentMessageExtensions
     {
-        public static DeploymentMessageEncodingService<TContractMessage> GetEncodingService<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
+        public static DeploymentMessageEncodingService<TContractMessage> GetEncodingService<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage, new()
         {
             return new DeploymentMessageEncodingService<TContractMessage>();
         }
 
-        public static CallInput CreateCallInput<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
+        public static CallInput CreateCallInput<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage, new()
         {
             return GetEncodingService<TContractMessage>(contractMessage).CreateCallInput(contractMessage);
         }
 
-        public static TransactionInput CreateTransactionInput<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
+        public static TransactionInput CreateTransactionInput<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage, new()
         {
             return GetEncodingService<TContractMessage>(contractMessage).CreateTransactionInput(contractMessage);
         }
 
-        public static TContractMessage DecodeTransaction<TContractMessage>(this TContractMessage contractMessage, Transaction transaction) where TContractMessage : ContractDeploymentMessage
+        public static TContractMessage DecodeTransaction<TContractMessage>(this TContractMessage contractMessage, Transaction transaction) where TContractMessage : ContractDeploymentMessage, new()
         {
             return GetEncodingService<TContractMessage>(contractMessage).DecodeTransaction(contractMessage, transaction);
         }
@@ -44,20 +45,32 @@ namespace Nethereum.Contracts
             return GetEncodingService<TContractMessage>(contractMessage).DecodeTransaction(contractMessage, transaction);
         }
 
-        public static string GetSwarmAddressFromByteCode<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
+        public static string GetSwarmAddressFromByteCode<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage, new()
         {
             return GetEncodingService<TContractMessage>(contractMessage).GetSwarmAddressFromByteCode(contractMessage);
         }
 
-        public static bool HasASwarmAddressTheByteCode<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage
+        public static bool HasASwarmAddressTheByteCode<TContractMessage>(this TContractMessage contractMessage) where TContractMessage : ContractDeploymentMessage, new()
         {
             return GetEncodingService<TContractMessage>(contractMessage).HasASwarmAddressTheByteCode(contractMessage);
         }
 
         public static void LinkLibraries<TContractMessage>(this TContractMessage contractMessage, params ByteCodeLibrary[] byteCodeLibraries) where TContractMessage : ContractDeploymentMessage, new()
         {
-            var libraryLinker = new ByteCodeLibraryLinker();
-            contractMessage.ByteCode = libraryLinker.LinkByteCode(contractMessage.ByteCode, byteCodeLibraries);
+            contractMessage.ByteCode = ByteCodeLibraryLinker.LinkByteCode(contractMessage.ByteCode, byteCodeLibraries);
+        }
+
+        public static string CalculateCreate2Address<TContractMessage>(this TContractMessage contractMessage, string deployerAddress, string salt) where TContractMessage : ContractDeploymentMessage, new()
+        {
+            var data = GetDeploymentData(contractMessage);
+            return ContractUtils.CalculateCreate2Address(deployerAddress, salt, data.ToHex());
+        }
+
+        public static string CalculateCreate2Address<TContractMessage>(this TContractMessage contractMessage, string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries) where TContractMessage : ContractDeploymentMessage, new()
+        {
+            LinkLibraries<TContractMessage>(contractMessage, byteCodeLibraries);
+            var data = GetDeploymentData(contractMessage);
+            return ContractUtils.CalculateCreate2Address(deployerAddress, salt, data.ToHex());
         }
 
         public static byte[] GetDeploymentData<TContractMessage>(this TContractMessage contractMessage

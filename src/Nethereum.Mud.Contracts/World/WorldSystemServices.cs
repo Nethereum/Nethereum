@@ -14,7 +14,6 @@ namespace Nethereum.Mud.Contracts.World
         {
             AccessManagementSystem = new AccessManagementSystemService(web3, contractAddress);
             BalanceTransferSystem = new BalanceTransferSystemService(web3, contractAddress);
-            BatchCallSystem = new BatchCallSystemService(web3, contractAddress);
             RegistrationSystem = new RegistrationSystemService(web3, contractAddress);
             SystemServices = new List<ISystemService> { AccessManagementSystem, BalanceTransferSystem, BatchCallSystem, RegistrationSystem };
         }

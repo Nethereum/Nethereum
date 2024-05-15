@@ -10,29 +10,29 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
-using Mud.IntegrationTests.IncrementSystem.ContractDefinition;
+using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem.ContractDefinition;
 
-namespace Mud.IntegrationTests.IncrementSystem
+namespace Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem
 {
-    public partial class IncrementSystemService: ContractWeb3ServiceBase
+    public partial class IncrementSystemService : ContractWeb3ServiceBase
     {
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
             return web3.Eth.GetContractDeploymentHandler<IncrementSystemDeployment>().SendRequestAndWaitForReceiptAsync(incrementSystemDeployment, cancellationTokenSource);
         }
 
-        public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment)
+        public static Task<string> DeployContractAsync(IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment)
         {
             return web3.Eth.GetContractDeploymentHandler<IncrementSystemDeployment>().SendRequestAsync(incrementSystemDeployment);
         }
 
-        public static async Task<IncrementSystemService> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<IncrementSystemService> DeployContractAndGetServiceAsync(IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
             var receipt = await DeployContractAndWaitForReceiptAsync(web3, incrementSystemDeployment, cancellationTokenSource);
             return new IncrementSystemService(web3, receipt.ContractAddress);
         }
 
-        public IncrementSystemService(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+        public IncrementSystemService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
         }
 
@@ -41,7 +41,7 @@ namespace Mud.IntegrationTests.IncrementSystem
             return ContractHandler.QueryAsync<MsgSenderFunction, string>(msgSenderFunction, blockParameter);
         }
 
-        
+
         public Task<string> MsgSenderQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<MsgSenderFunction, string>(null, blockParameter);
@@ -52,7 +52,7 @@ namespace Mud.IntegrationTests.IncrementSystem
             return ContractHandler.QueryAsync<MsgValueFunction, BigInteger>(msgValueFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> MsgValueQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<MsgValueFunction, BigInteger>(null, blockParameter);
@@ -63,7 +63,7 @@ namespace Mud.IntegrationTests.IncrementSystem
             return ContractHandler.QueryAsync<WorldFunction, string>(worldFunction, blockParameter);
         }
 
-        
+
         public Task<string> WorldQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<WorldFunction, string>(null, blockParameter);
@@ -71,22 +71,22 @@ namespace Mud.IntegrationTests.IncrementSystem
 
         public Task<string> IncrementRequestAsync(IncrementFunction incrementFunction)
         {
-             return ContractHandler.SendRequestAsync(incrementFunction);
+            return ContractHandler.SendRequestAsync(incrementFunction);
         }
 
         public Task<string> IncrementRequestAsync()
         {
-             return ContractHandler.SendRequestAsync<IncrementFunction>();
+            return ContractHandler.SendRequestAsync<IncrementFunction>();
         }
 
         public Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(IncrementFunction incrementFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(incrementFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(incrementFunction, cancellationToken);
         }
 
         public Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync<IncrementFunction>(null, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync<IncrementFunction>(null, cancellationToken);
         }
 
         public Task<bool> SupportsInterfaceQueryAsync(SupportsInterfaceFunction supportsInterfaceFunction, BlockParameter blockParameter = null)
@@ -94,12 +94,12 @@ namespace Mud.IntegrationTests.IncrementSystem
             return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction, blockParameter);
         }
 
-        
+
         public Task<bool> SupportsInterfaceQueryAsync(byte[] interfaceId, BlockParameter blockParameter = null)
         {
             var supportsInterfaceFunction = new SupportsInterfaceFunction();
-                supportsInterfaceFunction.InterfaceId = interfaceId;
-            
+            supportsInterfaceFunction.InterfaceId = interfaceId;
+
             return ContractHandler.QueryAsync<SupportsInterfaceFunction, bool>(supportsInterfaceFunction, blockParameter);
         }
 

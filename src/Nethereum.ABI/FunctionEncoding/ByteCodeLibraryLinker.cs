@@ -25,8 +25,9 @@ namespace Nethereum.ABI.FunctionEncoding
             return ByteCodeConstants.LIBRARY_PLACEHOLDER_PREFIX + key + ByteCodeConstants.LIBRARY_PLACEHOLDER_SUFFIX;
         }
 
-        public string LinkByteCode(string byteCode, params ByteCodeLibrary[] byteCodeLibraries)
+        public static string LinkByteCode(string byteCode, params ByteCodeLibrary[] byteCodeLibraries)
         {
+            if(byteCodeLibraries == null || byteCodeLibraries.Length == 0) return byteCode;
             foreach (var byteCodeLibrary in byteCodeLibraries)
             {
                 var placeholder = CreatePlaceholder(byteCodeLibrary.PlaceholderKey);

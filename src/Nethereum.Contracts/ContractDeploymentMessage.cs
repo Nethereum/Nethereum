@@ -14,7 +14,7 @@ namespace Nethereum.Contracts
         /// <summary>
         /// ByteCode (Compiled code) used for deployment
         /// </summary>
-        public string ByteCode { get; internal set; }
+        public string ByteCode { get; set; }
 
     }
 }

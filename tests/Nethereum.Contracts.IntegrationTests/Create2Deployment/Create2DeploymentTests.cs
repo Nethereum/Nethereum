@@ -85,7 +85,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
             var address = create2DeterministicDeploymentProxyService.CalculateCreate2Address(deployment.Address, salt, contractByteCode);
             var receipt = await create2DeterministicDeploymentProxyService.DeployContractRequestAndWaitForReceiptAsync(deployment.Address, salt, contractByteCode);
-            Assert.True(await create2DeterministicDeploymentProxyService.CheckContractAlreadyDeployedAsync(address));
+            Assert.True(await create2DeterministicDeploymentProxyService.HasContractAlreadyDeployedAsync(address));
 
             var abi =
               @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
@@ -122,7 +122,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
             var address = create2DeterministicDeploymentProxyService.CalculateCreate2Address(deploymentMessage, deploymentProxyCurrentChain.Address, salt);
             var receipt = await create2DeterministicDeploymentProxyService.DeployContractRequestAndWaitForReceiptAsync(deploymentMessage, deploymentProxyCurrentChain.Address, salt);
-            Assert.True(await create2DeterministicDeploymentProxyService.CheckContractAlreadyDeployedAsync(address));
+            Assert.True(await create2DeterministicDeploymentProxyService.HasContractAlreadyDeployedAsync(address));
 
             //the "owner" of the contract is the deployment proxy so the total supply is allocated to it
             var balance = await web3.Eth.ERC20.GetContractService(address).BalanceOfQueryAsync(deploymentProxyCurrentChain.Address);

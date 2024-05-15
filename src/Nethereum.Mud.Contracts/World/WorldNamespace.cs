@@ -16,18 +16,16 @@ using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.Mud.Contracts.Core.Tables;
-using Org.BouncyCastle.Asn1.Mozilla;
 using Nethereum.Mud.Contracts.Core.Namespaces;
+using Nethereum.Mud.Contracts.Store;
 
 namespace Nethereum.Mud.Contracts.World
 {
-    public class WorldNamespace : NamespaceBase<WorldNamespaceResource, WorldSystemServices, WorldTableServices>
+    public class WorldNamespace : NamespaceCore<WorldNamespaceResource, WorldSystemServices, WorldTableServices>
     {
         public WorldService WorldService { get; protected set; }
-
-        public StoreEventsLogProcessingService StoreEventsLogProcessingService { get; protected set; }
-
-        public WorldNamespace(IWeb3 web3, string contractAddress) : base(new WorldNamespaceResource())
+        
+        public WorldNamespace(IWeb3 web3, string contractAddress) : base(new WorldNamespaceResource(), web3, contractAddress)
         {
             WorldService = new WorldService(web3, contractAddress);
             Tables = new WorldTableServices(web3, contractAddress);

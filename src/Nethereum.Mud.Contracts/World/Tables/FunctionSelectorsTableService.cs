@@ -16,9 +16,7 @@ namespace Nethereum.Mud.Contracts.World.Tables
 
     public partial class FunctionSelectorsTableService : TableService<FunctionSelectorsTableRecord, FunctionSelectorsKey, FunctionSelectorsValue>
     {
-        public FunctionSelectorsTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
+       
 
         public FunctionSelectorsTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {

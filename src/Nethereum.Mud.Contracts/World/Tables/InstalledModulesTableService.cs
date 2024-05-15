@@ -15,10 +15,7 @@ namespace Nethereum.Mud.Contracts.World.Tables
 {
     public partial class InstalledModulesTableService : TableService<InstalledModulesTableRecord, InstalledModulesKey, InstalledModulesValue>
     {
-        public InstalledModulesTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
-
+       
         public InstalledModulesTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
         }

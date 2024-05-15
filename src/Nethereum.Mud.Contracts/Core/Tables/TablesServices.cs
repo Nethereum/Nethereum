@@ -4,6 +4,7 @@ using Nethereum.RPC.Eth.DTOs;
 using System.Collections.Generic;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World;
 
 namespace Nethereum.Mud.Contracts.Core.Tables
 {

@@ -11,7 +11,7 @@ namespace Nethereum.Mud.Contracts.Store
             ResourceIdsTableService = new ResourceIdsTableService(web3, contractAddress);
             StoreHooksTableService = new StoreHooksTableService(web3, contractAddress);
             TablesTableService = new TablesTableService(web3, contractAddress);
-            TablesTableService = new TablesTableService(web3, contractAddress);
+            TableServices = new System.Collections.Generic.List<ITableServiceBase> { ResourceIdsTableService, StoreHooksTableService, TablesTableService };
         }
         public ResourceIdsTableService ResourceIdsTableService { get; protected set; }
         public StoreHooksTableService StoreHooksTableService { get; protected set; }

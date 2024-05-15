@@ -1,4 +1,5 @@
 ﻿using Nethereum.Util;
+using System.IO;
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class ByteCodeLibrary
@@ -12,12 +13,21 @@ namespace Nethereum.ABI.FunctionEncoding
         /// <returns></returns>
         public static ByteCodeLibrary CreateFromPath(string path, string libraryName, string libraryAddress)
         {
-            path = path.Replace("\\", "/");
-            var placeHolderKey = Sha3Keccack.Current.CalculateHash(path + ":" + libraryName).Substring(0, 34);
-            return new ByteCodeLibrary() { PlaceholderKey = placeHolderKey, Address = libraryAddress };
+            var library = new ByteCodeLibrary() { Address = libraryAddress, Path = path, LibraryName = libraryName };
+            library.CalculatePlaceHolderKey();
+            return library;
         }
 
         public string PlaceholderKey { get; set; }
         public string Address { get; set; }
+        public string LibraryName { get; set; }
+        public string Path { get; set; }
+        public string ByteCode { get; set; }
+
+        public void CalculatePlaceHolderKey()
+        {
+            var path = Path.Replace("\\", "/");
+            PlaceholderKey = Sha3Keccack.Current.CalculateHash(path + ":" + LibraryName).Substring(0, 34);
+        }   
     }
 }

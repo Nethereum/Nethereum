@@ -13,6 +13,8 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.MessageEncodingServices;
 
 using System.Diagnostics;
+using Nethereum.ABI.FunctionEncoding;
+using System.Threading;
 
 namespace Nethereum.Contracts.Create2Deployment
 {
@@ -140,14 +142,8 @@ namespace Nethereum.Contracts.Create2Deployment
             if (await HasProxyBeenDeployedAsync(deployment.Address)) return deployment.Address;
 
             await ValidateAndSendEnoughBalanceForProxyDeploymentAndWaitForReceiptAsync(deployment);
-            var currentLegacySetting = _ethApiContractService.TransactionManager.UseLegacyAsDefault;
-         
-            _ethApiContractService.TransactionManager.UseLegacyAsDefault = true;
-            
             var txn = await _ethApiContractService.Transactions.SendRawTransaction.SendRequestAsync(deployment.RawTransaction);
             
-            _ethApiContractService.TransactionManager.UseLegacyAsDefault = currentLegacySetting;
-
            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(txn);
             var deployed = await HasProxyBeenDeployedAsync(deployment.Address);
             if(!deployed) throw new Exception("Proxy not deployed");
@@ -172,12 +168,14 @@ namespace Nethereum.Contracts.Create2Deployment
             }
         }
 
-        public string CalculateCreate2Address<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt) where TDeploymentMessage : ContractDeploymentMessage
+        public string CalculateCreate2Address<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries) where TDeploymentMessage : ContractDeploymentMessage, new()
         {
-            var deploymentEncodingService = new DeploymentMessageEncodingService<TDeploymentMessage>();
-            var deploymentData = deploymentEncodingService.GetDeploymentData(deploymentMessage);
+            return deploymentMessage.CalculateCreate2Address(deployerProxyAddress, salt, byteCodeLibraries);
+        }
 
-            return CalculateCreate2Address(deployerProxyAddress, salt, deploymentData);
+        public string CalculateCreate2Address<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt) where TDeploymentMessage : ContractDeploymentMessage, new()
+        {
+            return deploymentMessage.CalculateCreate2Address(deployerProxyAddress, salt);
         }
 
         public string CalculateCreate2Address(string deployerProxyAddress, string salt, string contractByteCode)
@@ -185,36 +183,42 @@ namespace Nethereum.Contracts.Create2Deployment
             return ContractUtils.CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
         }
 
-        public async Task<bool> CheckContractAlreadyDeployedAsync(string deployerProxyAddress, string salt, string contractByteCode)
+        public async Task<bool> HasContractAlreadyDeployedAsync(string deployerProxyAddress, string salt, string contractByteCode)
         {
             var create2Address = CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
             var code = await _ethApiContractService.GetCode.SendRequestAsync(create2Address);
             return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
         }
 
-        public async Task<bool> CheckContractAlreadyDeployedAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
-            where TDeploymentMessage : ContractDeploymentMessage
+        public async Task<bool> HasContractAlreadyDeployedAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
+            where TDeploymentMessage : ContractDeploymentMessage, new()
         {
             var create2Address = CalculateCreate2Address(deploymentMessage, deployerProxyAddress, salt);
             var code = await _ethApiContractService.GetCode.SendRequestAsync(create2Address);
             return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
         }
 
-        public async Task<bool> CheckContractAlreadyDeployedAsync(string address)
+        public async Task<bool> HasContractAlreadyDeployedAsync(string address)
         {
             var code = await _ethApiContractService.GetCode.SendRequestAsync(address);
             return !string.IsNullOrEmpty(code?.RemoveHexPrefix());
         }
 
-        public async Task<string> DeployContractRequestAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
-            where TDeploymentMessage : ContractDeploymentMessage
+        public async Task<Create2ContractDeploymentTransactionResult> DeployContractRequestAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+            where TDeploymentMessage : ContractDeploymentMessage, new()
         {
-            if (await CheckContractAlreadyDeployedAsync(deploymentMessage, deployerProxyAddress, salt))
-                throw new Exception("Contract already deployed");
+            var address = CalculateCreate2Address(deploymentMessage, deployerProxyAddress, salt, byteCodeLibraries);
+            if (await HasContractAlreadyDeployedAsync(address))
+            {
+                return new Create2ContractDeploymentTransactionResult()
+                {
+                    Address = address,
+                    AlreadyDeployed = true
+                };
+            }
             
             var deploymentEncodingService = new DeploymentMessageEncodingService<TDeploymentMessage>();
-            var deploymentData = deploymentEncodingService.GetDeploymentData(deploymentMessage);
-
+            var deploymentData = deploymentEncodingService.GetDeploymentData(deploymentMessage, byteCodeLibraries);
 
             var transactionInput = new TransactionInput()
             {
@@ -225,44 +229,88 @@ namespace Nethereum.Contracts.Create2Deployment
 
             var gas = await _ethApiContractService.Transactions.EstimateGas.SendRequestAsync(transactionInput);
             transactionInput.Gas = gas;
-            return await _ethApiContractService.TransactionManager.SendTransactionAsync(transactionInput);
+            var txnHash = await _ethApiContractService.TransactionManager.SendTransactionAsync(transactionInput);
+            return new Create2ContractDeploymentTransactionResult()
+            {
+                TransactionHash = txnHash,
+                Address = address
+            };
         }
 
-        public async Task<TransactionReceipt> DeployContractRequestAndWaitForReceiptAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt)
-            where TDeploymentMessage : ContractDeploymentMessage
+        public async Task<Create2ContractDeploymentTransactionReceiptResult> DeployContractRequestAndWaitForReceiptAsync<TDeploymentMessage>(TDeploymentMessage deploymentMessage, string deployerProxyAddress, string salt, ByteCodeLibrary[] byteCodeLibraries = null, CancellationToken cancellationToken = default)
+            where TDeploymentMessage : ContractDeploymentMessage, new()
         {
-            var txnHash = await DeployContractRequestAsync(deploymentMessage, deployerProxyAddress, salt);
-            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(txnHash);
-            if (await CheckContractAlreadyDeployedAsync(deploymentMessage, deployerProxyAddress, salt))
+            var deploymentTransactionResult = await DeployContractRequestAsync(deploymentMessage, deployerProxyAddress, salt, byteCodeLibraries);
+            if (deploymentTransactionResult.AlreadyDeployed)
             {
-                return receipt;
+                return new Create2ContractDeploymentTransactionReceiptResult()
+                {
+                    Address = deploymentTransactionResult.Address,
+                    AlreadyDeployed = true
+                };
+            }
+            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(deploymentTransactionResult.TransactionHash,cancellationToken);
+            if (await HasContractAlreadyDeployedAsync(deploymentTransactionResult.Address))
+            {
+                return new Create2ContractDeploymentTransactionReceiptResult()
+                {
+                    Address = deploymentTransactionResult.Address,
+                    TransactionReceipt = receipt
+                };
             }
             throw new Exception("Contract not deployed");
         }
 
-        public async Task<string> DeployContractRequestAsync(string deployerProxyAddress, string salt, string contractByteCode)
+        public async Task<Create2ContractDeploymentTransactionResult> DeployContractRequestAsync(string deployerProxyAddress, string salt, string contractByteCode)
         {
-            if (await CheckContractAlreadyDeployedAsync(deployerProxyAddress, salt, contractByteCode))
-                throw new Exception("Contract already deployed");
-            var transactionInput = new TransactionInput()
+            var address = ContractUtils.CalculateCreate2Address(deployerProxyAddress, salt, contractByteCode);
+            if (await HasContractAlreadyDeployedAsync(address))
             {
-                From = _ethApiContractService.TransactionManager.Account.Address,
-                Data = salt.EnsureHexPrefix() + contractByteCode.RemoveHexPrefix(),
-                To = deployerProxyAddress
-            };
+                return new Create2ContractDeploymentTransactionResult()
+                {
+                    Address = address,
+                    AlreadyDeployed = true
+                };
+            }
+            else
+            {
+                var transactionInput = new TransactionInput()
+                {
+                    From = _ethApiContractService.TransactionManager.Account.Address,
+                    Data = salt.EnsureHexPrefix() + contractByteCode.RemoveHexPrefix(),
+                    To = deployerProxyAddress
+                };
 
-            var gas = await _ethApiContractService.Transactions.EstimateGas.SendRequestAsync(transactionInput);
-            transactionInput.Gas = gas;
-            return await _ethApiContractService.TransactionManager.SendTransactionAsync(transactionInput);
+                var gas = await _ethApiContractService.Transactions.EstimateGas.SendRequestAsync(transactionInput);
+                transactionInput.Gas = gas;
+                var txnHash = await _ethApiContractService.TransactionManager.SendTransactionAsync(transactionInput);
+                return new Create2ContractDeploymentTransactionResult()
+                {
+                    TransactionHash = txnHash,
+                    Address = address
+                };
+            }
         }
 
-        public async Task<TransactionReceipt> DeployContractRequestAndWaitForReceiptAsync(string deployerProxyAddress, string salt, string contractByteCode)
+        public async Task<Create2ContractDeploymentTransactionReceiptResult> DeployContractRequestAndWaitForReceiptAsync(string deployerProxyAddress, string salt, string contractByteCode, CancellationToken cancellationToken = default)
         {
-            var txnHash = await DeployContractRequestAsync(deployerProxyAddress, salt, contractByteCode);
-            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(txnHash);
-            if (await CheckContractAlreadyDeployedAsync(deployerProxyAddress, salt, contractByteCode))
+            var deploymentTransactionResult = await DeployContractRequestAsync(deployerProxyAddress, salt, contractByteCode);
+            if (deploymentTransactionResult.AlreadyDeployed)
             {
-                return receipt;
+                return new Create2ContractDeploymentTransactionReceiptResult()
+                {
+                    Address = deploymentTransactionResult.Address,
+                    AlreadyDeployed = true
+                };
+            }
+            var receipt = await _ethApiContractService.TransactionManager.TransactionReceiptService.PollForReceiptAsync(deploymentTransactionResult.TransactionHash, cancellationToken);
+            if (await HasContractAlreadyDeployedAsync(deploymentTransactionResult.Address))
+            {
+                return new Create2ContractDeploymentTransactionReceiptResult()
+                {
+                    Address = deploymentTransactionResult.Address,
+                    TransactionReceipt = receipt
+                };
             }
             throw new Exception("Contract not deployed");
         }

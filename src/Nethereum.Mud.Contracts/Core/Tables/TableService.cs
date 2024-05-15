@@ -19,7 +19,7 @@ namespace Nethereum.Mud.Contracts.Core.Tables
         where TValue : class, new() where TKey : class, new()
     {
 
-        protected TableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
+        protected TableService(WorldNamespace world) : base(world)
         {
 
         }

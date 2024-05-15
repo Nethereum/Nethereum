@@ -1,4 +1,5 @@
 ﻿using Nethereum.Mud.Contracts.Core.StoreEvents;
+using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Mud.TableRepository;
@@ -12,7 +13,6 @@ namespace Nethereum.Mud.Contracts.Core.Tables
     public interface ITableServiceBase
     {
         IResource Resource { get; }
-        StoreEventsLogProcessingService StoreEventsLogProcessingService { get; }
 
         SystemCallData GetRegisterTableFunctionBatchSystemCallData();
         SchemaEncoded GetSchemaEncoded();

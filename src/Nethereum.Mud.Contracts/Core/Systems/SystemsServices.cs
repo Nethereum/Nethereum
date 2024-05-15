@@ -5,12 +5,21 @@ using System.Collections.Generic;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Tables;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Contracts.Create2Deployment;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
+
+    public class SystemDeploymentResult
+    {
+        public  Create2ContractDeploymentTransactionResult DeploymentResult { get; set; }
+        public ISystemService SystemService { get; set; }
+    }
+
     public abstract class SystemsServices
     {
-        protected BatchCallSystemService BatchCallSystem { get; set; }
+        public BatchCallSystemService BatchCallSystem { get; protected set; }
 
         public List<ISystemService> SystemServices { get; protected set; }
 
@@ -24,11 +33,23 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         public IWeb3 Web3 { get; protected set; }
         public string ContractAddress { get; protected set; }
 
-        public async Task<string> BatchRegisterAllSystemsRequestAsync(string deployedAddress, bool publicAccess = true, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
+        public async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+        {
+            var results = new List<SystemDeploymentResult>();   
+            foreach (var systemService in SystemServices)
+            {
+                var result = await systemService.DeployCreate2ContractAsync(deployerAddress, salt, byteCodeLibraries);
+                results.Add(new SystemDeploymentResult { DeploymentResult = result, SystemService = systemService });
+            }
+            return results;
+        }
+
+        public async Task<string> BatchRegisterAllSystemsRequestAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries= null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
         {
             var systemCallData = new List<SystemCallData>();
             foreach (var systemService in SystemServices)
             {
+                var deployedAddress = systemService.CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);
                 var registrator = systemService.SystemServiceResourceRegistrator;
                 var callData = registrator.CreateRegisterSystemAndRegisterRootFunctionSelectorsBatchSystemCallData(deployedAddress, publicAccess, excludedFunctionSelectorRecords, excludeDefaultSystemFunctions);
                 systemCallData.AddRange(callData);
@@ -36,11 +57,12 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             return await BatchCallSystem.BatchCallRequestAsync(systemCallData);
         }
 
-        public async Task<TransactionReceipt> BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(string deployedAddress, bool publicAccess = true, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
+        public async Task<TransactionReceipt> BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries = null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
         {
             var systemCallData = new List<SystemCallData>();
             foreach (var systemService in SystemServices)
             {
+                var deployedAddress = systemService.CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);
                 var registrator = systemService.SystemServiceResourceRegistrator;
                 var callData = registrator.CreateRegisterSystemAndRegisterRootFunctionSelectorsBatchSystemCallData(deployedAddress, publicAccess, excludedFunctionSelectorRecords, excludeDefaultSystemFunctions);
                 systemCallData.AddRange(callData);

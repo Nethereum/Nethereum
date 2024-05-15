@@ -15,9 +15,6 @@ namespace Nethereum.Mud.Contracts.World.Tables
 {
     public partial class InitModuleAddressTableService : TableSingletonService<InitModuleAddressTableRecord, InitModuleAddressValue>
     {
-        public InitModuleAddressTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-        }
 
         public InitModuleAddressTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {

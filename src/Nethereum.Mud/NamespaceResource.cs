@@ -10,6 +10,10 @@ namespace Nethereum.Mud
 
         public string GetNamespaceNameTrimmedForResource()
         {
+            if(Namespace == null)
+            {
+                return string.Empty;
+            }
             return ResourceEncoder.TrimNamespaceNameAsValidSize(Namespace);
         }
 

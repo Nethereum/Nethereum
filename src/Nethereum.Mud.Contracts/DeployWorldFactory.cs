@@ -45,47 +45,46 @@ namespace Nethereum.Mud.Contracts
                 ?? throw new Exception("WorldDeployedEvent not found in transaction receipt");
             return log.Event;
         }
-      
+
         public async Task<WorldFactoryContractAddresses> DeployWorldFactoryContractAndSystemDependenciesAsync(Nethereum.Web3.IWeb3 web3, string create2DeployerAddress, string salt)
         {
             var create2ProxyDeployerService = web3.Eth.Create2DeterministicDeploymentProxyService;
             var accessManagementSystemDeployment = new AccessManagementSystemDeployment();
-            var accessManagementSystemAddress = create2ProxyDeployerService.CalculateCreate2Address(accessManagementSystemDeployment, create2DeployerAddress, salt);
-            var accessManagementSystemTxnHash = await create2ProxyDeployerService.DeployContractRequestAsync(accessManagementSystemDeployment, create2DeployerAddress, salt);
+            var accessManagementDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAsync(accessManagementSystemDeployment, create2DeployerAddress, salt);
+
 
             var balanceTransferSystemDeployment = new BalanceTransferSystemDeployment();
-            var balanceTransferSystemAddress = create2ProxyDeployerService.CalculateCreate2Address(balanceTransferSystemDeployment, create2DeployerAddress, salt);
-            var balanceTransferSystemTxnHash = await create2ProxyDeployerService.DeployContractRequestAsync(balanceTransferSystemDeployment, create2DeployerAddress, salt);
+            var balanceTransferDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAsync(balanceTransferSystemDeployment, create2DeployerAddress, salt);
 
             var batchCallSystemDeployment = new BatchCallSystemDeployment();
-            var batchCallSystemAddress = create2ProxyDeployerService.CalculateCreate2Address(batchCallSystemDeployment, create2DeployerAddress, salt);
-            var batchCallSystemTxnHash = await create2ProxyDeployerService.DeployContractRequestAsync(batchCallSystemDeployment, create2DeployerAddress, salt);
+            var batchCallSystemDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAsync(batchCallSystemDeployment, create2DeployerAddress, salt);
+
 
             var registrationSystemDeployment = new RegistrationSystemDeployment();
-            var registrationSystemAddress = create2ProxyDeployerService.CalculateCreate2Address(registrationSystemDeployment, create2DeployerAddress, salt);
-            var registrationSystemTxnHash = await create2ProxyDeployerService.DeployContractRequestAsync(registrationSystemDeployment, create2DeployerAddress, salt);
+            var registrationSystemDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAsync(registrationSystemDeployment, create2DeployerAddress, salt);
 
             var initModuleDeployment = new InitModuleDeployment();
-            initModuleDeployment.AccessManagementSystem = accessManagementSystemAddress;
-            initModuleDeployment.BalanceTransferSystem = balanceTransferSystemAddress;
-            initModuleDeployment.BatchCallSystem = batchCallSystemAddress;
-            initModuleDeployment.RegistrationSystem = registrationSystemAddress;
-            var initModuleAddress = create2ProxyDeployerService.CalculateCreate2Address(initModuleDeployment, create2DeployerAddress, salt);
-            var initModuleTxnHash = await create2ProxyDeployerService.DeployContractRequestAsync(initModuleDeployment, create2DeployerAddress, salt);
+            initModuleDeployment.AccessManagementSystem = accessManagementDeploymentResult.Address;
+            initModuleDeployment.BalanceTransferSystem = balanceTransferDeploymentResult.Address;
+            initModuleDeployment.BatchCallSystem = batchCallSystemDeploymentResult.Address;
+            initModuleDeployment.RegistrationSystem = registrationSystemDeploymentResult.Address; ;
 
+            var initModuleDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAsync(initModuleDeployment, create2DeployerAddress, salt);
+
+            
             var worldFactoryDeployment = new WorldFactoryDeployment();
-            worldFactoryDeployment.InitModule = initModuleAddress;
-            var worldFactoryAddress = create2ProxyDeployerService.CalculateCreate2Address(worldFactoryDeployment, create2DeployerAddress, salt);
-            var worldFactoryTransactionReceipt = await create2ProxyDeployerService.DeployContractRequestAndWaitForReceiptAsync(worldFactoryDeployment, create2DeployerAddress, salt);  
+            worldFactoryDeployment.InitModule = initModuleDeploymentResult.Address;
+
+            var worldFactoryDeploymentResult = await create2ProxyDeployerService.DeployContractRequestAndWaitForReceiptAsync(worldFactoryDeployment, create2DeployerAddress, salt);
             
             return new WorldFactoryContractAddresses
             {
-                AccessManagementSystemAddress = accessManagementSystemAddress,
-                BalanceTransferSystemAddress = balanceTransferSystemAddress,
-                BatchCallSystemAddress = batchCallSystemAddress,
-                RegistrationSystemAddress = registrationSystemAddress,
-                InitModuleAddress = initModuleAddress,
-                WorldFactoryAddress = worldFactoryAddress
+                AccessManagementSystemAddress = accessManagementDeploymentResult.Address,
+                BalanceTransferSystemAddress = balanceTransferDeploymentResult.Address,
+                BatchCallSystemAddress = batchCallSystemDeploymentResult.Address,
+                RegistrationSystemAddress = registrationSystemDeploymentResult.Address,
+                InitModuleAddress = initModuleDeploymentResult.Address,
+                WorldFactoryAddress = worldFactoryDeploymentResult.Address
             };
 
         }

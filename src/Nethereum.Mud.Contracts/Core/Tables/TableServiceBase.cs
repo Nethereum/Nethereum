@@ -10,6 +10,8 @@ using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Mud.Contracts.Core.StoreEvents;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
+using Nethereum.Mud.Contracts.Store;
 
 namespace Nethereum.Mud.Contracts.Core.Tables
 {
@@ -18,19 +20,23 @@ namespace Nethereum.Mud.Contracts.Core.Tables
        where TTableRecordSingleton : TableRecordSingleton<TValue>, new()
        where TValue : class, new()
     {
+        protected StoreEventsLogProcessingService StoreEventsLogProcessingService { get; set; }
+        protected RegistrationSystemService RegistrationSystemService { get; set; }
 
-        public TableServiceBase(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService)
+        protected WorldService WorldService { get; set; }
+
+        public TableServiceBase(WorldNamespace world)
         {
-            WorldService = worldService;
-            StoreEventsLogProcessingService = storeEventsLogProcessingService;
-            RegistrationSystemService = registrationSystemService;
+            StoreEventsLogProcessingService = new StoreEventsLogProcessingService(world.Web3, world.ContractAddress);
+            RegistrationSystemService = world.Systems.RegistrationSystem;
+            WorldService = world.WorldService;
         }
 
         public TableServiceBase(IWeb3 web3, string contractAddress)
         {
-            WorldService = new WorldService(web3, contractAddress);
-            StoreEventsLogProcessingService = new StoreEventsLogProcessingService(web3, contractAddress);
             RegistrationSystemService = new RegistrationSystemService(web3, contractAddress);
+            StoreEventsLogProcessingService = new StoreEventsLogProcessingService(web3, contractAddress);
+            WorldService = new WorldService(web3, contractAddress);
         }
 
         public IResource Resource
@@ -41,14 +47,9 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             }
         }
 
-        public WorldService WorldService { get; protected set; }
-        public StoreEventsLogProcessingService StoreEventsLogProcessingService { get; protected set; }
-
-        public RegistrationSystemService RegistrationSystemService { get; protected set; }
-
-        public virtual Task<IEnumerable<TTableRecordSingleton>> GetRecordsFromLogsAsync(BigInteger? fromBlockNumber,
-                                                                          BigInteger? toBlockNumber,
-                                                                          CancellationToken cancellationToken,
+        public virtual Task<IEnumerable<TTableRecordSingleton>> GetRecordsFromLogsAsync(BigInteger? fromBlockNumber = null,
+                                                                          BigInteger? toBlockNumber = null,
+                                                                          CancellationToken cancellationToken = default,
                                                                           int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
                                                                           int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {

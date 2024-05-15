@@ -114,7 +114,7 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
         }
 
 
-        public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+        public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber = null, BigInteger? toBlockNumber = null, CancellationToken cancellationToken =default, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
                        int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
             var topics = new List<object>

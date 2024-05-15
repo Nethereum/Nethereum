@@ -6,7 +6,7 @@ using Nethereum.RPC.Eth.DTOs;
 namespace Nethereum.Contracts.MessageEncodingServices
 {
     public class DeploymentMessageEncodingService<TContractDeployment> : 
-        IContractMessageTransactionInputCreator<TContractDeployment> where TContractDeployment: ContractDeploymentMessage
+        IContractMessageTransactionInputCreator<TContractDeployment> where TContractDeployment: ContractDeploymentMessage, new()
     {
         protected DeployContractTransactionBuilder DeployContractTransactionBuilder { get; set; }
         protected ConstructorCallDecoder ConstructorCallDecoder { get; set; }
@@ -39,6 +39,12 @@ namespace Nethereum.Contracts.MessageEncodingServices
             transactionInput.Nonce = contractMessage.GetHexNonce();
 
             return transactionInput;
+        }
+
+        public string GetDeploymentData(TContractDeployment contractMessage, params ByteCodeLibrary[] byteCodeLibraries)
+        {
+            contractMessage.LinkLibraries(byteCodeLibraries);
+            return DeployContractTransactionBuilder.GetData(contractMessage.ByteCode, contractMessage);
         }
 
         public string GetDeploymentData(TContractDeployment contractMessage)

@@ -1,27 +1,30 @@
-using Nethereum.Mud.Contracts.World;
-using System.Diagnostics;
-using Nethereum.ABI.Decoders;
 using Nethereum.Contracts;
-using Nethereum.Contracts.CQS;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.RLP;
-using Nethereum.Util;
-using Nethereum.ABI;
-using Nethereum.Mud.Contracts.AccessManagementSystem;
-using static Nethereum.Mud.IntegrationTests.WorldServiceTests.CounterTable;
-using static Nethereum.Mud.IntegrationTests.WorldServiceTests.ItemTable;
-using Nethereum.Mud.Contracts.World.ContractDefinition;
-using Nethereum.Hex.HexConvertors.Extensions;
-using static Nethereum.Mud.Contracts.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace.Tables.ResourceAccessTableRecord;
-using Nethereum.Web3;
-using Nethereum.Mud.Contracts.StoreEvents;
-using Nethereum.Mud.TableRepository;
+using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.EncodingDecoding;
+using Nethereum.Mud.TableRepository;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.XUnitEthereumClients;
+using Nethereum.Hex.HexConvertors.Extensions;
+using System.Diagnostics;
+using Nethereum.Mud.IntegrationTests.MudTest.Tables;
+using Nethereum.Mud.IntegrationTests.MudTest.Systems;
+using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem;
+using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem.ContractDefinition;
+using Nethereum.Mud.Contracts;
+using Nethereum.Mud.Contracts.Core.StoreEvents;
+using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
+using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
+using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.Mud.Contracts.Store.Tables;
-using Nethereum.Mud.Contracts.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace;
-using Nethereum.Mud.Contracts.WorldNamespace.WorldNamespace.WorldNamespace.WorldNamespace;
-using Nethereum.Mud.Contracts.WorldNamespace.WorldNamespace.WorldNamespace;
-using Nethereum.Mud.Contracts.WorldNamespace.WorldNamespace;
+using Nethereum.Mud.Contracts.Core.Systems;
+using Nethereum.Mud.Contracts.Core.Namespaces;
+using Nethereum.Web3;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Util;
+using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
+using Nethereum.ABI;
+using Nethereum.RLP;
+
 
 namespace Nethereum.Mud.IntegrationTests
 {
@@ -93,12 +96,12 @@ namespace Nethereum.Mud.IntegrationTests
         [Fact]
         public void ShouldGenerateResourceIdsOnDifferentAbstractImplementations()
         {
-            var counterTableResourceId = new CounterTable().ResourceIdEncoded;
-            var counterTableResourceId2 = ResourceRegistry.GetResourceEncoded<CounterTable>();
+            var counterTableResourceId = new CounterTableRecord().ResourceIdEncoded;
+            var counterTableResourceId2 = ResourceRegistry.GetResourceEncoded<CounterTableRecord>();
             Assert.Equal(counterTableResourceId.ToHex(), counterTableResourceId2.ToHex());
 
-            var itemTableResourceId = new ItemTable().ResourceIdEncoded;
-            var itemTableResourceId2 = ResourceRegistry.GetResourceEncoded<ItemTable>();
+            var itemTableResourceId = new ItemTableRecord().ResourceIdEncoded;
+            var itemTableResourceId2 = ResourceRegistry.GetResourceEncoded<ItemTableRecord>();
             Assert.Equal(itemTableResourceId.ToHex(), itemTableResourceId2.ToHex());
 
             Assert.NotEqual(counterTableResourceId.ToHex(), itemTableResourceId.ToHex());
@@ -119,7 +122,7 @@ namespace Nethereum.Mud.IntegrationTests
         {
             var worldService = GetWorldService();
             var receipt = await worldService.ContractHandler.SendRequestAndWaitForReceiptAsync(new IncrementFunction());
-            var record = await worldService.GetRecordTableQueryAsync<CounterTable, CounterValue>(new CounterTable());
+            var record = await worldService.GetRecordTableQueryAsync<CounterTableRecord, CounterTableRecord.CounterValue>(new CounterTableRecord());
             Assert.True(record.Values.Value > 0);
         }
 
@@ -132,7 +135,7 @@ namespace Nethereum.Mud.IntegrationTests
 
             //first we are going to try to set the record on the resource table without direct table access
             var resourceAccess = new ResourceAccessTableRecord();
-            resourceAccess.Keys.ResourceId = new CounterTable().ResourceIdEncoded;
+            resourceAccess.Keys.ResourceId = new CounterTableRecord().ResourceIdEncoded;
             resourceAccess.Keys.Caller = UserAccount;
             resourceAccess.Values.Access = true;
             try
@@ -152,33 +155,33 @@ namespace Nethereum.Mud.IntegrationTests
             //using the access management system
             //first owner account 
             var accessSystem = new AccessManagementSystemService(worldService.Web3, worldService.ContractAddress);
-            var receipt2 = await accessSystem.GrantAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTable>(), worldService.Web3.TransactionManager.Account.Address);
+            var receipt2 = await accessSystem.GrantAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTableRecord>(), worldService.Web3.TransactionManager.Account.Address);
             var resourceAccessTable = new ResourceAccessTableRecord();
-            resourceAccessTable.Keys.ResourceId = ResourceRegistry.GetResourceEncoded<CounterTable>();
+            resourceAccessTable.Keys.ResourceId = ResourceRegistry.GetResourceEncoded<CounterTableRecord>();
             resourceAccessTable.Keys.Caller = worldService.Web3.TransactionManager.Account.Address;
-            var record = await worldService.GetRecordTableQueryAsync<ResourceAccessTableRecord, ResourceAccessKey, ResourceAccessValue>(resourceAccessTable);
+            var record = await worldService.GetRecordTableQueryAsync<ResourceAccessTableRecord, ResourceAccessTableRecord.ResourceAccessKey, ResourceAccessTableRecord.ResourceAccessValue>(resourceAccessTable);
             Assert.True(record.Values.Access);
 
             //then another account
-            var receipt3 = await accessSystem.GrantAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTable>(), UserAccount);
+            var receipt3 = await accessSystem.GrantAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTableRecord>(), UserAccount);
             resourceAccessTable.Keys.Caller = UserAccount;
-            record = await worldService.GetRecordTableQueryAsync<ResourceAccessTableRecord, ResourceAccessKey, ResourceAccessValue>(resourceAccessTable);
+            record = await worldService.GetRecordTableQueryAsync<ResourceAccessTableRecord, ResourceAccessTableRecord.ResourceAccessKey, ResourceAccessTableRecord.ResourceAccessValue>(resourceAccessTable);
             Assert.True(record.Values.Access);
 
             //we can now set the value using the user account directly in the table counter
-            var counterTable = new CounterTable();
+            var counterTable = new CounterTableRecord();
             counterTable.Values.Value = 2500;
             var worldServiceUser = GetUserWorldService();
            
             receipt3 = await worldServiceUser.SetRecordRequestAndWaitForReceiptAsync(counterTable); 
-            var recordCounter = await worldService.GetRecordTableQueryAsync<CounterTable, CounterValue>(new CounterTable());
+            var recordCounter = await worldService.GetRecordTableQueryAsync<CounterTableRecord, CounterTableRecord.CounterValue>(new CounterTableRecord());
             Assert.True(recordCounter.Values.Value == 2500);
 
             //revoke access
-            var receipt4 = await accessSystem.RevokeAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTable>(), UserAccount);
+            var receipt4 = await accessSystem.RevokeAccessRequestAndWaitForReceiptAsync(ResourceRegistry.GetResourceEncoded<CounterTableRecord>(), UserAccount);
 
             //we cannot set the value anymore
-            var counterTable2 = new CounterTable();
+            var counterTable2 = new CounterTableRecord();
             counterTable2.Values.Value = 3000;
             try
             {
@@ -194,7 +197,7 @@ namespace Nethereum.Mud.IntegrationTests
 
             //but we can still set the value using the system as it is open
             var receipt6 = await worldServiceUser.ContractHandler.SendRequestAndWaitForReceiptAsync(new IncrementFunction());
-            recordCounter = await worldService.GetRecordTableQueryAsync<CounterTable, CounterValue>(new CounterTable());
+            recordCounter = await worldService.GetRecordTableQueryAsync<CounterTableRecord, CounterTableRecord.CounterValue>(new CounterTableRecord());
             //the value should have been incremented by 1 of the previous value we set 2000
             Assert.True(recordCounter.Values.Value == 2501);
 
@@ -202,47 +205,11 @@ namespace Nethereum.Mud.IntegrationTests
 
 
 
-        public class CounterTable : TableRecordSingleton<CounterValue>
-        {
-
-            public CounterTable() : base("Counter")
-            {
-            }
-            public class CounterValue
-            {
-                [Parameter("uint32", "value", 1)]
-                public int Value { get; set; }
-            }
-
-        }
+       
 
        
 
-        public class ItemTable:TableRecord<ItemKey, ItemValue>
-        {
-            public ItemTable() : base("Item")
-            {
-                
-            }
-
-            public class ItemKey
-            {
-                [Parameter("uint32", "id", 1)]
-                public int Id { get; set; }
-            }
-
-            public class ItemValue
-            {
-                [Parameter("uint32", "price", 1)]
-                public int Price { get; set; }
-                [Parameter("string", "name", 2)]
-                public string Name { get; set; }
-                [Parameter("string", "description", 3)]
-                public string Description { get; set; }
-                [Parameter("string", "owner", 4)]
-                public string Owner { get; set; }
-            }
-        }   
+        
 
         [Fact]
         public async Task ShouldSetRecord()
@@ -259,16 +226,16 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldSetAndGetRecordTableItem()
         {
             var worldService = GetWorldService();
-            var itemTable = new ItemTable();
+            var itemTable = new ItemTableRecord();
             itemTable.Values.Name = "Item1";
             itemTable.Values.Price = 100;
             itemTable.Values.Description = "Description";
             itemTable.Values.Owner = "Owner";
             itemTable.Keys.Id = 1;
             var receipt = await worldService.SetRecordRequestAndWaitForReceiptAsync(itemTable);
-            var returnedItem = new ItemTable();
+            var returnedItem = new ItemTableRecord();
             returnedItem.Keys.Id = 1;
-            returnedItem = await worldService.GetRecordTableQueryAsync<ItemTable, ItemKey, ItemValue>(returnedItem);
+            returnedItem = await worldService.GetRecordTableQueryAsync<ItemTableRecord, ItemTableRecord.ItemKey, ItemTableRecord.ItemValue>(returnedItem);
             Assert.Equal("Item1", returnedItem.Values.Name);
             Assert.Equal(100, returnedItem.Values.Price);
             Assert.Equal("Description", returnedItem.Values.Description);
@@ -280,7 +247,7 @@ namespace Nethereum.Mud.IntegrationTests
         public async Task ShouldSetRecordTable()
         {
             var worldService = GetWorldService();
-            var counterTable = new CounterTable();
+            var counterTable = new CounterTableRecord();
             counterTable.Values.Value = 10;
             var receipt = await worldService.SetRecordRequestAndWaitForReceiptAsync(counterTable);
             var record = await worldService.GetRecordQueryAsync("Counter");
@@ -293,17 +260,17 @@ namespace Nethereum.Mud.IntegrationTests
             var storeLogProcessingService = new StoreEventsLogProcessingService(web3, WorldAddress);
             var setRecords = await storeLogProcessingService.GetAllSetRecordForTable( "Counter", null, null, CancellationToken.None);
 
-            var counterTable0 = new CounterTable();
+            var counterTable0 = new CounterTableRecord();
             counterTable0.DecodeValues(setRecords[0].Event.StaticData, setRecords[0].Event.EncodedLengths, setRecords[0].Event.DynamicData);
             Assert.True(counterTable0.Values.Value > 0);
 
-            var counterTable1 = new CounterTable();
+            var counterTable1 = new CounterTableRecord();
             counterTable1.DecodeValues(setRecords[1].Event.StaticData, setRecords[1].Event.EncodedLengths, setRecords[1].Event.DynamicData);
             Assert.True(counterTable0.Values.Value > 0);
 
             foreach (var setRecord in setRecords)
             {
-                var counterTable = new CounterTable(); 
+                var counterTable = new CounterTableRecord(); 
                 counterTable.DecodeValues(setRecord.Event.StaticData, setRecord.Event.EncodedLengths, setRecord.Event.DynamicData);
                 Debug.WriteLine(counterTable.Values.Value);
                 Assert.True(counterTable.Values.Value > 0);
@@ -318,9 +285,9 @@ namespace Nethereum.Mud.IntegrationTests
             var web3 = GetWeb3();
             var storeLogProcessingService = new StoreEventsLogProcessingService(web3, WorldAddress);
             var inMemoryStore = new InMemoryTableRepository();
-            var tableId = new CounterTable().ResourceIdEncoded;
+            var tableId = new CounterTableRecord().ResourceIdEncoded;
             await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, null, null, CancellationToken.None);
-            var results = await inMemoryStore.GetTableRecordsAsync<CounterTable>(tableId);
+            var results = await inMemoryStore.GetTableRecordsAsync<CounterTableRecord>(tableId);
 
             Assert.True(results.ToList()[0].Values.Value> 0);
 
@@ -352,7 +319,7 @@ namespace Nethereum.Mud.IntegrationTests
                 Debug.WriteLine(result.Values.Owner);
             }
 
-            var itemTableResults = await inMemoryStore.GetTableRecordsAsync<ItemTable>(new ItemTable().ResourceIdEncoded);
+            var itemTableResults = await inMemoryStore.GetTableRecordsAsync<ItemTableRecord>(new ItemTableRecord().ResourceIdEncoded);
             Assert.True(itemTableResults.ToList().Count >= 0); // we many not have set a record yet
             foreach (var result in itemTableResults)
             {
@@ -371,9 +338,9 @@ namespace Nethereum.Mud.IntegrationTests
             var web3 = GetWeb3();
             var storeLogProcessingService = new StoreEventsLogProcessingService(web3, WorldAddress);
             var inMemoryStore = new InMemoryTableRepository();
-            var tableId = new CounterTable().ResourceIdEncoded;
+            var tableId = new CounterTableRecord().ResourceIdEncoded;
             await storeLogProcessingService.ProcessAllStoreChangesAsync(inMemoryStore, tableId, null, null, CancellationToken.None);
-            var results = await inMemoryStore.GetTableRecordsAsync<CounterTable>(tableId);
+            var results = await inMemoryStore.GetTableRecordsAsync<CounterTableRecord>(tableId);
 
             Assert.True(results.ToList()[0].Values.Value > 0);
 
@@ -397,7 +364,7 @@ namespace Nethereum.Mud.IntegrationTests
 
                 if(recordTableId.Name == "Counter")
                 {
-                    Assert.True(recordTableId.IsRoot);
+                    Assert.True(recordTableId.IsRoot());
                     var field = result.Values.GetValueSchemaFields().ToList()[0];
                     Assert.Equal("uint32", field.Type);
                     Assert.Equal(1, field.Order);
@@ -406,7 +373,7 @@ namespace Nethereum.Mud.IntegrationTests
 
                 if(recordTableId.Name == "Item")
                 {
-                    Assert.True(recordTableId.IsRoot);
+                    Assert.True(recordTableId.IsRoot());
                     var fields = result.Values.GetValueSchemaFields().ToList();
                    
                     Assert.Equal("uint32", fields[0].Type);

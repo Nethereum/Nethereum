@@ -13,11 +13,7 @@ namespace Nethereum.Mud.Contracts.Store.Tables
 {
     public partial class StoreHooksTableService : TableService<StoreHooksTableRecord, StoreHooksKey, StoreHooksValue>
     {
-        public StoreHooksTableService(WorldService worldService, StoreEventsLogProcessingService storeEventsLogProcessingService, RegistrationSystemService registrationSystemService) : base(worldService, storeEventsLogProcessingService, registrationSystemService)
-        {
-
-        }
-
+       
         public StoreHooksTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
 
