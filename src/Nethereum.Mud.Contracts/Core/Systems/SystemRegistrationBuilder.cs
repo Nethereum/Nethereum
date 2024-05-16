@@ -44,7 +44,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             {
                 excludedRegisteredSelectors.AddRange(new SystemDefaultFunctions().GetAllFunctionSignatures().ToList());
             }
-            excludedRegisteredSelectors.AddRange(new SystemDefaultFunctions().GetAllFunctionSignatures().ToList());
+          
             var functionAbis = functionABIs;
             var functionSelectorsToRegister = functionAbis.Where(x => !excludedRegisteredSelectors.Any(y => y.IsTheSameHex(x.Sha3Signature))).ToList();
 
@@ -55,6 +55,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
                 registerFunction.SystemFunctionSignature = functionSelectorToRegister.Signature;
                 registerFunction.WorldFunctionSignature = functionSelectorToRegister.Signature;
                 registerFunction.SystemId = systemResourceId;
+                registerFunctionSelectors.Add(registerFunction);
             }
             return registerFunctionSelectors;
         }
@@ -73,7 +74,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             var registerSystemFunction = new RegisterSystemFunction();
             registerSystemFunction.SystemId = systemServiceResourceRegistration.Resource.ResourceIdEncoded;
             registerSystemFunction.System = deployedAddress;
-            registerSystemFunction.PublicAccess = true;
+            registerSystemFunction.PublicAccess = publicAccess;
             return registerSystemFunction;
         }
 

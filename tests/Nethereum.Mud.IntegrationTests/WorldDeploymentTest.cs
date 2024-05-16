@@ -231,14 +231,13 @@ namespace Nethereum.Mud.IntegrationTests
             var registrationSystemService = world.Systems.RegistrationSystem;
             //TODO NAMESPACE registration in NamespaceService
            
-                var nameSpaceReceipt = registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
+              var nameSpaceReceipt = registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
                     ResourceEncoder.EncodeNamesapce(String.Empty));
             
 
            
             await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
-           
-           // await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
+         
             
             var tables = await store.Tables.TablesTableService.GetRecordsFromLogsAsync();
 
@@ -277,23 +276,8 @@ namespace Nethereum.Mud.IntegrationTests
 
 
             var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAsync(addressDeployer, salt);
-            try
-            {
-                var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
-            }
-            catch (SmartContractCustomErrorRevertException e)
-            {
-                var errorTypes = registrationSystemService.GetAllErrorTypes();
-                foreach (var errorType in errorTypes)
-                {
-                    if (e.IsCustomErrorFor(errorType))
-                    {
-                        Debug.WriteLine(errorType.ToString());
-                        throw;
-                    }
-                }
-
-            }
+            var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
+            
             await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
 
             var counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
