@@ -7,6 +7,8 @@ namespace Nethereum.RPC.NonceServices
     public interface INonceService
     {
         IClient Client { get; set; }
+        bool UseLatestTransactionsOnly { get; set; }
+
         Task<HexBigInteger> GetNextNonceAsync();
         Task ResetNonceAsync();
     }

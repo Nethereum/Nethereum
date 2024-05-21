@@ -17,6 +17,7 @@ namespace Nethereum.RPC.NonceServices
         public IClient Client { get; set; }
         private readonly string _account;
         private SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1,1);
+        public bool UseLatestTransactionsOnly { get; set; } = false;
 
         public InMemoryNonceService(string account, IClient client)
         {
@@ -32,7 +33,13 @@ namespace Nethereum.RPC.NonceServices
             await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
             try
             {
-                var nonce = await ethGetTransactionCount.SendRequestAsync(_account, BlockParameter.CreatePending())
+
+                var blockParameter = BlockParameter.CreatePending();
+                if(UseLatestTransactionsOnly)
+                {
+                    blockParameter = BlockParameter.CreateLatest();
+                }
+                var nonce = await ethGetTransactionCount.SendRequestAsync(_account, blockParameter)
                     .ConfigureAwait(false);
                 if (nonce.Value <= CurrentNonce)
                 {
