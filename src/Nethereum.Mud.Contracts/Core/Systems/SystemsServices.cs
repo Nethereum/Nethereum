@@ -7,6 +7,7 @@ using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Contracts.Create2Deployment;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
@@ -33,7 +34,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         public IWeb3 Web3 { get; protected set; }
         public string ContractAddress { get; protected set; }
 
-        public async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+        public virtual async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
         {
             var results = new List<SystemDeploymentResult>();   
             foreach (var systemService in SystemServices)
@@ -44,7 +45,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             return results;
         }
 
-        public async Task<string> BatchRegisterAllSystemsRequestAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries= null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
+        public virtual async Task<string> BatchRegisterAllSystemsRequestAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries= null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
         {
             var systemCallData = new List<SystemCallData>();
             foreach (var systemService in SystemServices)
@@ -57,7 +58,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             return await BatchCallSystem.BatchCallRequestAsync(systemCallData);
         }
 
-        public async Task<TransactionReceipt> BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries = null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
+        public virtual async Task<TransactionReceipt> BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries = null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
         {
             var systemCallData = new List<SystemCallData>();
             foreach (var systemService in SystemServices)

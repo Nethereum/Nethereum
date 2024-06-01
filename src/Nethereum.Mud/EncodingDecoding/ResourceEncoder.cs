@@ -43,7 +43,7 @@ namespace Nethereum.Mud.EncodingDecoding
             return resource;
         }
 
-        public static byte[] EncodeNamesapce(string @namespace)
+        public static byte[] EncodeNamespace(string @namespace)
         {
             return Encode(Resource.RESOURCE_NAMESPACE, @namespace);
         }

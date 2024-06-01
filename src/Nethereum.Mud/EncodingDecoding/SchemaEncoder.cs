@@ -41,7 +41,7 @@ namespace Nethereum.Mud.EncodingDecoding
         //need to validate if it is the same if not use index position 92?
         public static bool IsDynamic(int index)
         {
-            return GetABIType(index).IsDynamic();
+            return GetABIType(index).IsMudDynamic();
         }
 
         public static bool IsStatic(int index)
@@ -181,7 +181,8 @@ namespace Nethereum.Mud.EncodingDecoding
             // and store the schema types in the encoded schema
             for (var i = 0; i < schemaTypes.Length; i++)
             {
-                var abiType = ABIType.CreateABIType(schemaTypes[i]);
+                var schemaType = ConvertToDynamicSchemaArrayIfNeeded(schemaTypes[i]);
+                var abiType = ABIType.CreateABIType(schemaType);
                 var staticByteLength = abiType.StaticSize;
                 if (staticByteLength < 0)
                 {
@@ -198,7 +199,7 @@ namespace Nethereum.Mud.EncodingDecoding
                 totalLength += staticByteLength;
                 // Sequentially store schema types after the first 4 bytes (which are reserved for length and field numbers)
                 // (safe because of the initial _schema.length check)
-                schema[i + startIndexFields] = (byte)Array.IndexOf(SchemaAbiTypes, schemaTypes[i]);
+                schema[i + startIndexFields] = (byte)Array.IndexOf(SchemaAbiTypes, schemaType);
 
             }
 
@@ -208,14 +209,20 @@ namespace Nethereum.Mud.EncodingDecoding
                 schema[0] = totalLengthBytes[0];
                 schema[1] = totalLengthBytes[1];
             }
-            else
+            else if(totalLengthBytes.Length == 1)
             {
                 schema[1] = totalLengthBytes[0];
             }
-
+           
             schema[2] = (byte)(schemaTypes.Length - dynamicFields);
             schema[3] = (byte)dynamicFields;
             return schema;
+        }
+
+        private static string ConvertToDynamicSchemaArrayIfNeeded(string schemaType)
+        {
+           if(schemaType.Contains("[")) return schemaType.Substring(0, schemaType.IndexOf("[")) + "[]";
+           return schemaType;
         }
 
         public static string EncodeTypesToHex(params string[] schemaTypes)

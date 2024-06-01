@@ -12,6 +12,7 @@ using Nethereum.Mud.Contracts.Core.StoreEvents;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
 using Nethereum.Mud.Contracts.Store;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Mud.Contracts.Core.Tables
 {
@@ -76,6 +77,12 @@ namespace Nethereum.Mud.Contracts.Core.Tables
         {
             var schemaEncoded = GetSchemaEncoded();
             return RegistrationSystemService.RegisterTableRequestAsync(schemaEncoded.ToRegisterTableFunction());
+        }
+
+        public virtual Task<TransactionReceipt> RegisterTableRequestAndWaitForReceiptAsync()
+        {
+            var schemaEncoded = GetSchemaEncoded();
+            return RegistrationSystemService.RegisterTableRequestAndWaitForReceiptAsync(schemaEncoded.ToRegisterTableFunction());
         }
     }
 }

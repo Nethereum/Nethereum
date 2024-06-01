@@ -63,8 +63,8 @@ namespace Nethereum.Mud.EncodingDecoding
         public static EncodedValues EncodeValues(List<FieldValue> fieldValues)
         {
             var valueFields = fieldValues.Where(f => f.IsKey == false).OrderBy(f => f.Order).ToArray();
-            var staticFields = valueFields.Where(f => f.ABIType.IsDynamic() == false).ToArray();
-            var dynamicFields = valueFields.Where(f => f.ABIType.IsDynamic()).ToArray();
+            var staticFields = valueFields.Where(f => f.ABIType.IsMudDynamic() == false).ToArray();
+            var dynamicFields = valueFields.Where(f => f.ABIType.IsMudDynamic()).ToArray();
 
             if (dynamicFields.Length > SchemaEncoder.MAX_NUMBER_OF_DYNAMIC_FIELDS)
             {
@@ -143,7 +143,7 @@ namespace Nethereum.Mud.EncodingDecoding
         public static List<ParameterOutput> DecodeValues(byte[] outputBytes, params ParameterOutput[] outputParameters)
         {
             Array.Sort(outputParameters, (x, y) => x.Parameter.Order.CompareTo(y.Parameter.Order));
-            var staticFields = outputParameters.Where(f => f.Parameter.ABIType.IsDynamic() == false).ToArray();
+            var staticFields = outputParameters.Where(f => f.Parameter.ABIType.IsMudDynamic() == false).ToArray();
             var currentIndex = 0;
 
             foreach (var field in staticFields)
@@ -156,7 +156,7 @@ namespace Nethereum.Mud.EncodingDecoding
                 field.Result = value;
             }
 
-            var dynamicFields = outputParameters.Where(f => f.Parameter.ABIType.IsDynamic() == true).ToList();
+            var dynamicFields = outputParameters.Where(f => f.Parameter.ABIType.IsMudDynamic() == true).ToList();
             var encodedLengths = EncodedLengthsEncoderDecoder.Decode(outputBytes.Skip(currentIndex).ToArray());
             currentIndex += 32;
 
@@ -192,7 +192,7 @@ namespace Nethereum.Mud.EncodingDecoding
 
         public static List<FieldValue> DecodeValuesToFieldValues(byte[] outputBytes, List<FieldInfo> fields)
         {
-            var staticFields = fields.Where(f => f.ABIType.IsDynamic() == false && f.IsKey == false).OrderBy(f => f.Order);
+            var staticFields = fields.Where(f => f.ABIType.IsMudDynamic() == false && f.IsKey == false).OrderBy(f => f.Order);
             var fieldValues = new List<FieldValue>();
             //var values = new List<object>();
             var currentIndex = 0;
@@ -205,7 +205,7 @@ namespace Nethereum.Mud.EncodingDecoding
                 currentIndex += fieldSize;
             }
 
-            var dynamicFields = fields.Where(f => f.ABIType.IsDynamic() == true && f.IsKey == false).OrderBy(f => f.Order).ToArray();
+            var dynamicFields = fields.Where(f => f.ABIType.IsMudDynamic() == true && f.IsKey == false).OrderBy(f => f.Order).ToArray();
             var encodedLengths = EncodedLengthsEncoderDecoder.Decode(outputBytes.Skip(currentIndex).ToArray());
             currentIndex += 32;
             for (int i = 0; i < dynamicFields.Length; i++)

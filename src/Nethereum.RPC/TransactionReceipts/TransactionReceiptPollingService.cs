@@ -7,6 +7,7 @@ using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.Exceptions;
+using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.TransactionReceipts
 {
@@ -122,16 +123,31 @@ namespace Nethereum.RPC.TransactionReceipts
 
         public async Task<TransactionReceipt> ValidateDeploymentTransactionReceipt(TransactionReceipt transactionReceipt)
         {
-            if (transactionReceipt.Status.Value != 1)
-            {
-                var contractAddress = transactionReceipt.ContractAddress;
-                var ethGetCode = new EthGetCode(_transactionManager.Client);
-                var code = await ethGetCode.SendRequestAsync(contractAddress).ConfigureAwait(false);
-                if (code == "0x")
-                    throw new ContractDeploymentException("Contract code not deployed successfully", transactionReceipt);
-            }
-
+            await PollForContractAddressAsync(transactionReceipt).ConfigureAwait(false);
             return transactionReceipt;
+        }
+
+        public async Task<string> PollForContractAddressAsync(TransactionReceipt transactionReceipt)
+        {
+            while (transactionReceipt.ContractAddress == null)
+            {
+                if (transactionReceipt.Status.Value == 0)
+                {
+                    throw new ContractDeploymentException("Contract code not deployed successfully", transactionReceipt);
+                }
+                await Task.Delay(GetPollingRetryIntervalInMilliseconds()).ConfigureAwait(false);
+
+                var getTransactionReceipt = new EthGetTransactionReceipt(_transactionManager.Client);
+                transactionReceipt = await getTransactionReceipt.SendRequestAsync(transactionReceipt.TransactionHash);
+            }
+            var ethGetCode = new EthGetCode(_transactionManager.Client);
+            var code = await ethGetCode.SendRequestAsync(transactionReceipt.ContractAddress);
+            if (code == "0x")
+            {
+                throw new ContractDeploymentException("Contract code not deployed successfully", transactionReceipt);
+            }
+            return transactionReceipt.ContractAddress;
+
         }
 
         public async Task<string> DeployContractAndGetAddressAsync(Func<Task<string>> deployFunction,
@@ -145,6 +161,7 @@ namespace Nethereum.RPC.TransactionReceipts
         {
              return DeployContractAndWaitForReceiptAsync(() => _transactionManager.SendTransactionAsync(transactionInput), cancellationToken);
         }
+
     }
 #endif
 }

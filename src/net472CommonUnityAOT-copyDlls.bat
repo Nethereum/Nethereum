@@ -30,6 +30,8 @@ xcopy "compiledlibraries\net472dllsAOT\Nethereum.EVM.dll" "compiledlibraries\net
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Optimism.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Optimism.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Besu.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Besu.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Geth.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Geth.dll" /s /y
+xcopy "compiledlibraries\net472dllsAOT\Nethereum.Mud.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Mud.dll" /s /y
+xcopy "compiledlibraries\net472dllsAOT\Nethereum.Mud.Contracts.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Mud.Contracts.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\*.jslib "compiledlibraries\net472UnityCommonAOT" /s /y
 
 EXIT /B 0

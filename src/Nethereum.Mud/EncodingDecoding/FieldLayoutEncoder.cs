@@ -9,8 +9,8 @@ namespace Nethereum.Mud.EncodingDecoding
     {
         public static byte[] EncodeFieldLayout(List<FieldInfo> fieldInfos)
         {
-            var staticFields = fieldInfos.Where(f => f.ABIType.IsDynamic() == false && f.IsKey == false).OrderBy(f => f.Order);
-            var dynamicFields = fieldInfos.Where(f => f.ABIType.IsDynamic() && f.IsKey == false).OrderBy(f => f.Order);
+            var staticFields = fieldInfos.Where(f => f.ABIType.IsMudDynamic() == false && f.IsKey == false).OrderBy(f => f.Order);
+            var dynamicFields = fieldInfos.Where(f => f.ABIType.IsMudDynamic() && f.IsKey == false).OrderBy(f => f.Order);
             var staticFieldLengths = staticFields.Select(f => f.ABIType.StaticSize);
             var staticDataLength = staticFieldLengths.Sum();
             var staticFieldLengthsAsBytes = ByteUtil.Merge(staticFieldLengths.Select(x => x.ToBytesForRLPEncoding().PadBytesLeft(1)).ToArray());

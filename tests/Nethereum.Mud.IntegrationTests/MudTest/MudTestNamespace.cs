@@ -10,7 +10,7 @@ namespace Nethereum.Mud.IntegrationTests.MudTest
 {
     public class MudTestNamespaceResource : NamespaceResource
     {
-        public MudTestNamespaceResource() : base(null)
+        public MudTestNamespaceResource() : base(String.Empty)
         {
         }
     }
