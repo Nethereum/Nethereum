@@ -24,7 +24,7 @@ namespace Nethereum.Mud
             {
                 if (_resourceIdEncoded == null)
                 {
-                    _resourceIdEncoded = ResourceEncoder.EncodeNamesapce(GetNamespaceNameTrimmedForResource());
+                    _resourceIdEncoded = ResourceEncoder.EncodeNamespace(GetNamespaceNameTrimmedForResource());
                 }
                 return _resourceIdEncoded;
             }
