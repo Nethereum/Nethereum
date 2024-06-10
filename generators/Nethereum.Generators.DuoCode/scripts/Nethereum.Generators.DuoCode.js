@@ -294,7 +294,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             37907).ctor)();
         generators.Add(this.GetCQSMessageDeploymentGenerator());
         generators.AddRange(this.GetAllCQSFunctionMessageGenerators());
-        generators.AddRange(this.GetllEventDTOGenerators());
+        generators.AddRange(this.GetAllEventDTOGenerators());
         generators.AddRange(this.GetAllErrorDTOGenerators());
         generators.AddRange(this.GetAllFunctionDTOsGenerators());
         //using the same namespace..
@@ -364,8 +364,8 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GenerateAllCQSMessages = function ContractProjectGenerator_GenerateAllCQSMessages() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
             35606).ctor)();
-        generated.Add(this.GeneratCQSMessageDeployment());
-        generated.AddRange(this.GeneratCQSFunctionMessages());
+        generated.Add(this.GenerateCQSMessageDeployment());
+        generated.AddRange(this.GenerateCQSFunctionMessages());
         return generated;
     };
     $p.GenerateAllFunctionDTOs = function ContractProjectGenerator_GenerateAllFunctionDTOs() {
@@ -425,7 +425,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         return generators;
     };
     $p.GenerateAllEventDTOs = function ContractProjectGenerator_GenerateAllEventDTOs() {
-        var generators = this.GetllEventDTOGenerators();
+        var generators = this.GetAllEventDTOGenerators();
         var dtoFullPath = this.GetFullPath(this.get_DTONamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
             35606).ctor)();
@@ -456,7 +456,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             }).call(this);
         return generated;
     };
-    $p.GetllEventDTOGenerators = function ContractProjectGenerator_GetllEventDTOGenerators() {
+    $p.GetAllEventDTOGenerators = function ContractProjectGenerator_GetAllEventDTOGenerators() {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
         var generators = new (System.Collections.Generic.List$1(Nethereum.Generators.DTOs.EventDTOGenerator, 
             6963).ctor)();
@@ -480,7 +480,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         }
         return generators;
     };
-    $p.GeneratCQSFunctionMessages = function ContractProjectGenerator_GeneratCQSFunctionMessages() {
+    $p.GenerateCQSFunctionMessages = function ContractProjectGenerator_GenerateCQSFunctionMessages() {
         var generators = this.GetAllCQSFunctionMessageGenerators();
         var cqsFullPath = this.GetFullPath(this.get_CQSNamespace());
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
@@ -526,7 +526,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         return new Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator.ctor(this.get_ContractABI().get_Constructor(), 
             cqsFullNamespace, this.get_ByteCode(), this.get_ContractName(), this.get_CodeGenLanguage());
     };
-    $p.GeneratCQSMessageDeployment = function ContractProjectGenerator_GeneratCQSMessageDeployment() {
+    $p.GenerateCQSMessageDeployment = function ContractProjectGenerator_GenerateCQSMessageDeployment() {
         var cqsGenerator = this.GetCQSMessageDeploymentGenerator();
 
         return cqsGenerator.GenerateFileContent$1(this.GetFullPath(this.get_CQSNamespace()));
@@ -2848,6 +2848,9 @@ $d.define(Nethereum.Generators.DTOs.EventDTOModel, Nethereum.Generators.Core.Typ
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
     $p.CanGenerateOutputDTO = function EventDTOModel_CanGenerateOutputDTO() {
+        return true;
+    };
+    $p.HasParameters = function EventDTOModel_HasParameters() {
         return this.get_EventABI().get_InputParameters() != null && this.get_EventABI().get_InputParameters().length > 0;
     };
 });
@@ -3010,14 +3013,20 @@ $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators
             this));
     };
     $p.GenerateClass = function EventDTOCSharpTemplate_GenerateClass() {
-        if (this.get_Model().CanGenerateOutputDTO()) {
+        if (this.get_Model().HasParameters()) {
             return String.Format("{0}\r\n\r\n{1}[Event(\"{2}\")]\r\n{3}public class {4}Base : IEventDTO\r\n{5}{{\r\n{6}\r\n{7}}}", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
                     this._parameterAbiEventDtocSharpTemplate.GenerateAllProperties(this.get_Model().get_EventABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
-        return null;
+        else {
+            return String.Format("{0}\r\n\r\n{1}[Event(\"{2}\")]\r\n{3}public class {4}Base : IEventDTO\r\n{5}{{\r\n{6}}}", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
+
     };
     $p.GetPartialMainClass = function EventDTOCSharpTemplate_GetPartialMainClass() {
         return String.Format("{0}public partial class {1} : {2}Base {{ }}", [Nethereum.Generators.Core.SpaceUtils().OneTab, 
@@ -3186,14 +3195,19 @@ $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators
             this));
     };
     $p.GenerateClass = function EventDTOFSharpTemplate_GenerateClass() {
-        if (this.get_Model().CanGenerateOutputDTO()) {
+        if (this.get_Model().HasParameters()) {
             return String.Format("{0}[<Event(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}inherit EventDTO()\r\n{5}\r\n{6}", 
                 [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     this._parameterAbiEventDtoFSharpTemplate.GenerateAllProperties(this.get_Model().get_EventABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
-        return null;
+        else {
+            return String.Format("{0}[<Event(\"{1}\")>]\r\n{2}type {3}() =\r\n{4}inherit EventDTO()\r\n{5}", 
+                [Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -3354,14 +3368,20 @@ $d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS
             this));
     };
     $p.GenerateClass = function EventDTOVbTemplate_GenerateClass() {
-        if (this.get_Model().CanGenerateOutputDTO()) {
+        if (this.get_Model().HasParameters()) {
             return String.Format("{0}\r\n\r\n{1}<[Event](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}Implements IEventDTO\r\n{6}\r\n{7}\r\n{8}\r\n{9}End Class", 
                 [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().TwoTabs, this._parameterAbiEventDtoVbTemplate.GenerateAllProperties(this.get_Model().get_EventABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().OneTab, Nethereum.Generators.Core.SpaceUtils().OneTab]);
         }
-        return null;
+        else {
+            return String.Format("{0}\r\n\r\n{1}<[Event](\"{2}\")>\r\n{3}Public Class {4}Base\r\n{5}Implements IEventDTO\r\n{6}\r\n{7}\r\n{8}End Class", 
+                [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().get_EventABI().get_Name(), 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().TwoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().TwoTabs, Nethereum.Generators.Core.SpaceUtils().OneTab, 
+                    Nethereum.Generators.Core.SpaceUtils().OneTab]);
+        }
     };
     $p.GetPartialMainClass = function EventDTOVbTemplate_GetPartialMainClass() {
         return String.Format("{0}Public Partial Class {1}\r\n{2}Inherits {3}Base\r\n{4}End Class", [Nethereum.Generators.Core.SpaceUtils().OneTab, 

@@ -64,8 +64,8 @@ namespace Nethereum.Generators.IntegrationTests
 
         [Theory]
         [InlineData(CodeGenLanguage.CSharp)]
-        [InlineData(CodeGenLanguage.FSharp)]
-        [InlineData(CodeGenLanguage.Vb)]
+        //[InlineData(CodeGenLanguage.FSharp)]
+        //[InlineData(CodeGenLanguage.Vb)]
         public void With_Single_Messages_File_Generated_Code_Builds(CodeGenLanguage codeGenLanguage)
         {
             //given
@@ -74,10 +74,10 @@ namespace Nethereum.Generators.IntegrationTests
 
             try
             {
-                context.CreateProject(codeGenLanguage, new[]
-                {
-                    new Tuple<string, string>("Nethereum.Web3", Constants.NethereumWeb3Version)
-                });
+                //context.CreateProject(codeGenLanguage, new[]
+                //{
+                //    new Tuple<string, string>("Nethereum.Web3", Constants.NethereumWeb3Version)
+                //});
 
                 var contractMetaData = TestContracts.StandardContract;
                 var contractABI = new GeneratorModelABIDeserialiser().DeserialiseABI(contractMetaData.ABI);

@@ -15,7 +15,7 @@ namespace Nethereum.Generators.DTOs
 
         public override string GenerateClass()
         {
-            if (Model.CanGenerateOutputDTO())
+            if (Model.HasParameters())
             {
                 return
                     $@"{GetPartialMainClass()}
@@ -26,7 +26,17 @@ namespace Nethereum.Generators.DTOs
 {_parameterAbiEventDtocSharpTemplate.GenerateAllProperties(Model.EventABI.InputParameters)}
 {SpaceUtils.OneTab}}}";
             }
-            return null;
+            else
+            {
+                return
+                    $@"{GetPartialMainClass()}
+
+{SpaceUtils.OneTab}[Event(""{Model.EventABI.Name}"")]
+{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : IEventDTO
+{SpaceUtils.OneTab}{{
+{SpaceUtils.OneTab}}}";
+            }
+          
         }
 
         public string GetPartialMainClass()

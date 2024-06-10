@@ -34,14 +34,14 @@ declare module Nethereum {
             GetAllFunctionDTOsGenerators(): System.Collections.Generic.List$1<DTOs.FunctionOutputDTOGenerator>;
             GenerateAllEventDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllErrorDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
-            GetllEventDTOGenerators(): System.Collections.Generic.List$1<DTOs.EventDTOGenerator>;
+            GetAllEventDTOGenerators(): System.Collections.Generic.List$1<DTOs.EventDTOGenerator>;
             GetAllErrorDTOGenerators(): System.Collections.Generic.List$1<DTOs.ErrorDTOGenerator>;
-            GeneratCQSFunctionMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
+            GenerateCQSFunctionMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GetAllCQSFunctionMessageGenerators(): System.Collections.Generic.List$1<CQS.FunctionCQSMessageGenerator>;
             get_AddRootNamespaceOnVbProjectsToImportStatements(): boolean;
             set_AddRootNamespaceOnVbProjectsToImportStatements(value: boolean): void;
             GetCQSMessageDeploymentGenerator(): CQS.ContractDeploymentCQSMessageGenerator;
-            GeneratCQSMessageDeployment(): Core.GeneratedFile;
+            GenerateCQSMessageDeployment(): Core.GeneratedFile;
             GetFullNamespace(namespace: string): string;
             GetFullPath(namespace: string): string;
         }
@@ -1178,6 +1178,7 @@ declare module Nethereum {
             export interface EventDTOModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
                 get_EventABI(): Model.EventABI;
                 CanGenerateOutputDTO(): boolean;
+                HasParameters(): boolean;
             }
             export interface EventDTOModelTypeFunc extends TypeFunction {
                 (): EventDTOModelTypeFunc;

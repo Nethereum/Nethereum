@@ -21,6 +21,11 @@ namespace Nethereum.Generators.DTOs
 
         public bool CanGenerateOutputDTO()
         {
+            return true;
+        }
+
+        public bool HasParameters()
+        {
             return EventABI.InputParameters != null && EventABI.InputParameters.Length > 0;
         }
 
