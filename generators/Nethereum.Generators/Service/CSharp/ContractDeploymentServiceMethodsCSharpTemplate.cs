@@ -23,23 +23,23 @@ namespace Nethereum.Generators.Service
                 _contractDeploymentCQSMessageModel.GetVariableName();
 
             var sendRequestReceipt = 
-            $@"{SpaceUtils.TwoTabs}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}return web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSource);
-{SpaceUtils.TwoTabs}}}";
+            $@"{SpaceUtils.Two___Tabs}public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}return web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSource);
+{SpaceUtils.Two___Tabs}}}";
 
             var sendRequest =
-                $@"{SpaceUtils.TwoTabs}public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName})
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}return web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAsync({messageVariableName});
-{SpaceUtils.TwoTabs}}}";
+                $@"{SpaceUtils.Two___Tabs}public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName})
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}return web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAsync({messageVariableName});
+{SpaceUtils.Two___Tabs}}}";
 
             var sendRequestContract =
-                $@"{SpaceUtils.TwoTabs}public static async Task<{_serviceModel.GetTypeName()}> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {messageVariableName}, cancellationTokenSource);
-{SpaceUtils.ThreeTabs}return new {_serviceModel.GetTypeName()}(web3, receipt.ContractAddress);
-{SpaceUtils.TwoTabs}}}";
+                $@"{SpaceUtils.Two___Tabs}public static async Task<{_serviceModel.GetTypeName()}> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, {messageType} {messageVariableName}, CancellationTokenSource cancellationTokenSource = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}var receipt = await DeployContractAndWaitForReceiptAsync(web3, {messageVariableName}, cancellationTokenSource);
+{SpaceUtils.Three____Tabs}return new {_serviceModel.GetTypeName()}(web3, receipt.ContractAddress);
+{SpaceUtils.Two___Tabs}}}";
 
             return string.Join(SpaceFollowingFunction, sendRequestReceipt, sendRequest, sendRequestContract);
         }

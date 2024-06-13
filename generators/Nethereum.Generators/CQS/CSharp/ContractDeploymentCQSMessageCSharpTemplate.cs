@@ -20,24 +20,24 @@ namespace Nethereum.Generators.CQS
             return
                 $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}public class {typeName}Base : ContractDeploymentMessage
-{SpaceUtils.OneTab}{{
-{SpaceUtils.TwoTabs}public static string BYTECODE = ""{Model.ByteCode}"";
-{SpaceUtils.TwoTabs}public {typeName}Base() : base(BYTECODE) {{ }}
-{SpaceUtils.TwoTabs}public {typeName}Base(string byteCode) : base(byteCode) {{ }}
+{SpaceUtils.One__Tab}public class {typeName}Base : ContractDeploymentMessage
+{SpaceUtils.One__Tab}{{
+{SpaceUtils.Two___Tabs}public static string BYTECODE = ""{Model.ByteCode}"";
+{SpaceUtils.Two___Tabs}public {typeName}Base() : base(BYTECODE) {{ }}
+{SpaceUtils.Two___Tabs}public {typeName}Base(string byteCode) : base(byteCode) {{ }}
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(Model.ConstructorABI.InputParameters)}
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
         }
 
         public string GetPartialMainClass()
         {
             var typeName = Model.GetTypeName();
 
-            return $@"{SpaceUtils.OneTab}public partial class {typeName} : {typeName}Base
-{SpaceUtils.OneTab}{{
-{SpaceUtils.TwoTabs}public {typeName}() : base(BYTECODE) {{ }}
-{SpaceUtils.TwoTabs}public {typeName}(string byteCode) : base(byteCode) {{ }}
-{SpaceUtils.OneTab}}}";
+            return $@"{SpaceUtils.One__Tab}public partial class {typeName} : {typeName}Base
+{SpaceUtils.One__Tab}{{
+{SpaceUtils.Two___Tabs}public {typeName}() : base(BYTECODE) {{ }}
+{SpaceUtils.Two___Tabs}public {typeName}(string byteCode) : base(byteCode) {{ }}
+{SpaceUtils.One__Tab}}}";
         }
     }
 }

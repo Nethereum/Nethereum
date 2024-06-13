@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug node process",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/examples\\index.js",
+      "skipFiles": [
+        "<node_internals/**"
+      ],
+      "stopOnEntry": true,
+      "console": "externalTerminal"
+    }
+  ]
+}

@@ -26,8 +26,8 @@ namespace Nethereum.Generators.DTOs
         {
             var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.CSharp);
             return
-                $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order}, {utils.GetBooleanAsString(parameter.Indexed)} )]
-{SpaceUtils.TwoTabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{ get; set; }}";
+                $@"{SpaceUtils.Two___Tabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order}, {utils.GetBooleanAsString(parameter.Indexed)} )]
+{SpaceUtils.Two___Tabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{ get; set; }}";
         }
     }
 }

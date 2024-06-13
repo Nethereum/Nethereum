@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28711.60
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34902.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "generators", "generators", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
@@ -17,8 +17,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Generators.BuildD
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Net", "generators\Nethereum.Generators.Net\Nethereum.Generators.Net.csproj", "{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}"
 EndProject
-Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "nethereum-codegen", "generators\Nethereum.Generators.JavaScript\nethereum-codegen.njsproj", "{03DBBE19-48CF-4164-B972-E2646BFA9E9B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generator.Console.UnitTests", "generators\Nethereum.Generator.Console.UnitTests\Nethereum.Generator.Console.UnitTests.csproj", "{8C826F21-786D-4D52-B645-613D2F804452}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.IntegrationTests", "generators\Nethereum.Generators.IntegrationTests\Nethereum.Generators.IntegrationTests.csproj", "{F4CD9527-23C9-4314-9A39-09DD20FC16F8}"
@@ -26,6 +24,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Generators.Tests.Common", "generators\Nethereum.Generators.Tests.Common\Nethereum.Generators.Tests.Common.csproj", "{8C9533E5-3F57-4E29-9D6F-F772D821871B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nethereum.Autogen.ContractApi", "generators\Nethereum.Autogen.ContractApi\Nethereum.Autogen.ContractApi.csproj", "{286EE65A-B485-4D49-B55D-6517A7758362}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "nethereum-codegen", "generators\Nethereum.Generators.JavaScript\nethereum-codegen.esproj", "{2F39D320-78CB-43C7-BFED-F99910677EC9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -135,22 +135,6 @@ Global
 		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x64.Build.0 = Release|Any CPU
 		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x86.ActiveCfg = Release|Any CPU
 		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4}.Release|x86.Build.0 = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|ARM.Build.0 = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x64.Build.0 = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Debug|x86.Build.0 = Debug|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|ARM.ActiveCfg = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|ARM.Build.0 = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x64.ActiveCfg = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x64.Build.0 = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x86.ActiveCfg = Release|Any CPU
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B}.Release|x86.Build.0 = Release|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C826F21-786D-4D52-B645-613D2F804452}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -215,6 +199,30 @@ Global
 		{286EE65A-B485-4D49-B55D-6517A7758362}.Release|x64.Build.0 = Release|Any CPU
 		{286EE65A-B485-4D49-B55D-6517A7758362}.Release|x86.ActiveCfg = Release|Any CPU
 		{286EE65A-B485-4D49-B55D-6517A7758362}.Release|x86.Build.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|ARM.Build.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|ARM.Deploy.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x64.Build.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x64.Deploy.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x86.Build.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|ARM.ActiveCfg = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|ARM.Build.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|ARM.Deploy.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x64.ActiveCfg = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x64.Build.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x64.Deploy.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x86.ActiveCfg = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x86.Build.0 = Release|Any CPU
+		{2F39D320-78CB-43C7-BFED-F99910677EC9}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -226,7 +234,6 @@ Global
 		{EB8AD30C-1914-42C9-9E10-A810B2CA296B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{A1EF670F-8721-4D11-A65B-1741B60E29C1} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{1A5F9C48-B80F-499F-BC85-7594F7C7A4E4} = {962EC435-6130-4B75-BAC1-12323B067443}
-		{03DBBE19-48CF-4164-B972-E2646BFA9E9B} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{8C826F21-786D-4D52-B645-613D2F804452} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{F4CD9527-23C9-4314-9A39-09DD20FC16F8} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{8C9533E5-3F57-4E29-9D6F-F772D821871B} = {962EC435-6130-4B75-BAC1-12323B067443}

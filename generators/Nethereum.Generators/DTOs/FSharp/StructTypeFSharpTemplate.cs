@@ -15,9 +15,9 @@ namespace Nethereum.Generators.DTOs
         public override string GenerateClass()
         {
                 return
-                    $@"{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
+                    $@"{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
 {_parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(Model.StructTypeABI.InputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
 
         }
     }

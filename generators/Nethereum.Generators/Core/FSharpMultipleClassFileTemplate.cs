@@ -33,8 +33,8 @@ namespace Nethereum.Generators.CQS
             foreach (var classGenerator in ClassGenerators)
             {
                 result = result +
-                         $@"{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}
+                         $@"{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}
 {classGenerator.GenerateClass()}";
             }
 

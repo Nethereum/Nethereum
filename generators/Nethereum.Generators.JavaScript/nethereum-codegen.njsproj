@@ -44,6 +44,7 @@
     <Content Include="README.md" />
     <Content Include="tsconfig.json" />
     <TypeScriptCompile Include="mscorlib.d.ts" />
+    <TypeScriptCompile Include="MudWorldParser.ts" />
     <TypeScriptCompile Include="Nethereum.Generators.DuoCode.d.ts" />
   </ItemGroup>
   <ItemGroup>

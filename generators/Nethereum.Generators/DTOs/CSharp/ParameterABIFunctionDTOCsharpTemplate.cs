@@ -23,10 +23,20 @@ namespace Nethereum.Generators.DTOs
 
         public string GenerateProperty(ParameterABI parameter)
         {
+            return GenerateProperty(parameter, SpaceUtils.Two___Tabs);
+        }
+
+        public string GenerateProperty(ParameterABI parameter, string spacing)
+        {
             var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.CSharp);
-            return 
-                $@"{SpaceUtils.TwoTabs}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})]
-{SpaceUtils.TwoTabs}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{ get; set; }}";
+            return
+                $@"{spacing}[Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})]
+{spacing}public virtual {parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)} {parameterModel.GetPropertyName()} {{ get; set; }}";
+        }
+
+        public string GenerateAllProperties(ParameterABI[] parameters, string spacing)
+        {
+            return string.Join(Environment.NewLine, parameters.Select(x => GenerateProperty(x, spacing)));
         }
 
         public string GenerateAllFunctionParameters(ParameterABI[] parameters)

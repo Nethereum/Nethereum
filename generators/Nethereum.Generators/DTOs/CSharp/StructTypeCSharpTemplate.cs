@@ -17,16 +17,16 @@ namespace Nethereum.Generators.DTOs
                 return
                     $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base 
-{SpaceUtils.OneTab}{{
+{SpaceUtils.One__Tab}public class {Model.GetTypeName()}Base 
+{SpaceUtils.One__Tab}{{
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(Model.StructTypeABI.InputParameters)}
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
 
         }
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
+            return $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
         }
     }
 }

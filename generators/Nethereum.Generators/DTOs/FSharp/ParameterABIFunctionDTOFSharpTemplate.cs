@@ -25,8 +25,8 @@ namespace Nethereum.Generators.DTOs
         {
             var parameterModel = new ParameterABIModel(parameter, CodeGenLanguage.FSharp);
             return
-                $@"{SpaceUtils.ThreeTabs}[<Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})>]
-{SpaceUtils.ThreeTabs}member val public {parameterModel.GetPropertyName()} = Unchecked.defaultof<{parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}> with get, set";
+                $@"{SpaceUtils.Three____Tabs}[<Parameter(""{parameter.Type}"", ""{@parameter.Name}"", {parameter.Order})>]
+{SpaceUtils.Three____Tabs}member val public {parameterModel.GetPropertyName()} = Unchecked.defaultof<{parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter)}> with get, set";
         }
 
 

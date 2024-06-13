@@ -19,26 +19,26 @@ namespace Nethereum.Generators.DTOs
                 return
                     $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}[Error(""{Model.ErrorABI.Name}"")]
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : IErrorDTO
-{SpaceUtils.OneTab}{{
+{SpaceUtils.One__Tab}[Error(""{Model.ErrorABI.Name}"")]
+{SpaceUtils.One__Tab}public class {Model.GetTypeName()}Base : IErrorDTO
+{SpaceUtils.One__Tab}{{
 {_parameterAbiErrorDtocSharpTemplate.GenerateAllProperties(Model.ErrorABI.InputParameters)}
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
             }
             else
             {
                 return
                     $@"{GetPartialMainClass()}
-{SpaceUtils.OneTab}[Error(""{Model.ErrorABI.Name}"")]
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : IErrorDTO
-{SpaceUtils.OneTab}{{
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}[Error(""{Model.ErrorABI.Name}"")]
+{SpaceUtils.One__Tab}public class {Model.GetTypeName()}Base : IErrorDTO
+{SpaceUtils.One__Tab}{{
+{SpaceUtils.One__Tab}}}";
             }
         }
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
+            return $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
         }
     }
 }

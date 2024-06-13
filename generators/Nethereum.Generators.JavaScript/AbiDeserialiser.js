@@ -41,9 +41,9 @@ function buildError(item, contractAbi) {
 }
 function getStructTypeName(item) {
     if (item.internalType !== undefined && item.internalType.startsWith("struct")) {
-        var length = 'struct '.length;
-        var internalTypeName = item.internalType;
-        var structName = internalTypeName.substring(length);
+        const length = 'struct '.length;
+        const internalTypeName = item.internalType;
+        let structName = internalTypeName.substring(length);
         if (structName.indexOf(".") > -1) {
             structName = structName.substring(structName.lastIndexOf(".") + 1);
         }
@@ -88,9 +88,9 @@ function buildStructsFromTuple(item) {
     return structs;
 }
 function buildFunctionParameters(items) {
-    var parameterOrder = 0;
-    var parameters = [];
-    for (var i = 0, len = items.length; i < len; i++) {
+    let parameterOrder = 0;
+    const parameters = [];
+    for (let i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
             var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, getStructTypeName(items[i]));
@@ -103,9 +103,9 @@ function buildFunctionParameters(items) {
     return parameters;
 }
 function buildEventParameters(items) {
-    var parameterOrder = 0;
-    var parameters = [];
-    for (var i = 0, len = items.length; i < len; i++) {
+    let parameterOrder = 0;
+    const parameters = [];
+    for (let i = 0, len = items.length; i < len; i++) {
         parameterOrder = parameterOrder + 1;
         if (items[i].type.startsWith("tuple")) {
             var parameter = new parameterAbi.ctor$1(items[i].type, items[i].name, parameterOrder, getStructTypeName(items[i]));
@@ -119,32 +119,28 @@ function buildEventParameters(items) {
     return parameters;
 }
 function buildContract(abiStr) {
-    var abi = JSON.parse(abiStr);
-    var functions = [];
-    var events = [];
-    var errors = [];
-    var structs = [];
-    var constructor = new constructorAbi();
-    var contract = new contractAbi();
-    for (var i = 0, len = abi.length; i < len; i++) {
+    const abi = JSON.parse(abiStr);
+    const functions = [];
+    const events = [];
+    const errors = [];
+    const structs = [];
+    let constructor = new constructorAbi();
+    const contract = new contractAbi();
+    for (let i = 0, len = abi.length; i < len; i++) {
         if (abi[i].type === "function") {
-            var functionItem = buildFunction(abi[i], contract);
+            let functionItem = buildFunction(abi[i], contract);
             if (functionItem.get_Name() == "nonce") {
-                var x = 1;
+                let x = 1;
             }
             if (functionItem.get_Constant() && abi[i].outputs.length == 0) {
             }
             else {
                 functions.push(functionItem);
-                var temp_3 = buildStructsFromParameters(abi[i].outputs);
-                var _loop_1 = function (item) {
-                    if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
+                const temp = buildStructsFromParameters(abi[i].outputs);
+                for (const item of temp) {
+                    if (!structs.some(x => x.get_Name() === item.get_Name())) {
                         structs.push(item);
                     }
-                };
-                for (var _i = 0, temp_1 = temp_3; _i < temp_1.length; _i++) {
-                    var item = temp_1[_i];
-                    _loop_1(item);
                 }
             }
         }
@@ -157,15 +153,11 @@ function buildContract(abiStr) {
         if (abi[i].type === "constructor") {
             constructor = buildConstructor(abi[i]);
         }
-        var temp = buildStructsFromParameters(abi[i].inputs);
-        var _loop_2 = function (item) {
-            if (!structs.some(function (x) { return x.get_Name() === item.get_Name(); })) {
+        const temp = buildStructsFromParameters(abi[i].inputs);
+        for (const item of temp) {
+            if (!structs.some(x => x.get_Name() === item.get_Name())) {
                 structs.push(item);
             }
-        };
-        for (var _a = 0, temp_2 = temp; _a < temp_2.length; _a++) {
-            var item = temp_2[_a];
-            _loop_2(item);
         }
     }
     contract.set_Constructor(constructor);

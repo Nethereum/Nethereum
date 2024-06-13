@@ -17,11 +17,11 @@ namespace Nethereum.Generators.DTOs
             if (Model.CanGenerateOutputDTO())
             {
                 return
-                    $@"{SpaceUtils.OneTab}[<FunctionOutput>]
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}inherit FunctionOutputDTO() 
+                    $@"{SpaceUtils.One__Tab}[<FunctionOutput>]
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
+{SpaceUtils.Two___Tabs}inherit FunctionOutputDTO() 
 {_parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(Model.FunctionABI.OutputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
             }
             return null;
         }

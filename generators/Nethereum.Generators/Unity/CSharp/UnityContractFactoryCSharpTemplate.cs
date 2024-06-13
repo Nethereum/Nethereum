@@ -25,12 +25,12 @@ namespace Nethereum.Generators.Unity.CSharp
             var functions = _model.ContractABI.Functions;
             var methods = string.Join(GenerateLineBreak(), functions.Select(GenerateMethod));
             var classTxn =
-$@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} 
-{SpaceUtils.OneTab}{{
-{SpaceUtils.TwoTabs}public string ContractAddress {{ get; protected set; }}
-{SpaceUtils.TwoTabs}public IContractTransactionUnityRequestFactory ContractTransactionUnityRequestFactory {{ get; protected set; }}
-{SpaceUtils.TwoTabs}public IContractQueryUnityRequestFactory ContractQueryUnityRequestFactory {{ get; protected set; }}
-{SpaceUtils.TwoTabs}public {Model.GetTypeName()}(string contractAddress, IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, IContractQueryUnityRequestFactory contractQueryUnityRequestFactory)
+$@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} 
+{SpaceUtils.One__Tab}{{
+{SpaceUtils.Two___Tabs}public string ContractAddress {{ get; protected set; }}
+{SpaceUtils.Two___Tabs}public IContractTransactionUnityRequestFactory ContractTransactionUnityRequestFactory {{ get; protected set; }}
+{SpaceUtils.Two___Tabs}public IContractQueryUnityRequestFactory ContractQueryUnityRequestFactory {{ get; protected set; }}
+{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}(string contractAddress, IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, IContractQueryUnityRequestFactory contractQueryUnityRequestFactory)
             {{
                 ContractAddress = contractAddress;
                 ContractTransactionUnityRequestFactory = contractTransactionUnityRequestFactory;
@@ -39,7 +39,7 @@ $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}
 
 {methods}
 
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
             return classTxn;
 
         }
@@ -52,19 +52,19 @@ $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}
             {
                 return
     $@"
-{SpaceUtils.TwoTabs}public {functionNameUpper}QueryRequest Create{functionNameUpper}QueryRequest()
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}return new {functionNameUpper}QueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
-{SpaceUtils.TwoTabs}}}";
+{SpaceUtils.Two___Tabs}public {functionNameUpper}QueryRequest Create{functionNameUpper}QueryRequest()
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}return new {functionNameUpper}QueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
+{SpaceUtils.Two___Tabs}}}";
             }
 
             if (functionABIModel.IsTransaction())
             {
                 return $@"
-{SpaceUtils.TwoTabs}public {functionNameUpper}TransactionRequest Create{functionNameUpper}TransactionRequest()
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}return new {functionNameUpper}TransactionRequest(ContractTransactionUnityRequestFactory, ContractAddress);
-{SpaceUtils.TwoTabs}}}";
+{SpaceUtils.Two___Tabs}public {functionNameUpper}TransactionRequest Create{functionNameUpper}TransactionRequest()
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}return new {functionNameUpper}TransactionRequest(ContractTransactionUnityRequestFactory, ContractAddress);
+{SpaceUtils.Two___Tabs}}}";
             }
 
 

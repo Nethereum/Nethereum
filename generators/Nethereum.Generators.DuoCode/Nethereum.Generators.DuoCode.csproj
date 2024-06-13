@@ -41,6 +41,9 @@
     <Compile Include="..\Nethereum.Generators\ContractProjectGenerator.cs">
       <Link>\ContractProjectGenerator.cs</Link>
     </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTablesGenerator.cs">
+      <Link>\MudTablesGenerator.cs</Link>
+    </Compile>
     <Compile Include="..\Nethereum.Generators\NetStandardLibraryGenerator.cs">
       <Link>\NetStandardLibraryGenerator.cs</Link>
     </Compile>
@@ -332,6 +335,33 @@
     <Compile Include="..\Nethereum.Generators\DTOs\Vb\StructTypeVbTemplate.cs">
       <Link>\DTOs\Vb\StructTypeVbTemplate.cs</Link>
     </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\MudServiceGenerator.cs">
+      <Link>\MudService\MudServiceGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\MudServiceModel.cs">
+      <Link>\MudService\MudServiceModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\CSharp\ServiceCSharpTemplate.cs">
+      <Link>\MudService\CSharp\ServiceCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\FSharp\MudServiceFSharpTemplate.cs">
+      <Link>\MudService\FSharp\MudServiceFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\Vb\ServiceVbTemplate.cs">
+      <Link>\MudService\Vb\ServiceVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTable.cs">
+      <Link>\MudTable\MudTable.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTableGenerator.cs">
+      <Link>\MudTable\MudTableGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTableModel.cs">
+      <Link>\MudTable\MudTableModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\CSharp\MudTableCSharpTemplate.cs">
+      <Link>\MudTable\CSharp\MudTableCSharpTemplate.cs</Link>
+    </Compile>
     <Compile Include="..\Nethereum.Generators\Service\ServiceGenerator.cs">
       <Link>\Service\ServiceGenerator.cs</Link>
     </Compile>
@@ -405,9 +435,9 @@
     <Error Condition="!Exists('..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets'))" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.d.ts" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I 
-        xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I 
-        xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js.map" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I</PostBuildEvent>
+    <PostBuildEvent>xcopy /F "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.d.ts" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I 
+xcopy /F "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I 
+xcopy /F "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js.map" "$(SolutionDir)generators\Nethereum.Generators.JavaScript\" /Y /I</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -23,36 +23,36 @@ namespace Nethereum.Generators.CQS
             var header = "";
             if (_functionABIModel.IsMultipleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}<[Function](""{functionABI.Name}"", GetType({_functionOutputDTOModel.GetTypeName()}))>";
+                header = $@"{SpaceUtils.One__Tab}<[Function](""{functionABI.Name}"", GetType({_functionOutputDTOModel.GetTypeName()}))>";
             }
 
             if (_functionABIModel.IsSingleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}<[Function](""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")>";
+                header = $@"{SpaceUtils.One__Tab}<[Function](""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")>";
             }
 
             if (_functionABIModel.HasNoReturn())
             {
-                header = $@"{SpaceUtils.OneTab}<[Function](""{functionABI.Name}"")>";
+                header = $@"{SpaceUtils.One__Tab}<[Function](""{functionABI.Name}"")>";
             }
 
             return $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}{header}
-{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
-{SpaceUtils.TwoTabs}Inherits FunctionMessage
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}{header}
+{SpaceUtils.One__Tab}Public Class {Model.GetTypeName()}Base
+{SpaceUtils.Two___Tabs}Inherits FunctionMessage
+{SpaceUtils.One__Tab}
 {_parameterAbiFunctionDtovbTemplate.GenerateAllProperties(functionABI.InputParameters)}
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class
 ";
         }
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}Public Partial Class {Model.GetTypeName()}
-{SpaceUtils.TwoTabs}Inherits {Model.GetTypeName()}Base
-{SpaceUtils.OneTab}End Class";
+            return $@"{SpaceUtils.One__Tab}Public Partial Class {Model.GetTypeName()}
+{SpaceUtils.Two___Tabs}Inherits {Model.GetTypeName()}Base
+{SpaceUtils.One__Tab}End Class";
 
         }
 

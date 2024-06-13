@@ -22,12 +22,12 @@ namespace Nethereum.Generators.Console.CSharp
             var messageVariableName = _contractDeploymentCQSMessageModel.GetVariableName();
 
             return
-                $@"{SpaceUtils.ThreeTabs} /* Deployment 
-{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
-{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(_contractDeploymentCQSMessageModel.ConstructorABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName});
-{SpaceUtils.ThreeTabs}var contractAddress = transactionReceiptDeployment.ContractAddress;
-{SpaceUtils.ThreeTabs} */ ";
+                $@"{SpaceUtils.Three____Tabs} /* Deployment 
+{SpaceUtils.Three____Tabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(_contractDeploymentCQSMessageModel.ConstructorABI.InputParameters, messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<{messageType}>().SendRequestAndWaitForReceiptAsync({messageVariableName});
+{SpaceUtils.Three____Tabs}var contractAddress = transactionReceiptDeployment.ContractAddress;
+{SpaceUtils.Three____Tabs} */ ";
         }
     }
 }

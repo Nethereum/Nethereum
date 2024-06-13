@@ -17,19 +17,19 @@ namespace Nethereum.Generators.DTOs
             if (Model.HasParameters())
             {
                 return
-                    $@"{SpaceUtils.OneTab}[<Event(""{Model.EventABI.Name}"")>]
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}inherit EventDTO()
+                    $@"{SpaceUtils.One__Tab}[<Event(""{Model.EventABI.Name}"")>]
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
+{SpaceUtils.Two___Tabs}inherit EventDTO()
 {_parameterAbiEventDtoFSharpTemplate.GenerateAllProperties(Model.EventABI.InputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
             }
             else
             {
                 return
-                 $@"{SpaceUtils.OneTab}[<Event(""{Model.EventABI.Name}"")>]
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}inherit EventDTO()
-{SpaceUtils.OneTab}";
+                 $@"{SpaceUtils.One__Tab}[<Event(""{Model.EventABI.Name}"")>]
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
+{SpaceUtils.Two___Tabs}inherit EventDTO()
+{SpaceUtils.One__Tab}";
             }
         }
     }

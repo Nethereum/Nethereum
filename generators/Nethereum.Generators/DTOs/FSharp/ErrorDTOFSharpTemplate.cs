@@ -17,18 +17,18 @@ namespace Nethereum.Generators.DTOs
             if (Model.HasParameters())
             {
                 return
-                    $@"{SpaceUtils.OneTab}[<Error(""{Model.ErrorABI.Name}"")>]
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}inherit ErrorDTO()
+                    $@"{SpaceUtils.One__Tab}[<Error(""{Model.ErrorABI.Name}"")>]
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
+{SpaceUtils.Two___Tabs}inherit ErrorDTO()
 {_parameterAbiErrorDtoFSharpTemplate.GenerateAllProperties(Model.ErrorABI.InputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
             }
             else
             {
-               return $@"{SpaceUtils.OneTab}[<Error(""{Model.ErrorABI.Name}"")>]
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() =
-{SpaceUtils.TwoTabs}inherit ErrorDTO()
-{SpaceUtils.OneTab}";
+               return $@"{SpaceUtils.One__Tab}[<Error(""{Model.ErrorABI.Name}"")>]
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() =
+{SpaceUtils.Two___Tabs}inherit ErrorDTO()
+{SpaceUtils.One__Tab}";
             }
         }
     }

@@ -2,6 +2,7 @@
 using Nethereum.Generators.CQS;
 using Nethereum.Generators.DTOs;
 using Nethereum.Generators.Model;
+using Nethereum.Generators.MudService;
 using Nethereum.Generators.Service;
 using Nethereum.Generators.Unity;
 using System;
@@ -11,6 +12,7 @@ using System.Linq;
 
 namespace Nethereum.Generators
 {
+
     public class ContractProjectGenerator
     {
         public ContractABI ContractABI { get; }
@@ -66,6 +68,7 @@ namespace Nethereum.Generators
             return generated.ToArray();
         }
 
+
         public GeneratedFile GenerateAllMessages()
         {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
@@ -104,6 +107,20 @@ namespace Nethereum.Generators
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
             var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+            return serviceGenerator.GenerateFileContent(serviceFullPath);
+        }
+
+        public GeneratedFile GenerateMudService(bool singleMessagesFile = false)
+        {
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            var cqsFullNamespace = GetFullNamespace(CQSNamespace);
+
+            dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
+            cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
+
+            var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
+            var serviceFullPath = GetFullPath(ServiceNamespace);
+            var serviceGenerator = new MudServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 

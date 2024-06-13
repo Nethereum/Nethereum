@@ -24,31 +24,31 @@ namespace Nethereum.Generators.CQS
             var header = "";
             if (_functionABIModel.IsMultipleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"", typeof({_functionOutputDTOModel.GetTypeName()}))]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"", typeof({_functionOutputDTOModel.GetTypeName()}))]";
             }
 
             if (_functionABIModel.IsSingleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")]";
             }
 
             if (_functionABIModel.HasNoReturn())
             {
-                header = $@"{SpaceUtils.OneTab}[Function(""{functionABI.Name}"")]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"")]";
             }
 
             return $@"{GetPartialMainClass()}
 
 {header}
-{SpaceUtils.OneTab}public class {Model.GetTypeName()}Base : FunctionMessage
-{SpaceUtils.OneTab}{{
+{SpaceUtils.One__Tab}public class {Model.GetTypeName()}Base : FunctionMessage
+{SpaceUtils.One__Tab}{{
 {_parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties(functionABI.InputParameters)}
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
         }
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
+            return $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} : {Model.GetTypeName()}Base {{ }}";
         }
     }
 

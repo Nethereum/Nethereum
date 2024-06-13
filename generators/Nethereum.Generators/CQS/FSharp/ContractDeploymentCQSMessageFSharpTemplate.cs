@@ -17,15 +17,15 @@ namespace Nethereum.Generators.CQS
         {
             var typeName = Model.GetTypeName();
             return
-                $@"{SpaceUtils.OneTab}type {typeName}(byteCode: string) =
-{SpaceUtils.TwoTabs}inherit ContractDeploymentMessage(byteCode)
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}static let BYTECODE = ""{Model.ByteCode}""
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}new() = {typeName}(BYTECODE)
-{SpaceUtils.TwoTabs}
+                $@"{SpaceUtils.One__Tab}type {typeName}(byteCode: string) =
+{SpaceUtils.Two___Tabs}inherit ContractDeploymentMessage(byteCode)
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}static let BYTECODE = ""{Model.ByteCode}""
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}new() = {typeName}(BYTECODE)
+{SpaceUtils.Two___Tabs}
 {_parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(Model.ConstructorABI.InputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
         }
 
     }

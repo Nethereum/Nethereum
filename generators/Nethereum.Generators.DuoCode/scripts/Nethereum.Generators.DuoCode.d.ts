@@ -24,6 +24,7 @@ declare module Nethereum {
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
             GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
+            GenerateMudService(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateAllUnity(): Core.GeneratedFile[];
             GenerateUnityContractFactory(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateUnityFunctionRequests(singleMessagesFile?: boolean): Core.GeneratedFile;
@@ -53,6 +54,27 @@ declare module Nethereum {
         }
         const ContractProjectGenerator: ContractProjectGeneratorTypeFunc;
 
+        // Nethereum.Generators.MudTablesGenerator
+        export interface MudTablesGenerator extends System.Object {
+            MudTables: MudTable.MudTable[];
+            get_Namespace(): string;
+            get_CodeGenLanguage(): Core.CodeGenLanguage;
+            get_BaseOutputPath(): string;
+            get_PathDelimiter(): string;
+            get_BaseNamespace(): string;
+            GenerateAllTables(): Core.GeneratedFile[];
+            GetAllTableTypeGenerators(): System.Collections.Generic.List$1<MudTable.MudTableGenerator>;
+            GetFullNamespace(namespace: string): string;
+            GetFullPath(namespace: string): string;
+        }
+        export interface MudTablesGeneratorTypeFunc extends TypeFunction {
+            (): MudTablesGeneratorTypeFunc;
+            prototype: MudTablesGenerator;
+            new (mudTables: MudTable.MudTable[], baseNamespace: string, codeGenLanguage: Core.CodeGenLanguage, baseOutputPath: string, pathDelimiter: string, namespace: string): MudTablesGenerator;
+            ctor: { new (mudTables: MudTable.MudTable[], baseNamespace: string, codeGenLanguage: Core.CodeGenLanguage, baseOutputPath: string, pathDelimiter: string, namespace: string): MudTablesGenerator; };
+        }
+        const MudTablesGenerator: MudTablesGeneratorTypeFunc;
+
         // Nethereum.Generators.NetStandardLibraryGenerator
         export interface NetStandardLibraryGenerator extends System.Object {
             get_ProjectFileName(): string;
@@ -68,6 +90,17 @@ declare module Nethereum {
             ctor: { new (projectFileName: string, codeGenLanguage: Core.CodeGenLanguage): NetStandardLibraryGenerator; };
         }
         const NetStandardLibraryGenerator: NetStandardLibraryGeneratorTypeFunc;
+
+        // Nethereum.Generators.MudCodeGenerator
+        export interface MudCodeGenerator extends System.Object {
+        }
+        export interface MudCodeGeneratorTypeFunc extends TypeFunction {
+            (): MudCodeGeneratorTypeFunc;
+            prototype: MudCodeGenerator;
+            new (): MudCodeGenerator;
+            ctor: { new (): MudCodeGenerator; };
+        }
+        const MudCodeGenerator: MudCodeGeneratorTypeFunc;
         module Core {
             // Nethereum.Generators.Core.FunctionABIModel
             export interface FunctionABIModel extends System.Object {
@@ -445,11 +478,11 @@ declare module Nethereum {
                 (): SpaceUtilsTypeFunc;
                 prototype: SpaceUtils;
                 NoTabs: string;
-                OneTab: string;
-                TwoTabs: string;
-                ThreeTabs: string;
-                FourTabs: string;
-                FiveTabs: string;
+                One__Tab: string;
+                Two___Tabs: string;
+                Three____Tabs: string;
+                Four_____Tabs: string;
+                Five______Tabs: string;
                 new (): SpaceUtils;
                 ctor: { new (): SpaceUtils; };
             }
@@ -1290,6 +1323,8 @@ declare module Nethereum {
             export interface ParameterABIFunctionDTOCSharpTemplate extends System.Object {
                 GenerateAllProperties(parameters: Model.ParameterABI[]): string;
                 GenerateProperty(parameter: Model.ParameterABI): string;
+                GenerateProperty$1(parameter: Model.ParameterABI, spacing: string): string;
+                GenerateAllProperties$1(parameters: Model.ParameterABI[], spacing: string): string;
                 GenerateAllFunctionParameters(parameters: Model.ParameterABI[]): string;
                 GenerateFunctionParameter(parameter: Model.ParameterABI): string;
                 GenerateAssigmentFunctionParametersToProperties(parameters: Model.ParameterABI[], objectName: string, spacing: string): string;
@@ -1466,6 +1501,133 @@ declare module Nethereum {
                 ctor: { new (model: StructTypeModel): StructTypeVbTemplate; };
             }
             const StructTypeVbTemplate: StructTypeVbTemplateTypeFunc;
+        }
+        module MudService {
+            // Nethereum.Generators.MudService.MudServiceGenerator
+            export interface MudServiceGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<MudServiceModel>, MudServiceModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface MudServiceGeneratorTypeFunc extends TypeFunction {
+                (): MudServiceGeneratorTypeFunc;
+                prototype: MudServiceGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): MudServiceGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): MudServiceGenerator; };
+            }
+            const MudServiceGenerator: MudServiceGeneratorTypeFunc;
+
+            // Nethereum.Generators.MudService.MudServiceModel
+            export interface MudServiceModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+                get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
+                GetResourceClassName(): string;
+                GetSystemName(): string;
+            }
+            export interface MudServiceModelTypeFunc extends TypeFunction {
+                (): MudServiceModelTypeFunc;
+                prototype: MudServiceModel;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): MudServiceModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): MudServiceModel; };
+            }
+            const MudServiceModel: MudServiceModelTypeFunc;
+
+            // Nethereum.Generators.MudService.MudServiceCSharpTemplate
+            export interface MudServiceCSharpTemplate extends CQS.ClassTemplateBase$1<MudServiceModel>, Core.IClassTemplate {
+                GenerateSystemClass(): string;
+            }
+            export interface MudServiceCSharpTemplateTypeFunc extends TypeFunction {
+                (): MudServiceCSharpTemplateTypeFunc;
+                prototype: MudServiceCSharpTemplate;
+                new (model: MudServiceModel): MudServiceCSharpTemplate;
+                ctor: { new (model: MudServiceModel): MudServiceCSharpTemplate; };
+            }
+            const MudServiceCSharpTemplate: MudServiceCSharpTemplateTypeFunc;
+
+            // Nethereum.Generators.MudService.MudServiceFSharpTemplate
+            export interface MudServiceFSharpTemplate extends CQS.ClassTemplateBase$1<MudServiceModel>, Core.IClassTemplate {
+            }
+            export interface MudServiceFSharpTemplateTypeFunc extends TypeFunction {
+                (): MudServiceFSharpTemplateTypeFunc;
+                prototype: MudServiceFSharpTemplate;
+                new (model: MudServiceModel): MudServiceFSharpTemplate;
+                ctor: { new (model: MudServiceModel): MudServiceFSharpTemplate; };
+            }
+            const MudServiceFSharpTemplate: MudServiceFSharpTemplateTypeFunc;
+
+            // Nethereum.Generators.MudService.MudServiceVbTemplate
+            export interface MudServiceVbTemplate extends CQS.ClassTemplateBase$1<MudServiceModel>, Core.IClassTemplate {
+                GenerateSystemClass(): string;
+            }
+            export interface MudServiceVbTemplateTypeFunc extends TypeFunction {
+                (): MudServiceVbTemplateTypeFunc;
+                prototype: MudServiceVbTemplate;
+                new (model: MudServiceModel): MudServiceVbTemplate;
+                ctor: { new (model: MudServiceModel): MudServiceVbTemplate; };
+            }
+            const MudServiceVbTemplate: MudServiceVbTemplateTypeFunc;
+        }
+        module MudTable {
+            // Nethereum.Generators.MudTable.MudTable
+            export interface MudTable extends System.Object {
+                get_MudNamespace(): string;
+                set_MudNamespace(value: string): void;
+                get_Name(): string;
+                set_Name(value: string): void;
+                get_ValueSchema(): Model.ParameterABI[];
+                set_ValueSchema(value: Model.ParameterABI[]): void;
+                get_Keys(): Model.ParameterABI[];
+                set_Keys(value: Model.ParameterABI[]): void;
+            }
+            export interface MudTableTypeFunc extends TypeFunction {
+                (): MudTableTypeFunc;
+                prototype: MudTable;
+                new (): MudTable;
+                ctor: { new (): MudTable; };
+            }
+            const MudTable: MudTableTypeFunc;
+
+            // Nethereum.Generators.MudTable.MudTableGenerator
+            export interface MudTableGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<MudTableModel>, MudTableModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface MudTableGeneratorTypeFunc extends TypeFunction {
+                (): MudTableGeneratorTypeFunc;
+                prototype: MudTableGenerator;
+                new (mudTable: MudTable, namespace: string, codeGenLanguage: Core.CodeGenLanguage): MudTableGenerator;
+                ctor: { new (mudTable: MudTable, namespace: string, codeGenLanguage: Core.CodeGenLanguage): MudTableGenerator; };
+            }
+            const MudTableGenerator: MudTableGeneratorTypeFunc;
+
+            // Nethereum.Generators.MudTable.MudTableModel
+            export interface MudTableModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_MudTable(): MudTable;
+                IsSingleton(): boolean;
+                GetKeyTypeName(): string;
+                GetValueTypeName(): string;
+                GetServiceTypeName(): string;
+            }
+            export interface MudTableModelTypeFunc extends TypeFunction {
+                (): MudTableModelTypeFunc;
+                prototype: MudTableModel;
+                new (mudTable: MudTable, namespace: string): MudTableModel;
+                ctor: { new (mudTable: MudTable, namespace: string): MudTableModel; };
+            }
+            const MudTableModel: MudTableModelTypeFunc;
+
+            // Nethereum.Generators.MudTable.MudTableCSharpTemplate
+            export interface MudTableCSharpTemplate extends CQS.ClassTemplateBase$1<MudTableModel>, Core.IClassTemplate {
+                GetSingletonServiceClass(): string;
+                GetServiceClass(): string;
+            }
+            export interface MudTableCSharpTemplateTypeFunc extends TypeFunction {
+                (): MudTableCSharpTemplateTypeFunc;
+                prototype: MudTableCSharpTemplate;
+                new (model: MudTableModel): MudTableCSharpTemplate;
+                ctor: { new (model: MudTableModel): MudTableCSharpTemplate; };
+            }
+            const MudTableCSharpTemplate: MudTableCSharpTemplateTypeFunc;
         }
         module Unity {
             // Nethereum.Generators.Unity.UnityContractFactoryGenerator

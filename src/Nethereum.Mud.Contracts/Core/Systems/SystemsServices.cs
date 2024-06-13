@@ -8,10 +8,10 @@ using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Contracts.Create2Deployment;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
-
     public class SystemDeploymentResult
     {
         public  Create2ContractDeploymentTransactionResult DeploymentResult { get; set; }
@@ -41,6 +41,24 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             {
                 var result = await systemService.DeployCreate2ContractAsync(deployerAddress, salt, byteCodeLibraries);
                 results.Add(new SystemDeploymentResult { DeploymentResult = result, SystemService = systemService });
+            }
+            return results;
+        }
+
+        public virtual async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
+        {
+            var results = new List<SystemDeploymentResult>();
+            foreach (var systemService in SystemServices)
+            {
+                var result = await systemService.DeployCreate2ContractAndWaitForReceiptAsync(deployerAddress, salt, byteCodeLibraries, cancellationToken);
+                results.Add(new SystemDeploymentResult { DeploymentResult = 
+                    new Create2ContractDeploymentTransactionResult()
+                    {
+                        AlreadyDeployed = result.AlreadyDeployed,
+                        Address = result.Address,
+                        TransactionHash = result.TransactionReceipt.TransactionHash,
+                    }, 
+                    SystemService = systemService });
             }
             return results;
         }

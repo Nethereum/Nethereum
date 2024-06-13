@@ -7,6 +7,8 @@
     <Folder Include="AllMessages\CSharp\" />
     <Folder Include="AllMessages\FSharp\" />
     <Folder Include="AllMessages\Vb\" />
+    <Folder Include="MudTable\FSharp\" />
+    <Folder Include="MudTable\Vb\" />
   </ItemGroup>
 
 </Project>

@@ -16,6 +16,8 @@ var contractName = "ERC20";
 var baseNamespace = "Nethereum.Unity.Contracts.Standards";
 var basePath = "codeGenNodeTest";
 
+var mudTables = '{"tables":{"Counter":{"schema":{"value":"uint32"},"key":[]},"Item":{"schema":{"id":"uint32","price":"uint32","name":"string","description":"string","owner":"string"},"key":["id"]}}}';
+
 
 
 var projectName = "Nethereum.GnosisSafe";
@@ -31,4 +33,13 @@ codegen.generateAllClasses(abi,
     0);
 
 codegen.generateUnityRequests(abi, contractByteCode, contractName, baseNamespace, basePath);
+
+codegen.generateMudTables(mudTables, baseNamespace, "Tables", basePath, 0);
+codegen.generateMudService(abi,
+    contractByteCode,
+    contractName,
+    baseNamespace,
+    basePath,
+    0);
+
 

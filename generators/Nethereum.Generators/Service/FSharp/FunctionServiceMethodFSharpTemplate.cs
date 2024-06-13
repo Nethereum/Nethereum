@@ -43,10 +43,10 @@ namespace Nethereum.Generators.Service
                 var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
 
                 return
-                    $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}QueryAsync({messageVariableName}: {messageType}, ?blockParameter: BlockParameter): Task<{functionOutputDTOType}> =
-{SpaceUtils.ThreeTabs}let blockParameterVal = defaultArg blockParameter null
-{SpaceUtils.ThreeTabs}this.ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>({messageVariableName}, blockParameterVal)
-{SpaceUtils.ThreeTabs}";
+                    $@"{SpaceUtils.Two___Tabs}member this.{functionNameUpper}QueryAsync({messageVariableName}: {messageType}, ?blockParameter: BlockParameter): Task<{functionOutputDTOType}> =
+{SpaceUtils.Three____Tabs}let blockParameterVal = defaultArg blockParameter null
+{SpaceUtils.Three____Tabs}this.ContractHandler.QueryDeserializingToObjectAsync<{messageType}, {functionOutputDTOType}>({messageVariableName}, blockParameterVal)
+{SpaceUtils.Three____Tabs}";
             }
 
             if (functionABIModel.IsSingleOutput() && !functionABIModel.IsTransaction())
@@ -56,24 +56,24 @@ namespace Nethereum.Generators.Service
                     var type = functionABIModel.GetSingleOutputReturnType();
 
                     return
-                        $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}QueryAsync({messageVariableName}: {messageType}, ?blockParameter: BlockParameter): Task<{type}> =
-{SpaceUtils.ThreeTabs}let blockParameterVal = defaultArg blockParameter null
-{SpaceUtils.ThreeTabs}this.ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameterVal)
-{SpaceUtils.ThreeTabs}";
+                        $@"{SpaceUtils.Two___Tabs}member this.{functionNameUpper}QueryAsync({messageVariableName}: {messageType}, ?blockParameter: BlockParameter): Task<{type}> =
+{SpaceUtils.Three____Tabs}let blockParameterVal = defaultArg blockParameter null
+{SpaceUtils.Three____Tabs}this.ContractHandler.QueryAsync<{messageType}, {type}>({messageVariableName}, blockParameterVal)
+{SpaceUtils.Three____Tabs}";
                 }
 
             if (functionABIModel.IsTransaction())
             {
                 var transactionRequest =
-                    $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}RequestAsync({messageVariableName}: {messageType}): Task<string> =
-{SpaceUtils.ThreeTabs}this.ContractHandler.SendRequestAsync({messageVariableName});
-{SpaceUtils.TwoTabs}";
+                    $@"{SpaceUtils.Two___Tabs}member this.{functionNameUpper}RequestAsync({messageVariableName}: {messageType}): Task<string> =
+{SpaceUtils.Three____Tabs}this.ContractHandler.SendRequestAsync({messageVariableName});
+{SpaceUtils.Two___Tabs}";
 
                 var transactionRequestAndReceipt =
-                    $@"{SpaceUtils.TwoTabs}member this.{functionNameUpper}RequestAndWaitForReceiptAsync({messageVariableName}: {messageType}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> =
-{SpaceUtils.ThreeTabs}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null
-{SpaceUtils.ThreeTabs}this.ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSourceVal);
-{SpaceUtils.TwoTabs}";
+                    $@"{SpaceUtils.Two___Tabs}member this.{functionNameUpper}RequestAndWaitForReceiptAsync({messageVariableName}: {messageType}, ?cancellationTokenSource : CancellationTokenSource): Task<TransactionReceipt> =
+{SpaceUtils.Three____Tabs}let cancellationTokenSourceVal = defaultArg cancellationTokenSource null
+{SpaceUtils.Three____Tabs}this.ContractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName}, cancellationTokenSourceVal);
+{SpaceUtils.Two___Tabs}";
 
                 return transactionRequest + Environment.NewLine + transactionRequestAndReceipt;
             }

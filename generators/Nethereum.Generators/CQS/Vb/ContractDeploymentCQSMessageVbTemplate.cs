@@ -19,40 +19,40 @@ namespace Nethereum.Generators.CQS
             return
                 $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}Public Class {typeName}Base 
-{SpaceUtils.ThreeTabs}Inherits ContractDeploymentMessage
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Shared DEFAULT_BYTECODE As String = ""{Model.ByteCode}""
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Sub New()
-{SpaceUtils.ThreeTabs}MyBase.New(DEFAULT_BYTECODE)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Sub New(ByVal byteCode As String)
-{SpaceUtils.ThreeTabs}MyBase.New(byteCode)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.TwoTabs}
+{SpaceUtils.One__Tab}Public Class {typeName}Base 
+{SpaceUtils.Three____Tabs}Inherits ContractDeploymentMessage
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Shared DEFAULT_BYTECODE As String = ""{Model.ByteCode}""
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Sub New()
+{SpaceUtils.Three____Tabs}MyBase.New(DEFAULT_BYTECODE)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Sub New(ByVal byteCode As String)
+{SpaceUtils.Three____Tabs}MyBase.New(byteCode)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.Two___Tabs}
 {_parameterAbiFunctionDtovbTemplate.GenerateAllProperties(Model.ConstructorABI.InputParameters)}
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class";
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class";
         }
 
         public string GetPartialMainClass()
         {
             var typeName = Model.GetTypeName();
 
-            return $@"{SpaceUtils.OneTab}Public Partial Class {typeName}
-{SpaceUtils.OneTab} Inherits {typeName}Base
-{SpaceUtils.OneTab}
-{SpaceUtils.TwoTabs}Public Sub New()
-{SpaceUtils.ThreeTabs}MyBase.New(DEFAULT_BYTECODE)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Sub New(ByVal byteCode As String)
-{SpaceUtils.ThreeTabs}MyBase.New(byteCode)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class";
+            return $@"{SpaceUtils.One__Tab}Public Partial Class {typeName}
+{SpaceUtils.One__Tab} Inherits {typeName}Base
+{SpaceUtils.One__Tab}
+{SpaceUtils.Two___Tabs}Public Sub New()
+{SpaceUtils.Three____Tabs}MyBase.New(DEFAULT_BYTECODE)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Sub New(ByVal byteCode As String)
+{SpaceUtils.Three____Tabs}MyBase.New(byteCode)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class";
         }
 
     }

@@ -17,15 +17,15 @@ namespace Nethereum.Generators.Service
         {
             return
                 $@"
-{SpaceUtils.OneTab}type {Model.GetTypeName()} (web3: Web3, contractAddress: string) =
-{SpaceUtils.OneTab}
-{SpaceUtils.TwoTabs}member val Web3 = web3 with get
-{SpaceUtils.TwoTabs}member val ContractHandler = web3.Eth.GetContractHandler(contractAddress) with get
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}type {Model.GetTypeName()} (web3: Web3, contractAddress: string) =
+{SpaceUtils.One__Tab}
+{SpaceUtils.Two___Tabs}member val Web3 = web3 with get
+{SpaceUtils.Two___Tabs}member val ContractHandler = web3.Eth.GetContractHandler(contractAddress) with get
+{SpaceUtils.One__Tab}
 {_deploymentServiceMethodsFSharpTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}
 {_functionServiceMethodFSharpTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
 
         }
     }

@@ -23,25 +23,25 @@ namespace Nethereum.Generators.CQS
             var header = "";
             if (_functionABIModel.IsMultipleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}[<Function(""{functionABI.Name}"", typeof<{_functionOutputDTOModel.GetTypeName()}>)>]";
+                header = $@"{SpaceUtils.One__Tab}[<Function(""{functionABI.Name}"", typeof<{_functionOutputDTOModel.GetTypeName()}>)>]";
             }
 
             if (_functionABIModel.IsSingleOutput())
             {
-                header = $@"{SpaceUtils.OneTab}[<Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")>]";
+                header = $@"{SpaceUtils.One__Tab}[<Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")>]";
             }
 
             if (_functionABIModel.HasNoReturn())
             {
-                header = $@"{SpaceUtils.OneTab}[<Function(""{functionABI.Name}"")>]";
+                header = $@"{SpaceUtils.One__Tab}[<Function(""{functionABI.Name}"")>]";
             }   
 
             return $@"{header}
-{SpaceUtils.OneTab}type {Model.GetTypeName()}() = 
-{SpaceUtils.TwoTabs}inherit FunctionMessage()
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}type {Model.GetTypeName()}() = 
+{SpaceUtils.Two___Tabs}inherit FunctionMessage()
+{SpaceUtils.One__Tab}
 {_parameterAbiFunctionDtoFSharpTemplate.GenerateAllProperties(functionABI.InputParameters)}
-{SpaceUtils.OneTab}";
+{SpaceUtils.One__Tab}";
         }
 
     }

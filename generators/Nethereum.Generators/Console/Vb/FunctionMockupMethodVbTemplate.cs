@@ -32,10 +32,10 @@ namespace Nethereum.Generators.Console.Vb
         {
             return
                 $@"
-{SpaceUtils.ThreeTabs}' Function: {functionAbi.Name} 
-{SpaceUtils.ThreeTabs}
+{SpaceUtils.Three____Tabs}' Function: {functionAbi.Name} 
+{SpaceUtils.Three____Tabs}
 {GenerateMethod(functionAbi)}
-{SpaceUtils.ThreeTabs}";
+{SpaceUtils.Three____Tabs}";
         }
 
         public string GenerateMethod(FunctionABI functionABI)
@@ -55,12 +55,12 @@ namespace Nethereum.Generators.Console.Vb
                 var functionOutputVariableName = functionOutputDTOModel.GetVariableName();
 
                 var returnWithInputParam =
-                    $@"{SpaceUtils.ThreeTabs}Dim {messageVariableName} = New {messageType}()
-{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}Dim {functionOutputVariableName} = Await contractHandler.QueryDeserializingToObjectAsync(Of {messageType}, {functionOutputDTOType})({messageVariableName})";
+                    $@"{SpaceUtils.Three____Tabs}Dim {messageVariableName} = New {messageType}()
+{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}Dim {functionOutputVariableName} = Await contractHandler.QueryDeserializingToObjectAsync(Of {messageType}, {functionOutputDTOType})({messageVariableName})";
 
                 var returnWithoutInputParam =
-                    $@"{SpaceUtils.ThreeTabs}Dim {functionOutputVariableName} = Await contractHandler.QueryDeserializingToObjectAsync(Of {messageType}, {functionOutputDTOType})()";
+                    $@"{SpaceUtils.Three____Tabs}Dim {functionOutputVariableName} = Await contractHandler.QueryDeserializingToObjectAsync(Of {messageType}, {functionOutputDTOType})()";
 
                 if (functionABIModel.HasNoInputParameters())
                 {
@@ -79,12 +79,12 @@ namespace Nethereum.Generators.Console.Vb
                 var type = functionABIModel.GetSingleOutputReturnType();
                 var returnName = functionCQSMessageModel.GetVariableName() + "Return";
                 var returnWithInputParam = 
-                    $@"{SpaceUtils.ThreeTabs}Dim {messageVariableName} = New {messageType}()
-{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}Dim {returnName} = Await contractHandler.QueryAsync(Of {messageType}, {type})({messageVariableName})";
+                    $@"{SpaceUtils.Three____Tabs}Dim {messageVariableName} = New {messageType}()
+{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}Dim {returnName} = Await contractHandler.QueryAsync(Of {messageType}, {type})({messageVariableName})";
 
                     var returnWithoutInputParam =
-                    $@"{SpaceUtils.ThreeTabs}Dim {returnName} = Await contractHandler.QueryAsync(Of {messageType}, {type})()";
+                    $@"{SpaceUtils.Three____Tabs}Dim {returnName} = Await contractHandler.QueryAsync(Of {messageType}, {type})()";
 
 
                     if (functionABIModel.HasNoInputParameters())
@@ -101,12 +101,12 @@ namespace Nethereum.Generators.Console.Vb
             {
 
                 var returnName = functionCQSMessageModel.GetVariableName() + "TxnReceipt";
-                var transactionRequestAndReceiptWithoutInput = $@"{SpaceUtils.ThreeTabs} Dim {returnName} = Await contractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})()";
+                var transactionRequestAndReceiptWithoutInput = $@"{SpaceUtils.Three____Tabs} Dim {returnName} = Await contractHandler.SendRequestAndWaitForReceiptAsync(Of {messageType})()";
 
                 var transactionRequestAndReceiptWithSimpleParams =
-                    $@"{SpaceUtils.ThreeTabs}Dim {messageVariableName} = New {messageType}()
-{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}Dim {returnName} = Await contractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName})";
+                    $@"{SpaceUtils.Three____Tabs}Dim {messageVariableName} = New {messageType}()
+{_parameterAbiFunctionDtoVbTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, "' " + messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}Dim {returnName} = Await contractHandler.SendRequestAndWaitForReceiptAsync({messageVariableName})";
 
                 if (functionABIModel.HasNoInputParameters())
                 {

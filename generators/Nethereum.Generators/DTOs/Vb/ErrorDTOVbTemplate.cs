@@ -19,31 +19,31 @@ namespace Nethereum.Generators.DTOs
                 return
                     $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}<[Error](""{Model.ErrorABI.Name}"")>
-{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
-{SpaceUtils.TwoTabs}Implements IErrorDTO
-{SpaceUtils.TwoTabs}
+{SpaceUtils.One__Tab}<[Error](""{Model.ErrorABI.Name}"")>
+{SpaceUtils.One__Tab}Public Class {Model.GetTypeName()}Base
+{SpaceUtils.Two___Tabs}Implements IErrorDTO
+{SpaceUtils.Two___Tabs}
 {_parameterAbiErrorDtoVbTemplate.GenerateAllProperties(Model.ErrorABI.InputParameters)}
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class";
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class";
             }
             else
             {
                return $@"{GetPartialMainClass()}
 
-{SpaceUtils.OneTab}<[Error](""{Model.ErrorABI.Name}"")>
-{SpaceUtils.OneTab}Public Class {Model.GetTypeName()}Base
-{SpaceUtils.TwoTabs}Implements IErrorDTO
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class";
+{SpaceUtils.One__Tab}<[Error](""{Model.ErrorABI.Name}"")>
+{SpaceUtils.One__Tab}Public Class {Model.GetTypeName()}Base
+{SpaceUtils.Two___Tabs}Implements IErrorDTO
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class";
             }
         }
 
         public string GetPartialMainClass()
         {
-            return $@"{SpaceUtils.OneTab}Public Partial Class {Model.GetTypeName()}
-{SpaceUtils.TwoTabs}Inherits {Model.GetTypeName()}Base
-{SpaceUtils.OneTab}End Class";
+            return $@"{SpaceUtils.One__Tab}Public Partial Class {Model.GetTypeName()}
+{SpaceUtils.Two___Tabs}Inherits {Model.GetTypeName()}Base
+{SpaceUtils.One__Tab}End Class";
 
         }
     }

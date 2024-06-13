@@ -49,37 +49,37 @@ namespace Nethereum.Generators.Unity.CSharp
                 if (functionABIModel.HasNoInputParameters())
                 {
                     queryMethod =
-$@"{SpaceUtils.TwoTabs}public IEnumerator Query(BlockParameter blockParameter = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
-{SpaceUtils.ThreeTabs}yield return Query({messageVariableName}, blockParameter);
-{SpaceUtils.TwoTabs}}}";
+$@"{SpaceUtils.Two___Tabs}public IEnumerator Query(BlockParameter blockParameter = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}var {messageVariableName} = new {messageType}();
+{SpaceUtils.Three____Tabs}yield return Query({messageVariableName}, blockParameter);
+{SpaceUtils.Two___Tabs}}}";
                 }
                 else
                 {
                     queryMethod =
-$@"{SpaceUtils.TwoTabs}public IEnumerator Query({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
-{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}yield return Query({messageVariableName}, blockParameter);
-{SpaceUtils.TwoTabs}}}";
+$@"{SpaceUtils.Two___Tabs}public IEnumerator Query({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}yield return Query({messageVariableName}, blockParameter);
+{SpaceUtils.Two___Tabs}}}";
                 }
                 var classQuery =
-    $@"{SpaceUtils.OneTab}public partial class {functionNameUpper}QueryRequest : ContractFunctionQueryRequest<{messageType}, {functionOutputDTOType}>
-{SpaceUtils.OneTab}{{
+    $@"{SpaceUtils.One__Tab}public partial class {functionNameUpper}QueryRequest : ContractFunctionQueryRequest<{messageType}, {functionOutputDTOType}>
+{SpaceUtils.One__Tab}{{
 
-{SpaceUtils.TwoTabs}public {functionNameUpper}QueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.Two___Tabs}public {functionNameUpper}QueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Two___Tabs}}}
 
-{SpaceUtils.TwoTabs}public {functionNameUpper}QueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.Two___Tabs}public {functionNameUpper}QueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Two___Tabs}}}
 
 {queryMethod}
 
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
                 return classQuery;
             }
 
@@ -90,37 +90,37 @@ $@"{SpaceUtils.TwoTabs}public IEnumerator Query({_parameterAbiFunctionDtocSharpT
                 if (functionABIModel.HasNoInputParameters())
                 {
                     txnMethod =
-$@"{SpaceUtils.TwoTabs}public IEnumerator SignAndSendTransaction(BlockParameter blockParameter = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
-{SpaceUtils.ThreeTabs}yield return SignAndSendTransaction({messageVariableName});
-{SpaceUtils.TwoTabs}}}";
+$@"{SpaceUtils.Two___Tabs}public IEnumerator SignAndSendTransaction(BlockParameter blockParameter = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}var {messageVariableName} = new {messageType}();
+{SpaceUtils.Three____Tabs}yield return SignAndSendTransaction({messageVariableName});
+{SpaceUtils.Two___Tabs}}}";
                 }
                 else
                 {
                     txnMethod =
-$@"{SpaceUtils.TwoTabs}public IEnumerator SignAndSendTransaction({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.ThreeTabs}var {messageVariableName} = new {messageType}();
-{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.FourTabs)}
-{SpaceUtils.ThreeTabs}yield return SignAndSendTransaction({messageVariableName});
-{SpaceUtils.TwoTabs}}}";
+$@"{SpaceUtils.Two___Tabs}public IEnumerator SignAndSendTransaction({_parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.FunctionABI.InputParameters)}, BlockParameter blockParameter = null)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Three____Tabs}var {messageVariableName} = new {messageType}();
+{_parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.FunctionABI.InputParameters, messageVariableName, SpaceUtils.Four_____Tabs)}
+{SpaceUtils.Three____Tabs}yield return SignAndSendTransaction({messageVariableName});
+{SpaceUtils.Two___Tabs}}}";
                 }
                 var classTxn =
-    $@"{SpaceUtils.OneTab}public partial class {functionNameUpper}TransactionRequest : ContractFunctionTransactionRequest<{messageType}>
-{SpaceUtils.OneTab}{{
+    $@"{SpaceUtils.One__Tab}public partial class {functionNameUpper}TransactionRequest : ContractFunctionTransactionRequest<{messageType}>
+{SpaceUtils.One__Tab}{{
 
-{SpaceUtils.TwoTabs}public {functionNameUpper}TransactionRequest(IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, string contractAddress) : base(contractTransactionUnityRequestFactory, contractAddress)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.Two___Tabs}public {functionNameUpper}TransactionRequest(IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, string contractAddress) : base(contractTransactionUnityRequestFactory, contractAddress)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Two___Tabs}}}
 
-{SpaceUtils.TwoTabs}public {functionNameUpper}TransactionRequest(string url, BigInteger chainId, string privateKey, string contractAddress, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, chainId, privateKey, contractAddress, jsonSerializerSettings, requestHeaders)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.Two___Tabs}public {functionNameUpper}TransactionRequest(string url, BigInteger chainId, string privateKey, string contractAddress, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, chainId, privateKey, contractAddress, jsonSerializerSettings, requestHeaders)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Two___Tabs}}}
 
 {txnMethod}
 
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
                 return classTxn;
             }
 

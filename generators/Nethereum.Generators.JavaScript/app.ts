@@ -2,6 +2,7 @@
 import * as path from 'path';
 import * as fsex from 'fs-extra';
 import * as abiDes from "./AbiDeserialiser"
+import * as mudParse from "./MudWorldParser";
 
 var n = require('./Nethereum.Generators.DuoCode.js');
 
@@ -32,6 +33,34 @@ var n = require('./Nethereum.Generators.DuoCode.js');
     outputFiles(generatedClases);
 }
 
+function generateMudServiceInternal(abi: string, byteCode: string,
+    contractName: string,
+    baseNamespace: string,
+    serviceNamespace: string,
+    cqsNamespace: string,
+    dtoNamespace: string,
+    basePath: string,
+    pathSeparator: string,
+    codeGenLang: int
+) {
+    var contractDes = abiDes.buildContract(abi);
+    var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
+        contractName,
+        byteCode,
+        baseNamespace,
+        serviceNamespace,
+        cqsNamespace,
+        dtoNamespace,
+        basePath,
+        pathSeparator,
+        codeGenLang);
+
+    classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
+    var generatedClases = classGenerator.GenerateMudService();
+    outputFiles([generatedClases]);
+}
+
+
 
 function generateAllUnityClassesInternal(abi: string, byteCode: string,
     contractName: string,
@@ -55,6 +84,18 @@ function generateAllUnityClassesInternal(abi: string, byteCode: string,
         0);
         var generatedClases = classGenerator.GenerateAllUnity();
         outputFiles(generatedClases);
+}
+
+function generateAllMudTablesInternal(json: string, baseNamespace: string,
+    namespace: string,
+    basePath: string,
+    pathSeparator: string,
+    codeGenLang: int) {
+    var tables = mudParse.extractTables(json);
+    var mudTableGenerator =
+        new Nethereum.Generators.MudTablesGenerator(tables, baseNamespace, codeGenLang, basePath, pathSeparator, namespace);
+    var generatedTables = mudTableGenerator.GenerateAllTables();
+    outputFiles(generatedTables);
 }
 
 function outputFiles(generatedFiles: Nethereum.Generators.Core.GeneratedFile[]) {
@@ -102,6 +143,39 @@ export function generateAllClasses(abi: string, byteCode: string,
         basePath,
         pathSeparator,
         codeGenLang);
+}
+
+export function generateMudService(abi: string, byteCode: string,
+    contractName: string,
+    baseNamespace: string,
+    basePath: string,
+    codeGenLang: int
+) {
+
+    var serviceNamespace = contractName;
+    //Same, we are generating single file
+    var cqsNamespace = contractName + ".ContractDefinition";
+    var dtoNamespace = contractName + ".ContractDefinition";
+    var pathSeparator = path.sep;
+    generateMudServiceInternal(abi,
+        byteCode,
+        contractName,
+        baseNamespace,
+        serviceNamespace,
+        cqsNamespace,
+        dtoNamespace,
+        basePath,
+        pathSeparator,
+        codeGenLang);
+}
+
+export function generateMudTables(json: string, baseNamespace: string,
+    namespace: string,
+    basePath: string,
+    codeGenLang: int
+) {
+    var pathSeparator = path.sep;
+    generateAllMudTablesInternal(json, baseNamespace, namespace, basePath, pathSeparator, codeGenLang);
 }
 
 export function generateUnityRequests(abi: string, byteCode: string,

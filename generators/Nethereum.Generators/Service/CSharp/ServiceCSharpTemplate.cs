@@ -17,16 +17,16 @@ namespace Nethereum.Generators.Service
         public override string GenerateClass()
         {
             return
-                $@"{SpaceUtils.OneTab}public partial class {Model.GetTypeName()}: ContractWeb3ServiceBase
-{SpaceUtils.OneTab}{{
+                $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()}: ContractWeb3ServiceBase
+{SpaceUtils.One__Tab}{{
 {_deploymentServiceMethodsCSharpTemplate.GenerateMethods()}
 {SpaceUtils.NoTabs}
-{SpaceUtils.TwoTabs}public {Model.GetTypeName()}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
-{SpaceUtils.TwoTabs}{{
-{SpaceUtils.TwoTabs}}}
+{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+{SpaceUtils.Two___Tabs}{{
+{SpaceUtils.Two___Tabs}}}
 {SpaceUtils.NoTabs}
 {_functionServiceMethodCSharpTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}}}";
+{SpaceUtils.One__Tab}}}";
         }
     }
 }

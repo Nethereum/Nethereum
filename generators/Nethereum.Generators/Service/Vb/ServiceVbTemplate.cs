@@ -18,29 +18,30 @@ namespace Nethereum.Generators.Service
         {
             return
                 $@"
-{SpaceUtils.OneTab}Public Partial Class {Model.GetTypeName()}
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}Public Partial Class {Model.GetTypeName()}
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}
 {_deploymentServiceMethodsVbTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}
-{SpaceUtils.TwoTabs}Protected Property Web3 As Nethereum.Web3.IWeb3
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Property ContractHandler As ContractHandler
-{SpaceUtils.TwoTabs}
-{SpaceUtils.TwoTabs}Public Sub New(ByVal web3 As Nethereum.Web3.Web3, ByVal contractAddress As String)
-{SpaceUtils.ThreeTabs}Web3 = web3
-{SpaceUtils.ThreeTabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.OneTab}
-{SpaceUtils.TwoTabs}Public Sub New(ByVal web3 As Nethereum.Web3.IWeb3, ByVal contractAddress As String)
-{SpaceUtils.ThreeTabs}Web3 = web3
-{SpaceUtils.ThreeTabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress)
-{SpaceUtils.TwoTabs}End Sub
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}
+{SpaceUtils.Two___Tabs}Protected Property Web3 As Nethereum.Web3.IWeb3
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Property ContractHandler As ContractHandler
+{SpaceUtils.Two___Tabs}
+{SpaceUtils.Two___Tabs}Public Sub New(ByVal web3 As Nethereum.Web3.Web3, ByVal contractAddress As String)
+{SpaceUtils.Three____Tabs}Web3 = web3
+{SpaceUtils.Three____Tabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.One__Tab}
+{SpaceUtils.Two___Tabs}Public Sub New(ByVal web3 As Nethereum.Web3.IWeb3, ByVal contractAddress As String)
+{SpaceUtils.Three____Tabs}Web3 = web3
+{SpaceUtils.Three____Tabs}ContractHandler = web3.Eth.GetContractHandler(contractAddress)
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.One__Tab}
 {_functionServiceMethodVbTemplate.GenerateMethods()}
-{SpaceUtils.OneTab}
-{SpaceUtils.OneTab}End Class";
+{SpaceUtils.One__Tab}
+{SpaceUtils.One__Tab}End Class";
 
         }
+
     }
 }

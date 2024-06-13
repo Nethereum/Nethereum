@@ -203,14 +203,6 @@ namespace Nethereum.Mud.IntegrationTests
 
         }
 
-
-
-       
-
-       
-
-        
-
         [Fact]
         public async Task ShouldSetRecord()
         {

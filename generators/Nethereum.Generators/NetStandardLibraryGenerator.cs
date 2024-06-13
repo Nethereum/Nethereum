@@ -32,16 +32,23 @@ namespace Nethereum.Generators
             return
                 $@"{SpaceUtils.NoTabs}<Project Sdk=""Microsoft.NET.Sdk"">
 {SpaceUtils.NoTabs}
-{SpaceUtils.OneTab}<PropertyGroup>
-{SpaceUtils.TwoTabs}<TargetFramework>netstandard2.0</TargetFramework>
-{SpaceUtils.TwoTabs}{languageDependentProperty}
-{SpaceUtils.OneTab}</PropertyGroup>
+{SpaceUtils.One__Tab}<PropertyGroup>
+{SpaceUtils.Two___Tabs}<TargetFramework>netstandard2.0</TargetFramework>
+{SpaceUtils.Two___Tabs}{languageDependentProperty}
+{SpaceUtils.One__Tab}</PropertyGroup>
 {SpaceUtils.NoTabs}
-{SpaceUtils.OneTab}<ItemGroup>
-{SpaceUtils.TwoTabs}<PackageReference Include = ""Nethereum.Web3"" Version=""{NethereumWeb3Version}"" />
-{SpaceUtils.OneTab}</ItemGroup>
-{SpaceUtils.OneTab}
+{SpaceUtils.One__Tab}<ItemGroup>
+{SpaceUtils.Two___Tabs}<PackageReference Include = ""Nethereum.Web3"" Version=""{NethereumWeb3Version}"" />
+{SpaceUtils.One__Tab}</ItemGroup>
+{SpaceUtils.One__Tab}
 {SpaceUtils.NoTabs}</Project>";
         }
+    }
+
+
+
+    public class MudCodeGenerator
+    {
+
     }
 }
