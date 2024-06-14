@@ -50,5 +50,24 @@ namespace Nethereum.Contracts
         {
             return GetAllErrorABIs().Select(x => x.Sha3Signature).ToArray();
         }
+
+        public void HandleCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            var errorAbi = GetAllErrorABIs().FirstOrDefault(x => exception.IsCustomErrorFor(x));
+            if (errorAbi != null)
+            {
+               throw new SmartContractCustomErrorRevertExceptionErrorABI(exception.ExceptionEncodedData, errorAbi);
+            }
+        }
+
+        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            var errorAbi = GetAllErrorABIs().FirstOrDefault(x => exception.IsCustomErrorFor(x));
+            if (errorAbi != null)
+            {
+                return new SmartContractCustomErrorRevertExceptionErrorABI(exception.ExceptionEncodedData, errorAbi);
+            }
+            return null;
+        }
     }
 }

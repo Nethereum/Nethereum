@@ -9,6 +9,8 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Contracts.Create2Deployment;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Nethereum.Contracts;
+using System;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
@@ -87,6 +89,27 @@ namespace Nethereum.Mud.Contracts.Core.Systems
                 systemCallData.AddRange(callData);
             }
             return await BatchCallSystem.BatchCallRequestAndWaitForReceiptAsync(systemCallData);
+        }
+
+        public void HandleCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            foreach (var systemService in SystemServices)
+            {
+                systemService.HandleCustomErrorException(exception);
+            }
+        }
+
+        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            foreach (var systemService in SystemServices)
+            {
+                var error = systemService.FindCustomErrorException(exception);
+                if (error != null)
+                {
+                    return error;
+                }
+            }
+            return null;
         }
     }
 }

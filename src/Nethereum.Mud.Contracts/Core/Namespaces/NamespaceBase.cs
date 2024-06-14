@@ -7,6 +7,7 @@ using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using System.Threading;
+using Nethereum.Contracts;
 
 namespace Nethereum.Mud.Contracts.Core.Namespaces
 {
@@ -55,6 +56,23 @@ namespace Nethereum.Mud.Contracts.Core.Namespaces
             }
 
             return null;
+        }
+
+        public void HandleCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            this.Systems.HandleCustomErrorException(exception);
+            this.World.WorldService.HandleCustomErrorException(exception);
+            this.World.Systems.HandleCustomErrorException(exception);
+        }
+
+        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        {
+            SmartContractCustomErrorRevertExceptionErrorABI returnValue = null;
+            returnValue = this.Systems.FindCustomErrorException(exception);
+            if (returnValue != null) return returnValue;
+            returnValue = this.World.WorldService.FindCustomErrorException(exception);
+            if (returnValue != null) return returnValue;
+            return this.World.Systems.FindCustomErrorException(exception);
         }
 
     }

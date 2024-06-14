@@ -10,6 +10,7 @@ namespace Nethereum.Contracts
         string ContractAddress { get; }
         ContractHandler ContractHandler { get; }
 
+        SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception);
         List<ErrorABI> GetAllErrorABIs();
         string[] GetAllErrorsSignatures();
         List<Type> GetAllErrorTypes();
@@ -19,5 +20,6 @@ namespace Nethereum.Contracts
         List<FunctionABI> GetAllFunctionABIs();
         string[] GetAllFunctionSignatures();
         List<Type> GetAllFunctionTypes();
+        void HandleCustomErrorException(SmartContractCustomErrorRevertException exception);
     }
 }
