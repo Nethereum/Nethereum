@@ -6,6 +6,7 @@ using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
 using Nethereum.Mud.Contracts.World.Tables;
+using Nethereum.ABI.Model;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
@@ -85,6 +86,12 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         public Task<string> BatchRegisterRootFunctionSelectorsRequestAsync(List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)
         {
             var callData = CreateRegisterRootFunctionSelectorsBatchSystemCallData(excludedFunctionSelectorRecords, excludeDefaultSystemFunctions);
+            return BatchCallSystemService.BatchCallRequestAsync(callData);
+        }
+
+        public Task<string> BatchRegisterSelectedRootFunctionSelectorsRequestAsync(List<FunctionABI> functionABIs)
+        {
+            var callData = systemRegistrationBuilder.CreateRegisterRootFunctionSelectorsBatchSystemCallData(Service, functionABIs);
             return BatchCallSystemService.BatchCallRequestAsync(callData);
         }
 

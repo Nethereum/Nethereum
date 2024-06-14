@@ -87,5 +87,14 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             var registerFunctionSelectors = CreateRegisterRootFunctionSelectors(systemService, excludedFunctionSelectorRecords, excludeDefaultSystemFunctions);
             return registerFunctionSelectors.CreateBatchSystemCallData<RegistrationSystemResource, RegisterRootFunctionSelectorFunction>();
         }
+
+        public List<SystemCallData> CreateRegisterRootFunctionSelectorsBatchSystemCallData<TSystemResource>(ISystemService<TSystemResource> systemService, List<FunctionABI> functionABIs
+                                                                                                           )
+             where TSystemResource : SystemResource, new()
+        {
+
+            var registerFunctionSelectors = CreateRegisterRootFunctionSelectors(functionABIs, systemService.Resource.ResourceIdEncoded);
+            return registerFunctionSelectors.CreateBatchSystemCallData<RegistrationSystemResource, RegisterRootFunctionSelectorFunction>();
+        }
     }
 }

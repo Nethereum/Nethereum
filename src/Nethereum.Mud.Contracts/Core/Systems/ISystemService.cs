@@ -14,7 +14,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
 
     }
 
-    public interface ISystemService
+    public interface ISystemService: IContractService
     {
         public List<FunctionABI> GetSystemFunctionABIs();
         public IResource Resource { get; }
@@ -22,5 +22,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         public Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries);
         public Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default);
         public ISystemServiceResourceRegistration SystemServiceResourceRegistrator { get; }
+
+       
     }
 }

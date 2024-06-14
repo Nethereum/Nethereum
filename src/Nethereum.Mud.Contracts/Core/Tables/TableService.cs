@@ -49,6 +49,20 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.SetRecordRequestAsync(table);
         }
 
+        public virtual async Task<string> DeleteRecordRequestAsync(TKey key)
+        {
+            var table = new TTableRecord();
+            table.Keys = key;
+            return await WorldService.DeleteRecordRequestAsync(table);
+        }
+
+        public virtual async Task<TransactionReceipt> DeleteRecordRequestAndWaitForReceiptAsync(TKey key)
+        {
+            var table = new TTableRecord();
+            table.Keys = key;
+            return await WorldService.DeleteRecordRequestAndWaitForReceiptAsync(table);
+        }
+
         public virtual async Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync(TKey key, TValue value)
         {
             var table = new TTableRecord();
