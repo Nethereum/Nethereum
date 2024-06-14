@@ -96,6 +96,19 @@ namespace Nethereum.Mud.Contracts.World
             return ContractHandler.SendRequestAndWaitForReceiptAsync(setRecordFunction, cancellationTokenSource);
         }
 
+        public Task<string> DeleteRecordRequestAsync<TKey, TValue>(TableRecord<TKey, TValue> table) where TKey : class, new() where TValue : class, new()
+        {
+            var deleteRecordFunction = BuildDeleteRecordFunction(table);
+            return ContractHandler.SendRequestAsync(deleteRecordFunction);
+        }
+
+        public Task<TransactionReceipt> DeleteRecordRequestAndWaitForReceiptAsync<TKey, TValue>(TableRecord<TKey, TValue> table, CancellationTokenSource cancellationTokenSource = null)
+            where TKey : class, new() where TValue : class, new()
+        {
+            var deleteRecordFunction = BuildDeleteRecordFunction(table);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(deleteRecordFunction, cancellationTokenSource);
+        }
+
         public static SetRecordFunction BuildSetRecordFunction<TKey, TValue>(TableRecord<TKey, TValue> table)
             where TKey : class, new() where TValue : class, new()
         {
@@ -107,6 +120,15 @@ namespace Nethereum.Mud.Contracts.World
             setRecordFunction.EncodedLengths = encodedValues.EncodedLengths;
             setRecordFunction.KeyTuple = table.GetEncodedKey();
             return setRecordFunction;
+        }
+
+        public static DeleteRecordFunction BuildDeleteRecordFunction<TKey, TValue>(TableRecord<TKey, TValue> table)
+             where TKey : class, new() where TValue : class, new()
+        {
+            var deleteRecordFunction = new DeleteRecordFunction();
+            deleteRecordFunction.TableId = table.ResourceIdEncoded;
+            deleteRecordFunction.KeyTuple = table.GetEncodedKey();
+            return deleteRecordFunction;
         }
 
         public static SetRecordFunction BuildSetRecordFunction<TValue>(TableRecordSingleton<TValue> table)
