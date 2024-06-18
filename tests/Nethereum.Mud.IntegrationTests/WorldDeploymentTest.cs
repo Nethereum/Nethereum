@@ -218,7 +218,9 @@ namespace Nethereum.Mud.IntegrationTests
             var resourceIds = await world.Tables.SystemRegistryTableService.GetRecordsFromRepository(inMemoryStore);
 
             var mudTest = new MudTestNamespace(web3, worldAddress);
+            //note this may need a wait
             await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();  
+            //note this may need a wait
             var receipt =  await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
          
             var tables = await store.Tables.TablesTableService.GetRecordsFromLogsAsync();
