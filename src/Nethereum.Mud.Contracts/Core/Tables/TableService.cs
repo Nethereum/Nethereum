@@ -1,4 +1,5 @@
-﻿using Nethereum.Mud.Contracts.World;
+
+using Nethereum.Mud.Contracts.World;
 using Nethereum.Web3;
 using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.Services;
@@ -29,6 +30,12 @@ namespace Nethereum.Mud.Contracts.Core.Tables
 
         }
 
+        /// <summary>
+        /// Gets the record from the table asynchronously using the provided key.
+        /// </summary>
+        /// <param name="key">The key to identify the record.</param>
+        /// <param name="blockParameter">Optional block parameter.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the table record.</returns>
         public virtual async Task<TTableRecord> GetTableRecordAsync(TKey key, BlockParameter blockParameter = null)
         {
             var table = new TTableRecord();
@@ -36,11 +43,22 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.GetRecordTableQueryAsync<TTableRecord, TKey, TValue>(table, blockParameter);
         }
 
+        /// <summary>
+        /// Sets a record in the table asynchronously.
+        /// </summary>
+        /// <param name="table">The table record to set.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction hash.</returns>
         public virtual async Task<string> SetRecordRequestAsync(TTableRecord table)
         {
             return await WorldService.SetRecordRequestAsync(table);
         }
 
+        /// <summary>
+        /// Sets a record in the table asynchronously using the provided key and value.
+        /// </summary>
+        /// <param name="key">The key to identify the record.</param>
+        /// <param name="value">The value to set in the record.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction hash.</returns>
         public virtual async Task<string> SetRecordRequestAsync(TKey key, TValue value)
         {
             var table = new TTableRecord();
@@ -49,6 +67,11 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.SetRecordRequestAsync(table);
         }
 
+        /// <summary>
+        /// Deletes a record from the table asynchronously using the provided key.
+        /// </summary>
+        /// <param name="key">The key to identify the record.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction hash.</returns>
         public virtual async Task<string> DeleteRecordRequestAsync(TKey key)
         {
             var table = new TTableRecord();
@@ -56,6 +79,11 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.DeleteRecordRequestAsync(table);
         }
 
+        /// <summary>
+        /// Deletes a record from the table asynchronously using the provided key and waits for the transaction receipt.
+        /// </summary>
+        /// <param name="key">The key to identify the record.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction receipt.</returns>
         public virtual async Task<TransactionReceipt> DeleteRecordRequestAndWaitForReceiptAsync(TKey key)
         {
             var table = new TTableRecord();
@@ -63,6 +91,12 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.DeleteRecordRequestAndWaitForReceiptAsync(table);
         }
 
+        /// <summary>
+        /// Sets a record in the table asynchronously using the provided key and value, and waits for the transaction receipt.
+        /// </summary>
+        /// <param name="key">The key to identify the record.</param>
+        /// <param name="value">The value to set in the record.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction receipt.</returns>
         public virtual async Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync(TKey key, TValue value)
         {
             var table = new TTableRecord();
@@ -71,12 +105,14 @@ namespace Nethereum.Mud.Contracts.Core.Tables
             return await WorldService.SetRecordRequestAndWaitForReceiptAsync(table);
         }
 
+        /// <summary>
+        /// Sets a record in the table asynchronously and waits for the transaction receipt.
+        /// </summary>
+        /// <param name="table">The table record to set.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the transaction receipt.</returns>
         public virtual async Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync(TTableRecord table)
         {
             return await WorldService.SetRecordRequestAndWaitForReceiptAsync(table);
         }
-
-       
-
     }
 }

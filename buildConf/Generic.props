@@ -7,7 +7,7 @@
    <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>
    <RepositoryType>git</RepositoryType>
    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
-   <Copyright>Nethereum.com (Juan Blanco) 2015-2022</Copyright>
+   <Copyright>Nethereum.com (Juan Blanco) 2015-2024</Copyright>
    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

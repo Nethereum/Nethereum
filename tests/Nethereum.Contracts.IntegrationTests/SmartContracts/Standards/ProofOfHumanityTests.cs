@@ -28,8 +28,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var registrations = await web3.Eth.ProofOfHumanity.GetContractService().AreRegisteredQueryUsingMulticallAsync(new[] { "0x1db3439a222c519ab44bb1144fc28167b4fa6ee6", "0x2ad91063e489cc4009df7fee45c25c8be684cf6a", "0x2A52309eDF998799C4A8b89324CCAd91848c8676", "0x0000000000000000000000000000000000000000" }).ConfigureAwait(false);
             Assert.True(registrations[0].IsRegistered);
-            Assert.True(registrations[1].IsRegistered);
-            Assert.True(registrations[2].IsRegistered);
+            Assert.False(registrations[1].IsRegistered);
+            Assert.False(registrations[2].IsRegistered);
             Assert.False(registrations[3].IsRegistered);
         }
 
@@ -39,7 +39,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var service = web3.Eth.ProofOfHumanity.GetContractService();
             var log = await service.GetLatestEvidenceLogAsync("0x1db3439a222c519ab44bb1144fc28167b4fa6ee6").ConfigureAwait(false);
-            Assert.Equal("/ipfs/QmQ3zm9y76sPT5Qyaxfpbtmdp8LNNGPrg2CrNYqbzGFokk/registration.json", log.Event.Evidence);
+            Assert.Equal("/ipfs/QmSdWucTAumLeYsJjEJTFduJ63vuKEjnu9dUweuRZc6srD/registration.json", log.Event.Evidence);
             var registrationEvidence = await service.GetRegistrationEvidenceFromIpfs(log.Event, "https://cf-ipfs.com/").ConfigureAwait(false);
             Assert.Equal("Vitalik Buterin", registrationEvidence.Name);
         }

@@ -21,6 +21,7 @@ using Nethereum.Mud.Contracts.Core.Namespaces;
 using System.Net;
 using Nethereum.Mud.Contracts.Store;
 using Nethereum.Mud.IntegrationTests.MudTest;
+using Nethereum.Web3.Accounts;
 
 
 
@@ -69,7 +70,7 @@ namespace Nethereum.Mud.IntegrationTests
 
             var registrationSystemService = new RegistrationSystemService(web3, worldAddress);
             var nameSpaceReceipt = registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
-                ResourceEncoder.EncodeNamesapce(String.Empty));
+                ResourceEncoder.EncodeNamespace(String.Empty));
 
 
             var counterSchemaEncoded = new CounterTableRecord().GetSchemaEncoded();
@@ -178,6 +179,10 @@ namespace Nethereum.Mud.IntegrationTests
         [Fact]
         public async Task ShouldDeployWorldContractRegisterTablesSystemAndInteractSimplified()
         {
+            var config = new ConfigTableRecord();
+            var encoded = config.GetSchemaEncoded();
+            Debug.WriteLine(encoded.ValueSchema.ToHex());
+
 
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             web3.TransactionManager.UseLegacyAsDefault = true;
@@ -189,11 +194,9 @@ namespace Nethereum.Mud.IntegrationTests
 
             var proxyCreate2Deployment = await create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
             var addressDeployer = await create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(proxyCreate2Deployment);
-
+           
             var worldFactoryDeployerService = new WorldFactoryDeployService();
             var worldFactoryAddresses = await worldFactoryDeployerService.DeployWorldFactoryContractAndSystemDependenciesAsync(web3, addressDeployer, salt);
-
-            
 
             var worldEvent = await worldFactoryDeployerService.DeployWorldAsync(web3, salt, worldFactoryAddresses);
             var worldAddress = worldEvent.NewContract;
@@ -212,37 +215,17 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.True(systemRecords.ToList().Count > 0);
 
             var namespaceRecords = await world.Tables.NamespaceOwnerTableService.GetRecordsFromRepository(inMemoryStore);
-            foreach (var namespaceRecord in namespaceRecords)
-            {
-                Debug.WriteLine(namespaceRecord.Keys.GetNamespaceIdResource().Namespace);
-                Debug.WriteLine(namespaceRecord.Values.Owner);
-            }
-
             var resourceIds = await world.Tables.SystemRegistryTableService.GetRecordsFromRepository(inMemoryStore);
-            foreach (var resourceId in resourceIds)
-            {
-                Debug.WriteLine(resourceId.Values.GetSystemIdResource().Name);
-                Debug.WriteLine(resourceId.Values.GetSystemIdResource().Namespace);
-
-            }
 
             var mudTest = new MudTestNamespace(web3, worldAddress);
-
-            var registrationSystemService = world.Systems.RegistrationSystem;
-            //TODO NAMESPACE registration in NamespaceService
-           
-              var nameSpaceReceipt = registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
-                    ResourceEncoder.EncodeNamesapce(String.Empty));
-            
-
-           
-            await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
+            await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();  
+            var receipt =  await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
          
-            
             var tables = await store.Tables.TablesTableService.GetRecordsFromLogsAsync();
 
             var counterTableSchema = tables.Where(x => x.Keys.GetTableIdResource().Name == "Counter").FirstOrDefault();
             var itemTableSchema = tables.Where(x => x.Keys.GetTableIdResource().Name == "Item").FirstOrDefault();
+            var configTableSchema = tables.Where(x => x.Keys.GetTableIdResource().Name == "Config").FirstOrDefault();
 
             var counterTableResourceId = counterTableSchema.Keys.GetTableIdResource();
             Assert.True(counterTableResourceId.IsRoot());
@@ -273,6 +256,22 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.Equal("uint32", itemKeys[0].Type);
             Assert.Equal(1, itemKeys[0].Order);
             Assert.Equal("id", itemKeys[0].Name);
+
+            var configTableResource = configTableSchema.Keys.GetTableIdResource();
+            Assert.True(configTableResource.IsRoot());
+            var configFields = configTableSchema.Values.GetValueSchemaFields().ToList();
+            //it should be converted to dynamic array from original static
+            Assert.Equal("uint256[]", configFields[0].Type);
+            Assert.Equal(1, configFields[0].Order);
+            Assert.Equal("config1", configFields[0].Name);
+            Assert.Equal("uint256[]", configFields[1].Type);
+            Assert.Equal(2, configFields[1].Order);
+            Assert.Equal("config2", configFields[1].Name);
+            Assert.Equal("uint256[]", configFields[2].Type);
+            Assert.Equal(3, configFields[2].Order);
+            Assert.Equal("config3", configFields[2].Name);
+
+
 
 
             var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAsync(addressDeployer, salt);
