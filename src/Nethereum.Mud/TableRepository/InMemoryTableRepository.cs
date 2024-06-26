@@ -4,10 +4,25 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
+using Org.BouncyCastle.Asn1.Cms;
 
 
 namespace Nethereum.Mud.TableRepository
 {
+
+    public class KeyUtils
+    {
+        public static string ConvertKeyToCommaSeparatedHex(List<byte[]> key)
+        {
+            return string.Join(",", key.Select(k => k.ToHex(true)));
+        }
+
+        public static List<byte[]> ConvertCommaSeparatedHexToKey(string key)
+        {
+            return key.Split(',').Select(k => k.HexToByteArray()).ToList();
+        }
+    }
+
     public class InMemoryTableRepository : ITableRepository
     {
         public Dictionary<string, Dictionary<string, EncodedValues>> Tables { get; set; }
@@ -60,7 +75,7 @@ namespace Nethereum.Mud.TableRepository
             
             }
           
-                return Task.FromResult<IEnumerable<EncodedTableRecord>>(records);
+           return Task.FromResult<IEnumerable<EncodedTableRecord>>(records);
             
         }
 
@@ -96,6 +111,25 @@ namespace Nethereum.Mud.TableRepository
         }
 
 
+        public async Task SetRecordsAsync<TTableRecord>(IEnumerable<TTableRecord> records) where TTableRecord : ITableRecord
+        {
+            foreach (var record in records)
+            {
+               await SetRecordAsync(record);
+            }
+        }
+
+        public Task SetRecordAsync(byte[] tableId, List<byte[]> key, EncodedValues encodedValues)
+        {
+            return SetRecordAsync(tableId.ToHex(true), ConvertKeyToCommaSeparatedHex(key), encodedValues);
+        }
+
+
+        public Task SetRecordAsync<TTableRecord>(TTableRecord record) where TTableRecord : ITableRecord
+        {
+            return SetRecordAsync(record.ResourceIdEncoded.ToHex(), ConvertKeyToCommaSeparatedHex(record.GetEncodedKey()), record.GetEncodeValues());
+        }
+      
 
         public Task SetRecordAsync(byte[] tableId, byte[] key, EncodedValues encodedValues)
         {
@@ -120,12 +154,12 @@ namespace Nethereum.Mud.TableRepository
 
         public static string ConvertKeyToCommaSeparatedHex(List<byte[]> key)
         {
-            return string.Join(",", key.Select(k => k.ToHex(true)));
+            return KeyUtils.ConvertKeyToCommaSeparatedHex(key);
         }
 
         public static List<byte[]> ConvertCommaSeparatedHexToKey(string key)
         {
-            return key.Split(',').Select(k => k.HexToByteArray()).ToList();
+            return KeyUtils.ConvertCommaSeparatedHexToKey(key);
         }
 
 
@@ -169,7 +203,8 @@ namespace Nethereum.Mud.TableRepository
                 }
             }
             dataNibbles.RemoveRange(start, deleteCount);
-            return dataNibbles.Concat(newDataNibbles).ToArray();
+            dataNibbles.InsertRange(start, newDataNibbles);
+            return dataNibbles.ToArray();
         }
 
         public Task SetSpliceStaticDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData)

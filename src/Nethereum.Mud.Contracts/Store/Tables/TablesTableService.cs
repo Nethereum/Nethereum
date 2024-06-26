@@ -2,7 +2,6 @@
 using Nethereum.RPC.Eth.DTOs;
 using System.Threading.Tasks;
 using Nethereum.Mud.Contracts.World;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 using Nethereum.Mud.Contracts.Core.Tables;

@@ -9,6 +9,10 @@ using Nethereum.RPC.Eth.DTOs;
 using Org.BouncyCastle.Crypto.Tls;
 using Nethereum.Mud.EncodingDecoding;
 using System.Threading;
+using Nethereum.Contracts;
+using System.Runtime.InteropServices;
+using Nethereum.Mud.TableRepository;
+using Nethereum.Contracts.QueryHandlers.MultiCall;
 
 namespace Nethereum.Mud.Contracts.World
 {
@@ -51,6 +55,33 @@ namespace Nethereum.Mud.Contracts.World
             table.DecodeValues(result.StaticData, result.EncodedLengths, result.DynamicData);
             return table;
         }
+
+
+        public async Task<List<TTable>> GetRecordTableMultiQueryRpcAsync<TTable, TKey, TValue>(List<TTable> tableRecords, BlockParameter blockParameter = null)
+           where TTable : TableRecord<TKey, TValue>, new()
+           where TValue : class, new()
+           where TKey : class, new()
+        {
+            var getRecordFunctions = new List<IMulticallInputOutput>();
+            foreach (var record in tableRecords)
+            {
+                getRecordFunctions.Add(new MulticallInputOutput<GetRecordFunction, GetRecordOutputDTO>(new GetRecordFunction()
+                {
+                    TableId = record.ResourceIdEncoded,
+                    KeyTuple = record.GetEncodedKey()
+                }, ContractAddress));
+            }
+            
+            var result = await Web3.Eth.GetMultiQueryBatchRpcHandler().MultiCallAsync(blockParameter, MultiQueryBatchRpcHandler.DEFAULT_CALLS_PER_REQUEST, getRecordFunctions.ToArray());
+            for (var i = 0; i < result.Length; i++)
+            {
+               var record   = result[i] as MulticallInputOutput<GetRecordFunction, GetRecordOutputDTO>;
+               var table = tableRecords.Where(x => KeyUtils.ConvertKeyToCommaSeparatedHex(x.GetEncodedKey()) == KeyUtils.ConvertKeyToCommaSeparatedHex(record.Input.KeyTuple)).FirstOrDefault();
+               table.DecodeValues(record.Output.StaticData, record.Output.EncodedLengths, record.Output.DynamicData);
+            }
+            return tableRecords;
+        }
+
 
         public Task<GetRecordOutputDTO> GetRecordQueryAsync(string tableName, BlockParameter blockParameter = null)
         {

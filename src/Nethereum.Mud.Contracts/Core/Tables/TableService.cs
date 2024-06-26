@@ -30,6 +30,23 @@ namespace Nethereum.Mud.Contracts.Core.Tables
 
         }
 
+        public virtual Task<IEnumerable<TTableRecord>> GetTableRecordsAsync(ITableRepository tableRepository)
+        {
+            return tableRepository.GetTableRecordsAsync<TTableRecord>();
+        }
+
+        public virtual Task<List<TTableRecord>> GetTableRecordsMulticallRpcAsync(List<TKey> key, BlockParameter blockParameter = null)
+        {
+            var input = new List<TTableRecord>();
+            foreach (var k in key)
+            {
+                var table = new TTableRecord();
+                table.Keys = k;
+                input.Add(table);
+            }
+            return WorldService.GetRecordTableMultiQueryRpcAsync<TTableRecord, TKey, TValue>(input, blockParameter);
+        }
+
         /// <summary>
         /// Gets the record from the table asynchronously using the provided key.
         /// </summary>

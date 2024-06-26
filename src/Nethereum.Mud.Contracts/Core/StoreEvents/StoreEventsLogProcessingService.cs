@@ -12,6 +12,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 
 namespace Nethereum.Mud.Contracts.Core.StoreEvents
@@ -114,7 +115,7 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
         }
 
 
-        public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber = null, BigInteger? toBlockNumber = null, CancellationToken cancellationToken =default, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+        public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber = null, BigInteger? toBlockNumber = null, CancellationToken cancellationToken = default, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
                        int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
             var topics = new List<object>
@@ -184,6 +185,11 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
             var logs = await _blockchainLogProcessing.GetAllEvents(filterInput, fromBlockNumber, toBlockNumber,
                               cancellationToken, numberOfBlocksPerRequest, retryWeight);
 
+            await ProcessAllStoreChangesFromLogs(tableRepository, logs);
+        }
+
+        public static async Task ProcessAllStoreChangesFromLogs(ITableRepository tableRepository, List<FilterLog> logs)
+        {
             foreach (var log in logs)
             {
                 if (log.IsLogForEvent<StoreSetRecordEventDTO>())
@@ -215,5 +221,11 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
                 }
             }
         }
+
+        public static Task ProcessAllStoreChangesFromLogs(ITableRepository tableRepository, TransactionReceipt transactionReceipt)
+        {
+           return ProcessAllStoreChangesFromLogs(tableRepository, transactionReceipt.Logs.ConvertToFilterLog().ToList());
+        }
+
     }
 }

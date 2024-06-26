@@ -20,6 +20,7 @@ namespace Nethereum.Mud.TableRepository
         Task SetRecordAsync(byte[] tableId, List<byte[]> key, byte[] staticData, byte[] encodedLengths, byte[] dynamicData);
         Task SetRecordAsync(string tableIdHex, string keyHex, byte[] staticData, byte[] encodedLengths, byte[] dynamicData);
         Task SetRecordAsync(string tableIdHex, string keyHex, EncodedValues encodedValues);
+        Task SetRecordAsync<TTableRecord>(TTableRecord record) where TTableRecord : ITableRecord;
         Task SetSpliceDynamicDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData, ulong deleteCount, byte[] encodedLengths);
         Task SetSpliceDynamicDataAsync(string tableIdHex, string keyHex, ulong start, byte[] newData, ulong deleteCount, byte[] encodedLengths);
         Task SetSpliceStaticDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData);
