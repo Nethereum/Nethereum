@@ -78,7 +78,7 @@ namespace Nethereum.Unity.Metamask
             yield return SignAndSendDeploymentContractTransaction(deploymentMessage);
         }
 
-        public IEnumerator SignAndSendDeploymentContractTransaction<TDeploymentMessage>(TDeploymentMessage deploymentMessage) where TDeploymentMessage : ContractDeploymentMessage
+        public IEnumerator SignAndSendDeploymentContractTransaction<TDeploymentMessage>(TDeploymentMessage deploymentMessage) where TDeploymentMessage : ContractDeploymentMessage, new()
         {
             var transactionInput = deploymentMessage.CreateTransactionInput();
             yield return SignAndSendTransaction(transactionInput);

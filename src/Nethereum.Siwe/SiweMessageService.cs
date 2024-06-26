@@ -7,6 +7,7 @@ using Nethereum.Signer;
 using Nethereum.Siwe.Core;
 using Nethereum.Siwe.UserServices;
 using Nethereum.Util;
+using Org.BouncyCastle.Bcpg;
 
 
 namespace Nethereum.Siwe
@@ -56,10 +57,21 @@ namespace Nethereum.Siwe
             if (accountRecovered.IsTheSameAddress(siweMessage.Address)) return true;
             if (_web3 != null)
             {
-                var service = _web3.Eth.ERC1271.GetContractService(siweMessage.Address);
-                return await service.IsValidSignatureAndValidateReturnQueryAsync(
-                    messageSigner.HashPrefixedMessage(Encoding.UTF8.GetBytes(builtMessage)),
-                    signature.HexToByteArray()).ConfigureAwait(false);
+                if (_web3.Eth.SignatureValidationPredeployContractERC6492.IsERC6492Signature(signature))
+                {
+                    var service = _web3.Eth.SignatureValidationPredeployContractERC6492;
+                    return await service.IsValidSignatureAsync(siweMessage.Address,
+                        messageSigner.HashPrefixedMessage(Encoding.UTF8.GetBytes(builtMessage)),
+                        signature.HexToByteArray()).ConfigureAwait(false);
+                }
+                else
+                {
+                    var service = _web3.Eth.ERC1271.GetContractService(siweMessage.Address);
+                    return await service.IsValidSignatureAndValidateReturnQueryAsync(
+                        messageSigner.HashPrefixedMessage(Encoding.UTF8.GetBytes(builtMessage)),
+                        signature.HexToByteArray()).ConfigureAwait(false);
+                }
+                
             }
 
             return false;

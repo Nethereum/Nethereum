@@ -31,6 +31,8 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.False(registrations[1].IsRegistered);
             Assert.False(registrations[2].IsRegistered);
             Assert.False(registrations[3].IsRegistered);
+
+            
         }
 
         [Fact]

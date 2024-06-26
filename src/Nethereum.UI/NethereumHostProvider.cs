@@ -27,9 +27,19 @@ namespace Nethereum.UI
         public event Func<bool, Task> AvailabilityChanged;
         public event Func<bool, Task> EnabledChanged;
 
-        public Task<bool> CheckProviderAvailabilityAsync()
+        public async Task<bool> CheckProviderAvailabilityAsync()
         {
-            return Task.FromResult(true);
+            await ChangeAvailableAsync(true);
+            return await Task.FromResult(true);
+        }
+
+        public async Task ChangeAvailableAsync(bool available)
+        {
+            if (AvailabilityChanged != null)
+            {
+                await AvailabilityChanged.Invoke(available).ConfigureAwait(false);
+            }
+            
         }
 
         public Task<string> EnableProviderAsync()

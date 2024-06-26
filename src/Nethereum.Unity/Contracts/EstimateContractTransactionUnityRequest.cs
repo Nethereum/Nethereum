@@ -26,13 +26,13 @@ namespace Nethereum.Unity.Contracts
             _ethEstimateGasUnityRequest = new EthEstimateGasUnityRequest(unityRpcClientFactory);
         }
 
-        public IEnumerator EstimateContractFunction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage
+        public IEnumerator EstimateContractFunction<TContractFunction>(TContractFunction function, string contractAdress) where TContractFunction : FunctionMessage, new()
         {
             var callInput = function.CreateCallInput(contractAdress);
             yield return _ethEstimateGasUnityRequest.SendRequest(callInput);
         }
 
-        public IEnumerator EstimateContractDeployment<TDeploymentMessage>(TDeploymentMessage deploymentMessage) where TDeploymentMessage : ContractDeploymentMessage
+        public IEnumerator EstimateContractDeployment<TDeploymentMessage>(TDeploymentMessage deploymentMessage) where TDeploymentMessage : ContractDeploymentMessage, new()
         {
             var callInput = deploymentMessage.CreateCallInput();
             yield return _ethEstimateGasUnityRequest.SendRequest(callInput);

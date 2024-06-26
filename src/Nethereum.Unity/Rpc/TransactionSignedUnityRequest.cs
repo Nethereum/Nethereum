@@ -73,7 +73,7 @@ namespace Nethereum.Unity.Rpc
         }
 
         public IEnumerator SignAndSendDeploymentContractTransaction<TDeploymentMessage>(TDeploymentMessage deploymentMessage)
-            where TDeploymentMessage : ContractDeploymentMessage
+            where TDeploymentMessage : ContractDeploymentMessage, new()
         {
             var transactionInput = deploymentMessage.CreateTransactionInput();
             yield return SignAndSendTransaction(transactionInput);

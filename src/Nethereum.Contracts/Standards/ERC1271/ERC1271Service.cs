@@ -1,4 +1,10 @@
 ﻿using Nethereum.Contracts.Services;
+using Nethereum.ABI;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
+using System.Linq;
+using Nethereum.Util;
 
 namespace Nethereum.Contracts.Standards.ERC1271
 {

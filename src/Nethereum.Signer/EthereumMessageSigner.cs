@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.Signer
 {
@@ -21,16 +22,14 @@ namespace Nethereum.Signer
             return base.Sign(HashAndHashPrefixedMessage(plainMessage), key);
         }
 
+        public byte[] HashPrefixedMessage(string plainMessage)
+        {
+            return HashPrefixedMessage(Encoding.UTF8.GetBytes(plainMessage));   
+        }
+
         public byte[] HashPrefixedMessage(byte[] message)
         {
-            var byteList = new List<byte>();
-            var bytePrefix = "0x19".HexToByteArray();
-            var textBytePrefix = Encoding.UTF8.GetBytes("Ethereum Signed Message:\n" + message.Length);
-
-            byteList.AddRange(bytePrefix);
-            byteList.AddRange(textBytePrefix);
-            byteList.AddRange(message);
-            return Hash(byteList.ToArray());
+            return new EthereumMessageHasher().HashPrefixedMessage(message);
         }
 
         public override string Sign(byte[] message, EthECKey key)

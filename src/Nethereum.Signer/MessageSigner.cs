@@ -20,8 +20,7 @@ namespace Nethereum.Signer
 
         public byte[] Hash(byte[] plainMessage)
         {
-            var hash = new Sha3Keccack().CalculateHash(plainMessage);
-            return hash;
+           return new DefaultMessageHasher().Hash(plainMessage);
         }
 
         public virtual string HashAndEcRecover(string plainMessage, string signature)
