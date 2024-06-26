@@ -75,7 +75,7 @@ namespace Nethereum.Signer.AWSKeyManagement
 
                 var result = await KeyClient.SignAsync(request).ConfigureAwait(false);
 
-                return ECDSASignature.FromDER(result.Signature.ToArray());
+                return ECDSASignature.FromDER(result.Signature.ToArray()).MakeCanonical();
             }
         }
         
