@@ -156,7 +156,13 @@ namespace Nethereum.ABI.Encoders
                 else
                     ret[i] = 0;
 
+            if (((int)numberOfBytesArray == bytes.Length -1) && !_signed && bytes.Length > 0 && bytes[0] == 0)
+            {
+                bytes = bytes.Skip(1).ToArray();
+            }
+            
             Array.Copy(bytes, 0, ret, (int)numberOfBytesArray - bytes.Length, bytes.Length);
+            
 
             return ret;
         }
