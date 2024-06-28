@@ -25,6 +25,8 @@ namespace Nethereum.Generator.Console.Configuration
 
             var byteCode = GeneratorConfigurationUtils.GetFileContent(outputFolder, binFilePath);
 
+            if(byteCode == null) byteCode = string.Empty;
+
             if (string.IsNullOrEmpty(contractName))
                 contractName = Path.GetFileNameWithoutExtension(abiFilePath);
 
