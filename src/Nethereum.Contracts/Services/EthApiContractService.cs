@@ -17,6 +17,7 @@ using Nethereum.RPC.TransactionManagers;
 using Nethereum.Contracts.Identity.ProofOfHumanity;
 using Nethereum.Contracts.Create2Deployment;
 using Nethereum.Contracts.Standards.ERC6492;
+using Nethereum.Contracts.Standards.ERC165;
 
 namespace Nethereum.Contracts.Services
 {
@@ -33,7 +34,8 @@ namespace Nethereum.Contracts.Services
             ERC2535Diamond = new ERC2535DiamondService(this);
             ProofOfHumanity = new ProofOfHumanityService(this);
             ERC6492 = new ERC6492Service(this);
-     
+            ERC165 = new ERC165SupportsInterfaceService(this);
+
             Create2DeterministicDeploymentProxyService = new Create2DeterministicDeploymentProxyService(this);
 #endif
         }
@@ -191,13 +193,28 @@ namespace Nethereum.Contracts.Services
         /// </remarks>
         public ERC6492Service ERC6492  { get; private set; }
 
+        /// <summary>
+        /// ERC165: Standard Interface Detection, Service to interact with smart contracts compliant with the standard interface
+        /// https://eips.ethereum.org/EIPS/eip-165
+        /// </summary>
+        public ERC165SupportsInterfaceService ERC165 { get; }
 
-    /// <summary>
-    ///ERC-2535: Diamonds, Multi-Facet Proxy  
-    ///Create modular smart contract systems that can be extended after deployment.
-    /// https://eips.ethereum.org/EIPS/eip-2535
-    /// </summary>
-    public ERC2535DiamondService ERC2535Diamond { get; private set; }
+        /// <summary>
+        /// ERC165: Standard Interface Detection, Service to interact with smart contracts compliant with the standard interface
+        /// https://eips.ethereum.org/EIPS/eip-165
+        /// </summary>
+        /// <remarks>
+        /// This is an alias to ERC165
+        /// </remarks>
+        public ERC165SupportsInterfaceService SupportsInterfaceServiceERC165 => ERC165;
+
+
+        /// <summary>
+        ///ERC-2535: Diamonds, Multi-Facet Proxy  
+        ///Create modular smart contract systems that can be extended after deployment.
+        /// https://eips.ethereum.org/EIPS/eip-2535
+        /// </summary>
+        public ERC2535DiamondService ERC2535Diamond { get; private set; }
 
         /// <summary>
         /// Service to interact with the Identity Proof of Humanity registry smart contract

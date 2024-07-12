@@ -14,6 +14,7 @@ using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
 using Nethereum.Contracts.Create2Deployment;
 using Nethereum.Contracts.Standards.ERC6492;
+using Nethereum.Contracts.Standards.ERC165;
 
 namespace Nethereum.Contracts.Services
 {
@@ -139,7 +140,24 @@ namespace Nethereum.Contracts.Services
         /// </remarks>
         ERC6492Service SignatureValidationPredeployContractERC6492 { get; }
 
-      
+
+        /// <summary>
+        /// ERC165: Standard Interface Detection, Service to interact with smart contracts compliant with the standard interface
+        /// https://eips.ethereum.org/EIPS/eip-165
+        /// </summary>
+        /// <remarks>
+        /// This is an alias to ERC165
+        /// </remarks>
+        ERC165SupportsInterfaceService SupportsInterfaceServiceERC165 { get; }
+
+
+        /// <summary>
+        /// ERC165: Standard Interface Detection, Service to interact with smart contracts compliant with the standard interface
+        /// https://eips.ethereum.org/EIPS/eip-165
+        /// </summary>
+        ERC165SupportsInterfaceService ERC165 { get; }
+
+
 
 
 

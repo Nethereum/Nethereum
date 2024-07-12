@@ -26,6 +26,31 @@ namespace Nethereum.Mud.Contracts.Core.Tables
         public IWeb3 Web3 { get; protected set; }
         public string ContractAddress { get; protected set; }
 
+        public async Task<string> RegisterAllTablesRequestAndGetLastTxnAsync(params IResource[] excludedTables)
+        {
+            string lastTxn = null;
+            foreach (var tableService in TableServices)
+            {
+                if (excludedTables != null &&
+                   excludedTables.Any(x => tableService.Resource.ResourceIdEncoded.ToHex().IsTheSameHex(x.ResourceIdEncoded.ToHex())))
+                {
+                    continue;
+                }
+               lastTxn = await tableService.RegisterTableRequestAsync();
+            }
+            return lastTxn;
+        }
+
+        public async Task<TransactionReceipt> RegisterAllTablesRequestAndWaitForLastTxnReceiptAsync(params IResource[] excludedTables)
+        {
+            var txn = await RegisterAllTablesRequestAndGetLastTxnAsync(excludedTables);
+            if(txn == null)
+            {
+                return null;
+            }
+            return await Web3.TransactionReceiptPolling.PollForReceiptAsync(txn);
+        }
+
         public async Task<string> BatchRegisterAllTablesRequestAsync(params IResource[] excludedTables)
         {
             var batchSystemCallData = new List<SystemCallData>();
