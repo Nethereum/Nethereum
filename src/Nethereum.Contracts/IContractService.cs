@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.Model;
 using Nethereum.Contracts.ContractHandlers;
+using Nethereum.Contracts.Services;
 using System;
 using System.Collections.Generic;
 
@@ -8,8 +9,7 @@ namespace Nethereum.Contracts
     public interface IContractService
     {
         string ContractAddress { get; }
-        ContractHandler ContractHandler { get; }
-
+        ContractHandler ContractHandler { get; set; }
         SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception);
         List<ErrorABI> GetAllErrorABIs();
         string[] GetAllErrorsSignatures();

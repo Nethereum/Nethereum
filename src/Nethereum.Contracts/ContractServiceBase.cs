@@ -8,7 +8,7 @@ namespace Nethereum.Contracts
 {
     public abstract class ContractServiceBase : IContractService
     {
-        public ContractHandler ContractHandler { get; protected set; }
+        public ContractHandler ContractHandler { get; set; }
 
         public string ContractAddress { get { return ContractHandler.ContractAddress; } }
 
