@@ -73,6 +73,11 @@ namespace Nethereum.Mud.EncodingDecoding
             return Encode(Resource.RESOURCE_SYSTEM, @namespace, name);
         }
 
+        public static byte[] EncodeUnlimitedAccess()
+        {
+            return Encode(Resource.RESOURCE_SYSTEM, string.Empty, "unlimited");
+        }
+
         public static byte[] EncodeRootSystem(string name)
         {
             return Encode(Resource.RESOURCE_SYSTEM, string.Empty, name);

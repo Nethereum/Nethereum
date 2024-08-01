@@ -7,6 +7,8 @@ using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinitio
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
 using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.ABI.Model;
+using Nethereum.BlockchainProcessing.BlockStorage.Entities;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
@@ -81,6 +83,12 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         {
             var registerFunction = GetRegisterSystemFunction(deployedAddress, publicAccess);
             return RegistrationSystemService.RegisterSystemRequestAsync(registerFunction);
+        }
+
+        public Task<TransactionReceipt> RegisterSystemAndWaitForReceiptAsync(string deployedAddress, bool publicAccess = true)
+        {
+            var registerFunction = GetRegisterSystemFunction(deployedAddress, publicAccess);
+            return RegistrationSystemService.RegisterSystemRequestAndWaitForReceiptAsync(registerFunction);
         }
 
         public Task<string> BatchRegisterRootFunctionSelectorsRequestAsync(List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)

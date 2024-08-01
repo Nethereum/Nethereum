@@ -47,7 +47,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             return results;
         }
 
-        public virtual async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
+        public virtual async Task<List<SystemDeploymentResult>> DeployAllCreate2ContractSystemsRequestAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries = null, CancellationToken cancellationToken = default)
         {
             var results = new List<SystemDeploymentResult>();
             foreach (var systemService in SystemServices)
@@ -63,6 +63,14 @@ namespace Nethereum.Mud.Contracts.Core.Systems
                     SystemService = systemService });
             }
             return results;
+        }
+
+        public virtual void SetSystemsCallFromDelegatorContractHandler(string delegatorAddress)
+        {
+            foreach (var systemService in SystemServices)
+            {
+                systemService.SetSystemCallFromDelegatorContractHandler(delegatorAddress);
+            }
         }
 
         public virtual async Task<string> BatchRegisterAllSystemsRequestAsync(string deployerAddress, string salt, bool publicAccess = true, ByteCodeLibrary[] byteCodeLibraries= null, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true)

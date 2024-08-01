@@ -9,7 +9,7 @@ using System.Diagnostics;
 using Nethereum.Mud.IntegrationTests.MudTest.Tables;
 using Nethereum.Mud.IntegrationTests.MudTest.Systems;
 using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem;
-using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem.ContractDefinition;    
+using Nethereum.Mud.IntegrationTests.MudTest.Systems.IncrementSystem.ContractDefinition;
 using Nethereum.Mud.Contracts;
 using Nethereum.Mud.Contracts.Core.StoreEvents;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem;
@@ -21,7 +21,7 @@ using Nethereum.Mud.Contracts.Core.Namespaces;
 using System.Net;
 using Nethereum.Mud.Contracts.Store;
 using Nethereum.Mud.IntegrationTests.MudTest;
-using Nethereum.Web3.Accounts;
+using Nethereum.Mud.Contracts.ContractHandlers;
 
 
 
@@ -272,24 +272,131 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.Equal("uint256[]", configFields[2].Type);
             Assert.Equal(3, configFields[2].Order);
             Assert.Equal("config3", configFields[2].Name);
-
-
-
-
-            var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAsync(addressDeployer, salt);
-            var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
             
+            try
+            {
+                var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAsync(addressDeployer, salt);
+                var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
+
+                await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+                var counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+                Assert.Equal(1, counterRecord.Values.Value);
+
+                await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+                counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+                Assert.Equal(2, counterRecord.Values.Value);
+
+                //using the same delegator as the caller to set the systems
+                mudTest.Systems.SetSystemsCallFromDelegatorContractHandler(web3.TransactionManager.Account.Address);
+
+                await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+                counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+                Assert.Equal(3, counterRecord.Values.Value);
+            }
+            catch (SmartContractCustomErrorRevertException e)
+            {
+                var error = mudTest.FindCustomErrorException(e);
+                mudTest.HandleCustomErrorException(e);
+
+            }
+        }
+
+
+        [Fact]
+        public async Task ShouldInteractWithSystemsPermissions()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            web3.TransactionManager.UseLegacyAsDefault = true;
+            var random = new Random();
+            //random salt in case we have an existing contract deployed
+            var salt = Nethereum.Util.Sha3Keccack.Current.CalculateHash(random.Next(0, 1000000).ToString());
+
+            var create2DeterministicDeploymentProxyService = web3.Eth.Create2DeterministicDeploymentProxyService;
+
+            var proxyCreate2Deployment = await create2DeterministicDeploymentProxyService.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
+            var addressDeployer = await create2DeterministicDeploymentProxyService.DeployProxyAndGetContractAddressAsync(proxyCreate2Deployment);
+
+            var worldFactoryDeployerService = new WorldFactoryDeployService();
+            var worldFactoryAddresses = await worldFactoryDeployerService.DeployWorldFactoryContractAndSystemDependenciesAsync(web3, addressDeployer, salt);
+
+            var worldEvent = await worldFactoryDeployerService.DeployWorldAsync(web3, salt, worldFactoryAddresses);
+            var worldAddress = worldEvent.NewContract;
+            var world = new WorldNamespace(web3, worldAddress);
+            var version = await world.WorldService.StoreVersionQueryAsStringAsync();
+            Assert.Equal("2.0.0", version);
+
+            var mudTest = new MudTestNamespace(web3, worldAddress);
+            //note this may need a wait
+            await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();
+            var receipt = await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
+
+
+            var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
+            var deployedAddress = deployAllResult.First().DeploymentResult.Address;
+            var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
+
             await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
 
-            var counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
-            Assert.Equal(1, counterRecord.Values.Value);
+             var counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+             Assert.Equal(1, counterRecord.Values.Value);
+
+            //using the same delegator as the caller to set the systems
+            mudTest.Systems.SetSystemsCallFromDelegatorContractHandler(web3.TransactionManager.Account.Address);
 
             await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
 
-            counterRecord =  await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+            counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
             Assert.Equal(2, counterRecord.Values.Value);
 
+           await mudTest.Systems.IncrementSystemService.SystemServiceResourceRegistrator.RegisterSystemAndWaitForReceiptAsync(deployedAddress, false);
+            await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+           counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+           Assert.Equal(3, counterRecord.Values.Value);
+
+           
+            var web3AnotherUser = TestAccounts.GetAccount1Web3();
+            var mudTestAnotherUser = new MudTestNamespace(web3AnotherUser, worldAddress);
+
+            var error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
+            {
+                await mudTestAnotherUser.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+            });
+
+            var fullError = mudTest.FindCustomErrorException(error);
+            Assert.Equal("World_AccessDenied", fullError.ErrorABI.Name);
+
+            await mudTest.World.Systems.RegistrationSystem.RegisterDelegationRequestAndWaitForReceiptAsync(TestAccounts.Account1Address, ResourceEncoder.EncodeUnlimitedAccess(), new byte[] { });
+
+          
+            mudTestAnotherUser.Systems.SetSystemsCallFromDelegatorContractHandler(web3.TransactionManager.Account.Address); //delegator is the owner
+            await mudTestAnotherUser.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+            counterRecord = await mudTest.Tables.CounterTableService.GetTableRecordAsync();
+            Assert.Equal(4, counterRecord.Values.Value);
+
+
+            await mudTest.World.Systems.RegistrationSystem.UnregisterDelegationRequestAndWaitForReceiptAsync(TestAccounts.Account1Address);
+
+            error = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
+            {
+                await mudTestAnotherUser.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
+
+            });
+
+            fullError = mudTest.FindCustomErrorException(error);
+            Assert.Equal("World_DelegationNotFound", fullError.ErrorABI.Name);
+
+            
+
+
         }
+
     }
+
 }
    

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.Create2Deployment;
 using System.Threading;
+using Nethereum.Contracts.ContractHandlers;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
