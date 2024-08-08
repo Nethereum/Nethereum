@@ -1,18 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Nethereum.Contracts.ContractHandlers;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.ABI.Model;
-using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
-using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Mud.Contracts.Core.Systems
 {
-
+    public static class FunctionABIMudExtensions
+    {
+        public static FunctionABI CreateNewFunctionABIForMudNamespace(this FunctionABI functionABI, string @namespace)
+        {
+            if(string.IsNullOrEmpty(@namespace))
+            {
+                return functionABI;
+            }
+            var newName = $"{@namespace}__{functionABI.Name}";
+            var newFunctionAbi = new FunctionABI(newName, functionABI.Constant);
+            newFunctionAbi.InputParameters = functionABI.InputParameters;
+            newFunctionAbi.OutputParameters = functionABI.OutputParameters;
+            return newFunctionAbi;
+        }
+    }
 
     public class SystemDefaultFunctions
     {
@@ -32,9 +41,22 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             return GetAllFunctionTypes().Select(x => ABITypedRegistry.GetFunctionABI(x)).ToList();
         }
 
-        public string[] GetAllFunctionSignatures()
+        public string[] GetAllFunctionSignatures(string @namespace = null)
         {
-            return GetAllFunctionABIs().Select(x => x.Sha3Signature).ToArray();
+            var functionAbis = GetAllFunctionABIs();
+            if (string.IsNullOrEmpty(@namespace))
+            {
+                return GetAllFunctionABIs().Select(x => x.Sha3Signature).ToArray();
+            }
+            else
+            {
+                var newFunctionAbis = new List<FunctionABI>();
+                foreach (var functionAbi in functionAbis)
+                {
+                    newFunctionAbis.Add(functionAbi.CreateNewFunctionABIForMudNamespace(@namespace));
+                }
+                return newFunctionAbis.Select(x => x.Sha3Signature).ToArray();
+            }
         }
 
         public partial class MsgSenderFunction : MsgSenderFunctionBase { }
