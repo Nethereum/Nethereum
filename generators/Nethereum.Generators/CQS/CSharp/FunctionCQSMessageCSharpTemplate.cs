@@ -24,17 +24,17 @@ namespace Nethereum.Generators.CQS
             var header = "";
             if (_functionABIModel.IsMultipleOutput())
             {
-                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"", typeof({_functionOutputDTOModel.GetTypeName()}))]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{_functionABIModel.GetFunctionSignatureName()}"", typeof({_functionOutputDTOModel.GetTypeName()}))]";
             }
 
             if (_functionABIModel.IsSingleOutput())
             {
-                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{_functionABIModel.GetFunctionSignatureName()}"", ""{_functionABIModel.GetSingleAbiReturnType()}"")]";
             }
 
             if (_functionABIModel.HasNoReturn())
             {
-                header = $@"{SpaceUtils.One__Tab}[Function(""{functionABI.Name}"")]";
+                header = $@"{SpaceUtils.One__Tab}[Function(""{_functionABIModel.GetFunctionSignatureName()}"")]";
             }
 
             return $@"{GetPartialMainClass()}

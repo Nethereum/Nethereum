@@ -7,16 +7,16 @@ using System.Threading;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Contracts;
 using Newtonsoft.Json;
-using Nethereum.Unity.Contracts.Standards.ERC20.ContractDefinition;
+using MyProject.Contracts.Standard_Token.ContractDefinition;
 
-namespace Nethereum.Unity.Contracts.Standards.ERC20
+namespace MyProject.Contracts.Standard_Token
 {
-    public partial class Erc20ContractRequestFactory 
+    public partial class StandardTokenContractRequestFactory 
     {
         public string ContractAddress { get; protected set; }
         public IContractTransactionUnityRequestFactory ContractTransactionUnityRequestFactory { get; protected set; }
         public IContractQueryUnityRequestFactory ContractQueryUnityRequestFactory { get; protected set; }
-        public Erc20ContractRequestFactory(string contractAddress, IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, IContractQueryUnityRequestFactory contractQueryUnityRequestFactory)
+        public StandardTokenContractRequestFactory(string contractAddress, IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, IContractQueryUnityRequestFactory contractQueryUnityRequestFactory)
             {
                 ContractAddress = contractAddress;
                 ContractTransactionUnityRequestFactory = contractTransactionUnityRequestFactory;
@@ -24,15 +24,15 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
             }
 
 
-        public DomainSeparatorQueryRequest CreateDomainSeparatorQueryRequest()
-        {
-            return new DomainSeparatorQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
-        }
-
-
         public AllowanceQueryRequest CreateAllowanceQueryRequest()
         {
             return new AllowanceQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
+        }
+
+
+        public AllowedQueryRequest CreateAllowedQueryRequest()
+        {
+            return new AllowedQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
         }
 
 
@@ -48,33 +48,21 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         }
 
 
+        public BalancesQueryRequest CreateBalancesQueryRequest()
+        {
+            return new BalancesQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
+        }
+
+
         public DecimalsQueryRequest CreateDecimalsQueryRequest()
         {
             return new DecimalsQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
         }
 
 
-        public Eip712DomainQueryRequest CreateEip712DomainQueryRequest()
-        {
-            return new Eip712DomainQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
-        }
-
-
         public NameQueryRequest CreateNameQueryRequest()
         {
             return new NameQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
-        }
-
-
-        public NoncesQueryRequest CreateNoncesQueryRequest()
-        {
-            return new NoncesQueryRequest(ContractQueryUnityRequestFactory, ContractAddress);
-        }
-
-
-        public PermitTransactionRequest CreatePermitTransactionRequest()
-        {
-            return new PermitTransactionRequest(ContractTransactionUnityRequestFactory, ContractAddress);
         }
 
 

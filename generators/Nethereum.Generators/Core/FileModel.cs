@@ -10,7 +10,7 @@ namespace Nethereum.Generators.Core
 
         public string GetFileName()
         {
-            return CommonGenerators.GenerateClassName(Name) + "." + CodeGenLanguage.GetCodeOutputFileExtension();
+            return CommonGenerators.GenerateClassName(Name) + ".gen." + CodeGenLanguage.GetCodeOutputFileExtension();
         }
 
         public string Namespace { get; }

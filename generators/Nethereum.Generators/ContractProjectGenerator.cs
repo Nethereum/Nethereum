@@ -28,6 +28,8 @@ namespace Nethereum.Generators
 
         private string ProjectName { get; }
 
+        public string MudNamespace { get; set; }
+
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
             string byteCode,
@@ -110,7 +112,7 @@ namespace Nethereum.Generators
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
-        public GeneratedFile GenerateMudService(bool singleMessagesFile = false)
+        public GeneratedFile GenerateMudService(string mudNamespace = null, bool singleMessagesFile = false)
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
@@ -120,7 +122,7 @@ namespace Nethereum.Generators
 
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
-            var serviceGenerator = new MudServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+            var serviceGenerator = new MudServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage, mudNamespace);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
@@ -287,7 +289,7 @@ namespace Nethereum.Generators
             var generators = new List<FunctionCQSMessageGenerator>();
             foreach (var functionAbi in ContractABI.Functions)
             {
-                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage, MudNamespace);
                 generators.Add(cqsGenerator);
             }
             return generators;

@@ -268,6 +268,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         this.PathDelimiter = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
         this.ProjectName = null;
+        this.MudNamespace = null;
         this.AddRootNamespaceOnVbProjectsToImportStatements = true;
     };
     $p.get_ContractABI = function ContractProjectGenerator_get_ContractABI() { return this.ContractABI; };
@@ -281,6 +282,8 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.get_PathDelimiter = function ContractProjectGenerator_get_PathDelimiter() { return this.PathDelimiter; };
     $p.get_CodeGenLanguage = function ContractProjectGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
     $p.get_ProjectName = function ContractProjectGenerator_get_ProjectName() { return this.ProjectName; };
+    $p.get_MudNamespace = function ContractProjectGenerator_get_MudNamespace() { return this.MudNamespace; };
+    $p.set_MudNamespace = function ContractProjectGenerator_set_MudNamespace(value) { this.MudNamespace = value;return value; };
     $t.ctor = function ContractProjectGenerator(contractABI, contractName, byteCode, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, baseOutputPath, pathDelimiter, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
         this.ContractABI = contractABI;
@@ -347,7 +350,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             this.get_CodeGenLanguage());
         return serviceGenerator.GenerateFileContent$1(serviceFullPath);
     };
-    $p.GenerateMudService = function ContractProjectGenerator_GenerateMudService(singleMessagesFile) {
+    $p.GenerateMudService = function ContractProjectGenerator_GenerateMudService(mudNamespace, singleMessagesFile) {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
         var cqsFullNamespace = this.GetFullNamespace(this.get_CQSNamespace());
 
@@ -358,7 +361,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var serviceFullPath = this.GetFullPath(this.get_ServiceNamespace());
         var serviceGenerator = new Nethereum.Generators.MudService.MudServiceGenerator.ctor(this.get_ContractABI(), 
             this.get_ContractName(), this.get_ByteCode(), serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, 
-            this.get_CodeGenLanguage());
+            this.get_CodeGenLanguage(), mudNamespace);
         return serviceGenerator.GenerateFileContent$1(serviceFullPath);
     };
     $p.GenerateAllUnity = function ContractProjectGenerator_GenerateAllUnity() {
@@ -543,7 +546,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         for (var $i = 0, $a = this.get_ContractABI().get_Functions(), $length = $a.length; $i < $length; $i++) {
             var functionAbi = $a[$i];
             var cqsGenerator = new Nethereum.Generators.CQS.FunctionCQSMessageGenerator.ctor(functionAbi, 
-                cqsFullNamespace, dtoFullNamespace, this.get_CodeGenLanguage());
+                cqsFullNamespace, dtoFullNamespace, this.get_CodeGenLanguage(), this.get_MudNamespace());
             generators.Add(cqsGenerator);
         }
         return generators;
@@ -635,6 +638,8 @@ $d.define(Nethereum.Generators.MudTablesGenerator, null, function($t, $p) {
     $p.GetFullNamespace = function MudTablesGenerator_GetFullNamespace(namespace) {
         if (String.IsNullOrEmpty(this.get_BaseNamespace()))
             return namespace;
+        if (String.IsNullOrEmpty(namespace))
+            return this.get_BaseNamespace();
         return this.get_BaseNamespace() + "." + namespace.TrimStart($d.array(System.Char, [46 /*'.'*/]));
     };
     $p.GetFullPath = function MudTablesGenerator_GetFullPath(namespace) {
@@ -691,9 +696,12 @@ $d.define(Nethereum.Generators.Core.FunctionABIModel, null, function($t, $p) {
         this._abiTypeToDotnetTypeConvertor = null;
         this.FunctionABI = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
+        this.MudNamespacePrefix = null;
     };
     $p.get_FunctionABI = function FunctionABIModel_get_FunctionABI() { return this.FunctionABI; };
     $p.get_CodeGenLanguage = function FunctionABIModel_get_CodeGenLanguage() { return this.CodeGenLanguage; };
+    $p.get_MudNamespacePrefix = function FunctionABIModel_get_MudNamespacePrefix() { return this.MudNamespacePrefix; };
+    $p.set_MudNamespacePrefix = function FunctionABIModel_set_MudNamespacePrefix(value) { this.MudNamespacePrefix = value;return value; };
     $t.ctor = function FunctionABIModel(functionABI, abiTypeToDotnetTypeConvertor, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
         this.FunctionABI = functionABI;
@@ -730,6 +738,12 @@ $d.define(Nethereum.Generators.Core.FunctionABIModel, null, function($t, $p) {
     };
     $p.IsTransaction = function FunctionABIModel_IsTransaction() {
         return this.get_FunctionABI().get_Constant() == false;
+    };
+    $p.GetFunctionSignatureName = function FunctionABIModel_GetFunctionSignatureName() {
+        if (!String.IsNullOrEmpty(this.get_MudNamespacePrefix())) {
+            return this.get_MudNamespacePrefix() + "__" + this.get_FunctionABI().get_Name();
+        }
+        return this.get_FunctionABI().get_Name();
     };
 });
 $d.define(Nethereum.Generators.Core.Parameter, null, function($t, $p) {
@@ -1383,7 +1397,7 @@ $d.define(Nethereum.Generators.Core.FileModel, null, function($t, $p) {
     $p.get_CodeGenLanguage = function FileModel_get_CodeGenLanguage() { return this.CodeGenLanguage; };
     $p.set_CodeGenLanguage = function FileModel_set_CodeGenLanguage(value) { this.CodeGenLanguage = value;return value; };
     $p.GetFileName = function FileModel_GetFileName() {
-        return this.get_CommonGenerators().GenerateClassName(this.get_Name()) + "." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+        return this.get_CommonGenerators().GenerateClassName(this.get_Name()) + ".gen." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
             this.get_CodeGenLanguage()));
     };
     $p.get_Namespace = function FileModel_get_Namespace() { return this.Namespace; };
@@ -1521,7 +1535,7 @@ $d.define(Nethereum.Generators.Core.TypeMessageModel, null, function($t, $p) {
         return String.Format("{0}{1}", [this.get_CommonGenerators().GenerateClassName(name), this.get_ClassNameSuffix()]);
     };
     $p.GetFileName$1 = function TypeMessageModel_GetFileName(name) {
-        return this.GetTypeName$1(name) + "." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+        return this.GetTypeName$1(name) + ".gen." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
             this.get_CodeGenLanguage()));
     };
     $p.GetVariableName$1 = function TypeMessageModel_GetVariableName(name) {
@@ -2585,11 +2599,15 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Genera
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.FunctionABI = null;
+        this.MudNamespace = null;
     };
     $p.get_FunctionABI = function FunctionCQSMessageGenerator_get_FunctionABI() { return this.FunctionABI; };
-    $t.ctor = function FunctionCQSMessageGenerator(functionABI, namespace, namespaceFunctionOutput, codeGenLanguage) {
+    $p.get_MudNamespace = function FunctionCQSMessageGenerator_get_MudNamespace() { return this.MudNamespace; };
+    $p.set_MudNamespace = function FunctionCQSMessageGenerator_set_MudNamespace(value) { this.MudNamespace = value;return value; };
+    $t.ctor = function FunctionCQSMessageGenerator(functionABI, namespace, namespaceFunctionOutput, codeGenLanguage, mudNamespace) {
         $t.$baseType.ctor.call(this);
         this.FunctionABI = functionABI;
+        this.set_MudNamespace(mudNamespace);
         this.set_ClassModel(new Nethereum.Generators.CQS.FunctionCQSMessageModel.ctor(this.get_FunctionABI(), 
             namespace));
         this.get_ClassModel().get_NamespaceDependencies().Add(namespaceFunctionOutput);
@@ -2604,6 +2622,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Genera
                 var csharpMapper = new Nethereum.Generators.Core.ABITypeToCSharpType.ctor();
                 var functionCsharpABIModel = new Nethereum.Generators.Core.FunctionABIModel.ctor(this.get_ClassModel().get_FunctionABI(), 
                     csharpMapper, 0 /* CodeGenLanguage.CSharp */);
+                functionCsharpABIModel.set_MudNamespacePrefix(this.get_MudNamespace());
                 this.set_ClassTemplate(new Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate.ctor(this.get_ClassModel(), 
                     functionOutputDTOModel, functionCsharpABIModel));
                 break;
@@ -2611,6 +2630,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Genera
                 var vbMapper = new Nethereum.Generators.Core.ABITypeToVBType.ctor();
                 var functionVBABIModel = new Nethereum.Generators.Core.FunctionABIModel.ctor(this.get_ClassModel().get_FunctionABI(), 
                     vbMapper, 1 /* CodeGenLanguage.Vb */);
+                functionVBABIModel.set_MudNamespacePrefix(this.get_MudNamespace());
                 this.set_ClassTemplate(new Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate.ctor(this.get_ClassModel(), 
                     functionOutputDTOModel, functionVBABIModel));
                 break;
@@ -2620,6 +2640,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Genera
 
                 var functionfsABIModel = new Nethereum.Generators.Core.FunctionABIModel.ctor(this.get_ClassModel().get_FunctionABI(), 
                     fsMapper, 3 /* CodeGenLanguage.FSharp */);
+                functionfsABIModel.set_MudNamespacePrefix(this.get_MudNamespace());
                 this.set_ClassTemplate(new Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate.ctor(this.get_ClassModel(), 
                     functionOutputDTOModel, functionfsABIModel));
                 break;
@@ -2697,17 +2718,17 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.G
         var header = "";
         if (this._functionABIModel.IsMultipleOutput()) {
             header = String.Format("{0}[Function(\"{1}\", typeof({2}))]", [Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                functionABI.get_Name(), this._functionOutputDTOModel.GetTypeName()]);
+                this._functionABIModel.GetFunctionSignatureName(), this._functionOutputDTOModel.GetTypeName()]);
         }
 
         if (this._functionABIModel.IsSingleOutput()) {
             header = String.Format("{0}[Function(\"{1}\", \"{2}\")]", [Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                functionABI.get_Name(), this._functionABIModel.GetSingleAbiReturnType()]);
+                this._functionABIModel.GetFunctionSignatureName(), this._functionABIModel.GetSingleAbiReturnType()]);
         }
 
         if (this._functionABIModel.HasNoReturn()) {
             header = String.Format("{0}[Function(\"{1}\")]", [Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                functionABI.get_Name()]);
+                this._functionABIModel.GetFunctionSignatureName()]);
         }
 
         return String.Format("{0}\r\n\r\n{1}\r\n{2}public class {3}Base : FunctionMessage\r\n{4}{{\r\n{5}\r\n{6}}}", 
@@ -3644,11 +3665,11 @@ $d.define(Nethereum.Generators.MudService.MudServiceGenerator, Nethereum.Generat
         this.ContractABI = null;
     };
     $p.get_ContractABI = function MudServiceGenerator_get_ContractABI() { return this.ContractABI; };
-    $t.ctor = function MudServiceGenerator(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, codeGenLanguage) {
+    $t.ctor = function MudServiceGenerator(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, codeGenLanguage, mudNamespace) {
         $t.$baseType.ctor.call(this);
         this.ContractABI = contractABI;
         this.set_ClassModel(new Nethereum.Generators.MudService.MudServiceModel.ctor(contractABI, contractName, 
-            byteCode, namespace, cqsNamespace, functionOutputNamespace));
+            byteCode, namespace, cqsNamespace, functionOutputNamespace, mudNamespace));
         this.get_ClassModel().set_CodeGenLanguage(codeGenLanguage);
         this.InitialiseTemplate(codeGenLanguage);
     };
@@ -3676,17 +3697,20 @@ $d.define(Nethereum.Generators.MudService.MudServiceModel, Nethereum.Generators.
         this.ContractABI = null;
         this.CQSNamespace = null;
         this.FunctionOutputNamespace = null;
+        this.MudNamespace = null;
         this.ContractDeploymentCQSMessageModel = null;
     };
     $p.get_ContractABI = function MudServiceModel_get_ContractABI() { return this.ContractABI; };
     $p.get_CQSNamespace = function MudServiceModel_get_CQSNamespace() { return this.CQSNamespace; };
     $p.get_FunctionOutputNamespace = function MudServiceModel_get_FunctionOutputNamespace() { return this.FunctionOutputNamespace; };
+    $p.get_MudNamespace = function MudServiceModel_get_MudNamespace() { return this.MudNamespace; };
     $p.get_ContractDeploymentCQSMessageModel = function MudServiceModel_get_ContractDeploymentCQSMessageModel() { return this.ContractDeploymentCQSMessageModel; };
-    $t.ctor = function MudServiceModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace) {
+    $t.ctor = function MudServiceModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, mudNamespace) {
         $t.$baseType.ctor.call(this, namespace, contractName, "Service");
         this.ContractABI = contractABI;
         this.CQSNamespace = cqsNamespace;
         this.FunctionOutputNamespace = functionOutputNamespace;
+        this.MudNamespace = mudNamespace;
         this.ContractDeploymentCQSMessageModel = new Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel.ctor(contractABI.get_Constructor(), 
             cqsNamespace, byteCode, contractName);
         this.InitialiseNamespaceDependencies();
@@ -3698,7 +3722,7 @@ $d.define(Nethereum.Generators.MudService.MudServiceModel, Nethereum.Generators.
             this.get_NamespaceDependencies().Add(functionOutputNamespace);
     };
     $p.GetFileName$1 = function MudServiceModel_GetFileName(name) {
-        return this.GetTypeName$1(name) + "MudExt." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+        return this.GetTypeName$1(name) + "MudExt.gen." + Nethereum.Generators.Core.CodeGenLanguageExt.GetCodeOutputFileExtension($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
             this.get_CodeGenLanguage()));
     };
     $p.GetResourceClassName = function MudServiceModel_GetResourceClassName() {
@@ -3755,10 +3779,19 @@ $d.define(Nethereum.Generators.MudService.MudServiceCSharpTemplate, Nethereum.Ge
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GenerateSystemClass = function MudServiceCSharpTemplate_GenerateSystemClass() {
-        return String.Format("{0}public class {1} : SystemResource\r\n{2}{{\r\n{3}public {4}() : base(\"{5}\") {{ }}\r\n{6}}}", 
-            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
-                Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                this.get_Model().GetResourceClassName(), this.get_Model().GetSystemName(), Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        if (String.IsNullOrEmpty(this.get_Model().get_MudNamespace())) {
+            return String.Format("{0}public class {1} : SystemResource\r\n{2}{{\r\n{3}public {4}() : base(\"{5}\") {{ }}\r\n{6}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    this.get_Model().GetResourceClassName(), this.get_Model().GetSystemName(), Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        }
+        else {
+            return String.Format("{0}public class {1} : SystemResource\r\n{2}{{\r\n{3}public {4}() : base(\"{5}\", \"{6}\") {{ }}\r\n{7}}}", 
+                [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    this.get_Model().GetResourceClassName(), this.get_Model().GetSystemName(), this.get_Model().get_MudNamespace(), 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        }
 
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
@@ -3823,11 +3856,21 @@ $d.define(Nethereum.Generators.MudService.MudServiceVbTemplate, Nethereum.Genera
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GenerateSystemClass = function MudServiceVbTemplate_GenerateSystemClass() {
-        return String.Format("{0}Public Class {1} Inherits SystemResource\r\n{2}\r\n{3}Public Sub New() \r\n{4}MyBase.New(\"{5}\")\r\n{6}End Sub\r\n{7}End Class", 
-            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
-                Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                Nethereum.Generators.Core.SpaceUtils().Three____Tabs, this.get_Model().GetSystemName(), 
-                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        if (String.IsNullOrEmpty(this.get_Model().get_MudNamespace())) {
+            return String.Format("{0}Public Class {1} Inherits SystemResource\r\n{2}\r\n{3}Public Sub New() \r\n{4}MyBase.New(\"{5}\")\r\n{6}End Sub\r\n{7}End Class", 
+                [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    Nethereum.Generators.Core.SpaceUtils().Three____Tabs, this.get_Model().GetSystemName(), 
+                    Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        }
+        else {
+            return String.Format("{0}Public Class {1} Inherits SystemResource\r\n{2}\r\n{3}Public Sub New() \r\n{4}MyBase.New(\"{5}\", \"{6}\")\r\n{7}End Sub\r\n{8}End Class", 
+                [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetResourceClassName(), 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    Nethereum.Generators.Core.SpaceUtils().Three____Tabs, this.get_Model().GetSystemName(), 
+                    this.get_Model().get_MudNamespace(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+        }
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -3933,11 +3976,11 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
     };
     $p.GenerateClass = function MudTableCSharpTemplate_GenerateClass() {
         if (this.get_Model().IsSingleton()) {
-            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecordSingleton<{4}.{5}> \r\n{6}{{\r\n{7}public {8}() : base(\"{9}\")\r\n{10}{{\r\n{11}\r\n{12}}}\r\n{13}\r\n{14}public partial class {15}\r\n{16}{{\r\n{17}          \r\n{18}}}\r\n{19}}}", 
+            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecordSingleton<{4}.{5}> \r\n{6}{{\r\n{7}public {8}() : {9}\r\n{10}{{\r\n{11}\r\n{12}}}\r\n{13}\r\n{14}public partial class {15}\r\n{16}{{\r\n{17}          \r\n{18}}}\r\n{19}}}", 
                 [this.GetSingletonServiceClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), this.get_Model().GetValueTypeName(), 
                     Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                    this.get_Model().GetTypeName(), this.get_Model().get_Name(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    this.get_Model().GetTypeName(), this.GetBaseConstructor(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     this.get_Model().GetValueTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
@@ -3946,12 +3989,12 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
                     Nethereum.Generators.Core.SpaceUtils().One__Tab]);
         }
         else {
-            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecord<{4}.{5}, {6}.{7}> \r\n{8}{{\r\n{9}public {10}() : base(\"{11}\")\r\n{12}{{\r\n{13}\r\n{14}}}\r\n{15}\r\n{16}public partial class {17}\r\n{18}{{\r\n{19}\r\n{20}}}\r\n{21}\r\n{22}public partial class {23}\r\n{24}{{\r\n{25}          \r\n{26}}}\r\n{27}}}", 
+            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecord<{4}.{5}, {6}.{7}> \r\n{8}{{\r\n{9}public {10}() : {11}\r\n{12}{{\r\n{13}\r\n{14}}}\r\n{15}\r\n{16}public partial class {17}\r\n{18}{{\r\n{19}\r\n{20}}}\r\n{21}\r\n{22}public partial class {23}\r\n{24}{{\r\n{25}          \r\n{26}}}\r\n{27}}}", 
                 [this.GetServiceClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), this.get_Model().GetKeyTypeName(), 
                     this.get_Model().GetTypeName(), this.get_Model().GetValueTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetTypeName(), 
-                    this.get_Model().get_Name(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                    this.GetBaseConstructor(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().NoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetKeyTypeName(), 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties$1(this.get_Model().get_MudTable().get_Keys(), 
@@ -3963,6 +4006,15 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
                     Nethereum.Generators.Core.SpaceUtils().One__Tab]);
         }
 
+    };
+    $p.GetBaseConstructor = function MudTableCSharpTemplate_GetBaseConstructor() {
+        if (String.IsNullOrEmpty(this.get_Model().get_MudTable().get_MudNamespace())) {
+            return String.Format("base(\"{0}\")", [this.get_Model().get_Name()]);
+        }
+        else {
+            return String.Format("base(\"{0}\", \"{1}\")", [this.get_Model().get_MudTable().get_MudNamespace(), 
+                this.get_Model().get_Name()]);
+        }
     };
     $p.GetSingletonServiceClass = function MudTableCSharpTemplate_GetSingletonServiceClass() {
         return String.Format("{0}public partial class {1} : TableSingletonService<{2},{3}.{4}>\r\n{5}{{ \r\n{6}public {7}(IWeb3 web3, string contractAddress) : base(web3, contractAddress) {{}}\r\n{8}}}", 

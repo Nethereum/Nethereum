@@ -30,7 +30,7 @@ namespace Nethereum.Generators.Core
 
         public virtual string GetFileName(string name)
         {
-            return GetTypeName(name) + "." + CodeGenLanguage.GetCodeOutputFileExtension();
+            return GetTypeName(name) + ".gen." + CodeGenLanguage.GetCodeOutputFileExtension();
         }
 
         public string GetVariableName(string name)

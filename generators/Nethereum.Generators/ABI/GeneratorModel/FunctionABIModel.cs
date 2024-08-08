@@ -8,6 +8,7 @@ namespace Nethereum.Generators.Core
         public FunctionABI FunctionABI { get; }
         public CodeGenLanguage CodeGenLanguage { get; }
         private ITypeConvertor _abiTypeToDotnetTypeConvertor;
+        public string MudNamespacePrefix { get; set; } = null;
 
         public FunctionABIModel(FunctionABI functionABI, ITypeConvertor abiTypeToDotnetTypeConvertor, CodeGenLanguage codeGenLanguage)
         {
@@ -63,6 +64,15 @@ namespace Nethereum.Generators.Core
         public bool IsTransaction()
         {
             return FunctionABI.Constant == false;
+        }
+
+        public string GetFunctionSignatureName()
+        {
+            if(!string.IsNullOrEmpty(MudNamespacePrefix))
+            {
+                return MudNamespacePrefix + "__" + FunctionABI.Name;
+            }
+            return FunctionABI.Name;
         }
     }
 }

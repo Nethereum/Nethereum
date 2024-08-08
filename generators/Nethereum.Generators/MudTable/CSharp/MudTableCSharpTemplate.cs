@@ -22,7 +22,7 @@ namespace Nethereum.Generators.MudTable
 {SpaceUtils.One__Tab}
 {SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} : TableRecordSingleton<{Model.GetTypeName()}.{Model.GetValueTypeName()}> 
 {SpaceUtils.One__Tab}{{
-{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}() : base(""{Model.Name}"")
+{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}() : {GetBaseConstructor()}
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Two___Tabs}
 {SpaceUtils.Two___Tabs}}}
@@ -40,7 +40,7 @@ namespace Nethereum.Generators.MudTable
 {SpaceUtils.One__Tab}
 {SpaceUtils.One__Tab}public partial class {Model.GetTypeName()} : TableRecord<{Model.GetTypeName()}.{Model.GetKeyTypeName()}, {Model.GetTypeName()}.{Model.GetValueTypeName()}> 
 {SpaceUtils.One__Tab}{{
-{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}() : base(""{Model.Name}"")
+{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}() : {GetBaseConstructor()}
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Two___Tabs}
 {SpaceUtils.Two___Tabs}}}
@@ -57,6 +57,18 @@ namespace Nethereum.Generators.MudTable
 {SpaceUtils.One__Tab}}}";
             }
 
+        }
+
+        public string GetBaseConstructor()
+        {
+            if (string.IsNullOrEmpty(Model.MudTable.MudNamespace))
+            {
+                return $@"base(""{Model.Name}"")";
+            }
+            else
+            {
+                return $@"base(""{Model.MudTable.MudNamespace}"", ""{Model.Name}"")";
+            }
         }
 
         public string GetSingletonServiceClass()

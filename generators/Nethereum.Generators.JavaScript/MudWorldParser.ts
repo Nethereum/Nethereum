@@ -3,31 +3,53 @@ var n = require('./Nethereum.Generators.DuoCode.js');
 var parameterAbiClass = Nethereum.Generators.Model.ParameterABI;
 var mudTableClass = Nethereum.Generators.MudTable.MudTable;
 
+
 interface Table {
     schema: { [key: string]: string };
     key: string[];
 }
 
-interface Word {
+interface Namespace {
     tables: { [key: string]: Table };
 }
 
-export function extractTables(jsonString: string): Nethereum.Generators.MudTable.MudTable[] {
-    const world = JSON.parse(jsonString) as Word;
-    const mudTables: Nethereum.Generators.MudTable.MudTable[] = [];
-    if (!world || !world.tables) return mudTables;
+interface World {
+    namespace?: string; // Single namespace (old format)
+    tables?: { [key: string]: Table }; //Single namespace (old format)
+    namespaces?: { [key: string]: Namespace }; //Multiple namespaces (new format)
+}
 
-    for (const tableKey in world.tables) {
-        const table = world.tables[tableKey];
-        
+export function extractTables(jsonString: string): Nethereum.Generators.MudTable.MudTable[] {
+    const world = JSON.parse(jsonString) as World;
+    const mudTables: Nethereum.Generators.MudTable.MudTable[] = [];
+
+    // Check if input format is single namespace or multiple namespaces
+    if (world.tables) {
+        // Single namespace (old format)
+        processNamespace(world.namespace, world.tables, mudTables);
+    } else if (world.namespaces) {
+        // Multiple namespaces (new format)
+        for (const namespaceKey in world.namespaces) {
+            const namespace = world.namespaces[namespaceKey];
+            processNamespace(namespaceKey, namespace.tables, mudTables);
+        }
+    }
+    return mudTables;
+}
+
+function processNamespace(namespace: string, tables: { [key: string]: Table }, mudTables: Nethereum.Generators.MudTable.MudTable[]) {
+    for (const tableKey in tables) {
+        const table = tables[tableKey];
+
         const mudTable = new mudTableClass.ctor();
         mudTables.push(mudTable);
         mudTable.set_Name(tableKey);
+        mudTable.set_MudNamespace(namespace);
 
         let schemaOrder = 0;
         let keyOrder = 0;
-        let valueParameters = [];
-        let keyParameters = [];
+        let valueParameters: any[] = [];
+        let keyParameters: any[] = [];
 
         for (const schemaKey in table.schema) {
             if (!table.key.includes(schemaKey)) {
@@ -43,10 +65,8 @@ export function extractTables(jsonString: string): Nethereum.Generators.MudTable
             keyOrder++;
             var parameter = new parameterAbiClass.ctor$1(type, key, keyOrder);
             keyParameters.push(parameter);
-            
         }
 
         mudTable.set_Keys(keyParameters);
     }
-    return mudTables;
 }

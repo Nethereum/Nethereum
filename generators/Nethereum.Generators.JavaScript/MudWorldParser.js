@@ -7,13 +7,28 @@ var mudTableClass = Nethereum.Generators.MudTable.MudTable;
 function extractTables(jsonString) {
     const world = JSON.parse(jsonString);
     const mudTables = [];
-    if (!world || !world.tables)
-        return mudTables;
-    for (const tableKey in world.tables) {
-        const table = world.tables[tableKey];
+    // Check if input format is single namespace or multiple namespaces
+    if (world.tables) {
+        // Single namespace (old format)
+        processNamespace(world.namespace, world.tables, mudTables);
+    }
+    else if (world.namespaces) {
+        // Multiple namespaces (new format)
+        for (const namespaceKey in world.namespaces) {
+            const namespace = world.namespaces[namespaceKey];
+            processNamespace(namespaceKey, namespace.tables, mudTables);
+        }
+    }
+    return mudTables;
+}
+exports.extractTables = extractTables;
+function processNamespace(namespace, tables, mudTables) {
+    for (const tableKey in tables) {
+        const table = tables[tableKey];
         const mudTable = new mudTableClass.ctor();
         mudTables.push(mudTable);
         mudTable.set_Name(tableKey);
+        mudTable.set_MudNamespace(namespace);
         let schemaOrder = 0;
         let keyOrder = 0;
         let valueParameters = [];
@@ -34,7 +49,5 @@ function extractTables(jsonString) {
         }
         mudTable.set_Keys(keyParameters);
     }
-    return mudTables;
 }
-exports.extractTables = extractTables;
 //# sourceMappingURL=MudWorldParser.js.map

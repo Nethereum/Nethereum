@@ -12,7 +12,6 @@ namespace Nethereum.Generators
         public CodeGenLanguage CodeGenLanguage { get; }
         public string BaseOutputPath { get; }
         public string PathDelimiter { get; }
-
         public string BaseNamespace { get; }
 
         public MudTablesGenerator(MudTable.MudTable[] mudTables, string baseNamespace , CodeGenLanguage codeGenLanguage, string baseOutputPath, string pathDelimiter, string @namespace)
@@ -52,6 +51,7 @@ namespace Nethereum.Generators
         public string GetFullNamespace(string @namespace)
         {
             if (string.IsNullOrEmpty(BaseNamespace)) return @namespace;
+            if(string.IsNullOrEmpty(@namespace)) return BaseNamespace;
             return BaseNamespace + "." + @namespace.TrimStart('.');
         }
 

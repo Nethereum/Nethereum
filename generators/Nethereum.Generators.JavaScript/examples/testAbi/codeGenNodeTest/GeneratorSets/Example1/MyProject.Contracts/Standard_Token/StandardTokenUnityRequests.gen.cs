@@ -7,29 +7,10 @@ using System.Threading;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Unity.Contracts;
 using Newtonsoft.Json;
-using Nethereum.Unity.Contracts.Standards.ERC20.ContractDefinition;
+using MyProject.Contracts.Standard_Token.ContractDefinition;
 
-namespace Nethereum.Unity.Contracts.Standards.ERC20
+namespace MyProject.Contracts.Standard_Token
 {
-    public partial class DomainSeparatorQueryRequest : ContractFunctionQueryRequest<DomainSeparatorFunction, DomainSeparatorOutputDTO>
-    {
-
-        public DomainSeparatorQueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
-        {
-        }
-
-        public DomainSeparatorQueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
-        {
-        }
-
-        public IEnumerator Query(BlockParameter blockParameter = null)
-        {
-            var domainSeparatorFunction = new DomainSeparatorFunction();
-            yield return Query(domainSeparatorFunction, blockParameter);
-        }
-
-    }
-
     public partial class AllowanceQueryRequest : ContractFunctionQueryRequest<AllowanceFunction, AllowanceOutputDTO>
     {
 
@@ -47,6 +28,27 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
                 allowanceFunction.Owner = owner;
                 allowanceFunction.Spender = spender;
             yield return Query(allowanceFunction, blockParameter);
+        }
+
+    }
+
+    public partial class AllowedQueryRequest : ContractFunctionQueryRequest<AllowedFunction, AllowedOutputDTO>
+    {
+
+        public AllowedQueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
+        {
+        }
+
+        public AllowedQueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
+        {
+        }
+
+        public IEnumerator Query(string returnValue1, string returnValue2, BlockParameter blockParameter = null)
+        {
+            var allowedFunction = new AllowedFunction();
+                allowedFunction.ReturnValue1 = returnValue1;
+                allowedFunction.ReturnValue2 = returnValue2;
+            yield return Query(allowedFunction, blockParameter);
         }
 
     }
@@ -83,11 +85,31 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         {
         }
 
-        public IEnumerator Query(string account, BlockParameter blockParameter = null)
+        public IEnumerator Query(string owner, BlockParameter blockParameter = null)
         {
             var balanceOfFunction = new BalanceOfFunction();
-                balanceOfFunction.Account = account;
+                balanceOfFunction.Owner = owner;
             yield return Query(balanceOfFunction, blockParameter);
+        }
+
+    }
+
+    public partial class BalancesQueryRequest : ContractFunctionQueryRequest<BalancesFunction, BalancesOutputDTO>
+    {
+
+        public BalancesQueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
+        {
+        }
+
+        public BalancesQueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
+        {
+        }
+
+        public IEnumerator Query(string returnValue1, BlockParameter blockParameter = null)
+        {
+            var balancesFunction = new BalancesFunction();
+                balancesFunction.ReturnValue1 = returnValue1;
+            yield return Query(balancesFunction, blockParameter);
         }
 
     }
@@ -111,25 +133,6 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
 
     }
 
-    public partial class Eip712DomainQueryRequest : ContractFunctionQueryRequest<Eip712DomainFunction, Eip712DomainOutputDTO>
-    {
-
-        public Eip712DomainQueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
-        {
-        }
-
-        public Eip712DomainQueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
-        {
-        }
-
-        public IEnumerator Query(BlockParameter blockParameter = null)
-        {
-            var eip712DomainFunction = new Eip712DomainFunction();
-            yield return Query(eip712DomainFunction, blockParameter);
-        }
-
-    }
-
     public partial class NameQueryRequest : ContractFunctionQueryRequest<NameFunction, NameOutputDTO>
     {
 
@@ -145,52 +148,6 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         {
             var nameFunction = new NameFunction();
             yield return Query(nameFunction, blockParameter);
-        }
-
-    }
-
-    public partial class NoncesQueryRequest : ContractFunctionQueryRequest<NoncesFunction, NoncesOutputDTO>
-    {
-
-        public NoncesQueryRequest(IContractQueryUnityRequestFactory contractQueryUnityRequestFactory, string contractAddress) : base(contractQueryUnityRequestFactory, contractAddress)
-        {
-        }
-
-        public NoncesQueryRequest(string url, string contractAddress, string defaultAccount = null, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, contractAddress, defaultAccount, jsonSerializerSettings, requestHeaders)
-        {
-        }
-
-        public IEnumerator Query(string owner, BlockParameter blockParameter = null)
-        {
-            var noncesFunction = new NoncesFunction();
-                noncesFunction.Owner = owner;
-            yield return Query(noncesFunction, blockParameter);
-        }
-
-    }
-
-    public partial class PermitTransactionRequest : ContractFunctionTransactionRequest<PermitFunction>
-    {
-
-        public PermitTransactionRequest(IContractTransactionUnityRequestFactory contractTransactionUnityRequestFactory, string contractAddress) : base(contractTransactionUnityRequestFactory, contractAddress)
-        {
-        }
-
-        public PermitTransactionRequest(string url, BigInteger chainId, string privateKey, string contractAddress, JsonSerializerSettings jsonSerializerSettings = null, Dictionary<string, string> requestHeaders = null) : base(url, chainId, privateKey, contractAddress, jsonSerializerSettings, requestHeaders)
-        {
-        }
-
-        public IEnumerator SignAndSendTransaction(string owner, string spender, BigInteger value, BigInteger deadline, byte v, byte[] r, byte[] s, BlockParameter blockParameter = null)
-        {
-            var permitFunction = new PermitFunction();
-                permitFunction.Owner = owner;
-                permitFunction.Spender = spender;
-                permitFunction.Value = value;
-                permitFunction.Deadline = deadline;
-                permitFunction.V = v;
-                permitFunction.R = r;
-                permitFunction.S = s;
-            yield return SignAndSendTransaction(permitFunction);
         }
 
     }

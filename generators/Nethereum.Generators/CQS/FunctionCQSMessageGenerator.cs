@@ -9,10 +9,12 @@ namespace Nethereum.Generators.CQS
     public class FunctionCQSMessageGenerator : ClassGeneratorBase<ClassTemplateBase<FunctionCQSMessageModel>, FunctionCQSMessageModel>
     {
         public FunctionABI FunctionABI { get; }
+        public string MudNamespace { get; set; }
 
-        public FunctionCQSMessageGenerator(FunctionABI functionABI, string @namespace, string namespaceFunctionOutput, CodeGenLanguage codeGenLanguage)
+        public FunctionCQSMessageGenerator(FunctionABI functionABI, string @namespace, string namespaceFunctionOutput, CodeGenLanguage codeGenLanguage, string mudNamespace = null)
         {
             FunctionABI = functionABI;
+            MudNamespace = mudNamespace;
             ClassModel = new FunctionCQSMessageModel(FunctionABI, @namespace);
             ClassModel.NamespaceDependencies.Add(namespaceFunctionOutput);
             ClassModel.CodeGenLanguage = codeGenLanguage;
@@ -27,16 +29,19 @@ namespace Nethereum.Generators.CQS
                 case CodeGenLanguage.CSharp:
                     var csharpMapper = new ABITypeToCSharpType();
                     var functionCsharpABIModel = new FunctionABIModel(ClassModel.FunctionABI, csharpMapper, CodeGenLanguage.CSharp);
+                    functionCsharpABIModel.MudNamespacePrefix = MudNamespace;
                     ClassTemplate = new FunctionCQSMessageCSharpTemplate(ClassModel, functionOutputDTOModel, functionCsharpABIModel);
                     break;
                 case CodeGenLanguage.Vb:
                     var vbMapper = new ABITypeToVBType();
                     var functionVBABIModel = new FunctionABIModel(ClassModel.FunctionABI, vbMapper, CodeGenLanguage.Vb);
+                    functionVBABIModel.MudNamespacePrefix = MudNamespace;
                     ClassTemplate = new FunctionCQSMessageVbTemplate(ClassModel, functionOutputDTOModel, functionVBABIModel);
                     break;
                 case CodeGenLanguage.FSharp:
                     var fsMapper = new ABITypeToFSharpType();;
                     var functionfsABIModel = new FunctionABIModel(ClassModel.FunctionABI, fsMapper, CodeGenLanguage.FSharp);
+                    functionfsABIModel.MudNamespacePrefix = MudNamespace;
                     ClassTemplate = new FunctionCQSMessageFSharpTemplate(ClassModel, functionOutputDTOModel, functionfsABIModel);
                     break;
                 default:

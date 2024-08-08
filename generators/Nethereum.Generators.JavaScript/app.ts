@@ -14,8 +14,9 @@ var n = require('./Nethereum.Generators.DuoCode.js');
     dtoNamespace: string,
     basePath: string,
     pathSeparator: string,
-    codeGenLang: int
-) {
+    codeGenLang: int,
+    mudNamespace: string = null
+ ): string[] {
     var contractDes = abiDes.buildContract(abi);
     var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
         contractName,
@@ -28,9 +29,12 @@ var n = require('./Nethereum.Generators.DuoCode.js');
         pathSeparator,
          codeGenLang);
 
-    classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
+     classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
+     if (mudNamespace !== null && mudNamespace !== undefined && mudNamespace !== '') {
+         classGenerator.set_MudNamespace(mudNamespace);
+     }
     var generatedClases = classGenerator.GenerateAllMessagesFileAndService();
-    outputFiles(generatedClases);
+    return outputFiles(generatedClases);
 }
 
 function generateMudServiceInternal(abi: string, byteCode: string,
@@ -41,8 +45,9 @@ function generateMudServiceInternal(abi: string, byteCode: string,
     dtoNamespace: string,
     basePath: string,
     pathSeparator: string,
-    codeGenLang: int
-) {
+    codeGenLang: int,
+    mudNamespace: string
+):string[] {
     var contractDes = abiDes.buildContract(abi);
     var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
         contractName,
@@ -53,13 +58,13 @@ function generateMudServiceInternal(abi: string, byteCode: string,
         dtoNamespace,
         basePath,
         pathSeparator,
-        codeGenLang);
+        codeGenLang
+        );
 
     classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
-    var generatedClases = classGenerator.GenerateMudService();
-    outputFiles([generatedClases]);
+    var generatedClases = classGenerator.GenerateMudService(mudNamespace);
+    return outputFiles([generatedClases]);
 }
-
 
 
 function generateAllUnityClassesInternal(abi: string, byteCode: string,
@@ -70,7 +75,7 @@ function generateAllUnityClassesInternal(abi: string, byteCode: string,
     dtoNamespace: string,
     basePath: string,
     pathSeparator: string
-) {
+):string[] {
     var contractDes = abiDes.buildContract(abi);
     var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
         contractName,
@@ -83,28 +88,35 @@ function generateAllUnityClassesInternal(abi: string, byteCode: string,
         pathSeparator,
         0);
         var generatedClases = classGenerator.GenerateAllUnity();
-        outputFiles(generatedClases);
+       return outputFiles(generatedClases);
 }
 
 function generateAllMudTablesInternal(json: string, baseNamespace: string,
     namespace: string,
     basePath: string,
     pathSeparator: string,
-    codeGenLang: int) {
+    codeGenLang: int,
+    mudNamespace: string)  :string[] {
     var tables = mudParse.extractTables(json);
+    tables = tables.filter(t =>
+        t.get_MudNamespace() === mudNamespace ||
+        ((mudNamespace === '' || mudNamespace === undefined || mudNamespace === null) && (t.get_MudNamespace() === null || t.get_MudNamespace() === undefined || mudNamespace === ''))
+    );
     var mudTableGenerator =
         new Nethereum.Generators.MudTablesGenerator(tables, baseNamespace, codeGenLang, basePath, pathSeparator, namespace);
     var generatedTables = mudTableGenerator.GenerateAllTables();
-    outputFiles(generatedTables);
+    return outputFiles(generatedTables);
 }
 
-function outputFiles(generatedFiles: Nethereum.Generators.Core.GeneratedFile[]) {
+function outputFiles(generatedFiles: Nethereum.Generators.Core.GeneratedFile[]) : string[] {
+    var files = [];
     for (var i = 0; i < generatedFiles.length; i++) {
-        outputFile(generatedFiles[i]);
+        files.push(outputFile(generatedFiles[i]));
     }
+    return files;
 }
 
-function outputFile(generatedFile: Nethereum.Generators.Core.GeneratedFile) {
+function outputFile(generatedFile: Nethereum.Generators.Core.GeneratedFile): string {
 
     fsex.ensureDirSync(generatedFile.get_OutputFolder());
     var fullPath = path.join(generatedFile.get_OutputFolder(), generatedFile.get_FileName());
@@ -113,27 +125,29 @@ function outputFile(generatedFile: Nethereum.Generators.Core.GeneratedFile) {
         fs.unlinkSync(fullPath);
     }
     fs.writeFileSync(fullPath, generatedFile.get_GeneratedCode());
+    return fullPath;
 }
 
-export function  generateNetStandardClassLibrary(projectName: string, basePath: string, codeLang: int) {
+export function  generateNetStandardClassLibrary(projectName: string, basePath: string, codeLang: int): string {
     var projectGenerator = new Nethereum.Generators.NetStandardLibraryGenerator(projectName, codeLang);
     var generatedProject = projectGenerator.GenerateFileContent(basePath);
-    outputFile(generatedProject);
+   return outputFile(generatedProject);
 }
 
 export function generateAllClasses(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
     basePath: string,
-    codeGenLang: int
-) {
+    codeGenLang: int,
+    mudNamespace: string = null
+) : string[] {
 
     var serviceNamespace = contractName;
     //Same, we are generating single file
     var cqsNamespace = contractName + ".ContractDefinition";
     var dtoNamespace = contractName + ".ContractDefinition";
     var pathSeparator = path.sep;
-    generateAllClassesInternal(abi,
+    return generateAllClassesInternal(abi,
         byteCode,
         contractName,
         baseNamespace,
@@ -142,22 +156,24 @@ export function generateAllClasses(abi: string, byteCode: string,
         dtoNamespace,
         basePath,
         pathSeparator,
-        codeGenLang);
+        codeGenLang,
+        mudNamespace);
 }
 
 export function generateMudService(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
     basePath: string,
-    codeGenLang: int
-) {
+    codeGenLang: int,
+    mudNamespace: string
+): string[] {
 
     var serviceNamespace = contractName;
     //Same, we are generating single file
     var cqsNamespace = contractName + ".ContractDefinition";
     var dtoNamespace = contractName + ".ContractDefinition";
     var pathSeparator = path.sep;
-    generateMudServiceInternal(abi,
+    return generateMudServiceInternal(abi,
         byteCode,
         contractName,
         baseNamespace,
@@ -166,30 +182,32 @@ export function generateMudService(abi: string, byteCode: string,
         dtoNamespace,
         basePath,
         pathSeparator,
-        codeGenLang);
+        codeGenLang,
+        mudNamespace);
 }
 
 export function generateMudTables(json: string, baseNamespace: string,
     namespace: string,
     basePath: string,
-    codeGenLang: int
-) {
+    codeGenLang: int,
+    mudNamespace: string
+) : string[] {
     var pathSeparator = path.sep;
-    generateAllMudTablesInternal(json, baseNamespace, namespace, basePath, pathSeparator, codeGenLang);
+   return generateAllMudTablesInternal(json, baseNamespace, namespace, basePath, pathSeparator, codeGenLang, mudNamespace);
 }
 
 export function generateUnityRequests(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
     basePath: string
-) {
+) : string[] {
 
     var serviceNamespace = contractName;
     //Same, we are generating single file
     var cqsNamespace = contractName + ".ContractDefinition";
     var dtoNamespace = contractName + ".ContractDefinition";
     var pathSeparator = path.sep;
-    generateAllUnityClassesInternal(abi,
+    return generateAllUnityClassesInternal(abi,
         byteCode,
         contractName,
         baseNamespace,
@@ -200,4 +218,152 @@ export function generateUnityRequests(abi: string, byteCode: string,
         pathSeparator
         );
 }
+
+function extractAbiAndBytecode(fileName: string) {
+    const outputPathInfo = path.parse(fileName);
+    const contractName = outputPathInfo.name;
+    let compilationOutput;
+    let abi = undefined;
+    let bytecode = '0x';
+    if (outputPathInfo.ext === '.abi') {
+        abi = fs.readFileSync(fileName, 'utf8');
+        compilationOutput = { 'abi': abi, 'bytecode': '0x' };
+        const binFile = fileName.substr(0, fileName.lastIndexOf('.')) + '.bin';
+        if (fs.existsSync(binFile)) {
+            bytecode = fs.readFileSync(binFile, 'utf8');
+        }
+    } else {
+        compilationOutput = JSON.parse(fs.readFileSync(fileName, 'utf8'));
+        abi = JSON.stringify(compilationOutput.abi);
+        bytecode = compilationOutput.bytecode.object;
+        if (bytecode === undefined) {
+            bytecode = compilationOutput.bytecode;
+        }
+    }
+    return { abi, bytecode, contractName };
+}
+
+
+function extractWordFromConfig(configFilePath: string): string {
+    const configContent = fs.readFileSync(configFilePath, 'utf8');
+
+    // Use a regex to match the content inside the defineWorld function
+    const jsonMatch = configContent.match(/defineWorld\(([\s\S]*?)\);/);
+    if (jsonMatch && jsonMatch[1]) {
+        const worldConfigString = jsonMatch[1].trim();
+
+        // Safely evaluate the JSON-like content
+        const extractWorld = (content: string) => {
+            return (new Function(`return ${content}`))();
+        };
+
+        const worldConfig = extractWorld(worldConfigString);
+
+        if ((worldConfig && worldConfig.tables) || (worldConfig && worldConfig.namespaces)) {
+            // Convert worldConfig to JSON string
+            return JSON.stringify(worldConfig);
+        }
+    }
+
+    throw new Error("Unable to extract tables from config file");
+}
+
+function applyDefaults(config: GeneratorConfig): GeneratorConfig {
+    return {
+        baseNamespace: config.baseNamespace || "",
+        codeGenLang: config.codeGenLang ?? 0,
+        basePath: config.basePath,
+        generatorType: config.generatorType,
+        mudNamespace: config.mudNamespace || ""
+    };
+}
+
+function generateFilesUsingConfig(generatorConfig: GeneratorConfig, fileName: string, root: string) :string[] {
+    const { baseNamespace, codeGenLang, basePath, generatorType, mudNamespace } = applyDefaults(generatorConfig);
+    const absolutePath = path.resolve(root, basePath);
+    var files = [];
+    if (!fileName.endsWith('mud.config.ts')) {
+        const { abi, bytecode, contractName } = extractAbiAndBytecode(fileName);
+        switch (generatorType) {
+            case GeneratorType.ContractDefinition:
+                files = generateAllClasses(abi, bytecode, contractName, baseNamespace, absolutePath, codeGenLang, mudNamespace);
+                break;
+            case GeneratorType.UnityRequest:
+                files = generateUnityRequests(abi, bytecode, contractName, baseNamespace, absolutePath);
+                break;
+            case GeneratorType.MudExtendedService:
+                files = generateMudService(abi, bytecode, contractName, baseNamespace, absolutePath, codeGenLang, mudNamespace);
+                break;
+            case GeneratorType.NetStandardLibrary:
+                files = [generateNetStandardClassLibrary(contractName, absolutePath, codeGenLang) ];
+                break;
+            default:
+                throw new Error("Unknown GeneratorType: " + generatorType);
+        }
+    } else {
+        switch (generatorType) {
+            case GeneratorType.MudTables:
+                const tablesConfig = extractWordFromConfig(fileName);
+                files = generateMudTables(tablesConfig, baseNamespace, "", absolutePath, codeGenLang, mudNamespace);
+                break;
+            default:
+                throw new Error("Unknown GeneratorType: " + generatorType);
+        }
+    }
+    return files;
+}
+
+export function generateFilesFromGeneratorConfigs(generatorConfigs: GeneratorConfig[], fileName: string, rootPath: string = ''): string[] {
+    var files = [];
+    generatorConfigs.forEach(generatorConfig => {
+        files = files.concat(generateFilesUsingConfig(generatorConfig, fileName, rootPath));
+    });
+    return files;
+}
+
+export function generateFilesFromConfigSetsArray(configSetsArray: GeneratorSetConfig[], rootPath: string): string[] {
+    var files = [];
+    configSetsArray.forEach(configSet => {
+        configSet.paths.forEach(relativePath => {
+            const absolutePath = path.resolve(rootPath, relativePath);
+
+            const file = generateFilesFromGeneratorConfigs(configSet.generatorConfigs, absolutePath, rootPath);
+            files = files.concat(file);
+        });
+    });
+    return files;
+}
+
+export function generateFilesFromConfigJsonFile(configJsonPath: string, rootPath: string) :string[] {
+    const configSetsArray = JSON.parse(fs.readFileSync(configJsonPath, 'utf8')) as GeneratorSetConfig[];
+    return generateFilesFromConfigSetsArray(configSetsArray, rootPath);
+}
+
+export function generateFilesFromConfigJsonString(configJson: string, rootPath: string) : string[]{
+    const configSetsArray = JSON.parse(configJson) as GeneratorSetConfig[];
+    return generateFilesFromConfigSetsArray(configSetsArray, rootPath);
+}
+
+export enum GeneratorType {
+    ContractDefinition = "ContractDefinition",
+    UnityRequest = "UnityRequest",
+    MudExtendedService = "MudExtendedService",
+    MudTables = "MudTables",
+    NetStandardLibrary = "NetStandardLibrary"
+}
+
+export interface GeneratorConfig {
+    baseNamespace: string;
+    codeGenLang: int;
+    basePath: string;
+    generatorType: GeneratorType;
+    mudNamespace: string;
+}
+
+export interface GeneratorSetConfig {
+    paths: string[];
+    default: boolean;
+    generatorConfigs: GeneratorConfig[]
+}
+
 

@@ -57,12 +57,24 @@ namespace Nethereum.Generators.MudService
 
         public string GenerateSystemClass()
         {
-            return $@"{SpaceUtils.One__Tab}Public Class {Model.GetResourceClassName()} Inherits SystemResource
+            if (string.IsNullOrEmpty(Model.MudNamespace))
+            {
+                return $@"{SpaceUtils.One__Tab}Public Class {Model.GetResourceClassName()} Inherits SystemResource
 {SpaceUtils.One__Tab}
 {SpaceUtils.Two___Tabs}Public Sub New() 
 {SpaceUtils.Three____Tabs}MyBase.New(""{Model.GetSystemName()}"")
 {SpaceUtils.Two___Tabs}End Sub
 {SpaceUtils.One__Tab}End Class";
+            }
+            else
+            {
+                return $@"{SpaceUtils.One__Tab}Public Class {Model.GetResourceClassName()} Inherits SystemResource
+{SpaceUtils.One__Tab}
+{SpaceUtils.Two___Tabs}Public Sub New() 
+{SpaceUtils.Three____Tabs}MyBase.New(""{Model.GetSystemName()}"", ""{Model.MudNamespace}"")
+{SpaceUtils.Two___Tabs}End Sub
+{SpaceUtils.One__Tab}End Class";
+            }
         }
     }
 

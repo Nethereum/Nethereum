@@ -58,11 +58,22 @@ $@"{GenerateSystemClass()}
 
         public string GenerateSystemClass()
         {
-            return
-  $@"{SpaceUtils.One__Tab}public class {Model.GetResourceClassName()} : SystemResource
+            if (string.IsNullOrEmpty(Model.MudNamespace))
+            {
+                return
+      $@"{SpaceUtils.One__Tab}public class {Model.GetResourceClassName()} : SystemResource
 {SpaceUtils.One__Tab}{{
 {SpaceUtils.Two___Tabs}public {Model.GetResourceClassName()}() : base(""{Model.GetSystemName()}"") {{ }}
 {SpaceUtils.One__Tab}}}";
+            }
+            else
+            {
+                return
+     $@"{SpaceUtils.One__Tab}public class {Model.GetResourceClassName()} : SystemResource
+{SpaceUtils.One__Tab}{{
+{SpaceUtils.Two___Tabs}public {Model.GetResourceClassName()}() : base(""{Model.GetSystemName()}"", ""{Model.MudNamespace}"") {{ }}
+{SpaceUtils.One__Tab}}}";
+            }
 
         }
     }

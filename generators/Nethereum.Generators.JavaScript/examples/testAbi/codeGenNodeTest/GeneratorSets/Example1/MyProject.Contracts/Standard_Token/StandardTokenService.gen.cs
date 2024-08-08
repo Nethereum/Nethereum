@@ -10,41 +10,30 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
-using Nethereum.Unity.Contracts.Standards.ERC20.ContractDefinition;
+using MyProject.Contracts.Standard_Token.ContractDefinition;
 
-namespace Nethereum.Unity.Contracts.Standards.ERC20
+namespace MyProject.Contracts.Standard_Token
 {
-    public partial class Erc20Service: ContractWeb3ServiceBase
+    public partial class StandardTokenService: ContractWeb3ServiceBase
     {
-        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, StandardTokenDeployment standardTokenDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            return web3.Eth.GetContractDeploymentHandler<Erc20Deployment>().SendRequestAndWaitForReceiptAsync(erc20Deployment, cancellationTokenSource);
+            return web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SendRequestAndWaitForReceiptAsync(standardTokenDeployment, cancellationTokenSource);
         }
 
-        public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment)
+        public static Task<string> DeployContractAsync(Nethereum.Web3.IWeb3 web3, StandardTokenDeployment standardTokenDeployment)
         {
-            return web3.Eth.GetContractDeploymentHandler<Erc20Deployment>().SendRequestAsync(erc20Deployment);
+            return web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SendRequestAsync(standardTokenDeployment);
         }
 
-        public static async Task<Erc20Service> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, Erc20Deployment erc20Deployment, CancellationTokenSource cancellationTokenSource = null)
+        public static async Task<StandardTokenService> DeployContractAndGetServiceAsync(Nethereum.Web3.IWeb3 web3, StandardTokenDeployment standardTokenDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
-            var receipt = await DeployContractAndWaitForReceiptAsync(web3, erc20Deployment, cancellationTokenSource);
-            return new Erc20Service(web3, receipt.ContractAddress);
+            var receipt = await DeployContractAndWaitForReceiptAsync(web3, standardTokenDeployment, cancellationTokenSource);
+            return new StandardTokenService(web3, receipt.ContractAddress);
         }
 
-        public Erc20Service(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+        public StandardTokenService(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
-        }
-
-        public Task<byte[]> DomainSeparatorQueryAsync(DomainSeparatorFunction domainSeparatorFunction, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<DomainSeparatorFunction, byte[]>(domainSeparatorFunction, blockParameter);
-        }
-
-        
-        public Task<byte[]> DomainSeparatorQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<DomainSeparatorFunction, byte[]>(null, blockParameter);
         }
 
         public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction, BlockParameter blockParameter = null)
@@ -60,6 +49,21 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
                 allowanceFunction.Spender = spender;
             
             return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);
+        }
+
+        public Task<BigInteger> AllowedQueryAsync(AllowedFunction allowedFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
+        }
+
+        
+        public Task<BigInteger> AllowedQueryAsync(string returnValue1, string returnValue2, BlockParameter blockParameter = null)
+        {
+            var allowedFunction = new AllowedFunction();
+                allowedFunction.ReturnValue1 = returnValue1;
+                allowedFunction.ReturnValue2 = returnValue2;
+            
+            return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
         }
 
         public Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
@@ -96,12 +100,26 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         }
 
         
-        public Task<BigInteger> BalanceOfQueryAsync(string account, BlockParameter blockParameter = null)
+        public Task<BigInteger> BalanceOfQueryAsync(string owner, BlockParameter blockParameter = null)
         {
             var balanceOfFunction = new BalanceOfFunction();
-                balanceOfFunction.Account = account;
+                balanceOfFunction.Owner = owner;
             
             return ContractHandler.QueryAsync<BalanceOfFunction, BigInteger>(balanceOfFunction, blockParameter);
+        }
+
+        public Task<BigInteger> BalancesQueryAsync(BalancesFunction balancesFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
+        }
+
+        
+        public Task<BigInteger> BalancesQueryAsync(string returnValue1, BlockParameter blockParameter = null)
+        {
+            var balancesFunction = new BalancesFunction();
+                balancesFunction.ReturnValue1 = returnValue1;
+            
+            return ContractHandler.QueryAsync<BalancesFunction, BigInteger>(balancesFunction, blockParameter);
         }
 
         public Task<byte> DecimalsQueryAsync(DecimalsFunction decimalsFunction, BlockParameter blockParameter = null)
@@ -115,16 +133,6 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
             return ContractHandler.QueryAsync<DecimalsFunction, byte>(null, blockParameter);
         }
 
-        public Task<Eip712DomainOutputDTO> Eip712DomainQueryAsync(Eip712DomainFunction eip712DomainFunction, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryDeserializingToObjectAsync<Eip712DomainFunction, Eip712DomainOutputDTO>(eip712DomainFunction, blockParameter);
-        }
-
-        public Task<Eip712DomainOutputDTO> Eip712DomainQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryDeserializingToObjectAsync<Eip712DomainFunction, Eip712DomainOutputDTO>(null, blockParameter);
-        }
-
         public Task<string> NameQueryAsync(NameFunction nameFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<NameFunction, string>(nameFunction, blockParameter);
@@ -134,58 +142,6 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         public Task<string> NameQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<NameFunction, string>(null, blockParameter);
-        }
-
-        public Task<BigInteger> NoncesQueryAsync(NoncesFunction noncesFunction, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<NoncesFunction, BigInteger>(noncesFunction, blockParameter);
-        }
-
-        
-        public Task<BigInteger> NoncesQueryAsync(string owner, BlockParameter blockParameter = null)
-        {
-            var noncesFunction = new NoncesFunction();
-                noncesFunction.Owner = owner;
-            
-            return ContractHandler.QueryAsync<NoncesFunction, BigInteger>(noncesFunction, blockParameter);
-        }
-
-        public Task<string> PermitRequestAsync(PermitFunction permitFunction)
-        {
-             return ContractHandler.SendRequestAsync(permitFunction);
-        }
-
-        public Task<TransactionReceipt> PermitRequestAndWaitForReceiptAsync(PermitFunction permitFunction, CancellationTokenSource cancellationToken = null)
-        {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(permitFunction, cancellationToken);
-        }
-
-        public Task<string> PermitRequestAsync(string owner, string spender, BigInteger value, BigInteger deadline, byte v, byte[] r, byte[] s)
-        {
-            var permitFunction = new PermitFunction();
-                permitFunction.Owner = owner;
-                permitFunction.Spender = spender;
-                permitFunction.Value = value;
-                permitFunction.Deadline = deadline;
-                permitFunction.V = v;
-                permitFunction.R = r;
-                permitFunction.S = s;
-            
-             return ContractHandler.SendRequestAsync(permitFunction);
-        }
-
-        public Task<TransactionReceipt> PermitRequestAndWaitForReceiptAsync(string owner, string spender, BigInteger value, BigInteger deadline, byte v, byte[] r, byte[] s, CancellationTokenSource cancellationToken = null)
-        {
-            var permitFunction = new PermitFunction();
-                permitFunction.Owner = owner;
-                permitFunction.Spender = spender;
-                permitFunction.Value = value;
-                permitFunction.Deadline = deadline;
-                permitFunction.V = v;
-                permitFunction.R = r;
-                permitFunction.S = s;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(permitFunction, cancellationToken);
         }
 
         public Task<string> SymbolQueryAsync(SymbolFunction symbolFunction, BlockParameter blockParameter = null)
@@ -272,15 +228,13 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         {
             return new List<Type>
             {
-                typeof(DomainSeparatorFunction),
                 typeof(AllowanceFunction),
+                typeof(AllowedFunction),
                 typeof(ApproveFunction),
                 typeof(BalanceOfFunction),
+                typeof(BalancesFunction),
                 typeof(DecimalsFunction),
-                typeof(Eip712DomainFunction),
                 typeof(NameFunction),
-                typeof(NoncesFunction),
-                typeof(PermitFunction),
                 typeof(SymbolFunction),
                 typeof(TotalSupplyFunction),
                 typeof(TransferFunction),
@@ -293,7 +247,6 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
             return new List<Type>
             {
                 typeof(ApprovalEventDTO),
-                typeof(EIP712DomainChangedEventDTO),
                 typeof(TransferEventDTO)
             };
         }
@@ -302,20 +255,7 @@ namespace Nethereum.Unity.Contracts.Standards.ERC20
         {
             return new List<Type>
             {
-                typeof(ECDSAInvalidSignatureError),
-                typeof(ECDSAInvalidSignatureLengthError),
-                typeof(ECDSAInvalidSignatureSError),
-                typeof(ERC20InsufficientAllowanceError),
-                typeof(ERC20InsufficientBalanceError),
-                typeof(ERC20InvalidApproverError),
-                typeof(ERC20InvalidReceiverError),
-                typeof(ERC20InvalidSenderError),
-                typeof(ERC20InvalidSpenderError),
-                typeof(ERC2612ExpiredSignatureError),
-                typeof(ERC2612InvalidSignerError),
-                typeof(InvalidAccountNonceError),
-                typeof(InvalidShortStringError),
-                typeof(StringTooLongError)
+
             };
         }
     }
