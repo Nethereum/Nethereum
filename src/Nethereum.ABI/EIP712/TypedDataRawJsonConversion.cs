@@ -233,7 +233,7 @@ namespace Nethereum.ABI.EIP712
                         var name = memberName;
                         if (values[i].Value is byte[])
                         {
-                            var value = ((byte[])values[i].Value).ToHex();
+                            var value = ((byte[])values[i].Value).ToHex(true);
                             properties.Add(new JProperty(name, value));
                         }
                         else
