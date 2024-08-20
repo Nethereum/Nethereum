@@ -27,7 +27,7 @@ namespace Nethereum.Model
         private static void ValidateValidV(RLPSignedDataHashBuilder rlpSigner)
         {
             if (rlpSigner.IsVSignatureForChain())
-                throw new Exception("TransactionChainId should be used instead of Transaction");
+                throw new Exception("LegacyTransactionChainId should be used instead of LegacyTransaction");
         }
 
         public LegacyTransaction(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
