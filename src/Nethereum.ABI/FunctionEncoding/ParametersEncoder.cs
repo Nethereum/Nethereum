@@ -43,7 +43,8 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (parameterSize < 0)
                 {
                     dynamicCount++;
-                    staticSize += 32;
+                    if (!abiType.IsDynamic())
+                        staticSize += 32;
                 }
                 else
                 {
