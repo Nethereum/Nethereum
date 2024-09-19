@@ -13,6 +13,7 @@
 	</PropertyGroup>
 	
   <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Util.Rest\Nethereum.Util.Rest.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
