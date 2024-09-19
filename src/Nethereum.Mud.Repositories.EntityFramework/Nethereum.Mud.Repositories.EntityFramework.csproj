@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	  <PropertyGroup>
+		<Description>Nethereum.Mud.Repositories.EntityFramework Nethereum Web3 Class Library providing the EF context Table Repositories to sync with the Store contracts  of the Mud framework https://mud.dev/ (Encoding, Repositories, Resources, Schema, TableRecords)</Description>
+		<AssemblyTitle>Nethereum.Mud.Repositories.EntityFramework</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<AssemblyName>Nethereum.Mud.Repositories.EntityFramework</AssemblyName>
+		<PackageId>Nethereum.Mud.Repositories.EntityFramework</PackageId>
+		<PackageTags>Netherum;Ethereum;Blockchain;Mud;EntityFrameworkd</PackageTags>
+		<LangVersion>Latest</LangVersion>
+		</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="[8.0.8,9)" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="[8.0.8,9)" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.Mud\Nethereum.Mud.csproj" />
+  </ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>
