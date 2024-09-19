@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.Util.Rest Nethereum Utility Library providing a generic interface and a simple implementation of a Rest client api</Description>
+		<AssemblyTitle>Nethereum.Util.Rest</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+		<AssemblyName>Nethereum.Util.Rest</AssemblyName>
+		<PackageId>Nethereum.Util.Rest</PackageId>
+		<PackageTags>Netherum;Ethereum;Blockchain;Util;Rest Client</PackageTags>
+		<LangVersion>Latest</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+		<DefineConstants>$(DefineConstants);PCL</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+		<DefineConstants>$(DefineConstants);PCL</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
+
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>

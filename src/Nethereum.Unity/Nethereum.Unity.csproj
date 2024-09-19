@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\Nethereum.Util.Rest\Nethereum.Util.Rest.csproj" />
   </ItemGroup>
 
   <ItemGroup>
