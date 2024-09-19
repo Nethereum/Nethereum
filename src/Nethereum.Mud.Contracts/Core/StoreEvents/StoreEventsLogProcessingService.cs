@@ -13,6 +13,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using Nethereum.BlockchainProcessing;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.JsonRpc.Client;
+using Nethereum.BlockchainProcessing.Processor;
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#endif
 
 
 namespace Nethereum.Mud.Contracts.Core.StoreEvents
@@ -31,8 +38,6 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
             _web3 = web3;
             ContractAddress = contractAddress;
         }
-
-
 
         public Task<List<EventLog<StoreSetRecordEventDTO>>> GetAllSetRecord(
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
@@ -136,6 +141,35 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
 
         }
 
+        public BlockchainProcessor CreateProcessor(ITableRepository tableRepository,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+                       int retryWeight = BlockchainLogProcessingService.RetryWeight,
+                       uint minimumNumberOfConfirmations = 0)
+        {
+            var topics = new List<object>
+                {
+                    Event<StoreSetRecordEventDTO>.GetEventABI().GetTopicBuilder().GetSignatureTopic(),
+                    Event<StoreSpliceStaticDataEventDTO>.GetEventABI().GetTopicBuilder().GetSignatureTopic(),
+                    Event<StoreSpliceDynamicDataEventDTO>.GetEventABI().GetTopicBuilder().GetSignatureTopic(),
+                    Event<StoreDeleteRecordEventDTO>.GetEventABI().GetTopicBuilder().GetSignatureTopic()
+                };
+
+            var filterInput = new NewFilterInput()
+            {
+                Address = new[] { ContractAddress },
+                Topics = new object[] { topics.ToArray() }
+            };
+
+            var logProcessorHandler = new ProcessorHandler<FilterLog>(
+                action: async (log) => 
+                await ProcessAllStoreChangesFromLog(tableRepository, log),
+                criteria: (log) => log.Removed == false);
+           return _blockchainLogProcessing.CreateProcessor(logProcessorHandler, minimumNumberOfConfirmations, filterInput, blockProgressRepository, log);
+
+        }
+
         public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, string nameSpace, string tableName, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
                                   int retryWeight = BlockchainLogProcessingService.RetryWeight)
         {
@@ -180,6 +214,8 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
             return await tableRepository.GetTableRecordsAsync<TTableRecord>(tableId);
         }
 
+      
+
         private async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, int numberOfBlocksPerRequest, int retryWeight, NewFilterInput filterInput, CancellationToken cancellationToken)
         {
             var logs = await _blockchainLogProcessing.GetAllEvents(filterInput, fromBlockNumber, toBlockNumber,
@@ -192,33 +228,42 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
         {
             foreach (var log in logs)
             {
-                if (log.IsLogForEvent<StoreSetRecordEventDTO>())
-                {
-                    var setRecordEventLog = log.DecodeEvent<StoreSetRecordEventDTO>();
-                    var setRecordEvent = setRecordEventLog.Event;
-                    await tableRepository.SetRecordAsync(setRecordEvent.TableId, setRecordEvent.KeyTuple, setRecordEvent.StaticData, setRecordEvent.EncodedLengths, setRecordEvent.DynamicData);
-                }
+                await ProcessAllStoreChangesFromLog(tableRepository, log);
+            }
+        }
 
-                if (log.IsLogForEvent<StoreSpliceStaticDataEventDTO>())
-                {
-                    var spliceStaticDataEventLog = log.DecodeEvent<StoreSpliceStaticDataEventDTO>();
-                    var spliceStaticDataEvent = spliceStaticDataEventLog.Event;
-                    await tableRepository.SetSpliceStaticDataAsync(spliceStaticDataEvent.TableId, spliceStaticDataEvent.KeyTuple, spliceStaticDataEvent.Start, spliceStaticDataEvent.Data);
-                }
+        private static async Task ProcessAllStoreChangesFromLog(ITableRepository tableRepository, FilterLog log)
+        {
+            if (log.IsLogForEvent<StoreSetRecordEventDTO>())
+            {
+                var setRecordEventLog = log.DecodeEvent<StoreSetRecordEventDTO>();
+                var setRecordEvent = setRecordEventLog.Event;
+                await tableRepository.SetRecordAsync(setRecordEvent.TableId, setRecordEvent.KeyTuple, setRecordEvent.StaticData, setRecordEvent.EncodedLengths, setRecordEvent.DynamicData,
+                    log.Address, log.BlockNumber, (int)log.LogIndex.Value);
+            }
 
-                if (log.IsLogForEvent<StoreSpliceDynamicDataEventDTO>())
-                {
-                    var spliceDynamicDataEventLog = log.DecodeEvent<StoreSpliceDynamicDataEventDTO>();
-                    var spliceDynamicDataEvent = spliceDynamicDataEventLog.Event;
-                    await tableRepository.SetSpliceDynamicDataAsync(spliceDynamicDataEvent.TableId, spliceDynamicDataEvent.KeyTuple, spliceDynamicDataEvent.Start, spliceDynamicDataEvent.Data, spliceDynamicDataEvent.DeleteCount, spliceDynamicDataEvent.EncodedLengths);
-                }
+            if (log.IsLogForEvent<StoreSpliceStaticDataEventDTO>())
+            {
+                var spliceStaticDataEventLog = log.DecodeEvent<StoreSpliceStaticDataEventDTO>();
+                var spliceStaticDataEvent = spliceStaticDataEventLog.Event;
+                await tableRepository.SetSpliceStaticDataAsync(spliceStaticDataEvent.TableId, spliceStaticDataEvent.KeyTuple, spliceStaticDataEvent.Start, spliceStaticDataEvent.Data,
+                    log.Address, log.BlockNumber, (int)log.LogIndex.Value);
+            }
 
-                if (log.IsLogForEvent<StoreDeleteRecordEventDTO>())
-                {
-                    var deleteRecordEventLog = log.DecodeEvent<StoreDeleteRecordEventDTO>();
-                    var deleteRecordEvent = deleteRecordEventLog.Event;
-                    await tableRepository.DeleteRecordAsync(deleteRecordEvent.TableId, deleteRecordEvent.KeyTuple);
-                }
+            if (log.IsLogForEvent<StoreSpliceDynamicDataEventDTO>())
+            {
+                var spliceDynamicDataEventLog = log.DecodeEvent<StoreSpliceDynamicDataEventDTO>();
+                var spliceDynamicDataEvent = spliceDynamicDataEventLog.Event;
+                await tableRepository.SetSpliceDynamicDataAsync(spliceDynamicDataEvent.TableId, spliceDynamicDataEvent.KeyTuple, spliceDynamicDataEvent.Start, spliceDynamicDataEvent.Data, spliceDynamicDataEvent.DeleteCount, spliceDynamicDataEvent.EncodedLengths
+                    , log.Address, log.BlockNumber, (int)log.LogIndex.Value);
+            }
+
+            if (log.IsLogForEvent<StoreDeleteRecordEventDTO>())
+            {
+                var deleteRecordEventLog = log.DecodeEvent<StoreDeleteRecordEventDTO>();
+                var deleteRecordEvent = deleteRecordEventLog.Event;
+                await tableRepository.DeleteRecordAsync(deleteRecordEvent.TableId, deleteRecordEvent.KeyTuple,
+                    log.Address, log.BlockNumber, (int)log.LogIndex.Value);
             }
         }
 
