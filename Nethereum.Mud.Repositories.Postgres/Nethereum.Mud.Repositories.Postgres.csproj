@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>Nethereum.Mud.Repositories.Postgres Nethereum Web3 Class Library providing the EF Postgres context Table Repositories and Process Services to sync with the Store contracts  of the Mud framework https://mud.dev/ </Description>
+		<AssemblyTitle>Nethereum.Mud.Repositories.Postgres</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<AssemblyName>Nethereum.Mud.Repositories.Postgres</AssemblyName>
+		<PackageId>Nethereum.Mud.Repositories.Postgres</PackageId>
+		<PackageTags>Netherum;Ethereum;Blockchain;Mud;Postgres</PackageTags>
+		<LangVersion>Latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.4,9)" />
+		<PackageReference Include="EFCore.NamingConventions" Version="[8.0.3,9)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\src\Nethereum.Mud.Repositories.EntityFramework\Nethereum.Mud.Repositories.EntityFramework.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>
