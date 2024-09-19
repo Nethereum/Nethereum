@@ -1,12 +1,7 @@
-﻿using Nethereum.ABI.CompilationMetadata;
-using Nethereum.DataServices.FourByteDirectory.Responses;
-using Nethereum.DataServices.Sourcify.Responses;
-using Newtonsoft.Json;
+﻿using Nethereum.DataServices.FourByteDirectory.Responses;
+using Nethereum.Util.Rest;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Nethereum.DataServices.FourByteDirectory
@@ -14,19 +9,23 @@ namespace Nethereum.DataServices.FourByteDirectory
     public class FourByteDirectoryService
     {
         public const string BaseUrl = "https://www.4byte.directory";
+        private IRestHttpHelper _restHttpHelper;
         public FourByteDirectoryService(HttpClient httpClient)
         {
-            HttpClient = httpClient;
+            _restHttpHelper = new RestHttpHelper(httpClient);
         }
 
         public FourByteDirectoryService()
         {
-            HttpClient = new HttpClient();
+            _restHttpHelper = new RestHttpHelper(new HttpClient());
         }
 
-        public HttpClient HttpClient { get; }
+        public FourByteDirectoryService(IRestHttpHelper restHttpHelper)
+        {
+            _restHttpHelper = restHttpHelper;
+        }
 
-
+     
 
         public Task<FourByteDirectoryResponse> GetFunctionSignatureByHexSignatureAsync(string hexSignature)
         {
@@ -80,22 +79,12 @@ namespace Nethereum.DataServices.FourByteDirectory
 
         public async Task<T> GetDataAsync<T>(string url)
         {
-            var request = new HttpRequestMessage(
-                    HttpMethod.Get,
-                    url);
-            request.Headers.Add("accept", "application/json");
-
-            var httpResponseMessage = await HttpClient.SendAsync(request).ConfigureAwait(false);
-            httpResponseMessage.EnsureSuccessStatusCode();
-            var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using (var streamReader = new StreamReader(stream))
-            using (var reader = new JsonTextReader(streamReader))
+            var headers = new Dictionary<string, string>
             {
-                var serializer = JsonSerializer.Create();
-                var message = serializer.Deserialize<T>(reader);
+                { "accept", "application/json" }
+            };
 
-                return message;
-            }
+            return await _restHttpHelper.GetAsync<T>(url, headers);
         }
 
 

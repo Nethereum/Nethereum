@@ -24,6 +24,7 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+      <ProjectReference Include="..\Nethereum.Util.Rest\Nethereum.Util.Rest.csproj" />
     </ItemGroup>
 
 

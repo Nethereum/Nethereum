@@ -1,11 +1,8 @@
 ﻿using Nethereum.ABI.CompilationMetadata;
 using Nethereum.DataServices.Sourcify.Responses;
-using Newtonsoft.Json;
+using Nethereum.Util.Rest;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Nethereum.DataServices.Sourcify
@@ -14,14 +11,23 @@ namespace Nethereum.DataServices.Sourcify
     {
         public const string BaseUrl = "https://sourcify.dev/server/";
         public const string BaseUrlMeta = "https://repo.sourcify.dev/";
+
+        private IRestHttpHelper restHttpHelper;
+
+
         public SourcifyApiService(HttpClient httpClient)
         {
-            HttpClient = httpClient;
+            restHttpHelper = new RestHttpHelper(httpClient);
         }
 
         public SourcifyApiService()
         {
-            HttpClient = new HttpClient();
+            restHttpHelper = new RestHttpHelper(new HttpClient());
+        }
+
+        public SourcifyApiService(IRestHttpHelper restHttpHelper)
+        {
+            this.restHttpHelper = restHttpHelper;
         }
 
         public HttpClient HttpClient { get; }
@@ -45,26 +51,14 @@ namespace Nethereum.DataServices.Sourcify
         }
 
 
-        public async Task<T> GetDataAsync<T>(string url)
+        public Task<T> GetDataAsync<T>(string url)
         {
-            var request = new HttpRequestMessage(
-                    HttpMethod.Get,
-                    url);
-            request.Headers.Add("accept", "application/json");
-
-            var httpResponseMessage = await HttpClient.SendAsync(request).ConfigureAwait(false);
-            httpResponseMessage.EnsureSuccessStatusCode();
-            var stream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using (var streamReader = new StreamReader(stream))
-            using (var reader = new JsonTextReader(streamReader))
+            var headers = new Dictionary<string, string>()
             {
-                var serializer = JsonSerializer.Create();
-                var message = serializer.Deserialize<T>(reader);
+                {"accept", "application/json"}
+            };
 
-                return message;
-            }
+            return restHttpHelper.GetAsync<T>(url, headers);
         }
-
-
     }
 }

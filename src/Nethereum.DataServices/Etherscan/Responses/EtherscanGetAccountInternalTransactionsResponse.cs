@@ -1,50 +1,111 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+
+#if NET8_0_OR_GREATER
+using System.Text.Json.Serialization;
+#else
+using Newtonsoft.Json;
+#endif
 
 namespace Nethereum.DataServices.Etherscan.Responses
 {
     public class EtherscanGetAccountInternalTransactionsResponse
     {
-            [JsonProperty("blockNumber")]
-            public string BlockNumber { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("blockNumber")]
+#else
+        [JsonProperty("blockNumber")]
+#endif
+        public string BlockNumber { get; set; }
 
-            [JsonProperty("timeStamp")]
-            public string TimeStamp { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("timeStamp")]
+#else
+        [JsonProperty("timeStamp")]
+#endif
+        public string TimeStamp { get; set; }
 
-            [JsonProperty("hash")]
-            public string Hash { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("hash")]
+#else
+        [JsonProperty("hash")]
+#endif
+        public string Hash { get; set; }
 
-            [JsonProperty("from")]
-            public string From { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("from")]
+#else
+        [JsonProperty("from")]
+#endif
+        public string From { get; set; }
 
-            [JsonProperty("to")]
-            public string To { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("to")]
+#else
+        [JsonProperty("to")]
+#endif
+        public string To { get; set; }
 
-            [JsonProperty("value")]
-            public string Value { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("value")]
+#else
+        [JsonProperty("value")]
+#endif
+        public string Value { get; set; }
 
-            [JsonProperty("contractAddress")]
-            public string ContractAddress { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("contractAddress")]
+#else
+        [JsonProperty("contractAddress")]
+#endif
+        public string ContractAddress { get; set; }
 
-            [JsonProperty("input")]
-            public string Input { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("input")]
+#else
+        [JsonProperty("input")]
+#endif
+        public string Input { get; set; }
 
-            [JsonProperty("type")]
-            public string Type { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("type")]
+#else
+        [JsonProperty("type")]
+#endif
+        public string Type { get; set; }
 
-            [JsonProperty("gas")]
-            public string Gas { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("gas")]
+#else
+        [JsonProperty("gas")]
+#endif
+        public string Gas { get; set; }
 
-            [JsonProperty("gasUsed")]
-            public string GasUsed { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("gasUsed")]
+#else
+        [JsonProperty("gasUsed")]
+#endif
+        public string GasUsed { get; set; }
 
-            [JsonProperty("traceId")]
-            public string TraceId { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("traceId")]
+#else
+        [JsonProperty("traceId")]
+#endif
+        public string TraceId { get; set; }
 
-            [JsonProperty("isError")]
-            public string IsError { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("isError")]
+#else
+        [JsonProperty("isError")]
+#endif
+        public string IsError { get; set; }
 
-            [JsonProperty("errCode")]
-            public string ErrCode { get; set; }
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("errCode")]
+#else
+        [JsonProperty("errCode")]
+#endif
+        public string ErrCode { get; set; }
     }
-
 }

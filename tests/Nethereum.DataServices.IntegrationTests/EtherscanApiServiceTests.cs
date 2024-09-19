@@ -10,8 +10,12 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
 {
     public class EtherscanApiServiceTests
     {
+        //NOTE: Etherscan has a rate limit of 5 calls per second
+        //You need to enter your own API key
         private static readonly SemaphoreSlim throttler = new SemaphoreSlim(1);
-
+        private string apiKey = "YourApiKey";
+        private string apiKeyBinance = "YourApiKey";
+        private string apiKeyOptimism = "YourApiKey";
         public async Task ThrottleEtherscanCallAsync(Func<Task> action)
         {
             await throttler.WaitAsync();
@@ -33,7 +37,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
            await ThrottleEtherscanCallAsync(async () =>
             {
 
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Contracts.GetAbiAsync("0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413");
                 Assert.Equal("1", result.Status);
             }
@@ -48,7 +52,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
             await ThrottleEtherscanCallAsync(async () =>
             {
 
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Contracts.GetContractCreatorAndCreationTxHashAsync("0xB83c27805aAcA5C7082eB45C868d955Cf04C337F","0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45");
                 Assert.Equal("1", result.Status);
             }
@@ -62,7 +66,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
             await ThrottleEtherscanCallAsync(async () =>
             {
 
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Contracts.GetSourceCodeAsync("0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413");
                 Assert.Equal("1", result.Status);
             });
@@ -73,7 +77,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Contracts.GetSourceCodeAsync("0xC36442b4a4522E871399CD717aBDD847Ab11FE88");
                 Assert.Equal("1", result.Status);
                 var contract = result.Result.First();
@@ -89,7 +93,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Accounts.GetAccountTransactionsAsync("0xc5102fE9359FD9a28f877a67E36B0F050d81a3CC");
                 Assert.Equal("1", result.Status);
                 Assert.Equal(10, result.Result.Count);
@@ -102,7 +106,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
-                var etherscanService = new EtherscanApiService(EtherscanChain.Binance);
+                var etherscanService = new EtherscanApiService(EtherscanChain.Binance, apiKeyBinance);
                 var result = await etherscanService.Accounts.GetAccountTransactionsAsync("0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82");
                 Assert.Equal("1", result.Status);
                 Assert.Equal(10, result.Result.Count);
@@ -115,7 +119,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
-                var etherscanService = new EtherscanApiService(EtherscanChain.Optimism);
+                var etherscanService = new EtherscanApiService(EtherscanChain.Optimism, apiKeyOptimism);
                 var result = await etherscanService.Accounts.GetAccountTransactionsAsync("0x6fd9d7AD17242c41f7131d257212c54A0e816691");
                 Assert.Equal("1", result.Status);
                 Assert.Equal(10, result.Result.Count);
@@ -130,7 +134,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
-                var etherscanService = new EtherscanApiService();
+                var etherscanService = new EtherscanApiService(EtherscanChain.Mainnet, apiKey);
                 var result = await etherscanService.Accounts.GetAccountInternalTransactionsAsync("0x2c1ba59d6f58433fb1eaee7d20b26ed83bda51a3", 1, 12, EtherscanResultSort.Descending);
                 Assert.Equal("1", result.Status);
                 Assert.Equal(12, result.Result.Count);

@@ -1,31 +1,41 @@
 ﻿using System.Collections.Generic;
-
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 #if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
 using System.Net.Http;
+using Nethereum.Util.Rest;
 #endif
 
 namespace Nethereum.Contracts.Standards.ERC20.TokenList
 {
+
+#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
     /// <summary>
     /// Helper service to get tokens from https://tokenlists.org/
     /// </summary>
     public class TokenListService
     {
-        public List<Token> DeserialiseFromJson(string json)
+        private readonly IRestHttpHelper _restHttpHelper;
+
+        // Constructor for dependency injection
+        public TokenListService(IRestHttpHelper restHttpHelper)
         {
-            var root = JsonConvert.DeserializeObject<Root>(json);
-            return root.Tokens;
+            _restHttpHelper = restHttpHelper;
         }
 
-#if NETSTANDARD1_0_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        public async  Task<List<Token>> LoadFromUrl(string url)
+        // Default constructor if no RestHttpHelper is provided
+        public TokenListService() : this(new RestHttpHelper(new HttpClient()))
         {
-            var client = new HttpClient();
-            var json = await client.GetStringAsync(url).ConfigureAwait(false);
-            return DeserialiseFromJson(json);
         }
-#endif
+
+        // Method to load tokens from a URL using RestHttpHelper
+        public async Task<List<Token>> LoadFromUrlAsync(string url)
+        {
+            // Use the RestHttpHelper to fetch the JSON from the URL
+            var root = await _restHttpHelper.GetAsync<Root>(url);
+            return root.Tokens;
     }
+
+    }
+#endif
 }
