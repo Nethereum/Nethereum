@@ -137,6 +137,8 @@ namespace Nethereum.Util
 //#endif
         }
 
+
+
        
         public static byte[] ShiftRight(this byte[] value, int shift)
         {
@@ -166,7 +168,22 @@ namespace Nethereum.Util
 
             return newValue;
 //#endif
-        }  
+        }
+
+        public static List<byte[]> SplitBytes(this byte[] bytes, int chunkSize = 32)
+        {
+            var result = new List<byte[]>();
+            int totalChunks = bytes.Length / chunkSize;
+
+            for (int i = 0; i < totalChunks; i++)
+            {
+                var chunk = new byte[chunkSize];
+                Array.Copy(bytes, i * chunkSize, chunk, 0, chunkSize);
+                result.Add(chunk);
+            }
+
+            return result;
+        }
     }
 
 
