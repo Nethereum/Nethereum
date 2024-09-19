@@ -1,0 +1,50 @@
+[
+{
+    "paths": ["out/ERC20.sol/Standard_Token.json"],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "MyProject.Contracts",
+                "basePath": "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            },
+            {
+                "baseNamespace": "MyProject.Contracts",
+                "basePath": "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts",
+                "codeGenLang": 0,
+                "generatorType": "UnityRequest"
+            }
+        ]
+},
+{
+    "paths": ["out/IncrementSystem.sol/IncrementSystem.json"],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "MyProject.Contracts.MyWorld.Systems",
+                "basePath":  "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts/MyWorld/Systems",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "mudNamespace": "MyWorld"
+            },
+            {
+                "baseNamespace": "MyProject.Contracts.MyWorld.Systems",
+                "basePath":  "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts/MyWorld/Systems",
+                "codeGenLang": 0,
+                "generatorType": "MudExtendedService",
+                "mudNamespace": "MyWorld"
+            }
+        ]
+},
+{
+    "paths": ["mudSingleNamespace/mud.config.ts"],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "MyProject.Contracts.MyWorld.Tables",
+                "basePath":  "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts/MyWorld/Tables",
+                "generatorType": "MudTables",
+                "mudNamespace": "MyWorld"
+               
+            }
+        ]
+}
+]
