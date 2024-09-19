@@ -148,6 +148,9 @@ cd Nethereum.Mud.Contracts
 CALL :build
 cd ..
 
+cd Nethereum.Util.RestApi
+CALL :build
+cd ..
 
 EXIT /B %ERRORLEVEL%
 

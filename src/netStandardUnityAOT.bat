@@ -207,6 +207,10 @@ cd Nethereum.Mud.Contracts
 CALL :build
 cd ..
 
+cd Nethereum.Util.RestApi
+CALL :build
+cd ..
+
 :build
 rem dotnet clean /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true
 rem  dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNetStandard=true /property:TargetNet35=false /property:TargetUnityAOT=true

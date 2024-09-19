@@ -211,7 +211,17 @@ cd Nethereum.Mud.Contracts
 CALL :restorepack
 cd ..
 
+cd Nethereum.Mud.Repositories.Postgres
+CALL :restorepack
+cd ..
 
+cd Nethereum.Mud.Repositories.EntityFramework
+CALL :restorepack
+cd ..
+
+cd Nethereum.Util.RestApi
+CALL :restorepack
+cd ..
 
 setlocal
 set DIR=%~dp0

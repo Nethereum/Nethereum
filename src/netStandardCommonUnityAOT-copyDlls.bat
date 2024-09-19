@@ -20,6 +20,7 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Siwe.dll" "compiledlibrar
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Unity.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Util.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.Rest.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Util.Rest.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.Web3.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.UI.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.WalletConnect.dll" "compiledlibraries\netStandardUnityCommonAOT\Nethereum.WalletConnect.dll" /s /y

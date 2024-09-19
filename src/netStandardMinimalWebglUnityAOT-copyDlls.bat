@@ -16,6 +16,7 @@ xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Siwe.Core.dll" "compiledl
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Unity.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Unity.Metamask.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Unity.Metamask.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Util.dll" /s /y
+xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Util.Rest.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Util.Rest.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\*.jslib "compiledlibraries\netStandardMinimalWebglUnityAOT" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.Web3.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.Web3.dll" /s /y
 xcopy "compiledlibraries\netStandardUnityAOT\Nethereum.UI.dll" "compiledlibraries\netStandardMinimalWebglUnityAOT\Nethereum.UI.dll" /s /y
