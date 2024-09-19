@@ -1,0 +1,6 @@
+@MudStoredRecordsRestApi_HostAddress = http://localhost:5295
+
+GET {{MudStoredRecordsRestApi_HostAddress}}/getstoredrecords/
+Accept: application/json
+
+###
