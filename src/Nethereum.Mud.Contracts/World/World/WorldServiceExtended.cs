@@ -76,7 +76,7 @@ namespace Nethereum.Mud.Contracts.World
             for (var i = 0; i < result.Length; i++)
             {
                var record   = result[i] as MulticallInputOutput<GetRecordFunction, GetRecordOutputDTO>;
-               var table = tableRecords.Where(x => KeyUtils.ConvertKeyToCommaSeparatedHex(x.GetEncodedKey()) == KeyUtils.ConvertKeyToCommaSeparatedHex(record.Input.KeyTuple)).FirstOrDefault();
+               var table = tableRecords.Where(x => KeyUtils.ConvertKeyToCombinedHex(x.GetEncodedKey()) == KeyUtils.ConvertKeyToCombinedHex(record.Input.KeyTuple)).FirstOrDefault();
                table.DecodeValues(record.Output.StaticData, record.Output.EncodedLengths, record.Output.DynamicData);
             }
             return tableRecords;

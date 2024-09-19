@@ -131,5 +131,17 @@ namespace Nethereum.Mud.Contracts.Core.Tables
         {
             return await WorldService.SetRecordRequestAndWaitForReceiptAsync(table);
         }
+
+
+        public virtual ITablePredicateBuilder<TTableRecord, TKey, TValue> CreateTablePredicateBuilder()
+        {
+            var address = this.WorldService.ContractHandler.ContractAddress;
+            return new TablePredicateBuilder<TTableRecord, TKey, TValue>(address);
+        }
+
+        public virtual Task<IEnumerable<TTableRecord>> GetRecordsFromRepositoryAsync(TablePredicate predicate, ITablePredicateQueryRepository tableRepository)
+        {
+            return tableRepository.GetTableRecordsAsync<TTableRecord>(predicate);
+        }
     }
 }
