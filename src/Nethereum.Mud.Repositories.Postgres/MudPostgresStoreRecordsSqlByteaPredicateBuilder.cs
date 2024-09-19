@@ -2,6 +2,7 @@
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.Repositories.EntityFramework;
+using System.Collections.Generic;
 
 namespace Nethereum.Mud.Repositories.Postgres
 {

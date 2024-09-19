@@ -76,6 +76,10 @@
       <Link>Util\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
 
+	  <Compile Include="..\..\src\Nethereum.Util.Rest\**\*.cs" Exclude="..\..\src\Nethereum.Util.Rest\Properties\**;..\..\src\Nethereum.Util.Rest\bin\**;..\..\src\Nethereum.Util.Rest\obj\**">
+		  <Link>UtilRest\%(RecursiveDir)%(FileName)%(Extension)</Link>
+	  </Compile>
+
     <Compile Include="..\..\src\Nethereum.RLP\**\*.cs" Exclude="..\..\src\Nethereum.RLP\Properties\**;..\..\src\Nethereum.RLP\bin\**;..\..\src\Nethereum.RLP\obj\**">
       <Link>RLP\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>

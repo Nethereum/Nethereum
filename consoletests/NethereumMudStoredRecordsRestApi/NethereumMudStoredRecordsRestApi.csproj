@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Nethereum.Mud.Repositories.Postgres\Nethereum.Mud.Repositories.Postgres.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
+	  <ProjectReference Include="..\..\src\Nethereum.Mud.Repositories.Postgres\Nethereum.Mud.Repositories.Postgres.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Mud\Nethereum.Mud.csproj" />
   </ItemGroup>
 

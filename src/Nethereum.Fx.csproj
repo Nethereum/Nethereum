@@ -171,6 +171,9 @@
     <Compile Remove="Nethereum.Util\Properties\**;Nethereum.Util\bin\**;Nethereum.Util\obj\**" />
     <None Remove="Nethereum.Util\Properties\**;Nethereum.Util\bin\**;Nethereum.Util\obj\**" />
 
+	  <Compile Remove="Nethereum.Util.Rest\Properties\**;Nethereum.Util.Rest\bin\**;Nethereum.Util.Rest\obj\**" />
+	  <None Remove="Nethereum.Util.Rest\Properties\**;Nethereum.Util.Rest\bin\**;Nethereum.Util.Rest\obj\**" />
+
     <Compile Remove="Nethereum.Signer\Properties\**;Nethereum.Signer\bin\**;Nethereum.Signer\obj\**" />
     <None Remove="Nethereum.Signer\Properties\**;Nethereum.Signer\bin\**;Nethereum.Signer\obj\**" />
 
@@ -269,6 +272,14 @@
 	<Compile Remove="Nethereum.Mud\**" />
 
 	<Compile Remove="Nethereum.Mud.Contracts\**" />
+
+	<None Remove="Nethereum.Mud.Repositories.EntityFramework\**" />
+
+	<Compile Remove="Nethereum.Mud.Repositories.EntityFramework\**" />
+	  
+	<None Remove="Nethereum.Mud.Repositories.Postgres\**" />
+
+	<Compile Remove="Nethereum.Mud.Repositories.Postgres\**" />
 
     <EmbeddedResource Remove="compiledlibraries\**" />
 

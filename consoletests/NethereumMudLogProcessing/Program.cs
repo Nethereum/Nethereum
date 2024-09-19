@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace NethereumMudLogProcessing
 {
+    //To: setup the database use dotnet ef migrations add InitialCreate and dotnet ef database update
     //dotnet ef migrations add InitialCreate
     //dotnet ef database update 
     internal class Program
@@ -55,9 +56,5 @@ namespace NethereumMudLogProcessing
 
         }
 
-    }
-
-
-    
     }
 }

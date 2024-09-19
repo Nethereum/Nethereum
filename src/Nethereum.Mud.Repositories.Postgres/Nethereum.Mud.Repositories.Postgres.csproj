@@ -17,7 +17,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\src\Nethereum.Mud.Repositories.EntityFramework\Nethereum.Mud.Repositories.EntityFramework.csproj" />
+		<ProjectReference Include="..\Nethereum.Mud.Repositories.EntityFramework\Nethereum.Mud.Repositories.EntityFramework.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">

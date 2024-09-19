@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.Mud.Repositories.EntityFramework;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Nethereum.Mud.Repositories.Postgres
 {
