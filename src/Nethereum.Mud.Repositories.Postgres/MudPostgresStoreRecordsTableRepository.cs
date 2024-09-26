@@ -60,7 +60,7 @@ namespace Nethereum.Mud.Repositories.Postgres
 
         public override async Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
-            var fullKey = ByteUtil.Merge(key.ToArray());
+            var fullKey = MergeKeysTo32ByteEachElement(key);
             var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.TableIdBytes == tableId && r.KeyBytes == fullKey);
             if (storedRecord != null)
             {
@@ -77,7 +77,7 @@ namespace Nethereum.Mud.Repositories.Postgres
         // Reuse of the record creation/updating logic
         protected override async Task<StoredRecord> CreateOrUpdateRecordAsync(byte[] tableId, List<byte[]> key, string address, BigInteger? blockNumber, int? logIndex)
         {
-            var fullKey = ByteUtil.Merge(key.ToArray());
+            byte[] fullKey = MergeKeysTo32ByteEachElement(key);
             var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.TableIdBytes == tableId && r.KeyBytes == fullKey);
 
             if (storedRecord == null)
@@ -110,6 +110,11 @@ namespace Nethereum.Mud.Repositories.Postgres
             }
 
             return storedRecord;
+        }
+
+        private static byte[] MergeKeysTo32ByteEachElement(List<byte[]> key)
+        {
+            return ByteUtil.Merge(key.Select(x => x.PadTo32Bytes()).ToArray());
         }
 
         public override async Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>(string tableIdHex)
