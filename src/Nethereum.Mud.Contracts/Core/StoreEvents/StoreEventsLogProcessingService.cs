@@ -166,7 +166,7 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
                 action: async (log) => 
                 await ProcessAllStoreChangesFromLog(tableRepository, log),
                 criteria: (log) => log.Removed == false);
-           return _blockchainLogProcessing.CreateProcessor(logProcessorHandler, minimumNumberOfConfirmations, filterInput, blockProgressRepository, log);
+           return _blockchainLogProcessing.CreateProcessor(new ProcessorHandler<FilterLog>[]{logProcessorHandler}, minimumNumberOfConfirmations, filterInput, blockProgressRepository, log, numberOfBlocksPerRequest, retryWeight);
 
         }
 
