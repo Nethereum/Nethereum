@@ -8,6 +8,7 @@ namespace Nethereum.Mud.TableRepository
 
     public class StoredRecord: EncodedValues
     {
+        public int RowId { get; set; }
         public byte[] TableIdBytes { get; set; }
         public byte[] KeyBytes { get; set; }
         public byte[] Key0Bytes { get; set; }

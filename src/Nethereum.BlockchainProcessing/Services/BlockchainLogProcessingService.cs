@@ -283,7 +283,7 @@ namespace Nethereum.BlockchainProcessing.Services
             IBlockProgressRepository blockProgressRepository = null,
             ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
         {
-            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight);
+            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight, log);
 
             var progressRepository = blockProgressRepository ??
                                      new InMemoryBlockchainProgressRepository();

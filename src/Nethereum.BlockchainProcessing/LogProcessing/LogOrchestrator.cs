@@ -11,6 +11,13 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+using Microsoft.Extensions.Logging;
+#else
+using Nethereum.JsonRpc.Client;
+#endif
 
 namespace Nethereum.BlockchainProcessing.LogProcessing
 {
@@ -52,17 +59,19 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
+        private readonly ILogger _logger;
         private BlockRangeRequestStrategy _blockRangeRequestStrategy;
         public ILogProcessStrategy LogProcessStrategy { get; set; } = new LogProcessParallelStrategy();
 
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
-            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0, ILogger logger = null)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
+            _logger = logger;
             _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight);
         }
 
@@ -80,6 +89,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                         nextBlockNumberFrom = progress.BlockNumberProcessTo.Value + 1;
                     }
 
+                    _logger?.LogInformation("Starting logs processing from block number: " + nextBlockNumberFrom.ToString());
                     var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
 
                     if (getLogsResponse == null || cancellationToken.IsCancellationRequested) return progress; //allowing all the logs to be processed if not cancelled before hand
@@ -88,12 +98,14 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
 
                     if (logs != null)
                     {
+                        _logger?.LogInformation("Total Logs found: " + logs.Count());
                         logs = logs.Sort();
                         await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                     }
                     progress.BlockNumberProcessTo = getLogsResponse.Value.To;
                     if (blockProgressRepository != null)
                     {
+                        _logger?.LogInformation("Logs processed completed to block number: " + progress.BlockNumberProcessTo.Value.ToString());
                         await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value).ConfigureAwait(false);
                     }
 

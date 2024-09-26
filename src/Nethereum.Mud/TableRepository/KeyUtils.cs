@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,7 +10,7 @@ namespace Nethereum.Mud.TableRepository
     {
         public static string ConvertKeyToCombinedHex(List<byte[]> key)
         {
-            return string.Join("", key.Select(k => k.ToHex()));
+            return string.Join("", key.Select(k => k.PadTo32Bytes().ToHex()));
         }
 
         public static List<byte[]> ConvertKeyFromCombinedHex(string key)
