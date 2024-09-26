@@ -63,7 +63,7 @@ namespace Nethereum.Mud.EncodingDecoding
                 var fieldSize = field.ABIType.FixedSize;
                 var bytes = outputBytes.Skip(currentIndex).Take(field.ABIType.FixedSize).ToArray();
                 var value = field.ABIType.Decode(bytes, field.ABIType.GetDefaultDecodingType());
-                fieldValues.Add(new FieldValue(field.Type, value, field.Name, field.Order));
+                fieldValues.Add(new FieldValue(field.Type, value, field.IsKey, field.Name, field.Order));
                 currentIndex += fieldSize;
             }
             return fieldValues;
@@ -160,7 +160,7 @@ namespace Nethereum.Mud.EncodingDecoding
             {
                 var fieldSize = field.ABIType.FixedSize;
                 var value = field.ABIType.Decode(outputBytes[currentIndex], field.ABIType.GetDefaultDecodingType());
-                fieldValues.Add(new FieldValue(field.Type, value, field.Name, field.Order));
+                fieldValues.Add(new FieldValue(field.Type, value, true, field.Name, field.Order));
                 currentIndex++;
             }
             return fieldValues;

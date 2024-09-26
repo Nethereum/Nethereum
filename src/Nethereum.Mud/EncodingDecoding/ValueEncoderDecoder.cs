@@ -8,6 +8,7 @@ using Nethereum.Mud.Exceptions;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Mud.EncodingDecoding
 {
@@ -190,6 +191,14 @@ namespace Nethereum.Mud.EncodingDecoding
             return outputParameters.ToList();
         }
 
+
+        public static List<FieldValue> DecodeValuesToFieldValues(EncodedValues encodedValues, List<FieldInfo> fields)
+        {
+            var encodedBytes = ByteUtil.Merge(encodedValues.StaticData).Concat(encodedValues.EncodedLengths).Concat(ByteUtil.Merge(encodedValues.DynamicData)).ToArray();
+            return DecodeValuesToFieldValues(encodedBytes, fields);
+        }
+
+
         public static List<FieldValue> DecodeValuesToFieldValues(byte[] outputBytes, List<FieldInfo> fields)
         {
             var staticFields = fields.Where(f => f.ABIType.IsMudDynamic() == false && f.IsKey == false).OrderBy(f => f.Order);
@@ -198,40 +207,59 @@ namespace Nethereum.Mud.EncodingDecoding
             var currentIndex = 0;
             foreach (var field in staticFields)
             {
-                var abiType = field.ABIType;
-                var fieldSize = abiType.StaticSize;
-                object value = DecodeValue(outputBytes, currentIndex, abiType);
-                fieldValues.Add(new FieldValue(field.Type, value, field.Name, field.Order));
-                currentIndex += fieldSize;
+                if (currentIndex == outputBytes.Length)
+                {
+                    fieldValues.Add(new FieldValue(field.Type, GetDefaultValue(field.ABIType), field.Name, field.Order));
+                }
+                else
+                {
+                    var abiType = field.ABIType;
+                    var fieldSize = abiType.StaticSize;
+                    object value = DecodeValue(outputBytes, currentIndex, abiType);
+                    fieldValues.Add(new FieldValue(field.Type, value, field.Name, field.Order));
+                    currentIndex += fieldSize;
+                }
             }
 
             var dynamicFields = fields.Where(f => f.ABIType.IsMudDynamic() == true && f.IsKey == false).OrderBy(f => f.Order).ToArray();
             var encodedLengths = EncodedLengthsEncoderDecoder.Decode(outputBytes.Skip(currentIndex).ToArray());
-            currentIndex += 32;
+
+            if (currentIndex != outputBytes.Length) 
+            { 
+                currentIndex += 32;
+            }
             for (int i = 0; i < dynamicFields.Length; i++)
             {
-                var fieldSize = encodedLengths.Lengths[i];
-                var bytes = outputBytes.Skip(currentIndex).Take(fieldSize).ToArray();
-                object value;
-                if (bytes.Length == 0)
+                if (currentIndex == outputBytes.Length)
                 {
-                    //check what direction is the padding or just empty
-                    bytes = bytes.PadBytes(fieldSize);
-                }
-
-                if (dynamicFields[i].ABIType is ArrayType arrayAbiType)
-                {
-                    value = arrayAbiType.DecodePackedUsingElementPacked(bytes, arrayAbiType.GetDefaultDecodingType());
-
+                    fieldValues.Add(new FieldValue(dynamicFields[i].ABIType, GetDefaultValue(dynamicFields[i].ABIType),
+                        dynamicFields[i].Name, dynamicFields[i].Order));
                 }
                 else
                 {
-                    value = dynamicFields[i].ABIType.DecodePacked(bytes, dynamicFields[i].ABIType.GetDefaultDecodingType());
+                    var fieldSize = encodedLengths.Lengths[i];
+                    var bytes = outputBytes.Skip(currentIndex).Take(fieldSize).ToArray();
+                    object value;
+                    if (bytes.Length == 0)
+                    {
+                        //check what direction is the padding or just empty
+                        bytes = bytes.PadBytes(fieldSize);
+                    }
 
+                    if (dynamicFields[i].ABIType is ArrayType arrayAbiType)
+                    {
+                        value = arrayAbiType.DecodePackedUsingElementPacked(bytes, arrayAbiType.GetDefaultDecodingType());
+
+                    }
+                    else
+                    {
+                        value = dynamicFields[i].ABIType.DecodePacked(bytes, dynamicFields[i].ABIType.GetDefaultDecodingType());
+
+                    }
+
+                    fieldValues.Add(new FieldValue(dynamicFields[i].Type, value, dynamicFields[i].Name, dynamicFields[i].Order));
+                    currentIndex += fieldSize;
                 }
-
-                fieldValues.Add(new FieldValue(dynamicFields[i].Type, value, dynamicFields[i].Name, dynamicFields[i].Order));
-                currentIndex += fieldSize;
             }
 
             return fieldValues;
@@ -242,6 +270,27 @@ namespace Nethereum.Mud.EncodingDecoding
             var bytes = outputBytes.Skip(currentIndex).Take(abiType.StaticSize).ToArray();
             var value = abiType.DecodePacked(bytes, abiType.GetDefaultDecodingType());
             return value;
+        }
+
+        private static object GetDefaultValue(ABIType abiType)
+        {
+            var type = abiType.GetDefaultDecodingType();
+#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
+            try
+            {
+                var value =  Activator.CreateInstance(type);
+                return value;
+            }
+            catch
+            {
+                if (abiType.Name.StartsWith("bytes"))
+                {
+                    return new byte[0];
+                }
+            }
+           
+#endif
+            return null;
         }
     }
 }

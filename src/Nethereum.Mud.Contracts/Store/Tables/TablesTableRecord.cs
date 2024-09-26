@@ -14,6 +14,14 @@ namespace Nethereum.Mud.Contracts.Store.Tables
 
         }
 
+        public TableSchema GetTableSchema()
+        {
+            var tableSchema = new TableSchema(Keys.TableId);
+            tableSchema.SchemaKeys = Values.GetKeySchemaFields();
+            tableSchema.SchemaValues = Values.GetValueSchemaFields();
+            return tableSchema;
+        }
+
         public class TablesKey
         {
             [Parameter("bytes32", "tableId", 1)]
@@ -89,6 +97,8 @@ namespace Nethereum.Mud.Contracts.Store.Tables
                 }
                 return fields;
             }
+
+           
         }
     }
 }
