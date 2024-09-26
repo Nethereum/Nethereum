@@ -4,6 +4,8 @@ using System.Numerics;
 using Microsoft.Extensions.Configuration;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.Mud.Repositories.EntityFramework;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Nethereum.Mud.Repositories.Postgres
 {
@@ -17,10 +19,12 @@ namespace Nethereum.Mud.Repositories.Postgres
         public MudPostgresStoreRecordsDbContext(DbContextOptions<MudPostgresStoreRecordsDbContext> options)
            : base(options) { 
         
-            
+           
         
         }
-       
+
+        
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -35,6 +39,14 @@ namespace Nethereum.Mud.Repositories.Postgres
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<BlockProgress>().HasKey(r => r.RowIndex);
+
+            modelBuilder.Entity<StoredRecord>()
+                    .Property(e => e.RowId)
+                        .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<StoredRecord>()
+                .HasIndex(r => new { r.RowId })
+                .HasDatabaseName("IX_RowId");
 
             // Set primary key based on Address, TableId, and Key
             modelBuilder.Entity<StoredRecord>()

@@ -38,7 +38,7 @@ namespace Nethereum.Mud.Repositories.EntityFramework
             catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("String or binary data would be truncated") ?? false)
             {
                 throw new DbUpdateException(
-                    $"{nameof(BlockProgressRepository<TDbContext>)} Data Truncation Rrror. Ensure that the LastBlockProcessed column length is {ColumnLengths.BigIntegerLength}."
+                    $"{nameof(BlockProgressRepository<TDbContext>)} Data Truncation Error. Ensure that the LastBlockProcessed column length is {ColumnLengths.BigIntegerLength}."
                     , ex);
             }
         }

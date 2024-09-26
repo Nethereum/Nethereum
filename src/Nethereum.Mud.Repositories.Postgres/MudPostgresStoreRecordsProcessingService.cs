@@ -2,7 +2,6 @@
 using Nethereum.Web3;
 using System.Numerics;
 using Microsoft.Extensions.Logging;
-using Nethereum.Mud;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Mud.Repositories.EntityFramework;
 using System.Threading.Tasks;
@@ -10,6 +9,7 @@ using System.Threading;
 
 namespace Nethereum.Mud.Repositories.Postgres
 {
+
     public class MudPostgresStoreRecordsProcessingService
     {
         public MudPostgresStoreRecordsProcessingService(MudPostgresStoreRecordsDbContext context, ILogger logger)
@@ -19,10 +19,10 @@ namespace Nethereum.Mud.Repositories.Postgres
         }
 
         public MudPostgresStoreRecordsDbContext Context { get; }
-        public ILogger Logger { get; set;  }
+        public ILogger Logger { get; set; }
         public string Address { get; set; }
         public string RpcUrl { get; set; }
-        public BigInteger StartAtBlockNumberIfNotProcessed { get; set; }  = 0;
+        public BigInteger StartAtBlockNumberIfNotProcessed { get; set; } = 0;
         public int NumberOfBlocksToProcessPerRequest { get; set; } = 1000;
         public int RetryWeight { get; set; } = 50;
 
@@ -42,4 +42,8 @@ namespace Nethereum.Mud.Repositories.Postgres
 
         }
     }
+
 }
+
+
+
