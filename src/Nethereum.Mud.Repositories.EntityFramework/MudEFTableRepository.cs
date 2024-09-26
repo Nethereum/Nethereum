@@ -9,6 +9,19 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Mud.Repositories.EntityFramework
 {
+    public class PagedResult<T>
+    {
+        public List<T> Records { get; set; }
+        public int TotalRecords { get; set; }
+        public int PageSize { get; set; }
+        public long? LastRowId { get; set; }  
+    }
+
+    public class PagedBlockNumberResult<T>:PagedResult<T>
+    {
+        public BigInteger? LastBlockNumber { get; set; }
+    }
+    
 
     public abstract class MudEFTableRepository<TDbContext> : TableRepositoryBase, ITableRepository where TDbContext : DbContext, IMudStoreRecordsDbSets
     {
@@ -18,6 +31,83 @@ namespace Nethereum.Mud.Repositories.EntityFramework
         {
             Context = context;            
         }
+
+
+        public async Task<int> GetStoredRecordsCountAsync()
+        {
+            return await Context.Set<StoredRecord>().AsNoTracking().CountAsync();
+        }
+
+        public async Task<PagedResult<StoredRecord>> GetStoredRecordsAsync(int pageSize = 100, long? startingRowId = null)
+        {
+            if (pageSize < 1) pageSize = 10;  // Set a default page size if it's invalid
+
+            // Get total row count
+            var totalRecords = await Context.Set<StoredRecord>().AsNoTracking().CountAsync();
+
+            // Create the query, filtering by RowId if startingRowId is provided
+            var query = Context.Set<StoredRecord>().AsNoTracking().OrderBy(r => r.RowId);
+
+            if (startingRowId.HasValue)
+            {
+                query = (IOrderedQueryable<StoredRecord>)query.Where(r => r.RowId > startingRowId.Value);
+            }
+
+            // Get the paged rows
+            var pagedRows = await query.Take(pageSize).ToListAsync();
+
+            // Determine the last RowId processed
+            var lastRowId = pagedRows.LastOrDefault()?.RowId;
+
+            return new PagedResult<StoredRecord>
+            {
+                Records = pagedRows,
+                TotalRecords = totalRecords,
+                PageSize = pageSize,
+                LastRowId = lastRowId
+            };
+        }
+
+
+        public async Task<PagedBlockNumberResult<StoredRecord>> GetStoredRecordsGreaterThanBlockNumberAsync(int pageSize = 100, BigInteger? startingBlockNumber = null, long? lastProcessedRowId = null)
+        {
+            if (pageSize < 1) pageSize = 10;  // Set a default page size if it's invalid
+
+            // Get total count of records where BlockNumber > startingBlockNumber or BlockNumber == startingBlockNumber and RowId > lastProcessedRowId
+            var totalRecords = await Context.Set<StoredRecord>()
+                                            .AsNoTracking()
+                                            .Where(r => r.BlockNumber != null &&
+                                                       ((!startingBlockNumber.HasValue || r.BlockNumber > startingBlockNumber) ||
+                                                       (startingBlockNumber.HasValue && r.BlockNumber == startingBlockNumber && r.RowId > lastProcessedRowId)))
+                                            .CountAsync();
+
+            // Create the query, filtering by BlockNumber and RowId if needed
+            var query = Context.Set<StoredRecord>()
+                               .AsNoTracking()
+                               .Where(r => r.BlockNumber != null &&
+                                          ((!startingBlockNumber.HasValue || r.BlockNumber > startingBlockNumber) ||
+                                          (startingBlockNumber.HasValue && r.BlockNumber == startingBlockNumber && r.RowId > lastProcessedRowId)))
+                               .OrderBy(r => r.BlockNumber)
+                               .ThenBy(r => r.RowId);  // Secondary sorting by RowId
+
+            // Get the paged rows
+            var pagedRows = await query.Take(pageSize).ToListAsync();
+
+            // Determine the last BlockNumber and RowId processed
+            var lastBlockNumber = pagedRows.LastOrDefault()?.BlockNumber;
+            var lastRowId = pagedRows.LastOrDefault()?.RowId;
+
+            return new PagedBlockNumberResult<StoredRecord>
+            {
+                Records = pagedRows,
+                TotalRecords = totalRecords,
+                PageSize = pageSize,
+                LastBlockNumber = lastBlockNumber,
+                LastRowId = lastRowId // Track the last RowId processed for records with the same BlockNumber
+            };
+        }
+
+
 
         // Optimized GetRecordAsync using AsNoTracking
         public override async Task<StoredRecord> GetRecordAsync(string tableIdHex, string keyHex)
