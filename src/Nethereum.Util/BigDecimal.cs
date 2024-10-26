@@ -110,7 +110,7 @@ namespace Nethereum.Util
         /// <returns>The truncated number</returns>
         internal BigDecimal Truncate(int precision = Precision)
         {
-            //if the precission is 0, 
+            //if the precision is 0, 
             if(precision <= 0) throw new ArgumentException("Precision has to bigger than 0");
             // copy this instance (remember its a struct)
             var shortened = this;
@@ -157,10 +157,10 @@ namespace Nethereum.Util
         /// <returns>The truncated number</returns>
         public BigDecimal Floor()
         {
-            var precission = Mantissa.NumberOfDigits() + Exponent;
-            if (precission <= 0) return 0;
+            var precision = Mantissa.NumberOfDigits() + Exponent;
+            if (precision <= 0) return 0;
 
-            return Truncate(precission);
+            return Truncate(precision);
         }
 
         private static int NumberOfDigits(BigInteger value)

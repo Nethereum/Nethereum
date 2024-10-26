@@ -204,7 +204,7 @@ namespace Nethereum.Util.UnitTests
         [InlineData("0.0001", 6, 100)]
         [InlineData("0.001", 6, 1000)]
         [InlineData("1.001", 6, 1001000)]
-        public void ShouldFloorToZeroWhenPrecissionIsZeroOrLower(string value, int numberOfDecimalPlaces, int expected)
+        public void ShouldFloorToZeroWhenPrecisionIsZeroOrLower(string value, int numberOfDecimalPlaces, int expected)
         {
             var unitConversion = new UnitConversion();
             var result = unitConversion.ToWei(decimal.Parse(value), numberOfDecimalPlaces);
