@@ -9,6 +9,7 @@ namespace Nethereum.Util
     /// Original Author: Jan Christoph Bernack (contact: jc.bernack at googlemail.com)
     /// Changes JB: Added parse, Fix Normalise, Added Floor, New ToString, Change Equals (normalise to validate first), Change Casting to avoid overflows (even if might be slower), Added Normalise Bigger than zero, test on operations, parsing, casting, and other test coverage for ethereum unit conversions
     /// Changes KJ: Added Culture formatting
+    /// Changes ER: Added explicit BigInteger cast, change floor result from BigDecimal to BigInteger
     /// http://stackoverflow.com/a/13813535/956364" />
     /// <summary>
     ///     Arbitrary precision Decimal.
@@ -155,12 +156,12 @@ namespace Nethereum.Util
         ///     Truncate the number, removing all decimal digits.
         /// </summary>
         /// <returns>The truncated number</returns>
-        public BigDecimal Floor()
+        public BigInteger Floor()
         {
             var precision = Mantissa.NumberOfDigits() + Exponent;
             if (precision <= 0) return 0;
 
-            return Truncate(precision);
+            return Truncate(precision).Mantissa;
         }
 
         private static int NumberOfDigits(BigInteger value)
@@ -269,6 +270,11 @@ namespace Nethereum.Util
         public static explicit operator uint(BigDecimal value)
         {
             return Convert.ToUInt32((decimal) value);
+        }
+
+        public static explicit operator BigInteger(BigDecimal value)
+        {
+            return value.Floor();
         }
 
         #endregion
