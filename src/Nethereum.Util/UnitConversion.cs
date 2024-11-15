@@ -164,7 +164,7 @@ namespace Nethereum.Util
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
             var conversion = amount * bigDecimalFromUnit;
             var floor = conversion.Floor();
-            return floor.Mantissa;
+            return floor;
         }
 
         public BigInteger ToWei(BigDecimal amount, EthUnit fromUnit = EthUnit.Ether)
