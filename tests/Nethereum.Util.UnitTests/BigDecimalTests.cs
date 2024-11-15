@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Globalization;
-
+using System.Numerics;
 using Xunit;
 
 namespace Nethereum.Util.UnitTests
@@ -104,6 +104,40 @@ namespace Nethereum.Util.UnitTests
             var roundedBig = big.RoundAwayFromZero(significantDigits: 0);
 
             Assert.Equal(expected: (BigDecimal)roundedRegular, roundedBig);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("1")]
+        [InlineData("100000000")]
+        [InlineData("1.1")]
+        [InlineData("1.01")]
+        [InlineData("1.001")]
+        [InlineData("1.0000000001")]
+        [InlineData("123456789.0000000001")]
+        public void ShouldFloorCorrectly(string value)
+        {
+            var bigInt = BigInteger.Parse(value.Split('.')[0]);
+            var bigDecimal = BigDecimal.Parse(value);
+            
+            Assert.Equal(bigInt, bigDecimal.Floor());
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("1")]
+        [InlineData("100000000")]
+        [InlineData("1.1")]
+        [InlineData("1.01")]
+        [InlineData("1.001")]
+        [InlineData("1.0000000001")]
+        [InlineData("123456789.0000000001")]
+        public void ShouldCastToBigIntegerCorrectly(string value)
+        {
+            var bigInt = BigInteger.Parse(value.Split('.')[0]);
+            var bigDecimal = BigDecimal.Parse(value);
+            
+            Assert.Equal(bigInt, (BigInteger)bigDecimal);
         }
 
         [Theory]
