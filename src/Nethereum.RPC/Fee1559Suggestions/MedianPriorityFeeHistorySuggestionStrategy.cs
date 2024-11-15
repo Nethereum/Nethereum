@@ -173,7 +173,7 @@ namespace Nethereum.RPC.Fee1559Suggestions
 
             return new Fee1559()
             {
-                MaxFeePerGas = maxFeePerGas.Value.Floor().Mantissa,
+                MaxFeePerGas = maxFeePerGas.Value.Floor(),
                 MaxPriorityFeePerGas = maxPriorityFeePerGas,
                 BaseFee = baseFee
             };
