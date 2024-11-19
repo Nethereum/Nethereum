@@ -120,7 +120,7 @@ namespace Nethereum.Util.UnitTests
             var bigInt = BigInteger.Parse(value.Split('.')[0]);
             var bigDecimal = BigDecimal.Parse(value);
             
-            Assert.Equal(bigInt, bigDecimal.Floor());
+            Assert.Equal(bigInt, bigDecimal.FloorToBigInteger());
         }
 
         [Theory]
