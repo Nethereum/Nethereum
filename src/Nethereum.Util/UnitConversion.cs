@@ -163,7 +163,7 @@ namespace Nethereum.Util
             TryValidateUnitValue(fromUnit);
             var bigDecimalFromUnit = new BigDecimal(fromUnit, 0);
             var conversion = amount * bigDecimalFromUnit;
-            var floor = conversion.Floor();
+            var floor = conversion.FloorToBigInteger();
             return floor;
         }
 
