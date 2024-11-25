@@ -18,11 +18,20 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
-	  <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'netstandard1.1' ">
+      <PackageReference Include="BouncyCastle.Cryptography" Version="[2.3.1,2.0)" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'netstandard1.1' ">
+        <DefineConstants>$(DefineConstants);LATEST_CRYPTOGRAPHY</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
+        <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+    </ItemGroup>
+
+
+    <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -52,7 +61,7 @@
       <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|AnyCPU'">
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-	
+
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netcoreapp2.1|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -100,7 +109,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-	
+
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -108,7 +117,7 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
-	
+
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
