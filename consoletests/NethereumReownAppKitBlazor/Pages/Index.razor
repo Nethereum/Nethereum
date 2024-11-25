@@ -1,0 +1,184 @@
+﻿@page "/"
+@using System.Drawing.Imaging;
+@using Nethereum.Reown.AppKit.Blazor
+@using Nethereum.UI
+@using Nethereum.Web3;
+@using Nethereum.Signer.EIP712;
+@using Nethereum.ABI.EIP712;
+@using Nethereum.Hex.HexTypes;
+@using Nethereum.RPC.Chain;
+@using Nethereum.RPC.HostWallet;
+@using Nethereum.Signer.EIP712;
+@using Nethereum.Web3;
+@using NethereumReownAppKitBlazor;
+
+@inject IEthereumHostProvider ethereumHostProvider
+@inject IAppKit appKit
+
+
+<PageTitle>Index</PageTitle>
+
+<appkit-button />
+<appkit-network-button />
+@if (string.IsNullOrEmpty(Address))
+{
+	<MudButton Variant="Variant.Outlined" @onclick="InitAsync">Init App Kit Modal</MudButton>
+}
+else
+{
+	<MudField>Address: @Address</MudField>
+	<MudField>ChainId: @ChainId</MudField>
+	<MudButton Variant="Variant.Outlined" @onclick="SignTypedDataAsync">Sign Typed Data</MudButton>
+	<MudField>Response: @Response</MudField>
+	<MudField>Recovered Account: @RecoveredAccount</MudField>
+	<MudButton Variant="Variant.Outlined" @onclick="PersonalSignAsync">Personal Sign</MudButton>
+	<MudButton Variant="Variant.Outlined" @onclick="SwitchChainAsync">Switch Chain</MudButton>
+	<MudButton Variant="Variant.Outlined" @onclick="AddEthereumChainAsync">Add Chain</MudButton>
+
+}
+
+
+
+
+@code {
+
+	public string? Response;
+	public string? Address;
+	public long? ChainId;
+	public string? RecoveredAccount;
+	public IWeb3 web3 = default!;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await base.OnInitializedAsync();
+
+		ethereumHostProvider.SelectedAccountChanged += async (address) =>
+		{
+			Address = address;
+			await InvokeAsync(StateHasChanged);
+		};
+
+		ethereumHostProvider.NetworkChanged += async (chainId) =>
+		{
+			ChainId = chainId;
+			await InvokeAsync(StateHasChanged);
+		};
+
+		web3 = await ethereumHostProvider.GetWeb3Async();
+	}
+
+	public async Task InitAsync()
+	{
+		await ethereumHostProvider.EnableProviderAsync();
+	}
+
+	public async Task SignTypedDataAsync()
+	{
+		try
+		{
+			var typedData = GetMailTypedDefinition();
+
+			var mail = new Mail
+				{
+					From = new Person
+					{
+						Name = "Cow",
+						Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" }
+					},
+					To = new List<Person>
+					{
+						new Person
+						{
+							Name = "Bob",
+							Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" }
+						}
+					},
+					Contents = "Hello, Bob!"
+				};
+
+			typedData.Domain.ChainId = ChainId;
+			typedData.SetMessage(mail);
+
+
+
+			Response = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+			RecoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, Response);
+		}
+		catch (Exception ex)
+		{
+			Response = ex.Message;
+			Console.WriteLine(ex.ToString());
+		}
+
+	}
+
+	public async Task SwitchChainAsync()
+	{
+		try
+		{
+			var response = await web3.Eth.HostWallet.SwitchEthereumChain.SendRequestAsync(new SwitchEthereumChainParameter()
+			{
+				ChainId = 1.ToHexBigInteger()
+			});
+
+			Response = response;
+		}
+		catch (Exception ex)
+		{
+			Response = ex.Message;
+			Console.WriteLine(ex.ToString());
+		}
+
+	}
+
+	public async Task PersonalSignAsync()
+	{
+		try
+		{
+			var response = await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(new HexUTF8String("Hello World"));
+			Response = response;
+		}
+		catch (Exception ex)
+		{
+			Response = ex.Message;
+			Console.WriteLine(ex.ToString());
+		}
+
+	}
+
+	public async Task AddEthereumChainAsync()
+	{
+		try
+		{
+			var chainFeature = ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(Nethereum.Signer.Chain.Optimism);
+			var addParameter = chainFeature.ToAddEthereumChainParameter();
+			var response = await web3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(addParameter);
+
+			Response = response;
+
+		}
+		catch (Exception ex)
+		{
+			Response = ex.Message;
+			Console.WriteLine(ex.ToString());
+		}
+
+	}
+
+	//The generic EIP712 Typed schema defintion for this message
+	public TypedData<Domain> GetMailTypedDefinition()
+	{
+		return new TypedData<Domain>
+			{
+				Domain = new Domain
+				{
+					Name = "Ether Mail",
+					Version = "1",
+					ChainId = 1,
+					VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+				},
+				Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(Domain), typeof(Group), typeof(Mail), typeof(Person)),
+				PrimaryType = nameof(Mail),
+			};
+	}
+}
