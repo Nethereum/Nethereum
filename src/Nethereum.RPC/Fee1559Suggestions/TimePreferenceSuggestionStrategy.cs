@@ -208,9 +208,9 @@ public static class Comparer
                 }
                 result.Add(new Fee1559()
                 {
-                    BaseFee = bf.Floor().Mantissa,
-                    MaxFeePerGas = (bf + t).Floor().Mantissa,
-                    MaxPriorityFeePerGas = t.Floor().Mantissa
+                    BaseFee = bf.FloorToBigInteger(),
+                    MaxFeePerGas = (bf + t).FloorToBigInteger(),
+                    MaxPriorityFeePerGas = t.FloorToBigInteger()
                 });
             }
 
