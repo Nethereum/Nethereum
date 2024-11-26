@@ -270,7 +270,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NethereumWCBlazor", "consol
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NethereumWCAvalonia", "consoletests\NethereumWCAvalonia\NethereumWCAvalonia.csproj", "{BBF4CD83-7374-4BFA-B837-F314CCFD977D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NethereumGodotAvalonia", "consoletests\NethereumGodotWCAvalonia\NethereumGodotAvalonia.csproj", "{6AE91750-F47C-4B12-BBA3-0F3DB273D45B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NethereumGodotWCAvalonia", "consoletests\NethereumGodotWCAvalonia\NethereumGodotWCAvalonia.csproj", "{6AE91750-F47C-4B12-BBA3-0F3DB273D45B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mud", "Mud", "{5B8B052D-60F9-48BD-B186-5EC802731AA9}"
 EndProject
