@@ -80,7 +80,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var deploymentHandler = web3.Eth.GetContractDeploymentHandler<EIP20Deployment>();
             var receipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentContract).ConfigureAwait(false);
             var tokenService = web3.Eth.ERC20.GetContractService(receipt.ContractAddress);
-            
+
             var transfersEvent = tokenService.GetTransferEvent();
 
             var totalSupplyDeployed = await tokenService.TotalSupplyQueryAsync().ConfigureAwait(false);
@@ -152,7 +152,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         public async void ERC20TokenBalances()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var tokens = await new TokenListService().LoadFromUrl(TokenListSources.UNISWAP).ConfigureAwait(false);
+            var tokens = await new TokenListService().LoadFromUrlAsync(TokenListSources.UNISWAP).ConfigureAwait(false);
             var tokensOwned = await web3.Eth.ERC20.GetAllTokenBalancesUsingMultiCallAsync(
                 new string[] { "0xBA12222222228d8Ba445958a75a0704d566BF2C8" }, tokens.Where(x => x.ChainId == 1),
                 BlockParameter.CreateLatest()).ConfigureAwait(false);
@@ -164,7 +164,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         public async void ERC20TokenBalancesWithPricesExample()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
-            var tokens = await new TokenListService().LoadFromUrl(TokenListSources.UNISWAP).ConfigureAwait(false);
+            var tokens = await new TokenListService().LoadFromUrlAsync(TokenListSources.UNISWAP).ConfigureAwait(false);
             var tokensOwned = await web3.Eth.ERC20.GetAllTokenBalancesUsingMultiCallAsync(
                 new string[] { "0xBA12222222228d8Ba445958a75a0704d566BF2C8" }, tokens.Where(x => x.ChainId == 1),
                 BlockParameter.CreateLatest()).ConfigureAwait(false);
