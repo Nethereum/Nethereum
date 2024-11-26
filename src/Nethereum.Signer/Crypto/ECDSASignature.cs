@@ -92,7 +92,7 @@ namespace Nethereum.Signer.Crypto
             seq.AddObject(new DerInteger(R));
             seq.AddObject(new DerInteger(S));
 
-#if !LATEST_CRYPTOGRAPHY
+#if !LATEST_BOUNCYCASTLE
             seq.Close();
 #endif
 
