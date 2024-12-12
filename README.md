@@ -5,13 +5,12 @@ Technical support, chat and collaboration at Discord: https://discord.gg/u3Ej2BR
 
 # What is Nethereum ?
 
-Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth or [Quorum](https://www.jpmorgan.com/global/Quorum).
+Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public like Geth (or your preferred client) L2 chains like Optimism, Arbitrum (or your preferred L2), any compatible EVM chain (Gnosis, etc) and permissioned chains like [Quorum](https://www.jpmorgan.com/global/Quorum).
 
-Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 3.1, net451, .net 6,  .net 8 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, consoles and IoT.
+Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 3.1, net451, .net 6, .net 8 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, consoles and IoT.
 
 # Nethereum Playground. Try Nethereum now in your browser.
 Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
-The same version is hosted in IPFS at http://playground.nethereum.eth.link/ or the same https://gateway.pinata.cloud/ipfs/QmPgWmX3HsxCBCDVv8adEhLzeJd2VstcyGh1T9ipKrvU4Y/
 
 [![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
@@ -33,10 +32,13 @@ The documentation and guides can be found at [Read the docs](https://nethereum.r
 * [Unity 3d](https://unity3d.com/) Unity integration.
 * ABI to .Net type encoding and decoding, including attribute based for complex object deserialization.
 * Hd Wallet
+* External signers integration (Azure, AWS)
+* Wallet integration (Metamask, WalletConnect)
+* EVM Simulator
 * Transaction, RLP and message signing, verification and recovery of accounts.
-* Libraries for standard contracts Token, [ENS](https://ens.domains/) and [Uport](https://www.uport.me/)
+* Libraries for standard contracts Tokens, [ENS](https://ens.domains/), MUD (https://mud.dev/), Gnosis Safe
 * Integrated TestRPC testing to simplify TDD and BDD (Specflow) development.
-* Key storage using Web3 storage standard, compatible with Geth and Parity.
+* Key storage using Web3 storage standard.
 * Simplified account life cycle for both managed by third party client (personal) or stand alone (signed transactions).
 * Low level Interception of RPC calls.
 * Code generation of smart contracts services.
@@ -47,28 +49,11 @@ Nethereum provides two types of packages. Standalone packages targeting Netstand
 
 To install the latest version:
 
-#### Windows users
-
-To install the main packages you can either:
-
-```
-PM > Install-Package Nethereum.Web3
-```
-or 
-```
-PM > Install-Package Nethereum.Portable
-```
-
-#### Mac/Linux users
+#### Windows/Mac/Linux users
 
 ```
 dotnet add package Nethereum.Web3 
-``` 
-or 
 ```
-dotnet add package Nethereum.Portable
-```
-
 
 ## Simple Code generation of Contract definitions
 If you are working with smart contracts, you can quickly code generate contract definitions using the vscode solidity extension (please check the documentation for other options)
@@ -79,12 +64,9 @@ If you are working with smart contracts, you can quickly code generate contract 
 
 |  Project Source | Nuget_Package |  Description |
 | ------------- |--------------------------|-----------|
-| Nethereum.Portable    | [![NuGet version](https://badge.fury.io/nu/nethereum.portable.svg)](https://badge.fury.io/nu/nethereum.portable)| Portable class library combining all the different libraries in one package |
 | [Nethereum.Web3](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Web3)    | [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)| Ethereum Web3 Class Library simplifying the interaction via RPC. Includes contract interaction, deployment, transaction, encoding / decoding and event filters |
 | [Nethereum.Unity](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Unity) |  | Unity3d integration, libraries can be found in the Nethereum [releases](https://github.com/Nethereum/Nethereum/releases) |
-| [Nethereum.Geth](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Geth)    | [![NuGet version](https://badge.fury.io/nu/nethereum.geth.svg)](https://badge.fury.io/nu/nethereum.geth)| Nethereum.Geth is the extended Web3 library for Geth. This includes the non-generic RPC API client methods to interact with the Go Ethereum Client (Geth) like Admin, Debug, Miner|
-| [Nethereum.Quorum](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Quorum)| [![NuGet version](https://badge.fury.io/nu/nethereum.quorum.svg)](https://badge.fury.io/nu/nethereum.quorum)| Extension to interact with Quorum, the permissioned implementation of Ethereum supporting data privacy created by JP Morgan|
-| [Nethereum.Parity](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Parity)| [![NuGet version](https://badge.fury.io/nu/nethereum.parity.svg)](https://badge.fury.io/nu/nethereum.parity)| Nethereum.Parity is the extended Web3 library for Parity. Including the non-generic RPC API client methods to interact with Parity. (WIP)|
+
 
 ## Core Libraries
 
@@ -110,8 +92,6 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 
 |  Project Source | Nuget_Package |  Description |
 | ------------- |--------------------------|-----------
-| [Nethereum.StandardTokenEIP20](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.StandardTokenEIP20)| [![NuGet version](https://badge.fury.io/nu/nethereum.standardtokeneip20.svg)](https://badge.fury.io/nu/nethereum.nethereum.standardtokeneip20)| ``` Nethereum.StandardTokenEIP20 ``` Ethereum Service to interact with ERC20 compliant contracts |
-| [Nethereum.Uport](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Uport)| [![NuGet version](https://badge.fury.io/nu/nethereum.uport.svg)](https://badge.fury.io/nu/nethereum.uport)| Uport registry library |
 | [Nethereum.ENS](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.ENS)| [![NuGet version](https://badge.fury.io/nu/nethereum.ens.svg)](https://badge.fury.io/nu/nethereum.ens)| Ethereum Name service library (original ENS) WIP to upgrade to latest ENS |
 
 ## Utilities
