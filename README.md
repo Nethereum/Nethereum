@@ -5,9 +5,9 @@ Technical support, chat and collaboration at Discord: https://discord.gg/u3Ej2BR
 
 # What is Nethereum ?
 
-Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, [Parity](https://www.parity.io/) or [Quorum](https://www.jpmorgan.com/global/Quorum).
+Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth or [Quorum](https://www.jpmorgan.com/global/Quorum).
 
-Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 2.1, netcore 3.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, Xbox, hololens and windows IoT.
+Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 3.1, net451, .net 6,  .net 8 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, consoles and IoT.
 
 # Nethereum Playground. Try Nethereum now in your browser.
 Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
