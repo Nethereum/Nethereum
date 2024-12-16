@@ -91,7 +91,11 @@ namespace Nethereum.Signer.Crypto
             var seq = new DerSequenceGenerator(bos);
             seq.AddObject(new DerInteger(R));
             seq.AddObject(new DerInteger(S));
+
+#if !LATEST_BOUNCYCASTLE
             seq.Close();
+#endif
+
             return bos.ToArray();
         }
     }
