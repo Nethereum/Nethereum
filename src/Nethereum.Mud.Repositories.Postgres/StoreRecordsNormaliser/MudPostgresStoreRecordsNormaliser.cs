@@ -153,10 +153,16 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
                 }
             }
 
+            if (updates.Length == 0)
+            {
+                return;
+            }
+
             // Remove the trailing comma and space from columns, values, and updates
-            columns.Length -= 2;
-            values.Length -= 2;
-            updates.Length -= 2;
+           
+             columns.Length -= 2;
+             values.Length -= 2;
+             updates.Length -= 2;
 
             // Check if the schema has keys (normal tables)
             if (schema.SchemaKeys.Any())
@@ -274,6 +280,11 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
         // Convert FieldValue to the appropriate PostgreSQL value, including array conversion to bytes
         private object ConvertToPostgresValue(FieldValue fieldValue)
         {
+            if (fieldValue.Value == null)
+            {
+                return DBNull.Value; 
+            }
+
             return fieldValue.ABIType.Name switch
             {
                 "address" => fieldValue.Value?.ToString(),
