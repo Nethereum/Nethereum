@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.ContractHandlers;
@@ -53,21 +54,13 @@ namespace Nethereum.Contracts
 
         public void HandleCustomErrorException(SmartContractCustomErrorRevertException exception)
         {
-            var errorAbi = GetAllErrorABIs().FirstOrDefault(x => exception.IsCustomErrorFor(x));
-            if (errorAbi != null)
-            {
-               throw new SmartContractCustomErrorRevertExceptionErrorABI(exception.ExceptionEncodedData, errorAbi);
-            }
+            var typedException = exception.CreateTypedException(GetAllErrorTypes().ToArray());
+            if (typedException != null) throw typedException;
         }
 
-        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        public SmartContractCustomErrorRevertExceptionErrorDecoded FindCustomErrorException(SmartContractCustomErrorRevertException exception)
         {
-            var errorAbi = GetAllErrorABIs().FirstOrDefault(x => exception.IsCustomErrorFor(x));
-            if (errorAbi != null)
-            {
-                return new SmartContractCustomErrorRevertExceptionErrorABI(exception.ExceptionEncodedData, errorAbi);
-            }
-            return null;
+           return (SmartContractCustomErrorRevertExceptionErrorDecoded)exception.CreateTypedException(GetAllErrorTypes().ToArray());
         }
     }
 }

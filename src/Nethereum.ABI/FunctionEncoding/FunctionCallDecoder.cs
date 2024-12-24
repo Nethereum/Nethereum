@@ -77,6 +77,23 @@ namespace Nethereum.ABI.FunctionEncoding
             return DecodeFunctionInput(error, signature, encodedErrorData);
         }
 
+        public object DecodeFunctionCustomError(Type errorType, string sha3Signature, string data)
+        {
+            var errorResult = Activator.CreateInstance(errorType);
+            sha3Signature = sha3Signature.EnsureHexPrefix();
+            data = data.EnsureHexPrefix();
+
+            if ((data == "0x") || (data == sha3Signature)) return errorResult;
+
+            if (data.StartsWith(sha3Signature))
+                data = data.Substring(sha3Signature.Length);
+
+            
+            var properties = PropertiesExtractor.GetPropertiesWithParameterAttribute(errorType);
+            DecodeAttributes(data, errorResult, properties.ToArray());
+            return errorResult;
+        }
+
 
         public ErrorFunction DecodeFunctionError(string output)
         {

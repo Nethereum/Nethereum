@@ -2,24 +2,25 @@
 using System;
 using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding;
-using static Nethereum.Contracts.SmartContractCustomErrorRevertExceptionErrorABI;
 
 namespace Nethereum.Contracts
 {
 
-    public class SmartContractCustomErrorRevertExceptionErrorABI:Exception
+    public class SmartContractCustomErrorRevertExceptionErrorDecoded:Exception
     {
         private const string ERROR_PREFIX = "Smart contract error";
         public string ExceptionEncodedData { get; }
         public string DecodedError { get;  }
         public ErrorABI ErrorABI { get; }
+        public SmartContractCustomErrorRevertException InnerCustomErrorRevert { get; }
 
-        public SmartContractCustomErrorRevertExceptionErrorABI(string encodedData, ErrorABI errorABI)
-            : base($"{ERROR_PREFIX} -- {DecodeErrorToDefaultString(errorABI, encodedData)}")
+        public SmartContractCustomErrorRevertExceptionErrorDecoded(string encodedData, ErrorABI errorABI, SmartContractCustomErrorRevertException innerCustomErrorRevert)
+            : base($"{ERROR_PREFIX} -- {DecodeErrorToDefaultString(errorABI, encodedData)}", innerCustomErrorRevert)
         {
             this.ExceptionEncodedData = encodedData;
             this.ErrorABI = errorABI;
             this.DecodedError = DecodeErrorToDefaultString(errorABI, encodedData);
+            this.InnerCustomErrorRevert = innerCustomErrorRevert;
         }
         private static string DecodeErrorToDefaultString(ErrorABI errorABI, string exceptionEncodedData)
         {
@@ -64,6 +65,11 @@ namespace Nethereum.Contracts
         public bool IsCustomErrorFor(Type errorType)
         {
             return this.ExceptionEncodedData.IsExceptionEncodedDataForError(errorType);
+        }
+
+        public object DecodeError(Type errorType)
+        {
+            return this.ExceptionEncodedData.DecodeExceptionEncodedData(errorType);
         }
 
         public TError DecodeError<TError>() where TError: class, new()

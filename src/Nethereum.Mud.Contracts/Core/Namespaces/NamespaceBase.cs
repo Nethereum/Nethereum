@@ -65,9 +65,9 @@ namespace Nethereum.Mud.Contracts.Core.Namespaces
             this.World.Systems.HandleCustomErrorException(exception);
         }
 
-        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        public SmartContractCustomErrorRevertExceptionErrorDecoded FindCustomErrorException(SmartContractCustomErrorRevertException exception)
         {
-            SmartContractCustomErrorRevertExceptionErrorABI returnValue = null;
+            SmartContractCustomErrorRevertExceptionErrorDecoded returnValue = null;
             returnValue = this.Systems.FindCustomErrorException(exception);
             if (returnValue != null) return returnValue;
             returnValue = this.World.WorldService.FindCustomErrorException(exception);
