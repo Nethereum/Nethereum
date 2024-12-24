@@ -211,7 +211,7 @@ cd Nethereum.Mud.Repositories.EntityFramework
 CALL :restorepack
 cd ..
 
-cd Nethereum.Util.RestApi
+cd Nethereum.Util.Rest
 CALL :restorepack
 cd ..
 
