@@ -31,5 +31,11 @@ namespace Nethereum.Util
             digest.DoFinal(output, 0);
             return output;
         }
+
+        public byte[] CalculateHashAsBytes(string value)
+        {
+            var input = Encoding.UTF8.GetBytes(value);
+            return CalculateHash(input);
+        }
     }
 }
