@@ -14,6 +14,11 @@ namespace Nethereum.Mud.Contracts.Core.Systems
         {
             return new SystemCallData() { CallData = GetCallData(), SystemId = SystemResource.ResourceIdEncoded };
         }
+
+        public SystemCallFromData GetSystemCallFromData(string from)
+        {
+            return new SystemCallFromData() { CallData = GetCallData(), SystemId = SystemResource.ResourceIdEncoded, From = from };
+        }
     }
 
 }
