@@ -8,7 +8,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
        where TSystemResource : SystemResource, new()
     {
         public IResource SystemResource => ResourceRegistry.GetResource<TSystemResource>();
-        public SystemCallMulticallInput(TFunctionMessage functionMessage, string contractAddressTarget) : base(functionMessage, contractAddressTarget) { }
+        public SystemCallMulticallInput(TFunctionMessage functionMessage) : base(functionMessage, null) { }
 
         public SystemCallData GetSystemCallData()
         {
