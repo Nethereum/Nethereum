@@ -18,11 +18,11 @@ namespace Nethereum.Mud.Contracts.World.Systems.BatchCallSystem
             if (this.ContractHandler is MudCallFromContractHandler mudCallFromContractHandler)
             {
 
-                return BatchCallFromRequestAndWaitForReceiptAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallFromData(mudCallFromContractHandler.Delegator)).ToList());
+                return BatchCallFromRequestAndWaitForReceiptAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallFromDataWithoutMudNamespacePrefix(mudCallFromContractHandler.Delegator)).ToList());
             }
             else
             {
-                return BatchCallRequestAndWaitForReceiptAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallData()).ToList());
+                return BatchCallRequestAndWaitForReceiptAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallDataWithoutMudNamespacePrefix()).ToList());
             }
         }
 
@@ -32,11 +32,11 @@ namespace Nethereum.Mud.Contracts.World.Systems.BatchCallSystem
             if (this.ContractHandler is MudCallFromContractHandler mudCallFromContractHandler)
             {
 
-                return BatchCallFromRequestAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallFromData(mudCallFromContractHandler.Delegator)).ToList());
+                return BatchCallFromRequestAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallFromDataWithoutMudNamespacePrefix(mudCallFromContractHandler.Delegator)).ToList());
             }
             else
             {
-                return BatchCallRequestAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallData()).ToList());
+                return BatchCallRequestAsync(systemCallMulticallInputs.Select(x => x.GetSystemCallDataWithoutMudNamespacePrefix()).ToList());
             }
         }
     }
