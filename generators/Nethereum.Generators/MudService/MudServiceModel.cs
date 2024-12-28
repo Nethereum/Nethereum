@@ -44,10 +44,10 @@ namespace Nethereum.Generators.MudService
         public string GetSystemName()
         {
             var contractClassName = CommonGenerators.GenerateClassName(this.Name);
-            if (contractClassName.EndsWith("System"))
-            {
-                return contractClassName.Substring(0, contractClassName.Length - "System".Length);
-            }
+            //if (contractClassName.EndsWith("System"))
+            //{
+            //    return contractClassName.Substring(0, contractClassName.Length - "System".Length);
+            //}
             return contractClassName;
         }
 
