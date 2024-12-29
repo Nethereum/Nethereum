@@ -14,24 +14,10 @@ namespace Nethereum.GnosisSafe.ContractDefinition
 {
 
 
-    public partial class GnosisSafeDeployment : GnosisSafeDeploymentBase
-    {
-        public GnosisSafeDeployment() : base(BYTECODE) { }
-        public GnosisSafeDeployment(string byteCode) : base(byteCode) { }
-    }
-
-    public class GnosisSafeDeploymentBase : ContractDeploymentMessage
-    {
-        public static string BYTECODE = "0x";
-        public GnosisSafeDeploymentBase() : base(BYTECODE) { }
-        public GnosisSafeDeploymentBase(string byteCode) : base(byteCode) { }
-
-    }
-
-    public partial class VERSIONFunction : VERSIONFunctionBase { }
+    public partial class VersionFunction : VersionFunctionBase { }
 
     [Function("VERSION", "string")]
-    public class VERSIONFunctionBase : FunctionMessage
+    public class VersionFunctionBase : FunctionMessage
     {
 
     }
@@ -104,7 +90,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
         public virtual string Module { get; set; }
     }
 
-  
+    
 
     public partial class ExecTransactionFunction : ExecTransactionFunctionBase { }
 
@@ -369,7 +355,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("AddedOwner")]
     public class AddedOwnerEventDTOBase : IEventDTO
     {
-        [Parameter("address", "owner", 1, false )]
+        [Parameter("address", "owner", 1, false)]
         public virtual string Owner { get; set; }
     }
 
@@ -378,9 +364,9 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ApproveHash")]
     public class ApproveHashEventDTOBase : IEventDTO
     {
-        [Parameter("bytes32", "approvedHash", 1, true )]
+        [Parameter("bytes32", "approvedHash", 1, true)]
         public virtual byte[] ApprovedHash { get; set; }
-        [Parameter("address", "owner", 2, true )]
+        [Parameter("address", "owner", 2, true)]
         public virtual string Owner { get; set; }
     }
 
@@ -389,7 +375,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ChangedFallbackHandler")]
     public class ChangedFallbackHandlerEventDTOBase : IEventDTO
     {
-        [Parameter("address", "handler", 1, false )]
+        [Parameter("address", "handler", 1, false)]
         public virtual string Handler { get; set; }
     }
 
@@ -398,7 +384,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ChangedGuard")]
     public class ChangedGuardEventDTOBase : IEventDTO
     {
-        [Parameter("address", "guard", 1, false )]
+        [Parameter("address", "guard", 1, false)]
         public virtual string Guard { get; set; }
     }
 
@@ -407,7 +393,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ChangedThreshold")]
     public class ChangedThresholdEventDTOBase : IEventDTO
     {
-        [Parameter("uint256", "threshold", 1, false )]
+        [Parameter("uint256", "threshold", 1, false)]
         public virtual BigInteger Threshold { get; set; }
     }
 
@@ -416,7 +402,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("DisabledModule")]
     public class DisabledModuleEventDTOBase : IEventDTO
     {
-        [Parameter("address", "module", 1, false )]
+        [Parameter("address", "module", 1, false)]
         public virtual string Module { get; set; }
     }
 
@@ -425,7 +411,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("EnabledModule")]
     public class EnabledModuleEventDTOBase : IEventDTO
     {
-        [Parameter("address", "module", 1, false )]
+        [Parameter("address", "module", 1, false)]
         public virtual string Module { get; set; }
     }
 
@@ -434,9 +420,9 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ExecutionFailure")]
     public class ExecutionFailureEventDTOBase : IEventDTO
     {
-        [Parameter("bytes32", "txHash", 1, false )]
+        [Parameter("bytes32", "txHash", 1, false)]
         public virtual byte[] TxHash { get; set; }
-        [Parameter("uint256", "payment", 2, false )]
+        [Parameter("uint256", "payment", 2, false)]
         public virtual BigInteger Payment { get; set; }
     }
 
@@ -445,7 +431,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ExecutionFromModuleFailure")]
     public class ExecutionFromModuleFailureEventDTOBase : IEventDTO
     {
-        [Parameter("address", "module", 1, true )]
+        [Parameter("address", "module", 1, true)]
         public virtual string Module { get; set; }
     }
 
@@ -454,7 +440,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ExecutionFromModuleSuccess")]
     public class ExecutionFromModuleSuccessEventDTOBase : IEventDTO
     {
-        [Parameter("address", "module", 1, true )]
+        [Parameter("address", "module", 1, true)]
         public virtual string Module { get; set; }
     }
 
@@ -463,9 +449,9 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("ExecutionSuccess")]
     public class ExecutionSuccessEventDTOBase : IEventDTO
     {
-        [Parameter("bytes32", "txHash", 1, false )]
+        [Parameter("bytes32", "txHash", 1, false)]
         public virtual byte[] TxHash { get; set; }
-        [Parameter("uint256", "payment", 2, false )]
+        [Parameter("uint256", "payment", 2, false)]
         public virtual BigInteger Payment { get; set; }
     }
 
@@ -474,7 +460,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("RemovedOwner")]
     public class RemovedOwnerEventDTOBase : IEventDTO
     {
-        [Parameter("address", "owner", 1, false )]
+        [Parameter("address", "owner", 1, false)]
         public virtual string Owner { get; set; }
     }
 
@@ -483,9 +469,9 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("SafeReceived")]
     public class SafeReceivedEventDTOBase : IEventDTO
     {
-        [Parameter("address", "sender", 1, true )]
+        [Parameter("address", "sender", 1, true)]
         public virtual string Sender { get; set; }
-        [Parameter("uint256", "value", 2, false )]
+        [Parameter("uint256", "value", 2, false)]
         public virtual BigInteger Value { get; set; }
     }
 
@@ -494,15 +480,15 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("SafeSetup")]
     public class SafeSetupEventDTOBase : IEventDTO
     {
-        [Parameter("address", "initiator", 1, true )]
+        [Parameter("address", "initiator", 1, true)]
         public virtual string Initiator { get; set; }
-        [Parameter("address[]", "owners", 2, false )]
+        [Parameter("address[]", "owners", 2, false)]
         public virtual List<string> Owners { get; set; }
-        [Parameter("uint256", "threshold", 3, false )]
+        [Parameter("uint256", "threshold", 3, false)]
         public virtual BigInteger Threshold { get; set; }
-        [Parameter("address", "initializer", 4, false )]
+        [Parameter("address", "initializer", 4, false)]
         public virtual string Initializer { get; set; }
-        [Parameter("address", "fallbackHandler", 5, false )]
+        [Parameter("address", "fallbackHandler", 5, false)]
         public virtual string FallbackHandler { get; set; }
     }
 
@@ -511,14 +497,14 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     [Event("SignMsg")]
     public class SignMsgEventDTOBase : IEventDTO
     {
-        [Parameter("bytes32", "msgHash", 1, true )]
+        [Parameter("bytes32", "msgHash", 1, true)]
         public virtual byte[] MsgHash { get; set; }
     }
 
-    public partial class VERSIONOutputDTO : VERSIONOutputDTOBase { }
+    public partial class VersionOutputDTO : VersionOutputDTOBase { }
 
     [FunctionOutput]
-    public class VERSIONOutputDTOBase : IFunctionOutputDTO 
+    public class VersionOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -531,7 +517,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class ApprovedHashesOutputDTO : ApprovedHashesOutputDTOBase { }
 
     [FunctionOutput]
-    public class ApprovedHashesOutputDTOBase : IFunctionOutputDTO 
+    public class ApprovedHashesOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "", 1)]
         public virtual BigInteger ReturnValue1 { get; set; }
@@ -544,7 +530,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class DomainSeparatorOutputDTO : DomainSeparatorOutputDTOBase { }
 
     [FunctionOutput]
-    public class DomainSeparatorOutputDTOBase : IFunctionOutputDTO 
+    public class DomainSeparatorOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bytes32", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
@@ -555,7 +541,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class EncodeTransactionDataOutputDTO : EncodeTransactionDataOutputDTOBase { }
 
     [FunctionOutput]
-    public class EncodeTransactionDataOutputDTOBase : IFunctionOutputDTO 
+    public class EncodeTransactionDataOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bytes", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
@@ -568,7 +554,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class ExecTransactionFromModuleReturnDataOutputDTO : ExecTransactionFromModuleReturnDataOutputDTOBase { }
 
     [FunctionOutput]
-    public class ExecTransactionFromModuleReturnDataOutputDTOBase : IFunctionOutputDTO 
+    public class ExecTransactionFromModuleReturnDataOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bool", "success", 1)]
         public virtual bool Success { get; set; }
@@ -579,7 +565,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetChainIdOutputDTO : GetChainIdOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetChainIdOutputDTOBase : IFunctionOutputDTO 
+    public class GetChainIdOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "", 1)]
         public virtual BigInteger ReturnValue1 { get; set; }
@@ -588,7 +574,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetModulesPaginatedOutputDTO : GetModulesPaginatedOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetModulesPaginatedOutputDTOBase : IFunctionOutputDTO 
+    public class GetModulesPaginatedOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("address[]", "array", 1)]
         public virtual List<string> Array { get; set; }
@@ -599,7 +585,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetOwnersOutputDTO : GetOwnersOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetOwnersOutputDTOBase : IFunctionOutputDTO 
+    public class GetOwnersOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("address[]", "", 1)]
         public virtual List<string> ReturnValue1 { get; set; }
@@ -608,7 +594,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetStorageAtOutputDTO : GetStorageAtOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetStorageAtOutputDTOBase : IFunctionOutputDTO 
+    public class GetStorageAtOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bytes", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
@@ -617,7 +603,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetThresholdOutputDTO : GetThresholdOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetThresholdOutputDTOBase : IFunctionOutputDTO 
+    public class GetThresholdOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "", 1)]
         public virtual BigInteger ReturnValue1 { get; set; }
@@ -626,7 +612,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class GetTransactionHashOutputDTO : GetTransactionHashOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetTransactionHashOutputDTOBase : IFunctionOutputDTO 
+    public class GetTransactionHashOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bytes32", "", 1)]
         public virtual byte[] ReturnValue1 { get; set; }
@@ -635,7 +621,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class IsModuleEnabledOutputDTO : IsModuleEnabledOutputDTOBase { }
 
     [FunctionOutput]
-    public class IsModuleEnabledOutputDTOBase : IFunctionOutputDTO 
+    public class IsModuleEnabledOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bool", "", 1)]
         public virtual bool ReturnValue1 { get; set; }
@@ -644,7 +630,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class IsOwnerOutputDTO : IsOwnerOutputDTOBase { }
 
     [FunctionOutput]
-    public class IsOwnerOutputDTOBase : IFunctionOutputDTO 
+    public class IsOwnerOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("bool", "", 1)]
         public virtual bool ReturnValue1 { get; set; }
@@ -653,32 +639,22 @@ namespace Nethereum.GnosisSafe.ContractDefinition
     public partial class NonceOutputDTO : NonceOutputDTOBase { }
 
     [FunctionOutput]
-    public class NonceOutputDTOBase : IFunctionOutputDTO 
+    public class NonceOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "", 1)]
         public virtual BigInteger ReturnValue1 { get; set; }
     }
-
-
-
-
-
-
-
-
 
 
 
     public partial class SignedMessagesOutputDTO : SignedMessagesOutputDTOBase { }
 
     [FunctionOutput]
-    public class SignedMessagesOutputDTOBase : IFunctionOutputDTO 
+    public class SignedMessagesOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("uint256", "", 1)]
         public virtual BigInteger ReturnValue1 { get; set; }
     }
-
-
 
 
 }

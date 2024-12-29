@@ -14,26 +14,17 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
 using Nethereum.Signer.EIP712;
 using Nethereum.RLP;
+using Nethereum.Web3;
 
 
 namespace Nethereum.GnosisSafe
 {
-    public partial class GnosisSafeService
+    public partial class GnosisSafeService:ContractWeb3ServiceBase
     {
         public class SafeSignature
         {
             public string Address { get; set; }
             public string Signature { get; set; }
-        }
-
-        public Task<string> VersionQueryAsync(VERSIONFunction versionFunction, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<VERSIONFunction, string>(versionFunction, blockParameter);
-        }
-
-        public Task<string> VersionQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<VERSIONFunction, string>(null, blockParameter);
         }
 
         public async Task<ExecTransactionFunction> BuildTransactionAsync(
