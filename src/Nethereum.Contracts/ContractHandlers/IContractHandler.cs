@@ -11,7 +11,7 @@ namespace Nethereum.Contracts.ContractHandlers
     public interface IContractHandler
     {
         string ContractAddress { get; }
-        EthApiContractService EthApiContractService { get; }
+        IEthApiContractService EthApiContractService { get; }
 
 #if !DOTNET35
         Task<HexBigInteger> EstimateGasAsync<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage transactionMessage = null) where TEthereumContractFunctionMessage : FunctionMessage, new();

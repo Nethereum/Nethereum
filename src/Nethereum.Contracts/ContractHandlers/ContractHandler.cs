@@ -11,7 +11,7 @@ namespace Nethereum.Contracts.ContractHandlers
 {
     public class ContractHandler : IContractHandler
     {
-        public ContractHandler(string contractAddress, EthApiContractService ethApiContractService,
+        public ContractHandler(string contractAddress, IEthApiContractService ethApiContractService,
             string addressFrom = null)
         {
             ContractAddress = contractAddress;
@@ -22,7 +22,7 @@ namespace Nethereum.Contracts.ContractHandlers
         public string AddressFrom { get; protected set; }
 
         public string ContractAddress { get; }
-        public EthApiContractService EthApiContractService { get; }
+        public IEthApiContractService EthApiContractService { get; protected set; }
 
         public Event<TEventType> GetEvent<TEventType>() where TEventType : IEventDTO, new()
         {
