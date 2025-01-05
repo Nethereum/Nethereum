@@ -34,7 +34,7 @@ namespace Nethereum.Mud.Contracts.Core
 
         public static string GetFunctionSha3SignatureWithoutMudNamespacePrefix(this FunctionABI functionABI)
         {
-            var signatureWithoutNamePrefix = GetFunctionSignatureWithoutMudNamespacePrefix(functionABI);
+            var signatureWithoutNamePrefix = functionABI.GetFunctionNameWithoutMudNamespacePrefix();
             var signatureEncoder = new SignatureEncoder();
             return signatureEncoder.GenerateSha3Signature(signatureWithoutNamePrefix, functionABI.InputParameters, 4);
         }

@@ -11,12 +11,13 @@ using Nethereum.Contracts;
 using Nethereum.Mud.Contracts.World.ContractDefinition;
 using Nethereum.Web3;
 using Nethereum.Mud.Contracts.Core.Systems;
+using Nethereum.Mud.Contracts.Core;
 namespace Nethereum.Mud.Contracts.ContractHandlers
 {
     public class MudCallFromContractHandler : ContractHandler
     {
 
-        public static MudCallFromContractHandler Create(string contractAddress, EthApiContractService ethApiContractService, string delegator, IResource resource, string addressFrom = null)
+        public static MudCallFromContractHandler Create(string contractAddress, IEthApiContractService ethApiContractService, string delegator, IResource resource, string addressFrom = null)
         {
             return new MudCallFromContractHandler(contractAddress, ethApiContractService, delegator, resource, addressFrom);
         }
@@ -29,7 +30,7 @@ namespace Nethereum.Mud.Contracts.ContractHandlers
             return handler;
         }
 
-        public MudCallFromContractHandler(string contractAddress, EthApiContractService ethApiContractService, string delegator, IResource resource,
+        public MudCallFromContractHandler(string contractAddress, IEthApiContractService ethApiContractService, string delegator, IResource resource,
             string addressFrom = null):base(contractAddress, ethApiContractService, addressFrom)
         {
             Delegator = delegator;
@@ -63,7 +64,7 @@ namespace Nethereum.Mud.Contracts.ContractHandlers
             }
 
             callFromFunction.SystemId = Resource.ResourceIdEncoded;
-            callFromFunction.CallData = functionMessage.GetCallData();
+            callFromFunction.CallData = functionMessage.GetCallDataWithoutMudNamespaceSignaturePrefix();
             SetAddressFrom(callFromFunction);
             return callFromFunction;
         }
