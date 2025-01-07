@@ -14,7 +14,7 @@ using MyProject.Contracts.MyWorld.Systems.IncrementSystem.ContractDefinition;
 
 namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
 {
-    public partial class IncrementSystemService: ContractWeb3ServiceBase
+    public partial class IncrementSystemService: IncrementSystemServiceBase
     {
         public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, IncrementSystemDeployment incrementSystemDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
@@ -36,13 +36,23 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
         {
         }
 
+    }
+
+
+    public partial class IncrementSystemServiceBase: ContractWeb3ServiceBase
+    {
+
+        public IncrementSystemServiceBase(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+        {
+        }
+
         public Task<string> MsgSenderQueryAsync(MsgSenderFunction msgSenderFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<MsgSenderFunction, string>(msgSenderFunction, blockParameter);
         }
 
         
-        public Task<string> MsgSenderQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<string> MsgSenderQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<MsgSenderFunction, string>(null, blockParameter);
         }
@@ -53,7 +63,7 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
         }
 
         
-        public Task<BigInteger> MsgValueQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> MsgValueQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<MsgValueFunction, BigInteger>(null, blockParameter);
         }
@@ -64,27 +74,27 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
         }
 
         
-        public Task<string> WorldQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<string> WorldQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<WorldFunction, string>(null, blockParameter);
         }
 
-        public Task<string> IncrementRequestAsync(IncrementFunction incrementFunction)
+        public virtual Task<string> IncrementRequestAsync(IncrementFunction incrementFunction)
         {
              return ContractHandler.SendRequestAsync(incrementFunction);
         }
 
-        public Task<string> IncrementRequestAsync()
+        public virtual Task<string> IncrementRequestAsync()
         {
              return ContractHandler.SendRequestAsync<IncrementFunction>();
         }
 
-        public Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(IncrementFunction incrementFunction, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(IncrementFunction incrementFunction, CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync(incrementFunction, cancellationToken);
         }
 
-        public Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> IncrementRequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync<IncrementFunction>(null, cancellationToken);
         }
@@ -95,7 +105,7 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
         }
 
         
-        public Task<bool> SupportsInterfaceQueryAsync(byte[] interfaceId, BlockParameter blockParameter = null)
+        public virtual Task<bool> SupportsInterfaceQueryAsync(byte[] interfaceId, BlockParameter blockParameter = null)
         {
             var supportsInterfaceFunction = new SupportsInterfaceFunction();
                 supportsInterfaceFunction.InterfaceId = interfaceId;

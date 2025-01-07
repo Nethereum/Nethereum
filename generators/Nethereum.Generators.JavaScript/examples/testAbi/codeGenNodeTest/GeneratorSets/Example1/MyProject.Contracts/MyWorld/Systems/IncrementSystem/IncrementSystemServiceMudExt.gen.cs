@@ -21,7 +21,7 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
 {
     public class IncrementSystemServiceResource : SystemResource
     {
-        public IncrementSystemServiceResource() : base("Increment", "MyWorld") { }
+        public IncrementSystemServiceResource() : base("IncrementSystem", "MyWorld") { }
     }
     public partial class IncrementSystemService: ISystemService<IncrementSystemServiceResource> 
     {
@@ -36,23 +36,23 @@ namespace MyProject.Contracts.MyWorld.Systems.IncrementSystem
         }
         
 
-        public List<FunctionABI> GetSystemFunctionABIs()
+        public virtual List<FunctionABI> GetSystemFunctionABIs()
         {
             return GetAllFunctionABIs();
         }
 
-        public string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+        public virtual string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
         {
             return new IncrementSystemDeployment().CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);
         }
 
-        public Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+        public virtual Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
         {
             var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;
             var deployment = new IncrementSystemDeployment();
             return create2ProxyDeployerService.DeployContractRequestAsync(deployment, deployerAddress, salt, byteCodeLibraries);
         }
-        public Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
+        public virtual Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
         {
             var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;
             var deployment = new IncrementSystemDeployment();

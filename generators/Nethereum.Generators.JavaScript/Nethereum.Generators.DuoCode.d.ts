@@ -757,6 +757,8 @@ declare module Nethereum {
 
             // Nethereum.Generators.Service.ServiceCSharpTemplate
             export interface ServiceCSharpTemplate extends CQS.ClassTemplateBase$1<ServiceModel>, Core.IClassTemplate {
+                GenerateMainClass(): string;
+                GenerateBaseClass(): string;
             }
             export interface ServiceCSharpTemplateTypeFunc extends TypeFunction {
                 (): ServiceCSharpTemplateTypeFunc;
@@ -1626,6 +1628,8 @@ declare module Nethereum {
 
             // Nethereum.Generators.MudTable.MudTableCSharpTemplate
             export interface MudTableCSharpTemplate extends CQS.ClassTemplateBase$1<MudTableModel>, Core.IClassTemplate {
+                GenerateDirectAccessProperties(parameters: Model.ParameterABI[], isKey: boolean, spacing: string): string;
+                GenerateDirectAccessProperty(parameter: Model.ParameterABI, isKey: boolean, spacing: string): string;
                 GetBaseConstructor(): string;
                 GetSingletonServiceClass(): string;
                 GetServiceClass(): string;

@@ -14,7 +14,7 @@ using MyProject.Contracts.Standard_Token.ContractDefinition;
 
 namespace MyProject.Contracts.Standard_Token
 {
-    public partial class StandardTokenService: ContractWeb3ServiceBase
+    public partial class StandardTokenService: StandardTokenServiceBase
     {
         public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.IWeb3 web3, StandardTokenDeployment standardTokenDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
@@ -36,13 +36,23 @@ namespace MyProject.Contracts.Standard_Token
         {
         }
 
+    }
+
+
+    public partial class StandardTokenServiceBase: ContractWeb3ServiceBase
+    {
+
+        public StandardTokenServiceBase(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+        {
+        }
+
         public Task<BigInteger> AllowanceQueryAsync(AllowanceFunction allowanceFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<AllowanceFunction, BigInteger>(allowanceFunction, blockParameter);
         }
 
         
-        public Task<BigInteger> AllowanceQueryAsync(string owner, string spender, BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> AllowanceQueryAsync(string owner, string spender, BlockParameter blockParameter = null)
         {
             var allowanceFunction = new AllowanceFunction();
                 allowanceFunction.Owner = owner;
@@ -57,7 +67,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<BigInteger> AllowedQueryAsync(string returnValue1, string returnValue2, BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> AllowedQueryAsync(string returnValue1, string returnValue2, BlockParameter blockParameter = null)
         {
             var allowedFunction = new AllowedFunction();
                 allowedFunction.ReturnValue1 = returnValue1;
@@ -66,17 +76,17 @@ namespace MyProject.Contracts.Standard_Token
             return ContractHandler.QueryAsync<AllowedFunction, BigInteger>(allowedFunction, blockParameter);
         }
 
-        public Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
+        public virtual Task<string> ApproveRequestAsync(ApproveFunction approveFunction)
         {
              return ContractHandler.SendRequestAsync(approveFunction);
         }
 
-        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(ApproveFunction approveFunction, CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync(approveFunction, cancellationToken);
         }
 
-        public Task<string> ApproveRequestAsync(string spender, BigInteger value)
+        public virtual Task<string> ApproveRequestAsync(string spender, BigInteger value)
         {
             var approveFunction = new ApproveFunction();
                 approveFunction.Spender = spender;
@@ -85,7 +95,7 @@ namespace MyProject.Contracts.Standard_Token
              return ContractHandler.SendRequestAsync(approveFunction);
         }
 
-        public Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(string spender, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> ApproveRequestAndWaitForReceiptAsync(string spender, BigInteger value, CancellationTokenSource cancellationToken = null)
         {
             var approveFunction = new ApproveFunction();
                 approveFunction.Spender = spender;
@@ -100,7 +110,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<BigInteger> BalanceOfQueryAsync(string owner, BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> BalanceOfQueryAsync(string owner, BlockParameter blockParameter = null)
         {
             var balanceOfFunction = new BalanceOfFunction();
                 balanceOfFunction.Owner = owner;
@@ -114,7 +124,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<BigInteger> BalancesQueryAsync(string returnValue1, BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> BalancesQueryAsync(string returnValue1, BlockParameter blockParameter = null)
         {
             var balancesFunction = new BalancesFunction();
                 balancesFunction.ReturnValue1 = returnValue1;
@@ -128,7 +138,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<byte> DecimalsQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<byte> DecimalsQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<DecimalsFunction, byte>(null, blockParameter);
         }
@@ -139,7 +149,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<string> NameQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<string> NameQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<NameFunction, string>(null, blockParameter);
         }
@@ -150,7 +160,7 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<string> SymbolQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<string> SymbolQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<SymbolFunction, string>(null, blockParameter);
         }
@@ -161,22 +171,22 @@ namespace MyProject.Contracts.Standard_Token
         }
 
         
-        public Task<BigInteger> TotalSupplyQueryAsync(BlockParameter blockParameter = null)
+        public virtual Task<BigInteger> TotalSupplyQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<TotalSupplyFunction, BigInteger>(null, blockParameter);
         }
 
-        public Task<string> TransferRequestAsync(TransferFunction transferFunction)
+        public virtual Task<string> TransferRequestAsync(TransferFunction transferFunction)
         {
              return ContractHandler.SendRequestAsync(transferFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(TransferFunction transferFunction, CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
         }
 
-        public Task<string> TransferRequestAsync(string to, BigInteger value)
+        public virtual Task<string> TransferRequestAsync(string to, BigInteger value)
         {
             var transferFunction = new TransferFunction();
                 transferFunction.To = to;
@@ -185,7 +195,7 @@ namespace MyProject.Contracts.Standard_Token
              return ContractHandler.SendRequestAsync(transferFunction);
         }
 
-        public Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> TransferRequestAndWaitForReceiptAsync(string to, BigInteger value, CancellationTokenSource cancellationToken = null)
         {
             var transferFunction = new TransferFunction();
                 transferFunction.To = to;
@@ -194,17 +204,17 @@ namespace MyProject.Contracts.Standard_Token
              return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFunction, cancellationToken);
         }
 
-        public Task<string> TransferFromRequestAsync(TransferFromFunction transferFromFunction)
+        public virtual Task<string> TransferFromRequestAsync(TransferFromFunction transferFromFunction)
         {
              return ContractHandler.SendRequestAsync(transferFromFunction);
         }
 
-        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(TransferFromFunction transferFromFunction, CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync(transferFromFunction, cancellationToken);
         }
 
-        public Task<string> TransferFromRequestAsync(string from, string to, BigInteger value)
+        public virtual Task<string> TransferFromRequestAsync(string from, string to, BigInteger value)
         {
             var transferFromFunction = new TransferFromFunction();
                 transferFromFunction.From = from;
@@ -214,7 +224,7 @@ namespace MyProject.Contracts.Standard_Token
              return ContractHandler.SendRequestAsync(transferFromFunction);
         }
 
-        public Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(string from, string to, BigInteger value, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> TransferFromRequestAndWaitForReceiptAsync(string from, string to, BigInteger value, CancellationTokenSource cancellationToken = null)
         {
             var transferFromFunction = new TransferFromFunction();
                 transferFromFunction.From = from;

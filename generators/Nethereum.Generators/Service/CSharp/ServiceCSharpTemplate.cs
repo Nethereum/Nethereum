@@ -18,9 +18,9 @@ namespace Nethereum.Generators.Service
         {
             return
                 $@"{GenerateMainClass()}
-                   {SpaceUtils.NoTabs}
-                   {SpaceUtils.NoTabs}
-                   {GenerateBaseClass()}";
+{SpaceUtils.NoTabs}
+{SpaceUtils.NoTabs}
+{GenerateBaseClass()}";
         }
 
 
