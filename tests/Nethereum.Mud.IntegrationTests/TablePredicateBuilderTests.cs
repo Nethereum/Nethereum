@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using MyProject.Contracts.MyWorld.Tables;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.IntegrationTests.MudTest.Tables;
 using Nethereum.Mud.Repositories.EntityFramework;
 using Nethereum.Mud.TableRepository;
