@@ -11,7 +11,7 @@
     <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.LiteFx</AssemblyName>
     <PackageId>Nethereum.LiteFx</PackageId>
-	  <LangVersion>preview</LangVersion>
+	 <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
