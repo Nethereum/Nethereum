@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Signer.UnitTests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-	  <TargetFrameworks>net6.0</TargetFrameworks>
+	<TargetFrameworks>net461;net6.0;net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.UnitTests</AssemblyName>
     <PackageId>Nethereum.Signer.UnitTests</PackageId>
   </PropertyGroup>
