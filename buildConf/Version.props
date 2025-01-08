@@ -2,16 +2,16 @@
   <PropertyGroup>
     <VersionMajor>4</VersionMajor>
     <VersionMinor>27</VersionMinor>
-    <VersionPatch>0</VersionPatch>
+    <VersionPatch>1</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
     <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
-    
-    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
-    
-    <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion> 
-    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
+
+    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion>
+
+    <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion>
+    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion>
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
 
