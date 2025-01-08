@@ -22,6 +22,7 @@ using System.Net;
 using Nethereum.Mud.Contracts.Store;
 using Nethereum.Mud.IntegrationTests.MudTest;
 using Nethereum.Mud.Contracts.ContractHandlers;
+using MyProject.Contracts.MyWorld.Tables;
 
 
 

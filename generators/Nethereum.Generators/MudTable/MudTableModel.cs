@@ -20,11 +20,13 @@ namespace Nethereum.Generators.MudTable
             NamespaceDependencies.AddRange(new[]
             { "Nethereum.ABI.FunctionEncoding.Attributes",
               "Nethereum.Mud",
+              "Nethereum.RPC.Eth.DTOs",
               "Nethereum.Mud.Contracts.Core.Tables",
               "Nethereum.Web3",
               "System.Collections.Generic",
               "System.Numerics",
-              
+              "System.Threading.Tasks"
+
             });
         }
 

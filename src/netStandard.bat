@@ -138,7 +138,7 @@ cd Nethereum.Mud.Contracts
 CALL :build
 cd ..
 
-cd Nethereum.Util.RestApi
+cd Nethereum.Util.Rest
 CALL :build
 cd ..
 

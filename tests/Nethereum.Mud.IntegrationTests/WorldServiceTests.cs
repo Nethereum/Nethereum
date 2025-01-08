@@ -24,6 +24,7 @@ using Nethereum.Util;
 using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
 using Nethereum.ABI;
 using Nethereum.RLP;
+using MyProject.Contracts.MyWorld.Tables;
 
 
 namespace Nethereum.Mud.IntegrationTests
@@ -229,10 +230,10 @@ namespace Nethereum.Mud.IntegrationTests
             returnedItem.Keys.Id = 1;
             returnedItem = await worldService.GetRecordTableQueryAsync<ItemTableRecord, ItemTableRecord.ItemKey, ItemTableRecord.ItemValue>(returnedItem);
             Assert.Equal("Item1", returnedItem.Values.Name);
-            Assert.Equal(100, returnedItem.Values.Price);
+            Assert.Equal((uint)100, returnedItem.Values.Price);
             Assert.Equal("Description", returnedItem.Values.Description);
             Assert.Equal("Owner", returnedItem.Values.Owner);
-            Assert.Equal(1, returnedItem.Keys.Id);
+            Assert.Equal((uint)1, returnedItem.Keys.Id);
         }
 
         [Fact]

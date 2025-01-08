@@ -9,28 +9,22 @@ using Nethereum.Contracts;
 using Nethereum.Contracts.TransactionHandlers.MultiSend;
 using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
 using Nethereum.Signer.EIP712;
+using Nethereum.RLP;
+using Nethereum.Web3;
+
 
 namespace Nethereum.GnosisSafe
 {
-    public partial class GnosisSafeService
+    public partial class GnosisSafeService:ContractWeb3ServiceBase
     {
         public class SafeSignature
         {
             public string Address { get; set; }
             public string Signature { get; set; }
-        }
-
-        public Task<string> VersionQueryAsync(VERSIONFunction versionFunction, BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<VERSIONFunction, string>(versionFunction, blockParameter);
-        }
-
-        public Task<string> VersionQueryAsync(BlockParameter blockParameter = null)
-        {
-            return ContractHandler.QueryAsync<VERSIONFunction, string>(null, blockParameter);
         }
 
         public async Task<ExecTransactionFunction> BuildTransactionAsync(
@@ -114,7 +108,7 @@ namespace Nethereum.GnosisSafe
             BigInteger chainId,
             params string[] privateKeySigners)
         {
-            var messageSigner = new MessageSigner();
+            var messageSigner = new EthereumMessageSigner();
 
             var typedDefinition = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
 
@@ -123,8 +117,13 @@ namespace Nethereum.GnosisSafe
             foreach (var privateKey in privateKeySigners)
             {
                 var publicAddress = EthECKey.GetPublicAddress(privateKey);
-                var signature = messageSigner.Sign(hashEncoded, privateKey);
-                signatures.Add(new SafeSignature() { Address = publicAddress, Signature = signature });
+                var signatureString = messageSigner.Sign(hashEncoded, privateKey);
+                var signature = MessageSigner.ExtractEcdsaSignature(signatureString);
+                var v = signature.V.ToBigIntegerFromRLPDecoded();
+                signature.V = new[] { (byte)(v + 4) };
+
+                signatureString = signature.CreateStringSignature();
+                signatures.Add(new SafeSignature() { Address = publicAddress, Signature = signatureString });
             }
 
             var fullSignature = GetCombinedSignaturesInOrder(signatures);
@@ -151,6 +150,7 @@ namespace Nethereum.GnosisSafe
             var fullSignatures = "0x";
             foreach (var signature in orderedSignatures)
             {
+               
                 fullSignatures += signature.Signature.RemoveHexPrefix();
             }
 

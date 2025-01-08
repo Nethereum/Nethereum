@@ -3730,9 +3730,10 @@ $d.define(Nethereum.Generators.MudService.MudServiceModel, Nethereum.Generators.
     };
     $p.GetSystemName = function MudServiceModel_GetSystemName() {
         var contractClassName = this.get_CommonGenerators().GenerateClassName(this.get_Name());
-        if (contractClassName.EndsWith("System")) {
-            return contractClassName.Substring$1(0, contractClassName.length - "System".length);
-        }
+        //if (contractClassName.EndsWith("System"))
+        //{
+        //    return contractClassName.Substring(0, contractClassName.Length - "System".Length);
+        //}
         return contractClassName;
     };
     $p.InitialiseNamespaceDependencies = function MudServiceModel_InitialiseNamespaceDependencies() {
@@ -3757,7 +3758,7 @@ $d.define(Nethereum.Generators.MudService.MudServiceCSharpTemplate, Nethereum.Ge
         var resourceName = this.get_Model().GetResourceClassName();
         var serviceName = this.get_Model().GetTypeName();
 
-        return String.Format("{0}\r\n{1}public partial class {2}: ISystemService<{3}> \r\n{4}{{\r\n{5}public IResource Resource => this.GetResource();\r\n{6}\r\n{7}public ISystemServiceResourceRegistration SystemServiceResourceRegistrator\r\n{8}{{\r\n{9}get\r\n{10}{{\r\n{11}return this.GetSystemServiceResourceRegistration<{12}, {13}>();\r\n{14}}}\r\n{15}}}\r\n{16}\r\n{17}\r\n{18}public List<FunctionABI> GetSystemFunctionABIs()\r\n{19}{{\r\n{20}return GetAllFunctionABIs();\r\n{21}}}\r\n{22}\r\n{23}public string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)\r\n{24}{{\r\n{25}return new {26}().CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);\r\n{27}}}\r\n{28}\r\n{29}public Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)\r\n{30}{{\r\n{31}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;\r\n{32}var deployment = new {33}();\r\n{34}return create2ProxyDeployerService.DeployContractRequestAsync(deployment, deployerAddress, salt, byteCodeLibraries);\r\n{35}}}\r\n{36}public Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)\r\n{37}{{\r\n{38}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;\r\n{39}var deployment = new {40}();\r\n{41}return create2ProxyDeployerService.DeployContractRequestAndWaitForReceiptAsync(deployment, deployerAddress, salt, byteCodeLibraries, cancellationToken);\r\n{42}}}\r\n{43}}}", 
+        return String.Format("{0}\r\n{1}public partial class {2}: ISystemService<{3}> \r\n{4}{{\r\n{5}public IResource Resource => this.GetResource();\r\n{6}\r\n{7}public ISystemServiceResourceRegistration SystemServiceResourceRegistrator\r\n{8}{{\r\n{9}get\r\n{10}{{\r\n{11}return this.GetSystemServiceResourceRegistration<{12}, {13}>();\r\n{14}}}\r\n{15}}}\r\n{16}\r\n{17}\r\n{18}public virtual List<FunctionABI> GetSystemFunctionABIs()\r\n{19}{{\r\n{20}return GetAllFunctionABIs();\r\n{21}}}\r\n{22}\r\n{23}public virtual string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)\r\n{24}{{\r\n{25}return new {26}().CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);\r\n{27}}}\r\n{28}\r\n{29}public virtual Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)\r\n{30}{{\r\n{31}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;\r\n{32}var deployment = new {33}();\r\n{34}return create2ProxyDeployerService.DeployContractRequestAsync(deployment, deployerAddress, salt, byteCodeLibraries);\r\n{35}}}\r\n{36}public virtual Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)\r\n{37}{{\r\n{38}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;\r\n{39}var deployment = new {40}();\r\n{41}return create2ProxyDeployerService.DeployContractRequestAndWaitForReceiptAsync(deployment, deployerAddress, salt, byteCodeLibraries, cancellationToken);\r\n{42}}}\r\n{43}}}", 
             [this.GenerateSystemClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), 
                 resourceName, Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
@@ -3946,8 +3947,8 @@ $d.define(Nethereum.Generators.MudTable.MudTableModel, Nethereum.Generators.Core
     };
     $p.InitialiseNamespaceDependencies = function MudTableModel_InitialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["Nethereum.ABI.FunctionEncoding.Attributes", 
-            "Nethereum.Mud", "Nethereum.Mud.Contracts.Core.Tables", "Nethereum.Web3", "System.Collections.Generic", 
-            "System.Numerics"]));
+            "Nethereum.Mud", "Nethereum.RPC.Eth.DTOs", "Nethereum.Mud.Contracts.Core.Tables", "Nethereum.Web3", 
+            "System.Collections.Generic", "System.Numerics", "System.Threading.Tasks"]));
     };
     $p.IsSingleton = function MudTableModel_IsSingleton() {
         return this.get_MudTable().get_Keys() == null || this.get_MudTable().get_Keys().length == 0;
@@ -3976,26 +3977,29 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
     };
     $p.GenerateClass = function MudTableCSharpTemplate_GenerateClass() {
         if (this.get_Model().IsSingleton()) {
-            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecordSingleton<{4}.{5}> \r\n{6}{{\r\n{7}public {8}() : {9}\r\n{10}{{\r\n{11}\r\n{12}}}\r\n{13}\r\n{14}public partial class {15}\r\n{16}{{\r\n{17}          \r\n{18}}}\r\n{19}}}", 
+            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecordSingleton<{4}.{5}> \r\n{6}{{\r\n{7}public {8}() : {9}\r\n{10}{{\r\n{11}\r\n{12}}}\r\n{13}\r\n{14}\r\n{15}\r\n{16}public partial class {17}\r\n{18}{{\r\n{19}          \r\n{20}}}\r\n{21}}}", 
                 [this.GetSingletonServiceClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), this.get_Model().GetValueTypeName(), 
                     Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     this.get_Model().GetTypeName(), this.GetBaseConstructor(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                    Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                    this.get_Model().GetValueTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                    this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties$1(this.get_Model().get_MudTable().get_ValueSchema(), 
+                    Nethereum.Generators.Core.SpaceUtils().NoTabs, this.GenerateDirectAccessProperties(this.get_Model().get_MudTable().get_ValueSchema(), 
+                        false, Nethereum.Generators.Core.SpaceUtils().Two___Tabs), Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetValueTypeName(), 
+                    Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties$1(this.get_Model().get_MudTable().get_ValueSchema(), 
                         Nethereum.Generators.Core.SpaceUtils().Three____Tabs), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().One__Tab]);
         }
         else {
-            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecord<{4}.{5}, {6}.{7}> \r\n{8}{{\r\n{9}public {10}() : {11}\r\n{12}{{\r\n{13}\r\n{14}}}\r\n{15}\r\n{16}public partial class {17}\r\n{18}{{\r\n{19}\r\n{20}}}\r\n{21}\r\n{22}public partial class {23}\r\n{24}{{\r\n{25}          \r\n{26}}}\r\n{27}}}", 
+            return String.Format("{0}\r\n{1}\r\n{2}public partial class {3} : TableRecord<{4}.{5}, {6}.{7}> \r\n{8}{{\r\n{9}public {10}() : {11}\r\n{12}{{\r\n{13}\r\n{14}}}\r\n{15}\r\n{16}\r\n{17}\r\n{18}public partial class {19}\r\n{20}{{\r\n{21}\r\n{22}}}\r\n{23}\r\n{24}public partial class {25}\r\n{26}{{\r\n{27}          \r\n{28}}}\r\n{29}}}", 
                 [this.GetServiceClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), this.get_Model().GetKeyTypeName(), 
                     this.get_Model().GetTypeName(), this.get_Model().GetValueTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetTypeName(), 
                     this.GetBaseConstructor(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                    Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+                    Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.GenerateDirectAccessProperties(this.get_Model().get_MudTable().get_Keys(), 
+                        true, Nethereum.Generators.Core.SpaceUtils().Two___Tabs), this.GenerateDirectAccessProperties(this.get_Model().get_MudTable().get_ValueSchema(), 
+                        false, Nethereum.Generators.Core.SpaceUtils().Two___Tabs), Nethereum.Generators.Core.SpaceUtils().NoTabs, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetKeyTypeName(), 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllProperties$1(this.get_Model().get_MudTable().get_Keys(), 
                         Nethereum.Generators.Core.SpaceUtils().Three____Tabs), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
@@ -4006,6 +4010,23 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
                     Nethereum.Generators.Core.SpaceUtils().One__Tab]);
         }
 
+    };
+    $p.GenerateDirectAccessProperties = function MudTableCSharpTemplate_GenerateDirectAccessProperties(parameters, isKey, spacing) {
+        return String.Join$1(String, System.Environment().NewLine, System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(function(x) {
+                return this.GenerateDirectAccessProperty(x, isKey, spacing);
+            }, this)));
+    };
+    $p.GenerateDirectAccessProperty = function MudTableCSharpTemplate_GenerateDirectAccessProperty(parameter, isKey, spacing) {
+        var typeMapper = new Nethereum.Generators.Core.ABITypeToCSharpType.ctor();
+        var parameterAbiModelTypeMap = new Nethereum.Generators.Core.ParameterABIModelTypeMap.ctor(typeMapper, 
+            0 /* CodeGenLanguage.CSharp */);
+        var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(parameter, 0 /* CodeGenLanguage.CSharp */);
+        var access = isKey ? "Keys" : "Values";
+        return String.Format("{0}/// <summary>\r\n{1}/// Direct access to the {2} property '{3}'.\r\n{4}/// </summary>\r\n{5}public virtual {6} {7} => {8}.{9};", 
+            [spacing, spacing, (isKey ? "key" : "value"), parameterModel.GetPropertyName(), spacing, 
+                spacing, parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(parameter), parameterModel.GetPropertyName(), 
+                access, parameterModel.GetPropertyName()]);
     };
     $p.GetBaseConstructor = function MudTableCSharpTemplate_GetBaseConstructor() {
         if (String.IsNullOrEmpty(this.get_Model().get_MudTable().get_MudNamespace())) {
@@ -4024,12 +4045,77 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
                 this.get_Model().GetServiceTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GetServiceClass = function MudTableCSharpTemplate_GetServiceClass() {
-        return String.Format("{0}public partial class {1} : TableService<{2}, {3}.{4}, {5}.{6}>\r\n{7}{{ \r\n{8}public {9}(IWeb3 web3, string contractAddress) : base(web3, contractAddress) {{}}\r\n{10}}}", 
+        return String.Format("{0}public partial class {1} : TableService<{2}, {3}.{4}, {5}.{6}>\r\n{7}{{ \r\n{8}public {9}(IWeb3 web3, string contractAddress) : base(web3, contractAddress) {{}}\r\n{10}\r\n{11}\r\n{12}\r\n{13}}}", 
             [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetServiceTypeName(), 
                 this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), this.get_Model().GetKeyTypeName(), 
                 this.get_Model().GetTypeName(), this.get_Model().GetValueTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                 Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetServiceTypeName(), 
+                this.GenerateGetTableRecordMethod(), this.GenerateSetRecordRequestMethod(), this.GenerateSetRecordRequestAndWaitMethod(), 
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+    };
+    $p.GenerateGetTableRecordMethod = function MudTableCSharpTemplate_GenerateGetTableRecordMethod() {
+        var keyParams = this.GenerateKeyPropertiesInitialization(Nethereum.Generators.Core.SpaceUtils().Three____Tabs);
+        return String.Format("{0}public virtual Task<{1}> GetTableRecordAsync({2}, BlockParameter blockParameter = null)\r\n{3}{{\r\n{4}\r\n{5}return GetTableRecordAsync(_key, blockParameter);\r\n{6}}}", 
+            [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetTypeName(), this.GenerateMethodParameters(this.get_Model().get_MudTable().get_Keys()), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, keyParams, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
+    };
+    $p.GenerateSetRecordRequestMethod = function MudTableCSharpTemplate_GenerateSetRecordRequestMethod() {
+        var keyParams = this.GenerateKeyPropertiesInitialization(Nethereum.Generators.Core.SpaceUtils().Three____Tabs);
+        var valueParams = this.GenerateValuePropertiesInitialization(Nethereum.Generators.Core.SpaceUtils().Three____Tabs);
+        return String.Format("{0}public virtual Task<string> SetRecordRequestAsync({1}, {2})\r\n{3}{{\r\n{4}\r\n{5}\r\n{6}return SetRecordRequestAsync(_key, _values);\r\n{7}}}", 
+            [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.GenerateMethodParameters(this.get_Model().get_MudTable().get_Keys()), 
+                this.GenerateValueParameters(this.get_Model().get_MudTable().get_ValueSchema()), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                keyParams, valueParams, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
+    };
+    $p.GenerateSetRecordRequestAndWaitMethod = function MudTableCSharpTemplate_GenerateSetRecordRequestAndWaitMethod() {
+        var keyParams = this.GenerateKeyPropertiesInitialization(Nethereum.Generators.Core.SpaceUtils().Three____Tabs);
+        var valueParams = this.GenerateValuePropertiesInitialization(Nethereum.Generators.Core.SpaceUtils().Three____Tabs);
+        return String.Format("{0}public virtual Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync({1}, {2})\r\n{3}{{\r\n{4}\r\n{5}\r\n{6}return SetRecordRequestAndWaitForReceiptAsync(_key, _values);\r\n{7}}}", 
+            [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.GenerateMethodParameters(this.get_Model().get_MudTable().get_Keys()), 
+                this.GenerateValueParameters(this.get_Model().get_MudTable().get_ValueSchema()), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                keyParams, valueParams, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
+    };
+    $p.GenerateMethodParameters = function MudTableCSharpTemplate_GenerateMethodParameters(parameters) {
+        return String.Join$1(String, ", ", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, parameters, $d.delegate(function(p) {
+                var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(p, 0 /* CodeGenLanguage.CSharp */);
+                var typeMapper = new Nethereum.Generators.Core.ABITypeToCSharpType.ctor();
+                var parameterAbiModelTypeMap = new Nethereum.Generators.Core.ParameterABIModelTypeMap.ctor(typeMapper, 
+                    0 /* CodeGenLanguage.CSharp */);
+                var type = parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(p);
+                return String.Format("{0} {1}", [type, parameterModel.GetVariableName()]);
+            })));
+    };
+    $p.GenerateKeyPropertiesInitialization = function MudTableCSharpTemplate_GenerateKeyPropertiesInitialization(spacing) {
+        return String.Format("{0}var _key = new {1}.{2}();\r\n{3}", [spacing, this.get_Model().GetTypeName(), 
+            this.get_Model().GetKeyTypeName(), String.Join$1(String, System.Environment().NewLine, System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+                String, this.get_Model().get_MudTable().get_Keys(), $d.delegate(function(k) {
+                    return String.Format("{0}_key.{1} = {2};", [spacing, new Nethereum.Generators.Core.ParameterABIModel.ctor$1(k, 
+                        0 /* CodeGenLanguage.CSharp */).GetPropertyName(), new Nethereum.Generators.Core.ParameterABIModel.ctor$1(k, 
+                        0 /* CodeGenLanguage.CSharp */).GetVariableName()]);
+                }, this)))]);
+    };
+    $p.GenerateValuePropertiesInitialization = function MudTableCSharpTemplate_GenerateValuePropertiesInitialization(spacing) {
+        return String.Format("\r\n{0}var _values = new {1}.{2}();\r\n{3}", [spacing, this.get_Model().GetTypeName(), 
+            this.get_Model().GetValueTypeName(), String.Join$1(String, System.Environment().NewLine, 
+                System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, String, this.get_Model().get_MudTable().get_ValueSchema(), 
+                    $d.delegate(function(v) {
+                        return String.Format("{0}_values.{1} = {2};", [spacing, new Nethereum.Generators.Core.ParameterABIModel.ctor$1(v, 
+                            0 /* CodeGenLanguage.CSharp */).GetPropertyName(), new Nethereum.Generators.Core.ParameterABIModel.ctor$1(v, 
+                            0 /* CodeGenLanguage.CSharp */).GetVariableName()]);
+                    }, this)))]);
+    };
+    $p.GenerateValueParameters = function MudTableCSharpTemplate_GenerateValueParameters(valueSchema) {
+        return String.Join$1(String, ", ", System.Linq.Enumerable.Select(Nethereum.Generators.Model.ParameterABI, 
+            String, valueSchema, $d.delegate(function(v) {
+                var parameterModel = new Nethereum.Generators.Core.ParameterABIModel.ctor$1(v, 0 /* CodeGenLanguage.CSharp */);
+                var typeMapper = new Nethereum.Generators.Core.ABITypeToCSharpType.ctor();
+                var parameterAbiModelTypeMap = new Nethereum.Generators.Core.ParameterABIModelTypeMap.ctor(typeMapper, 
+                    0 /* CodeGenLanguage.CSharp */);
+                var type = parameterAbiModelTypeMap.GetParameterDotNetOutputMapType(v);
+                return String.Format("{0} {1}", [type, parameterModel.GetVariableName()]);
+            })));
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -4211,18 +4297,18 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
         if (functionABIModel.IsMultipleOutput() && !functionABIModel.IsTransaction()) {
             var functionOutputDTOType = functionOutputDTOModel.GetTypeName();
 
-            var returnWithInputParam = String.Format("{0}public Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryDeserializingToObjectAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
+            var returnWithInputParam = String.Format("{0}public virtual Task<{1}> {2}QueryAsync({3} {4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}return ContractHandler.QueryDeserializingToObjectAsync<{7}, {8}>({9}, blockParameter);\r\n{10}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionOutputDTOType, functionNameUpper, 
                     messageType, messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Three____Tabs, messageType, functionOutputDTOType, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-            var returnWithoutInputParam = String.Format("{0}public Task<{1}> {2}QueryAsync(BlockParameter blockParameter = null)\r\n{3}{{\r\n{4}return ContractHandler.QueryDeserializingToObjectAsync<{5}, {6}>(null, blockParameter);\r\n{7}}}", 
+            var returnWithoutInputParam = String.Format("{0}public virtual Task<{1}> {2}QueryAsync(BlockParameter blockParameter = null)\r\n{3}{{\r\n{4}return ContractHandler.QueryDeserializingToObjectAsync<{5}, {6}>(null, blockParameter);\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionOutputDTOType, functionNameUpper, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                     messageType, functionOutputDTOType, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-            var returnWithSimpleParams = String.Format("{0}public Task<{1}> {2}QueryAsync({3}, BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}var {6} = new {7}();\r\n{8}\r\n{9}\r\n{10}return ContractHandler.QueryDeserializingToObjectAsync<{11}, {12}>({13}, blockParameter);\r\n{14}}}", 
+            var returnWithSimpleParams = String.Format("{0}public virtual Task<{1}> {2}QueryAsync({3}, BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}var {6} = new {7}();\r\n{8}\r\n{9}\r\n{10}return ContractHandler.QueryDeserializingToObjectAsync<{11}, {12}>({13}, blockParameter);\r\n{14}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionOutputDTOType, functionNameUpper, 
                     this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
@@ -4249,12 +4335,12 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
                         messageType, type, messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
 
-                var returnWithoutInputParam = String.Format("{0}\r\n{1}public Task<{2}> {3}QueryAsync(BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}return ContractHandler.QueryAsync<{6}, {7}>(null, blockParameter);\r\n{8}}}", 
+                var returnWithoutInputParam = String.Format("{0}\r\n{1}public virtual Task<{2}> {3}QueryAsync(BlockParameter blockParameter = null)\r\n{4}{{\r\n{5}return ContractHandler.QueryAsync<{6}, {7}>(null, blockParameter);\r\n{8}}}", 
                     [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                         type, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                         messageType, type, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-                var returnWithSimpleParams = String.Format("{0}\r\n{1}public Task<{2}> {3}QueryAsync({4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}var {7} = new {8}();\r\n{9}\r\n{10}\r\n{11}return ContractHandler.QueryAsync<{12}, {13}>({14}, blockParameter);\r\n{15}}}", 
+                var returnWithSimpleParams = String.Format("{0}\r\n{1}public virtual Task<{2}> {3}QueryAsync({4}, BlockParameter blockParameter = null)\r\n{5}{{\r\n{6}var {7} = new {8}();\r\n{9}\r\n{10}\r\n{11}return ContractHandler.QueryAsync<{12}, {13}>({14}, blockParameter);\r\n{15}}}", 
                     [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                         type, functionNameUpper, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                         Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
@@ -4272,17 +4358,17 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
             }
 
         if (functionABIModel.IsTransaction()) {
-            var transactionRequestWithInput = String.Format("{0}public Task<string> {1}RequestAsync({2} {3})\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAsync({6});\r\n{7}}}", 
+            var transactionRequestWithInput = String.Format("{0}public virtual Task<string> {1}RequestAsync({2} {3})\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAsync({6});\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-            var transactionRequestWithoutInput = String.Format("{0}public Task<string> {1}RequestAsync()\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAsync<{4}>();\r\n{5}}}", 
+            var transactionRequestWithoutInput = String.Format("{0}public virtual Task<string> {1}RequestAsync()\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAsync<{4}>();\r\n{5}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Three____Tabs, messageType, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
 
-            var transactionRequestWithSimpleParams = String.Format("{0}public Task<string> {1}RequestAsync({2})\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAsync({10});\r\n{11}}}", 
+            var transactionRequestWithSimpleParams = String.Format("{0}public virtual Task<string> {1}RequestAsync({2})\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAsync({10});\r\n{11}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                     messageVariableName, messageType, this._parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
@@ -4290,16 +4376,16 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
                     Nethereum.Generators.Core.SpaceUtils().Three____Tabs, messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
 
-            var transactionRequestAndReceiptWithInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationTokenSource cancellationToken = null)\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken);\r\n{7}}}", 
+            var transactionRequestAndReceiptWithInput = String.Format("{0}public virtual Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2} {3}, CancellationTokenSource cancellationToken = null)\r\n{4}{{\r\n{5} return ContractHandler.SendRequestAndWaitForReceiptAsync({6}, cancellationToken);\r\n{7}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, messageType, messageVariableName, 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                     messageVariableName, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-            var transactionRequestAndReceiptWithoutInput = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAndWaitForReceiptAsync<{4}>(null, cancellationToken);\r\n{5}}}", 
+            var transactionRequestAndReceiptWithoutInput = String.Format("{0}public virtual Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync(CancellationTokenSource cancellationToken = null)\r\n{2}{{\r\n{3} return ContractHandler.SendRequestAndWaitForReceiptAsync<{4}>(null, cancellationToken);\r\n{5}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                     Nethereum.Generators.Core.SpaceUtils().Three____Tabs, messageType, Nethereum.Generators.Core.SpaceUtils().Two___Tabs]);
 
-            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}public Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2}, CancellationTokenSource cancellationToken = null)\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAndWaitForReceiptAsync({10}, cancellationToken);\r\n{11}}}", 
+            var transactionRequestAndReceiptWithSimpleParams = String.Format("{0}public virtual Task<TransactionReceipt> {1}RequestAndWaitForReceiptAsync({2}, CancellationTokenSource cancellationToken = null)\r\n{3}{{\r\n{4}var {5} = new {6}();\r\n{7}\r\n{8}\r\n{9} return ContractHandler.SendRequestAndWaitForReceiptAsync({10}, cancellationToken);\r\n{11}}}", 
                 [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, functionNameUpper, this._parameterAbiFunctionDtocSharpTemplate.GenerateAllFunctionParameters(functionABIModel.get_FunctionABI().get_InputParameters()), 
                     Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                     messageVariableName, messageType, this._parameterAbiFunctionDtocSharpTemplate.GenerateAssigmentFunctionParametersToProperties(functionABIModel.get_FunctionABI().get_InputParameters(), 
@@ -4334,12 +4420,24 @@ $d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generato
             this));
     };
     $p.GenerateClass = function ServiceCSharpTemplate_GenerateClass() {
-        return String.Format("{0}public partial class {1}: ContractWeb3ServiceBase\r\n{2}{{\r\n{3}\r\n{4}\r\n{5}public {6}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)\r\n{7}{{\r\n{8}}}\r\n{9}\r\n{10}\r\n{11}}}", 
+        return String.Format("{0}\r\n{1}\r\n{2}\r\n{3}", [this.GenerateMainClass(), Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+            Nethereum.Generators.Core.SpaceUtils().NoTabs, this.GenerateBaseClass()]);
+    };
+    $p.GenerateMainClass = function ServiceCSharpTemplate_GenerateMainClass() {
+        return String.Format("{0}public partial class {1}: {2}Base\r\n{3}{{\r\n{4}\r\n{5}\r\n{6}public {7}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)\r\n{8}{{\r\n{9}}}\r\n\r\n{10}}}", 
+            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab, this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), 
+                Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+    };
+    $p.GenerateBaseClass = function ServiceCSharpTemplate_GenerateBaseClass() {
+        return String.Format("{0}public partial class {1}Base: ContractWeb3ServiceBase\r\n{2}{{\r\n{3}\r\n{4}public {5}Base(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)\r\n{6}{{\r\n{7}}}\r\n{8}\r\n{9}\r\n{10}}}", 
             [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().NoTabs, 
-                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().NoTabs, 
-                this._functionServiceMethodCSharpTemplate.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+                Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                Nethereum.Generators.Core.SpaceUtils().NoTabs, this._functionServiceMethodCSharpTemplate.GenerateMethods(), 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });

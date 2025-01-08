@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
+using Nethereum.Generators.Net;
+using System.IO;
+using System;
 
 namespace Nethereum.Generator.Console.Commands
 {
@@ -12,6 +15,7 @@ namespace Nethereum.Generator.Console.Commands
             Commands.Add(new GenerateFromProjectCommand());
             Commands.Add(new GenerateFromAbiCommand());
             Commands.Add(new GenerateFromTruffleCommand());
+            Commands.Add(new GenerateFromConfigCommand());
 
             this.AddHelpOption();
         }

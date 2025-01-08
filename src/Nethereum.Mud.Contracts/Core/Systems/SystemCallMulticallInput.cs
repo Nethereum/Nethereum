@@ -8,11 +8,26 @@ namespace Nethereum.Mud.Contracts.Core.Systems
        where TSystemResource : SystemResource, new()
     {
         public IResource SystemResource => ResourceRegistry.GetResource<TSystemResource>();
-        public SystemCallMulticallInput(TFunctionMessage functionMessage, string contractAddressTarget) : base(functionMessage, contractAddressTarget) { }
+        public SystemCallMulticallInput(TFunctionMessage functionMessage) : base(functionMessage, null) { }
 
         public SystemCallData GetSystemCallData()
         {
             return new SystemCallData() { CallData = GetCallData(), SystemId = SystemResource.ResourceIdEncoded };
+        }
+
+        public SystemCallFromData GetSystemCallFromData(string from)
+        {
+            return new SystemCallFromData() { CallData = GetCallData(), SystemId = SystemResource.ResourceIdEncoded, From = from };
+        }
+
+        public SystemCallData GetSystemCallDataWithoutMudNamespacePrefix()
+        {
+            return new SystemCallData() { CallData = Input.GetCallDataWithoutMudNamespaceSignaturePrefix(), SystemId = SystemResource.ResourceIdEncoded };
+        }
+
+        public SystemCallFromData GetSystemCallFromDataWithoutMudNamespacePrefix(string from)
+        {
+            return new SystemCallFromData() { CallData = Input.GetCallDataWithoutMudNamespaceSignaturePrefix(), SystemId = SystemResource.ResourceIdEncoded, From = from };
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -33,5 +34,6 @@ namespace Nethereum.Unity.Util
             return new AsyncOperationAwaiter(operation);
         }
     }
+
 #endif
 }

@@ -37,4 +37,34 @@
     <ProjectReference Include="..\Nethereum.Generators\Nethereum.Generators.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="examples\testAbi\mudMultipleNamespace\mud.config.ts">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\mudSingleNamespace\mud.config.ts">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\ERC20.sol\Standard_Token.abi.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\ERC20.sol\Standard_Token.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\ERC20.sol\Token.abi.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\ERC20.sol\Token.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\IncrementSystem.sol\IncrementSystem.abi.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\IncrementSystem.sol\IncrementSystem.abi.json.d.ts">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="examples\testAbi\out\IncrementSystem.sol\IncrementSystem.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

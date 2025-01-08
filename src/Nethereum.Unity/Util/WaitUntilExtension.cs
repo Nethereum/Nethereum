@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Nethereum.Unity.Util
 {
-#endif
+
 
 #if !DOTNET35
 

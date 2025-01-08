@@ -1,9 +1,11 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Mud;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Mud.Contracts.Core.Tables;
 using Nethereum.Web3;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Nethereum.Unity.Contracts.Standards.Tables
 {
@@ -18,6 +20,11 @@ namespace Nethereum.Unity.Contracts.Standards.Tables
         {
         
         }
+
+        /// <summary>
+        /// Direct access to the value property 'Value'.
+        /// </summary>
+        public virtual uint Value => Values.Value;
 
         public partial class CounterValue
         {

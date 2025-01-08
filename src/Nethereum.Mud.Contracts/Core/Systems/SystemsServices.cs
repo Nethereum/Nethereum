@@ -107,7 +107,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
             }
         }
 
-        public SmartContractCustomErrorRevertExceptionErrorABI FindCustomErrorException(SmartContractCustomErrorRevertException exception)
+        public SmartContractCustomErrorRevertExceptionErrorDecoded FindCustomErrorException(SmartContractCustomErrorRevertException exception)
         {
             foreach (var systemService in SystemServices)
             {

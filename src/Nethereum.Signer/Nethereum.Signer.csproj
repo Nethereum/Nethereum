@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Signer</AssemblyName>
     <PackageId>Nethereum.Signer</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Transactions;Signer</PackageTags>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 
@@ -18,18 +19,35 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472' And '$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net8.0'">
-      <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
-  </ItemGroup>
+	
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' ">
+<!--
+	<ItemGroup Condition="		'$(TargetFramework)' != 'net35' 
+			                And '$(TargetFramework)' != 'net451' 
+							And '$(TargetFramework)' != 'net461' 
+							And '$(TargetFramework)' != 'net472' 
+							And '$(TargetFramework)' != 'net6.0' 
+							And '$(TargetFramework)' != 'net8.0' 
+							And '$(TargetFramework)' != 'net9.0'">
+		
+		<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+	</ItemGroup>
+
+	
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
       <PackageReference Include="BouncyCastle.Cryptography" Version="[2.4.0,3.0)" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' ">
+	
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' ">
       <DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
   </PropertyGroup>
+-->
 
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
+		<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+  </ItemGroup>
+	
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
@@ -120,16 +138,6 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
-    <PackageReference Include="NBitcoin.Secp256k1">
-      <Version>1.0.3</Version>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="NBitcoin.Secp256k1">
-      <Version>3.1.1</Version>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
 	<PackageReference Include="NBitcoin.Secp256k1">
 		<Version>3.1.1</Version>
@@ -140,5 +148,11 @@
 		    <Version>3.1.1</Version>
 	    </PackageReference>
     </ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+		<PackageReference Include="NBitcoin.Secp256k1">
+			<Version>3.1.1</Version>
+		</PackageReference>
+	</ItemGroup>
 
 </Project>

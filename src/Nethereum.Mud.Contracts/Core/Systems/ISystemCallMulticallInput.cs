@@ -8,6 +8,10 @@ namespace Nethereum.Mud.Contracts.Core.Systems
     {
         IResource SystemResource { get; }
         SystemCallData GetSystemCallData();
+        SystemCallFromData GetSystemCallFromData(string from);
+        SystemCallData GetSystemCallDataWithoutMudNamespacePrefix();
+
+        SystemCallFromData GetSystemCallFromDataWithoutMudNamespacePrefix(string delegatorFrom);
     }
 
 }

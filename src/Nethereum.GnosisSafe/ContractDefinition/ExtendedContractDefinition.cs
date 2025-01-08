@@ -18,7 +18,8 @@ namespace Nethereum.GnosisSafe.ContractDefinition
         [Parameter("address", "to", 1)]
         public virtual string To { get; set; }
 
-        [Parameter("uint256", "value", 2)] public virtual BigInteger Value { get; set; } = 0;
+        [Parameter("uint256", "value", 2)] 
+        public virtual BigInteger Value { get; set; } = 0;
         [Parameter("bytes", "data", 3)]
         public virtual byte[] Data { get; set; }
 

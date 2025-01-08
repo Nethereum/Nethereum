@@ -57,6 +57,17 @@ namespace Nethereum.Contracts
             return null;
         }
 
+
+        public static object DecodeExceptionEncodedData(this string data, Type errorType)
+        {
+            var errorABI = ABITypedRegistry.GetError(errorType);
+            if (errorABI.IsExceptionEncodedDataForError(data))
+            {
+                return _functionCallDecoder.DecodeFunctionCustomError(errorType, errorABI.Sha3Signature, data);
+            }
+            return null;
+        }
+
         public static List<ParameterOutput> DecodeExceptionEncodedDataToDefault(this ErrorABI errorABI, string data)
         {
             return errorABI.DecodeErrorDataToDefault(data);

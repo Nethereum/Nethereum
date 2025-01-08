@@ -10,7 +10,10 @@
     <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.Fx</AssemblyName>
     <PackageId>Nethereum.Fx</PackageId>
-	  <LangVersion>preview</LangVersion>
+	<LangVersion>10.0</LangVersion>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+	<ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,15 +26,26 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net5.0;netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0'">
-    <!-- Define LATEST_BOUNCYCASTLE as we're using BouncyCastle.Cryptography -->
+
+	<!--
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="BouncyCastle.Cryptography" Version="[2.4.0,3.0)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net9.0'">
+    <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+  </ItemGroup>
+
+  Define LATEST_BOUNCYCASTLE as we're using BouncyCastle.Cryptography
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
+  
     <DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
   </PropertyGroup>
-
-  <PropertyGroup>
+	-->
+	<PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>..\FxOutput\Nethereum.Fx\</OutputPath>
   </PropertyGroup>
@@ -41,6 +55,10 @@
   </PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
+		<Optimize>True</Optimize>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0|AnyCPU'">
 		<Optimize>True</Optimize>
 	</PropertyGroup>
 
@@ -66,6 +84,11 @@
 		<Version>3.1.1</Version>
     </PackageReference>
   </ItemGroup>
+	  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="NBitcoin.Secp256k1">
+		<Version>3.1.1</Version>
+    </PackageReference>
+  </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
 	<PackageReference Include="NBitcoin.Secp256k1">
 		<Version>3.1.1</Version>
@@ -74,16 +97,9 @@
 
 
 <ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
-	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1,9)" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.1,10)" />
 </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="BouncyCastle.Cryptography" Version="[2.4.0,3.0)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net8.0'">
-    <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
-  </ItemGroup>
 
 <ItemGroup>
     <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.5" />
@@ -91,6 +107,7 @@
     <PackageReference Include="NBitcoin" Version="7.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
     <PackageReference Include="System.Reactive" Version="4.1.3" />
+	<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
   </ItemGroup>
 
   <ItemGroup>

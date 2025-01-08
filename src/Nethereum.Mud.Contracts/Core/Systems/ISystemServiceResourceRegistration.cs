@@ -1,4 +1,5 @@
-﻿using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
+﻿using Nethereum.ABI.Model;
+using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Systems.RegistrationSystem.ContractDefinition;
 using Nethereum.Mud.Contracts.World.Tables;
 using Nethereum.RPC.Eth.DTOs;
@@ -10,6 +11,7 @@ namespace Nethereum.Mud.Contracts.Core.Systems
     public interface ISystemServiceResourceRegistration
     {
         Task<string> BatchRegisterRootFunctionSelectorsRequestAsync(List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true);
+        Task<string> BatchRegisterSelectedRootFunctionSelectorsRequestAsync(List<FunctionABI> functionABIs);
         Task<string> BatchRegisterSystemAndRootFunctionSelectorsRequestAsync(string deployedAddress, bool publicAccess = true, List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true);
         List<RegisterRootFunctionSelectorFunction> CreateRegisterRootFunctionSelectors(List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true);
         List<SystemCallData> CreateRegisterRootFunctionSelectorsBatchSystemCallData(List<FunctionSelectorsTableRecord> excludedFunctionSelectorRecords = null, bool excludeDefaultSystemFunctions = true);

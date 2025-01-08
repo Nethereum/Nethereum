@@ -31,23 +31,23 @@ $@"{GenerateSystemClass()}
 {SpaceUtils.Two___Tabs}}}
 {SpaceUtils.Two___Tabs}
 {SpaceUtils.NoTabs}
-{SpaceUtils.Two___Tabs}public List<FunctionABI> GetSystemFunctionABIs()
+{SpaceUtils.Two___Tabs}public virtual List<FunctionABI> GetSystemFunctionABIs()
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}return GetAllFunctionABIs();
 {SpaceUtils.Two___Tabs}}}
 {SpaceUtils.NoTabs}
-{SpaceUtils.Two___Tabs}public string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+{SpaceUtils.Two___Tabs}public virtual string CalculateCreate2Address(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}return new {deploymentName}().CalculateCreate2Address(deployerAddress, salt, byteCodeLibraries);
 {SpaceUtils.Two___Tabs}}}
 {SpaceUtils.NoTabs}
-{SpaceUtils.Two___Tabs}public Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
+{SpaceUtils.Two___Tabs}public virtual Task<Create2ContractDeploymentTransactionResult> DeployCreate2ContractAsync(string deployerAddress, string salt, params ByteCodeLibrary[] byteCodeLibraries)
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;
 {SpaceUtils.Three____Tabs}var deployment = new {deploymentName}();
 {SpaceUtils.Three____Tabs}return create2ProxyDeployerService.DeployContractRequestAsync(deployment, deployerAddress, salt, byteCodeLibraries);
 {SpaceUtils.Two___Tabs}}}
-{SpaceUtils.Two___Tabs}public Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
+{SpaceUtils.Two___Tabs}public virtual Task<Create2ContractDeploymentTransactionReceiptResult> DeployCreate2ContractAndWaitForReceiptAsync(string deployerAddress, string salt, ByteCodeLibrary[] byteCodeLibraries, CancellationToken cancellationToken = default)
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}var create2ProxyDeployerService = Web3.Eth.Create2DeterministicDeploymentProxyService;
 {SpaceUtils.Three____Tabs}var deployment = new {deploymentName}();

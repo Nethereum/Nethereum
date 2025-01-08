@@ -5,76 +5,81 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.ContractHandlers;
 using System.Threading;
 using Nethereum.GnosisSafe.ContractDefinition;
+using System;
+using Nethereum.Web3;
 
 namespace Nethereum.GnosisSafe
 {
-    public partial class GnosisSafeService
+    public partial class GnosisSafeService : ContractWeb3ServiceBase
     {
         
-        protected Nethereum.Web3.Web3 Web3{ get; }
-
-        public ContractHandler ContractHandler { get; }
-
-        public GnosisSafeService(Nethereum.Web3.Web3 web3, string contractAddress)
+        public GnosisSafeService(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
         {
-            Web3 = web3;
-            ContractHandler = web3.Eth.GetContractHandler(contractAddress);
         }
 
-      
+        public Task<string> VersionQueryAsync(VersionFunction versionFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<VersionFunction, string>(versionFunction, blockParameter);
+        }
+
+
+        public Task<string> VersionQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<VersionFunction, string>(null, blockParameter);
+        }
 
         public Task<string> AddOwnerWithThresholdRequestAsync(AddOwnerWithThresholdFunction addOwnerWithThresholdFunction)
         {
-             return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
+            return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
         }
 
         public Task<TransactionReceipt> AddOwnerWithThresholdRequestAndWaitForReceiptAsync(AddOwnerWithThresholdFunction addOwnerWithThresholdFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
         }
 
         public Task<string> AddOwnerWithThresholdRequestAsync(string owner, BigInteger threshold)
         {
             var addOwnerWithThresholdFunction = new AddOwnerWithThresholdFunction();
-                addOwnerWithThresholdFunction.Owner = owner;
-                addOwnerWithThresholdFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
+            addOwnerWithThresholdFunction.Owner = owner;
+            addOwnerWithThresholdFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAsync(addOwnerWithThresholdFunction);
         }
 
         public Task<TransactionReceipt> AddOwnerWithThresholdRequestAndWaitForReceiptAsync(string owner, BigInteger threshold, CancellationTokenSource cancellationToken = null)
         {
             var addOwnerWithThresholdFunction = new AddOwnerWithThresholdFunction();
-                addOwnerWithThresholdFunction.Owner = owner;
-                addOwnerWithThresholdFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
+            addOwnerWithThresholdFunction.Owner = owner;
+            addOwnerWithThresholdFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(addOwnerWithThresholdFunction, cancellationToken);
         }
 
         public Task<string> ApproveHashRequestAsync(ApproveHashFunction approveHashFunction)
         {
-             return ContractHandler.SendRequestAsync(approveHashFunction);
+            return ContractHandler.SendRequestAsync(approveHashFunction);
         }
 
         public Task<TransactionReceipt> ApproveHashRequestAndWaitForReceiptAsync(ApproveHashFunction approveHashFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
         }
 
         public Task<string> ApproveHashRequestAsync(byte[] hashToApprove)
         {
             var approveHashFunction = new ApproveHashFunction();
-                approveHashFunction.HashToApprove = hashToApprove;
-            
-             return ContractHandler.SendRequestAsync(approveHashFunction);
+            approveHashFunction.HashToApprove = hashToApprove;
+
+            return ContractHandler.SendRequestAsync(approveHashFunction);
         }
 
         public Task<TransactionReceipt> ApproveHashRequestAndWaitForReceiptAsync(byte[] hashToApprove, CancellationTokenSource cancellationToken = null)
         {
             var approveHashFunction = new ApproveHashFunction();
-                approveHashFunction.HashToApprove = hashToApprove;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
+            approveHashFunction.HashToApprove = hashToApprove;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(approveHashFunction, cancellationToken);
         }
 
         public Task<BigInteger> ApprovedHashesQueryAsync(ApprovedHashesFunction approvedHashesFunction, BlockParameter blockParameter = null)
@@ -82,68 +87,68 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<ApprovedHashesFunction, BigInteger>(approvedHashesFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> ApprovedHashesQueryAsync(string returnValue1, byte[] returnValue2, BlockParameter blockParameter = null)
         {
             var approvedHashesFunction = new ApprovedHashesFunction();
-                approvedHashesFunction.ReturnValue1 = returnValue1;
-                approvedHashesFunction.ReturnValue2 = returnValue2;
-            
+            approvedHashesFunction.ReturnValue1 = returnValue1;
+            approvedHashesFunction.ReturnValue2 = returnValue2;
+
             return ContractHandler.QueryAsync<ApprovedHashesFunction, BigInteger>(approvedHashesFunction, blockParameter);
         }
 
         public Task<string> ChangeThresholdRequestAsync(ChangeThresholdFunction changeThresholdFunction)
         {
-             return ContractHandler.SendRequestAsync(changeThresholdFunction);
+            return ContractHandler.SendRequestAsync(changeThresholdFunction);
         }
 
         public Task<TransactionReceipt> ChangeThresholdRequestAndWaitForReceiptAsync(ChangeThresholdFunction changeThresholdFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
         }
 
         public Task<string> ChangeThresholdRequestAsync(BigInteger threshold)
         {
             var changeThresholdFunction = new ChangeThresholdFunction();
-                changeThresholdFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAsync(changeThresholdFunction);
+            changeThresholdFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAsync(changeThresholdFunction);
         }
 
         public Task<TransactionReceipt> ChangeThresholdRequestAndWaitForReceiptAsync(BigInteger threshold, CancellationTokenSource cancellationToken = null)
         {
             var changeThresholdFunction = new ChangeThresholdFunction();
-                changeThresholdFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
+            changeThresholdFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(changeThresholdFunction, cancellationToken);
         }
 
         public Task<string> DisableModuleRequestAsync(DisableModuleFunction disableModuleFunction)
         {
-             return ContractHandler.SendRequestAsync(disableModuleFunction);
+            return ContractHandler.SendRequestAsync(disableModuleFunction);
         }
 
         public Task<TransactionReceipt> DisableModuleRequestAndWaitForReceiptAsync(DisableModuleFunction disableModuleFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(disableModuleFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(disableModuleFunction, cancellationToken);
         }
 
         public Task<string> DisableModuleRequestAsync(string prevModule, string module)
         {
             var disableModuleFunction = new DisableModuleFunction();
-                disableModuleFunction.PrevModule = prevModule;
-                disableModuleFunction.Module = module;
-            
-             return ContractHandler.SendRequestAsync(disableModuleFunction);
+            disableModuleFunction.PrevModule = prevModule;
+            disableModuleFunction.Module = module;
+
+            return ContractHandler.SendRequestAsync(disableModuleFunction);
         }
 
         public Task<TransactionReceipt> DisableModuleRequestAndWaitForReceiptAsync(string prevModule, string module, CancellationTokenSource cancellationToken = null)
         {
             var disableModuleFunction = new DisableModuleFunction();
-                disableModuleFunction.PrevModule = prevModule;
-                disableModuleFunction.Module = module;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(disableModuleFunction, cancellationToken);
+            disableModuleFunction.PrevModule = prevModule;
+            disableModuleFunction.Module = module;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(disableModuleFunction, cancellationToken);
         }
 
         public Task<byte[]> DomainSeparatorQueryAsync(DomainSeparatorFunction domainSeparatorFunction, BlockParameter blockParameter = null)
@@ -151,7 +156,7 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<DomainSeparatorFunction, byte[]>(domainSeparatorFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> DomainSeparatorQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<DomainSeparatorFunction, byte[]>(null, blockParameter);
@@ -159,28 +164,28 @@ namespace Nethereum.GnosisSafe
 
         public Task<string> EnableModuleRequestAsync(EnableModuleFunction enableModuleFunction)
         {
-             return ContractHandler.SendRequestAsync(enableModuleFunction);
+            return ContractHandler.SendRequestAsync(enableModuleFunction);
         }
 
         public Task<TransactionReceipt> EnableModuleRequestAndWaitForReceiptAsync(EnableModuleFunction enableModuleFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(enableModuleFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(enableModuleFunction, cancellationToken);
         }
 
         public Task<string> EnableModuleRequestAsync(string module)
         {
             var enableModuleFunction = new EnableModuleFunction();
-                enableModuleFunction.Module = module;
-            
-             return ContractHandler.SendRequestAsync(enableModuleFunction);
+            enableModuleFunction.Module = module;
+
+            return ContractHandler.SendRequestAsync(enableModuleFunction);
         }
 
         public Task<TransactionReceipt> EnableModuleRequestAndWaitForReceiptAsync(string module, CancellationTokenSource cancellationToken = null)
         {
             var enableModuleFunction = new EnableModuleFunction();
-                enableModuleFunction.Module = module;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(enableModuleFunction, cancellationToken);
+            enableModuleFunction.Module = module;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(enableModuleFunction, cancellationToken);
         }
 
         public Task<byte[]> EncodeTransactionDataQueryAsync(EncodeTransactionDataFunction encodeTransactionDataFunction, BlockParameter blockParameter = null)
@@ -188,130 +193,130 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<EncodeTransactionDataFunction, byte[]>(encodeTransactionDataFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> EncodeTransactionDataQueryAsync(string to, BigInteger value, byte[] data, byte operation, BigInteger safeTxGas, BigInteger baseGas, BigInteger gasPrice, string gasToken, string refundReceiver, BigInteger nonce, BlockParameter blockParameter = null)
         {
             var encodeTransactionDataFunction = new EncodeTransactionDataFunction();
-                encodeTransactionDataFunction.To = to;
-                encodeTransactionDataFunction.Value = value;
-                encodeTransactionDataFunction.Data = data;
-                encodeTransactionDataFunction.Operation = operation;
-                encodeTransactionDataFunction.SafeTxGas = safeTxGas;
-                encodeTransactionDataFunction.BaseGas = baseGas;
-                encodeTransactionDataFunction.GasPrice = gasPrice;
-                encodeTransactionDataFunction.GasToken = gasToken;
-                encodeTransactionDataFunction.RefundReceiver = refundReceiver;
-                encodeTransactionDataFunction.Nonce = nonce;
-            
+            encodeTransactionDataFunction.To = to;
+            encodeTransactionDataFunction.Value = value;
+            encodeTransactionDataFunction.Data = data;
+            encodeTransactionDataFunction.Operation = operation;
+            encodeTransactionDataFunction.SafeTxGas = safeTxGas;
+            encodeTransactionDataFunction.BaseGas = baseGas;
+            encodeTransactionDataFunction.SafeGasPrice = gasPrice;
+            encodeTransactionDataFunction.GasToken = gasToken;
+            encodeTransactionDataFunction.RefundReceiver = refundReceiver;
+            encodeTransactionDataFunction.SafeNonce = nonce;
+
             return ContractHandler.QueryAsync<EncodeTransactionDataFunction, byte[]>(encodeTransactionDataFunction, blockParameter);
         }
 
         public Task<string> ExecTransactionRequestAsync(ExecTransactionFunction execTransactionFunction)
         {
-             return ContractHandler.SendRequestAsync(execTransactionFunction);
+            return ContractHandler.SendRequestAsync(execTransactionFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionRequestAndWaitForReceiptAsync(ExecTransactionFunction execTransactionFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFunction, cancellationToken);
         }
 
         public Task<string> ExecTransactionRequestAsync(string to, BigInteger value, byte[] data, byte operation, BigInteger safeTxGas, BigInteger baseGas, BigInteger gasPrice, string gasToken, string refundReceiver, byte[] signatures)
         {
             var execTransactionFunction = new ExecTransactionFunction();
-                execTransactionFunction.To = to;
-                execTransactionFunction.Value = value;
-                execTransactionFunction.Data = data;
-                execTransactionFunction.Operation = operation;
-                execTransactionFunction.SafeTxGas = safeTxGas;
-                execTransactionFunction.BaseGas = baseGas;
-                execTransactionFunction.GasPrice = gasPrice;
-                execTransactionFunction.GasToken = gasToken;
-                execTransactionFunction.RefundReceiver = refundReceiver;
-                execTransactionFunction.Signatures = signatures;
-            
-             return ContractHandler.SendRequestAsync(execTransactionFunction);
+            execTransactionFunction.To = to;
+            execTransactionFunction.Value = value;
+            execTransactionFunction.Data = data;
+            execTransactionFunction.Operation = operation;
+            execTransactionFunction.SafeTxGas = safeTxGas;
+            execTransactionFunction.BaseGas = baseGas;
+            execTransactionFunction.SafeGasPrice = gasPrice;
+            execTransactionFunction.GasToken = gasToken;
+            execTransactionFunction.RefundReceiver = refundReceiver;
+            execTransactionFunction.Signatures = signatures;
+
+            return ContractHandler.SendRequestAsync(execTransactionFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionRequestAndWaitForReceiptAsync(string to, BigInteger value, byte[] data, byte operation, BigInteger safeTxGas, BigInteger baseGas, BigInteger gasPrice, string gasToken, string refundReceiver, byte[] signatures, CancellationTokenSource cancellationToken = null)
         {
             var execTransactionFunction = new ExecTransactionFunction();
-                execTransactionFunction.To = to;
-                execTransactionFunction.Value = value;
-                execTransactionFunction.Data = data;
-                execTransactionFunction.Operation = operation;
-                execTransactionFunction.SafeTxGas = safeTxGas;
-                execTransactionFunction.BaseGas = baseGas;
-                execTransactionFunction.GasPrice = gasPrice;
-                execTransactionFunction.GasToken = gasToken;
-                execTransactionFunction.RefundReceiver = refundReceiver;
-                execTransactionFunction.Signatures = signatures;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFunction, cancellationToken);
+            execTransactionFunction.To = to;
+            execTransactionFunction.Value = value;
+            execTransactionFunction.Data = data;
+            execTransactionFunction.Operation = operation;
+            execTransactionFunction.SafeTxGas = safeTxGas;
+            execTransactionFunction.BaseGas = baseGas;
+            execTransactionFunction.SafeGasPrice = gasPrice;
+            execTransactionFunction.GasToken = gasToken;
+            execTransactionFunction.RefundReceiver = refundReceiver;
+            execTransactionFunction.Signatures = signatures;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFunction, cancellationToken);
         }
 
         public Task<string> ExecTransactionFromModuleRequestAsync(ExecTransactionFromModuleFunction execTransactionFromModuleFunction)
         {
-             return ContractHandler.SendRequestAsync(execTransactionFromModuleFunction);
+            return ContractHandler.SendRequestAsync(execTransactionFromModuleFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionFromModuleRequestAndWaitForReceiptAsync(ExecTransactionFromModuleFunction execTransactionFromModuleFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleFunction, cancellationToken);
         }
 
         public Task<string> ExecTransactionFromModuleRequestAsync(string to, BigInteger value, byte[] data, byte operation)
         {
             var execTransactionFromModuleFunction = new ExecTransactionFromModuleFunction();
-                execTransactionFromModuleFunction.To = to;
-                execTransactionFromModuleFunction.Value = value;
-                execTransactionFromModuleFunction.Data = data;
-                execTransactionFromModuleFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAsync(execTransactionFromModuleFunction);
+            execTransactionFromModuleFunction.To = to;
+            execTransactionFromModuleFunction.Value = value;
+            execTransactionFromModuleFunction.Data = data;
+            execTransactionFromModuleFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAsync(execTransactionFromModuleFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionFromModuleRequestAndWaitForReceiptAsync(string to, BigInteger value, byte[] data, byte operation, CancellationTokenSource cancellationToken = null)
         {
             var execTransactionFromModuleFunction = new ExecTransactionFromModuleFunction();
-                execTransactionFromModuleFunction.To = to;
-                execTransactionFromModuleFunction.Value = value;
-                execTransactionFromModuleFunction.Data = data;
-                execTransactionFromModuleFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleFunction, cancellationToken);
+            execTransactionFromModuleFunction.To = to;
+            execTransactionFromModuleFunction.Value = value;
+            execTransactionFromModuleFunction.Data = data;
+            execTransactionFromModuleFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleFunction, cancellationToken);
         }
 
         public Task<string> ExecTransactionFromModuleReturnDataRequestAsync(ExecTransactionFromModuleReturnDataFunction execTransactionFromModuleReturnDataFunction)
         {
-             return ContractHandler.SendRequestAsync(execTransactionFromModuleReturnDataFunction);
+            return ContractHandler.SendRequestAsync(execTransactionFromModuleReturnDataFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionFromModuleReturnDataRequestAndWaitForReceiptAsync(ExecTransactionFromModuleReturnDataFunction execTransactionFromModuleReturnDataFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleReturnDataFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleReturnDataFunction, cancellationToken);
         }
 
         public Task<string> ExecTransactionFromModuleReturnDataRequestAsync(string to, BigInteger value, byte[] data, byte operation)
         {
             var execTransactionFromModuleReturnDataFunction = new ExecTransactionFromModuleReturnDataFunction();
-                execTransactionFromModuleReturnDataFunction.To = to;
-                execTransactionFromModuleReturnDataFunction.Value = value;
-                execTransactionFromModuleReturnDataFunction.Data = data;
-                execTransactionFromModuleReturnDataFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAsync(execTransactionFromModuleReturnDataFunction);
+            execTransactionFromModuleReturnDataFunction.To = to;
+            execTransactionFromModuleReturnDataFunction.Value = value;
+            execTransactionFromModuleReturnDataFunction.Data = data;
+            execTransactionFromModuleReturnDataFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAsync(execTransactionFromModuleReturnDataFunction);
         }
 
         public Task<TransactionReceipt> ExecTransactionFromModuleReturnDataRequestAndWaitForReceiptAsync(string to, BigInteger value, byte[] data, byte operation, CancellationTokenSource cancellationToken = null)
         {
             var execTransactionFromModuleReturnDataFunction = new ExecTransactionFromModuleReturnDataFunction();
-                execTransactionFromModuleReturnDataFunction.To = to;
-                execTransactionFromModuleReturnDataFunction.Value = value;
-                execTransactionFromModuleReturnDataFunction.Data = data;
-                execTransactionFromModuleReturnDataFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleReturnDataFunction, cancellationToken);
+            execTransactionFromModuleReturnDataFunction.To = to;
+            execTransactionFromModuleReturnDataFunction.Value = value;
+            execTransactionFromModuleReturnDataFunction.Data = data;
+            execTransactionFromModuleReturnDataFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(execTransactionFromModuleReturnDataFunction, cancellationToken);
         }
 
         public Task<BigInteger> GetChainIdQueryAsync(GetChainIdFunction getChainIdFunction, BlockParameter blockParameter = null)
@@ -319,7 +324,7 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<GetChainIdFunction, BigInteger>(getChainIdFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> GetChainIdQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetChainIdFunction, BigInteger>(null, blockParameter);
@@ -333,9 +338,9 @@ namespace Nethereum.GnosisSafe
         public Task<GetModulesPaginatedOutputDTO> GetModulesPaginatedQueryAsync(string start, BigInteger pageSize, BlockParameter blockParameter = null)
         {
             var getModulesPaginatedFunction = new GetModulesPaginatedFunction();
-                getModulesPaginatedFunction.Start = start;
-                getModulesPaginatedFunction.PageSize = pageSize;
-            
+            getModulesPaginatedFunction.Start = start;
+            getModulesPaginatedFunction.PageSize = pageSize;
+
             return ContractHandler.QueryDeserializingToObjectAsync<GetModulesPaginatedFunction, GetModulesPaginatedOutputDTO>(getModulesPaginatedFunction, blockParameter);
         }
 
@@ -344,7 +349,7 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<GetOwnersFunction, List<string>>(getOwnersFunction, blockParameter);
         }
 
-        
+
         public Task<List<string>> GetOwnersQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetOwnersFunction, List<string>>(null, blockParameter);
@@ -355,13 +360,13 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<GetStorageAtFunction, byte[]>(getStorageAtFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> GetStorageAtQueryAsync(BigInteger offset, BigInteger length, BlockParameter blockParameter = null)
         {
             var getStorageAtFunction = new GetStorageAtFunction();
-                getStorageAtFunction.Offset = offset;
-                getStorageAtFunction.Length = length;
-            
+            getStorageAtFunction.Offset = offset;
+            getStorageAtFunction.Length = length;
+
             return ContractHandler.QueryAsync<GetStorageAtFunction, byte[]>(getStorageAtFunction, blockParameter);
         }
 
@@ -370,7 +375,7 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<GetThresholdFunction, BigInteger>(getThresholdFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> GetThresholdQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetThresholdFunction, BigInteger>(null, blockParameter);
@@ -381,21 +386,21 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<GetTransactionHashFunction, byte[]>(getTransactionHashFunction, blockParameter);
         }
 
-        
+
         public Task<byte[]> GetTransactionHashQueryAsync(string to, BigInteger value, byte[] data, byte operation, BigInteger safeTxGas, BigInteger baseGas, BigInteger gasPrice, string gasToken, string refundReceiver, BigInteger nonce, BlockParameter blockParameter = null)
         {
             var getTransactionHashFunction = new GetTransactionHashFunction();
-                getTransactionHashFunction.To = to;
-                getTransactionHashFunction.Value = value;
-                getTransactionHashFunction.Data = data;
-                getTransactionHashFunction.Operation = operation;
-                getTransactionHashFunction.SafeTxGas = safeTxGas;
-                getTransactionHashFunction.BaseGas = baseGas;
-                getTransactionHashFunction.GasPrice = gasPrice;
-                getTransactionHashFunction.GasToken = gasToken;
-                getTransactionHashFunction.RefundReceiver = refundReceiver;
-                getTransactionHashFunction.Nonce = nonce;
-            
+            getTransactionHashFunction.To = to;
+            getTransactionHashFunction.Value = value;
+            getTransactionHashFunction.Data = data;
+            getTransactionHashFunction.Operation = operation;
+            getTransactionHashFunction.SafeTxGas = safeTxGas;
+            getTransactionHashFunction.BaseGas = baseGas;
+            getTransactionHashFunction.SafeGasPrice = gasPrice;
+            getTransactionHashFunction.GasToken = gasToken;
+            getTransactionHashFunction.RefundReceiver = refundReceiver;
+            getTransactionHashFunction.SafeNonce = nonce;
+
             return ContractHandler.QueryAsync<GetTransactionHashFunction, byte[]>(getTransactionHashFunction, blockParameter);
         }
 
@@ -404,12 +409,12 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<IsModuleEnabledFunction, bool>(isModuleEnabledFunction, blockParameter);
         }
 
-        
+
         public Task<bool> IsModuleEnabledQueryAsync(string module, BlockParameter blockParameter = null)
         {
             var isModuleEnabledFunction = new IsModuleEnabledFunction();
-                isModuleEnabledFunction.Module = module;
-            
+            isModuleEnabledFunction.Module = module;
+
             return ContractHandler.QueryAsync<IsModuleEnabledFunction, bool>(isModuleEnabledFunction, blockParameter);
         }
 
@@ -418,12 +423,12 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<IsOwnerFunction, bool>(isOwnerFunction, blockParameter);
         }
 
-        
+
         public Task<bool> IsOwnerQueryAsync(string owner, BlockParameter blockParameter = null)
         {
             var isOwnerFunction = new IsOwnerFunction();
-                isOwnerFunction.Owner = owner;
-            
+            isOwnerFunction.Owner = owner;
+
             return ContractHandler.QueryAsync<IsOwnerFunction, bool>(isOwnerFunction, blockParameter);
         }
 
@@ -432,7 +437,7 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<NonceFunction, BigInteger>(nonceFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> NonceQueryAsync(BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<NonceFunction, BigInteger>(null, blockParameter);
@@ -440,156 +445,156 @@ namespace Nethereum.GnosisSafe
 
         public Task<string> RemoveOwnerRequestAsync(RemoveOwnerFunction removeOwnerFunction)
         {
-             return ContractHandler.SendRequestAsync(removeOwnerFunction);
+            return ContractHandler.SendRequestAsync(removeOwnerFunction);
         }
 
         public Task<TransactionReceipt> RemoveOwnerRequestAndWaitForReceiptAsync(RemoveOwnerFunction removeOwnerFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(removeOwnerFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(removeOwnerFunction, cancellationToken);
         }
 
         public Task<string> RemoveOwnerRequestAsync(string prevOwner, string owner, BigInteger threshold)
         {
             var removeOwnerFunction = new RemoveOwnerFunction();
-                removeOwnerFunction.PrevOwner = prevOwner;
-                removeOwnerFunction.Owner = owner;
-                removeOwnerFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAsync(removeOwnerFunction);
+            removeOwnerFunction.PrevOwner = prevOwner;
+            removeOwnerFunction.Owner = owner;
+            removeOwnerFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAsync(removeOwnerFunction);
         }
 
         public Task<TransactionReceipt> RemoveOwnerRequestAndWaitForReceiptAsync(string prevOwner, string owner, BigInteger threshold, CancellationTokenSource cancellationToken = null)
         {
             var removeOwnerFunction = new RemoveOwnerFunction();
-                removeOwnerFunction.PrevOwner = prevOwner;
-                removeOwnerFunction.Owner = owner;
-                removeOwnerFunction.Threshold = threshold;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(removeOwnerFunction, cancellationToken);
+            removeOwnerFunction.PrevOwner = prevOwner;
+            removeOwnerFunction.Owner = owner;
+            removeOwnerFunction.Threshold = threshold;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(removeOwnerFunction, cancellationToken);
         }
 
         public Task<string> RequiredTxGasRequestAsync(RequiredTxGasFunction requiredTxGasFunction)
         {
-             return ContractHandler.SendRequestAsync(requiredTxGasFunction);
+            return ContractHandler.SendRequestAsync(requiredTxGasFunction);
         }
 
         public Task<TransactionReceipt> RequiredTxGasRequestAndWaitForReceiptAsync(RequiredTxGasFunction requiredTxGasFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(requiredTxGasFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(requiredTxGasFunction, cancellationToken);
         }
 
         public Task<string> RequiredTxGasRequestAsync(string to, BigInteger value, byte[] data, byte operation)
         {
             var requiredTxGasFunction = new RequiredTxGasFunction();
-                requiredTxGasFunction.To = to;
-                requiredTxGasFunction.Value = value;
-                requiredTxGasFunction.Data = data;
-                requiredTxGasFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAsync(requiredTxGasFunction);
+            requiredTxGasFunction.To = to;
+            requiredTxGasFunction.Value = value;
+            requiredTxGasFunction.Data = data;
+            requiredTxGasFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAsync(requiredTxGasFunction);
         }
 
         public Task<TransactionReceipt> RequiredTxGasRequestAndWaitForReceiptAsync(string to, BigInteger value, byte[] data, byte operation, CancellationTokenSource cancellationToken = null)
         {
             var requiredTxGasFunction = new RequiredTxGasFunction();
-                requiredTxGasFunction.To = to;
-                requiredTxGasFunction.Value = value;
-                requiredTxGasFunction.Data = data;
-                requiredTxGasFunction.Operation = operation;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(requiredTxGasFunction, cancellationToken);
+            requiredTxGasFunction.To = to;
+            requiredTxGasFunction.Value = value;
+            requiredTxGasFunction.Data = data;
+            requiredTxGasFunction.Operation = operation;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(requiredTxGasFunction, cancellationToken);
         }
 
         public Task<string> SetFallbackHandlerRequestAsync(SetFallbackHandlerFunction setFallbackHandlerFunction)
         {
-             return ContractHandler.SendRequestAsync(setFallbackHandlerFunction);
+            return ContractHandler.SendRequestAsync(setFallbackHandlerFunction);
         }
 
         public Task<TransactionReceipt> SetFallbackHandlerRequestAndWaitForReceiptAsync(SetFallbackHandlerFunction setFallbackHandlerFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setFallbackHandlerFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setFallbackHandlerFunction, cancellationToken);
         }
 
         public Task<string> SetFallbackHandlerRequestAsync(string handler)
         {
             var setFallbackHandlerFunction = new SetFallbackHandlerFunction();
-                setFallbackHandlerFunction.Handler = handler;
-            
-             return ContractHandler.SendRequestAsync(setFallbackHandlerFunction);
+            setFallbackHandlerFunction.Handler = handler;
+
+            return ContractHandler.SendRequestAsync(setFallbackHandlerFunction);
         }
 
         public Task<TransactionReceipt> SetFallbackHandlerRequestAndWaitForReceiptAsync(string handler, CancellationTokenSource cancellationToken = null)
         {
             var setFallbackHandlerFunction = new SetFallbackHandlerFunction();
-                setFallbackHandlerFunction.Handler = handler;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setFallbackHandlerFunction, cancellationToken);
+            setFallbackHandlerFunction.Handler = handler;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setFallbackHandlerFunction, cancellationToken);
         }
 
         public Task<string> SetGuardRequestAsync(SetGuardFunction setGuardFunction)
         {
-             return ContractHandler.SendRequestAsync(setGuardFunction);
+            return ContractHandler.SendRequestAsync(setGuardFunction);
         }
 
         public Task<TransactionReceipt> SetGuardRequestAndWaitForReceiptAsync(SetGuardFunction setGuardFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setGuardFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setGuardFunction, cancellationToken);
         }
 
         public Task<string> SetGuardRequestAsync(string guard)
         {
             var setGuardFunction = new SetGuardFunction();
-                setGuardFunction.Guard = guard;
-            
-             return ContractHandler.SendRequestAsync(setGuardFunction);
+            setGuardFunction.Guard = guard;
+
+            return ContractHandler.SendRequestAsync(setGuardFunction);
         }
 
         public Task<TransactionReceipt> SetGuardRequestAndWaitForReceiptAsync(string guard, CancellationTokenSource cancellationToken = null)
         {
             var setGuardFunction = new SetGuardFunction();
-                setGuardFunction.Guard = guard;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setGuardFunction, cancellationToken);
+            setGuardFunction.Guard = guard;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setGuardFunction, cancellationToken);
         }
 
         public Task<string> SetupRequestAsync(SetupFunction setupFunction)
         {
-             return ContractHandler.SendRequestAsync(setupFunction);
+            return ContractHandler.SendRequestAsync(setupFunction);
         }
 
         public Task<TransactionReceipt> SetupRequestAndWaitForReceiptAsync(SetupFunction setupFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setupFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setupFunction, cancellationToken);
         }
 
         public Task<string> SetupRequestAsync(List<string> owners, BigInteger threshold, string to, byte[] data, string fallbackHandler, string paymentToken, BigInteger payment, string paymentReceiver)
         {
             var setupFunction = new SetupFunction();
-                setupFunction.Owners = owners;
-                setupFunction.Threshold = threshold;
-                setupFunction.To = to;
-                setupFunction.Data = data;
-                setupFunction.FallbackHandler = fallbackHandler;
-                setupFunction.PaymentToken = paymentToken;
-                setupFunction.Payment = payment;
-                setupFunction.PaymentReceiver = paymentReceiver;
-            
-             return ContractHandler.SendRequestAsync(setupFunction);
+            setupFunction.Owners = owners;
+            setupFunction.Threshold = threshold;
+            setupFunction.To = to;
+            setupFunction.Data = data;
+            setupFunction.FallbackHandler = fallbackHandler;
+            setupFunction.PaymentToken = paymentToken;
+            setupFunction.Payment = payment;
+            setupFunction.PaymentReceiver = paymentReceiver;
+
+            return ContractHandler.SendRequestAsync(setupFunction);
         }
 
         public Task<TransactionReceipt> SetupRequestAndWaitForReceiptAsync(List<string> owners, BigInteger threshold, string to, byte[] data, string fallbackHandler, string paymentToken, BigInteger payment, string paymentReceiver, CancellationTokenSource cancellationToken = null)
         {
             var setupFunction = new SetupFunction();
-                setupFunction.Owners = owners;
-                setupFunction.Threshold = threshold;
-                setupFunction.To = to;
-                setupFunction.Data = data;
-                setupFunction.FallbackHandler = fallbackHandler;
-                setupFunction.PaymentToken = paymentToken;
-                setupFunction.Payment = payment;
-                setupFunction.PaymentReceiver = paymentReceiver;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(setupFunction, cancellationToken);
+            setupFunction.Owners = owners;
+            setupFunction.Threshold = threshold;
+            setupFunction.To = to;
+            setupFunction.Data = data;
+            setupFunction.FallbackHandler = fallbackHandler;
+            setupFunction.PaymentToken = paymentToken;
+            setupFunction.Payment = payment;
+            setupFunction.PaymentReceiver = paymentReceiver;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(setupFunction, cancellationToken);
         }
 
         public Task<BigInteger> SignedMessagesQueryAsync(SignedMessagesFunction signedMessagesFunction, BlockParameter blockParameter = null)
@@ -597,71 +602,137 @@ namespace Nethereum.GnosisSafe
             return ContractHandler.QueryAsync<SignedMessagesFunction, BigInteger>(signedMessagesFunction, blockParameter);
         }
 
-        
+
         public Task<BigInteger> SignedMessagesQueryAsync(byte[] returnValue1, BlockParameter blockParameter = null)
         {
             var signedMessagesFunction = new SignedMessagesFunction();
-                signedMessagesFunction.ReturnValue1 = returnValue1;
-            
+            signedMessagesFunction.ReturnValue1 = returnValue1;
+
             return ContractHandler.QueryAsync<SignedMessagesFunction, BigInteger>(signedMessagesFunction, blockParameter);
         }
 
         public Task<string> SimulateAndRevertRequestAsync(SimulateAndRevertFunction simulateAndRevertFunction)
         {
-             return ContractHandler.SendRequestAsync(simulateAndRevertFunction);
+            return ContractHandler.SendRequestAsync(simulateAndRevertFunction);
         }
 
         public Task<TransactionReceipt> SimulateAndRevertRequestAndWaitForReceiptAsync(SimulateAndRevertFunction simulateAndRevertFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(simulateAndRevertFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(simulateAndRevertFunction, cancellationToken);
         }
 
         public Task<string> SimulateAndRevertRequestAsync(string targetContract, byte[] calldataPayload)
         {
             var simulateAndRevertFunction = new SimulateAndRevertFunction();
-                simulateAndRevertFunction.TargetContract = targetContract;
-                simulateAndRevertFunction.CalldataPayload = calldataPayload;
-            
-             return ContractHandler.SendRequestAsync(simulateAndRevertFunction);
+            simulateAndRevertFunction.TargetContract = targetContract;
+            simulateAndRevertFunction.CalldataPayload = calldataPayload;
+
+            return ContractHandler.SendRequestAsync(simulateAndRevertFunction);
         }
 
         public Task<TransactionReceipt> SimulateAndRevertRequestAndWaitForReceiptAsync(string targetContract, byte[] calldataPayload, CancellationTokenSource cancellationToken = null)
         {
             var simulateAndRevertFunction = new SimulateAndRevertFunction();
-                simulateAndRevertFunction.TargetContract = targetContract;
-                simulateAndRevertFunction.CalldataPayload = calldataPayload;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(simulateAndRevertFunction, cancellationToken);
+            simulateAndRevertFunction.TargetContract = targetContract;
+            simulateAndRevertFunction.CalldataPayload = calldataPayload;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(simulateAndRevertFunction, cancellationToken);
         }
 
         public Task<string> SwapOwnerRequestAsync(SwapOwnerFunction swapOwnerFunction)
         {
-             return ContractHandler.SendRequestAsync(swapOwnerFunction);
+            return ContractHandler.SendRequestAsync(swapOwnerFunction);
         }
 
         public Task<TransactionReceipt> SwapOwnerRequestAndWaitForReceiptAsync(SwapOwnerFunction swapOwnerFunction, CancellationTokenSource cancellationToken = null)
         {
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(swapOwnerFunction, cancellationToken);
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(swapOwnerFunction, cancellationToken);
         }
 
         public Task<string> SwapOwnerRequestAsync(string prevOwner, string oldOwner, string newOwner)
         {
             var swapOwnerFunction = new SwapOwnerFunction();
-                swapOwnerFunction.PrevOwner = prevOwner;
-                swapOwnerFunction.OldOwner = oldOwner;
-                swapOwnerFunction.NewOwner = newOwner;
-            
-             return ContractHandler.SendRequestAsync(swapOwnerFunction);
+            swapOwnerFunction.PrevOwner = prevOwner;
+            swapOwnerFunction.OldOwner = oldOwner;
+            swapOwnerFunction.NewOwner = newOwner;
+
+            return ContractHandler.SendRequestAsync(swapOwnerFunction);
         }
 
         public Task<TransactionReceipt> SwapOwnerRequestAndWaitForReceiptAsync(string prevOwner, string oldOwner, string newOwner, CancellationTokenSource cancellationToken = null)
         {
             var swapOwnerFunction = new SwapOwnerFunction();
-                swapOwnerFunction.PrevOwner = prevOwner;
-                swapOwnerFunction.OldOwner = oldOwner;
-                swapOwnerFunction.NewOwner = newOwner;
-            
-             return ContractHandler.SendRequestAndWaitForReceiptAsync(swapOwnerFunction, cancellationToken);
+            swapOwnerFunction.PrevOwner = prevOwner;
+            swapOwnerFunction.OldOwner = oldOwner;
+            swapOwnerFunction.NewOwner = newOwner;
+
+            return ContractHandler.SendRequestAndWaitForReceiptAsync(swapOwnerFunction, cancellationToken);
+        }
+
+        public override List<Type> GetAllFunctionTypes()
+        {
+            return new List<Type>
+            {
+                typeof(VersionFunction),
+                typeof(AddOwnerWithThresholdFunction),
+                typeof(ApproveHashFunction),
+                typeof(ApprovedHashesFunction),
+                typeof(ChangeThresholdFunction),
+                typeof(DisableModuleFunction),
+                typeof(DomainSeparatorFunction),
+                typeof(EnableModuleFunction),
+                typeof(EncodeTransactionDataFunction),
+                typeof(ExecTransactionFunction),
+                typeof(ExecTransactionFromModuleFunction),
+                typeof(ExecTransactionFromModuleReturnDataFunction),
+                typeof(GetChainIdFunction),
+                typeof(GetModulesPaginatedFunction),
+                typeof(GetOwnersFunction),
+                typeof(GetStorageAtFunction),
+                typeof(GetThresholdFunction),
+                typeof(GetTransactionHashFunction),
+                typeof(IsModuleEnabledFunction),
+                typeof(IsOwnerFunction),
+                typeof(NonceFunction),
+                typeof(RemoveOwnerFunction),
+                typeof(RequiredTxGasFunction),
+                typeof(SetFallbackHandlerFunction),
+                typeof(SetGuardFunction),
+                typeof(SetupFunction),
+                typeof(SignedMessagesFunction),
+                typeof(SimulateAndRevertFunction),
+                typeof(SwapOwnerFunction)
+            };
+        }
+
+        public override List<Type> GetAllEventTypes()
+        {
+            return new List<Type>
+            {
+                typeof(AddedOwnerEventDTO),
+                typeof(ApproveHashEventDTO),
+                typeof(ChangedFallbackHandlerEventDTO),
+                typeof(ChangedGuardEventDTO),
+                typeof(ChangedThresholdEventDTO),
+                typeof(DisabledModuleEventDTO),
+                typeof(EnabledModuleEventDTO),
+                typeof(ExecutionFailureEventDTO),
+                typeof(ExecutionFromModuleFailureEventDTO),
+                typeof(ExecutionFromModuleSuccessEventDTO),
+                typeof(ExecutionSuccessEventDTO),
+                typeof(RemovedOwnerEventDTO),
+                typeof(SafeReceivedEventDTO),
+                typeof(SafeSetupEventDTO),
+                typeof(SignMsgEventDTO)
+            };
+        }
+
+        public override List<Type> GetAllErrorTypes()
+        {
+            return new List<Type>
+            {
+
+            };
         }
     }
 }

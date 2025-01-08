@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MyProject.Contracts.MyWorld.Tables;
 using Nethereum.Mud.Contracts.Core.Tables;
 using Nethereum.Mud.IntegrationTests.MudTest.Tables;
 using Nethereum.Web3;

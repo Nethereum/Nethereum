@@ -34,6 +34,7 @@ else
 	<MudButton Variant="Variant.Outlined" @onclick="PersonalSignAsync">Personal Sign</MudButton>
 	<MudButton Variant="Variant.Outlined" @onclick="SwitchChainAsync">Switch Chain</MudButton>
 	<MudButton Variant="Variant.Outlined" @onclick="AddEthereumChainAsync">Add Chain</MudButton>
+	<MudButton Variant="Variant.Outlined" @onclick="GetBlockNumberAsync">Get BlockNumber</MudButton>
 
 }
 
@@ -129,6 +130,20 @@ else
 			Console.WriteLine(ex.ToString());
 		}
 
+	}
+
+	public async Task GetBlockNumberAsync() {
+		try
+		{
+			var web32 = new Nethereum.Web3.Web3("https://ethereum-rpc.publicnode.com");
+			var response = await web32.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            Response = response.Value.ToString();
+        }
+        catch (Exception ex)
+        {
+            Response = ex.Message;
+            Console.WriteLine(ex.ToString());
+        }
 	}
 
 	public async Task PersonalSignAsync()

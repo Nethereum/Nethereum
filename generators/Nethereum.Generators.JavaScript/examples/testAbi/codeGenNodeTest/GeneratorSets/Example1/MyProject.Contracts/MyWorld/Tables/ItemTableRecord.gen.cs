@@ -1,15 +1,47 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Mud;
+using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Mud.Contracts.Core.Tables;
 using Nethereum.Web3;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace MyProject.Contracts.MyWorld.Tables
 {
     public partial class ItemTableService : TableService<ItemTableRecord, ItemTableRecord.ItemKey, ItemTableRecord.ItemValue>
     { 
         public ItemTableService(IWeb3 web3, string contractAddress) : base(web3, contractAddress) {}
+        public virtual Task<ItemTableRecord> GetTableRecordAsync(uint id, BlockParameter blockParameter = null)
+        {
+            var _key = new ItemTableRecord.ItemKey();
+            _key.Id = id;
+            return GetTableRecordAsync(_key, blockParameter);
+        }
+        public virtual Task<string> SetRecordRequestAsync(uint id, uint price, string name, string description, string owner)
+        {
+            var _key = new ItemTableRecord.ItemKey();
+            _key.Id = id;
+
+            var _values = new ItemTableRecord.ItemValue();
+            _values.Price = price;
+            _values.Name = name;
+            _values.Description = description;
+            _values.Owner = owner;
+            return SetRecordRequestAsync(_key, _values);
+        }
+        public virtual Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync(uint id, uint price, string name, string description, string owner)
+        {
+            var _key = new ItemTableRecord.ItemKey();
+            _key.Id = id;
+
+            var _values = new ItemTableRecord.ItemValue();
+            _values.Price = price;
+            _values.Name = name;
+            _values.Description = description;
+            _values.Owner = owner;
+            return SetRecordRequestAndWaitForReceiptAsync(_key, _values);
+        }
     }
     
     public partial class ItemTableRecord : TableRecord<ItemTableRecord.ItemKey, ItemTableRecord.ItemValue> 
@@ -18,6 +50,26 @@ namespace MyProject.Contracts.MyWorld.Tables
         {
         
         }
+        /// <summary>
+        /// Direct access to the key property 'Id'.
+        /// </summary>
+        public virtual uint Id => Keys.Id;
+        /// <summary>
+        /// Direct access to the value property 'Price'.
+        /// </summary>
+        public virtual uint Price => Values.Price;
+        /// <summary>
+        /// Direct access to the value property 'Name'.
+        /// </summary>
+        public virtual string Name => Values.Name;
+        /// <summary>
+        /// Direct access to the value property 'Description'.
+        /// </summary>
+        public virtual string Description => Values.Description;
+        /// <summary>
+        /// Direct access to the value property 'Owner'.
+        /// </summary>
+        public virtual string Owner => Values.Owner;
 
         public partial class ItemKey
         {
