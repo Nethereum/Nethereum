@@ -389,6 +389,22 @@ namespace Nethereum.Util
             return new BigDecimal(mantissa, exponent);
         }
 
+        public static bool TryParse(string? value, out BigDecimal result)
+        {
+            try
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+
+                result = Parse(value);
+                return true;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+
         /// <summary>
         ///     Returns the mantissa of value, aligned to the exponent of reference.
         ///     Assumes the exponent of value is larger than of value.
