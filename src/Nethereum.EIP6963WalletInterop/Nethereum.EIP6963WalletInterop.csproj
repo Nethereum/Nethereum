@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.EIP6963WalletInterop Nethereum EIP6963 Browser Wallet Extension Interop, core components to integrate with browser extensions like Metamask, Coinbase, Brave, Rabby, Rainbow, and many more see https://eips.ethereum.org/EIPS/eip-6963 and https://eip6963.org/</Description>
+		<AssemblyTitle>Nethereum.Metamask</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>$(UIFrameworksCore);netstandard2.0;net472</TargetFrameworks>
+		<AssemblyName>Nethereum.EIP6963WalletInterop</AssemblyName>
+		<PackageId>Nethereum.EIP6963WalletInterop</PackageId>
+		<PackageTags>Netherum;EIP6963 Standard;Broswer Wallet Extension Interop;Ethereum;Blockchain;Metamask;Coinbase;Rabby;Rainbow</PackageTags>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+</Project>

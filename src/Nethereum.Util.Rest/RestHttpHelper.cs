@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
+
 
 #if NET8_0_OR_GREATER
 using System.Text.Json; // For System.Text.Json in .NET 5+

@@ -1,0 +1,238 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Nethereum.Blazor
+@using Nethereum.Blazor.Storage
+@using Nethereum.UI
+@using Nethereum.EIP6963WalletInterop
+@implements IDisposable
+@inject EIP6963WalletHostProvider _eip6963HostProvider
+@inject SelectedEthereumHostProviderService _selectedHostProvider
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject LocalStorageHelper? LocalStorage
+
+<div class="wallet-container @CssClass @GetThemeClass()">
+
+    @if (WalletAvailable)
+    {
+        <AuthorizeView Roles="EthereumConnected">
+            <Authorized>
+
+                @if (AvailableWallets.Count > 1)
+                {
+                    <button type="button" class="btnWallet btnWalletSelected" @onclick="ToggleDropdown"> 
+                        <div class="selected-wallet">
+                            @if (SelectedWallet != null)
+                            {
+                                <img src="@SelectedWallet.Icon" alt="@SelectedWallet.Name" class="wallet-icon" />
+                            }
+                            <span>@(string.IsNullOrEmpty(EnsName) ? Truncate(SelectedAccount, SelectedAccountTruncateLength) : EnsName)</span>
+
+                        </div>
+
+                        <span>▼</span>
+
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btnWallet btnWalletSelected">
+                        <div class="selected-wallet">
+                            @if (SelectedWallet != null)
+                            {
+                                <img src="@SelectedWallet.Icon" alt="@SelectedWallet.Name" class="wallet-icon" />
+                            }
+                            <span>@(string.IsNullOrEmpty(EnsName) ? Truncate(SelectedAccount, SelectedAccountTruncateLength) : EnsName)</span>
+
+                        </div>
+
+                    </button>
+                }
+
+
+            </Authorized>
+            <NotAuthorized>
+                <button type="button" class="btnWallet" @onclick="@FetchWalletsAsync">Connect Wallet</button>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        @if (ShowWalletSelection)
+        {
+            <div class="wallet-dropdown">
+                @foreach (var wallet in AvailableWallets)
+                {
+                    <button type="button" class="dropdown-item" @onclick="@(() => SelectWalletAsync(wallet.Uuid))">
+                        <img src="@wallet.Icon" alt="@wallet.Name" class="wallet-icon" />
+                        <span class="wallet-name">@wallet.Name</span>
+                    </button>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="no-wallet">@InstallWalletText</div>
+    }
+</div>
+
+@code {
+
+    public enum ThemeType
+    {
+        Light,
+        Dark,
+        None
+    }
+
+    public string GetThemeClass()
+    {
+        return Theme switch
+        {
+            ThemeType.Light => "light-theme",
+            ThemeType.Dark => "dark-theme",
+            ThemeType.None => "no-theme",
+            _ => "no-theme"
+        };
+    }
+
+    bool WalletAvailable { get; set; }
+    bool ShowWalletSelection { get; set; }
+    string SelectedAccount { get; set; }
+    EIP6963WalletInfo SelectedWallet { get; set; } // Stores the selected wallet object
+    List<EIP6963WalletInfo> AvailableWallets { get; set; } = new();
+
+    [Parameter]
+    public ThemeType Theme { get; set; } = ThemeType.Dark;
+
+    string? EnsName { get; set; } = null;
+
+    [Parameter]
+    public string CssClass { get; set; } = "";
+
+    [Parameter]
+    public string InstallWalletText { get; set; } = "No Wallet Available";
+
+    [Parameter]
+    public int SelectedAccountTruncateLength { get; set; } = 17;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _eip6963HostProvider.SelectedAccountChanged += WalletHostProvider_SelectedAccountChanged;
+            WalletAvailable = await _eip6963HostProvider.CheckProviderAvailabilityAsync();
+
+            if (WalletAvailable)
+            {
+                SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+                AvailableWallets = (await _eip6963HostProvider.GetAvailableWalletsAsync()).ToList();
+
+                // Retrieve the last used wallet (by RDNS) from LocalStorage
+                string? storedWalletRdns = null;
+                if (LocalStorage != null)
+                {
+                    storedWalletRdns = await LocalStorage.GetItemAsync("selectedWalletRdns");
+                }
+
+                if (!string.IsNullOrEmpty(storedWalletRdns) && AvailableWallets.Count > 0)
+                {
+                    // Find the wallet by RDNS instead of UUID
+                    SelectedWallet = AvailableWallets.FirstOrDefault(w => w.Rdns == storedWalletRdns);
+
+                    if (SelectedWallet != null)
+                    {
+                        await SelectWalletAsync(SelectedWallet.Uuid);
+                    }
+                    else if (LocalStorage != null)
+                    {
+                        // If the stored wallet is uninstalled, clear local storage
+                        await LocalStorage.RemoveItemAsync("selectedWalletRdns");
+                        SelectedWallet = AvailableWallets.FirstOrDefault();
+                    }
+                }
+                else
+                {
+                    SelectedWallet = AvailableWallets.FirstOrDefault();
+                }
+
+                if (!string.IsNullOrEmpty(SelectedAccount))
+                {
+                    await _selectedHostProvider.SetSelectedEthereumHostProvider(_eip6963HostProvider);
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+
+
+    public void Dispose()
+    {
+        _eip6963HostProvider.SelectedAccountChanged -= WalletHostProvider_SelectedAccountChanged;
+    }
+
+    private async Task WalletHostProvider_SelectedAccountChanged(string account)
+    {
+        SelectedAccount = account;
+        await SetEnsNameAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async Task FetchWalletsAsync()
+    {
+        AvailableWallets = (await _eip6963HostProvider.GetAvailableWalletsAsync()).ToList();
+        if (AvailableWallets.Count == 1)
+        {
+            await SelectWalletAsync(AvailableWallets[0].Uuid);
+        }
+        else
+        {
+            ShowWalletSelection = !ShowWalletSelection;
+        }
+        StateHasChanged();
+    }
+
+    protected async Task SetEnsNameAsync()
+    {
+        if (!string.IsNullOrEmpty(SelectedAccount))
+        {
+            try
+            {
+                var web3 = await _eip6963HostProvider.GetWeb3Async();
+                EnsName = await web3.Eth.GetEnsService().ReverseResolveAsync(SelectedAccount);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    protected async Task SelectWalletAsync(string walletUuid)
+    {
+        ShowWalletSelection = false;
+        await _eip6963HostProvider.SelectWalletAsync(walletUuid);
+        SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+
+        await SetEnsNameAsync();
+        SelectedWallet = AvailableWallets.FirstOrDefault(w => w.Uuid == walletUuid);
+
+            // Store RDNS instead of UUID for persistence
+            if (LocalStorage != null && SelectedWallet != null)
+            {
+                await LocalStorage.SetItemAsync("selectedWalletRdns", SelectedWallet.Rdns);
+            }
+
+            await _selectedHostProvider.SetSelectedEthereumHostProvider(_eip6963HostProvider);
+            StateHasChanged();
+        }
+
+        private void ToggleDropdown()
+        {
+            ShowWalletSelection = !ShowWalletSelection;
+        }
+
+        public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
+        {
+            return value?.Length > maxLength
+                ? value.Substring(0, maxLength) + truncationSuffix
+                : value;
+        }
+}

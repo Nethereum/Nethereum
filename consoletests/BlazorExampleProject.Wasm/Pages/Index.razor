@@ -1,0 +1,339 @@
+﻿@page "/"
+@using Nethereum.ABI.EIP712
+@using Nethereum.ABI.FunctionEncoding.Attributes;
+@implements IDisposable;
+@inject IJSRuntime jsRuntime;
+@inject SelectedEthereumHostProviderService selectedHostProviderService
+@inject NavigationManager _navigationManager
+@inject AuthenticationStateProvider _siweAuthenticationStateProvider;
+@using Nethereum.Hex.HexTypes;
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Nethereum.RPC.HostWallet
+@using Nethereum.Signer
+@using Nethereum.Signer.EIP712
+
+
+<AuthorizeView Roles="EthereumConnected">
+    <Authorized>
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Selected Account:</label>
+                    <div class="col-sm-6">
+                        @SelectedAccount
+                        <small id="selectedAccountHelp" class="form-text text-muted">The selected account is bound to the host (ie Metamask) on change</small>
+                    </div>
+                </div>
+                 <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Selected Account from Claims Principal</label>
+                    <div class="col-sm-6">
+                        @context?.User?.FindFirst(c => c.Type.Contains(ClaimTypes.NameIdentifier))?.Value
+                        <small id="selectedAccountHelp" class="form-text text-muted">The selected account is bound to the claims principal</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Selected Network ChainId:</label>
+                    <div class="col-sm-6">
+                        @SelectedChainId
+                        <small id="selectedAccountHelp" class="form-text text-muted">The selected chain Id</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Block hash of block number 0:</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@GetBlockHashAsync">Get BlockHash</button>
+                        <div>@BlockHash</div>
+                        <small id="selectedAccountHelp" class="form-text text-muted">With Metamask calls are redirected to its configured node (i.e http://localhost:8545)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+     
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Sign Typed Data V4:</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@SignV4">Sign</button>
+                        <div>@RecoveredAccount</div>
+                        <small id="selectedAccountHelp" class="form-text text-muted">Coverts Typed data to Json and sends it to Metamask to sign it, then uses Nethereum to recover the address</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Change Chain</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@ChangeChainToMainnet">Change Chain To Mainnet</button>
+
+                        <small id="selectedAccountHelp" class="form-text text-muted">Changes the chain to Mainnet</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Sign Message</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@SignAMessage">Sign</button>
+                        <div>@RecoveredAccountMessage</div>
+                        <small id="selectedAccountHelp" class="form-text text-muted">Signs using personal_sign and recovers using Nethereum</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Add Chain</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@AddChain">Add Chain (Optimism)</button>
+                        
+                        <small id="selectedAccountHelp" class="form-text text-muted">Adds a new chain (Optimism) to Metamask</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+
+        <div>
+            Please connect to Ethereum !
+        </div>
+
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    bool EthereumAvailable { get; set; }
+    string SelectedAccount { get; set; }
+    long SelectedChainId { get; set; }
+    string BlockHash { get; set; }
+    string TransactionHash { get; set; }
+    string ErrorTransferMessage { get; set; }
+    string ErrorAuthenticateMessage { get; set; }
+    string UserName { get; set; }
+    string RecoveredAccount { get; set; }
+    string RecoveredAccountMessage { get; set; }
+    protected string AuthenticatedAccount { get; set; }
+    IEthereumHostProvider _ethereumHostProvider;
+
+    protected override void OnInitialized()
+    {
+        //metamask is selected
+        _ethereumHostProvider = selectedHostProviderService.SelectedHost;
+        _ethereumHostProvider.SelectedAccountChanged += HostProvider_SelectedAccountChanged;
+        _ethereumHostProvider.NetworkChanged += HostProvider_NetworkChanged;
+        _ethereumHostProvider.EnabledChanged += HostProviderOnEnabledChanged;
+    }
+
+    public void Dispose()
+    {
+        _ethereumHostProvider.SelectedAccountChanged -= HostProvider_SelectedAccountChanged;
+        _ethereumHostProvider.NetworkChanged -= HostProvider_NetworkChanged;
+        _ethereumHostProvider.EnabledChanged -= HostProviderOnEnabledChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        EthereumAvailable = await _ethereumHostProvider.CheckProviderAvailabilityAsync();
+        if (EthereumAvailable)
+        {
+            if (_ethereumHostProvider.MultipleWalletsProvider == false || 
+                (_ethereumHostProvider.MultipleWalletsProvider == true && _ethereumHostProvider.MultipleWalletSelected))
+            {
+                var selectedAccount = await _ethereumHostProvider.GetProviderSelectedAccountAsync();
+                if (!string.IsNullOrEmpty(selectedAccount))
+                {
+                    SelectedAccount = selectedAccount;
+                    await GetChainId();
+                }
+            }
+        }
+
+        var authState = await AuthenticationState;
+        if (authState != null)
+        {
+            UserName = authState.User.FindFirst(c => c.Type.Contains(ClaimTypes.NameIdentifier))?.Value;
+        }
+    }
+
+
+    private async Task HostProviderOnEnabledChanged(bool enabled)
+    {
+        if (enabled)
+        {
+            await GetChainId();
+            this.StateHasChanged();
+        }
+    }
+
+    private async Task GetChainId()
+    {
+        var web3 = await _ethereumHostProvider.GetWeb3Async();
+        var chainId = await web3.Eth.ChainId.SendRequestAsync();
+        SelectedChainId = (long)chainId.Value;
+    }
+
+    private async Task HostProvider_SelectedAccountChanged(string account)
+    {
+        SelectedAccount = account;
+        await GetChainId();
+        this.StateHasChanged();
+    }
+
+    private async Task HostProvider_NetworkChanged(long chainId)
+    {
+        SelectedChainId = chainId;
+        this.StateHasChanged();
+    }
+
+
+    protected async Task GetBlockHashAsync()
+    {
+        var web3 = await _ethereumHostProvider.GetWeb3Async();
+        var block = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(new HexBigInteger(1));
+        BlockHash = block.BlockHash;
+    }
+
+    protected async Task SignAMessage()
+    {
+        RecoveredAccountMessage = "";
+        var web3 = await _ethereumHostProvider.GetWeb3Async();
+        var signature = await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(new HexUTF8String("Hello"));
+        RecoveredAccountMessage = new EthereumMessageSigner().EncodeUTF8AndEcRecover("Hello", signature);
+    }
+
+    protected async Task AddChain()
+    {
+        var web3 = await _ethereumHostProvider.GetWeb3Async();
+        var optimismChain = new AddEthereumChainParameter() {
+                ChainId = new HexBigInteger(10), ChainName = "Optimism", NativeCurrency = new NativeCurrency()
+                {
+                    Decimals = 18,
+                    Name = "ETH",
+                    Symbol = "ETH"
+                },
+                RpcUrls = new List<string> { "https://mainnet.optimism.io", "https://rpc.ankr.com/optimism" },
+                BlockExplorerUrls = new List<string> { "https://optimistic.etherscan.io/"},
+
+            };
+        try
+        {
+            var result = await web3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(optimismChain);
+        }
+        catch(Exception ex)
+        {
+            
+        }
+    }
+
+    protected async Task ChangeChainToMainnet()
+    {
+        try
+        {
+            var web3 = await _ethereumHostProvider.GetWeb3Async();
+            var result = await web3.Eth.HostWallet.SwitchEthereumChain.SendRequestAsync(new SwitchEthereumChainParameter() { ChainId = new HexBigInteger(1) });
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+    protected async Task SignV4()
+    {
+        RecoveredAccount = "";
+        var web3 = await _ethereumHostProvider.GetWeb3Async();
+        var chainId = await web3.Eth.ChainId.SendRequestAsync();
+        if (chainId.Value == 1)
+        {
+            var typedData = GetMailTypedDefinition();
+
+            var mail = new Mail
+                {
+                    From = new Person
+                    {
+                        Name = "Cow",
+                        Wallets = new List<string> { "0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826", "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF" }
+                    },
+                    To = new List<Person>
+                {
+                    new Person
+                    {
+                        Name = "Bob",
+                        Wallets = new List<string> { "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB", "0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57", "0xB0B0b0b0b0b0B000000000000000000000000000" }
+                    }
+                },
+                    Contents = "Hello, Bob!"
+                };
+
+            typedData.Domain.ChainId = 1;
+            typedData.SetMessage(mail);
+
+            var signature = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+
+            RecoveredAccount = new Eip712TypedDataSigner().RecoverFromSignatureV4(typedData, signature);
+        }
+        else
+        {
+            RecoveredAccount = "Chain Id is not 1, please change change your chain to mainnet";
+        }
+    }
+
+    protected async Task TransferEtherAsync()
+    {
+        try
+        {
+            var web3 = await _ethereumHostProvider.GetWeb3Async();
+
+            TransactionHash = await web3.Eth.GetEtherTransferService().TransferEtherAsync("0x13f022d72158410433cbd66f5dd8bf6d2d129924", 0.001m);
+        }
+        catch (Exception ex)
+        {
+            ErrorTransferMessage = ex.Message;
+        }
+    }
+
+
+
+    //The generic EIP712 Typed schema defintion for this message
+    public TypedData<Domain> GetMailTypedDefinition()
+    {
+        return new TypedData<Domain>
+            {
+                Domain = new Domain
+                {
+                    Name = "Ether Mail",
+                    Version = "1",
+                    ChainId = 1,
+                    VerifyingContract = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+                },
+                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(Domain), typeof(Group), typeof(Mail), typeof(Person)),
+                PrimaryType = nameof(Mail),
+            };
+    }
+
+}
+
+

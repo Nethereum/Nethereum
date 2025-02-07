@@ -61,17 +61,27 @@ namespace Nethereum.Blazor
 
         public async override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            if (EthereumHostProvider != null && EthereumHostProvider.Available)
+            try
             {
-                var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync();
-                if (currentAddress != null)
+                if (EthereumHostProvider != null && EthereumHostProvider.Available)
                 {
-                    var claimsPrincipal = GetClaimsPrincipal(currentAddress);
-                    return new AuthenticationState(claimsPrincipal);
+
+                    var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync();
+                    if (currentAddress != null)
+                    {
+                        var claimsPrincipal = GetClaimsPrincipal(currentAddress);
+                        return new AuthenticationState(claimsPrincipal);
+                    }
                 }
+
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
-           
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            catch
+            {
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
+
+            
            
         }
 

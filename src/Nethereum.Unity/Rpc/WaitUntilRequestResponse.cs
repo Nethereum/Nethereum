@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Nethereum.Unity.Metamask
+namespace Nethereum.Unity.Rpc
 {
     public class WaitUntilRequestResponse
     {

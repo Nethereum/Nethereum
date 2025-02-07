@@ -22,5 +22,10 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="nethereum-gen.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+    </None>
+  </ItemGroup>
 
 </Project>

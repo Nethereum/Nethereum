@@ -1,0 +1,41 @@
+﻿@inherits LayoutComponentBase
+@inject AuthenticationStateProvider _siweAuthenticationStateProvider;
+@using Nethereum.Blazor
+<style>
+   .custom-wallet {
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.custom-wallet .wallet-dropdown {
+    background: white;
+    border: 1px solid #ddd;
+    box-shadow: 0px 0.25em 0.6em rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.custom-wallet .dropdown-item {
+    color: black;
+    font-weight: bold;
+}
+
+.custom-wallet .dropdown-item:hover {
+    background-color: #f0f0f0;
+}
+</style>
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+    <div class="main">
+        <div class="top-row px-4">
+            <EIP6963Wallet Theme="EIP6963Wallet.ThemeType.Light"/>
+        </div>
+        <div class="content px-4">
+            @Body
+        </div>
+    </div>
+</div>
+

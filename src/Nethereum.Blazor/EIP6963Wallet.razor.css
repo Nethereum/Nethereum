@@ -1,0 +1,135 @@
+﻿/* Base Styles */
+.wallet-container {
+    position: relative;
+    width: 17.5em; /* Equivalent to ~280px */
+}
+
+/* General Button Styling */
+.btnWallet {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75em 1.2em; /* Scales with font size */
+    font-size: 1em; /* Base size (16px default) */
+    text-align: left;
+    cursor: pointer;
+    border-radius: 0.6em;
+    transition: background 0.3s ease, color 0.3s ease;
+    gap: 0.8em;
+}
+
+/* Wallet Icon & Address Alignment */
+.selected-wallet {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    flex-grow: 1;
+}
+
+/* Wallet Icon Styling */
+.wallet-icon {
+    width: 2em; /* Scales with font size */
+    height: 2em;
+    border-radius: 50%;
+}
+
+/* Wallet Name Styling */
+.wallet-name {
+    flex-grow: 1;
+    font-size: 1em; /* Matches default text size */
+}
+
+/* Dropdown Styling */
+.wallet-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    border-radius: 0.6em;
+    box-shadow: 0px 0.25em 0.6em rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    max-height: 18em;
+    overflow-y: auto;
+    padding: 0.4em 0;
+    transition: all 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+/* Dropdown Items */
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.9em 1.25em;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+    font-size: 1em; /* Scales dynamically */
+}
+
+/* Dark Theme */
+.dark-theme .btnWallet {
+    background-color: #1e1e1e;
+    color: white;
+    border: 0.07em solid #333;
+}
+
+.dark-theme .btnWallet:hover {
+    background-color: #2a2a2a;
+}
+
+.dark-theme .btnWalletSelected {
+    background-color: #3a3a3a;
+    border: 0.07em solid #555;
+}
+
+.dark-theme .wallet-dropdown {
+    background-color: #1e1e1e;
+}
+
+.dark-theme .dropdown-item {
+    color: white;
+}
+
+.dark-theme .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Theme */
+.light-theme .btnWallet {
+    background-color: white;
+    color: black;
+    border: 0.07em solid #ddd;
+}
+
+.light-theme .btnWallet:hover {
+    background-color: #f0f0f0;
+}
+
+.light-theme .btnWalletSelected {
+    background-color: #e0e0e0;
+    border: 0.07em solid #bbb;
+}
+
+.light-theme .wallet-dropdown {
+    background-color: white;
+    box-shadow: 0px 0.25em 0.6em rgba(0, 0, 0, 0.1);
+}
+
+.light-theme .dropdown-item {
+    color: black;
+}
+
+.light-theme .dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure Icons and Text are Aligned in Dropdown */
+.dropdown-item img {
+    width: 2em;
+    height: 2em;
+    border-radius: 50%;
+    margin-right: 0.8em;
+}

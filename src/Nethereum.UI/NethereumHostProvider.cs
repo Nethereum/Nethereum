@@ -11,7 +11,8 @@ namespace Nethereum.UI
         public string Name => "Nethereum Host Provider";
 
         public bool Available => true;
-
+        public bool MultipleWalletsProvider => false;
+        public bool MultipleWalletSelected { get; private set; } = false;
         protected Account Account { get; private set; }
 
         protected string Url { get; set; }

@@ -14,8 +14,10 @@ internal class AppKitHostProvider : IEthereumHostProvider, IAppKit {
 	public string? SelectedAccount { get; private set; }
 	public long SelectedNetworkChainId { get; private set; }
 	public bool Enabled { get; private set; }
+    public bool MultipleWalletsProvider => false; //False for now
+    public bool MultipleWalletSelected { get; private set; } = false;
 
-	public event Func<string?, Task>? SelectedAccountChanged;
+    public event Func<string?, Task>? SelectedAccountChanged;
 	public event Func<long, Task>? NetworkChanged;
 	public event Func<bool, Task>? AvailabilityChanged;
 	public event Func<bool, Task>? EnabledChanged;

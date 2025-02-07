@@ -11,7 +11,9 @@ namespace Nethereum.UI
         string SelectedAccount { get;}
         long SelectedNetworkChainId { get; }
         bool Enabled { get; }
-        
+        bool MultipleWalletsProvider { get; }
+        bool MultipleWalletSelected { get; }
+
         event Func<string, Task> SelectedAccountChanged;
         event Func<long, Task> NetworkChanged;
         event Func<bool, Task> AvailabilityChanged;

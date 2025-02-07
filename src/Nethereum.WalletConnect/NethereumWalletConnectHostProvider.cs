@@ -17,6 +17,8 @@ namespace Nethereum.WalletConnect
         public static NethereumWalletConnectHostProvider Current { get; private set; }
         public string Name { get; } = "WalletConnect";
         public bool Available { get; private set; }
+        public bool MultipleWalletsProvider => false; //False for now
+        public bool MultipleWalletSelected { get; private set; } = false;
         public string SelectedAccount
         {
             get => _selectedAccount;

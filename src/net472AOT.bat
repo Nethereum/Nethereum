@@ -147,6 +147,14 @@ cd Nethereum.Util.Rest
 CALL :build
 cd ..
 
+cd Nethereum.Unity.EIP6963
+CALL :build
+cd ..
+
+cd Nethereum.EIP6963WalletInterop
+CALL :build
+cd ..
+
 
 EXIT /B %ERRORLEVEL%
 

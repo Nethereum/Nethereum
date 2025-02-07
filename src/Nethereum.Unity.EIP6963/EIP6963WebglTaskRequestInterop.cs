@@ -5,38 +5,38 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Nethereum.Unity.Metamask
+namespace Nethereum.Unity.EIP6963
 {
     using AOT;
     using Nethereum.Hex.HexTypes;
 #if !DOTNET35
-    using Nethereum.Metamask;
+    using Nethereum.EIP6963WalletInterop;
     using Nethereum.RPC.AccountSigning;
     using Nethereum.RPC.HostWallet;
-    using Nethereum.Unity.Rpc;
     using UnityEngine;
+    using Nethereum.Unity.Rpc;
 
-    public class MetamaskWebglTaskRequestInterop : IMetamaskInterop
+    public class EIP6963WebglTaskRequestInterop : IEIP6963WalletInterop
     {
         public static Dictionary<string, RpcResponseMessage> RequestResponses = new Dictionary<string, RpcResponseMessage>();
 
         [MonoPInvokeCallback(typeof(Action<string>))]
-        public static void MetamaskTaskRequestInteropCallBack(string responseMessage)
+        public static void EIP6963_TaskRequestInteropCallBack(string responseMessage)
         {
             var response = JsonConvert.DeserializeObject<RpcResponseMessage>(responseMessage, DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings());
             RequestResponses.Add((string)response.Id, response);
         }
 
         [MonoPInvokeCallback(typeof(Action<string>))]
-        public static void SelectedAccountChanged(string selectedAccount)
+        public static void EIP6963_SelectedAccountChanged(string selectedAccount)
         {
-            MetamaskWebglHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).RunSynchronously();
+            EIP6963WebglHostProvider.Current.ChangeSelectedAccountAsync(selectedAccount).RunSynchronously();
         }
 
         [MonoPInvokeCallback(typeof(Action<string>))]
-        public static void SelectedNetworkChanged(string chainId)
+        public static void EIP6963_SelectedNetworkChanged(string chainId)
         {
-            MetamaskWebglHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).RunSynchronously();
+            EIP6963WebglHostProvider.Current.ChangeSelectedNetworkAsync((long)new HexBigInteger(chainId).Value).RunSynchronously();
         }
 
         public const int DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS = 1000;
@@ -45,7 +45,7 @@ namespace Nethereum.Unity.Metamask
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
         public bool InitialisedAccountChainEvents { get; set; } = false;
 
-        public MetamaskWebglTaskRequestInterop(JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds, int delayBetweenResponseCheckMilliseconds = DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS)
+        public EIP6963WebglTaskRequestInterop(JsonSerializerSettings jsonSerializerSettings = null, int timeOutMilliseconds = WaitUntilRequestResponse.DefaultTimeOutMilliSeconds, int delayBetweenResponseCheckMilliseconds = DEFAULT_DELAY_BETWEEN_RESPONSE_CHECK_MILLISECONDS)
         {
             TimeOutMilliseconds = timeOutMilliseconds;
 
@@ -67,12 +67,12 @@ namespace Nethereum.Unity.Metamask
         {
             var requestAccounts = new EthRequestAccounts();
             var request = requestAccounts.BuildRequest();
-            var metamaskRequest = new RpcRequestMessage(request.Id, request.Method, request.RawParameters);
-            var response = await SendAsync(metamaskRequest);
+            var rpcRequest = new RpcRequestMessage(request.Id, request.Method, request.RawParameters);
+            var response = await SendAsync(rpcRequest);
             var accounts = ConvertResponse<string[]>(response);
             if (!InitialisedAccountChainEvents)
             {
-                MetamaskWebglInterop.EthereumInitRpcClientCallback(SelectedAccountChanged, SelectedNetworkChanged);
+                EIP6963WebglInterop.EIP6963_EthereumInitRpcClientCallback(EIP6963_SelectedAccountChanged, EIP6963_SelectedNetworkChanged);
                 InitialisedAccountChainEvents = true;
             }
             if (accounts != null && accounts.Length > 0)
@@ -82,14 +82,14 @@ namespace Nethereum.Unity.Metamask
             return null;
         }
 
-        public async Task<bool> CheckMetamaskAvailability()
+        public async Task<bool> CheckAvailabilityAsync()
         {
-            return MetamaskWebglInterop.IsMetamaskAvailable();
+            return EIP6963WebglInterop.EIP6963_IsAvailable();
         }
 
         public async Task<string> GetSelectedAddress()
         {
-            return MetamaskWebglInterop.GetSelectedAddress();
+            return EIP6963WebglInterop.EIP6963_GetSelectedAddress();
         }
 
         public async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request)
@@ -98,7 +98,7 @@ namespace Nethereum.Unity.Metamask
             try
             {
                 request.Id = newUniqueRequestId;
-                MetamaskWebglInterop.RequestRpcClientCallback(MetamaskTaskRequestInteropCallBack, JsonConvert.SerializeObject(request, JsonSerializerSettings));
+                EIP6963WebglInterop.EIP6963_RequestRpcClientCallback(EIP6963_TaskRequestInteropCallBack, JsonConvert.SerializeObject(request, JsonSerializerSettings));
             }
             catch (Exception ex)
             {
@@ -113,9 +113,9 @@ namespace Nethereum.Unity.Metamask
             RpcResponseMessage responseMessage = null;
 
 
-            if (MetamaskWebglTaskRequestInterop.RequestResponses.ContainsKey(newUniqueRequestId))
+            if (EIP6963WebglTaskRequestInterop.RequestResponses.ContainsKey(newUniqueRequestId))
             {
-                responseMessage = MetamaskWebglTaskRequestInterop.RequestResponses[newUniqueRequestId];
+                responseMessage = EIP6963WebglTaskRequestInterop.RequestResponses[newUniqueRequestId];
                 RequestResponses.Remove(newUniqueRequestId);
                 return responseMessage;
             }
@@ -123,14 +123,14 @@ namespace Nethereum.Unity.Metamask
             {
                 if (waitUntilRequestResponse.HasTimedOut)
                 {
-                    throw new Exception($"Metamask Response has timeout after : {TimeOutMilliseconds}");
+                    throw new Exception($"Response has timeout after : {TimeOutMilliseconds}");
 
                 }
                 throw new Exception("Unexpected error retrieving message");
             }
         }
 
-        public Task<RpcResponseMessage> SendTransactionAsync(Nethereum.Metamask.MetamaskRpcRequestMessage rpcRequestMessage)
+        public Task<RpcResponseMessage> SendTransactionAsync(Nethereum.EIP6963WalletInterop.EIP6963RpcRequestMessage rpcRequestMessage)
         {
             return SendAsync(rpcRequestMessage);
         }
@@ -140,8 +140,8 @@ namespace Nethereum.Unity.Metamask
             var personalSign = new EthPersonalSign();
             var request = personalSign.BuildRequest(new Hex.HexTypes.HexUTF8String(utf8Hex));
             var account = await GetSelectedAddress();
-            var metamaskRequest = new MetamaskRpcRequestMessage(request.Id, request.Method, account, request.RawParameters);
-            var response = await SendAsync(metamaskRequest);
+            var eiprequest = new EIP6963RpcRequestMessage(request.Id, request.Method, account, request.RawParameters);
+            var response = await SendAsync(eiprequest);
             return ConvertResponse<string>(response);
         }
 
@@ -172,6 +172,26 @@ namespace Nethereum.Unity.Metamask
             }
         }
 
+        public async Task<EIP6963WalletInfo[]> GetAvailableWalletsAsync()
+        {
+            var wallets = EIP6963WebglInterop.EIP6963_GetAvailableWallets();
+            return JsonConvert.DeserializeObject<EIP6963WalletInfo[]>(wallets, JsonSerializerSettings);
+        }
+
+        public async Task SelectWalletAsync(string walletId)
+        {
+            EIP6963WebglInterop.EIP6963_SelectWallet(walletId);
+        }
+
+        public async Task<string> GetWalletIconAsync(string walletId)
+        {
+            return EIP6963WebglInterop.EIP6963_GetWalletIcon(walletId);
+        }
+
+        public void InitEIP6963()
+        {
+            EIP6963WebglInterop.EIP6963_InitEIP6963();
+        }
     }
 #endif
 }

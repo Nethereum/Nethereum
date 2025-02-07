@@ -1,19 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.UI;
 using Nethereum.Web3;
 
-namespace Nethereum.Metamask
+namespace Nethereum.EIP6963WalletInterop
 {
-    public class MetamaskHostProvider : IEthereumHostProvider
+    public class EIP6963WalletHostProvider : IEthereumHostProvider
     {
-        private readonly IMetamaskInterop _metamaskInterop;
-        public static MetamaskHostProvider Current { get; private set; }
-        public bool MultipleWalletsProvider => false;
+        protected readonly IEIP6963WalletInterop _walletInterop;
+        public static EIP6963WalletHostProvider Current { get; private set; }
+        public string Name { get; } = "EIP6963 Standard";
+        public bool MultipleWalletsProvider => true;
         public bool MultipleWalletSelected { get; private set; } = false;
-        public string Name { get; } = "Metamask";
+
         public bool Available { get; private set; }
         public string SelectedAccount
         {
@@ -21,26 +23,41 @@ namespace Nethereum.Metamask
             private set
             {
                 _selectedAccount = value;
-                _metamaskInterceptor.SelectedAccount = value;
+                _walletInterceptor.SelectedAccount = value;
             }
         }
         public long SelectedNetworkChainId { get; private set; }
         public bool Enabled { get; private set; }
         public IClient Client { get; }
 
-        private MetamaskInterceptor _metamaskInterceptor;
+        private EIP6963WalletInterceptor _walletInterceptor;
         private string _selectedAccount;
 
         public event Func<string, Task> SelectedAccountChanged;
         public event Func<long, Task> NetworkChanged;
         public event Func<bool, Task> AvailabilityChanged;
         public event Func<bool, Task> EnabledChanged;
+
+        public async Task<EIP6963WalletInfo[]> GetAvailableWalletsAsync()
+        {
+            return await _walletInterop.GetAvailableWalletsAsync();
+        }
+
+        public async Task SelectWalletAsync(string walletuuid)
+        {
+            await _walletInterop.SelectWalletAsync(walletuuid);
+            MultipleWalletSelected = true;
+            var result = await _walletInterop.GetSelectedAddress().ConfigureAwait(false);
+            await ChangeSelectedAccountAsync(result).ConfigureAwait(false);
+        }
+
         public async Task<bool> CheckProviderAvailabilityAsync()
         {
-            var result = await _metamaskInterop.CheckMetamaskAvailability().ConfigureAwait(false);
-            await ChangeMetamaskAvailableAsync(result).ConfigureAwait(false);
+            var result = await _walletInterop.CheckAvailabilityAsync().ConfigureAwait(false);
+            await ChangeWalletAvailableAsync(result).ConfigureAwait(false);
             return result;
         }
+
 
         public Task<Web3.IWeb3> GetWeb3Async()
         {
@@ -53,18 +70,18 @@ namespace Nethereum.Metamask
             {
                 web3 = new Web3.Web3(Client);
             }
-            web3.Client.OverridingRequestInterceptor = _metamaskInterceptor;
+            web3.Client.OverridingRequestInterceptor = _walletInterceptor;
             return Task.FromResult(web3);
         }
 
         public async Task<string> EnableProviderAsync()
         {
-            var selectedAccount = await _metamaskInterop.EnableEthereumAsync().ConfigureAwait(false);
+            var selectedAccount = await _walletInterop.EnableEthereumAsync().ConfigureAwait(false);
             Enabled = !string.IsNullOrEmpty(selectedAccount);
 
             if (Enabled)
             {
-                await ChangeMetamaskEnabledAsync(true).ConfigureAwait(false);
+                await ChangeWalletEnabledAsync(true).ConfigureAwait(false);
                 SelectedAccount = selectedAccount;
                 if (SelectedAccountChanged != null)
                 {
@@ -78,21 +95,21 @@ namespace Nethereum.Metamask
 
         public async Task<string> GetProviderSelectedAccountAsync()
         {
-            var result = await _metamaskInterop.GetSelectedAddress().ConfigureAwait(false);
+            var result = await _walletInterop.GetSelectedAddress().ConfigureAwait(false);
             await ChangeSelectedAccountAsync(result).ConfigureAwait(false);
             return result;
         }
 
         public async Task<string> SignMessageAsync(string message)
         {
-            return await _metamaskInterop.SignAsync(message.ToHexUTF8()).ConfigureAwait(false);
+            return await _walletInterop.SignAsync(message.ToHexUTF8()).ConfigureAwait(false);
         }
 
-        public MetamaskHostProvider(IMetamaskInterop metamaskInterop, IClient client = null, bool useOnlySigningWalletTransactionMethods = false)
+        public EIP6963WalletHostProvider(IEIP6963WalletInterop walletInterop, IClient client = null, bool useOnlySigningWalletTransactionMethods = false)
         {
-            _metamaskInterop = metamaskInterop;
+            _walletInterop = walletInterop;
             Client = client;
-            _metamaskInterceptor = new MetamaskInterceptor(_metamaskInterop, useOnlySigningWalletTransactionMethods);
+            _walletInterceptor = new EIP6963WalletInterceptor(_walletInterop, useOnlySigningWalletTransactionMethods);
             Current = this;
         }
 
@@ -120,7 +137,7 @@ namespace Nethereum.Metamask
             }
         }
 
-        public async Task ChangeMetamaskAvailableAsync(bool available)
+        public async Task ChangeWalletAvailableAsync(bool available)
         {
             if (Available != available)
             {
@@ -132,7 +149,7 @@ namespace Nethereum.Metamask
             }
         }
 
-        public async Task ChangeMetamaskEnabledAsync(bool enabled)
+        public async Task ChangeWalletEnabledAsync(bool enabled)
         {
             if (Enabled != enabled)
             {
