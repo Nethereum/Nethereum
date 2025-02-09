@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Nethereum.Unity.Metamask Nethereum Unity Class Library to interact with Ethereum from Unity3d and Metamask in the browser</Description>
-    <AssemblyTitle>Nethereum.Unity.Metamask</AssemblyTitle>
+    <Description>Nethereum.Unity.EIP6963 Nethereum Unity Class Library to interact with Ethereum from Unity3d and any compatible browser wallet EIP6963 in the browser</Description>
+    <AssemblyTitle>Nethereum.Unity.EIP6963</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(UnityFrameworks)</TargetFrameworks>
-    <AssemblyName>Nethereum.Unity.Metamask</AssemblyName>
-    <PackageId>Nethereum.Unity.Metamasky</PackageId>
-    <PackageTags>Netherum;Unity3d;Unity;Metamask;Ethereum;Blockchain;Crypto 2.0</PackageTags>
-	  <LangVersion>latest</LangVersion>
+    <AssemblyName>Nethereum.Unity.EIP6963</AssemblyName>
+    <PackageId>Nethereum.Unity.EIP6963</PackageId>
+    <PackageTags>Netherum;Unity3d;Unity;EIP6963;Metamask;Coinbase;Rabby;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+	<LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.EIP6963WalletInterop\Nethereum.EIP6963WalletInterop.csproj" />
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="NethereumMetamask.jslib">
+    <None Update="NethereumEIP6963.jslib">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

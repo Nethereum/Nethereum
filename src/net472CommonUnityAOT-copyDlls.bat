@@ -33,6 +33,8 @@ xcopy "compiledlibraries\net472dllsAOT\Nethereum.Geth.dll" "compiledlibraries\ne
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Mud.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Mud.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Mud.Contracts.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Mud.Contracts.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\Nethereum.Util.Rest.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Util.Rest.dll" /s /y
+xcopy "compiledlibraries\net472dllsAOT\Nethereum.EIP6963WalletInterop.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.EIP6963WalletInterop.dll" /s /y
+xcopy "compiledlibraries\net472dllsAOT\Nethereum.Unity.EIP6963.dll" "compiledlibraries\net472UnityCommonAOT\Nethereum.Unity.EIP6963.dll" /s /y
 xcopy "compiledlibraries\net472dllsAOT\*.jslib "compiledlibraries\net472UnityCommonAOT" /s /y
 
 EXIT /B 0
