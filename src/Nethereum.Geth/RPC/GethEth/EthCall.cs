@@ -118,11 +118,11 @@ namespace Nethereum.Geth.RPC.GethEth
     {
         public EthCall(IClient client) : base(client,ApiMethods.eth_call.ToString()) { }
 
-        public Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null)
+        public Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null)
         {
             return base.SendRequestAsync(id, transaction, blockParameter, stateChanges);
         }
-        public RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null)
+        public RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null)
         {
             return base.BuildRequest(id, transaction, blockParameter, stateChanges);
         }

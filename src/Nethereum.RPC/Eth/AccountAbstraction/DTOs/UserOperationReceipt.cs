@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 

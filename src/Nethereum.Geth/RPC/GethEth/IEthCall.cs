@@ -115,7 +115,7 @@ namespace Nethereum.Geth.RPC.GethEth
     ///</Summary>
     public interface IEthCall
     {
-        Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null);
-        RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null);
+        Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null);
+        RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null);
     }
 }
