@@ -4,9 +4,9 @@
     <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
   </PropertyGroup>
   
-  <PropertyGroup>
-    <NugetVersion>4.20.2</NugetVersion>
-  </PropertyGroup>
+   <PropertyGroup>
+    <NugetVersion>4.29.0</NugetVersion>
+  </PropertyGroup> 
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Message Condition = "$(NethereumGenerateCode) != 'false'" Importance="high" Text="Nethereum: Code generating dotnet files based on abi files in project and/or Nethereum.Generator.json." />

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net80</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <NuspecFile>nuget\Nethereum.Autogen.ContractApi.nuspec</NuspecFile>
     <StartupObject></StartupObject>
