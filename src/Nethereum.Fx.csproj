@@ -279,7 +279,14 @@
 
 	  <Compile Remove="Nethereum.UI\**" />
 
-	<Compile Remove="Nethereum.Metamask\**" />
+	  <Compile Remove="Nethereum.Unity.EIP6963\**" />
+	  
+	  
+	  <Compile Remove="Nethereum.EIP6963WalletInterop\**" />
+
+	 
+
+	  <Compile Remove="Nethereum.Metamask\**" />
 
 	<Compile Remove="Nethereum.WalletConnect\**" />
 
@@ -356,12 +363,19 @@
     <None Remove="Nethereum.Signer.Trezor\**" />
 	<None Remove="Nethereum.Unity\**" />
 	<None Remove="Nethereum.Unity.Metamask\**" />
+	  
 	<None Remove="Nethereum.Metamask\**" />
     <None Remove="Nethereum.Metamask.Blazor\**" />
     <None Remove="packages\**" />
 
     <Compile Remove="Nethereum.Reown.AppKit.Blazor\**" />
     <None Remove="Nethereum.Reown.AppKit.Blazor\**" />
+
+
+	<None Remove="Nethereum.Unity.EIP6963\**" />
+	<None Remove="Nethereum.EIP6963WalletInterop\**" />
+	<None Remove="Nethereum.Blazor\**" />
+	<Compile Remove="Nethereum.Blazor\**" />
   </ItemGroup>
 
   <ItemGroup>
