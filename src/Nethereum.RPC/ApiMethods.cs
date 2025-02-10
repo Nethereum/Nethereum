@@ -117,7 +117,11 @@
         wallet_switchEthereumChain,
         wallet_watchAsset,
         eth_signTypedData_v4,
-        personal_sign
-     
+        personal_sign,
+        eth_sendUserOperation,
+        eth_getUserOperationReceipt,
+        eth_supportedEntryPoints,
+        eth_getUserOperationByHash,
+        eth_estimateUserOperationGas
     }
 }

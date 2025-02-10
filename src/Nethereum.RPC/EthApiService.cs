@@ -11,7 +11,6 @@ using Nethereum.RPC.Eth.ChainValidation;
 
 namespace Nethereum.RPC
 {
-
     public class EthApiService : RpcClientWrapper, IEthApiService
     {
         private BlockParameter _defaultBlock;
@@ -36,6 +35,7 @@ namespace Nethereum.RPC
             ProtocolVersion = new EthProtocolVersion(client);
             Sign = new EthSign(client);
             Syncing = new EthSyncing(client);
+            
 
             Transactions = new EthApiTransactionsService(client);
             Filters = new EthApiFilterService(client);
@@ -53,6 +53,7 @@ namespace Nethereum.RPC
             DefaultBlock = BlockParameter.CreateLatest();
             TransactionManager = transactionManager;
             TransactionManager.Client = client; //Ensure is the same
+            AccountAbstractionBundler = new AccountAbstractionBundlerService(client);
         }
 
         public BlockParameter DefaultBlock
@@ -129,6 +130,8 @@ namespace Nethereum.RPC
         public IEthCreateAccessList CreateAccessList { get; private set; }
 
         public IEthChainProofValidationService ChainProofValidation { get; private set; }
+
+        public IAccountAbstractionBundlerService AccountAbstractionBundler { get; private set; }    
 
 #if !DOTNET35
         public virtual IEtherTransferService  GetEtherTransferService()
