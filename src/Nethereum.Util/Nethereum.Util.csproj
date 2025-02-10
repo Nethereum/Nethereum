@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Util</AssemblyName>
     <PackageId>Nethereum.Util</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain</PackageTags>
+	<LangVersion>Latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
