@@ -215,6 +215,18 @@ cd Nethereum.Util.Rest
 CALL :restorepack
 cd ..
 
+cd Nethereum.Blazor
+CALL :restorepack
+cd ..
+
+cd Nethereum.EIP6963WalletInterop
+CALL :restorepack
+cd ..
+
+cd Nethereum.Reown.AppKit.Blazor
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0packages\
