@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <TargetNet35>true</TargetNet35>
+    <TargetNet35>false</TargetNet35>
     <TargetNet461>false</TargetNet461>
     <TargetNet472>false</TargetNet472>
     <TargetNetCore>false</TargetNetCore>
@@ -40,7 +40,7 @@
     <ExternalSignerFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">net5.0;net8.0;net9.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ExternalSignerFrameworks>
-    <UnityFrameworks>net461;net35;net472;netstandard2.1</UnityFrameworks>
+    <UnityFrameworks>net461;net472;netstandard2.1</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.1;</UnityFrameworks>
