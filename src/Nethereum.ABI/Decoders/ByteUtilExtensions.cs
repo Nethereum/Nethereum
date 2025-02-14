@@ -21,5 +21,10 @@ namespace Nethereum.ABI.Decoders
             return new IntType("uint256").Decode<BigInteger>(bytes);
         }
 
+        public static byte[] ConvertToABIBytes(this BigInteger value)
+        {
+            return new IntType("uint256").Encode(value);
+        }
+
     }
 }
