@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.ABIRepository;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.Model;
 using Nethereum.Contracts.MessageEncodingServices;
 using Nethereum.RPC.Eth.DTOs;
@@ -31,6 +32,19 @@ namespace Nethereum.Contracts
             string data) where TContractMessage : FunctionMessage
         {     
             return GetEncodingService<TContractMessage>(contractMessage).DecodeInput(contractMessage, data);
+        }
+
+        public static MulticallInputOutput<TFunctionMessage, TFunctionOutput> CreateMulticallInputOutput<TFunctionMessage, TFunctionOutput>(this TFunctionMessage functionMessage, string contractAddress)
+          where TFunctionMessage : FunctionMessage, new()
+          where TFunctionOutput : IFunctionOutputDTO, new()
+        {
+            return new MulticallInputOutput<TFunctionMessage, TFunctionOutput>(functionMessage, contractAddress);
+        }
+
+        public static MulticallInput<TFunctionMessage>  CreateMulticallInput<TFunctionMessage>(this TFunctionMessage functionMessage, string contractAddress)
+          where TFunctionMessage : FunctionMessage, new()
+        {
+            return new MulticallInput<TFunctionMessage>(functionMessage, contractAddress);
         }
 
         public static bool IsTransactionForFunctionMessage<TContractMessage>(this
