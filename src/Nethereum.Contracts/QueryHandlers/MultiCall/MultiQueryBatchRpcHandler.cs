@@ -41,6 +41,36 @@ namespace Nethereum.Contracts.QueryHandlers.MultiCall
             return MultiCallAsync(null, pageSize, multiCalls);
         }
 
+
+        /// <summary>
+        /// Use this method to create a batch of calls to be executed in a single request in combination with other rpc batch requests
+        /// </summary>
+        /// <param name="rpcObjectIdStartAt">This the rpc object id to start with</param>
+        /// <param name="multiCalls"></param>
+        /// <returns></returns>
+        public MulticallInputOutputRpcBatchItem[] CreateMulticallInputOutputRpcBatchItems(int rpcObjectIdStartAt = 0,
+            params IMulticallInputOutput[] multiCalls)
+        {
+            var batchItems = new List<MulticallInputOutputRpcBatchItem>();
+            for (var i = 0; i < multiCalls.Length; i++)
+            {
+                var callInput = new CallInput
+                {
+                    Data = multiCalls[i].GetCallData().ToHex(),
+                    To = multiCalls[i].Target,
+                    Value = new HexBigInteger(multiCalls[i].Value),
+                    From = DefaultAddressFrom
+                };
+
+                var ethCall = new EthCall(Client);
+                var rpcRequestResponseBatchItem = ethCall.CreateBatchItem(callInput, rpcObjectIdStartAt + i);
+
+                batchItems.Add(new MulticallInputOutputRpcBatchItem(multiCalls[i], rpcRequestResponseBatchItem, rpcObjectIdStartAt + i));
+            }
+            return batchItems.ToArray();
+        }
+
+
         public async Task<IMulticallInputOutput[]> MultiCallAsync(BlockParameter block, int pageSize = DEFAULT_CALLS_PER_REQUEST,
             params IMulticallInputOutput[] multiCalls)
         {
