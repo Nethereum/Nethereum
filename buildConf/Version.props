@@ -7,11 +7,11 @@
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
     <RelSuffix>$(ReleaseSuffix)</RelSuffix>
     <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
-    
-    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
-    
-    <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion> 
-    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
+
+    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion>
+
+    <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion>
+    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion>
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
 
