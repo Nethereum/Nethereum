@@ -26,10 +26,10 @@ namespace Nethereum.Geth.RPC.Debug
             return base.SendRequestAsync(id, new HexBigInteger(blockNumber), options.ToDto());
         }
 
-        public async Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(ulong blockNumber, TracingCallOptions options, object id = null)
+        public async Task<BlockResponseDto<TOutput>> SendRequestAsync<TOutput>(ulong blockNumber, TracingCallOptions options, object id = null)
         {
             var rawResult = await base.SendRequestAsync(id, new HexBigInteger(blockNumber), options.ToDto());
-            return rawResult.ToObject<BlockResponseDto<TOutputType>>();
+            return rawResult.ToObject<BlockResponseDto<TOutput>>();
         }
     }
 }

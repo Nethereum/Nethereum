@@ -25,10 +25,10 @@ namespace Nethereum.Geth.RPC.Debug
             return base.SendRequestAsync(id, blockHash, options.ToDto());
         }
 
-        public async Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(string blockHash, TracingCallOptions options, object id = null)
+        public async Task<BlockResponseDto<TOutput>> SendRequestAsync<TOutput>(string blockHash, TracingCallOptions options, object id = null)
         {
             var rawResult = await base.SendRequestAsync(id, blockHash, options.ToDto());
-            return rawResult.ToObject<BlockResponseDto<TOutputType>>();
+            return rawResult.ToObject<BlockResponseDto<TOutput>>();
         }
     }
 }

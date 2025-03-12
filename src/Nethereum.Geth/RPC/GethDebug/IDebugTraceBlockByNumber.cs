@@ -9,7 +9,7 @@ namespace Nethereum.Geth.RPC.Debug
     {
         RpcRequest BuildRequest(ulong blockNumber, TracingCallOptions options, object id = null);
         Task<JArray> SendRequestAsync(ulong blockNumber, TracingCallOptions options = null, object id = null);
-        Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(ulong blockNumber, TracingCallOptions options,
+        Task<BlockResponseDto<TOutput>> SendRequestAsync<TOutput>(ulong blockNumber, TracingCallOptions options,
             object id = null);
 
     }

@@ -9,7 +9,7 @@ namespace Nethereum.Geth.RPC.Debug
     {
         RpcRequest BuildRequest(string filePath, TracingCallOptions options, object id = null);
         Task<JArray> SendRequestAsync(string filePath, TracingCallOptions options, object id = null);
-        Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(string filePath, TracingCallOptions options, object id = null);
+        Task<BlockResponseDto<TOutput>> SendRequestAsync<TOutput>(string filePath, TracingCallOptions options, object id = null);
 
     }
 }

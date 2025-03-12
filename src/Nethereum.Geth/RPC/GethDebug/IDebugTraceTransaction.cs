@@ -11,7 +11,7 @@ namespace Nethereum.Geth.RPC.Debug
     {
         RpcRequest BuildRequest(string txnHash, TracingOptions options, object id = null);
         Task<JToken> SendRequestAsync(string txnHash, TracingOptions options, object id = null);
-        Task<TOutputType> SendRequestAsync<TOutputType>(string txnHash, TracingOptions options,
+        Task<TOutput> SendRequestAsync<TOutput>(string txnHash, TracingOptions options,
             object id = null);
     }
 }

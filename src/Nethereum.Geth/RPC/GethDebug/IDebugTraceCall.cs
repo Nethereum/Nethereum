@@ -13,7 +13,7 @@ namespace Nethereum.Geth.RPC.Debug
         Task<JObject> SendRequestAsync(CallInput callArgs, string blockNrOrHash, TracingCallOptions options,
             object id = null);
 
-        Task<TOutputType> SendRequestAsync<TOutputType>(CallInput callArgs, string blockNrOrHash,
+        Task<TOutput> SendRequestAsync<TOutput>(CallInput callArgs, string blockNrOrHash,
             TracingCallOptions options, object id = null);
 
     }
