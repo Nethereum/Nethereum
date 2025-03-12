@@ -7,7 +7,11 @@ namespace Nethereum.Geth.RPC.Debug
 {
     public interface IDebugTraceBlock
     {
-        RpcRequest BuildRequest(string blockRlpHex, TraceTransactionOptions options, object id = null);
-        Task<JArray> SendRequestAsync(string blockRlpHex, TraceTransactionOptions options, object id = null);
+        RpcRequest BuildRequest(string blockRlpHex, TracingCallOptions options, object id = null);
+        Task<JArray> SendRequestAsync(string blockRlpHex, TracingCallOptions options, object id = null);
+
+        Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(string blockRlpHex,
+            TracingCallOptions options, object id = null);
+
     }
 }

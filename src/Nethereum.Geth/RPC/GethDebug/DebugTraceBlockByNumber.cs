@@ -16,14 +16,20 @@ namespace Nethereum.Geth.RPC.Debug
         {
         }
 
-        public RpcRequest BuildRequest(ulong blockNumber, TraceTransactionOptions options, object id = null)
+        public RpcRequest BuildRequest(ulong blockNumber, TracingCallOptions options, object id = null)
         {
-            return base.BuildRequest(id, new HexBigInteger(blockNumber), options);
+            return base.BuildRequest(id, new HexBigInteger(blockNumber), options.ToDto());
+        }
+        
+        public Task<JArray> SendRequestAsync(ulong blockNumber, TracingCallOptions options, object id = null)
+        {
+            return base.SendRequestAsync(id, new HexBigInteger(blockNumber), options.ToDto());
         }
 
-        public Task<JArray> SendRequestAsync(ulong blockNumber, TraceTransactionOptions options, object id = null)
+        public async Task<BlockResponseDto<TOutputType>> SendRequestAsync<TOutputType>(ulong blockNumber, TracingCallOptions options, object id = null)
         {
-            return base.SendRequestAsync(id, new HexBigInteger(blockNumber), options);
+            var rawResult = await base.SendRequestAsync(id, new HexBigInteger(blockNumber), options.ToDto());
+            return rawResult.ToObject<BlockResponseDto<TOutputType>>();
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Nethereum.Geth.Tests.Testers
         {
             return typeof(DebugTraceBlockFromFile);
         }
+        
 
         //[Fact] TODO: Refactor test
         public async void ShouldAlwaysReturnNull()
@@ -28,7 +29,8 @@ namespace Nethereum.Geth.Tests.Testers
         public override async Task<JArray> ExecuteAsync(IClient client)
         {
             var debugTraceBlockFromFile = new DebugTraceBlockFromFile(client);
-            return await debugTraceBlockFromFile.SendRequestAsync(Settings.GetDefaultLogLocation(), new TraceTransactionOptions()).ConfigureAwait(false);
+            return await debugTraceBlockFromFile.SendRequestAsync(Settings.GetDefaultLogLocation(), new TracingCallOptions()).ConfigureAwait(false);
         }
+        
     }
 }
