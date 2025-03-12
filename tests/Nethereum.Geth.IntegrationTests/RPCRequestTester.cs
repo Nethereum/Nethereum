@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Nethereum.Geth.RPC.Debug.DTOs;
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Tests.Testers
@@ -27,8 +26,7 @@ namespace Nethereum.RPC.Tests.Testers
         {
             return ExecuteAsync(Client);
         }
-        
+
         public abstract Task<T> ExecuteAsync(IClient client);
-        
     }
 }
