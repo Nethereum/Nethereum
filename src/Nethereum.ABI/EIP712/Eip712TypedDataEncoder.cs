@@ -47,6 +47,12 @@ namespace Nethereum.ABI.EIP712
             return EncodeTypedDataRaw(typedDataRaw);
         }
 
+        public byte[] EncodeAndHashTypedData(string json)
+        {
+            var encodedData = EncodeTypedData(json);
+            return Sha3Keccack.Current.CalculateHash(encodedData);
+        }
+
         /// <summary>
         /// Encode typed data using a non standard json, which may not include the Domain type and uses a different key selector for message
         /// </summary>
@@ -161,7 +167,7 @@ namespace Nethereum.ABI.EIP712
 
             result.AddRange(currentTypeMembers.Select(x => ConvertToElementType(x.Type)).Distinct().Where(IsReferenceType).SelectMany(x => EncodeTypes(types, x)));
 
-            return result;
+            return result.Distinct().ToList();
         }
 
         private static string ConvertToElementType(string type)
