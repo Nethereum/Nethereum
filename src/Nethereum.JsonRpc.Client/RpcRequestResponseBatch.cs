@@ -6,6 +6,8 @@ namespace Nethereum.JsonRpc.Client
 {
     public class RpcRequestResponseBatch
     {
+        public bool AcceptPartiallySuccessful { get; set; } = false;
+
         public List<IRpcRequestResponseBatchItem> BatchItems { get; set; } = new List<IRpcRequestResponseBatchItem>();
 
         public RpcRequestMessage[] GetRpcRequests()
@@ -13,7 +15,7 @@ namespace Nethereum.JsonRpc.Client
             return BatchItems.Select(x => x.RpcRequestMessage).ToArray();
         }
 
-        public void UpdateBatchItemResponses(IEnumerable<RpcResponseMessage> responses)
+        public virtual void UpdateBatchItemResponses(IEnumerable<RpcResponseMessage> responses)
         {
             var errors = new List<RpcError>();
             foreach (var response in responses)
@@ -21,8 +23,8 @@ namespace Nethereum.JsonRpc.Client
                 var batchItem = BatchItems.First(x => x.RpcRequestMessage.Id.ToString() == response.Id.ToString());
                 if (response.HasError)
                 {
-                    errors.Add(new RpcError(response.Error.Code, response.Error.Message + ": " + batchItem.RpcRequestMessage.Method,
-                     response.Error.Data));
+                    batchItem.DecodeResponse(response);
+                    errors.Add(batchItem.RpcError);
                 }
                 else
                 {
@@ -30,7 +32,7 @@ namespace Nethereum.JsonRpc.Client
                 }
             }
 
-            if (errors.Any())
+            if (errors.Any() && AcceptPartiallySuccessful == false)
                 throw new RpcResponseBatchException(errors.ToArray());
         }
 

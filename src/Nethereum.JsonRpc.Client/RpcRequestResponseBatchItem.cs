@@ -18,13 +18,14 @@ namespace Nethereum.JsonRpc.Client
         public object RawResponse { get; private set; }
         public bool HasError { get; private set; }
         public RpcError RpcError { get; private set; }
-        public void DecodeResponse(RpcResponseMessage rpcResponse)
+        public virtual void DecodeResponse(RpcResponseMessage rpcResponse)
         {
             if (rpcResponse.HasError)
             {
                 this.HasError = true;
                 this.RpcError = new RpcError(rpcResponse.Error.Code, rpcResponse.Error.Message,
                     rpcResponse.Error.Data);
+                return;
             }
             try
             {
