@@ -24,7 +24,7 @@ namespace Nethereum.JsonRpc.Client
                 if (response.HasError)
                 {
                     batchItem.DecodeResponse(response);
-                    errors.Add(batchItem.RpcError);
+                    errors.Add(new RpcError(response.Error.Code, response.Error.Message + ": " + batchItem.RpcRequestMessage.Method, response.Error.Data));
                 }
                 else
                 {
