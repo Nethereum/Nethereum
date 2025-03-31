@@ -162,5 +162,10 @@ namespace Nethereum.RPC
             CreateAccessList.DefaultBlock = DefaultBlock;
             Transactions.SetDefaultBlock(_defaultBlock);
         }
+
+        public IEIP7022AuthorisationService GetEIP7022AuthorisationService()
+        {
+           return new EIP7022AuthorisationService(TransactionManager, this);
+        }
     }
 }

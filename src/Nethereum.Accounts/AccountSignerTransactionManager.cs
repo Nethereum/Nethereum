@@ -146,7 +146,7 @@ namespace Nethereum.Web3.Accounts
             if (Client == null) throw new NullReferenceException("Client not configured");
             if (transaction == null) throw new ArgumentNullException(nameof(transaction));
             if (!transaction.From.IsTheSameAddress(Account.Address))
-                throw new Exception("Invalid account used signing");
+                throw new Exception("Invalid account used for signing, From Address does not match the account address, please ensure that is the same address");
 
             var ethSendTransaction = new EthSendRawTransaction(Client);
             var signedTransaction = await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);

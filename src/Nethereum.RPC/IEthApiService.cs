@@ -38,6 +38,7 @@ namespace Nethereum.RPC
 
 #if !DOTNET35
         IEtherTransferService GetEtherTransferService();
+        IEIP7022AuthorisationService GetEIP7022AuthorisationService();
 #endif
     }
 }
