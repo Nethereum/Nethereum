@@ -83,5 +83,10 @@ namespace Nethereum.Web3.Accounts.Basic
         {
             throw new InvalidOperationException("Basic accounts cannot sign offline transactions");
         }
+
+        public override Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            throw new InvalidOperationException("Basic accounts cannot sign authorisations");
+        }
     }
 }

@@ -19,6 +19,7 @@ namespace Nethereum.Web3.Accounts
     {
         private readonly LegacyTransactionSigner _legacyTransactionSigner;
         private readonly Transaction1559Signer _transaction1559Signer;
+        private readonly Transaction7702Signer _transaction7702Signer;
         public ExternalAccountSignerTransactionManager(IClient rpcClient, ExternalAccount account,
             BigInteger? chainId = null)
         {
@@ -27,9 +28,12 @@ namespace Nethereum.Web3.Accounts
             Client = rpcClient;
             _legacyTransactionSigner = new LegacyTransactionSigner();
             _transaction1559Signer = new Transaction1559Signer();
+            _transaction7702Signer = new Transaction7702Signer();
+
             TransactionVerificationAndRecovery = new TransactionVerificationAndRecoveryImp();
         }
 
+   
 
         public override BigInteger DefaultGas { get; set; } = SignedLegacyTransaction.DEFAULT_GAS_LIMIT;
 
@@ -78,6 +82,18 @@ namespace Nethereum.Web3.Accounts
                     transaction.AccessList.ToSignerAccessListItemArray());
                 await _transaction1559Signer.SignExternallyAsync(externalSigner, transaction1559).ConfigureAwait(false);
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
+            }else if (externalSigner.Supported1559 && transaction.Type != null &&
+                transaction.Type.Value == TransactionType.EIP7702.AsByte())
+            {
+                var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
+                var maxFeePerGas = transaction.MaxFeePerGas.Value;
+                var transaction7702 = new Transaction7702(ChainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
+                    gasLimit, transaction.To, value, transaction.Data,
+                    transaction.AccessList.ToSignerAccessListItemArray(),
+                    transaction.AuthorisationList.ToAuthorisation7720SignedList());
+
+                await _transaction7702Signer.SignExternallyAsync(externalSigner, transaction7702).ConfigureAwait(false);
+                signedTransaction = transaction7702.GetRLPEncoded().ToHex();
             }
             else
             {
@@ -150,6 +166,11 @@ namespace Nethereum.Web3.Accounts
             var ethSendTransaction = new EthSendRawTransaction(Client);
             var signedTransaction = await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
+        }
+
+        public override Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            throw new NotImplementedException("Authorisation signing not implemented yet for external accounts");
         }
     }
 }

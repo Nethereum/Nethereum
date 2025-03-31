@@ -169,5 +169,9 @@ namespace Nethereum.Signer.Trezor
             }
         }
 
+        public override Task SignAsync(Transaction7702 transaction)
+        {
+            throw new NotImplementedException();
+        }
     }
  }

@@ -11,14 +11,15 @@ namespace Nethereum.RPC.Eth.Mappers
         public static IndexedSignedTransaction ToSignedTransaction(this Transaction transaction, BigInteger? chainId = null)
         {
             List<AccessListItem> accessList = transaction.AccessList.ToSignerAccessListItemArray();
-                
+            List<Authorisation7702Signed> authorisationLists = transaction.AuthorisationList.ToAuthorisation7720SignedList();
+
             byte? type = null;
             if (transaction.Type != null)
             {
                 type = (byte)transaction.Type.Value;
             }
 
-            var signedTransaction =  TransactionFactory.CreateTransaction(chainId, type, transaction.Nonce.GetValue(), transaction.MaxPriorityFeePerGas.GetValue(), transaction.MaxFeePerGas.GetValue(), transaction.GasPrice.GetValue(), transaction.Gas.GetValue(), transaction.To, transaction.Value.GetValue(), transaction.Input, accessList, transaction.R, transaction.S, transaction.V);
+            var signedTransaction =  TransactionFactory.CreateTransaction(chainId, type, transaction.Nonce.GetValue(), transaction.MaxPriorityFeePerGas.GetValue(), transaction.MaxFeePerGas.GetValue(), transaction.GasPrice.GetValue(), transaction.Gas.GetValue(), transaction.To, transaction.Value.GetValue(), transaction.Input, accessList, authorisationLists, transaction.R, transaction.S, transaction.V);
             return new IndexedSignedTransaction() { Index = transaction.TransactionIndex, SignedTransaction = signedTransaction };
         }
 

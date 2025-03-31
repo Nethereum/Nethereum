@@ -83,5 +83,10 @@ namespace Nethereum.Web3.Accounts.Managed
         {
             throw new InvalidOperationException("Managed accounts cannot sign offline transactions");
         }
+
+        public override Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            throw new InvalidOperationException("Managed accounts cannot sign authorisations");
+        }
     }
 }

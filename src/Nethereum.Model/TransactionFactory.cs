@@ -38,6 +38,8 @@ namespace Nethereum.Model
                 case TransactionType.LegacyEIP2930:
                     return new Transaction2930Encoder();
 
+                case TransactionType.EIP7702:
+                    return new Transaction7702Encoder();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(transactionType), transactionType, null);
             }
@@ -97,6 +99,23 @@ namespace Nethereum.Model
                 signature);
         }
 
+        public static ISignedTransaction Create7702Transaction(BigInteger? chainId, BigInteger? nonce,
+            BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
+            BigInteger? gasLimit, string to, BigInteger? amount, string data,
+            List<AccessListItem> accessList, List<Authorisation7702Signed> authorisationList,
+            string r, string s, string v)
+            {
+                var rBytes = r.HexToByteArray();
+                var sBytes = s.HexToByteArray();
+                var vBytes = v.HexToByteArray();
+
+                var signature = new Signature(rBytes, sBytes, vBytes);
+                return new Transaction7702(chainId ?? 0, nonce ?? 0, maxPriorityFeePerGas ?? 0, maxFeePerGas ?? 0,
+                    gasLimit ?? 0, to, amount ?? 0, data, accessList, authorisationList, signature);
+            }
+
+
+
         public static ISignedTransaction Create2930Transaction(BigInteger? chainId, BigInteger? nonce,
            BigInteger? gasPrice,
            BigInteger? gasLimit, string to, BigInteger? amount, string data,
@@ -117,7 +136,7 @@ namespace Nethereum.Model
         public static ISignedTransaction CreateTransaction(BigInteger? chainId, byte? transactionType, BigInteger? nonce,
             BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas, BigInteger? gasPrice,
             BigInteger? gasLimit, string to, BigInteger? amount, string data,
-            List<AccessListItem> accessList, string r, string s, string v)
+            List<AccessListItem> accessList, List<Authorisation7702Signed> authorisationLists, string r, string s, string v)
         {
             if (transactionType.HasValue && transactionType == (int)TransactionType.EIP1559)
             {
@@ -129,6 +148,12 @@ namespace Nethereum.Model
             {
                 return Create2930Transaction(chainId, nonce, gasPrice, gasLimit, to, amount,
                     data, accessList, r, s, v);
+            }
+
+            if(transactionType.HasValue && transactionType == (int)TransactionType.EIP7702)
+            {
+                return Create7702Transaction(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, amount,
+                    data, accessList, authorisationLists, r, s, v);
             }
 
             if (!transactionType.HasValue || transactionType == 0)

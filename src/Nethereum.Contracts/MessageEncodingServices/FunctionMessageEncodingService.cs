@@ -53,7 +53,8 @@ namespace Nethereum.Contracts.MessageEncodingServices
             transactionInput.Type = contractMessage.GetHexTransactionType();
             transactionInput.MaxFeePerGas = contractMessage.GetHexMaxFeePerGas();
             transactionInput.MaxPriorityFeePerGas = contractMessage.GetMaxPriorityFeePerGas();
-            transactionInput.AccessList = contractMessage.AccessList;   
+            transactionInput.AccessList = contractMessage.AccessList;
+            transactionInput.AuthorisationList = contractMessage.AuthorisationList;
             transactionInput.Nonce = contractMessage.GetHexNonce();
             return transactionInput;
         }
@@ -88,8 +89,9 @@ namespace Nethereum.Contracts.MessageEncodingServices
             }
 
             contractMessageOutput.AccessList = transaction.AccessList;
-            
-                 
+            contractMessageOutput.AuthorisationList = transaction.AuthorisationList;
+
+
             return contractMessageOutput;
         }
 

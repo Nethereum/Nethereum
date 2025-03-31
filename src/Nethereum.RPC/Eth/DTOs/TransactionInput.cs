@@ -60,5 +60,15 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
         [JsonProperty(PropertyName = "accessList")]
         public List<AccessList> AccessList { get; set; }
+
+
+        /// <summary>
+        ///   Authorisation list
+        /// </summary>
+        [JsonProperty(PropertyName = "authorizationList")]
+        public List<Authorisation> AuthorisationList { get; set; }
+
+
+
     }
 }

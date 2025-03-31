@@ -16,6 +16,8 @@ namespace Nethereum.Signer
         Task SignAsync(LegacyTransaction transaction);
         Task SignAsync(LegacyTransactionChainId transaction);
         Task SignAsync(Transaction1559 transaction);
+        Task SignAsync(Transaction7702 transaction);
+
         bool Supported1559 { get; }
     }
 #endif

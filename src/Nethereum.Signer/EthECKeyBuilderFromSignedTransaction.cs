@@ -2,6 +2,7 @@
 
 namespace Nethereum.Signer
 {
+
     public static class EthECKeyBuilderFromSignedTransaction
     {
         public static EthECKey GetKey(this ISignedTransaction transaction)
@@ -26,6 +27,11 @@ namespace Nethereum.Signer
             }
 
             if (transaction is Transaction2930 transaction2930)
+            {
+                return EthECKey.RecoverFromParityYSignature(signature, transaction.RawHash);
+            }
+
+            if (transaction is Transaction7702 transaction7702) 
             {
                 return EthECKey.RecoverFromParityYSignature(signature, transaction.RawHash);
             }

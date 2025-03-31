@@ -14,17 +14,21 @@ namespace Nethereum.Web3.Accounts
     {
         private readonly LegacyTransactionSigner _legacyTransactionSigner;
         private readonly Transaction1559Signer _transaction1559Signer;
+        private readonly Transaction7702Signer _transaction7702Signer;
 
-        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner, Transaction1559Signer transaction1559Signer)
+        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner, Transaction1559Signer transaction1559Signer, Transaction7702Signer transaction7702Signer)
         {
             _legacyTransactionSigner = legacyTransactionSigner;
             _transaction1559Signer = transaction1559Signer;
+            _transaction7702Signer = transaction7702Signer;
+
         }
 
         public AccountOfflineTransactionSigner()
         {
             _legacyTransactionSigner = new LegacyTransactionSigner();
             _transaction1559Signer = new Transaction1559Signer();
+            _transaction7702Signer = new Transaction7702Signer();
         }
 
         public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId = null)
@@ -60,6 +64,18 @@ namespace Nethereum.Web3.Accounts
                     transaction.AccessList.ToSignerAccessListItemArray());
                 _transaction1559Signer.SignTransaction(new EthECKey(account.PrivateKey), transaction1559);
                 signedTransaction = transaction1559.GetRLPEncoded().ToHex();
+            }
+            else if (transaction.Type != null && transaction.Type.Value == TransactionType.EIP7702.AsByte())
+            {
+                var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
+                var maxFeePerGas = transaction.MaxFeePerGas.Value;
+                if (chainId == null) throw new ArgumentException("ChainId required for TransactionType 0X04 EIP7702");
+
+                var transaction7702 = new Transaction7702(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
+                    gasLimit, transaction.To, value, transaction.Data,
+                    transaction.AccessList.ToSignerAccessListItemArray(), transaction.AuthorisationList.ToAuthorisation7720SignedList());
+                _transaction7702Signer.SignTransaction(new EthECKey(account.PrivateKey), transaction7702);
+                signedTransaction = transaction7702.GetRLPEncoded().ToHex();
             }
             else
             {

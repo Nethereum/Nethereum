@@ -134,6 +134,11 @@ namespace Nethereum.Ledger
                 return memoryStream.ToArray();
             }
         }
+
+        public override Task SignAsync(Transaction7702 transaction)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal static class ExtensionMethods

@@ -58,5 +58,10 @@ namespace Nethereum.Contracts.CQS
         ///   Access list. Introduced in EIP 1559
         /// </summary>
         public List<AccessList> AccessList { get; set; }
+
+        /// <summary>
+        ///  AuthorisationList. Introduced in EIP 7022
+        /// </summary>
+        public List<Authorisation> AuthorisationList { get; set; }
     }
 }

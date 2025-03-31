@@ -8,7 +8,8 @@ namespace Nethereum.RPC.TransactionTypes
         LegacyTransaction = -1,
         LegacyChainTransaction = -2,
         Legacy = 0x0,
-        EIP1559 = 0X02 
+        EIP1559 = 0X02,
+        EIP7702 = 0X04
     }
 
     public static class TransactionTypeExtensions

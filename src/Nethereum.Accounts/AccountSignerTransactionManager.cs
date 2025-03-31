@@ -11,12 +11,15 @@ using Nethereum.RPC.NonceServices;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Util;
+using Nethereum.RPC.Eth.Mappers;
+using System.Collections.Generic;
 
 namespace Nethereum.Web3.Accounts
 {
     public class AccountSignerTransactionManager : TransactionManagerBase
     {
         private readonly AccountOfflineTransactionSigner _transactionSigner;
+        private readonly Authorisation7702Signer _authorisation7702Signer;
 
 
         public AccountSignerTransactionManager(IClient rpcClient, Account account, BigInteger? overridingAccountChainId = null)
@@ -33,6 +36,7 @@ namespace Nethereum.Web3.Accounts
             Account = account ?? throw new ArgumentNullException(nameof(account));
             Client = rpcClient;
             _transactionSigner = new AccountOfflineTransactionSigner();
+            _authorisation7702Signer = new Authorisation7702Signer();
         }
 
 
@@ -44,6 +48,7 @@ namespace Nethereum.Web3.Accounts
             Account = new Account(privateKey, chainId);
             Account.NonceService = new InMemoryNonceService(Account.Address, rpcClient);
             _transactionSigner = new AccountOfflineTransactionSigner();
+            _authorisation7702Signer = new Authorisation7702Signer();
         }
 
         public AccountSignerTransactionManager(string privateKey, BigInteger? chainId = null) : this(null, privateKey,
@@ -86,6 +91,35 @@ namespace Nethereum.Web3.Accounts
             var nonce = await GetNonceAsync(transaction).ConfigureAwait(false);
             transaction.Nonce = nonce;
 
+            //authorisations happen after nonce is retrieved and set
+
+            if (NextRequest7022Authorisations != null && NextRequest7022Authorisations.Count > 0)
+            {
+                if(transaction.AuthorisationList == null)
+                {
+                    transaction.AuthorisationList = new List<Authorisation>();
+                }
+                transaction.AuthorisationList.AddRange(NextRequest7022Authorisations);
+                NextRequest7022Authorisations.Clear();
+            }
+
+            if (transaction.AuthorisationList != null)
+            {
+                var newAuthorisationList = new List<Authorisation>();
+                foreach (var authorisation in transaction.AuthorisationList)
+                {
+                    if (authorisation.Nonce == null && authorisation.YParity == null) // not signed already
+                    {
+                        newAuthorisationList.Add(await SignAuthorisationAsync(authorisation).ConfigureAwait(false));
+                    }
+                    else
+                    {
+                        newAuthorisationList.Add(authorisation);
+                    }
+                }
+
+                transaction.AuthorisationList = newAuthorisationList;
+            }
             await SetTransactionFeesOrPricingAsync(transaction).ConfigureAwait(false);
 
             return SignTransaction(transaction);
@@ -117,6 +151,31 @@ namespace Nethereum.Web3.Accounts
             var ethSendTransaction = new EthSendRawTransaction(Client);
             var signedTransaction = await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
+        }
+
+      
+        public override async Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            if (authorisation == null) throw new ArgumentNullException(nameof(authorisation));
+            if (authorisation.ChainId == null)
+            {
+                await EnsureChainIdAndChainFeatureIsSetAsync();
+                authorisation.ChainId = new HexBigInteger(ChainId.Value);
+            } 
+            if (authorisation.Address == null) throw new ArgumentNullException(nameof(authorisation.Address));
+            if (authorisation.Nonce == null)
+            {
+                authorisation.Nonce = await GetNonceAsync(new TransactionInput()).ConfigureAwait(false);
+            }
+            var authorisation7702 = new Authorisation7702
+            {
+                Address = authorisation.Address,
+                ChainId = authorisation.ChainId.Value,
+                Nonce = authorisation.Nonce.Value,
+            };
+
+            var authorisationSigned = _authorisation7702Signer.SignAuthorisation(((Account)Account).PrivateKey, authorisation7702);
+            return authorisationSigned.ToRPCAuthorisation();
         }
     }
 }

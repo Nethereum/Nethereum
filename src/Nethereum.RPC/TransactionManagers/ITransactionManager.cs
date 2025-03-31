@@ -32,8 +32,10 @@ namespace Nethereum.RPC.TransactionManagers
         BigInteger? ChainId { get; }
 
         Task<TransactionReceipt> SendTransactionAndWaitForReceiptAsync(TransactionInput transactionInput, CancellationToken cancellationToken = default);
+        Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation);
+        Task Add7022AuthorisationDelegationOnNextRequestAsync(string addressContract, bool useUniversalZeroChainId = false);
+        void Remove7022AuthorisationDelegationOnNextRequest();
 
-       
 #endif
 
     }

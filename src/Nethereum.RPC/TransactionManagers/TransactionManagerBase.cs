@@ -13,6 +13,8 @@ using Nethereum.RPC.TransactionReceipts;
 using Nethereum.RPC.TransactionTypes;
 using Nethereum.RPC.Chain;
 using Nethereum.Model;
+using System.Collections.Generic;
+using Nethereum.Util;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -27,6 +29,8 @@ namespace Nethereum.RPC.TransactionManagers
         public bool EstimateOrSetDefaultGasIfNotSet { get; set; } = true;
         protected ChainFeature ChainFeature { get; set; }
 
+        protected List<Authorisation> NextRequest7022Authorisations { get; set; } = new List<Authorisation>();
+
         public ITransactionVerificationAndRecovery TransactionVerificationAndRecovery { get; set; }
 
         public BigInteger? ChainId { get; protected set; }
@@ -34,7 +38,7 @@ namespace Nethereum.RPC.TransactionManagers
         public bool IsTransactionToBeSendAsEIP1559(TransactionInput transaction)
         {
             if (ChainFeature != null && !ChainFeature.SupportEIP1559) return false;
-            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && transaction.Type.Value == TransactionTypes.TransactionType.EIP1559.AsByte());
+            return (!UseLegacyAsDefault && transaction.GasPrice == null) || (transaction.MaxPriorityFeePerGas != null) || (transaction.Type != null && (transaction.Type.Value == TransactionTypes.TransactionType.EIP1559.AsByte() || transaction.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte()));
         }
 
 #if !DOTNET35
@@ -53,6 +57,26 @@ namespace Nethereum.RPC.TransactionManagers
         }
 
         public abstract Task<string> SignTransactionAsync(TransactionInput transaction);
+        public abstract Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation);
+
+        protected void SetDefaultTransactionTypeIfNotSet(TransactionInput transaction)
+        {
+            if (IsTransactionToBeSendAsEIP1559(transaction))
+            {
+                if (transaction.Type == null)
+                {
+
+                    if (transaction.AuthorisationList != null)
+                    {
+                        transaction.Type = new HexBigInteger(TransactionTypes.TransactionType.EIP7702.AsByte());
+                    }
+                    else
+                    {
+                        transaction.Type = new HexBigInteger(TransactionTypes.TransactionType.EIP1559.AsByte());
+                    }
+                }
+            }
+        }
 
         protected async Task SetTransactionFeesOrPricingAsync(TransactionInput transaction)
         {
@@ -63,7 +87,8 @@ namespace Nethereum.RPC.TransactionManagers
 
                 if (IsTransactionToBeSendAsEIP1559(transaction))
                 {
-                    transaction.Type = new HexBigInteger(TransactionTypes.TransactionType.EIP1559.AsByte());
+                    SetDefaultTransactionTypeIfNotSet(transaction);
+
                     if (transaction.MaxPriorityFeePerGas != null)
                     {
                         if (transaction.MaxFeePerGas == null)
@@ -213,7 +238,60 @@ namespace Nethereum.RPC.TransactionManagers
             {
                 if (transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(DefaultGas);
             }
+
+            //Top up next request.. 7702
+            if(NextRequest7022Authorisations != null && NextRequest7022Authorisations.Count > 0)
+            {
+                var count = (transactionInput.AuthorisationList?.Count) ?? 1;
+                transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + 25000 * count);
+            }
+
+            //Topup the gas if the gas is not enough
+            if(transactionInput.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte())
+            {
+                //PER_AUTH_BASE_COST	12500
+                //PER_EMPTY_ACCOUNT_COST  25000
+                var count = (transactionInput.AuthorisationList?.Count) ?? 1;
+                transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + 25000 * count);
+            }
+           
         }
+
+        public async Task Add7022AuthorisationDelegationOnNextRequestAsync(string addressContract, bool useUniversalZeroChainId = false)
+        {
+            if (NextRequest7022Authorisations == null)
+            {
+                NextRequest7022Authorisations = new List<Authorisation>();
+            }
+
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+
+            var authorisation = new Authorisation()
+            {
+                Address = addressContract,
+                ChainId = useUniversalZeroChainId ? new HexBigInteger(0) : new HexBigInteger(ChainId.Value),
+            };
+
+            NextRequest7022Authorisations.Add(authorisation);
+        }
+
+        public void Remove7022AuthorisationDelegationOnNextRequest()
+        {
+            if (NextRequest7022Authorisations != null)
+            {
+                NextRequest7022Authorisations.Clear();
+            }
+
+            var authorisation = new Authorisation()
+            {
+                Address = AddressUtil.ZERO_ADDRESS,
+                ChainId = new HexBigInteger(0),
+            };
+
+            NextRequest7022Authorisations.Add(authorisation);
+        }
+
+
 #endif
     }
 }

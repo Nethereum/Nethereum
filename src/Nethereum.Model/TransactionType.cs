@@ -7,7 +7,8 @@ namespace Nethereum.Model
         LegacyTransaction = -1,
         LegacyChainTransaction = -2,
         LegacyEIP2930 = 0X01,
-        EIP1559 = 0X02 
+        EIP1559 = 0X02,
+        EIP7702 = 0X04
     }
 
     public static class TransactionTypeExtensions

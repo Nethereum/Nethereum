@@ -8,9 +8,7 @@ using Nethereum.Util;
 
 namespace Nethereum.Model
 {
-
-
-    public class Transaction1559: SignedTypeTransaction
+    public class Transaction1559 : SignedTypeTransaction
     {
         public Transaction1559(BigInteger chainId, BigInteger? nonce, BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
             BigInteger? gasLimit, string receiverAddress, BigInteger? amount, string data, List<AccessListItem> accessList)

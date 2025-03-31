@@ -40,6 +40,11 @@ namespace Nethereum.RPC.TransactionManagers
             
             return await new EthSendTransaction(Client).SendRequestAsync(transactionInput).ConfigureAwait(false);
         }
+
+        public override Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            throw new InvalidOperationException("Default transaction manager cannot sign authorisations");
+        }
 #endif
     }
 

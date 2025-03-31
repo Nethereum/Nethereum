@@ -74,6 +74,8 @@ namespace Nethereum.Signer.AzureKeyVault
 
         public override Task SignAsync(Transaction1559 transaction) => SignHashTransactionAsync(transaction);
 
+        public override Task SignAsync(Transaction7702 transaction) => SignHashTransactionAsync(transaction);
+
         public override bool CalculatesV { get; protected set; } = false;
 
         public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;

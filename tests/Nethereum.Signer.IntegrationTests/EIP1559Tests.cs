@@ -129,7 +129,7 @@ namespace Nethereum.Signer.IntegrationTests
 
                 var transaction1559FromChain = TransactionFactory.CreateTransaction(chainId, (byte) txn.Type.Value,
                     txn.Nonce, txn.MaxPriorityFeePerGas,
-                    txn.MaxFeePerGas, null, txn.Gas, txn.To, txn.Value, txn.Input, null, txn.R, txn.S, txn.V);
+                    txn.MaxFeePerGas, null, txn.Gas, txn.To, txn.Value, txn.Input, null, null, txn.R, txn.S, txn.V);
 
                 Assert.True(transaction1559FromChain.GetSenderAddress()
                     .IsTheSameAddress("0x12890D2cce102216644c59daE5baed380d84830c"));
