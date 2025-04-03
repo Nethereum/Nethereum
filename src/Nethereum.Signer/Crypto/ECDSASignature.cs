@@ -88,13 +88,12 @@ namespace Nethereum.Signer.Crypto
         {
             // Usually 70-72 bytes.
             var bos = new MemoryStream(72);
-            var seq = new DerSequenceGenerator(bos);
+            var seq = new CompatibleDerSequenceGenerator(bos);
+
             seq.AddObject(new DerInteger(R));
             seq.AddObject(new DerInteger(S));
 
-#if !LATEST_BOUNCYCASTLE
             seq.Close();
-#endif
 
             return bos.ToArray();
         }
