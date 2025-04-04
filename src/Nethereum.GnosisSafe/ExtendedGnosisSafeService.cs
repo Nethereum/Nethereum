@@ -88,7 +88,7 @@ namespace Nethereum.GnosisSafe
         }
 
         //The generic EIP712 Typed schema defintion for this message
-        public TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(BigInteger chainId, string verifyingContractAddress)
+        public static TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(BigInteger chainId, string verifyingContractAddress)
         {
             return new TypedData<GnosisSafeEIP712Domain>
             {
@@ -102,6 +102,21 @@ namespace Nethereum.GnosisSafe
             };
         }
 
+        public static byte[] GetHashEncoded(EncodeTransactionDataFunction transactionData, BigInteger chainId, string verifyingContractAddress)
+        {
+            var typedDefinition = GetGnosisSafeTypedDefinition(chainId, verifyingContractAddress);
+            return Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(transactionData, typedDefinition);
+        }
+
+        public byte[] GetHashEncoded(EncodeTransactionDataFunction transactionData, BigInteger chainId)
+        {
+            return GetHashEncoded(transactionData, chainId, this.ContractHandler.ContractAddress);
+        }
+
+        public static byte[] GetHashEncoded(string json)
+        {
+            return Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(json);
+        }
 
         public ExecTransactionFunction BuildTransaction(
             EncodeTransactionDataFunction transactionData,

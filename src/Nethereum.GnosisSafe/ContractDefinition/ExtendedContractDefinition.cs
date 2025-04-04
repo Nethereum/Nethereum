@@ -24,6 +24,7 @@ namespace Nethereum.GnosisSafe.ContractDefinition
         public virtual byte[] Data { get; set; }
 
         [Parameter("uint8", "operation", 4)] public virtual byte Operation { get; set; } = (byte)ContractOperationType.Call;
+        
         [Parameter("uint256", "safeTxGas", 5)]
         public virtual BigInteger SafeTxGas { get; set; } = 0;
         [Parameter("uint256", "baseGas", 6)] 
