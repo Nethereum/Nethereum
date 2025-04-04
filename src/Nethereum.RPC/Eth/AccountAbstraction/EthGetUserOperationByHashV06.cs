@@ -5,16 +5,13 @@ using System.Threading.Tasks;
 
 namespace Nethereum.RPC.Eth.AccountAbstraction
 {
-
-
-
     /// <summary>
     /// Represents the eth_getUserOperationByHash RPC method.
     /// Returns a UserOperation object based on the provided userOpHash.
     /// </summary>
-    public class EthGetUserOperationByHash : RpcRequestResponseHandler<UserOperation>, IEthGetUserOperationByHash
+    public class EthGetUserOperationByHashV06 : RpcRequestResponseHandler<UserOperationV06>, IEthGetUserOperationByHashV06
     {
-        public EthGetUserOperationByHash(IClient client)
+        public EthGetUserOperationByHashV06(IClient client)
             : base(client, ApiMethods.eth_getUserOperationByHash.ToString())
         {
         }
@@ -25,9 +22,9 @@ namespace Nethereum.RPC.Eth.AccountAbstraction
         /// <param name="userOpHash">The user operation hash as a hex string.</param>
         /// <param name="id">Optional request id.</param>
         /// <returns>
-        /// A task returning the UserOperation (in v0.7 format) or null if not found.
+        /// A task returning the UserOperation (in v0.6 format) or null if not found.
         /// </returns>
-        public Task<UserOperation> SendRequestAsync(string userOpHash, object id = null)
+        public Task<UserOperationV06> SendRequestAsync(string userOpHash, object id = null)
         {
             if (string.IsNullOrEmpty(userOpHash))
                 throw new ArgumentNullException(nameof(userOpHash));
