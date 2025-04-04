@@ -1,9 +1,11 @@
 ﻿using Nethereum.ABI.EIP712;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using System.Numerics;
 
 
 namespace Nethereum.AccountAbstraction
 {
+    [Struct("EIP712Domain")]
     public class ERC4337Domain : Domain
     {
         public const string ERC4337_DOMAIN_NAME = "ERC4337";

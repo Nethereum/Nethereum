@@ -6,7 +6,7 @@ namespace Nethereum.AccountAbstraction
 {
 
     [Struct("PackedUserOperation")]
-    public class PackedUserOperation
+    public class PackedUserOperationForHash
     {
 
         [Parameter("address", "sender", 1)]
