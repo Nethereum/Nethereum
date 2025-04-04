@@ -18,35 +18,33 @@ using Xunit;
 
 namespace Nethereum.Signer.IntegrationTests
 {
-
-
-   // [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class EIP7022Tests
     {
         private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
 
-        //public EIP7022Tests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
-        //{
-        //    //_ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
-        //}
+        public EIP7022Tests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
 
         [Fact]
         public async Task ShouldCreateEip7022AuthorisationAndExecuteDelegatedSmartContractAsync()
         {
-            //this uses for the time being foundry anvil --init genesis.json -v --hardfork prague 
-            //or sepolia until using internal geth node for testing
+            //you could run these tests using foundry anvil --init genesis.json -v --hardfork prague 
+            //or sepolia 
             //the testing smart contract is the BatchCallAndSponsor from https://github.com/quiknode-labs/qn-guide-examples
 
             var receiverAddress = "0x111f530216fbb0377b4bdd4d303a465a1090d09d";
 
-            var account = new Nethereum.Web3.Accounts.Account(EthereumClientIntegrationFixture.AccountPrivateKey, 1);
-            var web3 = new Web3.Web3(account);
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var ownerAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var defaultBatchCallService = await BatchCallAndSponsorService.DeployContractAndGetServiceAsync(web3, new BatchCallAndSponsorDeployment());
             var tokenService = await MockERC20Service.DeployContractAndGetServiceAsync(web3, new MockERC20Deployment());
             await tokenService.MintRequestAndWaitForReceiptAsync(ownerAddress, 1000000);
 
+            //sepolia deployed services
             //var defaultBachCallServiceAddress = "0x976d1885a5d42ccfe5327a06c8d6b6d519fde365";
             //var tokenAddress = "0x4c03e0ac1fa9e70116ab63b5c9db5a8ff0d2d2e5";
             //var web3 = new Web3.Web3(account, "https://ethereum-sepolia-rpc.publicnode.com");
