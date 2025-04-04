@@ -55,7 +55,7 @@ namespace Nethereum.XUnitEthereumClients
         public EthereumClient EthereumClient { get; private set; } = EthereumClient.Geth;
         public static string AccountAddress { get; set; } = "0x12890d2cce102216644c59daE5baed380d84830c";
         public static string AccountPrivateKey { get; set; } = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-        public static System.Numerics.BigInteger ChainId { get; set; } = 444444444500;
+        public static System.Numerics.BigInteger ChainId { get; set; } = 1337;
 
 
 
@@ -249,7 +249,7 @@ namespace Nethereum.XUnitEthereumClients
                 DeleteData();
 
                 var psiSetup = new ProcessStartInfo(_exePath,
-                    @" --datadir=devChain init genesis_clique.json ")
+                    @" --dev --datadir=devChain init genesis_clique.json ")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
@@ -262,7 +262,7 @@ namespace Nethereum.XUnitEthereumClients
                 Thread.Sleep(3000);
 
                 var psi = new ProcessStartInfo(_exePath,
-                    @" --nodiscover --http --datadir=devChain  --http.corsdomain ""*"" --mine  --ws --http.api ""eth,web3,personal,net,miner,admin,debug"" --http.addr ""0.0.0.0"" --allow-insecure-unlock --unlock 0x12890d2cce102216644c59daE5baed380d84830c --miner.etherbase 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console")
+                    @" --dev --nodiscover --http --datadir=devChain  --http.corsdomain ""*"" --mine  --ws --http.api ""eth,web3,personal,net,miner,admin,debug"" --http.addr ""0.0.0.0"" --allow-insecure-unlock --unlock 0x12890d2cce102216644c59daE5baed380d84830c --miner.etherbase 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,

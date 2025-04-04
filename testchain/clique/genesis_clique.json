@@ -13,11 +13,7 @@
 		"istanbulBlock": 0,
 		"berlinBlock": 0,
 		"londonBlock": 0,
-		"ShanghaiTime":0,
-		"clique": {
-			"period": 1,
-			"epoch": 30000
-		}
+		"ShanghaiTime":0
 	},
 	"nonce": "0x0",
 	"timestamp": "0x592bcf74",
