@@ -118,6 +118,13 @@ namespace Nethereum.ABI.EIP712
             return HashStruct(memberDescriptions, primaryType, memberValue);
         }
 
+        public byte[] EncodeStruct<T>(T message, string primaryType, params Type[] types)
+        {
+            var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
+            var memberValue = MemberValueFactory.CreateFromMessage(message);
+            return EncodeStruct(memberDescriptions, primaryType, memberValue);
+        }
+
         public string GetEncodedType(string primaryType, params Type[] types)
         {
             var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
@@ -132,6 +139,10 @@ namespace Nethereum.ABI.EIP712
 
         private byte[] HashStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
         {
+           return Sha3Keccack.Current.CalculateHash(EncodeStruct(types, primaryType, message));
+        }
+        private byte[] EncodeStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
+        {
             using (var memoryStream = new MemoryStream())
             using (var writer = new BinaryWriter(memoryStream))
             {
@@ -142,7 +153,7 @@ namespace Nethereum.ABI.EIP712
                 EncodeData(writer, types, message);
 
                 writer.Flush();
-                return Sha3Keccack.Current.CalculateHash(memoryStream.ToArray());
+                return memoryStream.ToArray();
             }
         }
 
