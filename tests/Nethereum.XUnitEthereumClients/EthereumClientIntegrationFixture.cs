@@ -12,6 +12,7 @@ using Nethereum.Web3.Accounts.Managed;
 
 namespace Nethereum.XUnitEthereumClients
 {
+
     public enum EthereumClient
     {
         Geth,
