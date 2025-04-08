@@ -66,7 +66,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
         }
 
         [Fact]
-        public async Task ShouldAsync()
+        public async Task ShouldExecuteAsync()
         {
 
             ulong salt = 20;
@@ -94,6 +94,37 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             var accountAddress = accountCreateResult.AccountAddress;
 
+            var counterService = await TestCounterService.DeployContractAndGetServiceAsync(web3, new TestCounterDeployment());
+
+            var countFunction = new CountFunction();
+            var executeFunction = new ExecuteFunction()
+            {
+                Target = counterService.ContractAddress,
+                Value = 0,
+                Data = countFunction.GetCallData()
+            };
+
+            var op = await entryPointService.SignAndInitialiseUserOperationAsync(new UserOperation
+            {
+                Sender = accountAddress,
+                CallData = executeFunction.GetCallData(),
+                CallGasLimit = 2_000_000,
+                VerificationGasLimit = 76_000
+            }, ethKey);
+
+            var handleOpsRequest = new HandleOpsFunction()
+            {
+                Ops = new List<EntryPoint.ContractDefinition.PackedUserOperation>() { op },
+                Beneficiary = accountOwner,
+                Gas = 10_000_000
+            };
+
+            var receipt = await entryPointService.HandleOpsRequestAndWaitForReceiptAsync(handleOpsRequest);
+
+            var count1 = await counterService.CountersQueryAsync(accountAddress);
+          
+
+            Assert.Equal(1, count1);
         }
 
 
