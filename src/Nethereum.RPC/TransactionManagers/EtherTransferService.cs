@@ -20,18 +20,20 @@ namespace Nethereum.RPC.TransactionManagers
             _transactionManager = transactionManager ?? throw new ArgumentNullException(nameof(transactionManager));
         }
 
-        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null)
+        public async Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null)
         {
             var fromAddress = _transactionManager?.Account?.Address;
+            gas = await EstimateGasIfNullAsync(gas, toAddress, etherAmount).ConfigureAwait(false);
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas, nonce);
-            return _transactionManager.SendTransactionAsync(transactionInput);
+            return await _transactionManager.SendTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
+        public async Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, decimal? gasPriceGwei = null, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
         {
             var fromAddress = _transactionManager?.Account?.Address;
+            gas = await EstimateGasIfNullAsync(gas, toAddress, etherAmount).ConfigureAwait(false);
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, gasPriceGwei, gas, nonce);
-            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken);
+            return await _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(string address, decimal gasPriceGwei, BigInteger? gas = null)
@@ -48,19 +50,21 @@ namespace Nethereum.RPC.TransactionManagers
 
     
 
-        public Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
+        public async Task<TransactionReceipt> TransferEtherAndWaitForReceiptAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null, CancellationToken cancellationToken = default)
         {
             var fromAddress = _transactionManager?.Account?.Address;
+            gas = await EstimateGasIfNullAsync(gas, toAddress, etherAmount).ConfigureAwait(false);
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxPriorityFeePerGas, maxFeePerGas, gas, nonce);
-            return _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken);
+            return await _transactionManager.SendTransactionAndWaitForReceiptAsync(transactionInput, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null)
+        public async Task<string> TransferEtherAsync(string toAddress, decimal etherAmount, BigInteger maxPriorityFeePerGas, BigInteger maxFeePerGas, BigInteger? gas = null, BigInteger? nonce = null)
         {
             //Make the the maxPriorityFee and maxFeePerGas
             var fromAddress = _transactionManager?.Account?.Address;
+            gas = await EstimateGasIfNullAsync(gas, toAddress, etherAmount).ConfigureAwait(false);
             var transactionInput = EtherTransferTransactionInputBuilder.CreateTransactionInput(fromAddress, toAddress, etherAmount, maxPriorityFeePerGas, maxFeePerGas, gas, nonce);
-            return _transactionManager.SendTransactionAsync(transactionInput);
+            return await _transactionManager.SendTransactionAsync(transactionInput).ConfigureAwait(false);
         }
 
         public async Task<Fee1559> SuggestFeeToTransferWholeBalanceInEtherAsync(
@@ -83,6 +87,17 @@ namespace Nethereum.RPC.TransactionManagers
             var totalAmount = currentBalance.Value - (gasAmount * maxFeePerGas);
             if (totalAmount <= 0) throw new Exception("Insufficient balance to make a transfer");
             return UnitConversion.Convert.FromWei(totalAmount);
+        }
+
+
+        private async Task<BigInteger> EstimateGasIfNullAsync(BigInteger? gas, string toAddress, decimal etherAmount)
+        {
+            if (gas == null)
+            {
+                var estimatedGas = await EstimateGasAsync(toAddress, etherAmount).ConfigureAwait(false);
+                return estimatedGas;
+            }
+            return gas.Value;
         }
 
         public async Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount)
