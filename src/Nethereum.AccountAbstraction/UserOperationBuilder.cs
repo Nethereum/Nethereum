@@ -77,7 +77,7 @@ namespace Nethereum.AccountAbstraction
             return PackAndHashEIP712UserOperation(userOperation, new ERC4337Domain(entryPointAddress, chainId));
         }
 
-        public static string PackAndSignEIP712UserOperation(UserOperation userOperation, string entryPointAddress, BigInteger chainId, EthECKey signer)
+        public static PackedUserOperation PackAndSignEIP712UserOperation(UserOperation userOperation, string entryPointAddress, BigInteger chainId, EthECKey signer)
         {
             var typedDataSigner = new Eip712TypedDataSigner();
             var packedUserOperation = PackUserOperationForHash(userOperation);
@@ -85,7 +85,20 @@ namespace Nethereum.AccountAbstraction
             var typedData = CreateUserOperationTypeData(domain);
 
             var signature = typedDataSigner.SignTypedDataV4(packedUserOperation, typedData, signer);
-            return signature;
+
+            var packedUserOperationWithSignature = new PackedUserOperation
+            {
+                Sender = packedUserOperation.Sender,
+                Nonce = packedUserOperation.Nonce,
+                InitCode = packedUserOperation.InitCode,
+                CallData = packedUserOperation.CallData,
+                AccountGasLimits = packedUserOperation.AccountGasLimits,
+                PreVerificationGas = packedUserOperation.PreVerificationGas,
+                GasFees = packedUserOperation.GasFees,
+                PaymasterAndData = packedUserOperation.PaymasterAndData,
+                Signature = signature.HexToByteArray()
+            };
+            return packedUserOperationWithSignature;
         }
 
         public static byte[] PackAndHashEIP712UserOperation(UserOperation userOperation, ERC4337Domain domain)

@@ -25,6 +25,11 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 };
                 return await ContractHandler.QueryAsync<GetSenderAddressFunction, string>(getSenderAddressFunction);
             }
+       
+            public async Task<string> HandleOpsQueryAsync(HandleOpsFunction handleOpsFunction)
+            {
+                return await ContractHandler.QueryAsync<HandleOpsFunction, string>(handleOpsFunction);
+            }
 
 
 
@@ -133,15 +138,19 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                     userOperation.MaxPriorityFeePerGas = UserOperation.DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
                 }
 
+
+                if (userOperation.PreVerificationGas == null)
+                {
+                    userOperation.SetNullValuesToDefaultValues();
+                    userOperation.PreVerificationGas = UserOperation.DEFAULT_PRE_VERIFICATION_GAS;
+                    var packedFilledOp = UserOperationBuilder.PackUserOperation(userOperation);
+                    //what about the signature size?
+                    userOperation.PreVerificationGas = userOperation.PreVerificationGas + CalculateCallDataCost(new ABIEncode().GetABIParamsEncoded(packedFilledOp));
+                }
+
                 userOperation.SetNullValuesToDefaultValues();
 
                
-                if (userOperation.PreVerificationGas == 0)
-                {
-                    var packedFilledOp = UserOperationBuilder.PackUserOperation(userOperation);
-                    //what about the signature size?
-                    userOperation.PreVerificationGas = CalculateCallDataCost(new ABIEncode().GetABIEncoded(packedFilledOp));
-                }
 
                 return userOperation;
             }
@@ -168,10 +177,9 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 }
                 
                 
-                var signature = UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
-                userOperation.Signature = signature.HexToByteArray();
-                return UserOperationBuilder.PackUserOperation(userOperation);
-        }
+                  var packedUserOperation = UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
+                  return packedUserOperation;
+            }
 
             private static BigInteger CalculateCallDataCost(byte[] data)
             {
