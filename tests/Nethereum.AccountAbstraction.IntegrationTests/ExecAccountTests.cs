@@ -66,7 +66,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             {
                 Sender = account,
                 CallGasLimit = 1000000, //estimation fails with this calldata
-                CallData = callData
+                CallData = callData,
+                VerificationGasLimit = 2000000,
             }, new Signer.EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey));
 
             try

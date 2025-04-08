@@ -11,6 +11,7 @@ using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDe
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition;
+using Nethereum.ABI.FunctionEncoding;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests
 {
@@ -37,28 +38,18 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
         }
 
         [Fact]
-        public async Task ShouldX()
+        public async Task ShouldThrowWhenTryingToCreateAnAccountDirectly()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             var ownerAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var entryPointService = await EntryPointService.DeployContractAndGetServiceAsync(web3, new EntryPointDeployment());
-            var accountAddress = await CreateSimpleAccountAsync(ownerAddress, entryPointService.ContractHandler.ContractAddress);
-            var simpleAccountService = new SimpleAccountService(web3, accountAddress);
-
-            await web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(accountAddress, 2);
-
-            var receipt = await simpleAccountService.ExecuteRequestAndWaitForReceiptAsync(new ExecuteFunction
+            var ex = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
             {
-                Data = new byte[0],
-                Value = Web3.Web3.Convert.ToWei(1),
-                Target = "0xb1ac840891b22e2892cF53B681cefA75d987AEAc"
+                var accountAddress = await CreateSimpleAccountAsync(ownerAddress, entryPointService.ContractHandler.ContractAddress);
             });
 
-            var balance = await web3.Eth.GetBalance.SendRequestAsync("0xb1ac840891b22e2892cF53B681cefA75d987AEAc");
-            var balanceInEth = Web3.Web3.Convert.FromWei(balance.Value);
-            Assert.Equal(1, balanceInEth);
-
+            Assert.Equal("Smart contract error: only callable from SenderCreator", ex.Message);
         }
 
         [Fact]
