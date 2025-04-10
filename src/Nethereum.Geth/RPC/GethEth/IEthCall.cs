@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Nethereum.Geth.RPC.DTOs;
+
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -115,7 +115,7 @@ namespace Nethereum.Geth.RPC.GethEth
     ///</Summary>
     public interface IEthCall
     {
-        Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null);
-        RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, DTOs.StateChange> stateChanges, object id = null);
+        Task<string> SendRequestAsync(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null);
+        RpcRequest BuildRequest(TransactionInput transaction, BlockParameter blockParameter, Dictionary<string, StateChange> stateChanges, object id = null);
     }
 }

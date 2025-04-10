@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Geth;
-using Nethereum.Geth.RPC.DTOs;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
