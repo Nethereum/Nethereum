@@ -4,6 +4,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
@@ -32,10 +33,14 @@ namespace Nethereum.EVM
         public BigInteger Timestamp { get; }
         public string Coinbase { get; }
         public BigInteger BaseFee { get; }
+        public BigInteger BlobBaseFee { get; set; } = 0;
+        public byte[][] BlobHashes { get; set; } = new byte[0][];
         public BigInteger GasPrice { get; internal set; } = 0;
         public BigInteger GasLimit { get; set; } = 10000000;
         public BigInteger Difficulty { get; set; } = 1;
         public BigInteger Fee { get; set; }
+        public Dictionary<BigInteger, byte[]> TransientStorage { get; } = new();
+        public bool IsStatic { get; set; } = false;
 
         public ExecutionStateService ExecutionStateService { get; protected set; }
 

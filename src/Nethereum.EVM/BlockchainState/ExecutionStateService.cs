@@ -19,13 +19,15 @@ namespace Nethereum.EVM.BlockchainState
 
         public INodeDataService NodeDataService { get; set; }
 
+
+
         public async Task<byte[]> GetFromStorageAsync(string address, BigInteger key)
         {
             var accountState = CreateOrGetAccountExecutionState(address);
             if (!accountState.StorageContainsKey(key))
             {
                 var storageValue = await NodeDataService.GetStorageAtAsync(address, key);
-                accountState.UpsertStorageValue(key, storageValue);
+                accountState.TrackAndWriteStorage(key, storageValue);
             }
 
             return accountState.GetStorageValue(key);
@@ -58,11 +60,30 @@ namespace Nethereum.EVM.BlockchainState
             return accountState.Nonce.Value;
         }
 
+        public async Task<AccountExecutionState> LoadBalanceNonceAndCodeFromStorageAsync(string address)
+        {
+            await GetCodeAsync(address);
+            await GetNonceAsync(address);
+            await GetTotalBalanceAsync(address);
+            return CreateOrGetAccountExecutionState(address);
+        }
+
 
         public void SetNonce(string address, BigInteger nonce)
         {
             var accountState = CreateOrGetAccountExecutionState(address);
             accountState.Nonce = nonce;
+        }
+
+        public bool AddressIsWarm(string address)
+        {
+            address = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+            return AccountsState.ContainsKey(address);
+        }
+
+        public void MarkAddressAsWarm(string address)
+        {
+            CreateOrGetAccountExecutionState(address);
         }
 
         public AccountExecutionState CreateOrGetAccountExecutionState(string address)

@@ -110,6 +110,26 @@ namespace Nethereum.EVM
             return stack[0];
         }
 
+        public byte[] StackPeekAt(int index)
+        {
+            if (index < 0 || index >= stack.Count)
+            {
+                throw new Exception("Invalid stack index");
+            }
+            return stack[index];
+        }
+
+        public BigInteger StackPeekAtAndConvertToBigInteger(int index)
+        {
+            return StackPeekAt(index).ConvertToInt256();
+        }
+
+        public BigInteger StackPeekAtAndConvertToUBigInteger(int index)
+        {
+            return StackPeekAt(index).ConvertToUInt256();
+        }
+
+
         public void StackSwap(int index)
         {
             var swapTemp = stack[0];
@@ -213,6 +233,61 @@ namespace Nethereum.EVM
             StackPush(IntTypeEncoder.EncodeSignedUnsigned256(value, 32));
         }
 
+        public bool IsAddressWarm(byte[] addressBytes)
+        {
+            return ProgramContext.ExecutionStateService.AddressIsWarm(addressBytes.ToHex());
+        }
 
+        public void MarkAddressAsWarm(byte[] addressBytes)
+        {
+            ProgramContext.ExecutionStateService.MarkAddressAsWarm(addressBytes.ToHex());
+        }
+
+        public bool IsStorageSlotWarm(BigInteger key)
+        {
+            var state = ProgramContext.ExecutionStateService.CreateOrGetAccountExecutionState(ProgramContext.AddressContract);
+            return state.IsStorageKeyWarm(key);
+        }
+
+        public void MarkStorageSlotAsWarm(BigInteger key)
+        {
+            var state = ProgramContext.ExecutionStateService.CreateOrGetAccountExecutionState(ProgramContext.AddressContract);
+            state.MarkStorageKeyAsWarm(key);
+        }
+
+        public BigInteger CalculateMemoryExpansionGas(BigInteger offset, BigInteger length)
+        {
+            if (length == 0) return 0;
+
+            var currentBytes = Memory?.Count ?? 0;
+            var currentWords = (currentBytes + 31) / 32;
+
+            var highestAccessedByte = (int)(offset + length);
+            var requiredWords = (highestAccessedByte + 31) / 32;
+
+            if (requiredWords <= currentWords)
+                return 0;
+
+            return MemoryCost(requiredWords) - MemoryCost(currentWords);
+        }
+
+        private static BigInteger MemoryCost(int words)
+        {
+            return (words * words / 512) + (3 * words);
+        }
+
+        public BigInteger TotalGasUsed { get; set; } = 0;
+        public BigInteger GasRemaining { get; set; } = 0;
+
+        public void UpdateGasUsed(BigInteger gasCost)
+        {
+            //if (GasRemaining < gasCost)
+            //{
+            //    throw new Exception("Out of gas");
+            //}
+
+            TotalGasUsed += gasCost;
+            GasRemaining -= gasCost;
+        }
     }
 }

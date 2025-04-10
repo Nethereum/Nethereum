@@ -26,9 +26,12 @@ namespace Nethereum.EVM.Execution
             return key;
         }
 
-        public void SStore(Program program)
+        public async Task SStore(Program program)
         {
             var key = program.StackPopAndConvertToUBigInteger();
+            //ensure we have the value in storage to track it
+            //always first so we can track the original value
+            await program.ProgramContext.GetFromStorageAsync(key);
             var storageValue = program.StackPop();
             program.ProgramContext.SaveToStorage(key, storageValue);
             program.Step();
@@ -50,6 +53,24 @@ namespace Nethereum.EVM.Execution
             }
 
             program.StackPush(data);
+            program.Step();
+        }
+
+        public void MCopy(Program program)
+        {
+            var destOffset = (int)program.StackPopAndConvertToUBigInteger(); 
+            var srcOffset = (int)program.StackPopAndConvertToUBigInteger();  
+            var length = (int)program.StackPopAndConvertToUBigInteger();     
+
+            var srcData = new byte[length];
+
+            if (srcOffset < program.Memory.Count)
+            {
+                var available = Math.Min(length, program.Memory.Count - srcOffset);
+                program.Memory.CopyTo(srcOffset, srcData, 0, available);
+            }
+
+            program.WriteToMemory(destOffset, length, srcData);
             program.Step();
         }
 

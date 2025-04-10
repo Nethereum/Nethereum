@@ -15,6 +15,11 @@ namespace Nethereum.EVM.BlockchainState
             return originalBalance + internalBalance;
         }
 
+        public bool IsZero()
+        {
+            return GetTotalBalance() == 0;
+        }
+
         public void UpdateExecutionBalance(BigInteger value)
         {
             if (ExecutionBalance != null)

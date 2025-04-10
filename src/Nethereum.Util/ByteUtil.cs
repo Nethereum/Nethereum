@@ -184,6 +184,29 @@ namespace Nethereum.Util
 
             return result;
         }
+
+        public static bool AreEqual(byte[] a, byte[] b)
+        {
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
+            if (a.Length != b.Length) return false;
+
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
+        }
+
+        public static bool IsZero(byte[] value)
+        {
+            if (value == null) return true;
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] != 0) return false;
+            }
+            return true;
+        }
     }
 
 

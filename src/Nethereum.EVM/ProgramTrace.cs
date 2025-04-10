@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 
 namespace Nethereum.EVM
@@ -18,13 +19,15 @@ namespace Nethereum.EVM
         public Dictionary<string, string> Storage { get; set; }
         public int Depth { get; set; }
         public List<string> MemoryAsArray { get; set; } = new List<string>();
+        public BigInteger GasCost { get; internal set; }
+
         public override string ToString()
         {
             var builder = new StringBuilder();
             builder.AppendLine("Address:" + ProgramAddress);
             builder.AppendLine("VMTraceStep Trace step:" + VMTraceStep);
             builder.AppendLine("Depth: " + Depth);
-
+            builder.AppendLine("Gas:" + GasCost);
             builder.AppendLine("Program Trace step:" + ProgramTraceStep);
             builder.AppendLine(Instruction.ToDisassemblyLine());
             if (Stack != null)

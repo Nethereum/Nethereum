@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using System.Threading;
 using Nethereum.ABI;
 using System.Linq;
+using Nethereum.Contracts.ContractHandlers;
 // ReSharper disable ConsiderUsingConfigureAwait  
 // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
@@ -35,8 +36,17 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
             var contractAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
             var senderAddress = "0x0000000000000000000000000000000000000001";
+
+            var contractHandler = web3.Eth.GetContractHandler(contractAddress);
+            var balanceOfFunction = new Nethereum.Contracts.Standards.ERC20.ContractDefinition.BalanceOfFunction()
+            {
+                Owner = senderAddress
+            };
+            var gasEstimate = await contractHandler.EstimateGasAsync(balanceOfFunction);
+
             var simulator = new Nethereum.EVM.Contracts.ERC20.ERC20ContractSimulator(web3, 1, contractAddress);
             var slot = await simulator.CalculateMappingBalanceSlotAsync(senderAddress, 100);
+       
             Assert.Equal(9, slot);
         }
 

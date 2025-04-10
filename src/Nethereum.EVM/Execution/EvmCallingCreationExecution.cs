@@ -159,7 +159,7 @@ namespace Nethereum.EVM.Execution
             var value = program.StackPopAndConvertToBigInteger();
             var from = program.ProgramContext.AddressContract;
             var to = codeAddress.ConvertToEthereumChecksumAddress();
-
+  
             return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
 
         }
@@ -243,6 +243,7 @@ namespace Nethereum.EVM.Execution
                 programContext.Difficulty = program.ProgramContext.Difficulty;
                 programContext.GasLimit = program.ProgramContext.GasLimit;
                 var callProgram = new Program(byteCode, programContext);
+                callProgram.GasRemaining = gas;
                 var vm = new EVMSimulator(evmProgramExecutionParent);
                 
                 try
@@ -274,6 +275,9 @@ namespace Nethereum.EVM.Execution
                         {
                             program.ProgramResult.InsertInnerContractCodeIfDoesNotExist(codeItem.Key, codeItem.Value);
                         }
+
+                        program.GasRemaining += callProgram.GasRemaining;
+                        program.TotalGasUsed += callProgram.TotalGasUsed;
                         program.Step();
                     }
                     else

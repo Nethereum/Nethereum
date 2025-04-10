@@ -109,13 +109,20 @@
         ///<summary>Istanbul hardfork, EIP-1884: balance of the executing contract in wei</summary>///
         SELFBALANCE,
         ///<summary>London hardfork, EIP-3198: current block's base fee</summary>///
-        BASEFEE,
-
+        BASEFEE = 0x48,
+        /// <summary>
+        /// Cancun: Get versioned hashes
+        /// </summary>
+        BLOBHASH = 0x49,
+        /// <summary>
+        /// Cancun: Returns the value of the blob base-fee of the current block
+        /// </summary>
+        BLOBBASEFEE = 0x4A,
         ///<summary>remove item from stack</summary>///
         POP = 0x50,         
         ///<summary>load word from memory</summary>///
         MLOAD,              
-        ///<summary>save word to memory</summary>///
+        ///<su  mmary>save word to memory</summary>///
         MSTORE,             
         ///<summary>save byte to memory</summary>///
         MSTORE8,            
@@ -135,6 +142,18 @@
         GAS,                
         ///<summary>set a potential jump destination</summary>///
         JUMPDEST,
+        /// <summary>
+        /// Load word from transient storage
+        /// </summary>
+        TLOAD,
+        /// <summary>
+        /// Cancun, Save word to transient storage
+        /// </summary>
+        TSTORE,
+        /// <summary>
+        /// Copies a word from memory to memory
+        /// </summary>
+        MCOPY = 0x5e,
         ///<summary>place 0 byte item on stack</summary>///
         PUSH0 = 0x5f,
         ///<summary>place 1 byte item on stack</summary>///

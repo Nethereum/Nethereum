@@ -94,9 +94,9 @@ namespace Nethereum.EVM.Execution
 
         public void Exp(Program program)
         {
-            var first = program.StackPopAndConvertToUBigInteger();
-            var second = program.StackPopAndConvertToUBigInteger();
-            var result = BigInteger.ModPow(first, second, Two256);
+            var value = program.StackPopAndConvertToUBigInteger();
+            var exponent = program.StackPopAndConvertToUBigInteger();
+            var result = BigInteger.ModPow(value, exponent, Two256);
             program.StackPush(result);
             program.Step();
         }

@@ -1,4 +1,5 @@
 ﻿using Nethereum.EVM.Execution;
+using Nethereum.EVM.Gas;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,6 @@ namespace Nethereum.EVM
     /// <summary>
     /// EVM simulator 
     /// Experimental needs more testing
-    /// Gas calculation not implemented (this might be a future release)
     /// </summary>
     public class EVMSimulator
     {
@@ -36,10 +36,14 @@ namespace Nethereum.EVM
             while(program.Stopped != true)
             {
                 var currentInstruction = program.GetCurrentInstruction();
+                var gasCost = await OpcodeGasTable.GetGasCostAsync(currentInstruction.Instruction.Value, program);
+                program.UpdateGasUsed(gasCost);
                 if (traceEnabled)
                 {
                     
                     var trace = ProgramTrace.CreateTraceFromCurrentProgram(program.ProgramContext.AddressContract, vmExecutionCounter, programExecutionCounter, depth, program, currentInstruction, program.ProgramContext.CodeAddress);
+                    trace.GasCost = gasCost;
+
                     program.Trace.Add(trace);
 #if DEBUG
                     if (EnableTraceToDebugOuptput)
@@ -63,6 +67,7 @@ namespace Nethereum.EVM
                 var instruction = program.GetCurrentInstruction();
                 if (instruction.Instruction != null)
                 {
+
                     switch (instruction.Instruction.Value)
                     {
                         case Instruction.STOP:
@@ -224,6 +229,12 @@ namespace Nethereum.EVM
                         case Instruction.BASEFEE:
                             EvmProgramExecution.BlockchainCurrentContractContext.BaseFee(program);
                             break;
+                        case Instruction.BLOBBASEFEE:
+                            EvmProgramExecution.BlockchainCurrentContractContext.BlobBaseFee(program);
+                            break;
+                        case Instruction.BLOBHASH:
+                            EvmProgramExecution.BlockchainCurrentContractContext.BlobHash(program);
+                            break;
                         case Instruction.BLOCKHASH:
                             await EvmProgramExecution.BlockchainCurrentContractContext.BlockHashAsync(program);
                             break;
@@ -335,7 +346,14 @@ namespace Nethereum.EVM
                             await EvmProgramExecution.StorageMemory.SLoad(program);
                             break;
                         case Instruction.SSTORE:
-                            EvmProgramExecution.StorageMemory.SStore(program);
+                            await EvmProgramExecution.StorageMemory.SStore(program);
+                            break;
+                        case Instruction.TLOAD:
+                            EvmProgramExecution.BlockchainCurrentContractContext.TLoad(program);
+                            break;
+
+                        case Instruction.TSTORE:
+                            EvmProgramExecution.BlockchainCurrentContractContext.TStore(program);
                             break;
                         //--------------------//      
                         case Instruction.LOG0:

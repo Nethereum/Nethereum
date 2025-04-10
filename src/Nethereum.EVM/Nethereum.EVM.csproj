@@ -8,6 +8,7 @@
 	<AssemblyName>Nethereum.EVM</AssemblyName>
 	<PackageId>Nethereum.EVM</PackageId>
 	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+	<LangVersion>9.0</LangVersion>
 </PropertyGroup>
 
   <ItemGroup>

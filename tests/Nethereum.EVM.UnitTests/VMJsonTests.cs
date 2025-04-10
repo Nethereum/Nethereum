@@ -12,6 +12,8 @@ using Xunit;
 
 namespace Nethereum.EVM.UnitTests
 {
+
+
     public class VMJsonTests
     {
 
@@ -176,7 +178,7 @@ namespace Nethereum.EVM.UnitTests
                         if (test.Trace.Exists(x => !string.IsNullOrEmpty(x.Error) || x.Op == 90)) { continue; }
                         Debug.WriteLine(scenarioName);
                         Debug.WriteLine(test.Id);
-                        var executionState = new ExecutionStateService(null);
+                        var executionState = new ExecutionStateService(new MockNodeDataService());
                         foreach (var scenarioAccountStorageItem in scenario.PreAccountsStorage)
                         {
                             var scenarioAccountStorage = scenarioAccountStorageItem.Value;
@@ -269,6 +271,8 @@ namespace Nethereum.EVM.UnitTests
                         }
 
                         Assert.Equal(resultHex, test.Trace.Last().Return.ToHexCompact());
+
+                        var gas = program.TotalGasUsed;
                     }
                 }
             }
@@ -293,7 +297,7 @@ namespace Nethereum.EVM.UnitTests
         //[Fact]
         //public async Task TestvmIOandFlowOperations()
         //{
-        //    var excluded = new string[] { "codecopy", "jump", "jumpi"};
+        //    var excluded = new string[] { "codecopy", "jump", "jumpi" };
         //    await RunTestsFromFolder("Tests/VMTests/vmIOandFlowOperations", excluded);
         //}
 

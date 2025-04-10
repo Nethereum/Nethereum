@@ -17,7 +17,7 @@ namespace Nethereum.EVM.Execution
             var address = program.ProgramContext.AddressContract;
 
             var memStart = (int)program.StackPopAndConvertToUBigInteger();
-            var memOffset = (int)program.StackPopAndConvertToUBigInteger();
+            var memLength = (int)program.StackPopAndConvertToUBigInteger();
 
             var topics = new List<string>();
             for (int i = 0; i < numberTopics; ++i)
@@ -26,7 +26,7 @@ namespace Nethereum.EVM.Execution
                 topics.Add(topic.ToHex());
             }
 
-            byte[] data = program.Memory.GetRange(memStart, memOffset).ToArray();
+            byte[] data = program.Memory.GetRange(memStart, memLength).ToArray();
 
             var filterLog = new FilterLog
             {

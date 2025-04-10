@@ -65,8 +65,8 @@ namespace Nethereum.EVM.Execution
         public void SHA3(Program program)
         {
             var index = program.StackPopAndConvertToUBigInteger();
-            var lenght = program.StackPopAndConvertToUBigInteger();
-            var data = program.Memory.GetRange((int)index, (int)lenght);
+            var length = program.StackPopAndConvertToUBigInteger();
+            var data = program.Memory.GetRange((int)index, (int)length);
             var encoded = Sha3Keccack.Current.CalculateHash(data.ToArray());
             program.StackPush(encoded);
             program.Step();
@@ -108,7 +108,7 @@ namespace Nethereum.EVM.Execution
         }
         public void Gas(Program program)
         {
-            var gas = program.ProgramContext.Gas;
+            var gas = BigInteger.Max(program.GasRemaining, 0);
             program.StackPush(gas);
             program.Step();
         }
@@ -128,6 +128,54 @@ namespace Nethereum.EVM.Execution
         {
             var baseFee = program.ProgramContext.BaseFee;
             program.StackPush(baseFee);
+            program.Step();
+        }
+
+        public void BlobBaseFee(Program program)
+        {
+            program.StackPush(program.ProgramContext.BlobBaseFee);
+            program.Step();
+        }
+
+        public void BlobHash(Program program)
+        {
+            var index = program.StackPopAndConvertToUBigInteger();
+
+            if (program.ProgramContext.BlobHashes == null || index >= program.ProgramContext.BlobHashes.Length)
+            {
+                program.StackPush(new byte[32]); // push zeroed 32 bytes
+            }
+            else
+            {
+                program.StackPush(program.ProgramContext.BlobHashes[(int)index].PadTo32Bytes());
+            }
+
+            program.Step();
+        }
+
+        public void TLoad(Program program)
+        {
+            var key = program.StackPopAndConvertToUBigInteger();
+            if (program.ProgramContext.IsStatic)
+                throw new Exception("TLOAD not allowed in static context");
+
+            byte[] value = program.ProgramContext.TransientStorage.TryGetValue(key, out var val)
+                ? val
+                : new byte[32];
+
+            program.StackPush(value);
+            program.Step();
+        }
+
+        public void TStore(Program program)
+        {
+            var key = program.StackPopAndConvertToUBigInteger();
+            var value = program.StackPop().PadTo32Bytes();
+
+            if (program.ProgramContext.IsStatic)
+                throw new Exception("TSTORE not allowed in static context");
+
+            program.ProgramContext.TransientStorage[key] = value;
             program.Step();
         }
     }
