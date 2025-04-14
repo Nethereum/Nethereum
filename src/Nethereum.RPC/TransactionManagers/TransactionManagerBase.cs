@@ -15,6 +15,7 @@ using Nethereum.RPC.Chain;
 using Nethereum.Model;
 using System.Collections.Generic;
 using Nethereum.Util;
+using System.Linq;
 
 namespace Nethereum.RPC.TransactionManagers
 {
@@ -239,20 +240,15 @@ namespace Nethereum.RPC.TransactionManagers
                 if (transactionInput.Gas == null) transactionInput.Gas = new HexBigInteger(DefaultGas);
             }
 
-            //Top up next request.. 7702
-            if(NextRequest7022Authorisations != null && NextRequest7022Authorisations.Count > 0)
-            {
-                var count = (transactionInput.AuthorisationList?.Count) ?? 1;
-                transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + 25000 * count);
-            }
-
-            //Topup the gas if the gas is not enough
-            if(transactionInput.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte())
+            
+            if(transactionInput.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte()
+                || transactionInput.AuthorisationList != null && transactionInput.AuthorisationList.Count > 0)
             {
                 //PER_AUTH_BASE_COST	12500
                 //PER_EMPTY_ACCOUNT_COST  25000
-                var count = (transactionInput.AuthorisationList?.Count) ?? 1;
-                transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + 25000 * count);
+                var gasCost = AuthorisationGasCalculator.CalculateGasForAuthorisationDelegation(transactionInput.AuthorisationList.ToArray());
+
+                transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + gasCost );
             }
            
         }
@@ -291,6 +287,7 @@ namespace Nethereum.RPC.TransactionManagers
             NextRequest7022Authorisations.Add(authorisation);
         }
 
+       
 
 #endif
     }

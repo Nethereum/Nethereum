@@ -11,68 +11,74 @@ namespace Nethereum.RPC.TransactionManagers
 {
     public class EIP7022AuthorisationService : IEIP7022AuthorisationService
     {
-        private readonly ITransactionManager _transactionManager;
-        private readonly IEthApiService _ethApiService;
+        protected ITransactionManager TransactionManager { get; }
+        protected IEthApiService EthApiService { get; }
 
         public const string CODE_EIP7022_PREFIX = "0xef0100";
 
         public EIP7022AuthorisationService(ITransactionManager transactionManager, IEthApiService ethApiService)
         {
-            _transactionManager = transactionManager ?? throw new ArgumentNullException(nameof(transactionManager));
-            _ethApiService = ethApiService;
+            TransactionManager = transactionManager ?? throw new ArgumentNullException(nameof(transactionManager));
+            EthApiService = ethApiService;
         }
 
-        private TransactionInput CreateDefaultTransactionInput()
+        private TransactionInput CreateDefaultTransactionInputForExistingAddress()
         {
-            //This is assuming that the contract it will be delegated to, will have a fallback function that will accept the transaction hence the gas
+           
             return new TransactionInput()
             {
-                From = _transactionManager.Account.Address,
-                Gas =
-                new HexBigInteger(_transactionManager.DefaultGas + 2300),
-                To = _transactionManager.Account.Address,
+                From = TransactionManager.Account.Address,
+                // The transaction manager will add up the authorisation delegation gas,
+                // but we top it up with 2300 to allow for the possible receiver amount
+                Gas = new HexBigInteger(TransactionManager.DefaultGas + 2300),
+                To = TransactionManager.Account.Address,
                 Value = new HexBigInteger(0),
                 Data = "0x"
             };
         }
 
+     
+
         public async Task Add7022AuthorisationDelegationOnNextRequestAsync(string addressContract, bool useUniversalZeroChainId = false)
         {
-            await _transactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
+            await TransactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
         }
 
         public void Remove7022AuthorisationDelegationOnNextRequest()
         {
-            _transactionManager.Remove7022AuthorisationDelegationOnNextRequest();
+            TransactionManager.Remove7022AuthorisationDelegationOnNextRequest();
         }
 
         public async Task<string> AuthoriseRequestAsync(string addressContract, bool useUniversalZeroChainId = false)
         {
-            await _transactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
-            return await _transactionManager.SendTransactionAsync(CreateDefaultTransactionInput()).ConfigureAwait(false);
+            await TransactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
+            return await TransactionManager.SendTransactionAsync(CreateDefaultTransactionInputForExistingAddress()).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> AuthoriseRequestAndWaitForReceiptAsync(string addressContract, bool useUniversalZeroChainId = false)
         {
-            await _transactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
-            return await _transactionManager.SendTransactionAndWaitForReceiptAsync(CreateDefaultTransactionInput()).ConfigureAwait(false);
+            await TransactionManager.Add7022AuthorisationDelegationOnNextRequestAsync(addressContract, useUniversalZeroChainId).ConfigureAwait(false);
+            return await TransactionManager.SendTransactionAndWaitForReceiptAsync(CreateDefaultTransactionInputForExistingAddress()).ConfigureAwait(false);
         }
 
         public async Task<string> RemoveAuthorisationRequestAsync()
         {
-            _transactionManager.Remove7022AuthorisationDelegationOnNextRequest();
-            return await _transactionManager.SendTransactionAsync(CreateDefaultTransactionInput()).ConfigureAwait(false);
+            TransactionManager.Remove7022AuthorisationDelegationOnNextRequest();
+            return await TransactionManager.SendTransactionAsync(CreateDefaultTransactionInputForExistingAddress()).ConfigureAwait(false);
         }
+
+       
+
 
         public async Task<TransactionReceipt> RemoveAuthorisationRequestAndWaitForReceiptAsync()
         {
-            _transactionManager.Remove7022AuthorisationDelegationOnNextRequest();
-            return await _transactionManager.SendTransactionAndWaitForReceiptAsync(CreateDefaultTransactionInput()).ConfigureAwait(false);
+            TransactionManager.Remove7022AuthorisationDelegationOnNextRequest();
+            return await TransactionManager.SendTransactionAndWaitForReceiptAsync(CreateDefaultTransactionInputForExistingAddress()).ConfigureAwait(false);
         }
 
         public async Task<string> GetDelegatedAccountAddressAsync(string address)
         {
-            var code = await _ethApiService.GetCode.SendRequestAsync(address).ConfigureAwait(false);
+            var code = await EthApiService.GetCode.SendRequestAsync(address).ConfigureAwait(false);
             if (string.IsNullOrEmpty(code) || code == "0x")
             {
                 return null;
@@ -90,7 +96,7 @@ namespace Nethereum.RPC.TransactionManagers
 
         public async Task<bool> IsDelegatedAccountAsync(string address)
         {
-            var code = await _ethApiService.GetCode.SendRequestAsync(address).ConfigureAwait(false);
+            var code = await EthApiService.GetCode.SendRequestAsync(address).ConfigureAwait(false);
             if (string.IsNullOrEmpty(code) || code == "0x")
             {
                 return false;

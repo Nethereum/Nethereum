@@ -1,4 +1,5 @@
-﻿using Nethereum.Contracts;
+﻿using Nethereum.Accounts;
+using Nethereum.Contracts;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.TransactionManagers;
@@ -56,7 +57,7 @@ namespace Nethereum.Signer.IntegrationTests
 
             
            var authorisationService = web3.Eth.GetEIP7022AuthorisationService();
-            var removeReceipt = await authorisationService.RemoveAuthorisationRequestAndWaitForReceiptAsync();
+           var removeReceipt = await authorisationService.RemoveAuthorisationRequestAndWaitForReceiptAsync();
 
            var delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
            Assert.Null(delegatedAddress);
@@ -133,6 +134,46 @@ namespace Nethereum.Signer.IntegrationTests
 
             receiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
             Assert.Equal(originalReceiverTokenBalance + 100, receiverTokenBalance);
+
+
+        }
+
+        [Fact]
+        public async Task ShouldCreateAuthoritiesForManyAccounts()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetWeb3();
+            var ownerAddress = EthereumClientIntegrationFixture.AccountAddress;
+
+            var defaultBatchCallService = await BatchCallAndSponsorService.DeployContractAndGetServiceAsync(web3, new BatchCallAndSponsorDeployment());
+            var defaultBachCallServiceAddress = defaultBatchCallService.ContractAddress;
+            
+            //sepolia deployed services
+            //var defaultBachCallServiceAddress = "0x976d1885a5d42ccfe5327a06c8d6b6d519fde365";
+           
+            //var web3 = new Web3.Web3(account, "https://ethereum-sepolia-rpc.publicnode.com");
+
+            var authorisationService = new EIP7022SponsorAuthorisationService(web3.TransactionManager, web3.Eth);
+
+            var keys = new List<EthECKey>();
+
+            var numberOfAccounts = 400;
+
+            for (int i = 0; i < numberOfAccounts; i++)
+            {
+                var key = EthECKey.GenerateKey();
+                keys.Add(key);
+            }
+
+            var receipt = await authorisationService.AuthoriseBatchSponsoredRequestAndWaitForReceiptAsync(keys.ToArray(), defaultBachCallServiceAddress, 1000, true, true);
+            
+            var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(receipt.TransactionHash);
+            var authorisationList = transaction.AuthorisationList;
+            Assert.True(authorisationList.Count == numberOfAccounts);
+
+
+
+            Assert.True(receipt.Succeeded());
+
 
 
         }

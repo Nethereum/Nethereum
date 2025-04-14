@@ -16,6 +16,8 @@ using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Model;
+using Nethereum.Accounts;
+
 #if !LITE
 using Nethereum.Signer;
 #endif
@@ -87,6 +89,12 @@ namespace Nethereum.Web3
         public IDebugApiService Debug { get; private set; }
 
         public FeeSuggestionService FeeSuggestion { get; private set; }
+#if !LITE
+        public EIP7022SponsorAuthorisationService GetEIP7022SponsorAuthorisation()
+        {
+            return new EIP7022SponsorAuthorisationService(TransactionManager, Eth);
+        }
+#endif 
         public ITransactionReceiptService TransactionReceiptPolling
         {
             get
@@ -147,11 +155,15 @@ namespace Nethereum.Web3
             Personal = new PersonalApiService(Client);
             FeeSuggestion = new FeeSuggestionService(Client);
             Debug = new DebugApiService(Client);
+
+
         }
 
         private void InitialiseDefaultRpcClient(string url, ILogger log, AuthenticationHeaderValue authenticationHeader)
         {
             Client = new RpcClient(new Uri(url), authenticationHeader, null, null, log);
         }
+
+         
     }
 }

@@ -3,6 +3,12 @@ using System.Numerics;
 
 namespace Nethereum.Model
 {
+    public class Gas7702
+    {
+        public const int PER_AUTH_BASE_COST = 12500;
+        public const int PER_EMPTY_ACCOUNT_COST	= 25000;
+    }
+
     public class Transaction7702 : SignedTypeTransaction
     {
         public Transaction7702(BigInteger chainId, BigInteger? nonce, BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,

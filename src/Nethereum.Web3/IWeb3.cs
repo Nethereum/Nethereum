@@ -1,4 +1,8 @@
-﻿using Nethereum.BlockchainProcessing.Services;
+﻿#if !LITE
+using Nethereum.Accounts;
+#endif
+
+using Nethereum.BlockchainProcessing.Services;
 using Nethereum.Contracts.Services;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
@@ -20,5 +24,8 @@ namespace Nethereum.Web3
         ITransactionReceiptService TransactionReceiptPolling { get; set; }
         IDebugApiService Debug { get; }
         FeeSuggestionService FeeSuggestion { get; }
+#if !LITE
+        EIP7022SponsorAuthorisationService GetEIP7022SponsorAuthorisation();
+#endif 
     }
 }
