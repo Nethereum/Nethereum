@@ -2,6 +2,7 @@
 using Nethereum.Contracts;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.Mappers;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer.IntegrationTests.BatchCallAndSponsor;
 using Nethereum.Signer.IntegrationTests.BatchCallAndSponsor.ContractDefinition;
@@ -170,9 +171,18 @@ namespace Nethereum.Signer.IntegrationTests
             var authorisationList = transaction.AuthorisationList;
             Assert.True(authorisationList.Count == numberOfAccounts);
 
-
-
             Assert.True(receipt.Succeeded());
+
+            for(int i = 0; i < numberOfAccounts; i++)
+            {
+                var authorisation = authorisationList[i];
+                Assert.Equal(0, authorisation.ChainId.Value);
+                Assert.Equal(defaultBachCallServiceAddress, authorisation.Address);
+                Assert.True(keys[i].GetPublicAddress().IsTheSameAddress(
+                    EthECKeyBuilderFromSignedAuthorisation.RecoverSignerAddress(
+                    authorisation.ToAuthorisation7702Signed())));
+                
+            }
 
 
 
