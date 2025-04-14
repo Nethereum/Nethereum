@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nethereum.Geth.IntegrationTests.Testers;
 using Nethereum.Geth.RPC.Debug;
 using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.Geth.RPC.Debug.Tracers;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
 using Newtonsoft.Json.Linq;
@@ -11,9 +14,13 @@ using Xunit;
 
 namespace Nethereum.Geth.Tests.Testers
 {
-    public class DebugTraceTransactionTester : RPCRequestTester<JObject>, IRPCRequestTester
+    public class DebugTraceTransactionTester : RPCRequestTester<JToken>, IRPCRequestTester
     {
-        public string GetError(JObject result)
+        
+        public static IEnumerable<object[]> GetCallTracerConfigCombinations() => Utils.GetBooleanCombinations(2);
+        public static IEnumerable<object[]> GetOpcodeTracerConfigCombinations() => Utils.GetBooleanCombinations(5);
+
+        public string GetError(JToken result)
         {
             var structsLogs = (JArray) result["structLogs"];
             var lastCall = structsLogs[structsLogs.Count - 1];
@@ -24,11 +31,20 @@ namespace Nethereum.Geth.Tests.Testers
         //Live error "0x2bf8b77737953752535380c87a443de4974899f97a84fddf04a7764330f9964c"
         //Live normal = "0x58c8e6eaab928b2ce991d4b949027d168d010ed9ac6b79d65bfb1c7495a89b7a"
 
-        public override async Task<JObject> ExecuteAsync(IClient client)
+        public override async Task<JToken> ExecuteAsync(IClient client)
         {
             var debugTraceTransaction = new DebugTraceTransaction(client);
-            return await debugTraceTransaction.SendRequestAsync(Settings.GetTransactionHash(),
-                new TraceTransactionOptions()).ConfigureAwait(false);
+            return await debugTraceTransaction.SendRequestAsync(
+                Settings.GetTransactionHash(),
+                new TracingOptions()).ConfigureAwait(false);
+        }
+        
+        public async Task<TOutput> ExecuteAsync<TOutput>(IClient client, TracingOptions tracingOptions)
+        {
+            var debugTraceTransaction = new DebugTraceTransaction(client);
+            return await debugTraceTransaction.SendRequestAsync<TOutput>(
+                Settings.GetTransactionHash(),
+                tracingOptions).ConfigureAwait(false);
         }
 
         public override Type GetRequestType()
@@ -50,6 +66,171 @@ namespace Nethereum.Geth.Tests.Testers
                 //error is for a specific environment
             }
         }
+        
+
+        [Theory]
+        [MemberData(nameof(GetCallTracerConfigCombinations))]
+        public async void ShouldReturnCallTracerRpcResponse(bool onlyTopCalls, bool withLogs)
+        {
+            var result = await ExecuteAsync<CallTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new CallTracerInfo(onlyTopCalls, withLogs)
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturn4ByteTracerRpcResponse()
+        {
+            var result = await ExecuteAsync<FourByteTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new FourByteTracerInfo()
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturnBigramTracerRpcResponse()
+        {
+            var result = await ExecuteAsync<BigramTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new BigramTracerInfo()
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturnUnigramTracerRpcResponse()
+        {
+            var result = await ExecuteAsync<UnigramTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new UnigramTracerInfo()
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturnTrigramTracerRpcResponse()
+        {
+            var result = await ExecuteAsync<TrigramTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new TrigramTracerInfo()
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturnOpcountTracerRpcResponse()
+        {
+            var result = await ExecuteAsync<long>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new OpcountTracerInfo()
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Theory]
+        [MemberData(nameof(GetOpcodeTracerConfigCombinations))]
+        public async void ShouldReturnOpcodeTracerRpcResponse(
+            bool enableMemory, 
+            bool disableStack, 
+            bool disableStorage, 
+            bool enableReturnData,
+            bool debug)
+        {
+            var limit = 10;
+            var result = await ExecuteAsync<OpcodeTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new OpcodeTracerInfo(enableMemory, disableStack, disableStorage, enableReturnData, debug, limit)
+                }).ConfigureAwait(false);
+            Assert.NotNull(result);
+        }
+        
+        [Fact]
+        public async void ShouldReturnPrestateTracerRpcResponse()
+        {
+            var resultPrestateMode = await ExecuteAsync<PrestateTracerResponsePrestateMode>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new PrestateTracerInfo(false)
+                }).ConfigureAwait(false);
+            Assert.NotNull(resultPrestateMode);
+            
+            var resultDiffMode = await ExecuteAsync<PrestateTracerResponseDiffMode>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new PrestateTracerInfo(true)
+                }).ConfigureAwait(false);
+            Assert.NotNull(resultDiffMode);
+        }
+        
+        [Fact]
+        public async void ShouldReturnAJTokenForCustomTracer()
+        {
+            
+            var result = await ExecuteAsync<JToken>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                    TracerInfo = new CustomTracerInfo(Utils.GetCustomTracerCode()) 
+                }
+                ).ConfigureAwait(false);
+            Assert.NotNull(result);
+            
+        }
+        
+        [Fact]
+        public async void ShouldUseOpcodeTracerIfNotSpecified()
+        {
+            
+            var result = await ExecuteAsync<OpcodeTracerResponse>(
+                Client,
+                new TracingOptions()
+                {
+                    Timeout = "1m",
+                    Reexec = 128,
+                }
+            ).ConfigureAwait(false);
+            Assert.NotNull(result);
+            
+        }
+        
 
         /*{"structLogs": [
 {

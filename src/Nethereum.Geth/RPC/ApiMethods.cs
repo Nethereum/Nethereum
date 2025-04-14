@@ -39,6 +39,7 @@
         debug_startGoTrace,
         debug_stopCPUProfile,
         debug_stopGoTrace,
+        debug_traceBadBlock,
         debug_traceBlock,
         debug_traceBlockByNumber,
         debug_traceBlockByHash,
