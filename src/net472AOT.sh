@@ -34,10 +34,6 @@ cd Nethereum.Web3
 build
 cd ..
 
-cd Nethereum.StandardToken*
-build
-cd ..
-
 cd Nethereum.JsonRpc.IpcClient*
 build
 cd ..
@@ -90,7 +86,11 @@ cd Nethereum.Accounts*
 build
 cd ..
 
-cd Nethereum.Unity*
+cd Nethereum.Unity
+build
+cd ..
+
+cd Nethereum.Unity.Metamask
 build
 cd ..
 
@@ -98,7 +98,71 @@ cd Nethereum.RPC.Reactive
 build
 cd ..
 
-cd Nethereum.Pantheon
+cd Nethereum.Besu
+build
+cd ..
+
+cd Nethereum.Signer.EIP712
+build
+cd..
+
+cd Nethereum.GnosisSafe
+build
+cd ..
+
+cd Nethereum.Siwe.Core
+build
+cd ..
+
+cd Nethereum.BlockchainProcessing
+build
+cd..
+
+cd Nethereum.Optimism
+build
+cd ..
+
+cd Nethereum.UI
+build
+cd ..
+
+cd Nethereum.EVM
+build
+cd ..
+
+cd Nethereum.Merkle
+build
+cd ..
+
+cd Nethereum.Merkle.Patricia
+build
+cd ..
+
+cd Nethereum.Metamask
+build
+cd ..
+
+cd Nethereum.Model
+build
+cd ..
+
+cd Nethereum.Mud
+build
+cd ..
+
+cd Nethereum.Mud.Contracts
+build
+cd ..
+
+cd Nethereum.Util.Rest
+build
+cd ..
+
+cd Nethereum.Unity.EIP6963
+build
+cd ..
+
+cd Nethereum.EIP6963WalletInterop
 build
 cd ..
 
