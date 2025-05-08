@@ -19,9 +19,6 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-	
-
-<!--
 	<ItemGroup Condition="		'$(TargetFramework)' != 'net35' 
 			                And '$(TargetFramework)' != 'net451' 
 							And '$(TargetFramework)' != 'net461' 
@@ -33,21 +30,14 @@
 		<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
 	</ItemGroup>
 
-	
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
       <PackageReference Include="BouncyCastle.Cryptography" Version="[2.4.0,3.0)" />
   </ItemGroup>
 
-	
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' ">
       <DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
   </PropertyGroup>
--->
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
-		<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
-  </ItemGroup>
-	
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
