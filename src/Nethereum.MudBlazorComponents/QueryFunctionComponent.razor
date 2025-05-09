@@ -1,0 +1,241 @@
+﻿@using System.Numerics
+@using System.Reflection
+@using MudBlazor
+@using Nethereum.Web3
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Services
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.UI
+@typeparam TFunctionMessage where TFunctionMessage : FunctionMessage, new()
+@typeparam TFunctionOutput
+
+<MudExpansionPanels Elevation="1" Class="mb-4">
+    <MudExpansionPanel Expanded="false">
+        <TitleContent>
+                    <MudText Typo="Typo.h5">@Title</MudText>
+        </TitleContent>
+        <ChildContent>
+            <MudPaper Class="pa-4 mb-4">
+                <MudForm @ref="_form">
+                <MudStack Spacing="2">
+                    <StructInput Model="FunctionInput"
+                                 ModelType="typeof(TFunctionMessage)"
+                                 ExcludedProperties="DefaultExcludedQueryProps"
+                                 @key="FunctionInput" />
+
+                    <MudExpansionPanels Elevation="0">
+                        <MudExpansionPanel Text="Optional Call Settings">
+                            <MudStack Spacing="2">
+                                <MudTextField @bind-Value="FunctionInput.FromAddress"
+                                              Label="From Address"
+                                              Variant="Variant.Filled"
+                                              FullWidth="true"
+                                              Immediate="true"
+                                              Validation="@((string v) => string.IsNullOrWhiteSpace(v) || Nethereum.Util.AddressUtil.Current.IsValidEthereumAddressHexFormat(v) ? null : "Invalid address")" />
+
+                                <MudNumericField T="decimal"
+                                                 @bind-Value="AmountToSendEth"
+                                                 Label="Amount to Send (ETH)"
+                                                 Variant="Variant.Filled"
+                                                 FullWidth="true"
+                                                 Immediate="true" />
+                            </MudStack>
+                        </MudExpansionPanel>
+                    </MudExpansionPanels>
+
+                    <MudButton OnClick="ValidateForm"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               Disabled="@IsLoading"
+                   
+                               >
+                        Query
+                    </MudButton>
+
+                    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@ErrorMessage</MudAlert>
+                    }
+
+                   @if (HasQueried && Output is not null)
+                        {
+                            <MudExpansionPanels Elevation="1">
+                                <MudExpansionPanel Expanded="true">
+                                    <HeadContent>
+                                        <MudText Typo="Typo.h6">Result</MudText>
+                                    </HeadContent>
+                                    <ResultOutput Result="Output"
+                                                  ResultType="typeof(TFunctionOutput)"
+                                                  Title=""
+                                                  />
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+                        }
+                </MudStack>
+               </MudForm> 
+            </MudPaper>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+@code {
+    [Parameter] public string Title { get; set; } = typeof(TFunctionMessage).Name;
+    [Parameter] public string ContractAddress { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
+    [Parameter] public Type ServiceType { get; set; }
+    [Parameter] public string ServiceMethodName { get; set; }
+    [Parameter] public bool UseContractHandlerDirectly { get; set; } = false;
+
+    [Parameter] public Func<object, TFunctionMessage, Task<TFunctionOutput>> ExecuteQuery { get; set; }
+    [Parameter] public Func<Exception, object, string> HandleCustomError { get; set; }
+    [Parameter] public TFunctionMessage FunctionInput { get; set; }
+
+    private TFunctionOutput Output;
+    private string ErrorMessage;
+    private bool IsLoading;
+    private bool HasQueried;
+    private MudForm _form;
+
+    private decimal AmountToSendEth
+    {
+        get => Web3.Convert.FromWei(FunctionInput?.AmountToSend ?? 0);
+        set => FunctionInput.AmountToSend = Web3.Convert.ToWei(value);
+    }
+
+    protected override void OnInitialized()
+    {
+        FunctionInput ??= new TFunctionMessage();
+       
+    }
+
+    protected override void OnParametersSet()
+    {
+        FunctionInput ??= new TFunctionMessage();
+       
+    }
+
+    private async Task ValidateForm()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            await QueryAsync();
+        }
+    }
+
+    private async Task QueryAsync()
+    {
+        ErrorMessage = null;
+        Output = default;
+        IsLoading = true;
+        HasQueried = false;
+
+     
+        try
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+
+            if (UseContractHandlerDirectly)
+            {
+                var handler = web3.Eth.GetContractQueryHandler<TFunctionMessage>();
+                Output = await handler.QueryAsync<TFunctionOutput>(ContractAddress, FunctionInput);
+            }
+            else
+            {
+                var service = CreateServiceInstance(web3);
+
+                if (ExecuteQuery != null)
+                {
+                    Output = await ExecuteQuery(service, FunctionInput);
+                }
+                else
+                {
+                    var methods = ServiceType?.GetMethods().Where(m => m.Name == ServiceMethodName).ToList();
+
+                    var method = methods?.FirstOrDefault(m =>
+                     {
+                         var parameters = m.GetParameters();
+                         return parameters.Length == 2 &&
+                                parameters[0].ParameterType.IsAssignableFrom(typeof(TFunctionMessage)) &&
+                                parameters[1].ParameterType == typeof(BlockParameter);
+                     })
+                     ?? methods?.FirstOrDefault(m =>
+                     {
+                         var parameters = m.GetParameters();
+                         return parameters.Length == 1 &&
+                                parameters[0].ParameterType.IsAssignableFrom(typeof(TFunctionMessage));
+                     });
+
+                    if (method == null)
+                        throw new InvalidOperationException($"No suitable method '{ServiceMethodName}' found on '{ServiceType?.Name}'");
+
+                    var args = method.GetParameters().Length == 2
+                        ? new object[] { FunctionInput, null }
+                        : new object[] { FunctionInput };
+
+                    var resultTask = method.Invoke(service, args) as Task<TFunctionOutput>;
+                    Output = await resultTask;
+                }
+            }
+
+            HasQueried = true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = await ResolveErrorMessageAsync(ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private object CreateServiceInstance(IWeb3 web3)
+    {
+        if (ServiceType == null)
+            throw new InvalidOperationException("ServiceType must be provided");
+
+        return Activator.CreateInstance(ServiceType, web3, ContractAddress);
+    }
+
+    private async Task<string> ResolveErrorMessageAsync(Exception ex)
+    {
+        if (HandleCustomError != null && ServiceType != null)
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            var svc = CreateServiceInstance(web3);
+            return HandleCustomError(ex, svc);
+        }
+
+        if (ex is SmartContractCustomErrorRevertException revert && ServiceType != null)
+        {
+            try
+            {
+                var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+                var svc = CreateServiceInstance(web3) as ContractWeb3ServiceBase;
+                var decoded = svc?.FindCustomErrorException(revert);
+                return decoded?.ToString() ?? revert.Message;
+            }
+            catch
+            {
+                return revert.Message;
+            }
+        }
+
+        return ex.ToString();
+    }
+
+    private static readonly HashSet<string> DefaultExcludedQueryProps = new()
+    {
+        nameof(FunctionMessage.FromAddress),
+        nameof(FunctionMessage.AmountToSend),
+        nameof(FunctionMessage.Gas),
+        nameof(FunctionMessage.GasPrice),
+        nameof(FunctionMessage.Nonce),
+        nameof(FunctionMessage.MaxFeePerGas),
+        nameof(FunctionMessage.MaxPriorityFeePerGas),
+        nameof(FunctionMessage.TransactionType),
+        nameof(FunctionMessage.AccessList)
+    };
+}

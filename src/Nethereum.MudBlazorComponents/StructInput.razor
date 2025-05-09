@@ -1,0 +1,258 @@
+﻿@using System.Numerics
+@using System.Reflection
+@using System.Collections
+@using System.Text.RegularExpressions
+@using Nethereum.Util
+@using Nethereum.Hex.HexConvertors.Extensions
+@using MudBlazor
+
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <MudText Typo="Typo.subtitle2">@Title</MudText>
+    }
+
+    @if (Model == null)
+    {
+        <MudText Color="Color.Secondary">[null]</MudText>
+    }
+    else
+    {
+        var allProps = ModelType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var parameterProps = allProps
+        .Where(p => p.GetCustomAttribute<Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute>() != null)
+            .ToList();
+
+        var otherProps = allProps
+            .Where(p => !parameterProps.Contains(p) && !ExcludedProperties.Contains(p.Name))
+            .ToList();
+
+        foreach (var prop in parameterProps.Concat(otherProps))
+        {
+            if (ExcludedProperties.Contains(prop.Name)) continue;
+
+            if (prop.GetValue(Model) == null)
+            {
+                object defaultValue = prop.PropertyType switch
+                {
+                    Type t when t == typeof(byte[]) => Array.Empty<byte>(),
+                    Type t when t == typeof(BigInteger) => BigInteger.Zero,
+                    Type t when t.IsValueType => Activator.CreateInstance(t),
+                    _ => null
+                };
+
+                if (defaultValue != null)
+                {
+                    prop.SetValue(Model, defaultValue);
+                }
+            }
+        }
+
+        foreach (var prop in parameterProps.Concat(otherProps))
+        {
+            if (ExcludedProperties.Contains(prop.Name)) continue;
+
+            var propType = prop.PropertyType;
+            var propName = prop.Name;
+            var parameterAttr = prop.GetCustomAttribute<Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute>();
+            var required = parameterAttr != null;
+
+            <MudGrid Class="mb-2">
+                <MudItem xs="12" sm="6">
+                    @if (parameterAttr?.Type == "address" && propType == typeof(string))
+                    {
+                        <MudTextField @bind-Value="BindString(prop).Value"
+                                      Label="@($"{propName} (address)")"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                      Required="true"
+                                  Validation="@((string v) =>  string.IsNullOrWhiteSpace(v)
+                                                          ? "Address is required"
+                                                          : !_addressUtil.IsValidEthereumAddressHexFormat(v)
+                                                              ? "Invalid Ethereum address"
+                                                              : null)" />
+                    }
+                    else if (parameterAttr?.Type?.StartsWith("bytes") == true && propType == typeof(byte[]))
+                    {
+                        <MudTextField @bind-Value="BindByteArray(prop).Value"
+                                      Label="@($"{propName} ({parameterAttr.Type})")"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                      Required="true"
+                                      Validation="@((string v) => string.IsNullOrWhiteSpace(v) || !v.IsHex() ? "Invalid hex" : null)" />
+                    }
+                    else if (propType == typeof(string))
+                    {
+                        <MudTextField @bind-Value="BindString(prop).Value"
+                                      Label="@propName"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Required="@required" />
+                    }
+                    else if (propType == typeof(int))
+                    {
+                        <MudNumericField T="int" @bind-Value="BindInt(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(uint))
+                    {
+                        <MudNumericField T="uint" @bind-Value="BindUInt(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(long))
+                    {
+                        <MudNumericField T="long" @bind-Value="BindLong(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(ulong))
+                    {
+                        <MudNumericField T="ulong" @bind-Value="BindULong(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(decimal))
+                    {
+                        <MudNumericField T="decimal" @bind-Value="BindDecimal(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(bool))
+                    {
+                        <MudSwitch T="bool"  @bind-Value="BindBool(prop).Value" Label="@propName" />
+                    }
+                    else if (propType == typeof(byte))
+                    {
+                        <MudNumericField T="byte" @bind-Value="BindByte(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(sbyte))
+                    {
+                        <MudNumericField T="sbyte" @bind-Value="BindSByte(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(short))
+                    {
+                        <MudNumericField T="short" @bind-Value="BindShort(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(ushort))
+                    {
+                        <MudNumericField T="ushort" @bind-Value="BindUShort(prop).Value"
+                                         Label="@propName" FullWidth="true" Required="@required" />
+                    }
+                    else if (propType == typeof(BigInteger))
+                    {
+                        <MudTextField @bind-Value="BindBigInteger(prop).Value"
+                                      Label="@propName"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                      Required="@required"
+                                      Validation="@((string v) => BigInteger.TryParse(v, out _) ? null : "Invalid number")" />
+                    }
+                    else if (typeof(IEnumerable).IsAssignableFrom(propType) && propType != typeof(string))
+                    {
+                        var listValue = (IList)prop.GetValue(Model);
+                        if (listValue == null)
+                        {
+                            listValue = (IList)Activator.CreateInstance(propType);
+                            prop.SetValue(Model, listValue);
+                        }
+
+                        var itemType = propType.IsArray ? propType.GetElementType() : propType.GetGenericArguments().FirstOrDefault();
+                        if (itemType != null)
+                        {
+                            <MudPaper Class="mt-2 ml-4 pa-2 mb-2">
+                                <ArrayInput Items="listValue" ItemType="itemType" Title="@propName" />
+                            </MudPaper>
+                        }
+                    }
+                    else if (propType.IsClass && propType != typeof(string))
+                    {
+                        var nestedModel = prop.GetValue(Model) ?? Activator.CreateInstance(propType);
+                        prop.SetValue(Model, nestedModel);
+                        <MudPaper Class="mt-2 ml-4 pa-2 mb-2">
+                            <StructInput Model="nestedModel" ModelType="propType" Title="@propName" />
+                        </MudPaper>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">Unsupported: @propName (@propType.Name)</MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+        }
+    }
+
+
+@code {
+    [Parameter] public object Model { get; set; }
+    [Parameter] public Type ModelType { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public HashSet<string> ExcludedProperties { get; set; } = new();
+
+    private static readonly AddressUtil _addressUtil = new();
+
+    private BindConverter<string> BindString(PropertyInfo prop) => new(() =>
+        (string)prop.GetValue(Model) ?? "", v => prop.SetValue(Model, v));
+
+    private BindConverter<int> BindInt(PropertyInfo prop) => new(() =>
+        (int)(prop.GetValue(Model) ?? 0), v => prop.SetValue(Model, v));
+
+    private BindConverter<uint> BindUInt(PropertyInfo prop) => new(() =>
+        (uint)(prop.GetValue(Model) ?? 0u), v => prop.SetValue(Model, v));
+
+    private BindConverter<long> BindLong(PropertyInfo prop) => new(() =>
+        (long)(prop.GetValue(Model) ?? 0L), v => prop.SetValue(Model, v));
+
+    private BindConverter<ulong> BindULong(PropertyInfo prop) => new(() =>
+        (ulong)(prop.GetValue(Model) ?? 0UL), v => prop.SetValue(Model, v));
+
+    private BindConverter<bool> BindBool(PropertyInfo prop) => new(() =>
+        (bool)(prop.GetValue(Model) ?? false), v => prop.SetValue(Model, v));
+
+    private BindConverter<decimal> BindDecimal(PropertyInfo prop) => new(() =>
+        Convert.ToDecimal(prop.GetValue(Model) ?? 0), v => prop.SetValue(Model, v));
+
+    private BindConverter<string> BindBigInteger(PropertyInfo prop) => new(() =>
+        prop.GetValue(Model)?.ToString() ?? "", v =>
+    {
+        if (BigInteger.TryParse(v, out var result))
+            prop.SetValue(Model, result);
+    });
+
+    private BindConverter<byte> BindByte(PropertyInfo prop) => new(() =>
+    (byte)(prop.GetValue(Model) ?? (byte)0), v => prop.SetValue(Model, v));
+
+    private BindConverter<sbyte> BindSByte(PropertyInfo prop) => new(() =>
+        (sbyte)(prop.GetValue(Model) ?? (sbyte)0), v => prop.SetValue(Model, v));
+
+    private BindConverter<short> BindShort(PropertyInfo prop) => new(() =>
+        (short)(prop.GetValue(Model) ?? (short)0), v => prop.SetValue(Model, v));
+
+    private BindConverter<ushort> BindUShort(PropertyInfo prop) => new(() =>
+        (ushort)(prop.GetValue(Model) ?? (ushort)0), v => prop.SetValue(Model, v));
+
+    private BindConverter<string> BindByteArray(PropertyInfo prop) => new(() =>
+    {
+        var bytes = prop.GetValue(Model) as byte[];
+        return bytes != null ? bytes.ToHex(true) : "";
+    },
+    v =>
+    {
+        if (!string.IsNullOrWhiteSpace(v) && v.IsHex())
+        {
+            prop.SetValue(Model, v.HexToByteArray());
+        }
+    });
+
+    public record BindConverter<T>(Func<T> Getter, Action<T> Setter)
+    {
+        public T Value
+        {
+            get => Getter();
+            set => Setter(value);
+        }
+
+        public static implicit operator T(BindConverter<T> b) => b.Value;
+    }
+}

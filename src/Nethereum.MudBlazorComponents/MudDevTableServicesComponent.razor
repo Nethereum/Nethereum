@@ -1,0 +1,66 @@
+﻿@using System.Reflection
+@using MudBlazor
+@using Nethereum.UI
+@using Nethereum.Mud.Contracts.Store.Tables
+@using Nethereum.Mud.Contracts.Core.Tables
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h5" Class="mb-4">@Title</MudText>
+
+    <MudTextField @bind-Value="ContractAddress"
+    Label="World Contract Address"
+    Variant="Variant.Outlined"
+    Class="mb-4" />
+
+    @foreach (var svc in _tableServiceTypes)
+    {
+        <DynamicComponent Type="@_componentCache[svc]"
+        Parameters="GetParameters()"
+        @key="svc" />
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string Title { get; set; } = "MUD Tables";     
+    [Parameter] public Assembly SearchAssembly { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
+    [Parameter] public string ContractAddress { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ContractAddressChanged { get; set; }
+
+
+    private List<Type> _tableServiceTypes = new();
+    private readonly Dictionary<Type, Type> _componentCache = new();
+    private static readonly Type _iface = typeof(ITableServiceBase);
+    private Dictionary<string, object> _parameterValues;
+
+    protected override void OnParametersSet()
+    {
+        _parameterValues = GetParameters();
+        DiscoverServices();
+    }
+   
+    private void DiscoverServices()
+    {
+        var asm = SearchAssembly ?? _iface.Assembly;       
+        _tableServiceTypes = SafeGetTypes(asm)
+            .Where(t => t.IsClass && !t.IsAbstract && _iface.IsAssignableFrom(t))
+            .OrderBy(t => t.Name)
+            .ToList();
+
+        foreach (var tableServiceType in _tableServiceTypes)
+            _componentCache.TryAdd(tableServiceType, typeof(MudDevTableComponent<>).MakeGenericType(tableServiceType));
+    }
+
+    private static IEnumerable<Type> SafeGetTypes(Assembly asm)
+    {
+        try { return asm.GetTypes(); }
+        catch (ReflectionTypeLoadException ex)
+        { return ex.Types.Where(t => t is not null)!; }
+    }
+
+    private Dictionary<string, object> GetParameters() => new()
+        {
+            ["ContractAddress"] = ContractAddress,
+            ["HostProvider"] = HostProvider
+        };
+}

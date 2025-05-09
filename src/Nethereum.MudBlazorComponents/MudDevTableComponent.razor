@@ -1,0 +1,230 @@
+﻿@using System.Numerics
+@using System.Reflection
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+@using Nethereum.Mud.Contracts.Core.Tables
+@using Nethereum.Web3
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Services
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.UI
+@using Nethereum.Util
+@using Nethereum.Mud
+@using Nethereum.Mud.Contracts.Store.Tables
+@typeparam TTableService
+
+<MudExpansionPanels Elevation="1" Class="mb-4">
+    <MudExpansionPanel Expanded="false">
+        <TitleContent>
+            <MudText Typo="Typo.h5">@_resourceTitle</MudText>
+        </TitleContent>
+        <ChildContent>
+            <MudPaper Class="pa-4 mb-4">
+                <MudForm @ref="_form">
+                    <MudStack Spacing="2">
+                        @if (!_isSingleton && _key != null && _keyType != null)
+                        {
+                            <StructInput Model="_key"
+                            ModelType="_keyType"
+                            Title="Record Key"
+                            @key="_key" />
+                        }
+
+                        <MudButton OnClick="QueryRecordAsync"
+                        Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.Search"
+                        Disabled="@IsLoading"
+                        >
+                            Load Record
+                        </MudButton>
+
+                        @if (_value != null && _valueType != null)
+                        {
+                            <StructInput Model="_value"
+                            ModelType="_valueType"
+                            Title="Record Value"
+                            @key="_value" />
+
+                            <MudButton OnClick="ValidateAndSaveAsync"
+                            Variant="Variant.Outlined"
+                            Color="Color.Secondary"
+                            StartIcon="@Icons.Material.Filled.Save"
+                            Disabled="@IsLoading"
+                            >
+                                Save Record
+                            </MudButton>
+                        }
+
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <MudAlert Severity="Severity.Error">@ErrorMessage</MudAlert>
+                        }
+
+                        @if (Receipt != null)
+                        {
+                            <MudExpansionPanels Elevation="1" Class="mb-4">
+                                <MudExpansionPanel Expanded="true">
+                                    <TitleContent>
+                                        <MudText Typo="Typo.h6">Transaction Receipt</MudText>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <ResultOutput Result="Receipt" ResultType="typeof(TransactionReceipt)" />
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+                        }
+                    </MudStack>
+                </MudForm>
+            </MudPaper>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+
+@code {
+    private bool _isSingleton;
+
+    [Parameter] public string ContractAddress { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
+
+    private object _key;
+    private object _value;
+    private Type _keyType;
+    private Type _valueType;
+    private Type _recordType;
+    private PropertyInfo _valuesProp;
+    private string _resourceTitle = "Manage Table Record";
+
+    private TransactionReceipt Receipt;
+    private string ErrorMessage;
+    private bool IsLoading;
+    private MudForm _form;
+
+    protected override void OnInitialized()
+    {
+        // Detect generic arguments and record/value types
+        var scan = typeof(TTableService);
+        while (scan != null && scan != typeof(object))
+        {
+            if (scan.IsGenericType)
+            {
+                var def = scan.GetGenericTypeDefinition();
+                if (def == typeof(TableSingletonService<,>))
+                {
+                    _isSingleton = true;
+                    var args = scan.GetGenericArguments();
+                    _recordType = args[0];
+                    _valueType = args[1];
+                    _value = Activator.CreateInstance(_valueType);
+                    break;
+                }
+                if (def == typeof(TableService<,,>))
+                {
+                    var args = scan.GetGenericArguments();
+                    _recordType = args[0];
+                    _keyType = args[1];
+                    _valueType = args[2];
+                    _key = Activator.CreateInstance(_keyType);
+                    break;
+                }
+            }
+            scan = scan.BaseType;
+        }
+
+        // Locate Values property for both singleton & regular records
+        _valuesProp = _recordType?.GetProperty("Values");
+        _resourceTitle = ResourceRegistry.GetResource(_recordType)?.Name ?? "Manage Table Record";
+    }
+
+    private async Task ValidateAndSaveAsync()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            await SaveRecordAsync();
+        }
+    }
+
+    private async Task QueryRecordAsync()
+    {
+        ErrorMessage = null;
+        IsLoading = true;
+        try
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            Console.WriteLine(ContractAddress);
+            var service = (TTableService)Activator.CreateInstance(typeof(TTableService), web3, ContractAddress);
+            
+            MethodInfo method;
+            object[] parameters;
+
+            if (_isSingleton)
+            {
+                method = typeof(TTableService).GetMethod("GetTableRecordAsync", new[] { typeof(BlockParameter) });
+                parameters = new object[] { null };
+            }
+            else
+            {
+                method = typeof(TTableService).GetMethod("GetTableRecordAsync", new[] { _keyType, typeof(BlockParameter) });
+                parameters = new object[] { _key, null };
+            }
+
+            var task = (Task)method.Invoke(service, parameters);
+            await task.ConfigureAwait(false);
+            var recordResult = task.GetType().GetProperty("Result")?.GetValue(task);
+
+            if (recordResult != null)
+            {
+                if (_valuesProp == null)
+                {
+                    _valuesProp = recordResult.GetType().GetProperty("Values");
+                }
+                _value = _valuesProp != null ? _valuesProp.GetValue(recordResult) : recordResult;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.ToString();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveRecordAsync()
+    {
+        ErrorMessage = null;
+        IsLoading = true;
+        try
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            var service = (TTableService)Activator.CreateInstance(typeof(TTableService), web3, ContractAddress);
+            MethodInfo method;
+            object[] parameters;
+
+            if (_isSingleton)
+            {
+                method = typeof(TTableService).GetMethod("SetRecordRequestAndWaitForReceiptAsync", new[] { _valueType });
+                parameters = new object[] { _value };
+            }
+            else
+            {
+                method = typeof(TTableService).GetMethod("SetRecordRequestAndWaitForReceiptAsync", new[] { _keyType, _valueType });
+                parameters = new object[] { _key, _value };
+            }
+
+            var task = (Task<TransactionReceipt>)method.Invoke(service, parameters);
+            Receipt = await task.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

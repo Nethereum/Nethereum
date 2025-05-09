@@ -1,0 +1,365 @@
+﻿@using System.Numerics
+@using MudBlazor
+@using Nethereum.Web3
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Services
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.UI
+@using Nethereum.Util
+@typeparam TFunctionMessage where TFunctionMessage : FunctionMessage, new()
+
+<MudExpansionPanels Elevation="1" Class="mb-4">
+    <MudExpansionPanel  Expanded="false">
+        <TitleContent>
+                    <MudText Typo="Typo.h5">@Title</MudText>
+        </TitleContent>
+        <ChildContent>
+<MudPaper Class="pa-4 mb-4">
+    <MudForm @ref="_form">
+        <MudStack Spacing="2">
+            <StructInput Model="FunctionInput"
+                         ModelType="typeof(TFunctionMessage)"
+                         Title="Transaction Inputs"
+                         ExcludedProperties="DefaultExcludedTransactionProps"
+                         @key="FunctionInput" />
+
+            <MudExpansionPanels Elevation="0">
+                <MudExpansionPanel Text="Optional Transaction Settings">
+                    <MudStack Spacing="2">
+
+                        <MudNumericField T="decimal"
+                                         @bind-Value="AmountToSendEth"
+                                         Label="Amount to Send (ETH)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudTextField @bind-Value="GasString"
+                                      Label="Gas (Units)"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                                  Validation="((Func<string, string>)ValidateBigInteger)" />
+
+                        <MudTextField @bind-Value="NonceString"
+                                      Label="Nonce"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                      Validation="((Func<string, string>)ValidateBigInteger)" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="GasPriceGwei"
+                                         Label="Gas Price (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="MaxFeePerGasGwei"
+                                         Label="Max Fee Per Gas (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="MaxPriorityFeePerGasGwei"
+                                         Label="Max Priority Fee (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
+            <MudButton OnClick="ValidateAndSendAsync"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Send"
+                       Disabled="@IsLoading"
+                       >
+                Send Transaction
+            </MudButton>
+
+            <MudButton OnClick="ValidateAndSendAndWaitAsync"
+                       Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Schedule"
+                       Disabled="@IsLoading"
+                       >
+                Send and Wait
+            </MudButton>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@ErrorMessage</MudAlert>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(TransactionHash))
+            {
+                <MudText Color="Color.Success">Tx Hash: @TransactionHash</MudText>
+            }
+
+            @if (Receipt is not null)
+            {
+              <MudExpansionPanels Elevation="1" Class="mb-4">
+                <MudExpansionPanel Expanded="true">
+                      <TitleContent>
+                           <MudText Typo="Typo.h6">Transaction Receipt</MudText>
+                     </TitleContent>
+                     <ChildContent>
+                                <ResultOutput Result="Receipt"
+                                            ResultType="typeof(TransactionReceipt)"
+                                            
+                                            ContractService="contractService"
+                                            AdditionalEventTypes="AdditionalEventTypes" />
+                    </ChildContent>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+            }
+        </MudStack>
+    </MudForm>
+</MudPaper>
+</ChildContent>
+</MudExpansionPanel>
+</MudExpansionPanels>
+
+@code {
+    [Parameter] public string Title { get; set; } = typeof(TFunctionMessage).Name;
+    [Parameter] public string ContractAddress { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
+
+    [Parameter] public Type ServiceType { get; set; }
+    [Parameter] public string ServiceRequestMethodName { get; set; }
+    [Parameter] public string ServiceRequestAndWaitForReceiptMethodName { get; set; }
+    [Parameter] public bool UseContractHandlerDirectly { get; set; }
+
+
+    [Parameter] public Func<object, TFunctionMessage, Task<string>> ExecuteSend { get; set; }
+    [Parameter] public Func<object, TFunctionMessage, Task<TransactionReceipt>> ExecuteSendAndWait { get; set; }
+    [Parameter] public Func<Exception, object, string> HandleCustomError { get; set; }
+    [Parameter] public IEnumerable<Type> AdditionalEventTypes { get; set; }
+
+    private TFunctionMessage FunctionInput = new();
+    private MudForm _form;
+
+    private string TransactionHash;
+    private TransactionReceipt Receipt;
+    private string ErrorMessage;
+    private bool IsLoading;
+    private ContractServiceBase contractService;
+
+    private decimal AmountToSendEth
+    {
+        get => Web3.Convert.FromWei(FunctionInput.AmountToSend);
+        set => FunctionInput.AmountToSend = Web3.Convert.ToWei(value);
+    }
+
+    private string GasString
+    {
+        get => FunctionInput.Gas?.ToString() ?? "";
+        set => FunctionInput.Gas = BigInteger.TryParse(value, out var result) ? result : null;
+    }
+
+    private string NonceString
+    {
+        get => FunctionInput.Nonce?.ToString() ?? "";
+        set => FunctionInput.Nonce = BigInteger.TryParse(value, out var result) ? result : null;
+    }
+
+    private string ValidateBigInteger(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        return BigInteger.TryParse(input, out _) ? null : "Invalid number";
+    }
+
+    private decimal? GasPriceGwei
+    {
+        get => FunctionInput.GasPrice.HasValue
+            ? Web3.Convert.FromWei(FunctionInput.GasPrice.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => FunctionInput.GasPrice = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private decimal? MaxFeePerGasGwei
+    {
+        get => FunctionInput.MaxFeePerGas.HasValue
+            ? Web3.Convert.FromWei(FunctionInput.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => FunctionInput.MaxFeePerGas = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private decimal? MaxPriorityFeePerGasGwei
+    {
+        get => FunctionInput.MaxPriorityFeePerGas.HasValue
+            ? Web3.Convert.FromWei(FunctionInput.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => FunctionInput.MaxPriorityFeePerGas = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private async Task ValidateAndSendAsync()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            await SendTransactionAsync();
+        }
+    }
+
+    private async Task ValidateAndSendAndWaitAsync()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            await SendTransactionAndWaitAsync();
+        }
+    }
+
+    private async Task SendTransactionAsync()
+    {
+        await ExecuteTransaction(async (svc, input) =>
+        {
+            if (ExecuteSend != null)
+                return await ExecuteSend(svc, input);
+
+            if (UseContractHandlerDirectly)
+            {
+                var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+                var handler = web3.Eth.GetContractTransactionHandler<TFunctionMessage>();
+                return await handler.SendRequestAsync(ContractAddress, input);
+            }
+
+            var methods = ServiceType?.GetMethods().Where(m => m.Name == ServiceRequestMethodName).ToList();
+
+            var method = methods?.FirstOrDefault(m =>
+            {
+                var parameters = m.GetParameters();
+                return parameters.Length == 1 &&
+                       parameters[0].ParameterType.IsAssignableFrom(typeof(TFunctionMessage));
+            });
+
+            if (method == null)
+                throw new InvalidOperationException($"No suitable method '{ServiceRequestMethodName}' found on '{ServiceType?.Name}'");
+
+            var resultTask = method.Invoke(svc, new object[] { input }) as Task<string>;
+            return await resultTask;
+        });
+    }
+
+    private async Task SendTransactionAndWaitAsync()
+    {
+        await ExecuteTransaction(async (svc, input) =>
+        {
+            if (ExecuteSendAndWait != null)
+            {
+                Receipt = await ExecuteSendAndWait(svc, input);
+                return Receipt.TransactionHash;
+            }
+
+            if (UseContractHandlerDirectly)
+            {
+                var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+                var handler = web3.Eth.GetContractTransactionHandler<TFunctionMessage>();
+                Receipt = await handler.SendRequestAndWaitForReceiptAsync(ContractAddress, input);
+                return Receipt.TransactionHash;
+            }
+
+            var methods = ServiceType?.GetMethods().Where(m => m.Name == ServiceRequestAndWaitForReceiptMethodName).ToList();
+
+            var method = methods?.FirstOrDefault(m =>
+            {
+                var parameters = m.GetParameters();
+                return parameters.Length == 2 &&
+                       parameters[0].ParameterType.IsAssignableFrom(typeof(TFunctionMessage)) &&
+                       parameters[1].ParameterType == typeof(CancellationTokenSource);
+            });
+
+            if (method == null)
+                throw new InvalidOperationException($"No suitable method '{ServiceRequestAndWaitForReceiptMethodName}' found on '{ServiceType?.Name}'");
+
+            var resultTask = method.Invoke(svc, new object[] { input, null }) as Task<TransactionReceipt>;
+            Receipt = await resultTask;
+            return Receipt.TransactionHash;
+        });
+    }
+
+    private async Task ExecuteTransaction(Func<object, TFunctionMessage, Task<string>> transactionFunc)
+    {
+        ErrorMessage = null;
+        TransactionHash = null;
+        Receipt = null;
+        IsLoading = true;
+
+        try
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            var service = CreateServiceInstance(web3);
+            TransactionHash = await transactionFunc(service, FunctionInput);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = await ResolveErrorMessageAsync(ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private object CreateServiceInstance(IWeb3 web3)
+    {
+        if (ServiceType == null)
+            throw new InvalidOperationException("ServiceType must be provided");
+
+        var service = Activator.CreateInstance(ServiceType, web3, ContractAddress);
+        this.contractService = service as ContractServiceBase;
+        return service;
+    }
+
+    private async Task<string> ResolveErrorMessageAsync(Exception ex)
+    {
+        if (HandleCustomError != null && ServiceType != null)
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            var svc = CreateServiceInstance(web3);
+            return HandleCustomError(ex, svc);
+        }
+
+        if (ex is SmartContractCustomErrorRevertException revert && ServiceType != null)
+        {
+            try
+            {
+                var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+                var svc = CreateServiceInstance(web3) as ContractWeb3ServiceBase;
+                var decoded = svc?.FindCustomErrorException(revert);
+                return decoded?.ToString() ?? revert.Message;
+            }
+            catch
+            {
+                return revert.Message;
+            }
+        }
+
+        return ex.ToString();
+    }
+
+    private static readonly HashSet<string> DefaultExcludedTransactionProps = new()
+    {
+        nameof(FunctionMessage.FromAddress),
+        nameof(FunctionMessage.AmountToSend),
+        nameof(FunctionMessage.Gas),
+        nameof(FunctionMessage.GasPrice),
+        nameof(FunctionMessage.Nonce),
+        nameof(FunctionMessage.MaxFeePerGas),
+        nameof(FunctionMessage.MaxPriorityFeePerGas),
+        nameof(FunctionMessage.TransactionType),
+        nameof(FunctionMessage.AccessList)
+    };
+}

@@ -1,0 +1,35 @@
+﻿@using MudBlazor
+@inject IJSRuntime JS
+
+@if (!IsExpandable)
+{
+    <MudTextField Value="@Value"
+                  ReadOnly="true"
+                  Variant="Variant.Filled"
+                  Typo="Typo.subtitle2" />
+}
+else
+{
+    <MudTextField Value="@Value"
+                  Typo="Typo.subtitle2"
+                  ReadOnly="true"
+                  Variant="Variant.Filled"
+                  Adornment="Adornment.End"
+                  AutoGrow="true"
+                  MaxLines="10"
+                  AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                  OnAdornmentClick="@(() => CopyToClipboard(Value))" />
+}
+
+@code {
+    [Parameter] public string Value { get; set; }
+    [Parameter] public int ShortenThreshold { get; set; } = 48;
+
+    private bool IsExpandable =>
+        !string.IsNullOrEmpty(Value) && Value.Length > ShortenThreshold;
+
+    private async Task CopyToClipboard(string value)
+    {
+        await JS.InvokeVoidAsync("eval", $"navigator.clipboard.writeText(`{value}`)");
+    }
+}

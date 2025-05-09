@@ -1,0 +1,134 @@
+﻿@using MudBlazor
+@using System.Collections
+@using System.Reflection
+@using System.Numerics
+@using System.Text.RegularExpressions
+
+    <MudText Typo="Typo.subtitle2">@Title</MudText>
+
+    <MudTable Items="@(Items.Cast<object>())" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>#</MudTh>
+            <MudTh>Item</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate Context="item">
+            @{
+                var index = Items.IndexOf(item);
+            }
+            <MudTd>@(index + 1)</MudTd>
+            <MudTd>
+                @if (ItemType == typeof(BigInteger))
+                {
+                    var val = item is BigInteger b ? b : BigInteger.Zero;
+                    <MudTextField Value="@val.ToString()"
+                                  ValueChanged="@GetBigIntegerChangedCallback(index)"
+                                  Variant="Variant.Filled" />
+                }
+                else if (ItemType == typeof(byte[]))
+                {
+                    var bytes = item as byte[] ?? Array.Empty<byte>();
+                    var hex = "0x" + BitConverter.ToString(bytes).Replace("-", "").ToLower();
+                    <MudTextField Value="@hex"
+                                  ValueChanged="@GetByteArrayChangedCallback(index)"
+                                  Variant="Variant.Filled" />
+                }
+                else if (IsPrimitive(ItemType))
+                {
+                    <MudTextField @bind-Value="Items[index]" Variant="Variant.Filled" />
+                }
+                else
+                {
+                    <StructInput Model="Items[index]" ModelType="ItemType" />
+                }
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => RemoveItem(index))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddItem" Class="mt-2" Color="Color.Secondary">
+        Add Item
+    </MudButton>
+
+
+@code {
+    [Parameter] public IList Items { get; set; }
+    [Parameter] public Type ItemType { get; set; }
+    [Parameter] public string Title { get; set; } = "Array";
+
+    private void AddItem()
+    {
+        object instance = ItemType switch
+        {
+            var t when t == typeof(string) => string.Empty,
+            var t when t == typeof(int) => 0,
+            var t when t == typeof(uint) => 0u,
+            var t when t == typeof(long) => 0L,
+            var t when t == typeof(ulong) => 0UL,
+            var t when t == typeof(bool) => false,
+            var t when t == typeof(decimal) => 0m,
+            var t when t == typeof(BigInteger) => BigInteger.Zero,
+            var t when t == typeof(byte[]) => Array.Empty<byte>(),
+            var t when t.GetConstructor(Type.EmptyTypes) is not null => Activator.CreateInstance(t),
+            _ => null
+        };
+
+        if (instance != null) Items.Add(instance);
+    }
+
+    private void RemoveItem(int index)
+    {
+        if (index >= 0 && index < Items.Count)
+        {
+            Items.RemoveAt(index);
+        }
+    }
+
+    private void SetBigInteger(int index, string value)
+    {
+        if (BigInteger.TryParse(value, out var result))
+        {
+            Items[index] = result;
+        }
+    }
+
+    private void SetByteArray(int index, string hex)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(hex))
+            {
+                var cleaned = hex.StartsWith("0x") ? hex[2..] : hex;
+                if (cleaned.Length % 2 != 0) cleaned = "0" + cleaned;
+
+                if (Regex.IsMatch(cleaned, "^[0-9a-fA-F]+$"))
+                {
+                    var bytes = Enumerable.Range(0, cleaned.Length / 2)
+                        .Select(i => Convert.ToByte(cleaned.Substring(i * 2, 2), 16))
+                        .ToArray();
+
+                    Items[index] = bytes;
+                }
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    private bool IsPrimitive(Type type) =>
+        type.IsPrimitive ||
+        type == typeof(string) ||
+        type == typeof(decimal) ||
+        type == typeof(bool) ||
+        type == typeof(int) ||
+        type == typeof(uint) ||
+        type == typeof(long) ||
+        type == typeof(ulong);
+
+    private EventCallback<string> GetBigIntegerChangedCallback(int index)
+        => EventCallback.Factory.Create<string>(this, v => SetBigInteger(index, v));
+
+    private EventCallback<string> GetByteArrayChangedCallback(int index)
+        => EventCallback.Factory.Create<string>(this, v => SetByteArray(index, v));
+}

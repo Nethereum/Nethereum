@@ -1,0 +1,182 @@
+﻿@using MudBlazor
+@using System.Collections
+@using System.Reflection
+@using System.Numerics
+@using Nethereum.Hex.HexConvertors.Extensions
+@using Nethereum.Hex.HexTypes
+@using Nethereum.Contracts
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.Web3
+@using Nethereum.ABI.Model
+@using Newtonsoft.Json.Linq
+
+        <MudPaper Class="pa-4">
+             @if (!string.IsNullOrEmpty(Title))
+            {
+                <MudText Typo="Typo.h6" Class="mb-2">@Title</MudText>
+            }
+            @if (Result == null)
+            {
+                <MudText Color="Color.Error">[null]</MudText>
+            }
+            else if (Result is JValue jval)
+            {
+                <MudText>@jval.ToString()</MudText>
+            }
+            else if (Result is JToken jtoken)
+            {
+                <FormattedValue Value="@jtoken.ToString(Newtonsoft.Json.Formatting.Indented)" />
+            }
+            else if (IsSimple(ResultType))
+            {
+                <FormattedValue Value="@FormatSimple(Result)" />
+            }
+            else
+            {
+                foreach (var prop in ResultType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (typeof(Delegate).IsAssignableFrom(prop.PropertyType)) continue;
+                    if (prop.GetMethod == null || prop.GetMethod.GetParameters().Length > 0) continue;
+
+                    var value = prop.GetValue(Result);
+                    var name = prop.Name;
+                    var type = prop.PropertyType;
+
+                    <MudGrid Class="mb-2">
+                        <MudItem xs="12" sm="4">
+                           
+                               <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@name</MudText>
+                           
+                        </MudItem>
+                        <MudItem xs="12" sm="8">
+                            @if (value == null)
+                            {
+                                <MudText Typo="Typo.subtitle2">None</MudText>
+                            }
+                            else if (value is HexBigInteger hexBigInt)
+                            {
+                                <FormattedValue Value="@hexBigInt.Value.ToString()" />
+                            }
+                            else if (type == typeof(byte[]))
+                            {
+                                <FormattedValue Value="@((value as byte[])?.ToHex(true))" />
+                            }
+                            else if (value is IEnumerable enumerable && type != typeof(string))
+                            {
+                                <MudList T="object" Dense="true" Class="ml-2">
+                                    @foreach (var item in enumerable)
+                                    {
+                                        <MudListItem Class="pl-0">
+                                            @if (item != null && item.GetType().IsClass && item.GetType() != typeof(string))
+                                            {
+                                                <ResultOutput Result="item" ResultType="@item.GetType()" />
+                                            }
+                                            else
+                                            {
+                                                <FormattedValue Value="@item?.ToString()" />
+                                            }
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                            else if (type.IsClass && type != typeof(string))
+                            {
+                                <MudPaper Class="ml-2 mt-2 pa-3">
+                                    <ResultOutput Result="value" ResultType="@value.GetType()" Title="@name" />
+                                </MudPaper>
+                            }
+                            else
+                            {
+                                <FormattedValue Value="@FormatSimple(value)" />
+                            }
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="my-1" />
+                }
+
+                @if (Result is TransactionReceipt receipt)
+                {
+                    var events = DecodeEvents(receipt);
+                    if (events?.Any() == true)
+                    {
+                        <MudText Typo="Typo.h6" Class="mt-4">Emitted Events</MudText>
+                        foreach (var evt in events)
+                        {
+                            <MudPaper Class="pa-2 mt-2">
+                                <ResultOutput Result="evt" ResultType="@evt.GetType()" Title="@evt.GetType().Name" />
+                            </MudPaper>
+                        }
+                    }
+                }
+            }
+        </MudPaper>
+
+@code {
+    [Parameter] public object Result { get; set; }
+    [Parameter] public Type ResultType { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public ContractServiceBase ContractService { get; set; }
+    [Parameter] public IEnumerable<Type> AdditionalEventTypes { get; set; }
+
+    private List<object> DecodeEvents(TransactionReceipt receipt)
+    {
+
+        if (ContractService == null && AdditionalEventTypes == null) return new();
+
+        var types = new List<Type>();
+        if (ContractService != null)
+            types.AddRange(ContractService.GetAllEventTypes());
+
+        if (AdditionalEventTypes != null)
+            types.AddRange(AdditionalEventTypes);
+
+
+
+        var decoded = new List<object>();
+
+        foreach (var t in types.Distinct())
+        {
+            var eventAbi = ABITypedRegistry.GetEvent(t);
+            var decodeMethod = typeof(EventExtensions)
+                .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .FirstOrDefault(m => m.Name == "DecodeAllEvents"
+                                     && m.GetParameters().Length == 2
+                                     && m.GetGenericArguments().Length == 1);
+
+            if (decodeMethod == null) continue;
+
+            var genericMethod = decodeMethod.MakeGenericMethod(t);
+            var result = genericMethod.Invoke(null, new object[] { eventAbi, receipt.Logs });
+
+            if (result is IList enumerable)
+            {
+
+                foreach (var item in enumerable)
+                {
+                    var titem = item.GetType();
+                    PropertyInfo prop = titem.GetProperty("Event");
+
+                    object itemEvent = prop.GetValue(item);
+                    decoded.Add(itemEvent);
+
+                }
+            }
+        }
+
+        return decoded;
+    }
+
+
+
+    private bool IsSimple(Type type) =>
+        type.IsPrimitive || type == typeof(string) || type == typeof(BigInteger) || type == typeof(decimal);
+
+    private string FormatSimple(object value) =>
+        value switch
+        {
+            BigInteger bi => bi.ToString("N0"),
+            decimal d => d.ToString("G"),
+            _ => value?.ToString()
+        };
+}

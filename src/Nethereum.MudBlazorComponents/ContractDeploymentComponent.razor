@@ -1,0 +1,235 @@
+﻿@using System.Numerics
+@using MudBlazor
+@using Nethereum.Web3
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Services
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.UI
+@using Nethereum.Util
+@typeparam TDeploymentMessage where TDeploymentMessage : ContractDeploymentMessage, new()
+
+
+<MudExpansionPanels Elevation="1" Class="mb-4">
+    <MudExpansionPanel  Expanded="false">
+        <TitleContent>
+                    <MudText Typo="Typo.h5">@Title</MudText>
+        </TitleContent>
+        <ChildContent>
+<MudPaper Class="pa-4 mb-4">
+    <MudForm @ref="_form">
+        <MudStack Spacing="2">
+          
+
+            <StructInput Model="DeploymentMessage"
+                         ModelType="typeof(TDeploymentMessage)"
+                         Title="Deployment Inputs"
+                         ExcludedProperties="DefaultExcludedDeploymentProps"
+                         @key="DeploymentMessage" />
+
+            <MudExpansionPanels Elevation="0">
+                <MudExpansionPanel Text="Optional Deployment Settings">
+                    <MudStack Spacing="2">
+                        <MudNumericField T="decimal"
+                                         @bind-Value="AmountToSendEth"
+                                         Label="Amount to Send (ETH)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudTextField @bind-Value="GasString"
+                                      Label="Gas (Units)"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                      Validation="@((Func<string, string>)ValidateBigInteger)" />
+
+                        <MudTextField @bind-Value="NonceString"
+                                      Label="Nonce"
+                                      Variant="Variant.Filled"
+                                      FullWidth="true"
+                                      Immediate="true"
+                                     Validation="@((Func<string, string>)ValidateBigInteger)" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="GasPriceGwei"
+                                         Label="Gas Price (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="MaxFeePerGasGwei"
+                                         Label="Max Fee Per Gas (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="MaxPriorityFeePerGasGwei"
+                                         Label="Max Priority Fee (Gwei)"
+                                         Variant="Variant.Filled"
+                                         FullWidth="true"
+                                         Immediate="true" />
+                    </MudStack>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
+            <MudButton OnClick="ValidateAndDeployAsync"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Publish"
+                       Disabled="@IsLoading"
+                       >
+                Deploy Contract
+            </MudButton>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled">@ErrorMessage</MudAlert>
+            }
+
+            @if (Receipt is not null)
+            {
+                <MudText Color="Color.Primary">Contract Address: <b>@Receipt.ContractAddress</b></MudText>
+
+                <MudExpansionPanels Elevation="1" Class="mb-4">
+                <MudExpansionPanel Expanded="true">
+                      <TitleContent>
+                           <MudText Typo="Typo.h6">Transaction Receipt</MudText>
+                     </TitleContent>
+                     <ChildContent>
+                             <ResultOutput Result="Receipt"
+                                  ResultType="typeof(TransactionReceipt)"
+                                  ContractService="contractService"
+                                  AdditionalEventTypes="AdditionalEventTypes" />
+                        </ChildContent>
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+            }
+        </MudStack>
+    </MudForm>
+</MudPaper>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+@code {
+    [Parameter] public string Title { get; set; } = typeof(TDeploymentMessage).Name;
+    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
+    [Parameter] public TDeploymentMessage DeploymentMessage { get; set; } = new();
+    [Parameter] public string ContractAddress { get; set; }
+    [Parameter] public EventCallback<string> ContractAddressChanged { get; set; }
+    [Parameter] public Type ServiceType { get; set; }
+    [Parameter] public IEnumerable<Type> AdditionalEventTypes { get; set; }
+
+    private MudForm _form;
+    private TransactionReceipt Receipt;
+    private string ErrorMessage;
+    private bool IsLoading;
+    private ContractServiceBase contractService;
+
+    private decimal AmountToSendEth
+    {
+        get => Web3.Convert.FromWei(DeploymentMessage.AmountToSend);
+        set => DeploymentMessage.AmountToSend = Web3.Convert.ToWei(value);
+    }
+
+    private string GasString
+    {
+        get => DeploymentMessage.Gas?.ToString() ?? "";
+        set => DeploymentMessage.Gas = BigInteger.TryParse(value, out var result) ? result : null;
+    }
+
+    private string NonceString
+    {
+        get => DeploymentMessage.Nonce?.ToString() ?? "";
+        set => DeploymentMessage.Nonce = BigInteger.TryParse(value, out var result) ? result : null;
+    }
+
+    private string ValidateBigInteger(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        return BigInteger.TryParse(input, out _) ? null : "Invalid number";
+    }
+
+    private decimal? GasPriceGwei
+    {
+        get => DeploymentMessage.GasPrice.HasValue
+            ? Web3.Convert.FromWei(DeploymentMessage.GasPrice.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => DeploymentMessage.GasPrice = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private decimal? MaxFeePerGasGwei
+    {
+        get => DeploymentMessage.MaxFeePerGas.HasValue
+            ? Web3.Convert.FromWei(DeploymentMessage.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => DeploymentMessage.MaxFeePerGas = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private decimal? MaxPriorityFeePerGasGwei
+    {
+        get => DeploymentMessage.MaxPriorityFeePerGas.HasValue
+            ? Web3.Convert.FromWei(DeploymentMessage.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+        set => DeploymentMessage.MaxPriorityFeePerGas = value.HasValue
+            ? Web3.Convert.ToWei(value.Value, UnitConversion.EthUnit.Gwei)
+            : null;
+    }
+
+    private async Task ValidateAndDeployAsync()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            await DeployAsync();
+        }
+    }
+
+    private async Task DeployAsync()
+    {
+        ErrorMessage = null;
+        Receipt = null;
+        IsLoading = true;
+
+        try
+        {
+            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+            var handler = web3.Eth.GetContractDeploymentHandler<TDeploymentMessage>();
+            Receipt = await handler.SendRequestAndWaitForReceiptAsync(DeploymentMessage);
+            ContractAddress = Receipt.ContractAddress;
+            await ContractAddressChanged.InvokeAsync(ContractAddress);
+
+            if (ServiceType != null && !string.IsNullOrEmpty(ContractAddress))
+            {
+                var serviceInstance = Activator.CreateInstance(ServiceType, web3, ContractAddress);
+                contractService = serviceInstance as ContractServiceBase;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.ToString();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static readonly HashSet<string> DefaultExcludedDeploymentProps = new()
+    {
+        nameof(ContractDeploymentMessage.FromAddress),
+        nameof(ContractDeploymentMessage.AmountToSend),
+        nameof(ContractDeploymentMessage.Gas),
+        nameof(ContractDeploymentMessage.GasPrice),
+        nameof(ContractDeploymentMessage.Nonce),
+        nameof(ContractDeploymentMessage.MaxFeePerGas),
+        nameof(ContractDeploymentMessage.MaxPriorityFeePerGas),
+        nameof(ContractDeploymentMessage.TransactionType),
+        nameof(ContractDeploymentMessage.AccessList)
+    };
+}
