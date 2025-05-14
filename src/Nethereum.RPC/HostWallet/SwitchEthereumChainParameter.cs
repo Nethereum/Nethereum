@@ -8,6 +8,9 @@ namespace Nethereum.RPC.HostWallet
     public class SwitchEthereumChainParameter
     {
         [JsonProperty(PropertyName = "chainId")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("chainId")]
+#endif
         public HexBigInteger ChainId { get; set; }
     }
 }

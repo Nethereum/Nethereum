@@ -1,103 +1,152 @@
 using Nethereum.Hex.HexTypes;
 using Nethereum.Util;
-using Newtonsoft.Json.Linq;
-using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+#if NET6_0_OR_GREATER
+using System.Text.Json.Serialization;
+#endif
 
 namespace Nethereum.RPC.Eth.DTOs
 {
-
     public class TransactionReceipt
     {
         /// <summary>
-        ///     DATA, 32 Bytes - hash of the transaction.
+        /// DATA, 32 Bytes - hash of the transaction.
         /// </summary>
-        [JsonProperty(PropertyName = "transactionHash")]
+        [JsonProperty("transactionHash")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("transactionHash")]
+#endif
         public string TransactionHash { get; set; }
 
         /// <summary>
-        ///     QUANTITY - integer of the transactions index position in the block.
+        /// QUANTITY - integer of the transaction's index position in the block.
         /// </summary>
-       [JsonProperty(PropertyName = "transactionIndex")]
+        [JsonProperty("transactionIndex")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("transactionIndex")]
+#endif
         public HexBigInteger TransactionIndex { get; set; }
 
         /// <summary>
-        ///     DATA, 32 Bytes - hash of the block where this transaction was in.
+        /// DATA, 32 Bytes - hash of the block where this transaction was in.
         /// </summary>
-       [JsonProperty(PropertyName = "blockHash")]
+        [JsonProperty("blockHash")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("blockHash")]
+#endif
         public string BlockHash { get; set; }
 
         /// <summary>
-        ///     QUANTITY - block number where this transaction was in.
+        /// QUANTITY - block number where this transaction was in.
         /// </summary>
-       [JsonProperty(PropertyName = "blockNumber")]
+        [JsonProperty("blockNumber")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("blockNumber")]
+#endif
         public HexBigInteger BlockNumber { get; set; }
 
         /// <summary>
-        ///     DATA, 20 Bytes - From address
+        /// DATA, 20 Bytes - From address
         /// </summary>
-        [JsonProperty(PropertyName = "from")]
+        [JsonProperty("from")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("from")]
+#endif
         public string From { get; set; }
 
         /// <summary>
-        ///     DATA, 20 Bytes - To address
+        /// DATA, 20 Bytes - To address
         /// </summary>
-        [JsonProperty(PropertyName = "to")]
+        [JsonProperty("to")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("to")]
+#endif
         public string To { get; set; }
-        
+
         /// <summary>
-        ///     QUANTITY - The total amount of gas used when this transaction was executed in the block.
+        /// QUANTITY - The total amount of gas used when this transaction was executed in the block.
         /// </summary>
-       [JsonProperty(PropertyName = "cumulativeGasUsed")]
+        [JsonProperty("cumulativeGasUsed")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("cumulativeGasUsed")]
+#endif
         public HexBigInteger CumulativeGasUsed { get; set; }
 
         /// <summary>
-        ///     QUANTITY - The amount of gas used by this specific transaction alone.
+        /// QUANTITY - The amount of gas used by this specific transaction alone.
         /// </summary>
-       [JsonProperty(PropertyName = "gasUsed")]
+        [JsonProperty("gasUsed")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("gasUsed")]
+#endif
         public HexBigInteger GasUsed { get; set; }
 
         /// <summary>
-        /// The actual value per gas deducted from the senders account. Before EIP-1559, this is equal to the transaction's gas price. After, it is equal to baseFeePerGas + min(maxFeePerGas - baseFeePerGas, maxPriorityFeePerGas). Legacy transactions and EIP-2930 transactions are coerced into the EIP-1559 format by setting both maxFeePerGas and maxPriorityFeePerGas as the transaction's gas price.
+        /// The actual value per gas deducted from the sender's account. Varies before and after EIP-1559.
         /// </summary>
-        [JsonProperty(PropertyName = "effectiveGasPrice")]
+        [JsonProperty("effectiveGasPrice")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("effectiveGasPrice")]
+#endif
         public HexBigInteger EffectiveGasPrice { get; set; }
 
         /// <summary>
-        ///     DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
+        /// DATA, 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
         /// </summary>
-       [JsonProperty(PropertyName = "contractAddress")]
+        [JsonProperty("contractAddress")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("contractAddress")]
+#endif
         public string ContractAddress { get; set; }
 
         /// <summary>
-        ///     QUANTITY / BOOLEAN Transaction Success 1, Transaction Failed 0
+        /// QUANTITY / BOOLEAN - Transaction success (1) or failure (0)
         /// </summary>
-       [JsonProperty(PropertyName = "status")]
+        [JsonProperty("status")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("status")]
+#endif
         public HexBigInteger Status { get; set; }
 
         /// <summary>
-        ///     logs: Array - Array of log objects, which this transaction generated.
+        /// logs: Array - Array of log objects generated by this transaction.
         /// </summary>
-       [JsonProperty(PropertyName = "logs")]
-        public JArray Logs { get; set; }
+        [JsonProperty("logs")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("logs")]
+        //[System.Text.Json.Serialization.JsonConverter(typeof(SystemTextJsonRawJArrayConverter))]
+#endif
+        public FilterLog[] Logs { get; set; }
 
         /// <summary>
-        ///    QUANTITY - The transaction type.
+        /// QUANTITY - The transaction type.
         /// </summary>
-       [JsonProperty(PropertyName = "type")]
+        [JsonProperty("type")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("type")]
+#endif
         public HexBigInteger Type { get; set; }
 
         /// <summary>
-        ///     DATA, 256 Bytes - Bloom filter for light clients to quickly retrieve related logs
+        /// DATA, 256 Bytes - Bloom filter for log retrieval.
         /// </summary>
-       [JsonProperty(PropertyName = "logsBloom")]
+        [JsonProperty("logsBloom")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("logsBloom")]
+#endif
         public string LogsBloom { get; set; }
 
         /// <summary>
-        ///  DATA, 32 Bytes The post-transaction state root. Only specified for transactions included before the Byzantium upgrade. (DEPRECATED)
+        /// DATA, 32 Bytes - The post-transaction state root. Deprecated.
         /// </summary>
-        [JsonProperty(PropertyName = "root")]
+        [JsonProperty("root")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("root")]
+#endif
         public string Root { get; set; }
+
         public bool? HasErrors()
         {
             if (Status?.HexValue == null) return null;
@@ -112,7 +161,7 @@ namespace Nethereum.RPC.Eth.DTOs
                        TransactionIndex == val.TransactionIndex &&
                        BlockHash == val.BlockHash &&
                        BlockNumber == val.BlockNumber &&
-                       From == val.From && 
+                       From == val.From &&
                        To == val.To &&
                        CumulativeGasUsed == val.CumulativeGasUsed &&
                        GasUsed == val.GasUsed &&

@@ -114,7 +114,7 @@ namespace Nethereum.Contracts
         public static bool IsExceptionForError(this ErrorABI errorABI, RpcResponseException exception)
         {
             if (exception.RpcError.Data == null) return false;
-            var encodedData = exception.RpcError.Data.ToString();
+            var encodedData = exception.RpcError.GetDataAsString();
             if (!encodedData.IsHex()) return false;
             return encodedData.IsExceptionEncodedDataForError(errorABI.Sha3Signature);
         }
@@ -123,7 +123,7 @@ namespace Nethereum.Contracts
          RpcResponseException exception, IABIInfoStorage abiInfoStorage)
         {
             if(exception.RpcError.Data == null) return null;
-            var encodedData = exception.RpcError.Data.ToString();
+            var encodedData = exception.RpcError.GetDataAsString();
             if (!encodedData.IsHex()) return null;
             var signature = SignatureEncoder.GetSignatureFromData(encodedData);
             return abiInfoStorage.FindErrorABI(signature);

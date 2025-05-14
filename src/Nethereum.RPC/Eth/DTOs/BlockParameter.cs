@@ -3,13 +3,21 @@ using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
 
+#if NET6_0_OR_GREATER
+using System.Text.Json.Serialization;
+#endif
+
 namespace Nethereum.RPC.Eth.DTOs
 {
     /// <summary>
     /// "`earliest`: The lowest numbered block the client has available; `finalized`: The most recent crypto-economically secure block, cannot be re-orged outside of manual intervention driven by community coordination; `safe`: The most recent block that is safe from re-orgs under honest majority and certain synchronicity assumptions; `latest`: The most recent block in the canonical chain observed by the client, this block may be re-orged out of the canonical chain even under healthy/normal conditions; `pending`: A sample next block built by the client on top of `latest` and containing the set of transactions usually taken from local mempool.
     /// Before the merge transition is finalized, any call querying for `finalized` or `safe` block MUST be responded to with `-39001: Unknown block` error"
     /// </summary>
-    [JsonConverter(typeof (BlockParameterJsonConverter))]
+    [Newtonsoft.Json.JsonConverter(typeof (BlockParameterJsonConverter))]
+
+#if NET6_0_OR_GREATER
+    [System.Text.Json.Serialization.JsonConverter(typeof(BlockParameterSystemTextJsonConverter))] // STJ
+#endif
     public class BlockParameter
     {
         public enum BlockParameterType

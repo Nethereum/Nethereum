@@ -9,7 +9,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             to.TransactionIndex = @from.TransactionIndex.Value.ToString();
             to.GasUsed = @from.GasUsed?.Value.ToString();
             to.CumulativeGasUsed = @from.CumulativeGasUsed?.Value.ToString();
-            to.HasLog = @from.Logs?.Count > 0;
+            to.HasLog = from.HasLogs();
         }
 
         public static void Map(this TransactionBase to, Nethereum.RPC.Eth.DTOs.Transaction @from)

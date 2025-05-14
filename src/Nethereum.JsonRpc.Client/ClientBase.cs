@@ -7,7 +7,6 @@ namespace Nethereum.JsonRpc.Client
 {
     public abstract class ClientBase : IClient
     {
-
         public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
         public RequestInterceptor OverridingRequestInterceptor { get; set; }
@@ -46,19 +45,24 @@ namespace Nethereum.JsonRpc.Client
                     response.Error.Data));
         }
 
-        private async Task<T> SendInnerRequestAsync<T>(RpcRequestMessage reqMsg,
+        protected virtual async Task<T> SendInnerRequestAsync<T>(RpcRequestMessage reqMsg,
                                                        string route = null)
         {
             var response = await SendAsync(reqMsg, route).ConfigureAwait(false);
             HandleRpcError(response, reqMsg.Method);
             try
             {
-                return response.GetResult<T>();
+                return DecodeResult<T>(response);
             }
             catch (FormatException formatException)
             {
                 throw new RpcResponseFormatException("Invalid format found in RPC response", formatException);
             }
+        }
+
+        public virtual T DecodeResult<T>(RpcResponseMessage rpcResponseMessage)
+        {
+            return rpcResponseMessage.GetResult<T>();
         }
 
         protected virtual Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)

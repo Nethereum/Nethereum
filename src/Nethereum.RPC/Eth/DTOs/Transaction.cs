@@ -12,6 +12,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
         [JsonProperty(PropertyName = "hash")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("hash")]
+#endif
         public string TransactionHash { get; set; }
 
         /// <summary>
@@ -19,6 +22,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
         [JsonProperty(PropertyName = "transactionIndex")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("transactionIndex")]
+#endif
         public HexBigInteger TransactionIndex { get; set; }
 
         /// <summary>
@@ -26,6 +32,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "type")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("type")]
+#endif
         public HexBigInteger Type { get; set; }
 
         /// <summary>
@@ -33,6 +42,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "blockHash")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blockHash")]
+#endif
         public string BlockHash { get; set; }
 
         /// <summary>
@@ -40,6 +52,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "blockNumber")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blockNumber")]
+#endif
         public HexBigInteger BlockNumber { get; set; }
 
         /// <summary>
@@ -47,6 +62,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "from")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("from")]
+#endif
         public string From { get; set; }
 
         /// <summary>
@@ -54,6 +72,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "to")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("to")]
+#endif
         public string To { get; set; }
 
         /// <summary>
@@ -61,6 +82,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
        [JsonProperty(PropertyName = "gas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("gas")]
+#endif
         public HexBigInteger Gas { get; set; }
 
         /// <summary>
@@ -68,6 +92,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
  
        [JsonProperty(PropertyName = "gasPrice")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("gasPrice")]
+#endif
         public HexBigInteger GasPrice { get; set; }
 
         /// <summary>
@@ -75,6 +102,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "maxFeePerGas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("maxFeePerGas")]
+#endif
         public HexBigInteger MaxFeePerGas { get; set; }
 
         /// <summary>
@@ -82,6 +112,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "maxPriorityFeePerGas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("maxPriorityFeePerGas")]
+#endif
         public HexBigInteger MaxPriorityFeePerGas { get; set; }
 
         /// <summary>
@@ -89,6 +122,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "value")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("value")]
+#endif
         public HexBigInteger Value { get; set; }
 
         /// <summary>
@@ -96,6 +132,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "input")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("input")]
+#endif
         public string Input { get; set; }
 
         /// <summary>
@@ -103,6 +142,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "nonce")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("nonce")]
+#endif
         public HexBigInteger Nonce { get; set; }
 
         /// <summary>
@@ -110,6 +152,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "r")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("r")]
+#endif
         public string R { get; set; }
 
 
@@ -118,6 +163,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
  
       [JsonProperty(PropertyName = "s")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("s")]
+#endif
         public string S { get; set; }
 
         /// <summary>
@@ -125,6 +173,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
  
       [JsonProperty(PropertyName = "v")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("v")]
+#endif
         public string V { get; set; }
 
         /// <summary>
@@ -132,6 +183,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
 
       [JsonProperty(PropertyName = "accessList")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("accessList")]
+#endif
       public List<AccessList> AccessList { get; set; }
 
     /// <summary>
@@ -139,6 +193,9 @@ namespace Nethereum.RPC.Eth.DTOs
     /// </summary>
 
       [JsonProperty(PropertyName = "authorizationList")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("authorizationList")]
+#endif
       public List<Authorisation> AuthorisationList { get; set; }
     }
 }

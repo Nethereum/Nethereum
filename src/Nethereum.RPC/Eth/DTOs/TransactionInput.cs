@@ -53,12 +53,18 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     the same nonce.
         /// </summary>
         [JsonProperty(PropertyName = "nonce")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("nonce")]
+#endif
         public HexBigInteger Nonce { get; set; }
 
         /// <summary>
         ///   Access list
         /// </summary>
         [JsonProperty(PropertyName = "accessList")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("accessList")]
+#endif
         public List<AccessList> AccessList { get; set; }
 
 
@@ -66,6 +72,9 @@ namespace Nethereum.RPC.Eth.DTOs
         ///   Authorisation list
         /// </summary>
         [JsonProperty(PropertyName = "authorizationList")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("authorizationList")]
+#endif
         public List<Authorisation> AuthorisationList { get; set; }
 
 

@@ -54,15 +54,12 @@ namespace Nethereum.RPC.Eth.DTOs
         }
         public static IEnumerable<FilterLogVO> GetTransactionLogs(this Transaction transaction, TransactionReceipt receipt)
         {
-            for (var i = 0; i < receipt.Logs?.Count; i++)
+            if (transaction == null || receipt == null || receipt.Logs == null)
+                yield break;
+            for (var i = 0; i < receipt.Logs.Length; i++)
             {
-                if (receipt.Logs[i] is JObject log)
-                {
-                    var typedLog = log.ToObject<FilterLog>();
-
-                    yield return
-                        new FilterLogVO(transaction, receipt, typedLog);
-                }
+                yield return
+                    new FilterLogVO(transaction, receipt, receipt.Logs[i]);   
             }
         }
 

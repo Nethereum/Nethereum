@@ -13,6 +13,9 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     Array - Array of transaction objects
         /// </summary>
         [JsonProperty(PropertyName = "transactions")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("transactions")]
+#endif
         public Transaction[] Transactions { get; set; }
     }
 }

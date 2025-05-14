@@ -37,7 +37,7 @@ namespace Nethereum.JsonRpc.Client
         {
             try
             {
-                return rpcResponseMessage.GetResult<TResponse>();
+                return Client.DecodeResult<TResponse>(rpcResponseMessage);
             }
             catch (FormatException formatException)
             {

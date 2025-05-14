@@ -7,37 +7,70 @@ namespace Nethereum.RPC.AccountAbstraction.DTOs
 {
     public class UserOperationReceipt
     {
-        [JsonProperty("userOpHash")]
+        [JsonProperty(PropertyName = "userOpHash")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("userOpHash")]
+#endif
         public string UserOpHash { get; set; }
 
-        [JsonProperty("entryPoint")]
+        [JsonProperty(PropertyName = "entryPoint")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("entryPoint")]
+#endif
         public string EntryPoint { get; set; }
 
-        [JsonProperty("sender")]
+        [JsonProperty(PropertyName = "sender")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("sender")]
+#endif
         public string Sender { get; set; }
 
-        [JsonProperty("nonce")]
+        [JsonProperty(PropertyName = "nonce")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("nonce")]
+        #endif
         public HexBigInteger Nonce { get; set; }
 
-        [JsonProperty("paymaster")]
+        [JsonProperty(PropertyName = "paymaster")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("paymaster")]
+        #endif
         public string Paymaster { get; set; }
 
-        [JsonProperty("actualGasCost")]
+        [JsonProperty(PropertyName = "actualGasCost")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("actualGasCost")]
+        #endif
         public HexBigInteger ActualGasCost { get; set; }
 
-        [JsonProperty("actualGasUsed")]
+        [JsonProperty(PropertyName = "actualGasUsed")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("actualGasUsed")]
+        #endif
         public HexBigInteger ActualGasUsed { get; set; }
 
-        [JsonProperty("success")]
+        [JsonProperty(PropertyName = "success")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("success")]
+        #endif
         public bool Success { get; set; }
 
-        [JsonProperty("reason")]
+        [JsonProperty(PropertyName = "reason")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("reason")]
+        #endif
         public string Reason { get; set; }
 
-        [JsonProperty("logs")]
+        [JsonProperty(PropertyName = "logs")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("logs")]
+        #endif
         public List<string> Logs { get; set; }
 
-        [JsonProperty("receipt")]
+        [JsonProperty(PropertyName = "receipt")]
+        #if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("receipt")]
+        #endif
         public TransactionReceipt Receipt { get; set; }
     }
 }

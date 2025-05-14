@@ -35,7 +35,8 @@ namespace Nethereum.RPC.Eth.DTOs
 
         public static bool HasLogs(this TransactionReceipt receipt)
         {
-            return receipt.Logs?.Count > 0;
+            if(receipt.Logs != null && receipt.Logs.Length > 0) return true;
+            return false;
         }
     }
 

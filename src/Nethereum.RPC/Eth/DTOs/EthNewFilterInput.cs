@@ -19,6 +19,9 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     "pending", "earliest" for not yet mined transactions.
         /// </summary>
         [JsonProperty(PropertyName = "fromBlock")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("fromBlock")]
+#endif
         public BlockParameter FromBlock { get; set; }
 
         /// <summary>
@@ -26,6 +29,9 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     "pending", "earliest" for not yet mined transactions.
         /// </summary>
         [JsonProperty(PropertyName = "toBlock")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("toBlock")]
+#endif
         public BlockParameter ToBlock { get; set; }
 
         /// <summary>
@@ -33,6 +39,9 @@ namespace Nethereum.RPC.Eth.DTOs
         ///     originate.
         /// </summary>
         [JsonProperty(PropertyName = "address")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("address")]
+#endif
         public string[] Address { get; set; }
 
         /// <summary>
@@ -41,6 +50,9 @@ namespace Nethereum.RPC.Eth.DTOs
         /// </summary>
         /// <see cref="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI#events" />
         [JsonProperty(PropertyName = "topics")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("topics")]
+#endif
         public object[] Topics { get; set; }
     }
 }

@@ -386,6 +386,17 @@ namespace Nethereum.Contracts
             return JsonConvert.DeserializeObject<FilterLog[]>(logs.ToString());
         }
 
+        public static FilterLog ConvertToFilterLog(this FilterLog log)
+        {
+            return log;
+        }
+
+        public static FilterLog[] ConvertToFilterLog(this FilterLog[] logs)
+        {
+            return logs;
+        }
+
+
         public static FilterLog[] GetLogsForEvent(this EventABI eventABI, JArray logs)
         {
             var returnList = new List<FilterLog>();

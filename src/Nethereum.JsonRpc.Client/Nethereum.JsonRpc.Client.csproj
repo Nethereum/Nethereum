@@ -20,7 +20,14 @@
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' AND '$(TargetFramework)' != 'netstandard1.1' AND '$(TargetFramework)' != 'net451' AND '$(TargetFramework)' != 'netcoreapp2.1' ">
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.0,10)" />
   </ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+	</ItemGroup>
 
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
 
 
 </Project>

@@ -1,186 +1,309 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Nethereum.Hex.HexTypes;
+using Nethereum.Hex.HexConvertors.Extensions;
+
+#if NET6_0_OR_GREATER
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
+#endif
 
 namespace Nethereum.JsonRpc.Client.RpcMessages
 {
-    /*
-
-RPC Model simplified and downported to net351 from EdjCase.JsonRPC.Core
-https://github.com/edjCase/JsonRpc/tree/master/src/EdjCase.JsonRpc.Core
-
-The MIT License (MIT)
-Copyright(c) 2015 Gekctek
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
     public static class RpcResponseExtensions
     {
-        /// <summary>
-        /// Parses and returns the result of the rpc response as the type specified. 
-        /// Otherwise throws a parsing exception
-        /// </summary>
-        /// <typeparam name="T">Type of object to parse the response as</typeparam>
-        /// <param name="response">Rpc response object</param>
-        /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
-        /// <returns>Result of response as type specified</returns>
         public static T GetResult<T>(this RpcResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
         {
-            if (response.Result == null)
-            {
-                if (!returnDefaultIfNull && default(T) != null)
-                {
-                    throw new Exception("Unable to convert the result (null) to type " + typeof(T));
-                }
-                return default(T);
-            }
-            try
-            {
-                if (settings == null)
-                {
-                    return response.Result.ToObject<T>();
-                }
-                else
-                {
-                    JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
-                    return response.Result.ToObject<T>(jsonSerializer);
-                }
-            }
-            catch (FormatException ex)
-            {
-                throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Unable to convert the result to type " + typeof(T), ex);
-            }
+            return ConvertToNewtonsoft<T>(response.Result, returnDefaultIfNull, settings);
         }
 
-        /// <summary>
-        /// Parses and returns the result of the rpc streaming response as the type specified. 
-        /// Otherwise throws a parsing exception
-        /// </summary>
-        /// <typeparam name="T">Type of object to parse the response as</typeparam>
-        /// <param name="response">Rpc response object</param>
-        /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
-        /// <returns>Result of response as type specified</returns>
+
         public static T GetStreamingResult<T>(this RpcStreamingResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
         {
-            if(response.Method == null) {
+            if (response.Method == null)
+            {
                 return GetResult<T>(response, returnDefaultIfNull, settings);
             }
 
-            if (response.Params.Result == null)
+            return ConvertToNewtonsoft<T>(response.Params?.Result, returnDefaultIfNull, settings);
+        }
+
+
+#if NET6_0_OR_GREATER
+
+        public static T GetResultSTJ<T>(this RpcResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerOptions options = null)
+        {
+            return ConvertToSTJ<T>(response.Result, returnDefaultIfNull, options);
+        }
+
+        private static T ConvertToSTJ<T>(object result, bool returnDefaultIfNull, JsonSerializerOptions options = null)
+        {
+            if (result == null)
             {
                 if (!returnDefaultIfNull && default(T) != null)
                 {
-                    throw new Exception("Unable to convert the result (null) to type " + typeof(T));
+                    throw new Exception($"Unable to convert the result (null) to type {typeof(T)}");
                 }
-                return default(T);
+                return default;
             }
+
             try
             {
+                if (result is string str)
+                {
+                    if (typeof(T).IsSubclassOfGeneric(typeof(HexRPCType<>)) && str.IsHex())
+                    {
+                        return (T)HexTypeFactory.CreateFromHex<T>(str);
+                    }
+
+                    var bytes = Encoding.UTF8.GetBytes($"\"{str}\"");
+                    return System.Text.Json.JsonSerializer.Deserialize<T>(bytes, options);
+                }
+
+                if (result is JsonElement jsonElement)
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<T>(jsonElement, options);
+                }
+
+                if (result is System.Text.Json.Nodes.JsonNode jsonNode)
+                {
+                    return jsonNode.Deserialize<T>(options);
+                }
+
+                return (T)Convert.ChangeType(result, typeof(T));
+            }
+            catch (FormatException ex)
+            {
+                throw new FormatException($"Invalid format when trying to convert the result to type {typeof(T)}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Unable to convert the result to type {typeof(T)}", ex);
+            }
+        }
+
+        private static bool IsSubclassOfGeneric(this Type type, Type genericBase)
+        {
+            while (type != null && type != typeof(object))
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == genericBase)
+                {
+                    return true;
+                }
+                type = type.BaseType!;
+            }
+            return false;
+        }
+#endif
+        private static T ConvertToNewtonsoft<T>(object result, bool returnDefaultIfNull, JsonSerializerSettings settings = null)
+        {
+            if (result == null)
+            {
+                if (!returnDefaultIfNull && default(T) != null)
+                    throw new Exception($"Unable to convert the result (null) to type {typeof(T)}");
+                return default;
+            }
+
+            try
+            {
+                JToken token = result as JToken ?? JToken.FromObject(result);
+
                 if (settings == null)
                 {
-                    return response.Params.Result.ToObject<T>();
+                    return token.ToObject<T>();
                 }
                 else
                 {
-                    JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
-                    return response.Params.Result.ToObject<T>(jsonSerializer);
+                    var jsonSerializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+                    return token.ToObject<T>(jsonSerializer);
                 }
             }
             catch (FormatException ex)
             {
-                throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
+                throw new FormatException($"Invalid format when trying to convert the result to type {typeof(T)}", ex);
             }
             catch (Exception ex)
             {
-                throw new Exception("Unable to convert the result to type " + typeof(T), ex);
+                throw new Exception($"Unable to convert the result to type {typeof(T)}", ex);
             }
         }
+
+ 
     }
 
-    [JsonObject]
+
+        //public static class RpcResponseExtensions
+        //{
+        //    /// <summary>
+        //    /// Parses and returns the result of the rpc response as the type specified. 
+        //    /// Otherwise throws a parsing exception
+        //    /// </summary>
+        //    /// <typeparam name="T">Type of object to parse the response as</typeparam>
+        //    /// <param name="response">Rpc response object</param>
+        //    /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
+        //    /// <returns>Result of response as type specified</returns>
+        //    public static T GetResult<T>(this RpcResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
+        //    {
+        //        if (response.Result == null)
+        //        {
+        //            if (!returnDefaultIfNull && default(T) != null)
+        //            {
+        //                throw new Exception("Unable to convert the result (null) to type " + typeof(T));
+        //            }
+        //            return default(T);
+        //        }
+        //        try
+        //        {
+        //            if (settings == null)
+        //            {
+        //                return response.Result.ToObject<T>();
+        //            }
+        //            else
+        //            {
+        //                JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
+        //                return response.Result.ToObject<T>(jsonSerializer);
+        //            }
+        //        }
+        //        catch (FormatException ex)
+        //        {
+        //            throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            throw new Exception("Unable to convert the result to type " + typeof(T), ex);
+        //        }
+        //    }
+
+        //    /// <summary>
+        //    /// Parses and returns the result of the rpc streaming response as the type specified. 
+        //    /// Otherwise throws a parsing exception
+        //    /// </summary>
+        //    /// <typeparam name="T">Type of object to parse the response as</typeparam>
+        //    /// <param name="response">Rpc response object</param>
+        //    /// <param name="returnDefaultIfNull">Returns the type's default value if the result is null. Otherwise throws parsing exception</param>
+        //    /// <returns>Result of response as type specified</returns>
+        //    public static T GetStreamingResult<T>(this RpcStreamingResponseMessage response, bool returnDefaultIfNull = true, JsonSerializerSettings settings = null)
+        //    {
+        //        if(response.Method == null) {
+        //            return GetResult<T>(response, returnDefaultIfNull, settings);
+        //        }
+
+        //        if (response.Params.Result == null)
+        //        {
+        //            if (!returnDefaultIfNull && default(T) != null)
+        //            {
+        //                throw new Exception("Unable to convert the result (null) to type " + typeof(T));
+        //            }
+        //            return default(T);
+        //        }
+        //        try
+        //        {
+        //            if (settings == null)
+        //            {
+        //                return response.Params.Result.ToObject<T>();
+        //            }
+        //            else
+        //            {
+        //                JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
+        //                return response.Params.Result.ToObject<T>(jsonSerializer);
+        //            }
+        //        }
+        //        catch (FormatException ex)
+        //        {
+        //            throw new FormatException("Invalid format when trying to convert the result to type " + typeof(T), ex);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            throw new Exception("Unable to convert the result to type " + typeof(T), ex);
+        //        }
+        //    }
+        //}
+
+        [JsonObject]
     public class RpcResponseMessage
     {
-        [JsonConstructor]
-        protected RpcResponseMessage()
+        
+        [Newtonsoft.Json.JsonConstructor]
+        public RpcResponseMessage()
         {
             JsonRpcVersion = "2.0";
         }
 
-        /// <param name="id">Request id</param>
-        protected RpcResponseMessage(object id)
+        public RpcResponseMessage(object id)
         {
-            this.Id = id;
+            Id = id;
             JsonRpcVersion = "2.0";
         }
 
-        /// <param name="id">Request id</param>
-        /// <param name="error">Request error</param>
         public RpcResponseMessage(object id, RpcError error) : this(id)
         {
-            this.Error = error;
+            Error = error;
         }
 
-        /// <param name="id">Request id</param>
-        /// <param name="result">Response result object</param>
-        public RpcResponseMessage(object id, JToken result) : this(id)
+        public RpcResponseMessage(object id, object result) : this(id)
         {
-            this.Result = result;
+            ResultNewtonsoft = result;
+#if NET6_0_OR_GREATER
+            if (result is JsonElement element)
+            {
+                ResultSystemTextJson = element;
+            }
+#endif
         }
 
-        /// <summary>
-        /// Request id (Required but nullable)
-        /// </summary>
-        [JsonProperty("id", Required = Required.Default)]
+        [JsonProperty("id")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("id")]
+#endif
         public object Id { get; private set; }
 
-        /// <summary>
-        /// Rpc request version (Required)
-        /// </summary>
-        [JsonProperty("jsonrpc", Required = Required.Always)]
+        [JsonProperty("jsonrpc")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("jsonrpc")]
+#endif
         public string JsonRpcVersion { get; private set; }
 
-        /// <summary>
-        /// Reponse result object (Required)
-        /// </summary>
-        [JsonProperty("result", Required = Required.Default)]
-        public JToken Result { get; private set; }
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("result")]
+        public JsonElement ResultSystemTextJson { get; set; }
+#endif
 
-        /// <summary>
-        /// Error from processing Rpc request (Required)
-        /// </summary>
-        [JsonProperty("error", Required = Required.Default)]
+        [JsonProperty("result")]
+        public object ResultNewtonsoft { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+#endif
+        public object Result =>
+#if NET6_0_OR_GREATER
+            ResultSystemTextJson.ValueKind != JsonValueKind.Undefined ? ResultSystemTextJson : ResultNewtonsoft;
+#else
+        ResultNewtonsoft;
+#endif
+
+        [JsonProperty("error")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("error")]
+#endif
         public RpcError Error { get; protected set; }
 
-        [JsonIgnore]
-        public bool HasError { get { return this.Error != null; } }
+        [Newtonsoft.Json.JsonIgnore]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+#endif
+        public bool HasError => Error != null;
     }
 
     [JsonObject]
     public class RpcStreamingResponseMessage : RpcResponseMessage
     {
-        [JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         protected RpcStreamingResponseMessage()
         {
             
@@ -217,7 +340,7 @@ SOFTWARE.
     [JsonObject]
     public class RpcStreamingParams
     {
-        [JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         public RpcStreamingParams()
         {
 
@@ -239,61 +362,58 @@ SOFTWARE.
     [JsonObject]
     public class RpcRequestMessage
     {
-        [JsonConstructor]
-        private RpcRequestMessage()
-        {
+        [Newtonsoft.Json.JsonConstructor]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonConstructor]
+#endif
+        private RpcRequestMessage() { }
 
-        }
-
-        /// <param name="id">Request id</param>
-        /// <param name="method">Target method name</param>
-        /// <param name="parameterList">List of parameters for the target method</param>
         public RpcRequestMessage(object id, string method, params object[] parameterList)
         {
-            this.Id = id;
-            this.JsonRpcVersion = "2.0";
-            this.Method = method;
-            this.RawParameters = parameterList;
+            Id = id;
+            JsonRpcVersion = "2.0";
+            Method = method;
+            RawParameters = parameterList;
         }
 
-        /// <param name="id">Request id</param>
-        /// <param name="method">Target method name</param>
-        /// <param name="parameterMap">Map of parameter name to parameter value for the target method</param>
         public RpcRequestMessage(object id, string method, Dictionary<string, object> parameterMap)
         {
-            this.Id = id;
-            this.JsonRpcVersion = "2.0";
-            this.Method = method;
-            this.RawParameters = parameterMap;
+            Id = id;
+            JsonRpcVersion = "2.0";
+            Method = method;
+            RawParameters = parameterMap;
         }
 
-        /// <summary>
-        /// Request Id (Optional)
-        /// </summary>
         [JsonProperty("id")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("id")]
+#endif
         public object Id { get; set; }
-        /// <summary>
-        /// Version of the JsonRpc to be used (Required)
-        /// </summary>
-        [JsonProperty("jsonrpc", Required = Required.Always)]
-        public string JsonRpcVersion { get; private set; }
-        /// <summary>
-        /// Name of the target method (Required)
-        /// </summary>
-        [JsonProperty("method", Required = Required.Always)]
-        public string Method { get; private set; }
-        /// <summary>
-        /// Parameters to invoke the method with (Optional)
-        /// </summary>
-        [JsonProperty("params")]
-        [JsonConverter(typeof(RpcParametersJsonConverter))]
-        public object RawParameters { get; private set; }
 
+        [JsonProperty("jsonrpc", Required = Required.Always)]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("jsonrpc")]
+#endif
+        public string JsonRpcVersion { get; private set; }
+
+        [JsonProperty("method", Required = Required.Always)]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("method")]
+#endif
+        public string Method { get; private set; }
+
+        [JsonProperty("params")]
+        [Newtonsoft.Json.JsonConverter(typeof(RpcParametersJsonConverter))] // Newtonsoft
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonConverter(typeof(RpcParametersSystemTextJsonConverter))] // STJ
+        [JsonPropertyName("params")]
+#endif
+        public object RawParameters { get; private set; }
     }
     /// <summary>
     /// Json converter for Rpc parameters
     /// </summary>
-    public class RpcParametersJsonConverter : JsonConverter
+    public class RpcParametersJsonConverter : Newtonsoft.Json.JsonConverter
     {
         /// <summary>
         /// Writes the value of the parameters to json format
@@ -301,7 +421,7 @@ SOFTWARE.
         /// <param name="writer">Json writer</param>
         /// <param name="value">Value to be converted to json format</param>
         /// <param name="serializer">Json serializer</param>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
         {
             serializer.Serialize(writer, value);
         }
@@ -314,7 +434,7 @@ SOFTWARE.
         /// <param name="existingValue">The current value of the property being set</param>
         /// <param name="serializer">Json serializer</param>
         /// <returns>The object value of the converted json value</returns>
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
         {
             switch (reader.TokenType)
             {
@@ -350,26 +470,38 @@ SOFTWARE.
     [JsonObject]
     public class RpcError
     {
-        [JsonConstructor]
-        private RpcError()
-        {
-        }
+        [Newtonsoft.Json.JsonConstructor]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonConstructor]
+#endif
+        private RpcError() { }
+
         /// <summary>
         /// Rpc error code
         /// </summary>
         [JsonProperty("code")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("code")]
+#endif
         public int Code { get; private set; }
 
         /// <summary>
         /// Error message (Required)
         /// </summary>
         [JsonProperty("message", Required = Required.Always)]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("message")]
+#endif
         public string Message { get; private set; }
 
         /// <summary>
-        /// Error data (Optional)
+        /// Error data (Optional): may be a hex string, an object, or null
         /// </summary>
         [JsonProperty("data")]
-        public JToken Data { get; private set; }
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("data")]
+#endif
+        public object Data { get; private set; }
     }
 }
+
