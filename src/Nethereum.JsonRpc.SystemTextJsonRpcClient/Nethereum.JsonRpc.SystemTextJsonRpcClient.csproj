@@ -1,0 +1,33 @@
+
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>A lightweight and AOT-friendly JSON-RPC client for Ethereum, using System.Text.Json. Part of the Nethereum suite.</Description>
+		<AssemblyTitle>Nethereum.JsonRpc.SystemTextJsonRpcClient</AssemblyTitle>
+		<VersionPrefix>$(NethereumVersion)</VersionPrefix>
+		<TargetFrameworks>net9.0</TargetFrameworks>
+		<AssemblyName>Nethereum.JsonRpc.SystemTextJsonRpcClient</AssemblyName>
+		<PackageId>Nethereum.JsonRpc.SystemTextJsonRpcClient</PackageId>
+		<PackageTags>Ethereum;JsonRpc;Nethereum;System.Text.Json;AOT;Client;Web3</PackageTags>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+		<ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+		<ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net451' Or '$(TargetFramework)' == 'net461'">
+		<Reference Include="System.Net.Http" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+
+</Project>
