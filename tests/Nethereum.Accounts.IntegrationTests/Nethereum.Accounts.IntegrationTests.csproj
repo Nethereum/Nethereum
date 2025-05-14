@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Web3.IntegrationTests </Description>
     <Authors>Juan Blanco</Authors>
-	<TargetFrameworks>net6.0</TargetFrameworks>
+	<TargetFrameworks>net8.0</TargetFrameworks>
   </PropertyGroup> 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <Reference Include="System.Numerics" />

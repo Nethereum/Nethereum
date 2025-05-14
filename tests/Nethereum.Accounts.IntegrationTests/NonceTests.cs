@@ -8,9 +8,13 @@ using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
+using Nethereum.JsonRpc.Client;
+using System.Net.Http;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
+
+
     [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
     public class NonceTests
     {

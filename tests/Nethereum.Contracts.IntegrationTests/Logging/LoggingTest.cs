@@ -64,7 +64,7 @@ namespace Nethereum.Contracts.IntegrationTests.Logging
                 loggerMock.VerifyLog(logger => logger.LogTrace("*eth_getTransactionCount*"));
                 loggerMock.VerifyLog(logger => logger.LogTrace("*eth_gasPrice*"));
                 loggerMock.VerifyLog(logger => logger.LogTrace("*eth_sendRawTransaction*")); 
-                loggerMock.VerifyLog(logger => logger.LogError("RPC Response Error: intrinsic gas too low"));
+                loggerMock.VerifyLog(logger => logger.LogError("RPC Response Error: intrinsic gas too low: gas 900, minimum needed 64412"));
 
             }
         }

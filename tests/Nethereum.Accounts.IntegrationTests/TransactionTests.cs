@@ -72,7 +72,7 @@ namespace Nethereum.Accounts.IntegrationTests
                 new ChainFeature()
                 {
                     ChainName = "Nethereum Test Chain",
-                    ChainId = 444444444500,
+                    ChainId = 1337,
                     SupportEIP1559 = false
                 });
 
@@ -95,7 +95,7 @@ namespace Nethereum.Accounts.IntegrationTests
                 new ChainFeature()
                 {
                     ChainName = "Nethereum Test Chain",
-                    ChainId = 444444444500,
+                    ChainId = 1337,
                     SupportEIP1559 = true
                 });
 
@@ -113,7 +113,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.NotNull(tran2.MaxPriorityFeePerGas);
             Assert.NotNull(tran2.GasPrice);
 
-            ChainFeaturesService.Current.TryRemoveChainFeature(444444444500);
+            ChainFeaturesService.Current.TryRemoveChainFeature(1337);
             //Should default to 1559 when not feature is set
 
             var tranHash3 = await web3.Eth.TransactionManager.SendTransactionAsync(new TransactionInput()
