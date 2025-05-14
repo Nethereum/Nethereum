@@ -16,10 +16,11 @@ using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Model;
-using Nethereum.Accounts;
+
 
 #if !LITE
 using Nethereum.Signer;
+using Nethereum.Accounts;
 #endif
 using Nethereum.Util;
 
