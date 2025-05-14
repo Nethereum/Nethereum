@@ -1,0 +1,67 @@
+using Nethereum.Generators.BlazorServicePage;
+using Nethereum.Generators.Core;
+using Nethereum.Generators.Model;
+
+namespace Nethereum.Generators
+{
+    public class BlazorPagesGenerator
+    {
+        public ContractABI ContractABI { get; }
+        public string Namespace { get; }
+        public string BaseOutputPath { get; }
+        public string PathDelimiter { get; }
+        public string ContractName { get; }
+        public string BaseNamespace { get; }
+        public string ServiceNamespace { get; }
+        public string CQSNamespace { get; }
+        public string DTONamespace { get; }
+        public CodeGenLanguage CodeGenLanguage { get; }
+        public string SharedTypesNamespace { get; }
+
+        public BlazorPagesGenerator(ContractABI contractABI, string contractName,  string baseNamespace, 
+                                                            string serviceNamespace, string cqsNamespace, 
+                                                            string dtoNamespace, string sharedTypesNamespace, 
+                                                            CodeGenLanguage codeGenLanguage, string baseOutputPath, string pathDelimiter, 
+            string @namespace)
+        {
+            ContractABI = contractABI;
+            ContractName = contractName;
+            Namespace = @namespace;
+            BaseNamespace = baseNamespace;
+            ServiceNamespace = serviceNamespace;
+            CQSNamespace = cqsNamespace;
+            DTONamespace = dtoNamespace;
+            SharedTypesNamespace = sharedTypesNamespace;
+            CodeGenLanguage = codeGenLanguage;
+            BaseOutputPath = baseOutputPath;
+            PathDelimiter = pathDelimiter;
+        }
+
+        public GeneratedFile GenerateFile()
+        {
+            var pageNamespace = GetFullNamespace(Namespace);
+            var serviceNamespace = GetFullNamespace(ServiceNamespace);
+            var dtoNamespace = GetFullNamespace(DTONamespace);
+            var cqsNamespace = GetFullNamespace(CQSNamespace);
+
+            string sharedTypesFullNamespace = null;
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
+            var fullPath = BaseOutputPath;
+            var generator = new BlazorPageServiceGenerator(ContractABI, ContractName, pageNamespace, serviceNamespace, dtoNamespace, sharedTypesFullNamespace, CodeGenLanguage);
+            return  generator.GenerateFileContent(fullPath);
+
+        }
+
+        public string GetFullNamespace(string @namespace)
+        {
+            if (string.IsNullOrEmpty(BaseNamespace)) return @namespace;
+            if (string.IsNullOrEmpty(@namespace)) return BaseNamespace;
+            return BaseNamespace + "." + @namespace.TrimStart('.');
+        }
+
+    }
+}

@@ -7,16 +7,16 @@ namespace Nethereum.Generators.DTOs
     {
         public ErrorABI ErrorABI { get; }
 
-        public ErrorDTOModel(ErrorABI errorABI, string @namespace)
+        public ErrorDTOModel(ErrorABI errorABI, string @namespace, string sharedTypesNamespace)
             : base(@namespace, errorABI.GetErrorTypeNameBasedOnOverloads(), "Error")
         {
             ErrorABI = errorABI;
-            InitisialiseNamespaceDependencies();
+            InitisialiseNamespaceDependencies(sharedTypesNamespace);
         }
 
-        private void InitisialiseNamespaceDependencies()
+        private void InitisialiseNamespaceDependencies(string sharedTypesNamespace)
         {
-            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", sharedTypesNamespace });
         }
 
         public bool HasParameters()

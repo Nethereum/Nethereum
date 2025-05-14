@@ -9,10 +9,10 @@ namespace Nethereum.Generators.Service
     {
         public  ContractABI ContractABI { get; }
 
-        public ServiceGenerator(ContractABI contractABI, string contractName, string byteCode, string @namespace, string cqsNamespace, string functionOutputNamespace, CodeGenLanguage codeGenLanguage)
+        public ServiceGenerator(ContractABI contractABI, string contractName, string byteCode, string @namespace, string cqsNamespace, string functionOutputNamespace, string sharedTypesFullNamespace, CodeGenLanguage codeGenLanguage)
         {
             ContractABI = contractABI;
-            ClassModel = new ServiceModel(contractABI, contractName, byteCode, @namespace, cqsNamespace, functionOutputNamespace);
+            ClassModel = new ServiceModel(contractABI, contractName, byteCode, @namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace);
             ClassModel.CodeGenLanguage = codeGenLanguage;
             InitialiseTemplate(codeGenLanguage);
         }

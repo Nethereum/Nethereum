@@ -7,9 +7,9 @@ namespace Nethereum.Generators.DTOs
 {
     public class ErrorDTOGenerator : ClassGeneratorBase<ClassTemplateBase<ErrorDTOModel>, ErrorDTOModel>
     {
-        public ErrorDTOGenerator(ErrorABI abi, string @namespace, CodeGenLanguage codeGenLanguage)
+        public ErrorDTOGenerator(ErrorABI abi, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)
         {
-            ClassModel = new ErrorDTOModel(abi, @namespace);
+            ClassModel = new ErrorDTOModel(abi, @namespace, sharedTypesNamespace);
             ClassModel.CodeGenLanguage = codeGenLanguage;
             InitialiseTemplate(codeGenLanguage);
         }

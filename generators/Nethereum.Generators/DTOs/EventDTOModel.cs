@@ -7,16 +7,16 @@ namespace Nethereum.Generators.DTOs
     {
         public EventABI EventABI { get; }
        
-        public EventDTOModel(EventABI eventABI, string @namespace)
+        public EventDTOModel(EventABI eventABI, string @namespace, string sharedTypesNamespace)
             :base(@namespace, eventABI.GetEventTypeNameBasedOnOverloads(), "EventDTO")
         {
             EventABI = eventABI;
-            InitisialiseNamespaceDependencies();
+            InitisialiseNamespaceDependencies(sharedTypesNamespace);
         }
 
-        private void InitisialiseNamespaceDependencies()
+        private void InitisialiseNamespaceDependencies(string sharedTypesNamespace)
         {
-            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", sharedTypesNamespace });
         }
 
         public bool CanGenerateOutputDTO()

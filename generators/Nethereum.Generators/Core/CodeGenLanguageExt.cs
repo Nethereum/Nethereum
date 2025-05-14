@@ -122,6 +122,10 @@ namespace Nethereum.Generators.Core
             {
                 return "fs";
             }
+            else if (codeGenLanguage == CodeGenLanguage.Razor)
+            {
+                return "razor";
+            }
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(codeGenLanguage), codeGenLanguage, null);

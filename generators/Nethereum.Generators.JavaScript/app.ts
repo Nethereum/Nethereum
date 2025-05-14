@@ -12,6 +12,8 @@ var n = require('./Nethereum.Generators.DuoCode.js');
     serviceNamespace: string,
     cqsNamespace: string,
     dtoNamespace: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     basePath: string,
     pathSeparator: string,
     codeGenLang: int,
@@ -25,9 +27,11 @@ var n = require('./Nethereum.Generators.DuoCode.js');
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator,
-         codeGenLang);
+        codeGenLang);
 
      classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
      if (mudNamespace !== null && mudNamespace !== undefined && mudNamespace !== '') {
@@ -43,6 +47,8 @@ function generateMudServiceInternal(abi: string, byteCode: string,
     serviceNamespace: string,
     cqsNamespace: string,
     dtoNamespace: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     basePath: string,
     pathSeparator: string,
     codeGenLang: int,
@@ -56,6 +62,8 @@ function generateMudServiceInternal(abi: string, byteCode: string,
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator,
         codeGenLang
@@ -73,6 +81,8 @@ function generateAllUnityClassesInternal(abi: string, byteCode: string,
     serviceNamespace: string,
     cqsNamespace: string,
     dtoNamespace: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     basePath: string,
     pathSeparator: string
 ):string[] {
@@ -84,6 +94,8 @@ function generateAllUnityClassesInternal(abi: string, byteCode: string,
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator,
         0);
@@ -137,6 +149,8 @@ export function  generateNetStandardClassLibrary(projectName: string, basePath: 
 export function generateAllClasses(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     basePath: string,
     codeGenLang: int,
     mudNamespace: string = null
@@ -154,6 +168,8 @@ export function generateAllClasses(abi: string, byteCode: string,
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator,
         codeGenLang,
@@ -164,6 +180,8 @@ export function generateMudService(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
     basePath: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     codeGenLang: int,
     mudNamespace: string
 ): string[] {
@@ -180,6 +198,8 @@ export function generateMudService(abi: string, byteCode: string,
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator,
         codeGenLang,
@@ -199,6 +219,8 @@ export function generateMudTables(json: string, baseNamespace: string,
 export function generateUnityRequests(abi: string, byteCode: string,
     contractName: string,
     baseNamespace: string,
+    sharedTypesNamespace: string,
+    sharedTypes: string[],
     basePath: string
 ) : string[] {
 
@@ -214,6 +236,8 @@ export function generateUnityRequests(abi: string, byteCode: string,
         serviceNamespace,
         cqsNamespace,
         dtoNamespace,
+        sharedTypesNamespace,
+        sharedTypes,
         basePath,
         pathSeparator
         );
@@ -273,30 +297,34 @@ function applyDefaults(config: GeneratorConfig): GeneratorConfig {
         baseNamespace: config.baseNamespace || "",
         codeGenLang: config.codeGenLang ?? 0,
         basePath: config.basePath,
+        sharedTypesNamespace: config.sharedTypesNamespace || "",
+        sharedTypes: config.sharedTypes || [],
         generatorType: config.generatorType,
         mudNamespace: config.mudNamespace || ""
     };
 }
 
 function generateFilesUsingConfig(generatorConfig: GeneratorConfig, fileName: string, root: string) :string[] {
-    const { baseNamespace, codeGenLang, basePath, generatorType, mudNamespace } = applyDefaults(generatorConfig);
+    const { baseNamespace, codeGenLang, basePath, generatorType, sharedTypesNamespace, sharedTypes, mudNamespace } = applyDefaults(generatorConfig);
     const absolutePath = path.resolve(root, basePath);
     var files = [];
     if (!fileName.endsWith('mud.config.ts')) {
         const { abi, bytecode, contractName } = extractAbiAndBytecode(fileName);
         switch (generatorType) {
             case GeneratorType.ContractDefinition:
-                files = generateAllClasses(abi, bytecode, contractName, baseNamespace, absolutePath, codeGenLang, mudNamespace);
+                files = generateAllClasses(abi, bytecode, contractName, baseNamespace, sharedTypesNamespace, sharedTypes, absolutePath, codeGenLang, mudNamespace);
                 break;
             case GeneratorType.UnityRequest:
-                files = generateUnityRequests(abi, bytecode, contractName, baseNamespace, absolutePath);
+                files = generateUnityRequests(abi, bytecode, contractName, baseNamespace, sharedTypesNamespace, sharedTypes, absolutePath);
                 break;
             case GeneratorType.MudExtendedService:
-                files = generateMudService(abi, bytecode, contractName, baseNamespace, absolutePath, codeGenLang, mudNamespace);
+                files = generateMudService(abi, bytecode, contractName, baseNamespace, absolutePath, sharedTypesNamespace, sharedTypes, codeGenLang, mudNamespace);
                 break;
             case GeneratorType.NetStandardLibrary:
                 files = [generateNetStandardClassLibrary(contractName, absolutePath, codeGenLang) ];
                 break;
+            case GeneratorType.BlazorPageService:
+                files = [generateBlazorPageService(abi, contractName, baseNamespace, absolutePath, sharedTypesNamespace, codeGenLang)];
             default:
                 throw new Error("Unknown GeneratorType: " + generatorType);
         }
@@ -349,13 +377,16 @@ export enum GeneratorType {
     UnityRequest = "UnityRequest",
     MudExtendedService = "MudExtendedService",
     MudTables = "MudTables",
-    NetStandardLibrary = "NetStandardLibrary"
+    NetStandardLibrary = "NetStandardLibrary",
+    BlazorPageService = "BlazorPageService",
 }
 
 export interface GeneratorConfig {
     baseNamespace: string;
     codeGenLang: int;
     basePath: string;
+    sharedTypesNamespace: string;
+    sharedTypes: string[];
     generatorType: GeneratorType;
     mudNamespace: string;
 }
@@ -367,3 +398,42 @@ export interface GeneratorSetConfig {
 }
 
 
+
+export function generateBlazorPageService(abi: any, contractName: string, baseNamespace: string, absolutePath: string, sharedTypesNamespace: string, codeGenLang: number): any {
+    var serviceNamespace = contractName;
+    //Same, we are generating single file
+    var cqsNamespace = contractName + ".ContractDefinition";
+    var dtoNamespace = contractName + ".ContractDefinition";
+    var pathSeparator = path.sep;
+    generateBlazorPageServiceInternal(abi, contractName, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, absolutePath, pathSeparator, codeGenLang);
+}
+
+function generateBlazorPageServiceInternal(abi: string,
+    contractName: string,
+    baseNamespace: string,
+    serviceNamespace: string,
+    cqsNamespace: string,
+    dtoNamespace: string,
+    sharedTypesNamespace: string,
+    basePath: string,
+    pathSeparator: string,
+    codeGenLang: int,
+): string {
+    var contractDes = abiDes.buildContract(abi);
+    var classGenerator = new Nethereum.Generators.BlazorPagesGenerator(
+        contractDes,
+        contractName,
+        baseNamespace,
+        serviceNamespace,
+        cqsNamespace,
+        dtoNamespace,
+        sharedTypesNamespace,
+        codeGenLang,
+        basePath,
+        pathSeparator,
+        "");
+
+
+    var generatedClass = classGenerator.GenerateFile();
+    return outputFile(generatedClass);
+}

@@ -4,21 +4,18 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
-
-
     public class AllMessagesModel:FileModel
     {
-   
         public ContractDeploymentCQSMessageModel ContractDeploymentCQSMessageModel { get; }
 
         public AllMessagesModel(string contractName, 
-                             string @namespace):
+                             string @namespace, string dtoNamespace, string sharedNamespace):
             base(@namespace, contractName + "Definition")
         {
-            InitialiseNamespaceDependencies();
+            InitialiseNamespaceDependencies(dtoNamespace, sharedNamespace);
         }
 
-        private void InitialiseNamespaceDependencies()
+        private void InitialiseNamespaceDependencies(string dtoNamespace, string sharedNamespace)
         {
             NamespaceDependencies.AddRange(new[] {
                 "System",
@@ -30,7 +27,9 @@ namespace Nethereum.Generators.Service
                 "Nethereum.RPC.Eth.DTOs",
                 "Nethereum.Contracts.CQS",
                 "Nethereum.Contracts",
-                "System.Threading" });
+                "System.Threading",
+                dtoNamespace,
+                sharedNamespace});
         }
     }
 }

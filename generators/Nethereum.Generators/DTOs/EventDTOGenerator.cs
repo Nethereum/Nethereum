@@ -7,9 +7,9 @@ namespace Nethereum.Generators.DTOs
 {
     public class EventDTOGenerator: ClassGeneratorBase<ClassTemplateBase<EventDTOModel>, EventDTOModel>
     { 
-        public EventDTOGenerator(EventABI abi, string @namespace, CodeGenLanguage codeGenLanguage)
+        public EventDTOGenerator(EventABI abi, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)
         {
-            ClassModel = new EventDTOModel(abi, @namespace);
+            ClassModel = new EventDTOModel(abi, @namespace, sharedTypesNamespace);
             ClassModel.CodeGenLanguage = codeGenLanguage;
             InitialiseTemplate(codeGenLanguage);
         }

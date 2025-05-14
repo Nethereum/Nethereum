@@ -11,14 +11,14 @@ namespace Nethereum.Generators.CQS
         public FunctionABI FunctionABI { get; }
         public string MudNamespace { get; set; }
 
-        public FunctionCQSMessageGenerator(FunctionABI functionABI, string @namespace, string namespaceFunctionOutput, CodeGenLanguage codeGenLanguage, string mudNamespace = null)
+        public FunctionCQSMessageGenerator(FunctionABI functionABI, string @namespace, string namespaceFunctionOutput, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage, string mudNamespace = null)
         {
             FunctionABI = functionABI;
             MudNamespace = mudNamespace;
-            ClassModel = new FunctionCQSMessageModel(FunctionABI, @namespace);
+            ClassModel = new FunctionCQSMessageModel(FunctionABI, @namespace, sharedTypesNamespace);
             ClassModel.NamespaceDependencies.Add(namespaceFunctionOutput);
             ClassModel.CodeGenLanguage = codeGenLanguage;
-            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, namespaceFunctionOutput);
+            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, namespaceFunctionOutput, sharedTypesNamespace);
             InitialiseTemplate(codeGenLanguage, functionOutputDTOModel);
         }
 

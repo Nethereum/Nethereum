@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace Nethereum.Generators
 {
+
     public class MudTablesGenerator
     {
         public MudTable.MudTable[] MudTables;

@@ -7,16 +7,16 @@ namespace Nethereum.Generators.DTOs
     {
         public FunctionABI FunctionABI { get; }
 
-        public FunctionOutputDTOModel(FunctionABI functionABI, string @namespace)
+        public FunctionOutputDTOModel(FunctionABI functionABI, string @namespace, string sharedTypesNamespace)
             :base(@namespace, functionABI.GetFunctionTypeNameBasedOnOverloads(), "OutputDTO")
         {
             FunctionABI = functionABI;
-            InitisialiseNamespaceDependencies();
+            InitialiseNamespaceDependencies(sharedTypesNamespace);
         }
 
-        private void InitisialiseNamespaceDependencies()
+        private void InitialiseNamespaceDependencies(string sharedTypesNamespace)
         {
-            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
+            NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes", sharedTypesNamespace });
         }
 
         public bool CanGenerateOutputDTO()

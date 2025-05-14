@@ -15,6 +15,7 @@ namespace Nethereum.Generators
 
     public class ContractProjectGenerator
     {
+       
         public ContractABI ContractABI { get; }
         public string ContractName { get; }
         public string ByteCode { get; }
@@ -29,6 +30,9 @@ namespace Nethereum.Generators
         private string ProjectName { get; }
 
         public string MudNamespace { get; set; }
+        public string[] SharedGeneratedTypes { get; }
+
+        public string SharedTypesNamespace { get; }
 
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
@@ -37,6 +41,8 @@ namespace Nethereum.Generators
             string serviceNamespace,
             string cqsNamespace,
             string dtoNamespace,
+            string sharedTypesNamespace,
+            string[] sharedGeneratedTypes,
             string baseOutputPath,
             string pathDelimiter,
             CodeGenLanguage codeGenLanguage)
@@ -59,33 +65,148 @@ namespace Nethereum.Generators
                         BaseOutputPath.LastIndexOf(PathDelimiter) + PathDelimiter.Length);
                 }
             }
+
+            if (sharedGeneratedTypes == null)
+            {
+                SharedGeneratedTypes = new string[0];
+            }
+            else
+            {
+                SharedGeneratedTypes = sharedGeneratedTypes;
+            }
+
+            
+            SharedTypesNamespace = sharedTypesNamespace;
+            
         }
 
         public GeneratedFile[] GenerateAllMessagesFileAndService()
         {
             var generated = new List<GeneratedFile>();
             generated.Add(GenerateAllMessages());
+            //always individual files for structs
             generated.AddRange(GenerateAllStructs());
+            
+            if (AreFunctionsSharedGenerated())
+            {
+                generated.AddRange(GenerateAllFunctionDTOs());
+                generated.AddRange(GenerateCQSFunctionMessages());
+            }
+
+            if (AreEventsSharedGenerated())
+            {
+                generated.AddRange(GenerateAllEventDTOs());
+            }
+
+            if (AreErrorsSharedGenerated())
+            {
+                generated.AddRange(GenerateAllErrorDTOs());
+            }
             generated.Add(GenerateService(singleMessagesFile:true));
             return generated.ToArray();
         }
 
+        public bool AreStructsSharedGenerated()
+        {
+           if(!string.IsNullOrEmpty(SharedTypesNamespace))
+           {
+               return true;
+           }
+           return false;
+        }
+
+        public bool HasSharingSettings()
+        {
+            return !string.IsNullOrEmpty(SharedTypesNamespace) && SharedGeneratedTypes != null && SharedGeneratedTypes.Length > 0;
+        }
+
+        public bool AreFunctionsSharedGenerated()
+        {
+            if(HasSharingSettings())
+            {
+                for(int i = 0; i < SharedGeneratedTypes.Length; i++)
+                {
+                    if (SharedGeneratedTypes[i].ToLower() == "functions")
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool AreErrorsSharedGenerated()
+        {
+            if (HasSharingSettings())
+            {
+                for (int i = 0; i < SharedGeneratedTypes.Length; i++)
+                {
+                    if (SharedGeneratedTypes[i].ToLower() == "errors")
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool AreEventsSharedGenerated()
+        {
+            if (HasSharingSettings())
+            {
+                for (int i = 0; i < SharedGeneratedTypes.Length; i++)
+                {
+                    if (SharedGeneratedTypes[i].ToLower() == "events")
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         public GeneratedFile GenerateAllMessages()
         {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
-            var cqsFullPath = GetFullPath(CQSNamespace); ;
+            var cqsFullPath = GetFullPath(CQSNamespace);
+            var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            string sharedTypesFullNamespace = null;
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
 
+            
             var generators = new List<IClassGenerator>();
             generators.Add(GetCQSMessageDeploymentGenerator());
-            generators.AddRange(GetAllCQSFunctionMessageGenerators());
-            generators.AddRange(GetAllEventDTOGenerators());
-            generators.AddRange(GetAllErrorDTOGenerators());
-            generators.AddRange(GetAllFunctionDTOsGenerators());
+
+            if (!AreFunctionsSharedGenerated())
+            {
+                generators.AddRange(GetAllCQSFunctionMessageGenerators());
+                generators.AddRange(GetAllFunctionDTOsGenerators());
+            }
+
+            if (!AreEventsSharedGenerated())
+            {
+                generators.AddRange(GetAllEventDTOGenerators());
+            }
+
+            if (!AreStructsSharedGenerated())
+            {
+                generators.AddRange(GetAllStructTypeGenerators());
+            }
+
+            if (!AreErrorsSharedGenerated())
+            {
+                generators.AddRange(GetAllErrorDTOGenerators());
+            }
+            
             //using the same namespace..
-            var mainGenerator = new AllMessagesGenerator(generators, ContractName, cqsFullNamespace, CodeGenLanguage);
+            var mainGenerator = new AllMessagesGenerator (generators, ContractName, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
             return mainGenerator.GenerateFileContent(cqsFullPath);
         }
+
+       
 
         public GeneratedFile[] GenerateAll()
         {
@@ -106,9 +227,15 @@ namespace Nethereum.Generators
             dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
             cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
 
+            string sharedTypesFullNamespace = null;
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
-            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage);
+            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
@@ -120,9 +247,15 @@ namespace Nethereum.Generators
             dtoFullNamespace = singleMessagesFile ? string.Empty : FullyQualifyNamespaceFromImport(dtoFullNamespace);
             cqsFullNamespace = FullyQualifyNamespaceFromImport(cqsFullNamespace);
 
+            string sharedTypesFullNamespace = null;
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
-            var serviceGenerator = new MudServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage, mudNamespace);
+            var serviceGenerator = new MudServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage, mudNamespace);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
@@ -174,6 +307,12 @@ namespace Nethereum.Generators
         {
             var generators = GetAllFunctionDTOsGenerators();
             var dtoFullPath = GetFullPath(DTONamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreFunctionsSharedGenerated())
+            {
+                dtoFullPath = GetFullPath(SharedTypesNamespace);
+            }
+
             var generated = new List<GeneratedFile>();
             foreach (var generator in generators)
             {
@@ -186,6 +325,12 @@ namespace Nethereum.Generators
         {
             var generators = GetAllStructTypeGenerators();
             var structFullPath = GetFullPath(DTONamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreStructsSharedGenerated())
+            {
+                structFullPath = GetFullPath(SharedTypesNamespace);
+            }
+            
             var generated = new List<GeneratedFile>();
             foreach (var generator in generators)
             {
@@ -194,9 +339,16 @@ namespace Nethereum.Generators
             return generated;
         }
 
+
         public List<StructTypeGenerator> GetAllStructTypeGenerators()
         {
-            var structTypeNamespace = GetFullNamespace(DTONamespace);
+            var structTypeNamespace = GetFullPath(DTONamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreStructsSharedGenerated())
+            {
+                structTypeNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
             var generators = new List<StructTypeGenerator>();
             foreach (var structAbi in ContractABI.Structs)
             {
@@ -209,10 +361,21 @@ namespace Nethereum.Generators
         public List<FunctionOutputDTOGenerator> GetAllFunctionDTOsGenerators()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            string sharedTypesFullNamespace = null;
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                if (AreFunctionsSharedGenerated())
+                {
+                    dtoFullNamespace = GetFullNamespace(SharedTypesNamespace);
+                }
+
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
             var generators = new List<FunctionOutputDTOGenerator>();
             foreach (var functionABI in ContractABI.Functions)
             {
-                var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace, CodeGenLanguage);
+                var functionOutputDTOGenerator = new FunctionOutputDTOGenerator(functionABI, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
                 generators.Add(functionOutputDTOGenerator);
             }
             return generators;
@@ -222,6 +385,12 @@ namespace Nethereum.Generators
         {
             var generators = GetAllEventDTOGenerators();
             var dtoFullPath = GetFullPath(DTONamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreEventsSharedGenerated())
+            {
+                dtoFullPath = GetFullPath(SharedTypesNamespace);
+            }
+
             var generated = new List<GeneratedFile>();
             foreach (var generator in generators)
             {
@@ -234,6 +403,12 @@ namespace Nethereum.Generators
         {
             var generators = GetAllErrorDTOGenerators();
             var dtoFullPath = GetFullPath(DTONamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreErrorsSharedGenerated())
+            {
+                dtoFullPath = GetFullPath(SharedTypesNamespace);
+            }
+
             var generated = new List<GeneratedFile>();
             foreach (var generator in generators)
             {
@@ -245,10 +420,22 @@ namespace Nethereum.Generators
         public List<EventDTOGenerator> GetAllEventDTOGenerators()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            string sharedTypesFullNamespace = null;
+            
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                if(AreEventsSharedGenerated())
+                {
+                    dtoFullNamespace = GetFullNamespace(SharedTypesNamespace);
+                }
+
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
             var generators = new List<EventDTOGenerator>();
             foreach (var eventABI in ContractABI.Events)
             {
-                var generator = new EventDTOGenerator(eventABI, dtoFullNamespace, CodeGenLanguage);
+                var generator = new EventDTOGenerator(eventABI, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
                 generators.Add(generator);
             }
             return generators;
@@ -257,10 +444,23 @@ namespace Nethereum.Generators
         public List<ErrorDTOGenerator> GetAllErrorDTOGenerators()
         {
             var dtoFullNamespace = GetFullNamespace(DTONamespace);
+            string sharedTypesFullNamespace = null;
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                if (AreErrorsSharedGenerated())
+                {
+                    dtoFullNamespace = GetFullNamespace(SharedTypesNamespace);
+                }
+
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
+
             var generators = new List<ErrorDTOGenerator>();
             foreach (var errorABI in ContractABI.Errors)
             {
-                var generator = new ErrorDTOGenerator(errorABI, dtoFullNamespace, CodeGenLanguage);
+                var generator = new ErrorDTOGenerator(errorABI, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
                 generators.Add(generator);
             }
             return generators;
@@ -269,7 +469,13 @@ namespace Nethereum.Generators
         public List<GeneratedFile> GenerateCQSFunctionMessages()
         {
             var generators = GetAllCQSFunctionMessageGenerators();
-            var cqsFullPath = GetFullPath(CQSNamespace);;
+            var cqsFullPath = GetFullPath(CQSNamespace);
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreFunctionsSharedGenerated())
+            {
+                cqsFullPath = GetFullPath(SharedTypesNamespace);
+            }
+
             var generated = new List<GeneratedFile>();
             foreach (var generator in generators)
             {
@@ -286,10 +492,24 @@ namespace Nethereum.Generators
 
             dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
 
+            string sharedTypesFullNamespace = null;
+
+            if (!string.IsNullOrEmpty(SharedTypesNamespace))
+            {
+                if (AreFunctionsSharedGenerated())
+                {
+                    dtoFullNamespace = GetFullNamespace(SharedTypesNamespace);
+                    dtoFullNamespace = FullyQualifyNamespaceFromImport(dtoFullNamespace);
+                }
+
+                sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
+            }
+
+
             var generators = new List<FunctionCQSMessageGenerator>();
             foreach (var functionAbi in ContractABI.Functions)
             {
-                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, CodeGenLanguage, MudNamespace);
+                var cqsGenerator = new FunctionCQSMessageGenerator(functionAbi, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage, MudNamespace);
                 generators.Add(cqsGenerator);
             }
             return generators;

@@ -9,17 +9,19 @@ namespace Nethereum.Generators.MudService
         public ContractABI ContractABI { get; }
         public string CQSNamespace { get; }
         public string FunctionOutputNamespace { get; }
+        public string SharedTypesNamespace { get; }
         public string MudNamespace { get; }
         public ContractDeploymentCQSMessageModel ContractDeploymentCQSMessageModel { get; }
 
         public MudServiceModel(ContractABI contractABI, string contractName, 
                             string byteCode, string @namespace, 
-                            string cqsNamespace, string functionOutputNamespace, string mudNamespace = ""):
+                            string cqsNamespace, string functionOutputNamespace, string sharedTypesNamespace, string mudNamespace = ""):
             base(@namespace, contractName, "Service")
         {
             ContractABI = contractABI;
             CQSNamespace = cqsNamespace;
             FunctionOutputNamespace = functionOutputNamespace;
+            SharedTypesNamespace = sharedTypesNamespace;
             MudNamespace = mudNamespace;
             ContractDeploymentCQSMessageModel = new ContractDeploymentCQSMessageModel(contractABI.Constructor, cqsNamespace, byteCode, contractName);
             InitialiseNamespaceDependencies();
@@ -29,6 +31,9 @@ namespace Nethereum.Generators.MudService
 
             if(!string.IsNullOrEmpty(functionOutputNamespace))
                 NamespaceDependencies.Add(functionOutputNamespace);
+
+            if (!string.IsNullOrEmpty(sharedTypesNamespace))
+                NamespaceDependencies.Add(sharedTypesNamespace);
         }
 
         public override string GetFileName(string name)

@@ -8,9 +8,9 @@ namespace Nethereum.Generators.DTOs
     public class FunctionOutputDTOGenerator: ClassGeneratorBase<ClassTemplateBase<FunctionOutputDTOModel>,FunctionOutputDTOModel>
     {
      
-        public FunctionOutputDTOGenerator(FunctionABI functionABI, string @namespace, CodeGenLanguage codeGenLanguage)
+        public FunctionOutputDTOGenerator(FunctionABI functionABI, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)
         {
-            ClassModel = new FunctionOutputDTOModel(functionABI, @namespace) {CodeGenLanguage = codeGenLanguage};
+            ClassModel = new FunctionOutputDTOModel(functionABI, @namespace, sharedTypesNamespace) {CodeGenLanguage = codeGenLanguage};
             InitialiseTemplate(codeGenLanguage);
         }
 

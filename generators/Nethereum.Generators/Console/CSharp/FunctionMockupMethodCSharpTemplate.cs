@@ -39,8 +39,8 @@ namespace Nethereum.Generators.Console.CSharp
 
         public string GenerateMethod(FunctionABI functionABI)
         {
-            var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, null);
-            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, null);
+            var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, null, null);
+            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, null, null);
             var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor, CodeGenLanguage.CSharp);
 
             var messageType = functionCQSMessageModel.GetTypeName();

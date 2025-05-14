@@ -33,6 +33,8 @@ codegen.generateMudService(abi,
     contractByteCode,
     contractName,
     baseNamespace,
+    null,
+    null,
     basePath,
     0);
 
@@ -47,6 +49,12 @@ var jsonGeneratorSetsExample1 =
                 "basePath": "codeGenNodeTest/GeneratorSets/Example1/MyProject.Contracts",
                 "codeGenLang": 0,
                 "generatorType": "ContractDefinition"
+            },
+            {
+                "baseNamespace": "MyProject.Contracts",
+                "basePath": "codeGenNodeTest/GeneratorSets/Example1/MyProject.Blazor",
+                "codeGenLang": 0,
+                "generatorType": "BlazorPageService"
             },
             {
                 "baseNamespace": "MyProject.Contracts",
@@ -102,6 +110,8 @@ var jsonGeneratorSetsExample2 =
                 "baseNamespace": "MyProject.Contracts",
                 "basePath": "codeGenNodeTest/GeneratorSets/Example2/MyProject.Contracts",
                 "codeGenLang": 0,
+                "sharedTypesNamespace": "SharedTypes",
+                "sharedTypes": ["events", "errors"],
                 "generatorType": "ContractDefinition"
             },
             {

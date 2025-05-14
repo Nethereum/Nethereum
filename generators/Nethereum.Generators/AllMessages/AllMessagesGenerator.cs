@@ -9,10 +9,10 @@ namespace Nethereum.Generators.Service
     {
         private readonly IEnumerable<IClassGenerator> _classGenerators;
 
-        public AllMessagesGenerator(IEnumerable<IClassGenerator> classGenerators, string contractName, string @namespace, CodeGenLanguage codeGenLanguage)
+        public AllMessagesGenerator(IEnumerable<IClassGenerator> classGenerators, string contractName, string @namespace, string dtoNamespace, string sharedNamespace, CodeGenLanguage codeGenLanguage)
         {
             _classGenerators = classGenerators;
-            Model = new AllMessagesModel(contractName, @namespace);
+            Model = new AllMessagesModel(contractName, @namespace, dtoNamespace, sharedNamespace);
             Model.CodeGenLanguage = codeGenLanguage;
             InitialiseTemplate(codeGenLanguage);
         }

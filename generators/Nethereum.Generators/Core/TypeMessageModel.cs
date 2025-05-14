@@ -23,6 +23,11 @@ namespace Nethereum.Generators.Core
             CodeGenLanguage = CodeGenLanguage.CSharp;
         }
 
+        public static string GetDefaultTypeName(string name, string classNameSuffix)
+        {
+            return $"{new CommonGenerators().GenerateClassName(name)}{classNameSuffix}";
+        }
+
         public virtual string GetTypeName(string name)
         {
             return $"{CommonGenerators.GenerateClassName(name)}{ClassNameSuffix}";

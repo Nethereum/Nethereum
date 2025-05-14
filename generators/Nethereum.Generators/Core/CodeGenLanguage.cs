@@ -9,6 +9,14 @@ namespace Nethereum.Generators.Core
         CSharp,
         Vb,
         Proto,
-        FSharp
+        FSharp,
+        Razor
+    }
+
+    public enum SharedDTOType
+    {
+        Functions,
+        Events,
+        Structs
     }
 }

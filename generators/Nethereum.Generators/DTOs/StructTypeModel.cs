@@ -11,10 +11,10 @@ namespace Nethereum.Generators.DTOs
             : base(@namespace, structTypeABI.Name, "")
         {
             StructTypeABI = structTypeABI;
-            InitisialiseNamespaceDependencies();
+            InitialiseNamespaceDependencies();
         }
 
-        private void InitisialiseNamespaceDependencies()
+        private void InitialiseNamespaceDependencies()
         {
             NamespaceDependencies.AddRange(new[] { "System", "System.Threading.Tasks", "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes" });
         }

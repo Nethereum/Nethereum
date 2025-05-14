@@ -9,10 +9,10 @@ namespace Nethereum.Generators.MudService
     {
         public  ContractABI ContractABI { get; }
 
-        public MudServiceGenerator(ContractABI contractABI, string contractName, string byteCode, string @namespace, string cqsNamespace, string functionOutputNamespace, CodeGenLanguage codeGenLanguage, string mudNamespace = null)
+        public MudServiceGenerator(ContractABI contractABI, string contractName, string byteCode, string @namespace, string cqsNamespace, string functionOutputNamespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage, string mudNamespace = null)
         {
             ContractABI = contractABI;
-            ClassModel = new MudServiceModel(contractABI, contractName, byteCode, @namespace, cqsNamespace, functionOutputNamespace, mudNamespace);
+            ClassModel = new MudServiceModel(contractABI, contractName, byteCode, @namespace, cqsNamespace, functionOutputNamespace, sharedTypesNamespace, mudNamespace);
             ClassModel.CodeGenLanguage = codeGenLanguage;
             InitialiseTemplate(codeGenLanguage);
         }

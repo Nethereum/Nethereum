@@ -8,6 +8,30 @@
 
 declare module Nethereum {
     module Generators {
+        // Nethereum.Generators.BlazorPagesGenerator
+        export interface BlazorPagesGenerator extends System.Object {
+            get_ContractABI(): Model.ContractABI;
+            get_Namespace(): string;
+            get_BaseOutputPath(): string;
+            get_PathDelimiter(): string;
+            get_ContractName(): string;
+            get_BaseNamespace(): string;
+            get_ServiceNamespace(): string;
+            get_CQSNamespace(): string;
+            get_DTONamespace(): string;
+            get_CodeGenLanguage(): Core.CodeGenLanguage;
+            get_SharedTypesNamespace(): string;
+            GenerateFile(): Core.GeneratedFile;
+            GetFullNamespace(namespace: string): string;
+        }
+        export interface BlazorPagesGeneratorTypeFunc extends TypeFunction {
+            (): BlazorPagesGeneratorTypeFunc;
+            prototype: BlazorPagesGenerator;
+            new (contractABI: Model.ContractABI, contractName: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, baseOutputPath: string, pathDelimiter: string, namespace: string): BlazorPagesGenerator;
+            ctor: { new (contractABI: Model.ContractABI, contractName: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, baseOutputPath: string, pathDelimiter: string, namespace: string): BlazorPagesGenerator; };
+        }
+        const BlazorPagesGenerator: BlazorPagesGeneratorTypeFunc;
+
         // Nethereum.Generators.ContractProjectGenerator
         export interface ContractProjectGenerator extends System.Object {
             get_ContractABI(): Model.ContractABI;
@@ -22,7 +46,14 @@ declare module Nethereum {
             get_CodeGenLanguage(): Core.CodeGenLanguage;
             get_MudNamespace(): string;
             set_MudNamespace(value: string): void;
+            get_SharedGeneratedTypes(): string[];
+            get_SharedTypesNamespace(): string;
             GenerateAllMessagesFileAndService(): Core.GeneratedFile[];
+            AreStructsSharedGenerated(): boolean;
+            HasSharingSettings(): boolean;
+            AreFunctionsSharedGenerated(): boolean;
+            AreErrorsSharedGenerated(): boolean;
+            AreEventsSharedGenerated(): boolean;
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
             GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
@@ -51,8 +82,8 @@ declare module Nethereum {
         export interface ContractProjectGeneratorTypeFunc extends TypeFunction {
             (): ContractProjectGeneratorTypeFunc;
             prototype: ContractProjectGenerator;
-            new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator;
-            ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator; };
+            new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator;
+            ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator; };
         }
         const ContractProjectGenerator: ContractProjectGeneratorTypeFunc;
 
@@ -224,7 +255,15 @@ declare module Nethereum {
                 CSharp = 0,
                 Vb = 1,
                 Proto = 2,
-                FSharp = 3
+                FSharp = 3,
+                Razor = 4
+            }
+
+            // Nethereum.Generators.Core.SharedDTOType
+            export enum SharedDTOType {
+                Functions = 0,
+                Events = 1,
+                Structs = 2
             }
 
             // Nethereum.Generators.Core.CodeGenLanguageExt
@@ -511,6 +550,7 @@ declare module Nethereum {
             export interface TypeMessageModelTypeFunc extends TypeFunction {
                 (): TypeMessageModelTypeFunc;
                 prototype: TypeMessageModel;
+                GetDefaultTypeName(name: string, classNameSuffix: string): string;
             }
             const TypeMessageModel: TypeMessageModelTypeFunc;
 
@@ -682,8 +722,8 @@ declare module Nethereum {
             export interface AllMessagesGeneratorTypeFunc extends TypeFunction {
                 (): AllMessagesGeneratorTypeFunc;
                 prototype: AllMessagesGenerator;
-                new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, contractName: string, namespace: string, codeGenLanguage: Core.CodeGenLanguage): AllMessagesGenerator;
-                ctor: { new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, contractName: string, namespace: string, codeGenLanguage: Core.CodeGenLanguage): AllMessagesGenerator; };
+                new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, contractName: string, namespace: string, dtoNamespace: string, sharedNamespace: string, codeGenLanguage: Core.CodeGenLanguage): AllMessagesGenerator;
+                ctor: { new (classGenerators: System.Collections.Generic.IEnumerable$1<Core.IClassGenerator>, contractName: string, namespace: string, dtoNamespace: string, sharedNamespace: string, codeGenLanguage: Core.CodeGenLanguage): AllMessagesGenerator; };
             }
             const AllMessagesGenerator: AllMessagesGeneratorTypeFunc;
 
@@ -694,8 +734,8 @@ declare module Nethereum {
             export interface AllMessagesModelTypeFunc extends TypeFunction {
                 (): AllMessagesModelTypeFunc;
                 prototype: AllMessagesModel;
-                new (contractName: string, namespace: string): AllMessagesModel;
-                ctor: { new (contractName: string, namespace: string): AllMessagesModel; };
+                new (contractName: string, namespace: string, dtoNamespace: string, sharedNamespace: string): AllMessagesModel;
+                ctor: { new (contractName: string, namespace: string, dtoNamespace: string, sharedNamespace: string): AllMessagesModel; };
             }
             const AllMessagesModel: AllMessagesModelTypeFunc;
 
@@ -707,8 +747,8 @@ declare module Nethereum {
             export interface ServiceGeneratorTypeFunc extends TypeFunction {
                 (): ServiceGeneratorTypeFunc;
                 prototype: ServiceGenerator;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator; };
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator; };
             }
             const ServiceGenerator: ServiceGeneratorTypeFunc;
 
@@ -717,13 +757,16 @@ declare module Nethereum {
                 get_ContractABI(): Model.ContractABI;
                 get_CQSNamespace(): string;
                 get_FunctionOutputNamespace(): string;
+                get_SharedTypesFullNamespace(): string;
                 get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
             }
             export interface ServiceModelTypeFunc extends TypeFunction {
                 (): ServiceModelTypeFunc;
                 prototype: ServiceModel;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): ServiceModel;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string): ServiceModel; };
+                NAME_SUFFIX: string;
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string): ServiceModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string): ServiceModel; };
+                GetDefaultTypeName(name: string): string;
             }
             const ServiceModel: ServiceModelTypeFunc;
 
@@ -839,6 +882,52 @@ declare module Nethereum {
                 ctor: { new (model: ServiceModel): ServiceVbTemplate; };
             }
             const ServiceVbTemplate: ServiceVbTemplateTypeFunc;
+        }
+        module BlazorServicePage {
+            // Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator
+            export interface BlazorPageServiceGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<BlazorPageServiceModel>, BlazorPageServiceModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                get_ContractABI(): Model.ContractABI;
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface BlazorPageServiceGeneratorTypeFunc extends TypeFunction {
+                (): BlazorPageServiceGeneratorTypeFunc;
+                prototype: BlazorPageServiceGenerator;
+                new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedNamespace: string, codeGenLanguage: Core.CodeGenLanguage): BlazorPageServiceGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedNamespace: string, codeGenLanguage: Core.CodeGenLanguage): BlazorPageServiceGenerator; };
+            }
+            const BlazorPageServiceGenerator: BlazorPageServiceGeneratorTypeFunc;
+
+            // Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel
+            export interface BlazorPageServiceModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_ContractABI(): Model.ContractABI;
+                get_CQSNamespace(): string;
+                get_FunctionOutputNamespace(): string;
+                get_ContractName(): string;
+                GetServiceTypeName(): string;
+                GetContractDeploymentTypeName(): string;
+            }
+            export interface BlazorPageServiceModelTypeFunc extends TypeFunction {
+                (): BlazorPageServiceModelTypeFunc;
+                prototype: BlazorPageServiceModel;
+                NAME_SUFFIX: string;
+                new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, shareNamespace: string): BlazorPageServiceModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, shareNamespace: string): BlazorPageServiceModel; };
+            }
+            const BlazorPageServiceModel: BlazorPageServiceModelTypeFunc;
+
+            // Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplate
+            export interface BlazorFunctionComponentsTemplate extends System.Object {
+                GenerateComponents(includeDeploymentComponent?: boolean): string;
+                GenerateComponent(functionABI: Model.FunctionABI): string;
+                GenerateDeploymentComponent(): string;
+            }
+            export interface BlazorFunctionComponentsTemplateTypeFunc extends TypeFunction {
+                (): BlazorFunctionComponentsTemplateTypeFunc;
+                prototype: BlazorFunctionComponentsTemplate;
+                new (model: BlazorPageServiceModel): BlazorFunctionComponentsTemplate;
+                ctor: { new (model: BlazorPageServiceModel): BlazorFunctionComponentsTemplate; };
+            }
+            const BlazorFunctionComponentsTemplate: BlazorFunctionComponentsTemplateTypeFunc;
         }
         module Console {
             // Nethereum.Generators.Console.ConsoleGenerator
@@ -1035,6 +1124,17 @@ declare module Nethereum {
             }
             const MultipleClassFileTemplate: MultipleClassFileTemplateTypeFunc;
 
+            // Nethereum.Generators.CQS.RazorClassFileTemplate
+            export interface RazorClassFileTemplate extends ClassFileTemplate {
+            }
+            export interface RazorClassFileTemplateTypeFunc extends TypeFunction {
+                (): RazorClassFileTemplateTypeFunc;
+                prototype: RazorClassFileTemplate;
+                new (classModel: Core.IClassModel, classTemplate: Core.IClassTemplate): RazorClassFileTemplate;
+                ctor: { new (classModel: Core.IClassModel, classTemplate: Core.IClassTemplate): RazorClassFileTemplate; };
+            }
+            const RazorClassFileTemplate: RazorClassFileTemplateTypeFunc;
+
             // Nethereum.Generators.CQS.VbClassFileTemplate
             export interface VbClassFileTemplate extends ClassFileTemplate {
             }
@@ -1077,8 +1177,10 @@ declare module Nethereum {
             export interface ContractDeploymentCQSMessageModelTypeFunc extends TypeFunction {
                 (): ContractDeploymentCQSMessageModelTypeFunc;
                 prototype: ContractDeploymentCQSMessageModel;
+                NAME_SUFFIX: string;
                 new (constructorABI: Model.ConstructorABI, namespace: string, byteCode: string, contractName: string): ContractDeploymentCQSMessageModel;
                 ctor: { new (constructorABI: Model.ConstructorABI, namespace: string, byteCode: string, contractName: string): ContractDeploymentCQSMessageModel; };
+                GetDefaultTypeName(name: string): string;
             }
             const ContractDeploymentCQSMessageModel: ContractDeploymentCQSMessageModelTypeFunc;
 
@@ -1091,8 +1193,8 @@ declare module Nethereum {
             export interface FunctionCQSMessageGeneratorTypeFunc extends TypeFunction {
                 (): FunctionCQSMessageGeneratorTypeFunc;
                 prototype: FunctionCQSMessageGenerator;
-                new (functionABI: Model.FunctionABI, namespace: string, namespaceFunctionOutput: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): FunctionCQSMessageGenerator;
-                ctor: { new (functionABI: Model.FunctionABI, namespace: string, namespaceFunctionOutput: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): FunctionCQSMessageGenerator; };
+                new (functionABI: Model.FunctionABI, namespace: string, namespaceFunctionOutput: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): FunctionCQSMessageGenerator;
+                ctor: { new (functionABI: Model.FunctionABI, namespace: string, namespaceFunctionOutput: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): FunctionCQSMessageGenerator; };
             }
             const FunctionCQSMessageGenerator: FunctionCQSMessageGeneratorTypeFunc;
 
@@ -1103,8 +1205,8 @@ declare module Nethereum {
             export interface FunctionCQSMessageModelTypeFunc extends TypeFunction {
                 (): FunctionCQSMessageModelTypeFunc;
                 prototype: FunctionCQSMessageModel;
-                new (functionABI: Model.FunctionABI, namespace: string): FunctionCQSMessageModel;
-                ctor: { new (functionABI: Model.FunctionABI, namespace: string): FunctionCQSMessageModel; };
+                new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string): FunctionCQSMessageModel;
+                ctor: { new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string): FunctionCQSMessageModel; };
             }
             const FunctionCQSMessageModel: FunctionCQSMessageModelTypeFunc;
 
@@ -1186,8 +1288,8 @@ declare module Nethereum {
             export interface ErrorDTOGeneratorTypeFunc extends TypeFunction {
                 (): ErrorDTOGeneratorTypeFunc;
                 prototype: ErrorDTOGenerator;
-                new (abi: Model.ErrorABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator;
-                ctor: { new (abi: Model.ErrorABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator; };
+                new (abi: Model.ErrorABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator;
+                ctor: { new (abi: Model.ErrorABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ErrorDTOGenerator; };
             }
             const ErrorDTOGenerator: ErrorDTOGeneratorTypeFunc;
 
@@ -1199,8 +1301,8 @@ declare module Nethereum {
             export interface ErrorDTOModelTypeFunc extends TypeFunction {
                 (): ErrorDTOModelTypeFunc;
                 prototype: ErrorDTOModel;
-                new (errorABI: Model.ErrorABI, namespace: string): ErrorDTOModel;
-                ctor: { new (errorABI: Model.ErrorABI, namespace: string): ErrorDTOModel; };
+                new (errorABI: Model.ErrorABI, namespace: string, sharedTypesNamespace: string): ErrorDTOModel;
+                ctor: { new (errorABI: Model.ErrorABI, namespace: string, sharedTypesNamespace: string): ErrorDTOModel; };
             }
             const ErrorDTOModel: ErrorDTOModelTypeFunc;
 
@@ -1211,8 +1313,8 @@ declare module Nethereum {
             export interface EventDTOGeneratorTypeFunc extends TypeFunction {
                 (): EventDTOGeneratorTypeFunc;
                 prototype: EventDTOGenerator;
-                new (abi: Model.EventABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): EventDTOGenerator;
-                ctor: { new (abi: Model.EventABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): EventDTOGenerator; };
+                new (abi: Model.EventABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): EventDTOGenerator;
+                ctor: { new (abi: Model.EventABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): EventDTOGenerator; };
             }
             const EventDTOGenerator: EventDTOGeneratorTypeFunc;
 
@@ -1225,8 +1327,8 @@ declare module Nethereum {
             export interface EventDTOModelTypeFunc extends TypeFunction {
                 (): EventDTOModelTypeFunc;
                 prototype: EventDTOModel;
-                new (eventABI: Model.EventABI, namespace: string): EventDTOModel;
-                ctor: { new (eventABI: Model.EventABI, namespace: string): EventDTOModel; };
+                new (eventABI: Model.EventABI, namespace: string, sharedTypesNamespace: string): EventDTOModel;
+                ctor: { new (eventABI: Model.EventABI, namespace: string, sharedTypesNamespace: string): EventDTOModel; };
             }
             const EventDTOModel: EventDTOModelTypeFunc;
 
@@ -1237,8 +1339,8 @@ declare module Nethereum {
             export interface FunctionOutputDTOGeneratorTypeFunc extends TypeFunction {
                 (): FunctionOutputDTOGeneratorTypeFunc;
                 prototype: FunctionOutputDTOGenerator;
-                new (functionABI: Model.FunctionABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): FunctionOutputDTOGenerator;
-                ctor: { new (functionABI: Model.FunctionABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): FunctionOutputDTOGenerator; };
+                new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): FunctionOutputDTOGenerator;
+                ctor: { new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage): FunctionOutputDTOGenerator; };
             }
             const FunctionOutputDTOGenerator: FunctionOutputDTOGeneratorTypeFunc;
 
@@ -1250,8 +1352,8 @@ declare module Nethereum {
             export interface FunctionOutputDTOModelTypeFunc extends TypeFunction {
                 (): FunctionOutputDTOModelTypeFunc;
                 prototype: FunctionOutputDTOModel;
-                new (functionABI: Model.FunctionABI, namespace: string): FunctionOutputDTOModel;
-                ctor: { new (functionABI: Model.FunctionABI, namespace: string): FunctionOutputDTOModel; };
+                new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string): FunctionOutputDTOModel;
+                ctor: { new (functionABI: Model.FunctionABI, namespace: string, sharedTypesNamespace: string): FunctionOutputDTOModel; };
             }
             const FunctionOutputDTOModel: FunctionOutputDTOModelTypeFunc;
 
@@ -1520,8 +1622,8 @@ declare module Nethereum {
             export interface MudServiceGeneratorTypeFunc extends TypeFunction {
                 (): MudServiceGeneratorTypeFunc;
                 prototype: MudServiceGenerator;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): MudServiceGenerator;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): MudServiceGenerator; };
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): MudServiceGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesNamespace: string, codeGenLanguage: Core.CodeGenLanguage, mudNamespace?: string): MudServiceGenerator; };
             }
             const MudServiceGenerator: MudServiceGeneratorTypeFunc;
 
@@ -1530,6 +1632,7 @@ declare module Nethereum {
                 get_ContractABI(): Model.ContractABI;
                 get_CQSNamespace(): string;
                 get_FunctionOutputNamespace(): string;
+                get_SharedTypesNamespace(): string;
                 get_MudNamespace(): string;
                 get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
                 GetResourceClassName(): string;
@@ -1538,8 +1641,8 @@ declare module Nethereum {
             export interface MudServiceModelTypeFunc extends TypeFunction {
                 (): MudServiceModelTypeFunc;
                 prototype: MudServiceModel;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, mudNamespace?: string): MudServiceModel;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, mudNamespace?: string): MudServiceModel; };
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesNamespace: string, mudNamespace?: string): MudServiceModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesNamespace: string, mudNamespace?: string): MudServiceModel; };
             }
             const MudServiceModel: MudServiceModelTypeFunc;
 

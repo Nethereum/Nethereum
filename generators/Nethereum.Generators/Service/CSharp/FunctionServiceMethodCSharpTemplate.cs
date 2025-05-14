@@ -41,7 +41,7 @@ $@"{SpaceUtils.Two___Tabs}public override List<Type> GetAllFunctionTypes()
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}return new List<Type>
 {SpaceUtils.Three____Tabs}{{
-{string.Join($",{Environment.NewLine}", functions.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new FunctionCQSMessageModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{string.Join($",{Environment.NewLine}", functions.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new FunctionCQSMessageModel(x, _model.CQSNamespace, null).GetTypeName()})"))}
 {SpaceUtils.Three____Tabs}}};
 {SpaceUtils.Two___Tabs}}}";
             return funtionTypesMethod;
@@ -55,7 +55,7 @@ $@"{SpaceUtils.Two___Tabs}public override List<Type> GetAllEventTypes()
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}return new List<Type>
 {SpaceUtils.Three____Tabs}{{
-{string.Join($",{Environment.NewLine}", events.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new EventDTOModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{string.Join($",{Environment.NewLine}", events.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new EventDTOModel(x, _model.CQSNamespace, null).GetTypeName()})"))}
 {SpaceUtils.Three____Tabs}}};
 {SpaceUtils.Two___Tabs}}}";
             return eventTypesMethod;
@@ -69,7 +69,7 @@ $@"{SpaceUtils.Two___Tabs}public override List<Type> GetAllErrorTypes()
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Three____Tabs}return new List<Type>
 {SpaceUtils.Three____Tabs}{{
-{string.Join($",{Environment.NewLine}", errors.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new ErrorDTOModel(x, _model.CQSNamespace).GetTypeName()})"))}
+{string.Join($",{Environment.NewLine}", errors.Select(x => $"{SpaceUtils.Four_____Tabs}typeof({new ErrorDTOModel(x, _model.CQSNamespace, null).GetTypeName()})"))}
 {SpaceUtils.Three____Tabs}}};
 {SpaceUtils.Two___Tabs}}}";
             return errorsMethod;
@@ -77,8 +77,8 @@ $@"{SpaceUtils.Two___Tabs}public override List<Type> GetAllErrorTypes()
 
         public string GenerateMethod(FunctionABI functionABI)
         {
-            var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, _model.CQSNamespace);
-            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, _model.FunctionOutputNamespace);
+            var functionCQSMessageModel = new FunctionCQSMessageModel(functionABI, _model.CQSNamespace, null);
+            var functionOutputDTOModel = new FunctionOutputDTOModel(functionABI, _model.FunctionOutputNamespace, null);
             var functionABIModel = new FunctionABIModel(functionABI, _typeConvertor, CodeGenLanguage.CSharp);
 
             var messageType = functionCQSMessageModel.GetTypeName();
