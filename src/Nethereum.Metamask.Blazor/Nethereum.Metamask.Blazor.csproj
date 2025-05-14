@@ -27,6 +27,7 @@
 		<None Include="..\..\NethereumKey.snk" />
 	</ItemGroup>
 	<ItemGroup>
+	  <ProjectReference Include="..\Nethereum.Blazor\Nethereum.Blazor.csproj" />
 	  <ProjectReference Include="..\Nethereum.Metamask\Nethereum.Metamask.csproj" />
 	</ItemGroup>
 </Project>
