@@ -3,6 +3,7 @@ using Nethereum.RLP;
 using Nethereum.Util;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace Nethereum.Model
@@ -29,6 +30,22 @@ namespace Nethereum.Model
             encodedItem.Add(RLP.RLP.EncodeElement(authorisation.Nonce.ToBytesForRLPEncoding()));
             var encoded = RLP.RLP.EncodeList(encodedItem.ToArray());
             return AddMagicNumberToEncodedBytes(encoded);
+        }
+
+        public static Authorisation7702 DecodeRLPToAuthorisation7702(byte[] encodedBytes)
+        {
+            if (encodedBytes.Length < 1 || encodedBytes[0] != MAGIC_NUMBER)
+                throw new ArgumentException("Encoded bytes do not contain the magic number.", nameof(encodedBytes));
+            var decoded = (RLPCollection)RLP.RLP.Decode(encodedBytes.Skip(1).ToArray());
+            var chainId = decoded[0].RLPData.ToBigIntegerFromRLPDecoded();
+            var address = decoded[1].RLPData.ToHex();
+            var nonce = decoded[2].RLPData.ToBigIntegerFromRLPDecoded();
+            return new Authorisation7702
+            {
+                ChainId = chainId,
+                Address = address,
+                Nonce = nonce
+            };
         }
 
         public static byte[] EncodeAndHash(this Authorisation7702 authorisation)
