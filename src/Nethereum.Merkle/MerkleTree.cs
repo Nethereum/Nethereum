@@ -8,7 +8,7 @@ using Nethereum.Util.HashProviders;
 namespace Nethereum.Merkle
 {
 
-    public class MerkleTree<T>
+public class MerkleTree<T>
     {
         private readonly IHashProvider _hashProvider;
         private readonly IByteArrayConvertor<T> _byteArrayConvertor;
