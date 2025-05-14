@@ -72,7 +72,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             try
             {
-                var receipt = await entryPointService.HandleOpsRequestAndWaitForReceiptAsync(new List<EntryPoint.ContractDefinition.PackedUserOperation>() { signedPackedUserOperation }, ownerAddress);
+                var receipt = await entryPointService.HandleOpsRequestAndWaitForReceiptAsync(new List<Structs.PackedUserOperation>() { signedPackedUserOperation }, ownerAddress);
                 var executed = receipt.DecodeAllEvents<ExecutedEventDTO>();
                 Assert.True(executed.Count == 1);
 

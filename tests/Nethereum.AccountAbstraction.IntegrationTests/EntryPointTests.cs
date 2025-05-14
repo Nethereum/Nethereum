@@ -114,7 +114,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             var handleOpsRequest = new HandleOpsFunction()
             {
-                Ops = new List<EntryPoint.ContractDefinition.PackedUserOperation>() { op },
+                Ops = new List<Structs.PackedUserOperation>() { op },
                 Beneficiary = accountOwner,
                 Gas = 10_000_000
             };
@@ -208,7 +208,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
                 // Static call check
                 await entryPoint.HandleOpsQueryAsync(new HandleOpsFunction
                 {
-                    Ops = new List<EntryPoint.ContractDefinition.PackedUserOperation> { op1, op2 },
+                    Ops = new List<Structs.PackedUserOperation> { op1, op2 },
                     Beneficiary = beneficiaryAddress,
                     Gas = 10_000_000
                 });
@@ -224,7 +224,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             // Execute both
             var receipt = await entryPoint.HandleOpsRequestAndWaitForReceiptAsync(new HandleOpsFunction
             {
-                Ops = new List<EntryPoint.ContractDefinition.PackedUserOperation> { op1, op2 },
+                Ops = new List<Structs.PackedUserOperation> { op1, op2 },
                 Beneficiary = beneficiaryAddress,
                 Gas = 10_000_000
             });
