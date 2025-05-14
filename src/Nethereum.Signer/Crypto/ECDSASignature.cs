@@ -29,8 +29,8 @@ namespace Nethereum.Signer.Crypto
                 var seq = decoder.ReadObject() as DerSequence;
                 if (seq == null || seq.Count != 2)
                     throw new FormatException(InvalidDERSignature);
-                R = ((DerInteger) seq[0]).Value;
-                S = ((DerInteger) seq[1]).Value;
+                R = ((DerInteger)seq[0]).Value;
+                S = ((DerInteger)seq[1]).Value;
             }
             catch (Exception ex)
             {
