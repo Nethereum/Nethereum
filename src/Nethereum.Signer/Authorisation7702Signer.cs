@@ -1,6 +1,7 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Nethereum.Signer
 {

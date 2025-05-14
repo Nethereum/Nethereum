@@ -1,6 +1,7 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.TransactionTypes;
 using Nethereum.Util;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace Nethereum.RPC.TransactionManagers
             return new TransactionInput()
             {
                 From = TransactionManager.Account.Address,
+                Type = new HexBigInteger(TransactionTypes.TransactionType.EIP7702.AsByte()),
                 // The transaction manager will add up the authorisation delegation gas,
                 // but we top it up with 2300 to allow for the possible receiver amount
                 Gas = new HexBigInteger(TransactionManager.DefaultGas + 2300),

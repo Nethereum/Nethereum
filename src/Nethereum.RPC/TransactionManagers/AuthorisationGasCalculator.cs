@@ -22,7 +22,8 @@ namespace Nethereum.RPC.TransactionManagers
             }
             if (numberOfExisting > 0)
             {
-                gas += (numberOfExisting * Gas7702.PER_AUTH_BASE_COST);
+                //it is the same as empty account.
+                gas += (numberOfExisting * Gas7702.PER_EMPTY_ACCOUNT_COST);
             }
             return gas;
         }

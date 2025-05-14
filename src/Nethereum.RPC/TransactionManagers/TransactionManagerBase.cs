@@ -241,12 +241,17 @@ namespace Nethereum.RPC.TransactionManagers
             }
 
             
-            if(transactionInput.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte()
+            if(transactionInput.Type != null && transactionInput.Type.Value == TransactionTypes.TransactionType.EIP7702.AsByte()
                 || transactionInput.AuthorisationList != null && transactionInput.AuthorisationList.Count > 0)
             {
                 //PER_AUTH_BASE_COST	12500
                 //PER_EMPTY_ACCOUNT_COST  25000
                 var gasCost = AuthorisationGasCalculator.CalculateGasForAuthorisationDelegation(transactionInput.AuthorisationList.ToArray());
+
+                if (NextRequest7022Authorisations != null && NextRequest7022Authorisations.Count > 0)
+                {
+                   gasCost += AuthorisationGasCalculator.CalculateGasForAuthorisationDelegation(NextRequest7022Authorisations.ToArray());
+                }
 
                 transactionInput.Gas = new HexBigInteger(transactionInput.Gas.Value + gasCost );
             }
