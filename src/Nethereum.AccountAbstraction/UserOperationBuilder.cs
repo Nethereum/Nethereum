@@ -1,6 +1,5 @@
 ﻿using Nethereum.ABI;
 using Nethereum.ABI.EIP712;
-using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.Contracts.Services;
 using Nethereum.RLP;
 using Nethereum.Util;
@@ -9,6 +8,7 @@ using System.Linq;
 using Nethereum.Signer.EIP712;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction
 { 
@@ -60,6 +60,28 @@ namespace Nethereum.AccountAbstraction
            var verificationBytes = ByteUtil.PadBytesLeft(verificationGasLimit.ToBytesForRLPEncoding(), 16);
            var callBytes = ByteUtil.PadBytesLeft(callGasLimit.ToBytesForRLPEncoding(), 16);
            return ByteUtil.Merge(verificationBytes, callBytes);
+        }
+
+        public static byte[] HashUserOperation(PackedUserOperation userOperation, string entryPointAddress, BigInteger chainId)
+        {
+            var domain = new ERC4337Domain(entryPointAddress, chainId);
+            var typedData = CreateUserOperationTypeData(domain);
+            var packedUserOperation = new PackedUserOperationForHash
+            {
+                Sender = userOperation.Sender,
+                Nonce = userOperation.Nonce,
+                InitCode = userOperation.InitCode,
+                CallData = userOperation.CallData,
+                AccountGasLimits = userOperation.AccountGasLimits,
+                PreVerificationGas = userOperation.PreVerificationGas,
+                GasFees = userOperation.GasFees,
+                PaymasterAndData = userOperation.PaymasterAndData
+            };
+
+            var typedDataEncoder = new Eip712TypedDataEncoder();
+            var encoded = typedDataEncoder.EncodeTypedData(packedUserOperation, typedData);
+            return encoded;
+
         }
 
         public static byte[] PackPaymasterData(string paymaster, BigInteger paymasterVerificationGasLimit, BigInteger postOpGasLimit, byte[] paymasterData)

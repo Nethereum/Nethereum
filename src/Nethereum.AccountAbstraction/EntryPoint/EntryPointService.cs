@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.ABI;
 using Nethereum.Signer;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.EntryPoint
 {

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Nethereum.Signer;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory
 {
