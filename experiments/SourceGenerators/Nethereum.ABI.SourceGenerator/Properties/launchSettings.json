@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Profile 1": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\Nethereum.ABI.Generator.Console\\Nethereum.ABI.Generator.Console.csproj"
+    }
+  }
+}
