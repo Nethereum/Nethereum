@@ -29,21 +29,26 @@ namespace Nethereum.JsonRpc.Client
         if (obj.TryGetPropertyValue("data", out var innerData) && innerData is not null)
             return innerData.ToString();
     }
-#else
-            if (Data is JValue jVal && jVal.Type == JTokenType.String)
+#endif
+         if (Data is JValue jVal && jVal.Type == JTokenType.String)
                 return jVal.ToString();
 
-            if (Data is JObject jObj)
-            {
-                if (jObj["result"] is JToken result)
-                    return result.ToString();
+         if (Data is JObject jObj)
+         {
+            if (jObj["result"] is JToken result)
+                return result.ToString();
 
-                if (jObj["data"] is JToken innerData)
-                    return innerData.ToString();
-            }
-#endif
+            if (jObj["data"] is JToken innerData)
+                return innerData.ToString();
+         }
 
-            return string.Empty;
+           if (Data is string str)
+                return str;
+
+           if(Data != null)
+                return Data.ToString();
+
+            return null;
         }
     }
 }
