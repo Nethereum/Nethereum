@@ -10,7 +10,7 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
-using Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop.ContractDefinition;
+using Nethereum.Mekle.Contracts.MerkleERC20Drop.ContractDefinition;
 
 namespace Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop
 {

@@ -1,10 +1,10 @@
 using Nethereum.ABI.ByteArrayConvertors;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop.ContractDefinition;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Mekle.Contracts.MerkleERC20Drop.ContractDefinition;
 using Nethereum.Merkle;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util.HashProviders;

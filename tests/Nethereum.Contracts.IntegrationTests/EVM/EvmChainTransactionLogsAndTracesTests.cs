@@ -203,7 +203,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             Assert.Equal(txnReceipt.Failed(), program.ProgramResult.IsRevert);
             if (!txnReceipt.Failed())
             {
-                Assert.True(program.ProgramResult.Logs.Count == txnReceipt.Logs.Count);
+                Assert.True(program.ProgramResult.Logs.Count() == txnReceipt.Logs.Count());
                 if (program.ProgramResult.Logs.Count > 0)
                 {
                     var receiptLogs = txnReceipt.Logs.ConvertToFilterLog();
