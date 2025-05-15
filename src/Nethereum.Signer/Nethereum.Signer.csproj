@@ -19,23 +19,31 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
   </ItemGroup>
 
-	
-	<ItemGroup Condition="'$(TargetFramework)' != 'net6.0' 
-							And '$(TargetFramework)' != 'net8.0' 
-							And '$(TargetFramework)' != 'net9.0'">
+	<!-- Use Portable.BouncyCastle for other frameworks -->
+	<ItemGroup Condition="'$(TargetFramework)' != 'net472' 
+                  And '$(TargetFramework)' != 'net6.0' 
+                  And '$(TargetFramework)' != 'net8.0' 
+                  And '$(TargetFramework)' != 'net9.0'
+				  ">  
 		
-		<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
+		<PackageReference Include="Portable.BouncyCastle" Version="[1.9.0,2.0)" />
 	</ItemGroup>
 
-	
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
-      <PackageReference Include="BouncyCastle.Cryptography" Version="[2.5.1,3.0)" />
-  </ItemGroup>
+	<!-- Use BouncyCastle.Cryptography for specific frameworks -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net472' 
+                  Or '$(TargetFramework)' == 'net6.0' 
+                  Or '$(TargetFramework)' == 'net8.0' 
+                  Or '$(TargetFramework)' == 'net9.0'">
+		<PackageReference Include="BouncyCastle.Cryptography" Version="[2.5.1,3.0)" />
+	</ItemGroup>
 
-	
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' ">
-      <DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
-  </PropertyGroup>
+	<!-- Define constant -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net472' 
+                      Or '$(TargetFramework)' == 'net6.0' 
+                      Or '$(TargetFramework)' == 'net8.0' 
+                      Or '$(TargetFramework)' == 'net9.0'">
+		<DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
+	</PropertyGroup>
 
 <!--
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetFramework)' != 'net451' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net472'">
@@ -132,7 +140,7 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
 	<PackageReference Include="NBitcoin.Secp256k1">
 		<Version>3.1.1</Version>
 	</PackageReference>

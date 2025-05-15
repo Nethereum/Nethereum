@@ -9,14 +9,13 @@
     <TargetUnityNet472AOT>false</TargetUnityNet472AOT>
     <TargetUnityAOT>false</TargetUnityAOT>
     <TargetUnityAOT Condition="'$(TargetUnityNet461AOT)' == 'true' Or '$(TargetUnityNet472AOT)' == 'true'">true</TargetUnityAOT>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' != 'netstandard1.1'">1.6.1</NetStandardImplicitPackageVersion>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;netstandard2.0;net35;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;netstandard2.0;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard2.0;net35;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard2.0;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetStandard)'== 'true'">netstandard2.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>netstandard1.1;net451;net461;netstandard2.0;net6.0;net8.0;net9.0</DefaultFrameworks>
+    <DefaultFrameworks>net451;net461;netstandard2.0;net6.0;net8.0;net9.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</DefaultFrameworks>
@@ -30,7 +29,7 @@
     <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</ENSFrameworks>
 
-    <HdWalletFrameworks>netstandard1.1;netstandard2.0;net452;net461;</HdWalletFrameworks>
+    <HdWalletFrameworks>netstandard2.0;net452;net461;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netstandard2.0</HdWalletFrameworks>
@@ -87,7 +86,7 @@
     <Reference Include="System" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
-    <PackageReference Include="BouncyCastle" Version="[1.8.2,2.0)" />
+ 
   </ItemGroup>
 
 <!--Note Bouncy Portable is not included here to enable Web3.Lite-->
