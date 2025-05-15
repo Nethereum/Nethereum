@@ -43,7 +43,7 @@
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.1;</UnityFrameworks>
-    <IpcWebSocketsFrameworks>net461;netstandard1.3;netstandard2.0;net6.0;net8.0;net9.0</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard2.0;net6.0;net8.0;net9.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</IpcWebSocketsFrameworks>
