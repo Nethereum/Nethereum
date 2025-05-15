@@ -3,20 +3,16 @@ using System.Net.Http.Headers;
 
 #if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
 using Microsoft.Extensions.Logging;
-#else
-using Nethereum.JsonRpc.Client;
 #endif
 using Nethereum.BlockchainProcessing.Services;
-using Nethereum.Contracts;
 using Nethereum.Contracts.Services;
-using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.DebugNode;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Model;
-
+using Nethereum.JsonRpc.Client;
 
 #if !LITE
 using Nethereum.Signer;
