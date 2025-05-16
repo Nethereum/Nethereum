@@ -224,81 +224,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
         //    }
         //}
 
-        [JsonObject]
-    public class RpcResponseMessage
-    {
-        
-        [Newtonsoft.Json.JsonConstructor]
-        public RpcResponseMessage()
-        {
-            JsonRpcVersion = "2.0";
-        }
-
-        public RpcResponseMessage(object id)
-        {
-            Id = id;
-            JsonRpcVersion = "2.0";
-        }
-
-        public RpcResponseMessage(object id, RpcError error) : this(id)
-        {
-            Error = error;
-        }
-
-        public RpcResponseMessage(object id, object result) : this(id)
-        {
-            ResultNewtonsoft = result;
-#if NET6_0_OR_GREATER
-            if (result is JsonElement element)
-            {
-                ResultSystemTextJson = element;
-            }
-#endif
-        }
-
-        [JsonProperty("id")]
-#if NET6_0_OR_GREATER
-        [JsonPropertyName("id")]
-#endif
-        public object Id { get; private set; }
-
-        [JsonProperty("jsonrpc")]
-#if NET6_0_OR_GREATER
-        [JsonPropertyName("jsonrpc")]
-#endif
-        public string JsonRpcVersion { get; private set; }
-
-#if NET6_0_OR_GREATER
-        [JsonPropertyName("result")]
-        public JsonElement ResultSystemTextJson { get; set; }
-#endif
-
-        [JsonProperty("result")]
-        public object ResultNewtonsoft { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-#if NET6_0_OR_GREATER
-        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-#endif
-        public object Result =>
-#if NET6_0_OR_GREATER
-            ResultSystemTextJson.ValueKind != JsonValueKind.Undefined ? ResultSystemTextJson : ResultNewtonsoft;
-#else
-        ResultNewtonsoft;
-#endif
-
-        [JsonProperty("error")]
-#if NET6_0_OR_GREATER
-        [JsonPropertyName("error")]
-#endif
-        public RpcError Error { get; protected set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-#if NET6_0_OR_GREATER
-        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-#endif
-        public bool HasError => Error != null;
-    }
+       
 
     [JsonObject]
     public class RpcStreamingResponseMessage : RpcResponseMessage
@@ -468,13 +394,89 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
     }
 
     [JsonObject]
+    public class RpcResponseMessage
+    {
+
+        [Newtonsoft.Json.JsonConstructor]
+        public RpcResponseMessage()
+        {
+            JsonRpcVersion = "2.0";
+        }
+
+        public RpcResponseMessage(object id)
+        {
+            Id = id;
+            JsonRpcVersion = "2.0";
+        }
+
+        public RpcResponseMessage(object id, RpcError error) : this(id)
+        {
+            Error = error;
+        }
+
+        public RpcResponseMessage(object id, object result) : this(id)
+        {
+            ResultNewtonsoft = result;
+#if NET6_0_OR_GREATER
+            if (result is JsonElement element)
+            {
+                ResultSystemTextJson = element;
+            }
+#endif
+        }
+
+        [JsonProperty("id")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("id")]
+#endif
+        public object Id { get; set; }
+
+        [JsonProperty("jsonrpc")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("jsonrpc")]
+#endif
+        public string JsonRpcVersion { get; set; }
+
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("result")]
+        public JsonElement ResultSystemTextJson { get; set; }
+#endif
+
+        [JsonProperty("result")]
+        public object ResultNewtonsoft { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+#endif
+        public object Result =>
+#if NET6_0_OR_GREATER
+            ResultSystemTextJson.ValueKind != JsonValueKind.Undefined ? ResultSystemTextJson : ResultNewtonsoft;
+#else
+        ResultNewtonsoft;
+#endif
+
+        [JsonProperty("error")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("error")]
+#endif
+        public RpcError Error { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+#endif
+        public bool HasError => Error != null;
+    }
+
+    [JsonObject]
     public class RpcError
     {
         [Newtonsoft.Json.JsonConstructor]
 #if NET6_0_OR_GREATER
         [System.Text.Json.Serialization.JsonConstructor]
 #endif
-        private RpcError() { }
+        public RpcError() { }
 
         /// <summary>
         /// Rpc error code
@@ -483,7 +485,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #if NET6_0_OR_GREATER
         [JsonPropertyName("code")]
 #endif
-        public int Code { get; private set; }
+        public int Code { get; set; }
 
         /// <summary>
         /// Error message (Required)
@@ -492,7 +494,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #if NET6_0_OR_GREATER
         [JsonPropertyName("message")]
 #endif
-        public string Message { get; private set; }
+        public string Message { get; set; }
 
         /// <summary>
         /// Error data (Optional): may be a hex string, an object, or null
@@ -501,7 +503,8 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #if NET6_0_OR_GREATER
         [JsonPropertyName("data")]
 #endif
-        public object Data { get; private set; }
+        public object Data { get; set; }
     }
+
 }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -84,9 +85,7 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
         {
             try
             {
-                var json = _requestTypeInfo != null
-                    ? JsonSerializer.Serialize(request, _requestTypeInfo)
-                    : JsonSerializer.Serialize(request, _serializerOptions);
+                var json = JsonSerializer.Serialize(request, typeof(RpcRequestMessage), _serializerOptions);
 
                 _logger?.LogDebug("Sending request: {Json}", json);
 
@@ -103,6 +102,7 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
                     : await JsonSerializer.DeserializeAsync<RpcResponseMessage>(stream, _serializerOptions, cts.Token).ConfigureAwait(false);
 
                 _logger?.LogDebug("Received response: {Response}", JsonSerializer.Serialize(rpcResponse, _serializerOptions));
+               // Debug.WriteLine(string.Format("Received response: {0}", JsonSerializer.Serialize(rpcResponse, _serializerOptions)));
                 return rpcResponse!;
             }
             catch (TaskCanceledException ex)
@@ -123,9 +123,7 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
         {
             try
             {
-                var json = _requestArrayTypeInfo != null
-                    ? JsonSerializer.Serialize(requests, _requestArrayTypeInfo)
-                    : JsonSerializer.Serialize(requests, _serializerOptions);
+                var json = JsonSerializer.Serialize(requests, typeof(RpcRequestMessage[]), _serializerOptions);
 
                 _logger?.LogDebug("Sending batch request: {Json}", json);
 

@@ -17,6 +17,7 @@ using Nethereum.ABI.EIP712;
 using Nethereum.Signer.EIP712;
 using Nethereum.Signer;
 using Nethereum.JsonRpc.SystemTextJsonRpcClient;
+using NBitcoin.Secp256k1;
 
 
 namespace Nethereum.AOTSigningTest
@@ -102,7 +103,120 @@ namespace Nethereum.AOTSigningTest
             await EnsSamples(web3);
             await EIP712Sample();
 
+            await ErrorSample(web3Local);
+            await StructsJson(web3Local);
         }
+
+        public static async Task StructsJson(Web3.Web3 web3)
+        {
+
+            Console.WriteLine("Structs Json Sample");
+            Nethereum.ABI.ABIDeserialisation.AbiDeserializationSettings.UseSystemTextJson = true;
+            var abi =
+                @"[{'constant':true,'inputs':[{'name':'','type':'bytes32'},{'name':'','type':'uint256'}],'name':'documents','outputs':[{'name':'name','type':'string'},{'name':'description','type':'string'},{'name':'sender','type':'address'}],'payable':false,'stateMutability':'view','type':'function'},{'constant':false,'inputs':[{'name':'key','type':'bytes32'},{'name':'name','type':'string'},{'name':'description','type':'string'}],'name':'storeDocument','outputs':[{'name':'success','type':'bool'}],'payable':false,'stateMutability':'nonpayable','type':'function'}]";
+
+            var smartContractByteCode =
+                "6060604052341561000f57600080fd5b6105408061001e6000396000f30060606040526004361061004b5763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166379c17cc581146100505780638553139c14610189575b600080fd5b341561005b57600080fd5b610069600435602435610235565b60405173ffffffffffffffffffffffffffffffffffffffff821660408201526060808252845460026000196101006001841615020190911604908201819052819060208201906080830190879080156101035780601f106100d857610100808354040283529160200191610103565b820191906000526020600020905b8154815290600101906020018083116100e657829003601f168201915b50508381038252855460026000196101006001841615020190911604808252602090910190869080156101775780601f1061014c57610100808354040283529160200191610177565b820191906000526020600020905b81548152906001019060200180831161015a57829003601f168201915b50509550505050505060405180910390f35b341561019457600080fd5b610221600480359060446024803590810190830135806020601f8201819004810201604051908101604052818152929190602084018383808284378201915050505050509190803590602001908201803590602001908080601f01602080910402602001604051908101604052818152929190602084018383808284375094965061028795505050505050565b604051901515815260200160405180910390f35b60006020528160005260406000208181548110151561025057fe5b60009182526020909120600390910201600281015490925060018301915073ffffffffffffffffffffffffffffffffffffffff1683565b6000610291610371565b60606040519081016040908152858252602080830186905273ffffffffffffffffffffffffffffffffffffffff33168284015260008881529081905220805491925090600181016102e2838261039f565b600092835260209092208391600302018151819080516103069291602001906103d0565b506020820151816001019080516103219291602001906103d0565b506040820151600291909101805473ffffffffffffffffffffffffffffffffffffffff191673ffffffffffffffffffffffffffffffffffffffff9092169190911790555060019695505050505050565b60606040519081016040528061038561044e565b815260200161039261044e565b8152600060209091015290565b8154818355818115116103cb576003028160030283600052602060002091820191016103cb9190610460565b505050565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f1061041157805160ff191683800117855561043e565b8280016001018555821561043e579182015b8281111561043e578251825591602001919060010190610423565b5061044a9291506104b3565b5090565b60206040519081016040526000815290565b6104b091905b8082111561044a57600061047a82826104cd565b6104886001830160006104cd565b5060028101805473ffffffffffffffffffffffffffffffffffffffff19169055600301610466565b90565b6104b091905b8082111561044a57600081556001016104b9565b50805460018160011615610100020316600290046000825580601f106104f35750610511565b601f01602090049060005260206000209081019061051191906104b3565b505600a165627a7a72305820049f1f3ad86cf097dd9c5de014d2e718b5b6b9a05b091d4daebcf60dd3e1213c0029";
+
+
+            var accountBalance = await web3.Eth.GetBalance.SendRequestAsync(web3.TransactionManager.Account.Address).ConfigureAwait(false);
+
+          
+
+            var receipt =
+                await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
+                    abi,
+                    smartContractByteCode,
+                    web3.TransactionManager.Account.Address,
+                    new HexBigInteger(900000)).ConfigureAwait(false);
+
+            var contractAddress = receipt.ContractAddress;
+
+            var contract = web3.Eth.GetContract(abi, contractAddress);
+            var storeDocumentFunction = contract.GetFunction("storeDocument");
+
+            var receipt1 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(web3.TransactionManager.Account.Address,
+                new HexBigInteger(900000), null, null, "k1", "doc1", "Document 1").ConfigureAwait(false);
+            
+            var receipt2 = await storeDocumentFunction.SendTransactionAndWaitForReceiptAsync(web3.TransactionManager.Account.Address,
+                new HexBigInteger(900000), null, null, "k2", "doc2", "Document 2").ConfigureAwait(false);
+            
+
+            var documentsFunction = contract.GetFunction("documents");
+            var document1 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k1", 0).ConfigureAwait(false);
+            var document2 = await documentsFunction.CallDeserializingToObjectAsync<Document>("k2", 0).ConfigureAwait(false);
+
+           Console.WriteLine(document1.Name);
+           Console.WriteLine(document1.Description);
+
+            Console.WriteLine(document1.Sender);
+            
+            Console.WriteLine(document2.Name);
+            Console.WriteLine(document2.Description);
+            Console.WriteLine(document2.Sender);
+
+        }
+
+        [FunctionOutput]
+        public class Document
+        {
+            [Parameter("string", "name", 1)] public string Name { get; set; }
+
+            [Parameter("string", "description", 2)]
+            public string Description { get; set; }
+
+            [Parameter("address", "sender", 3)] public string Sender { get; set; }
+        }
+
+        public static async Task ErrorSample(Web3.Web3 web3)
+        {
+            Console.WriteLine("Error Sample");
+            Nethereum.ABI.ABIDeserialisation.AbiDeserializationSettings.UseSystemTextJson = true;
+            var errorThrowDeployment = new TestTokenDeployment();
+
+            var transactionReceiptDeployment = await web3.Eth.GetContractDeploymentHandler<TestTokenDeployment>()
+                .SendRequestAndWaitForReceiptAsync(errorThrowDeployment).ConfigureAwait(false);
+            var contractAddress = transactionReceiptDeployment.ContractAddress;
+
+            var contract = web3.Eth.GetContract("[{'inputs':[{'internalType':'uint256','name':'available','type':'uint256'},{'internalType':'uint256','name':'required','type':'uint256'}],'name':'InsufficientBalance','type':'error'},{'inputs':[{'internalType':'address','name':'to','type':'address'},{'internalType':'uint256','name':'amount','type':'uint256'}],'name':'transfer','outputs':[],'stateMutability':'nonpayable','type':'function'}]", contractAddress);
+            var function = contract.GetFunction("transfer");
+
+            try
+            {
+                //random return value as it is going to error
+                await function.EstimateGasAsync(web3.TransactionManager.Account.Address, 100).ConfigureAwait(false);
+
+            }
+            catch (SmartContractCustomErrorRevertException error)
+            {
+                Console.WriteLine("Is Custom Error" + error.IsCustomErrorFor<InsufficientBalance>());
+                var insufficientBalance = error.DecodeError<InsufficientBalance>();
+                Console.WriteLine(insufficientBalance.Required);
+                Console.WriteLine(insufficientBalance.Available);
+
+            }
+            
+           
+        }
+
+        [Error("InsufficientBalance")]
+        public class InsufficientBalance
+        {
+            [Parameter("uint256", "available", 1)]
+            public virtual BigInteger Available { get; set; }
+
+            [Parameter("uint256", "required", 1)]
+            public virtual BigInteger Required { get; set; }
+        }
+
+        public partial class TestTokenDeployment : ContractDeploymentMessage
+        {
+            public static string BYTECODE = "608060405234801561001057600080fd5b5061019b806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063a9059cbb14610030575b600080fd5b61004361003e3660046100ea565b610045565b005b3360009081526020819052604090205481111561009557336000908152602081905260409081902054905163cf47918160e01b815260048101919091526024810182905260440160405180910390fd5b33600090815260208190526040812080548392906100b4908490610138565b90915550506001600160a01b038216600090815260208190526040812080548392906100e1908490610120565b90915550505050565b600080604083850312156100fc578182fd5b82356001600160a01b0381168114610112578283fd5b946020939093013593505050565b600082198211156101335761013361014f565b500190565b60008282101561014a5761014a61014f565b500390565b634e487b7160e01b600052601160045260246000fdfea2646970667358221220036d01bbac8615b9779f8355c03bd4da1057c57188f047db3a3190e81f894f7964736f6c63430008040033";
+
+            public TestTokenDeployment() : base(BYTECODE) { }
+            public TestTokenDeployment(string byteCode) : base(byteCode) { }
+        }
+
 
         public static async Task EIP712Sample() {
             var signer = new Eip712TypedDataSigner();

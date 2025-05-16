@@ -1,10 +1,20 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+#if NET6_0_OR_GREATER
+using System.Text.Json;
+#endif
 using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.ABI.ABIDeserialisation
 {
+    public static class AbiDeserializationSettings
+    {
+        public static bool UseSystemTextJson { get; set; } = false;
+    }
+
     public class ABIJsonDeserialiser
     {
         public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
@@ -112,12 +122,23 @@ namespace Nethereum.ABI.ABIDeserialisation
             return parameters.ToArray();
         }
 
-        public ContractABI DeserialiseContract(string abi) 
+
+        public ContractABI DeserialiseContract(string abi)
         {
-            var convertor = new ExpandoObjectConverter();
-            var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, convertor);
+#if NET6_0_OR_GREATER
+            if (AbiDeserializationSettings.UseSystemTextJson)
+            {
+                return new ABIJsonDeserialiserSTJ().DeserialiseContract(abi);
+            }
+#endif
+
+            var converter = new ExpandoObjectConverter();
+            var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, converter);
+
             return DeserialiseContractBody(contract);
         }
+
+
         public ContractABI DeserialiseContract(JArray abi) {
             var convertor = new JObjectToExpandoConverter();
             return DeserialiseContractBody(convertor.JObjectArray(abi));

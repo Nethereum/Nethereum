@@ -64,10 +64,8 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
         {
             try
             {
-                string json = _requestTypeInfo != null
-                    ? JsonSerializer.Serialize(request, _requestTypeInfo)
-                    : JsonSerializer.Serialize(request, _serializerOptions);
-
+                var json = JsonSerializer.Serialize(request, typeof(RpcRequestMessage), _serializerOptions);
+                
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 using var cts = new CancellationTokenSource(ConnectionTimeout);
@@ -94,10 +92,8 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
         {
             try
             {
-                string json = _requestArrayTypeInfo != null
-                    ? JsonSerializer.Serialize(requests, _requestArrayTypeInfo)
-                    : JsonSerializer.Serialize(requests, _serializerOptions);
-
+                var json = JsonSerializer.Serialize(requests, typeof(RpcRequestMessage[]), _serializerOptions);
+             
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 using var cts = new CancellationTokenSource(ConnectionTimeout);
