@@ -1,6 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.Geth.RPC.Debug.Tracers;
 using Nethereum.JsonRpc.Client;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Geth.RPC.Debug
@@ -18,20 +21,27 @@ namespace Nethereum.Geth.RPC.Debug
     ///     which hasn't changed. This is a slow process and is therefor defaulted to false. By default it will only ever give
     ///     you the changed storage values.
     /// </Summary>
-    public class DebugTraceTransaction : RpcRequestResponseHandler<JObject>, IDebugTraceTransaction
+    public class DebugTraceTransaction : RpcRequestResponseHandler<JToken>, IDebugTraceTransaction
     {
         public DebugTraceTransaction(IClient client) : base(client, ApiMethods.debug_traceTransaction.ToString())
         {
         } 
 
-        public RpcRequest BuildRequest(string txnHash, TraceTransactionOptions options, object id = null)
+        public RpcRequest BuildRequest(string txnHash, TracingOptions options, object id = null)
         {
-            return base.BuildRequest(id, txnHash, options);
+            return base.BuildRequest(id, txnHash, options.ToDto());
         }
 
-        public Task<JObject> SendRequestAsync(string txnHash, TraceTransactionOptions options, object id = null)
+        public Task<JToken> SendRequestAsync(string txnHash, TracingOptions options, object id = null)
         {
-            return base.SendRequestAsync(id, txnHash, options);
+            return base.SendRequestAsync(id, txnHash, options.ToDto());
         }
+        
+        public async Task<TOutput> SendRequestAsync<TOutput>(string txnHash, TracingOptions options, object id = null)
+        {
+            var rawResult = await base.SendRequestAsync(id, txnHash, options.ToDto());
+            return rawResult.ToObject<TOutput>();
+        }
+        
     }
 }

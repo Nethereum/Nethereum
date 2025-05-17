@@ -14,14 +14,22 @@ namespace Nethereum.Geth.RPC.Debug
         {
         }
          
-        public RpcRequest BuildRequest(string filePath, TraceTransactionOptions options, object id = null)
+        public RpcRequest BuildRequest(string filePath, TracingCallOptions options, object id = null)
         {
-            return base.BuildRequest(id, filePath, options);
+            return base.BuildRequest(id, filePath, options.ToDto());
+        }
+        
+        public Task<JArray> SendRequestAsync(string filePath, TracingCallOptions options, object id = null)
+        {
+            return base.SendRequestAsync(id, filePath, options.ToDto());
         }
 
-        public Task<JArray> SendRequestAsync(string filePath, TraceTransactionOptions options, object id = null)
+        public async Task<BlockResponseDto<TOutput>> SendRequestAsync<TOutput>(string filePath, TracingCallOptions options, object id = null)
         {
-            return base.SendRequestAsync(id, filePath, options);
+            var rawResult = await base.SendRequestAsync(id, filePath, options.ToDto());
+            return rawResult.ToObject<BlockResponseDto<TOutput>>();
         }
+        
+        
     }
 }
