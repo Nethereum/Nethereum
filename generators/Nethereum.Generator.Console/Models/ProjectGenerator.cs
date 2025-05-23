@@ -27,6 +27,8 @@ namespace Nethereum.Generator.Console.Models
                     $"{contract.ContractName}",
                     $"{contract.ContractName}.ContractDefinition",
                     $"{contract.ContractName}.ContractDefinition",
+                    null,
+                    null,
                     OutputFolder,
                     Path.DirectorySeparatorChar.ToString(),
                     Language

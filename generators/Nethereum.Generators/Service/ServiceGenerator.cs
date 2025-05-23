@@ -5,7 +5,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Service
 {
-    public class ServiceGenerator : ClassGeneratorBase<ClassTemplateBase<ServiceModel>, ServiceModel>
+    public class ServiceGenerator : ClassGeneratorBase<ServiceModel>
     {
         public  ContractABI ContractABI { get; }
 

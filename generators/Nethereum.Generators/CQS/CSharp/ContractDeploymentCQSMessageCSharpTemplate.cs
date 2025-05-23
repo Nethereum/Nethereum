@@ -4,7 +4,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageCSharpTemplate : ClassTemplateBase<ContractDeploymentCQSMessageModel>
+    public class ContractDeploymentCQSMessageCSharpTemplate : ClassTemplateBase
     {
         private ParameterABIFunctionDTOCSharpTemplate _parameterAbiFunctionDtocSharpTemplate;
 
@@ -14,9 +14,11 @@ namespace Nethereum.Generators.CQS
             ClassFileTemplate = new CSharpClassFileTemplate(model, this);
         }
 
+        public ContractDeploymentCQSMessageModel Model => (ContractDeploymentCQSMessageModel)ClassModel;
+
         public override string GenerateClass()
         {
-            var typeName = Model.GetTypeName();
+            var typeName = ClassModel.GetTypeName();
             return
                 $@"{GetPartialMainClass()}
 
@@ -31,7 +33,7 @@ namespace Nethereum.Generators.CQS
 
         public string GetPartialMainClass()
         {
-            var typeName = Model.GetTypeName();
+            var typeName = ClassModel.GetTypeName();
 
             return $@"{SpaceUtils.One__Tab}public partial class {typeName} : {typeName}Base
 {SpaceUtils.One__Tab}{{

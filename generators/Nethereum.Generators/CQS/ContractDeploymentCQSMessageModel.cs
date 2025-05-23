@@ -5,17 +5,16 @@ namespace Nethereum.Generators.CQS
 {
     public class ContractDeploymentCQSMessageModel:TypeMessageModel
     {
-        public const string NAME_SUFFIX = "Deployment";
         public ConstructorABI ConstructorABI { get; }
         public string ByteCode { get; }
 
         public static string GetDefaultTypeName(string name)
         {
-           return GetDefaultTypeName(name, NAME_SUFFIX);
+           return GetDefaultTypeName(name, "Deployment");
         }
 
         public ContractDeploymentCQSMessageModel(ConstructorABI constructorABI, string @namespace, string byteCode, string contractName)
-            :base(@namespace, contractName, NAME_SUFFIX)
+            :base(@namespace, contractName, "Deployment")
         {
             ConstructorABI = constructorABI;
             ByteCode = byteCode;

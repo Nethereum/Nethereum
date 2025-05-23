@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="codeGenNodeTest\" />
+    <Folder Include="examples\testAbi\codeGenNodeTest\GeneratorSets\Example1\MyProject.Blazor\" />
   </ItemGroup>
 </Project>

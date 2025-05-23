@@ -1,12 +1,10 @@
 namespace Nethereum.Generators.Core
 {
-    public class ClassGeneratorBase<TClassTemplate, TClassModel> : IFileGenerator, IClassGenerator
-        where TClassModel : TypeMessageModel
-        where TClassTemplate : IClassTemplate
-        
+    public class ClassGeneratorBase<TMessageModel>: IFileGenerator, IClassGenerator
+        where TMessageModel : TypeMessageModel
     {
-        protected TClassTemplate ClassTemplate { get; set; }
-        public TClassModel ClassModel { get; set; }
+        protected IClassTemplate ClassTemplate { get; set; }
+        public TMessageModel ClassModel { get; set; }
 
         public GeneratedFile GenerateFileContent(string outputPath)
         {

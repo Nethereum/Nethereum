@@ -3,8 +3,10 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class EventDTOFSharpTemplate : ClassTemplateBase<EventDTOModel>
+    public class EventDTOFSharpTemplate : ClassTemplateBase
     {
+        public EventDTOModel Model => (EventDTOModel)ClassModel;
+
         private ParameterABIEventDTOFSharpTemplate _parameterAbiEventDtoFSharpTemplate;
         public EventDTOFSharpTemplate(EventDTOModel eventDTOModel) : base(eventDTOModel)
         {

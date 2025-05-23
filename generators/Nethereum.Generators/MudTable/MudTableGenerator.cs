@@ -5,7 +5,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.MudTable
 {
-    public class MudTableGenerator : ClassGeneratorBase<ClassTemplateBase<MudTableModel>, MudTableModel>
+    public class MudTableGenerator : ClassGeneratorBase<MudTableModel>
     {
         public MudTableGenerator(MudTable mudTable, string @namespace, CodeGenLanguage codeGenLanguage)
         {

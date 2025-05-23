@@ -3,8 +3,9 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.MudService
 {
-    public class MudServiceVbTemplate : ClassTemplateBase<MudServiceModel>
+    public class MudServiceVbTemplate : ClassTemplateBase
     {
+        public MudServiceModel Model => (MudServiceModel)ClassModel;
         public MudServiceVbTemplate(MudServiceModel model) : base(model)
         {
             ClassFileTemplate = new VbClassFileTemplate(Model, this);

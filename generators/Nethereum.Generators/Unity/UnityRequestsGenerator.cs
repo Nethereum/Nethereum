@@ -6,7 +6,7 @@ using Nethereum.Generators.Unity.CSharp;
 
 namespace Nethereum.Generators.Unity
 {
-    public class UnityRequestsGenerator : ClassGeneratorBase<ClassTemplateBase<UnityRequestsModel>, UnityRequestsModel>
+    public class UnityRequestsGenerator : ClassGeneratorBase<UnityRequestsModel>
     {
         public  ContractABI ContractABI { get; }
 

@@ -3,8 +3,10 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOFSharpTemplate : ClassTemplateBase<FunctionOutputDTOModel>
+    public class FunctionOutputDTOFSharpTemplate : ClassTemplateBase
     {
+        public FunctionOutputDTOModel Model => (FunctionOutputDTOModel)ClassModel;
+
         private ParameterABIFunctionDTOFSharpTemplate _parameterAbiFunctionDtoFSharpTemplate;
         public FunctionOutputDTOFSharpTemplate(FunctionOutputDTOModel model) : base(model)
         {

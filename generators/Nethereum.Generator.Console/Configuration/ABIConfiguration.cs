@@ -28,6 +28,8 @@ namespace Nethereum.Generator.Console.Configuration
 
         public string BaseOutputPath { get; set; }
 
+        
+
         public CodeGenLanguage CodeGenLanguage { get; set; }
 
         public ContractProjectGenerator CreateGenerator(string defaultNamespace, string projectFolder)
@@ -46,6 +48,8 @@ namespace Nethereum.Generator.Console.Configuration
                 ServiceNamespace ?? $"{ContractName}.Service",
                 CQSNamespace ?? $"{ContractName}.ContractDefinition",
                 DTONamespace ?? $"{ContractName}.ContractDefinition",
+                null,
+                null,
                 BaseOutputPath ?? projectFolder,
                 Path.DirectorySeparatorChar.ToString(),
                 CodeGenLanguage

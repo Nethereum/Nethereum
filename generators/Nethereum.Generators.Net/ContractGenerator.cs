@@ -85,6 +85,8 @@ namespace Nethereum.Generators.Net
             string serviceNamespace,
             string cqsNamespace,
             string dtoNamespace,
+            string sharedTypesNamespace,
+            string[] sharedGeneratedTypes,
             string basePath,
             string pathSeparator,
             int codeGenLang,
@@ -98,6 +100,8 @@ namespace Nethereum.Generators.Net
                 serviceNamespace,
                 cqsNamespace,
                 dtoNamespace,
+                sharedTypesNamespace,
+                sharedGeneratedTypes,
                 basePath,
                 pathSeparator,
                 (CodeGenLanguage)codeGenLang
@@ -116,6 +120,8 @@ namespace Nethereum.Generators.Net
             string bytecode,
             string contractName,
             string baseNamespace,
+            string sharedTypesNamespace,
+            string[] sharedGeneratedTypes,
             string basePath,
             string pathSeparator)
         {
@@ -127,6 +133,8 @@ namespace Nethereum.Generators.Net
                 contractName,
                 $"{contractName}.ContractDefinition",
                 $"{contractName}.ContractDefinition",
+                sharedTypesNamespace,
+                sharedGeneratedTypes,
                 basePath,
                 pathSeparator,
                 0
@@ -142,6 +150,8 @@ namespace Nethereum.Generators.Net
             string contractName,
             string baseNamespace,
             string basePath,
+            string sharedTypesNamespace,
+            string[] sharedGeneratedTypes,
             string pathSeparator,
             int codeGenLang,
             string mudNamespace)
@@ -154,6 +164,8 @@ namespace Nethereum.Generators.Net
                 contractName,
                 $"{contractName}.ContractDefinition",
                 $"{contractName}.ContractDefinition",
+                sharedTypesNamespace,
+                sharedGeneratedTypes,
                 basePath,
                 pathSeparator,
                 (CodeGenLanguage)codeGenLang
@@ -181,6 +193,39 @@ namespace Nethereum.Generators.Net
             var generator = new MudTablesGenerator(tables.ToArray(), baseNamespace, (CodeGenLanguage)codeGenLang, basePath, pathSeparator, mudNamespace);
             var generatedFiles = generator.GenerateAllTables();
             return OutputGeneratedFiles(generatedFiles);
+        }
+
+        public string GenerateBlazorServicePage(ContractABI abi,
+            string contractName,
+            string baseNamespace,
+            string serviceNamespace,
+            string cqsNamespace,
+            string dtoNamespace,
+            string sharedTypesNamespace,
+            string basePath,
+            string pathSeparator,
+            int codeGenLang,
+            string blazorNamespace
+            )
+        {
+            var blazorGenerator = new BlazorPagesGenerator(
+                abi,
+                contractName,
+                baseNamespace,
+                serviceNamespace,
+                cqsNamespace,
+                dtoNamespace,
+                sharedTypesNamespace,
+                CodeGenLanguage.CSharp,
+                basePath,
+                pathSeparator,
+                blazorNamespace
+
+            );
+
+            var generatedFile = blazorGenerator.GenerateFile();
+            var outputFiles = OutputGeneratedFiles(new[] { generatedFile });
+            return outputFiles[0];
         }
 
         private List<string> OutputGeneratedFiles(IEnumerable<GeneratedFile> generatedFiles)

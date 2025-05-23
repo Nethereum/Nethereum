@@ -12,13 +12,11 @@ namespace Nethereum.Generators.Service
         public string SharedTypesFullNamespace { get; }
         public ContractDeploymentCQSMessageModel ContractDeploymentCQSMessageModel { get; }
 
-        public const string NAME_SUFFIX = "Service";
-
 
         public ServiceModel(ContractABI contractABI, string contractName, 
                             string byteCode, string @namespace, 
                             string cqsNamespace, string functionOutputNamespace, string sharedTypesFullNamespace) :
-            base(@namespace, contractName, NAME_SUFFIX)
+            base(@namespace, contractName, "Service") // we need to duplicate the name due typescript
         {
             ContractABI = contractABI;
             CQSNamespace = cqsNamespace;
@@ -39,7 +37,7 @@ namespace Nethereum.Generators.Service
 
         public static string GetDefaultTypeName(string name)
         {
-           return GetDefaultTypeName(name, NAME_SUFFIX);
+           return GetDefaultTypeName(name, "Service");
         }
 
         private void InitialiseNamespaceDependencies()

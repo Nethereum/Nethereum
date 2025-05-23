@@ -3,7 +3,7 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.Console.Vb
 {
-    public class ConsoleVbTemplate: ClassTemplateBase<ConsoleModel>
+    public class ConsoleVbTemplate: ClassTemplateBase
     {
         private FunctionMockupMethodVbTemplate _functionMockupMethodVb;
         private ContractDeploymentMockUpMethodVbTemplate _contractDeploymentMockUpMethodVb;
@@ -11,7 +11,7 @@ namespace Nethereum.Generators.Console.Vb
         {
             _functionMockupMethodVb = new FunctionMockupMethodVbTemplate(model.ContractABI);
             _contractDeploymentMockUpMethodVb = new ContractDeploymentMockUpMethodVbTemplate(model.ContractDeploymentCQSMessageModel);
-            ClassFileTemplate = new VbClassFileTemplate(Model, this);
+            ClassFileTemplate = new VbClassFileTemplate(ClassModel, this);
         }
 
         public override string GenerateClass()

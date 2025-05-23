@@ -8,7 +8,7 @@ using Nethereum.Generators.Service;
 
 namespace Nethereum.Generators.Console
 {
-    public class ConsoleGenerator : ClassGeneratorBase<ClassTemplateBase<ConsoleModel>, ConsoleModel>
+    public class ConsoleGenerator : ClassGeneratorBase<ConsoleModel>
     {
         public  ContractABI ContractABI { get; }
 

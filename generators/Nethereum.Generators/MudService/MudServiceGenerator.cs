@@ -5,7 +5,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.MudService
 {
-    public class MudServiceGenerator : ClassGeneratorBase<ClassTemplateBase<MudServiceModel>, MudServiceModel>
+    public class MudServiceGenerator : ClassGeneratorBase<MudServiceModel>
     {
         public  ContractABI ContractABI { get; }
 

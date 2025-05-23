@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
 using System.Threading;
+using MyProject.Contracts.Standard_Token.ContractDefinition;
 
 namespace MyProject.Contracts.Standard_Token.ContractDefinition
 {
@@ -141,32 +142,6 @@ namespace MyProject.Contracts.Standard_Token.ContractDefinition
         public virtual BigInteger Value { get; set; }
     }
 
-    public partial class ApprovalEventDTO : ApprovalEventDTOBase { }
-
-    [Event("Approval")]
-    public class ApprovalEventDTOBase : IEventDTO
-    {
-        [Parameter("address", "_owner", 1, true )]
-        public virtual string Owner { get; set; }
-        [Parameter("address", "_spender", 2, true )]
-        public virtual string Spender { get; set; }
-        [Parameter("uint256", "_value", 3, false )]
-        public virtual BigInteger Value { get; set; }
-    }
-
-    public partial class TransferEventDTO : TransferEventDTOBase { }
-
-    [Event("Transfer")]
-    public class TransferEventDTOBase : IEventDTO
-    {
-        [Parameter("address", "_from", 1, true )]
-        public virtual string From { get; set; }
-        [Parameter("address", "_to", 2, true )]
-        public virtual string To { get; set; }
-        [Parameter("uint256", "_value", 3, false )]
-        public virtual BigInteger Value { get; set; }
-    }
-
     public partial class AllowanceOutputDTO : AllowanceOutputDTOBase { }
 
     [FunctionOutput]
@@ -244,4 +219,30 @@ namespace MyProject.Contracts.Standard_Token.ContractDefinition
 
 
 
+
+    public partial class ApprovalEventDTO : ApprovalEventDTOBase { }
+
+    [Event("Approval")]
+    public class ApprovalEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "_owner", 1, true )]
+        public virtual string Owner { get; set; }
+        [Parameter("address", "_spender", 2, true )]
+        public virtual string Spender { get; set; }
+        [Parameter("uint256", "_value", 3, false )]
+        public virtual BigInteger Value { get; set; }
+    }
+
+    public partial class TransferEventDTO : TransferEventDTOBase { }
+
+    [Event("Transfer")]
+    public class TransferEventDTOBase : IEventDTO
+    {
+        [Parameter("address", "_from", 1, true )]
+        public virtual string From { get; set; }
+        [Parameter("address", "_to", 2, true )]
+        public virtual string To { get; set; }
+        [Parameter("uint256", "_value", 3, false )]
+        public virtual BigInteger Value { get; set; }
+    }
 }

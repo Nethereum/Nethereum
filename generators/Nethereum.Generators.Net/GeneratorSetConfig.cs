@@ -16,5 +16,8 @@ namespace Nethereum.Generators.Net
         public int CodeGenLang { get; set; } = 0;
         public string GeneratorType { get; set; }
         public string MudNamespace { get; set; } = "";
+        public string SharedTypesNamespace { get; set; } = "";
+        public string[] SharedTypes { get; set; } = null;
+        public string BlazorNamespace { get; set; } = "";
     }
 }

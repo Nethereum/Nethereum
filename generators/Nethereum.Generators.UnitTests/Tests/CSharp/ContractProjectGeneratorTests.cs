@@ -24,6 +24,8 @@ namespace Nethereum.Generators.UnitTests.Tests.CSharp
                 "StandardContract.Service",
                 "StandardContract.CQS",
                 "StandardContract.DTO", 
+                null,
+                null,
                 @"c:\Temp\",
                 "\\",
                 CodeGenLanguage.CSharp);

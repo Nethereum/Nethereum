@@ -3,7 +3,7 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.Service
 {
-    public class ServiceCSharpTemplate: ClassTemplateBase<ServiceModel>
+    public class ServiceCSharpTemplate: ClassTemplateBase
     {
         private FunctionServiceMethodCSharpTemplate _functionServiceMethodCSharpTemplate;
         private ContractDeploymentServiceMethodsCSharpTemplate _deploymentServiceMethodsCSharpTemplate;
@@ -11,7 +11,7 @@ namespace Nethereum.Generators.Service
         {
             _functionServiceMethodCSharpTemplate = new FunctionServiceMethodCSharpTemplate(model);
             _deploymentServiceMethodsCSharpTemplate = new ContractDeploymentServiceMethodsCSharpTemplate(model);
-            ClassFileTemplate = new CSharpClassFileTemplate(Model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(ClassModel, this);
         }
 
         public override string GenerateClass()
@@ -27,11 +27,11 @@ namespace Nethereum.Generators.Service
         public string GenerateMainClass()
         {
             return
-                $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()}: {Model.GetTypeName()}Base
+                $@"{SpaceUtils.One__Tab}public partial class {ClassModel.GetTypeName()}: {ClassModel.GetTypeName()}Base
 {SpaceUtils.One__Tab}{{
 {_deploymentServiceMethodsCSharpTemplate.GenerateMethods()}
 {SpaceUtils.NoTabs}
-{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+{SpaceUtils.Two___Tabs}public {ClassModel.GetTypeName()}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Two___Tabs}}}
 
@@ -42,10 +42,10 @@ namespace Nethereum.Generators.Service
         public string GenerateBaseClass()
         {
             return
-                $@"{SpaceUtils.One__Tab}public partial class {Model.GetTypeName()}Base: ContractWeb3ServiceBase
+                $@"{SpaceUtils.One__Tab}public partial class {ClassModel.GetTypeName()}Base: ContractWeb3ServiceBase
 {SpaceUtils.One__Tab}{{
 {SpaceUtils.NoTabs}
-{SpaceUtils.Two___Tabs}public {Model.GetTypeName()}Base(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
+{SpaceUtils.Two___Tabs}public {ClassModel.GetTypeName()}Base(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)
 {SpaceUtils.Two___Tabs}{{
 {SpaceUtils.Two___Tabs}}}
 {SpaceUtils.NoTabs}

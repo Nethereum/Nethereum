@@ -3,8 +3,9 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.Service
 {
-    public class ServiceFSharpTemplate : ClassTemplateBase<ServiceModel>
+    public class ServiceFSharpTemplate : ClassTemplateBase
     {
+        public ServiceModel Model => (ServiceModel)ClassModel;
         private FunctionServiceMethodFSharpTemplate _functionServiceMethodFSharpTemplate;
         private ContractDeploymentServiceMethodsFSharpTemplate _deploymentServiceMethodsFSharpTemplate;
         public ServiceFSharpTemplate(ServiceModel model) : base(model)

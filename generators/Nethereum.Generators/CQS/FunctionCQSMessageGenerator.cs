@@ -6,7 +6,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class FunctionCQSMessageGenerator : ClassGeneratorBase<ClassTemplateBase<FunctionCQSMessageModel>, FunctionCQSMessageModel>
+    public class FunctionCQSMessageGenerator : ClassGeneratorBase<FunctionCQSMessageModel>
     {
         public FunctionABI FunctionABI { get; }
         public string MudNamespace { get; set; }

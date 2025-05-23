@@ -1,6 +1,8 @@
-using Nethereum.Generators.BlazorServicePage;
+
 using Nethereum.Generators.Core;
 using Nethereum.Generators.Model;
+using Nethereum.Generators.CQS;
+using Nethereum.Generators.Service;
 
 namespace Nethereum.Generators
 {
@@ -17,6 +19,8 @@ namespace Nethereum.Generators
         public string DTONamespace { get; }
         public CodeGenLanguage CodeGenLanguage { get; }
         public string SharedTypesNamespace { get; }
+
+        public ContractDeploymentCQSMessageModel ContractDeploymentCQSMessageModel { get; }
 
         public BlazorPagesGenerator(ContractABI contractABI, string contractName,  string baseNamespace, 
                                                             string serviceNamespace, string cqsNamespace, 
@@ -51,7 +55,19 @@ namespace Nethereum.Generators
             }
 
             var fullPath = BaseOutputPath;
+            System.Console.WriteLine($"Generating Blazor Service Page for {ContractName} in {fullPath}");
+            //parameters console
+            System.Console.WriteLine("PageNamespace: " + pageNamespace);
+            System.Console.WriteLine("ServiceNamespace: " + serviceNamespace);
+            System.Console.WriteLine("CQSNamespace: " + cqsNamespace);
+            System.Console.WriteLine("DtoNamespace: " + dtoNamespace);
+            System.Console.WriteLine("SharedTypesNamespace: " + sharedTypesFullNamespace);
+            System.Console.WriteLine("BaseOutputPath: " + BaseOutputPath);
+            System.Console.WriteLine("PathDelimiter: " + PathDelimiter);
+            System.Console.WriteLine("CodeGenLanguage: " + CodeGenLanguage);
+
             var generator = new BlazorPageServiceGenerator(ContractABI, ContractName, pageNamespace, serviceNamespace, dtoNamespace, sharedTypesFullNamespace, CodeGenLanguage);
+            System.Console.WriteLine($"Generating Blazor Service Page Content for {ContractName} in {fullPath}");
             return  generator.GenerateFileContent(fullPath);
 
         }

@@ -18,7 +18,6 @@ Nethereum.Generators = Nethereum.Generators || {};
 Nethereum.Generators.Core = Nethereum.Generators.Core || {};
 Nethereum.Generators.Model = Nethereum.Generators.Model || {};
 Nethereum.Generators.Service = Nethereum.Generators.Service || {};
-Nethereum.Generators.BlazorServicePage = Nethereum.Generators.BlazorServicePage || {};
 Nethereum.Generators.Console = Nethereum.Generators.Console || {};
 Nethereum.Generators.Console.CSharp = Nethereum.Generators.Console.CSharp || {};
 Nethereum.Generators.Console.Vb = Nethereum.Generators.Console.Vb || {};
@@ -67,13 +66,13 @@ Nethereum.Generators.Service.AllMessagesGenerator = $d.declare("Nethereum.Genera
     0, $asm);
 Nethereum.Generators.Service.AllMessagesModel = $d.declare("Nethereum.Generators.Service.AllMessagesModel", 
     0, $asm);
-Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator = $d.declare("Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator", 
+Nethereum.Generators.Service.BlazorPageServiceGenerator = $d.declare("Nethereum.Generators.Service.BlazorPageServiceGenerator", 
     0, $asm);
-Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel = $d.declare("Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel", 
+Nethereum.Generators.Service.BlazorPageServiceModel = $d.declare("Nethereum.Generators.Service.BlazorPageServiceModel", 
     0, $asm);
-Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplate = $d.declare("Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplate", 
+Nethereum.Generators.Service.BlazorFunctionComponentsTemplate = $d.declare("Nethereum.Generators.Service.BlazorFunctionComponentsTemplate", 
     0, $asm);
-Nethereum.Generators.BlazorServicePage.BlazorPageServiceCSharpRazorTemplate = $d.declare("Nethereum.Generators.BlazorServicePage.BlazorPageServiceCSharpRazorTemplate", 
+Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate = $d.declare("Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate", 
     0, $asm);
 Nethereum.Generators.Console.ConsoleGenerator = $d.declare("Nethereum.Generators.Console.ConsoleGenerator", 
     0, $asm);
@@ -93,10 +92,10 @@ Nethereum.Generators.Console.Vb.FunctionMockupMethodVbTemplate = $d.declare("Net
     0, $asm);
 Nethereum.Generators.CQS.ClassFileTemplate = $d.declare("Nethereum.Generators.CQS.ClassFileTemplate", 
     0, $asm);
-Nethereum.Generators.Core.ClassGeneratorBase$2 = $d.declare("Nethereum.Generators.Core.ClassGeneratorBase`2", 
+Nethereum.Generators.Core.ClassGeneratorBase$1 = $d.declare("Nethereum.Generators.Core.ClassGeneratorBase`1", 
     256, $asm);
-Nethereum.Generators.CQS.ClassTemplateBase$1 = $d.declare("Nethereum.Generators.CQS.ClassTemplateBase`1", 
-    256, $asm);
+Nethereum.Generators.CQS.ClassTemplateBase = $d.declare("Nethereum.Generators.CQS.ClassTemplateBase", 
+    0, $asm);
 Nethereum.Generators.Core.CodeGenLanguageExt = $d.declare("Nethereum.Generators.Core.CodeGenLanguageExt", 
     0, $asm);
 Nethereum.Generators.Core.CodeGenLanguageExt.StringComparerIgnoreCase = $d.declare("StringComparerIgnoreCase", 
@@ -281,6 +280,7 @@ $d.define(Nethereum.Generators.BlazorPagesGenerator, null, function($t, $p) {
         this.DTONamespace = null;
         this.CodeGenLanguage = 0 /* CodeGenLanguage */;
         this.SharedTypesNamespace = null;
+        this.ContractDeploymentCQSMessageModel = null;
     };
     $p.get_ContractABI = function BlazorPagesGenerator_get_ContractABI() { return this.ContractABI; };
     $p.get_Namespace = function BlazorPagesGenerator_get_Namespace() { return this.Namespace; };
@@ -293,6 +293,7 @@ $d.define(Nethereum.Generators.BlazorPagesGenerator, null, function($t, $p) {
     $p.get_DTONamespace = function BlazorPagesGenerator_get_DTONamespace() { return this.DTONamespace; };
     $p.get_CodeGenLanguage = function BlazorPagesGenerator_get_CodeGenLanguage() { return this.CodeGenLanguage; };
     $p.get_SharedTypesNamespace = function BlazorPagesGenerator_get_SharedTypesNamespace() { return this.SharedTypesNamespace; };
+    $p.get_ContractDeploymentCQSMessageModel = function BlazorPagesGenerator_get_ContractDeploymentCQSMessageModel() { return this.ContractDeploymentCQSMessageModel; };
     $t.ctor = function BlazorPagesGenerator(contractABI, contractName, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, codeGenLanguage, baseOutputPath, pathDelimiter, namespace) {
         $t.$baseType.ctor.call(this);
         this.ContractABI = contractABI;
@@ -319,9 +320,24 @@ $d.define(Nethereum.Generators.BlazorPagesGenerator, null, function($t, $p) {
         }
 
         var fullPath = this.get_BaseOutputPath();
-        var generator = new Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator.ctor(this.get_ContractABI(), 
+        System.Console.WriteLine$10(String.Format("Generating Blazor Service Page for {0} in {1}", [this.get_ContractName(), 
+            fullPath]));
+        //parameters console
+        System.Console.WriteLine$10("PageNamespace: " + pageNamespace);
+        System.Console.WriteLine$10("ServiceNamespace: " + serviceNamespace);
+        System.Console.WriteLine$10("CQSNamespace: " + cqsNamespace);
+        System.Console.WriteLine$10("DtoNamespace: " + dtoNamespace);
+        System.Console.WriteLine$10("SharedTypesNamespace: " + sharedTypesFullNamespace);
+        System.Console.WriteLine$10("BaseOutputPath: " + this.get_BaseOutputPath());
+        System.Console.WriteLine$10("PathDelimiter: " + this.get_PathDelimiter());
+        System.Console.WriteLine$10("CodeGenLanguage: " + $d.toString($d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
+            this.get_CodeGenLanguage())));
+
+        var generator = new Nethereum.Generators.Service.BlazorPageServiceGenerator.ctor(this.get_ContractABI(), 
             this.get_ContractName(), pageNamespace, serviceNamespace, dtoNamespace, sharedTypesFullNamespace, 
             this.get_CodeGenLanguage());
+        System.Console.WriteLine$10(String.Format("Generating Blazor Service Page Content for {0} in {1}", 
+            [this.get_ContractName(), fullPath]));
         return generator.GenerateFileContent$1(fullPath);
 
     };
@@ -1748,8 +1764,6 @@ $d.define(Nethereum.Generators.Service.AllMessagesModel, Nethereum.Generators.Co
 });
 Nethereum.Generators.Core.IClassGenerator = $d.type("Nethereum.Generators.Core.IClassGenerator", 66, $asm, function($t, $p) {
 });
-Nethereum.Generators.Core.IClassTemplate = $d.type("Nethereum.Generators.Core.IClassTemplate", 66, $asm, function($t, $p) {
-});
 Nethereum.Generators.Core.IClassModel = $d.type("Nethereum.Generators.Core.IClassModel", 66, $asm, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileModel];
 });
@@ -1811,31 +1825,31 @@ $d.define(Nethereum.Generators.Core.TypeMessageModel, null, function($t, $p) {
     $p.Nethereum$Generators$Core$IFileModel$get_Namespace = $p.get_Namespace;
     $p.Nethereum$Generators$Core$IFileModel$get_NamespaceDependencies = $p.get_NamespaceDependencies;
 });
-$d.define(Nethereum.Generators.Core.ClassGeneratorBase$2, null, function($t, $p, TClassTemplate, TClassModel) {
+$d.define(Nethereum.Generators.Core.ClassGeneratorBase$1, null, function($t, $p, TMessageModel) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
-        this.ClassTemplate = $d.defaultOf(TClassTemplate);
-        this.ClassModel = $d.defaultOf(TClassModel);
+        this.ClassTemplate = null;
+        this.ClassModel = $d.defaultOf(TMessageModel);
     };
-    $t.ctor = function ClassGeneratorBase$2() {
+    $t.ctor = function ClassGeneratorBase$1() {
         $t.$baseType.ctor.call(this);
     };
-    $p.get_ClassTemplate = function ClassGeneratorBase$2_get_ClassTemplate() { return this.ClassTemplate; };
-    $p.set_ClassTemplate = function ClassGeneratorBase$2_set_ClassTemplate(value) { this.ClassTemplate = value;return value; };
-    $p.get_ClassModel = function ClassGeneratorBase$2_get_ClassModel() { return this.ClassModel; };
-    $p.set_ClassModel = function ClassGeneratorBase$2_set_ClassModel(value) { this.ClassModel = value;return value; };
-    $p.GenerateFileContent$1 = function ClassGeneratorBase$2_GenerateFileContent(outputPath) {
+    $p.get_ClassTemplate = function ClassGeneratorBase$1_get_ClassTemplate() { return this.ClassTemplate; };
+    $p.set_ClassTemplate = function ClassGeneratorBase$1_set_ClassTemplate(value) { this.ClassTemplate = value;return value; };
+    $p.get_ClassModel = function ClassGeneratorBase$1_get_ClassModel() { return this.ClassModel; };
+    $p.set_ClassModel = function ClassGeneratorBase$1_set_ClassModel(value) { this.ClassModel = value;return value; };
+    $p.GenerateFileContent$1 = function ClassGeneratorBase$1_GenerateFileContent(outputPath) {
         var fileContent = this.GenerateFileContent();
         return fileContent == null ? null : new Nethereum.Generators.Core.GeneratedFile.ctor(fileContent, 
             this.GetFileName(), outputPath);
     };
-    $p.GenerateFileContent = function ClassGeneratorBase$2_GenerateFileContent() {
+    $p.GenerateFileContent = function ClassGeneratorBase$1_GenerateFileContent() {
         return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateFullClass();
     };
-    $p.GetFileName = function ClassGeneratorBase$2_GetFileName() {
+    $p.GetFileName = function ClassGeneratorBase$1_GetFileName() {
         return this.get_ClassModel().GetFileName();
     };
-    $p.GenerateClass = function ClassGeneratorBase$2_GenerateClass() {
+    $p.GenerateClass = function ClassGeneratorBase$1_GenerateClass() {
         return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateClass();
     };
     $p.Nethereum$Generators$Core$IFileGenerator$GenerateFileContent$1 = $p.GenerateFileContent$1;
@@ -1843,9 +1857,9 @@ $d.define(Nethereum.Generators.Core.ClassGeneratorBase$2, null, function($t, $p,
     $p.Nethereum$Generators$Core$IFileGenerator$GetFileName = $p.GetFileName;
     $p.Nethereum$Generators$Core$IGenerator$GenerateClass = $p.GenerateClass;
     $p.Nethereum$Generators$Core$IClassGenerator$GenerateClass = $p.GenerateClass;
-}, [$d.typeParam("TClassTemplate"), $d.typeParam("TClassModel", Nethereum.Generators.Core.TypeMessageModel)]);
-$d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, 
-    22667), Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, 46747), function($t, $p) {
+}, [$d.typeParam("TMessageModel", Nethereum.Generators.Core.TypeMessageModel)]);
+$d.define(Nethereum.Generators.Service.BlazorPageServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.Service.BlazorPageServiceModel, 
+    61243), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -1853,29 +1867,35 @@ $d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceGenerator, Net
     $p.get_ContractABI = function BlazorPageServiceGenerator_get_ContractABI() { return this.ContractABI; };
     $t.ctor = function BlazorPageServiceGenerator(contractABI, contractName, namespace, cqsNamespace, functionOutputNamespace, sharedNamespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
+        System.Console.WriteLine$10(String.Format("Initialising constructor BlazorPageServiceGenerator ContractName: {0}", 
+            [contractName]));
         this.ContractABI = contractABI;
-        this.set_ClassModel(new Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel.ctor(contractABI, 
+        this.set_ClassModel(new Nethereum.Generators.Service.BlazorPageServiceModel.ctor(contractABI, 
             contractName, namespace, cqsNamespace, functionOutputNamespace, sharedNamespace));
+        System.Console.WriteLine$10("Setting Code Language");
         this.get_ClassModel().set_CodeGenLanguage(4 /* CodeGenLanguage.Razor */);
-        this.InitialiseTemplate(4 /* CodeGenLanguage.Razor */);
+        System.Console.WriteLine$10("Initialising template");
+        this.InitialiseTemplate();
+        System.Console.WriteLine$10(String.Format("Finished Initialising constructor BlazorPageServiceGenerator ContractName: {0}", 
+            [contractName]));
     };
-    $p.InitialiseTemplate = function BlazorPageServiceGenerator_InitialiseTemplate(codeGenLanguage) {
-        switch (codeGenLanguage) {
-            case 4 /* CodeGenLanguage.Razor */:
-                this.set_ClassTemplate(new Nethereum.Generators.BlazorServicePage.BlazorPageServiceCSharpRazorTemplate.ctor(this.get_ClassModel()));
-                break;
-            default:
-                throw new System.ArgumentOutOfRangeException.ctor$4("codeGenLanguage", $d.boxEnum(Nethereum.Generators.Core.CodeGenLanguage, 
-                    codeGenLanguage), "Code generation not implemented for this language");
-        }
+    $p.InitialiseTemplate = function BlazorPageServiceGenerator_InitialiseTemplate() {
 
+        System.Console.WriteLine$10("Razor creating template");
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_ContractName()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_ClassNameSuffix()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_Namespace()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().GetServiceTypeName()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().GetContractDeploymentTypeName()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_FunctionOutputNamespace()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_CQSNamespace()]));
+        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_NamespaceDependencies().get_Count()]));
+
+        this.set_ClassTemplate(new Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate.ctor(this.get_ClassModel()));
     };
 });
-$d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
+$d.define(Nethereum.Generators.Service.BlazorPageServiceModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
-    $t.cctor = function() {
-        $t.NAME_SUFFIX = "Page";
-    };
     $t.$ator = function() {
         this.ContractABI = null;
         this.CQSNamespace = null;
@@ -1892,13 +1912,16 @@ $d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, Nethere
     $p.GetContractDeploymentTypeName = function BlazorPageServiceModel_GetContractDeploymentTypeName() {
         return Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel.GetDefaultTypeName(this.get_ContractName());
     };
-    $t.ctor = function BlazorPageServiceModel(contractABI, contractName, namespace, cqsNamespace, functionOutputNamespace, shareNamespace) {
-        $t.$baseType.ctor.call(this, namespace, contractName, $t.NAME_SUFFIX);
+    $t.ctor = function BlazorPageServiceModel(contractABI, contractName, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace) {
+        $t.$baseType.ctor.call(this, namespace, contractName, "Page");
+        System.Console.WriteLine$10(String.Format("Initialising constructor BlazorPageServiceModel ContractName: {0}", 
+            [this.get_ContractName()]));
         this.ContractABI = contractABI;
         this.CQSNamespace = cqsNamespace;
         this.ContractName = contractName;
         this.FunctionOutputNamespace = functionOutputNamespace;
         this.InitialiseNamespaceDependencies();
+
 
         if (!String.IsNullOrEmpty(cqsNamespace))
             this.get_NamespaceDependencies().Add(cqsNamespace);
@@ -1906,14 +1929,16 @@ $d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, Nethere
         if (!String.IsNullOrEmpty(functionOutputNamespace))
             this.get_NamespaceDependencies().Add(functionOutputNamespace);
 
-        if (!String.IsNullOrEmpty(shareNamespace))
-            this.get_NamespaceDependencies().Add(shareNamespace);
+        if (!String.IsNullOrEmpty(sharedTypesFullNamespace))
+            this.get_NamespaceDependencies().Add(sharedTypesFullNamespace);
+        System.Console.WriteLine$10(String.Format("Finished Initialising constructor BlazorPageServiceModel ContractName: {0}", 
+            [this.get_ContractName()]));
     };
     $p.InitialiseNamespaceDependencies = function BlazorPageServiceModel_InitialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System.Numerics", "Nethereum.UI"]));
     };
 });
-$d.define(Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplate, null, function($t, $p) {
+$d.define(Nethereum.Generators.Service.BlazorFunctionComponentsTemplate, null, function($t, $p) {
     $t.$ator = function() {
         this._model = null;
         this._typeConvertor = null;
@@ -1997,35 +2022,41 @@ $d.define(Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplat
                 Nethereum.Generators.Core.SpaceUtils().Three____Tabs, serviceType, Nethereum.Generators.Core.SpaceUtils().Three____Tabs]);
     };
 });
-$d.define(Nethereum.Generators.CQS.ClassTemplateBase$1, null, function($t, $p, TModel) {
+Nethereum.Generators.Core.IClassTemplate = $d.type("Nethereum.Generators.Core.IClassTemplate", 66, $asm, function($t, $p) {
+});
+$d.define(Nethereum.Generators.CQS.ClassTemplateBase, null, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this.ClassFileTemplate = null;
-        this.Model = $d.defaultOf(TModel);
+        this.ClassModel = null;
     };
-    $p.get_ClassFileTemplate = function ClassTemplateBase$1_get_ClassFileTemplate() { return this.ClassFileTemplate; };
-    $p.set_ClassFileTemplate = function ClassTemplateBase$1_set_ClassFileTemplate(value) { this.ClassFileTemplate = value;return value; };
-    $p.get_Model = function ClassTemplateBase$1_get_Model() { return this.Model; };
-    $t.ctor = function ClassTemplateBase$1(model) {
+    $p.get_ClassFileTemplate = function ClassTemplateBase_get_ClassFileTemplate() { return this.ClassFileTemplate; };
+    $p.set_ClassFileTemplate = function ClassTemplateBase_set_ClassFileTemplate(value) { this.ClassFileTemplate = value;return value; };
+    $p.get_ClassModel = function ClassTemplateBase_get_ClassModel() { return this.ClassModel; };
+    $t.ctor = function ClassTemplateBase(model) {
         $t.$baseType.ctor.call(this);
-        this.Model = model;
+        this.ClassModel = model;
     };
-    $p.GenerateFullClass = function ClassTemplateBase$1_GenerateFullClass() {
+    $p.GenerateFullClass = function ClassTemplateBase_GenerateFullClass() {
         return this.get_ClassFileTemplate().GenerateFullClass();
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateFullClass = $p.GenerateFullClass;
-}, [$d.typeParam("TModel")]);
-$d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceCSharpRazorTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.BlazorServicePage.BlazorPageServiceModel, 
-    22667), function($t, $p) {
+});
+$d.define(Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._blazorFunctionComponentsTemplate = null;
     };
+    $p.get_Model = function BlazorPageServiceCSharpRazorTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.Service.BlazorPageServiceModel);
+    };
     $t.ctor = function BlazorPageServiceCSharpRazorTemplate(model) {
         $t.$baseType.ctor.call(this, model);
-        this._blazorFunctionComponentsTemplate = new Nethereum.Generators.BlazorServicePage.BlazorFunctionComponentsTemplate.ctor(model);
+        System.Console.WriteLine$10("Initialising BlazorPageServiceCSharpRazorTemplate");
+        this._blazorFunctionComponentsTemplate = new Nethereum.Generators.Service.BlazorFunctionComponentsTemplate.ctor(model);
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.RazorClassFileTemplate.ctor(this.get_Model(), 
             this));
+        System.Console.WriteLine$10("Finished Initialising BlazorPageServiceCSharpRazorTemplate");
     };
     $p.GenerateClass = function BlazorPageServiceCSharpRazorTemplate_GenerateClass() {
 
@@ -2041,8 +2072,8 @@ $d.define(Nethereum.Generators.BlazorServicePage.BlazorPageServiceCSharpRazorTem
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.Console.ConsoleGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    12205), Nethereum.Generators.Console.ConsoleModel, 26037), function($t, $p) {
+$d.define(Nethereum.Generators.Console.ConsoleGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.Console.ConsoleModel, 
+    12205), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -2105,8 +2136,7 @@ $d.define(Nethereum.Generators.Console.ConsoleModel, Nethereum.Generators.Core.T
             "Nethereum.Contracts.Extensions", "Nethereum.Web3.Accounts", "Nethereum.Contracts", "System.Threading"]));
     };
 });
-$d.define(Nethereum.Generators.Console.CSharp.ConsoleCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    12205), function($t, $p) {
+$d.define(Nethereum.Generators.Console.CSharp.ConsoleCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionMockupMethodCSharp = null;
@@ -2116,19 +2146,20 @@ $d.define(Nethereum.Generators.Console.CSharp.ConsoleCSharpTemplate, Nethereum.G
         $t.$baseType.ctor.call(this, model);
         this._functionMockupMethodCSharp = new Nethereum.Generators.Console.CSharp.FunctionMockupMethodCSharpTemplate.ctor(model.get_ContractABI());
         this._deploymentMockUpMethodCSharpTemplate = new Nethereum.Generators.Console.CSharp.ContractDeploymentMockUpMethodCSharpTemplate.ctor(model.get_ContractDeploymentCQSMessageModel());
-        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_ClassModel(), 
             this));
     };
     $p.GenerateClass = function ConsoleCSharpTemplate_GenerateClass() {
         return String.Format("{0}public class {1}\r\n{2}{{\r\n{3}public static async Task Main()\r\n{4}{{\r\n{5}var url = \"http://testchain.nethereum.com:8545\";\r\n{6}//var url = \"https://mainnet.infura.io\";\r\n{7}var privateKey = \"0x7580e7fb49df1c861f0050fae31c2224c6aba908e116b8da44ee8cd927b990b0\";\r\n{8}var account = new Nethereum.Web3.Accounts.Account(privateKey);\r\n{9}var web3 = new Web3(account, url);\r\n{10}\r\n{11}\r\n{12}var contractHandler = web3.Eth.GetContractHandler(contractAddress);\r\n{13}\r\n{14}}}\r\n{15}\r\n{16}}}", 
-            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().Three____Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().Three____Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
-                Nethereum.Generators.Core.SpaceUtils().Three____Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
-                this._deploymentMockUpMethodCSharpTemplate.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
-                this._functionMockupMethodCSharp.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().One__Tab]);
+                Nethereum.Generators.Core.SpaceUtils().Three____Tabs, this._deploymentMockUpMethodCSharpTemplate.GenerateMethods(), 
+                Nethereum.Generators.Core.SpaceUtils().Three____Tabs, this._functionMockupMethodCSharp.GenerateMethods(), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
@@ -2262,8 +2293,7 @@ $d.define(Nethereum.Generators.Console.CSharp.FunctionMockupMethodCSharpTemplate
         return System.Environment().NewLine + System.Environment().NewLine;
     };
 });
-$d.define(Nethereum.Generators.Console.Vb.ConsoleVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Console.ConsoleModel, 
-    12205), function($t, $p) {
+$d.define(Nethereum.Generators.Console.Vb.ConsoleVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionMockupMethodVb = null;
@@ -2273,7 +2303,7 @@ $d.define(Nethereum.Generators.Console.Vb.ConsoleVbTemplate, Nethereum.Generator
         $t.$baseType.ctor.call(this, model);
         this._functionMockupMethodVb = new Nethereum.Generators.Console.Vb.FunctionMockupMethodVbTemplate.ctor(model.get_ContractABI());
         this._contractDeploymentMockUpMethodVb = new Nethereum.Generators.Console.Vb.ContractDeploymentMockUpMethodVbTemplate.ctor(model.get_ContractDeploymentCQSMessageModel());
-        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.VbClassFileTemplate.ctor(this.get_Model(), 
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.VbClassFileTemplate.ctor(this.get_ClassModel(), 
             this));
     };
     $p.GenerateClass = function ConsoleVbTemplate_GenerateClass() {
@@ -2996,8 +3026,8 @@ $d.define(Nethereum.Generators.CQS.VbMultipleClassFileTemplate, Nethereum.Genera
         return result;
     };
 });
-$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    50469), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 52769), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
+    50469), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function ContractDeploymentCQSMessageGenerator(abi, namespaceName, byteCode, contractName, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -3026,9 +3056,6 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageGenerator, Nether
 });
 $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
-    $t.cctor = function() {
-        $t.NAME_SUFFIX = "Deployment";
-    };
     $t.$ator = function() {
         this.ConstructorABI = null;
         this.ByteCode = null;
@@ -3036,10 +3063,10 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.
     $p.get_ConstructorABI = function ContractDeploymentCQSMessageModel_get_ConstructorABI() { return this.ConstructorABI; };
     $p.get_ByteCode = function ContractDeploymentCQSMessageModel_get_ByteCode() { return this.ByteCode; };
     $t.GetDefaultTypeName = function ContractDeploymentCQSMessageModel_GetDefaultTypeName(name) {
-        return Nethereum.Generators.Core.TypeMessageModel.GetDefaultTypeName(name, $t().NAME_SUFFIX);
+        return Nethereum.Generators.Core.TypeMessageModel.GetDefaultTypeName(name, "Deployment");
     };
     $t.ctor = function ContractDeploymentCQSMessageModel(constructorABI, namespace, byteCode, contractName) {
-        $t.$baseType.ctor.call(this, namespace, contractName, $t.NAME_SUFFIX);
+        $t.$baseType.ctor.call(this, namespace, contractName, "Deployment");
         this.ConstructorABI = constructorABI;
         this.ByteCode = byteCode;
         this.InitisialiseNamespaceDependencies();
@@ -3050,8 +3077,8 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, Nethereum.
             "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
-$d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    46813), Nethereum.Generators.CQS.FunctionCQSMessageModel, 59), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.FunctionCQSMessageGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
+    46813), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.FunctionABI = null;
@@ -3125,8 +3152,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageModel, Nethereum.Generators
             "Nethereum.ABI.FunctionEncoding.Attributes", sharedTypesNamespace]));
     };
 });
-$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    50469), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
@@ -3136,8 +3162,11 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, N
         this._parameterAbiFunctionDtocSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate.ctor();
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(model, this));
     };
+    $p.get_Model = function ContractDeploymentCQSMessageCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel);
+    };
     $p.GenerateClass = function ContractDeploymentCQSMessageCSharpTemplate_GenerateClass() {
-        var typeName = this.get_Model().GetTypeName();
+        var typeName = this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName();
         return String.Format("{0}\r\n\r\n{1}public class {2}Base : ContractDeploymentMessage\r\n{3}{{\r\n{4}public static string BYTECODE = \"{5}\";\r\n{6}public {7}Base() : base(BYTECODE) {{ }}\r\n{8}public {9}Base(string byteCode) : base(byteCode) {{ }}\r\n{10}\r\n{11}}}", 
             [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, typeName, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
                 Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().get_ByteCode(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
@@ -3145,7 +3174,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, N
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GetPartialMainClass = function ContractDeploymentCQSMessageCSharpTemplate_GetPartialMainClass() {
-        var typeName = this.get_Model().GetTypeName();
+        var typeName = this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName();
 
         return String.Format("{0}public partial class {1} : {2}Base\r\n{3}{{\r\n{4}public {5}() : base(BYTECODE) {{ }}\r\n{6}public {7}(string byteCode) : base(byteCode) {{ }}\r\n{8}}}", 
             [Nethereum.Generators.Core.SpaceUtils().One__Tab, typeName, typeName, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
@@ -3154,13 +3183,15 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageCSharpTemplate, N
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    46813), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
         this._functionOutputDTOModel = null;
         this._functionABIModel = null;
+    };
+    $p.get_Model = function FunctionCQSMessageCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.FunctionCQSMessageModel);
     };
     $t.ctor = function FunctionCQSMessageCSharpTemplate(model, functionOutputDTOModel, functionABIModel) {
         $t.$baseType.ctor.call(this, model);
@@ -3198,8 +3229,7 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageCSharpTemplate, Nethereum.G
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    50469), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
@@ -3208,6 +3238,9 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, N
         $t.$baseType.ctor.call(this, model);
         this._parameterAbiFunctionDtoFSharpTemplate = new Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate.ctor();
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.FSharpClassFileTemplate.ctor(model, this));
+    };
+    $p.get_Model = function ContractDeploymentCQSMessageFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel);
     };
     $p.GenerateClass = function ContractDeploymentCQSMessageFSharpTemplate_GenerateClass() {
         var typeName = this.get_Model().GetTypeName();
@@ -3220,13 +3253,15 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageFSharpTemplate, N
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    46813), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
         this._functionOutputDTOModel = null;
         this._functionABIModel = null;
+    };
+    $p.get_Model = function FunctionCQSMessageFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.FunctionCQSMessageModel);
     };
     $t.ctor = function FunctionCQSMessageFSharpTemplate(model, functionOutputDTOModel, functionABIModel) {
         $t.$baseType.ctor.call(this, model);
@@ -3261,11 +3296,13 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageFSharpTemplate, Nethereum.G
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel, 
-    50469), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtovbTemplate = null;
+    };
+    $p.get_Model = function ContractDeploymentCQSMessageVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel);
     };
     $t.ctor = function ContractDeploymentCQSMessageVbTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -3273,7 +3310,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethe
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.VbClassFileTemplate.ctor(model, this));
     };
     $p.GenerateClass = function ContractDeploymentCQSMessageVbTemplate_GenerateClass() {
-        var typeName = this.get_Model().GetTypeName();
+        var typeName = this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName();
         return String.Format("{0}\r\n\r\n{1}Public Class {2}Base \r\n{3}Inherits ContractDeploymentMessage\r\n{4}\r\n{5}Public Shared DEFAULT_BYTECODE As String = \"{6}\"\r\n{7}\r\n{8}Public Sub New()\r\n{9}MyBase.New(DEFAULT_BYTECODE)\r\n{10}End Sub\r\n{11}\r\n{12}Public Sub New(ByVal byteCode As String)\r\n{13}MyBase.New(byteCode)\r\n{14}End Sub\r\n{15}\r\n{16}\r\n{17}\r\n{18}End Class", 
             [this.GetPartialMainClass(), Nethereum.Generators.Core.SpaceUtils().One__Tab, typeName, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
@@ -3285,7 +3322,7 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethe
                 Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GetPartialMainClass = function ContractDeploymentCQSMessageVbTemplate_GetPartialMainClass() {
-        var typeName = this.get_Model().GetTypeName();
+        var typeName = this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName();
 
         return String.Format("{0}Public Partial Class {1}\r\n{2} Inherits {3}Base\r\n{4}\r\n{5}Public Sub New()\r\n{6}MyBase.New(DEFAULT_BYTECODE)\r\n{7}End Sub\r\n{8}\r\n{9}Public Sub New(ByVal byteCode As String)\r\n{10}MyBase.New(byteCode)\r\n{11}End Sub\r\n{12}\r\n{13}End Class", 
             [Nethereum.Generators.Core.SpaceUtils().One__Tab, typeName, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
@@ -3297,13 +3334,15 @@ $d.define(Nethereum.Generators.CQS.ContractDeploymentCQSMessageVbTemplate, Nethe
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.CQS.FunctionCQSMessageModel, 
-    46813), function($t, $p) {
+$d.define(Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtovbTemplate = null;
         this._functionOutputDTOModel = null;
         this._functionABIModel = null;
+    };
+    $p.get_Model = function FunctionCQSMessageVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.CQS.FunctionCQSMessageModel);
     };
     $t.ctor = function FunctionCQSMessageVbTemplate(model, functionOutputDTOModel, functionABIModel) {
         $t.$baseType.ctor.call(this, model);
@@ -3344,8 +3383,8 @@ $d.define(Nethereum.Generators.CQS.FunctionCQSMessageVbTemplate, Nethereum.Gener
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.ErrorDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
-    13865), Nethereum.Generators.DTOs.ErrorDTOModel, 41555), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.ErrorDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
+    13865), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function ErrorDTOGenerator(abi, namespace, sharedTypesNamespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -3392,8 +3431,8 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOModel, Nethereum.Generators.Core.Typ
         return this.get_ErrorABI().get_InputParameters() != null && this.get_ErrorABI().get_InputParameters().length > 0;
     };
 });
-$d.define(Nethereum.Generators.DTOs.EventDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    57448), Nethereum.Generators.DTOs.EventDTOModel, 47392), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.EventDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
+    57448), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function EventDTOGenerator(abi, namespace, sharedTypesNamespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -3443,8 +3482,8 @@ $d.define(Nethereum.Generators.DTOs.EventDTOModel, Nethereum.Generators.Core.Typ
         return this.get_EventABI().get_InputParameters() != null && this.get_EventABI().get_InputParameters().length > 0;
     };
 });
-$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    2635), Nethereum.Generators.DTOs.FunctionOutputDTOModel, 4405), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
+    2635), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function FunctionOutputDTOGenerator(functionABI, namespace, sharedTypesNamespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -3473,10 +3512,10 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOGenerator, Nethereum.Genera
         }
     };
     $p.GenerateClass = function FunctionOutputDTOGenerator_GenerateClass() {
-        return this.get_ClassModel().CanGenerateOutputDTO() ? this.get_ClassTemplate().GenerateClass() : null;
+        return this.get_ClassModel().CanGenerateOutputDTO() ? this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateClass() : null;
     };
     $p.GenerateFileContent = function FunctionOutputDTOGenerator_GenerateFileContent() {
-        return this.get_ClassModel().CanGenerateOutputDTO() ? this.get_ClassTemplate().GenerateFullClass() : null;
+        return this.get_ClassModel().CanGenerateOutputDTO() ? this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateFullClass() : null;
     };
     $p.Nethereum$Generators$Core$IFileGenerator$GenerateFileContent = $p.GenerateFileContent;
     $p.Nethereum$Generators$Core$IGenerator$GenerateClass = $p.GenerateClass;
@@ -3504,8 +3543,8 @@ $d.define(Nethereum.Generators.DTOs.FunctionOutputDTOModel, Nethereum.Generators
             null, this.get_CodeGenLanguage()).IsMultipleOutput();
     };
 });
-$d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    44706), Nethereum.Generators.DTOs.StructTypeModel, 18904), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
+    44706), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function StructTypeGenerator(structTypeABI, namespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -3533,10 +3572,10 @@ $d.define(Nethereum.Generators.DTOs.StructTypeGenerator, Nethereum.Generators.Co
         }
     };
     $p.GenerateClass = function StructTypeGenerator_GenerateClass() {
-        return this.get_ClassTemplate().GenerateClass();
+        return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateClass();
     };
     $p.GenerateFileContent = function StructTypeGenerator_GenerateFileContent() {
-        return this.get_ClassTemplate().GenerateFullClass();
+        return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateFullClass();
     };
     $p.Nethereum$Generators$Core$IFileGenerator$GenerateFileContent = $p.GenerateFileContent;
     $p.Nethereum$Generators$Core$IGenerator$GenerateClass = $p.GenerateClass;
@@ -3558,11 +3597,13 @@ $d.define(Nethereum.Generators.DTOs.StructTypeModel, Nethereum.Generators.Core.T
             "System.Collections.Generic", "System.Numerics", "Nethereum.Hex.HexTypes", "Nethereum.ABI.FunctionEncoding.Attributes"]));
     };
 });
-$d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
-    13865), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiErrorDtocSharpTemplate = null;
+    };
+    $p.get_Model = function ErrorDTOCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.ErrorDTOModel);
     };
     $t.ctor = function ErrorDTOCSharpTemplate(errorDTOModel) {
         $t.$baseType.ctor.call(this, errorDTOModel);
@@ -3591,11 +3632,13 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOCSharpTemplate, Nethereum.Generators
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    57448), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtocSharpTemplate = null;
+    };
+    $p.get_Model = function EventDTOCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.EventDTOModel);
     };
     $t.ctor = function EventDTOCSharpTemplate(eventDTOModel) {
         $t.$baseType.ctor.call(this, eventDTOModel);
@@ -3625,11 +3668,13 @@ $d.define(Nethereum.Generators.DTOs.EventDTOCSharpTemplate, Nethereum.Generators
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    2635), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $p.get_Model = function FunctionOutputDTOCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.FunctionOutputDTOModel);
     };
     $t.ctor = function FunctionOutputDTOCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -3728,11 +3773,13 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOCSharpTemplate, null,
             parameterModel.GetVariableName()]);
     };
 });
-$d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    44706), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $p.get_Model = function StructTypeCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.StructTypeModel);
     };
     $t.ctor = function StructTypeCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -3753,11 +3800,13 @@ $d.define(Nethereum.Generators.DTOs.StructTypeCSharpTemplate, Nethereum.Generato
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
-    13865), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiErrorDtoFSharpTemplate = null;
+    };
+    $p.get_Model = function ErrorDTOFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.ErrorDTOModel);
     };
     $t.ctor = function ErrorDTOFSharpTemplate(errorDTOModel) {
         $t.$baseType.ctor.call(this, errorDTOModel);
@@ -3782,11 +3831,13 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOFSharpTemplate, Nethereum.Generators
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    57448), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtoFSharpTemplate = null;
+    };
+    $p.get_Model = function EventDTOFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.EventDTOModel);
     };
     $t.ctor = function EventDTOFSharpTemplate(eventDTOModel) {
         $t.$baseType.ctor.call(this, eventDTOModel);
@@ -3811,11 +3862,13 @@ $d.define(Nethereum.Generators.DTOs.EventDTOFSharpTemplate, Nethereum.Generators
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    2635), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
+    };
+    $p.get_Model = function FunctionOutputDTOFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.FunctionOutputDTOModel);
     };
     $t.ctor = function FunctionOutputDTOFSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -3901,11 +3954,13 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOFSharpTemplate, null,
             parameterModel.GetVariableName()]);
     };
 });
-$d.define(Nethereum.Generators.DTOs.StructTypeFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    44706), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.StructTypeFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoFSharpTemplate = null;
+    };
+    $p.get_Model = function StructTypeFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.StructTypeModel);
     };
     $t.ctor = function StructTypeFSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -3921,11 +3976,13 @@ $d.define(Nethereum.Generators.DTOs.StructTypeFSharpTemplate, Nethereum.Generato
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.ErrorDTOModel, 
-    13865), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiErrorDtoVbTemplate = null;
+    };
+    $p.get_Model = function ErrorDTOVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.ErrorDTOModel);
     };
     $t.ctor = function ErrorDTOVbTemplate(errorDTOModel) {
         $t.$baseType.ctor.call(this, errorDTOModel);
@@ -3958,11 +4015,13 @@ $d.define(Nethereum.Generators.DTOs.ErrorDTOVbTemplate, Nethereum.Generators.CQS
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.EventDTOModel, 
-    57448), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiEventDtoVbTemplate = null;
+    };
+    $p.get_Model = function EventDTOVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.EventDTOModel);
     };
     $t.ctor = function EventDTOVbTemplate(eventDTOModel) {
         $t.$baseType.ctor.call(this, eventDTOModel);
@@ -3995,11 +4054,13 @@ $d.define(Nethereum.Generators.DTOs.EventDTOVbTemplate, Nethereum.Generators.CQS
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.FunctionOutputDTOModel, 
-    2635), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.FunctionOutputDTOVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoVbTemplate = null;
+    };
+    $p.get_Model = function FunctionOutputDTOVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.FunctionOutputDTOModel);
     };
     $t.ctor = function FunctionOutputDTOVbTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -4091,11 +4152,13 @@ $d.define(Nethereum.Generators.DTOs.ParameterABIFunctionDTOVbTemplate, null, fun
             parameterModel.GetVariableName()]);
     };
 });
-$d.define(Nethereum.Generators.DTOs.StructTypeVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.DTOs.StructTypeModel, 
-    44706), function($t, $p) {
+$d.define(Nethereum.Generators.DTOs.StructTypeVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtoVbTemplate = null;
+    };
+    $p.get_Model = function StructTypeVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.DTOs.StructTypeModel);
     };
     $t.ctor = function StructTypeVbTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -4118,8 +4181,8 @@ $d.define(Nethereum.Generators.DTOs.StructTypeVbTemplate, Nethereum.Generators.C
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.MudService.MudServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudService.MudServiceModel, 
-    59223), Nethereum.Generators.MudService.MudServiceModel, 44164), function($t, $p) {
+$d.define(Nethereum.Generators.MudService.MudServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.MudService.MudServiceModel, 
+    59223), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -4211,9 +4274,11 @@ $d.define(Nethereum.Generators.MudService.MudServiceModel, Nethereum.Generators.
             "Nethereum.Contracts", "System.Threading"]));
     };
 });
-$d.define(Nethereum.Generators.MudService.MudServiceCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudService.MudServiceModel, 
-    59223), function($t, $p) {
+$d.define(Nethereum.Generators.MudService.MudServiceCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $p.get_Model = function MudServiceCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.MudService.MudServiceModel);
+    };
     $t.ctor = function MudServiceCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 
@@ -4263,9 +4328,11 @@ $d.define(Nethereum.Generators.MudService.MudServiceCSharpTemplate, Nethereum.Ge
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.MudService.MudServiceFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudService.MudServiceModel, 
-    59223), function($t, $p) {
+$d.define(Nethereum.Generators.MudService.MudServiceFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $p.get_Model = function MudServiceFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.MudService.MudServiceModel);
+    };
     $t.ctor = function MudServiceFSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
 
@@ -4277,7 +4344,7 @@ $d.define(Nethereum.Generators.MudService.MudServiceFSharpTemplate, Nethereum.Ge
 
         //            return
         //                $@"
-        //{SpaceUtils.One__Tab}type {Model.GetTypeName()} (web3: Web3, contractAddress: string) =
+        //{SpaceUtils.One__Tab}type {ClassModel.GetTypeName()} (web3: Web3, contractAddress: string) =
         //{SpaceUtils.One__Tab}
 
         //{SpaceUtils.One__Tab}
@@ -4289,9 +4356,11 @@ $d.define(Nethereum.Generators.MudService.MudServiceFSharpTemplate, Nethereum.Ge
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.MudService.MudServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudService.MudServiceModel, 
-    59223), function($t, $p) {
+$d.define(Nethereum.Generators.MudService.MudServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $p.get_Model = function MudServiceVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.MudService.MudServiceModel);
+    };
     $t.ctor = function MudServiceVbTemplate(model) {
         $t.$baseType.ctor.call(this, model);
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.VbClassFileTemplate.ctor(this.get_Model(), 
@@ -4360,8 +4429,8 @@ $d.define(Nethereum.Generators.MudTable.MudTable, null, function($t, $p) {
     $p.get_Keys = function MudTable_get_Keys() { return this.Keys; };
     $p.set_Keys = function MudTable_set_Keys(value) { this.Keys = value;return value; };
 });
-$d.define(Nethereum.Generators.MudTable.MudTableGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudTable.MudTableModel, 
-    8377), Nethereum.Generators.MudTable.MudTableModel, 16111), function($t, $p) {
+$d.define(Nethereum.Generators.MudTable.MudTableGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.MudTable.MudTableModel, 
+    8377), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.ctor = function MudTableGenerator(mudTable, namespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
@@ -4391,10 +4460,10 @@ $d.define(Nethereum.Generators.MudTable.MudTableGenerator, Nethereum.Generators.
         }
     };
     $p.GenerateClass = function MudTableGenerator_GenerateClass() {
-        return this.get_ClassTemplate().GenerateClass();
+        return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateClass();
     };
     $p.GenerateFileContent = function MudTableGenerator_GenerateFileContent() {
-        return this.get_ClassTemplate().GenerateFullClass();
+        return this.get_ClassTemplate().Nethereum$Generators$Core$IClassTemplate$GenerateFullClass();
     };
     $p.Nethereum$Generators$Core$IFileGenerator$GenerateFileContent = $p.GenerateFileContent;
     $p.Nethereum$Generators$Core$IGenerator$GenerateClass = $p.GenerateClass;
@@ -4429,11 +4498,13 @@ $d.define(Nethereum.Generators.MudTable.MudTableModel, Nethereum.Generators.Core
         return String.Format("{0}TableService", [this.get_Name()]);
     };
 });
-$d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.MudTable.MudTableModel, 
-    8377), function($t, $p) {
+$d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $p.get_Model = function MudTableCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.MudTable.MudTableModel);
     };
     $t.ctor = function MudTableCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -4585,8 +4656,8 @@ $d.define(Nethereum.Generators.MudTable.MudTableCSharpTemplate, Nethereum.Genera
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33121), Nethereum.Generators.Service.ServiceModel, 34828), function($t, $p) {
+$d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.Service.ServiceModel, 
+    33121), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -4620,9 +4691,6 @@ $d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Co
 });
 $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.TypeMessageModel, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassModel, Nethereum.Generators.Core.IFileModel];
-    $t.cctor = function() {
-        $t.NAME_SUFFIX = "Service";
-    };
     $t.$ator = function() {
         this.ContractABI = null;
         this.CQSNamespace = null;
@@ -4636,7 +4704,7 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
     $p.get_SharedTypesFullNamespace = function ServiceModel_get_SharedTypesFullNamespace() { return this.SharedTypesFullNamespace; };
     $p.get_ContractDeploymentCQSMessageModel = function ServiceModel_get_ContractDeploymentCQSMessageModel() { return this.ContractDeploymentCQSMessageModel; };
     $t.ctor = function ServiceModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace) {
-        $t.$baseType.ctor.call(this, namespace, contractName, $t.NAME_SUFFIX);
+        $t.$baseType.ctor.call(this, namespace, contractName, "Service");
         this.ContractABI = contractABI;
         this.CQSNamespace = cqsNamespace;
         this.FunctionOutputNamespace = functionOutputNamespace;
@@ -4655,7 +4723,7 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
             this.get_NamespaceDependencies().Add(sharedTypesFullNamespace);
     };
     $t.GetDefaultTypeName = function ServiceModel_GetDefaultTypeName(name) {
-        return Nethereum.Generators.Core.TypeMessageModel.GetDefaultTypeName(name, $t().NAME_SUFFIX);
+        return Nethereum.Generators.Core.TypeMessageModel.GetDefaultTypeName(name, "Service");
     };
     $p.InitialiseNamespaceDependencies = function ServiceModel_InitialiseNamespaceDependencies() {
         this.get_NamespaceDependencies().AddRange($d.array(String, ["System", "System.Threading.Tasks", 
@@ -4886,8 +4954,7 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate, null
         return System.Environment().NewLine + System.Environment().NewLine;
     };
 });
-$d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33121), function($t, $p) {
+$d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodCSharpTemplate = null;
@@ -4897,7 +4964,7 @@ $d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generato
         $t.$baseType.ctor.call(this, model);
         this._functionServiceMethodCSharpTemplate = new Nethereum.Generators.Service.FunctionServiceMethodCSharpTemplate.ctor(model);
         this._deploymentServiceMethodsCSharpTemplate = new Nethereum.Generators.Service.ContractDeploymentServiceMethodsCSharpTemplate.ctor(model);
-        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 
+        this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_ClassModel(), 
             this));
     };
     $p.GenerateClass = function ServiceCSharpTemplate_GenerateClass() {
@@ -4906,17 +4973,19 @@ $d.define(Nethereum.Generators.Service.ServiceCSharpTemplate, Nethereum.Generato
     };
     $p.GenerateMainClass = function ServiceCSharpTemplate_GenerateMainClass() {
         return String.Format("{0}public partial class {1}: {2}Base\r\n{3}{{\r\n{4}\r\n{5}\r\n{6}public {7}(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)\r\n{8}{{\r\n{9}}}\r\n\r\n{10}}}", 
-            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), this.get_Model().GetTypeName(), 
-                Nethereum.Generators.Core.SpaceUtils().One__Tab, this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), 
-                Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), 
+                this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
+                this._deploymentServiceMethodsCSharpTemplate.GenerateMethods(), Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
     $p.GenerateBaseClass = function ServiceCSharpTemplate_GenerateBaseClass() {
         return String.Format("{0}public partial class {1}Base: ContractWeb3ServiceBase\r\n{2}{{\r\n{3}\r\n{4}public {5}Base(Nethereum.Web3.IWeb3 web3, string contractAddress) : base(web3, contractAddress)\r\n{6}{{\r\n{7}}}\r\n{8}\r\n{9}\r\n{10}}}", 
-            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                Nethereum.Generators.Core.SpaceUtils().NoTabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                this.get_Model().GetTypeName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+            [Nethereum.Generators.Core.SpaceUtils().One__Tab, this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().NoTabs, 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_ClassModel().Nethereum$Generators$Core$IClassModel$GetTypeName(), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().NoTabs, this._functionServiceMethodCSharpTemplate.GenerateMethods(), 
                 Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };
@@ -5024,12 +5093,14 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodFSharpTemplate, null
         return null;
     };
 });
-$d.define(Nethereum.Generators.Service.ServiceFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33121), function($t, $p) {
+$d.define(Nethereum.Generators.Service.ServiceFSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodFSharpTemplate = null;
         this._deploymentServiceMethodsFSharpTemplate = null;
+    };
+    $p.get_Model = function ServiceFSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.Service.ServiceModel);
     };
     $t.ctor = function ServiceFSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -5238,12 +5309,14 @@ $d.define(Nethereum.Generators.Service.FunctionServiceMethodVbTemplate, null, fu
         return System.Environment().NewLine + System.Environment().NewLine;
     };
 });
-$d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Service.ServiceModel, 
-    33121), function($t, $p) {
+$d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._functionServiceMethodVbTemplate = null;
         this._deploymentServiceMethodsVbTemplate = null;
+    };
+    $p.get_Model = function ServiceVbTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.Service.ServiceModel);
     };
     $t.ctor = function ServiceVbTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -5269,8 +5342,8 @@ $d.define(Nethereum.Generators.Service.ServiceVbTemplate, Nethereum.Generators.C
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.Unity.UnityContractFactoryGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityContractFactoryModel, 
-    12798), Nethereum.Generators.Unity.UnityContractFactoryModel, 14598), function($t, $p) {
+$d.define(Nethereum.Generators.Unity.UnityContractFactoryGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.Unity.UnityContractFactoryModel, 
+    12798), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -5328,8 +5401,8 @@ $d.define(Nethereum.Generators.Unity.UnityContractFactoryModel, Nethereum.Genera
             "Nethereum.RPC.Eth.DTOs", "Nethereum.Unity.Contracts", "Newtonsoft.Json"]));
     };
 });
-$d.define(Nethereum.Generators.Unity.UnityRequestsGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityRequestsModel, 
-    57724), Nethereum.Generators.Unity.UnityRequestsModel, 18465), function($t, $p) {
+$d.define(Nethereum.Generators.Unity.UnityRequestsGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.Unity.UnityRequestsModel, 
+    57724), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -5389,13 +5462,15 @@ $d.define(Nethereum.Generators.Unity.UnityRequestsModel, Nethereum.Generators.Co
             "Nethereum.RPC.Eth.DTOs", "Nethereum.Unity.Contracts", "Newtonsoft.Json"]));
     };
 });
-$d.define(Nethereum.Generators.Unity.CSharp.UnityContractFactoryCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityContractFactoryModel, 
-    12798), function($t, $p) {
+$d.define(Nethereum.Generators.Unity.CSharp.UnityContractFactoryCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._model = null;
         this._commonGenerators = null;
         this._typeConvertor = null;
+    };
+    $p.get_Model = function UnityContractFactoryCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.Unity.UnityContractFactoryModel);
     };
     $t.ctor = function UnityContractFactoryCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
@@ -5444,14 +5519,16 @@ $d.define(Nethereum.Generators.Unity.CSharp.UnityContractFactoryCSharpTemplate, 
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsCsharpTemplates, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.Unity.UnityRequestsModel, 
-    57724), function($t, $p) {
+$d.define(Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsCsharpTemplates, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
     $t.$ator = function() {
         this._model = null;
         this._commonGenerators = null;
         this._typeConvertor = null;
         this._parameterAbiFunctionDtocSharpTemplate = null;
+    };
+    $p.get_Model = function UnityFunctionRequestsCsharpTemplates_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.Unity.UnityRequestsModel);
     };
     $t.ctor = function UnityFunctionRequestsCsharpTemplates(model) {
         $t.$baseType.ctor.call(this, model);
@@ -5539,8 +5616,8 @@ $d.define(Nethereum.Generators.Unity.CSharp.UnityFunctionRequestsCsharpTemplates
     };
     $p.Nethereum$Generators$Core$IClassTemplate$GenerateClass = $p.GenerateClass;
 });
-$d.define(Nethereum.Generators.XUnit.SimpleTestGenerator, Nethereum.Generators.Core.ClassGeneratorBase$2(Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.XUnit.SimpleTestModel, 
-    50434), Nethereum.Generators.XUnit.SimpleTestModel, 37075), function($t, $p) {
+$d.define(Nethereum.Generators.XUnit.SimpleTestGenerator, Nethereum.Generators.Core.ClassGeneratorBase$1(Nethereum.Generators.XUnit.SimpleTestModel, 
+    50434), function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IFileGenerator, Nethereum.Generators.Core.IGenerator, Nethereum.Generators.Core.IClassGenerator];
     $t.$ator = function() {
         this.ContractABI = null;
@@ -5592,9 +5669,11 @@ $d.define(Nethereum.Generators.XUnit.SimpleTestModel, Nethereum.Generators.Core.
             "Nethereum.Contracts.CQS", "Nethereum.Contracts.IntegrationTester", "Xunit", "Xunit.Abstractions"]));
     };
 });
-$d.define(Nethereum.Generators.XUnit.SimpleTestCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase$1(Nethereum.Generators.XUnit.SimpleTestModel, 
-    50434), function($t, $p) {
+$d.define(Nethereum.Generators.XUnit.SimpleTestCSharpTemplate, Nethereum.Generators.CQS.ClassTemplateBase, function($t, $p) {
     $t.$intfs = [Nethereum.Generators.Core.IClassTemplate];
+    $p.get_Model = function SimpleTestCSharpTemplate_get_Model() {
+        return $d.cast(this.get_ClassModel(), Nethereum.Generators.XUnit.SimpleTestModel);
+    };
     $t.ctor = function SimpleTestCSharpTemplate(model) {
         $t.$baseType.ctor.call(this, model);
         this.set_ClassFileTemplate(new Nethereum.Generators.CQS.CSharpClassFileTemplate.ctor(this.get_Model(), 

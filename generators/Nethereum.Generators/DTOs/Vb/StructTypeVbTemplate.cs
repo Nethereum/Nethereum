@@ -4,8 +4,10 @@ using Nethereum.Generators.CQS;
 namespace Nethereum.Generators.DTOs
 {
 
-    public class StructTypeVbTemplate : ClassTemplateBase<StructTypeModel>
+    public class StructTypeVbTemplate : ClassTemplateBase
     {
+        public StructTypeModel Model => (StructTypeModel)ClassModel;
+
         private ParameterABIFunctionDTOVbTemplate _parameterAbiFunctionDtoVbTemplate;
         public StructTypeVbTemplate(StructTypeModel model) : base(model)
         {

@@ -28,6 +28,12 @@ namespace Nethereum.Generators.UnitTests.Tests
                     },
                     {
                         ""baseNamespace"": ""MyProject.Contracts"",
+                        ""basePath"": ""codeGenNodeTest/GeneratorSets/Example1/MyProject.Blazor"",
+                        ""codeGenLang"": 0,
+                        ""generatorType"": ""BlazorPageService""
+                    },
+                    {
+                        ""baseNamespace"": ""MyProject.Contracts"",
                         ""basePath"": ""codeGenNodeTest/GeneratorSets/Example2/MyProject.Contracts"",
                         ""codeGenLang"": 0,
                         ""generatorType"": ""UnityRequest""

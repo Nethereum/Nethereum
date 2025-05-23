@@ -11,6 +11,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
 using MyProject.Contracts.Standard_Token.ContractDefinition;
+using MyProject.Contracts.SharedTypes;
 
 namespace MyProject.Contracts.Standard_Token
 {

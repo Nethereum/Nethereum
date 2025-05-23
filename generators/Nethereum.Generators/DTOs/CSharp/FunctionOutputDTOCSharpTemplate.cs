@@ -4,8 +4,10 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOCSharpTemplate: ClassTemplateBase<FunctionOutputDTOModel>
+    public class FunctionOutputDTOCSharpTemplate: ClassTemplateBase
     {
+        public FunctionOutputDTOModel Model => (FunctionOutputDTOModel)ClassModel;
+
         private ParameterABIFunctionDTOCSharpTemplate _parameterAbiFunctionDtocSharpTemplate;
         public FunctionOutputDTOCSharpTemplate(FunctionOutputDTOModel model):base(model)
         {

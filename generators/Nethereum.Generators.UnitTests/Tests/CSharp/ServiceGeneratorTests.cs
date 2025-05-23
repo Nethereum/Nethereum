@@ -34,7 +34,7 @@ namespace Nethereum.Generators.Tests.CSharp
             };
 
 
-            return new ServiceGenerator(contractABI, "StandardContract", "0x123456", "DefaultNamespace", "CQS", "Functions",  CodeGenLanguage.CSharp);
+            return new ServiceGenerator(contractABI, "StandardContract", "0x123456", "DefaultNamespace", "CQS", "Functions", null, CodeGenLanguage.CSharp);
         }
 
 

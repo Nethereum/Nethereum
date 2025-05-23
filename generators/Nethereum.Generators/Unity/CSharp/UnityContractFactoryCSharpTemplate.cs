@@ -6,8 +6,9 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.Unity.CSharp
 {
-    public class UnityContractFactoryCSharpTemplate : ClassTemplateBase<UnityContractFactoryModel>
+    public class UnityContractFactoryCSharpTemplate : ClassTemplateBase
     {
+        public UnityContractFactoryModel Model => (UnityContractFactoryModel)ClassModel;
         private readonly UnityContractFactoryModel _model;
         private CommonGenerators _commonGenerators;
         private ITypeConvertor _typeConvertor;

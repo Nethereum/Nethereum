@@ -5,7 +5,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class FunctionOutputDTOGenerator: ClassGeneratorBase<ClassTemplateBase<FunctionOutputDTOModel>,FunctionOutputDTOModel>
+    public class FunctionOutputDTOGenerator: ClassGeneratorBase<FunctionOutputDTOModel>
     {
      
         public FunctionOutputDTOGenerator(FunctionABI functionABI, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)

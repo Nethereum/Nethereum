@@ -325,6 +325,7 @@ function generateFilesUsingConfig(generatorConfig: GeneratorConfig, fileName: st
                 break;
             case GeneratorType.BlazorPageService:
                 files = [generateBlazorPageService(abi, contractName, baseNamespace, absolutePath, sharedTypesNamespace, codeGenLang)];
+                break;
             default:
                 throw new Error("Unknown GeneratorType: " + generatorType);
         }
@@ -405,7 +406,7 @@ export function generateBlazorPageService(abi: any, contractName: string, baseNa
     var cqsNamespace = contractName + ".ContractDefinition";
     var dtoNamespace = contractName + ".ContractDefinition";
     var pathSeparator = path.sep;
-    generateBlazorPageServiceInternal(abi, contractName, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, absolutePath, pathSeparator, codeGenLang);
+    return generateBlazorPageServiceInternal(abi, contractName, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, absolutePath, pathSeparator, codeGenLang);
 }
 
 function generateBlazorPageServiceInternal(abi: string,

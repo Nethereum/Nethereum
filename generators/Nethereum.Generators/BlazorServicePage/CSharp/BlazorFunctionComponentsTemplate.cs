@@ -7,7 +7,7 @@ using Nethereum.Generators.CQS;
 using Nethereum.Generators.DTOs;
 using Nethereum.Generators.Model;
 
-namespace Nethereum.Generators.BlazorServicePage
+namespace Nethereum.Generators.Service
 {
     public class BlazorFunctionComponentsTemplate
     {

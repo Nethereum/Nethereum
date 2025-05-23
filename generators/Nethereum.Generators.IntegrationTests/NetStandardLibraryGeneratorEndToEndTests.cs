@@ -49,6 +49,8 @@ namespace Nethereum.Generators.IntegrationTests
                     "StandardContract.Service",
                     "StandardContract.CQS",
                     "StandardContract.DTO",
+                    null,
+                    null,
                     context.TargetProjectFolder,
                     Path.DirectorySeparatorChar.ToString(),
                     codeGenLanguage)

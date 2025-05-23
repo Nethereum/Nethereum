@@ -6,7 +6,7 @@ using Nethereum.Generators.Service;
 
 namespace Nethereum.Generators.XUnit
 {
-    public class SimpleTestGenerator : ClassGeneratorBase<ClassTemplateBase<SimpleTestModel>, SimpleTestModel>
+    public class SimpleTestGenerator : ClassGeneratorBase<SimpleTestModel>
     {
         public  ContractABI ContractABI { get; }
 

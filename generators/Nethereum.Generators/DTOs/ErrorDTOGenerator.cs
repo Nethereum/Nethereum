@@ -5,7 +5,7 @@ using System;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class ErrorDTOGenerator : ClassGeneratorBase<ClassTemplateBase<ErrorDTOModel>, ErrorDTOModel>
+    public class ErrorDTOGenerator : ClassGeneratorBase<ErrorDTOModel>
     {
         public ErrorDTOGenerator(ErrorABI abi, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)
         {

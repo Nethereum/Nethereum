@@ -3,7 +3,7 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.Console.CSharp
 {
-    public class ConsoleCSharpTemplate: ClassTemplateBase<ConsoleModel>
+    public class ConsoleCSharpTemplate: ClassTemplateBase
     {
         private FunctionMockupMethodCSharpTemplate _functionMockupMethodCSharp;
         private ContractDeploymentMockUpMethodCSharpTemplate _deploymentMockUpMethodCSharpTemplate;
@@ -11,13 +11,13 @@ namespace Nethereum.Generators.Console.CSharp
         {
             _functionMockupMethodCSharp = new FunctionMockupMethodCSharpTemplate(model.ContractABI);
             _deploymentMockUpMethodCSharpTemplate = new ContractDeploymentMockUpMethodCSharpTemplate(model.ContractDeploymentCQSMessageModel);
-            ClassFileTemplate = new CSharpClassFileTemplate(Model, this);
+            ClassFileTemplate = new CSharpClassFileTemplate(ClassModel, this);
         }
 
         public override string GenerateClass()
         {
             return
-                $@"{SpaceUtils.One__Tab}public class {Model.GetTypeName()}
+                $@"{SpaceUtils.One__Tab}public class {ClassModel.GetTypeName()}
 {SpaceUtils.One__Tab}{{
 {SpaceUtils.Two___Tabs}public static async Task Main()
 {SpaceUtils.Two___Tabs}{{

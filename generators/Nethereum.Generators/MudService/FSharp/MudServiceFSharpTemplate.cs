@@ -5,8 +5,9 @@ using System.Diagnostics;
 
 namespace Nethereum.Generators.MudService
 {
-    public class MudServiceFSharpTemplate : ClassTemplateBase<MudServiceModel>
+    public class MudServiceFSharpTemplate : ClassTemplateBase
     {
+        public MudServiceModel Model => (MudServiceModel)ClassModel;
         public MudServiceFSharpTemplate(MudServiceModel model) : base(model)
         {
             
@@ -18,7 +19,7 @@ namespace Nethereum.Generators.MudService
            
 //            return
 //                $@"
-//{SpaceUtils.One__Tab}type {Model.GetTypeName()} (web3: Web3, contractAddress: string) =
+//{SpaceUtils.One__Tab}type {ClassModel.GetTypeName()} (web3: Web3, contractAddress: string) =
 //{SpaceUtils.One__Tab}
 
 //{SpaceUtils.One__Tab}

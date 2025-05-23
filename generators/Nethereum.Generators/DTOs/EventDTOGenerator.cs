@@ -5,7 +5,7 @@ using System;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class EventDTOGenerator: ClassGeneratorBase<ClassTemplateBase<EventDTOModel>, EventDTOModel>
+    public class EventDTOGenerator: ClassGeneratorBase<EventDTOModel>
     { 
         public EventDTOGenerator(EventABI abi, string @namespace, string sharedTypesNamespace, CodeGenLanguage codeGenLanguage)
         {

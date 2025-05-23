@@ -18,7 +18,7 @@ namespace Nethereum.Generators.Tests.CSharp
             };
             contractAbi.Functions = new FunctionABI[] { functionAbi };
 
-            return new FunctionOutputDTOGenerator(functionAbi, "DefaultNamespace", CodeGenLanguage.CSharp);
+            return new FunctionOutputDTOGenerator(functionAbi, "DefaultNamespace", null, CodeGenLanguage.CSharp);
         }
 
         public FunctionOutputDTOGeneratorTests():base(CreateGenerator(), "CSharp")

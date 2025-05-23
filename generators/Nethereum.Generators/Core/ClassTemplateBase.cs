@@ -3,18 +3,17 @@ using Nethereum.Generators.Core;
 namespace Nethereum.Generators.CQS
 {
 
-    public abstract class ClassTemplateBase<TModel> : IClassTemplate
-        where TModel: IClassModel
+    public abstract class ClassTemplateBase: IClassTemplate
     {
         protected ClassFileTemplate ClassFileTemplate { get; set; }
 
-        protected TModel Model { get; }
+        protected IClassModel ClassModel { get; }
 
         public abstract string GenerateClass();
 
-        protected ClassTemplateBase(TModel model)
+        protected ClassTemplateBase(IClassModel model)
         {
-            Model = model;
+            ClassModel = model;
         }
 
         public string GenerateFullClass()
@@ -22,4 +21,5 @@ namespace Nethereum.Generators.CQS
             return ClassFileTemplate.GenerateFullClass();
         }
     }
+
 }

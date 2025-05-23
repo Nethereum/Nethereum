@@ -10,7 +10,7 @@ namespace Nethereum.Generators.Net.ContractLibrary
             var generator = new ContractProjectGenerator(
                 contractAbi,
                 command.ContractName, command.ContractByteCode, command.BaseNamespace,
-                command.ServiceNamespace, command.CqsNamespace, command.DtoNamesapce, command.BasePath,
+                command.ServiceNamespace, command.CqsNamespace, command.DtoNamesapce, command.SharedTypesNamespace, command.SharedGeneratedTypes, command.BasePath,
                 command.PathDelimiter, command.CodeGenLanguage);
             var generatedClasses = generator.GenerateAll();
            GeneratedFileWriter.WriteFilesToDisk(generatedClasses);

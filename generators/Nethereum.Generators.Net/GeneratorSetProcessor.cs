@@ -120,6 +120,8 @@
                         $"{contractName}",
                         $"{contractName}.ContractDefinition",
                         $"{contractName}.ContractDefinition",
+                        config.SharedTypesNamespace,
+                        config.SharedTypes,
                         absolutePath, 
                         Path.DirectorySeparatorChar.ToString(),
                         config.CodeGenLang
@@ -132,6 +134,8 @@
                         bytecode,
                         contractName,
                         config.BaseNamespace,
+                        config.SharedTypesNamespace,
+                        config.SharedTypes,
                         absolutePath, 
                         Path.DirectorySeparatorChar.ToString()
                     ));
@@ -144,6 +148,8 @@
                         contractName,
                         config.BaseNamespace,
                         absolutePath,
+                        config.SharedTypesNamespace,
+                        config.SharedTypes,
                         Path.DirectorySeparatorChar.ToString(),
                         config.CodeGenLang,
                         config.MudNamespace
@@ -158,6 +164,22 @@
                         Path.DirectorySeparatorChar.ToString(),
                         config.CodeGenLang,
                         config.MudNamespace
+                    ));
+                    break;
+
+                case "BlazorPageService":
+                    files.Add(_contractGenerator.GenerateBlazorServicePage(
+                        abi,
+                        contractName,
+                        config.BaseNamespace,
+                        $"{contractName}",
+                        $"{contractName}.ContractDefinition",
+                        $"{contractName}.ContractDefinition",
+                        config.SharedTypesNamespace,
+                        absolutePath,
+                        Path.DirectorySeparatorChar.ToString(),
+                        config.CodeGenLang,
+                        config.BlazorNamespace
                     ));
                     break;
 

@@ -3,8 +3,10 @@ using Nethereum.Generators.DTOs;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageVbTemplate : ClassTemplateBase<ContractDeploymentCQSMessageModel>
+    public class ContractDeploymentCQSMessageVbTemplate : ClassTemplateBase
     {
+        public ContractDeploymentCQSMessageModel Model => (ContractDeploymentCQSMessageModel)ClassModel;
+
         private ParameterABIFunctionDTOVbTemplate _parameterAbiFunctionDtovbTemplate;
 
         public ContractDeploymentCQSMessageVbTemplate(ContractDeploymentCQSMessageModel model) : base(model)
@@ -13,9 +15,11 @@ namespace Nethereum.Generators.CQS
             ClassFileTemplate = new VbClassFileTemplate(model, this);
         }
 
+        
+
         public override string GenerateClass()
         {
-            var typeName = Model.GetTypeName();
+            var typeName = ClassModel.GetTypeName();
             return
                 $@"{GetPartialMainClass()}
 
@@ -39,7 +43,7 @@ namespace Nethereum.Generators.CQS
 
         public string GetPartialMainClass()
         {
-            var typeName = Model.GetTypeName();
+            var typeName = ClassModel.GetTypeName();
 
             return $@"{SpaceUtils.One__Tab}Public Partial Class {typeName}
 {SpaceUtils.One__Tab} Inherits {typeName}Base

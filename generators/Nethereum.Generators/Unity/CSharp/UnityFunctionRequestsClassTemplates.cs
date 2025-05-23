@@ -9,8 +9,9 @@ using Nethereum.Generators.Service;
 namespace Nethereum.Generators.Unity.CSharp
 {
 
-    public class UnityFunctionRequestsCsharpTemplates : ClassTemplateBase<UnityRequestsModel>
+    public class UnityFunctionRequestsCsharpTemplates : ClassTemplateBase
     {
+        public UnityRequestsModel Model => (UnityRequestsModel)ClassModel;
         private readonly UnityRequestsModel _model;
         private CommonGenerators _commonGenerators;
         private ITypeConvertor _typeConvertor;

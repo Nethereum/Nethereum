@@ -12,7 +12,7 @@ namespace Nethereum.Generators.Tests.CSharp
             var contractAbi = new ContractABI();
             var eventAbi = new EventABI("ItemAdded", contractAbi){ InputParameters = new[] { new ParameterABI("uint256", "itemId") } };
             contractAbi.Events = new EventABI[] { eventAbi };
-            return new EventDTOGenerator(eventAbi, "DefaultNamespace", CodeGenLanguage.CSharp);
+            return new EventDTOGenerator(eventAbi, "DefaultNamespace", null, CodeGenLanguage.CSharp);
         }
 
         public EventDTOGeneratorTests():base(CreateGenerator(), "CSharp")

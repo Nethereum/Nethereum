@@ -3,8 +3,9 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class ErrorDTOVbTemplate : ClassTemplateBase<ErrorDTOModel>
+    public class ErrorDTOVbTemplate : ClassTemplateBase
     {
+        public ErrorDTOModel Model => (ErrorDTOModel)ClassModel;
         private ParameterABIFunctionDTOVbTemplate _parameterAbiErrorDtoVbTemplate;
         public ErrorDTOVbTemplate(ErrorDTOModel errorDTOModel) : base(errorDTOModel)
         {

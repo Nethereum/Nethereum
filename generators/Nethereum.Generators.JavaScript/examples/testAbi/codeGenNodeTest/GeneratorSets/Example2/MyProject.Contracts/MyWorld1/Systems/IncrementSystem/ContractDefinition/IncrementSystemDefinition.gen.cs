@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
 using System.Threading;
+using MyProject.Contracts.MyWorld1.Systems.IncrementSystem.ContractDefinition;
 
 namespace MyProject.Contracts.MyWorld1.Systems.IncrementSystem.ContractDefinition
 {
@@ -68,34 +69,6 @@ namespace MyProject.Contracts.MyWorld1.Systems.IncrementSystem.ContractDefinitio
         public virtual byte[] InterfaceId { get; set; }
     }
 
-    public partial class StoreSplicestaticdataEventDTO : StoreSplicestaticdataEventDTOBase { }
-
-    [Event("Store_SpliceStaticData")]
-    public class StoreSplicestaticdataEventDTOBase : IEventDTO
-    {
-        [Parameter("bytes32", "tableId", 1, true )]
-        public virtual byte[] TableId { get; set; }
-        [Parameter("bytes32[]", "keyTuple", 2, false )]
-        public virtual List<byte[]> KeyTuple { get; set; }
-        [Parameter("uint48", "start", 3, false )]
-        public virtual ulong Start { get; set; }
-        [Parameter("bytes", "data", 4, false )]
-        public virtual byte[] Data { get; set; }
-    }
-
-    public partial class SliceOutofboundsError : SliceOutofboundsErrorBase { }
-
-    [Error("Slice_OutOfBounds")]
-    public class SliceOutofboundsErrorBase : IErrorDTO
-    {
-        [Parameter("bytes", "data", 1)]
-        public virtual byte[] Data { get; set; }
-        [Parameter("uint256", "start", 2)]
-        public virtual BigInteger Start { get; set; }
-        [Parameter("uint256", "end", 3)]
-        public virtual BigInteger End { get; set; }
-    }
-
     public partial class MsgSenderOutputDTO : MsgSenderOutputDTOBase { }
 
     [FunctionOutput]
@@ -132,5 +105,33 @@ namespace MyProject.Contracts.MyWorld1.Systems.IncrementSystem.ContractDefinitio
     {
         [Parameter("bool", "", 1)]
         public virtual bool ReturnValue1 { get; set; }
+    }
+
+    public partial class StoreSplicestaticdataEventDTO : StoreSplicestaticdataEventDTOBase { }
+
+    [Event("Store_SpliceStaticData")]
+    public class StoreSplicestaticdataEventDTOBase : IEventDTO
+    {
+        [Parameter("bytes32", "tableId", 1, true )]
+        public virtual byte[] TableId { get; set; }
+        [Parameter("bytes32[]", "keyTuple", 2, false )]
+        public virtual List<byte[]> KeyTuple { get; set; }
+        [Parameter("uint48", "start", 3, false )]
+        public virtual ulong Start { get; set; }
+        [Parameter("bytes", "data", 4, false )]
+        public virtual byte[] Data { get; set; }
+    }
+
+    public partial class SliceOutofboundsError : SliceOutofboundsErrorBase { }
+
+    [Error("Slice_OutOfBounds")]
+    public class SliceOutofboundsErrorBase : IErrorDTO
+    {
+        [Parameter("bytes", "data", 1)]
+        public virtual byte[] Data { get; set; }
+        [Parameter("uint256", "start", 2)]
+        public virtual BigInteger Start { get; set; }
+        [Parameter("uint256", "end", 3)]
+        public virtual BigInteger End { get; set; }
     }
 }

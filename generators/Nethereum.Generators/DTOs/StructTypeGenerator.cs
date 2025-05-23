@@ -5,7 +5,7 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class StructTypeGenerator : ClassGeneratorBase<ClassTemplateBase<StructTypeModel>, StructTypeModel>
+    public class StructTypeGenerator : ClassGeneratorBase<StructTypeModel>
     {
 
         public StructTypeGenerator(StructABI structTypeABI, string @namespace, CodeGenLanguage codeGenLanguage)

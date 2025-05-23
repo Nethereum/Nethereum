@@ -1,0 +1,112 @@
+@using System.Numerics
+@using Nethereum.UI
+@using MyProject.Contracts.Standard_Token
+@using MyProject.Contracts.Standard_Token.ContractDefinition
+
+@page "/standard_token"
+@rendermode InteractiveWebAssembly
+@inject SelectedEthereumHostProviderService selectedHostProviderService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+
+        <MudText Typo="Typo.h5" Class="mb-4">Standard_Token</MudText>
+
+        <MudTextField @bind-Value="ContractAddress" Label="Standard_Token Contract Address" Variant="Variant.Outlined" Class="mb-4" />
+
+        <ContractDeploymentComponent TDeploymentMessage="StandardTokenDeployment"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenPage)"
+            ContractAddressChanged="ContractAddressChanged" />
+
+        <QueryFunctionComponent TFunctionMessage="AllowanceFunction" TFunctionOutput="BigInteger"
+            Title="allowance"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="AllowanceQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="AllowedFunction" TFunctionOutput="BigInteger"
+            Title="allowed"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="AllowedQueryAsync" />
+
+        <TransactionFunctionComponent TFunctionMessage="ApproveFunction"
+            Title="approve"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceRequestMethodName="ApproveRequestAsync"
+            ServiceRequestAndWaitForReceiptMethodName="ApproveRequestAndWaitForReceiptAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="BalanceOfFunction" TFunctionOutput="BigInteger"
+            Title="balanceOf"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="BalanceOfQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="BalancesFunction" TFunctionOutput="BigInteger"
+            Title="balances"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="BalancesQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="DecimalsFunction" TFunctionOutput="byte"
+            Title="decimals"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="DecimalsQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="NameFunction" TFunctionOutput="string"
+            Title="name"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="NameQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="SymbolFunction" TFunctionOutput="string"
+            Title="symbol"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="SymbolQueryAsync" />
+
+        <QueryFunctionComponent TFunctionMessage="TotalSupplyFunction" TFunctionOutput="BigInteger"
+            Title="totalSupply"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceMethodName="TotalSupplyQueryAsync" />
+
+        <TransactionFunctionComponent TFunctionMessage="TransferFunction"
+            Title="transfer"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceRequestMethodName="TransferRequestAsync"
+            ServiceRequestAndWaitForReceiptMethodName="TransferRequestAndWaitForReceiptAsync" />
+
+        <TransactionFunctionComponent TFunctionMessage="TransferFromFunction"
+            Title="transferFrom"
+            ContractAddress="@ContractAddress"
+            HostProvider="selectedHostProviderService"
+            ServiceType="typeof(StandardTokenService)"
+            ServiceRequestMethodName="TransferFromRequestAsync"
+            ServiceRequestAndWaitForReceiptMethodName="TransferFromRequestAndWaitForReceiptAsync" />
+
+</MudContainer>
+
+@code
+    {
+        private string ContractAddress;
+
+        private void ContractAddressChanged(string address)
+        {
+            ContractAddress = address;
+        }
+    }
+

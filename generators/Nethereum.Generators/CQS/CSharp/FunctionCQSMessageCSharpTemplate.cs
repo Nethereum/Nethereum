@@ -4,8 +4,10 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.CQS
 {
-    public class FunctionCQSMessageCSharpTemplate : ClassTemplateBase<FunctionCQSMessageModel>
+    public class FunctionCQSMessageCSharpTemplate : ClassTemplateBase
     {
+        public FunctionCQSMessageModel Model => (FunctionCQSMessageModel)ClassModel;
+
         private ParameterABIFunctionDTOCSharpTemplate _parameterAbiFunctionDtocSharpTemplate;
         private FunctionOutputDTOModel _functionOutputDTOModel;
         private FunctionABIModel _functionABIModel;
@@ -17,6 +19,7 @@ namespace Nethereum.Generators.CQS
             _functionABIModel = functionABIModel;
             ClassFileTemplate = new CSharpClassFileTemplate(model, this);
         }
+
 
         public override string GenerateClass()
         {

@@ -3,8 +3,10 @@ using Nethereum.Generators.DTOs;
 
 namespace Nethereum.Generators.CQS
 {
-    public class FunctionCQSMessageVbTemplate : ClassTemplateBase<FunctionCQSMessageModel>
+    public class FunctionCQSMessageVbTemplate : ClassTemplateBase
     {
+        public FunctionCQSMessageModel Model => (FunctionCQSMessageModel)ClassModel;
+
         private ParameterABIFunctionDTOVbTemplate _parameterAbiFunctionDtovbTemplate;
         private FunctionOutputDTOModel _functionOutputDTOModel;
         private FunctionABIModel _functionABIModel;

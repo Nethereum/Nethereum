@@ -1,19 +1,20 @@
 using Nethereum.Generators.Core;
 using Nethereum.Generators.CQS;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Nethereum.Generators.BlazorServicePage
+namespace Nethereum.Generators.Service
 {
-    class BlazorPageServiceCSharpRazorTemplate : ClassTemplateBase<BlazorPageServiceModel>
-    {
-        private readonly BlazorFunctionComponentsTemplate _blazorFunctionComponentsTemplate;
 
-        public BlazorPageServiceCSharpRazorTemplate(BlazorPageServiceModel model) : base(model)
+    public class BlazorPageServiceCSharpRazorTemplate: ClassTemplateBase
+    {
+        private BlazorFunctionComponentsTemplate _blazorFunctionComponentsTemplate;
+        public BlazorPageServiceModel Model => (BlazorPageServiceModel)ClassModel;
+
+        public BlazorPageServiceCSharpRazorTemplate(BlazorPageServiceModel model): base(model)
         {
+            System.Console.WriteLine("Initialising BlazorPageServiceCSharpRazorTemplate");
             _blazorFunctionComponentsTemplate = new BlazorFunctionComponentsTemplate(model);
             ClassFileTemplate = new RazorClassFileTemplate(Model, this);
+            System.Console.WriteLine("Finished Initialising BlazorPageServiceCSharpRazorTemplate");
         }
 
         public override string GenerateClass()

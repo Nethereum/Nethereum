@@ -3,7 +3,7 @@ using Nethereum.Generators.DTOs;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageFSharpTemplate : ClassTemplateBase<ContractDeploymentCQSMessageModel>
+    public class ContractDeploymentCQSMessageFSharpTemplate : ClassTemplateBase
     {
         private ParameterABIFunctionDTOFSharpTemplate _parameterAbiFunctionDtoFSharpTemplate;
 
@@ -12,6 +12,7 @@ namespace Nethereum.Generators.CQS
             _parameterAbiFunctionDtoFSharpTemplate = new ParameterABIFunctionDTOFSharpTemplate();
             ClassFileTemplate = new FSharpClassFileTemplate(model, this);
         }
+        public ContractDeploymentCQSMessageModel Model => (ContractDeploymentCQSMessageModel)ClassModel;
 
         public override string GenerateClass()
         {

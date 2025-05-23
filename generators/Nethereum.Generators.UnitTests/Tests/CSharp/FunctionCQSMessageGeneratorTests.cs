@@ -18,7 +18,7 @@ namespace Nethereum.Generators.Tests.CSharp
             };
             contractAbi.Functions = new FunctionABI[] {functionAbi};
 
-            return new FunctionCQSMessageGenerator(functionAbi, "DefaultNamespace", "FunctionOutput", CodeGenLanguage.CSharp);
+            return new FunctionCQSMessageGenerator(functionAbi, "DefaultNamespace", null, "FunctionOutput", CodeGenLanguage.CSharp);
         }
 
 

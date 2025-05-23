@@ -3,8 +3,9 @@ using Nethereum.Generators.CQS;
 
 namespace Nethereum.Generators.XUnit
 {
-    public class SimpleTestCSharpTemplate : ClassTemplateBase<SimpleTestModel>
+    public class SimpleTestCSharpTemplate : ClassTemplateBase
     {
+        public SimpleTestModel Model => (SimpleTestModel)ClassModel;
         public SimpleTestCSharpTemplate(SimpleTestModel model):base(model)
         {
             ClassFileTemplate = new CSharpClassFileTemplate(Model, this);

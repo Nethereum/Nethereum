@@ -4,7 +4,7 @@ using System;
 
 namespace Nethereum.Generators.CQS
 {
-    public class ContractDeploymentCQSMessageGenerator: ClassGeneratorBase<ClassTemplateBase<ContractDeploymentCQSMessageModel>, ContractDeploymentCQSMessageModel>
+    public class ContractDeploymentCQSMessageGenerator: ClassGeneratorBase<ContractDeploymentCQSMessageModel>
     {
         public ContractDeploymentCQSMessageGenerator(ConstructorABI abi, string namespaceName, string byteCode, string contractName, CodeGenLanguage codeGenLanguage)
         {

@@ -7,8 +7,9 @@ using System.Linq;
 
 namespace Nethereum.Generators.MudTable
 {
-    public class MudTableCSharpTemplate : ClassTemplateBase<MudTableModel>
+    public class MudTableCSharpTemplate : ClassTemplateBase
     {
+        public MudTableModel Model => (MudTableModel)ClassModel;
         private ParameterABIFunctionDTOCSharpTemplate _parameterAbiFunctionDtocSharpTemplate;
         public MudTableCSharpTemplate(MudTableModel model) : base(model)
         {

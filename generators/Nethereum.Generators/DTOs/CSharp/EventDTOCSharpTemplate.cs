@@ -4,8 +4,10 @@ using Nethereum.Generators.Model;
 
 namespace Nethereum.Generators.DTOs
 {
-    public class EventDTOCSharpTemplate: ClassTemplateBase<EventDTOModel>
+    public class EventDTOCSharpTemplate: ClassTemplateBase
     {
+        public EventDTOModel Model => (EventDTOModel)ClassModel;
+
         private ParameterABIEventDTOCSharpTemplate _parameterAbiEventDtocSharpTemplate;
         public EventDTOCSharpTemplate(EventDTOModel eventDTOModel):base(eventDTOModel)
         {
