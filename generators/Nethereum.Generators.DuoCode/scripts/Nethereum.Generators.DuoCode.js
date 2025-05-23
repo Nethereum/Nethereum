@@ -413,7 +413,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.GenerateAllMessagesFileAndService = function ContractProjectGenerator_GenerateAllMessagesFileAndService() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
             35606).ctor)();
-        generated.Add(this.GenerateAllMessages());
+        generated.Add(this.GenerateAllMessages(false));
         //always individual files for structs
         generated.AddRange(this.GenerateAllStructs());
 
@@ -471,7 +471,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         }
         return false;
     };
-    $p.GenerateAllMessages = function ContractProjectGenerator_GenerateAllMessages() {
+    $p.GenerateAllMessages = function ContractProjectGenerator_GenerateAllMessages(generateStructs) {
         var cqsFullNamespace = this.GetFullNamespace(this.get_CQSNamespace());
         var cqsFullPath = this.GetFullPath(this.get_CQSNamespace());
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
@@ -494,8 +494,10 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             generators.AddRange(this.GetAllEventDTOGenerators());
         }
 
-        if (!this.AreStructsSharedGenerated()) {
-            generators.AddRange(this.GetAllStructTypeGenerators());
+        if (generateStructs) {
+            if (!this.AreStructsSharedGenerated()) {
+                generators.AddRange(this.GetAllStructTypeGenerators());
+            }
         }
 
         if (!this.AreErrorsSharedGenerated()) {
@@ -640,7 +642,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         return generated;
     };
     $p.GetAllStructTypeGenerators = function ContractProjectGenerator_GetAllStructTypeGenerators() {
-        var structTypeNamespace = this.GetFullPath(this.get_DTONamespace());
+        var structTypeNamespace = this.GetFullNamespace(this.get_DTONamespace());
 
         if (!String.IsNullOrEmpty(this.get_SharedTypesNamespace()) && this.AreStructsSharedGenerated()) {
             structTypeNamespace = this.GetFullNamespace(this.get_SharedTypesNamespace());
@@ -1867,30 +1869,16 @@ $d.define(Nethereum.Generators.Service.BlazorPageServiceGenerator, Nethereum.Gen
     $p.get_ContractABI = function BlazorPageServiceGenerator_get_ContractABI() { return this.ContractABI; };
     $t.ctor = function BlazorPageServiceGenerator(contractABI, contractName, namespace, cqsNamespace, functionOutputNamespace, sharedNamespace, codeGenLanguage) {
         $t.$baseType.ctor.call(this);
-        System.Console.WriteLine$10(String.Format("Initialising constructor BlazorPageServiceGenerator ContractName: {0}", 
-            [contractName]));
+
         this.ContractABI = contractABI;
         this.set_ClassModel(new Nethereum.Generators.Service.BlazorPageServiceModel.ctor(contractABI, 
             contractName, namespace, cqsNamespace, functionOutputNamespace, sharedNamespace));
-        System.Console.WriteLine$10("Setting Code Language");
+
         this.get_ClassModel().set_CodeGenLanguage(4 /* CodeGenLanguage.Razor */);
-        System.Console.WriteLine$10("Initialising template");
+
         this.InitialiseTemplate();
-        System.Console.WriteLine$10(String.Format("Finished Initialising constructor BlazorPageServiceGenerator ContractName: {0}", 
-            [contractName]));
     };
     $p.InitialiseTemplate = function BlazorPageServiceGenerator_InitialiseTemplate() {
-
-        System.Console.WriteLine$10("Razor creating template");
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_ContractName()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_ClassNameSuffix()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_Namespace()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().GetServiceTypeName()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().GetContractDeploymentTypeName()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_FunctionOutputNamespace()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_CQSNamespace()]));
-        System.Console.WriteLine$10(String.Format("ClassModel: {0}", [this.get_ClassModel().get_NamespaceDependencies().get_Count()]));
-
         this.set_ClassTemplate(new Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate.ctor(this.get_ClassModel()));
     };
 });
@@ -1914,8 +1902,6 @@ $d.define(Nethereum.Generators.Service.BlazorPageServiceModel, Nethereum.Generat
     };
     $t.ctor = function BlazorPageServiceModel(contractABI, contractName, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace) {
         $t.$baseType.ctor.call(this, namespace, contractName, "Page");
-        System.Console.WriteLine$10(String.Format("Initialising constructor BlazorPageServiceModel ContractName: {0}", 
-            [this.get_ContractName()]));
         this.ContractABI = contractABI;
         this.CQSNamespace = cqsNamespace;
         this.ContractName = contractName;
@@ -1931,11 +1917,10 @@ $d.define(Nethereum.Generators.Service.BlazorPageServiceModel, Nethereum.Generat
 
         if (!String.IsNullOrEmpty(sharedTypesFullNamespace))
             this.get_NamespaceDependencies().Add(sharedTypesFullNamespace);
-        System.Console.WriteLine$10(String.Format("Finished Initialising constructor BlazorPageServiceModel ContractName: {0}", 
-            [this.get_ContractName()]));
     };
     $p.InitialiseNamespaceDependencies = function BlazorPageServiceModel_InitialiseNamespaceDependencies() {
-        this.get_NamespaceDependencies().AddRange($d.array(String, ["System.Numerics", "Nethereum.UI"]));
+        this.get_NamespaceDependencies().AddRange($d.array(String, ["Nethereum.MudBlazorComponents", 
+            "System.Numerics", "Nethereum.UI"]));
     };
 });
 $d.define(Nethereum.Generators.Service.BlazorFunctionComponentsTemplate, null, function($t, $p) {
@@ -2015,7 +2000,7 @@ $d.define(Nethereum.Generators.Service.BlazorFunctionComponentsTemplate, null, f
             return null;
 
         var deploymentType = this._model.GetContractDeploymentTypeName();
-        var serviceType = String.Format("typeof({0})", [this._model.GetTypeName()]);
+        var serviceType = String.Format("typeof({0})", [this._model.GetServiceTypeName()]);
 
         return String.Format("{0}<ContractDeploymentComponent TDeploymentMessage=\"{1}\"\r\n{2}HostProvider=\"selectedHostProviderService\"\r\n{3}ServiceType=\"{4}\"\r\n{5}ContractAddressChanged=\"ContractAddressChanged\" />", 
             [Nethereum.Generators.Core.SpaceUtils().Two___Tabs, deploymentType, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
@@ -2062,11 +2047,12 @@ $d.define(Nethereum.Generators.Service.BlazorPageServiceCSharpRazorTemplate, Net
 
         var components = this._blazorFunctionComponentsTemplate.GenerateComponents(true);
 
-        return String.Format("@page \"/{0}\"\r\n@rendermode InteractiveWebAssembly\r\n@inject SelectedEthereumHostProviderService selectedHostProviderService\r\n\r\n<MudContainer MaxWidth=\"MaxWidth.Medium\" Class=\"mt-4\">\r\n\r\n{1}<MudText Typo=\"Typo.h5\" Class=\"mb-4\">{2}</MudText>\r\n\r\n{3}<MudTextField @bind-Value=\"ContractAddress\" Label=\"{4} Contract Address\" Variant=\"Variant.Outlined\" Class=\"mb-4\" />\r\n\r\n{5}\r\n\r\n</MudContainer>\r\n\r\n@code\r\n{6}{{\r\n{7}private string ContractAddress;\r\n\r\n{8}private void ContractAddressChanged(string address)\r\n{9}{{\r\n{10}ContractAddress = address;\r\n{11}}}\r\n{12}}}", 
-            [this.get_Model().get_ContractName().toLowerCase(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                this.get_Model().get_ContractName(), Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
-                this.get_Model().get_ContractName(), components, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
-                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
+        return String.Format("@page \"/{0}\"\r\n@page \"/{1}/{{ContractAddress}}\"\r\n\r\n@inject SelectedEthereumHostProviderService selectedHostProviderService\r\n\r\n<MudContainer MaxWidth=\"MaxWidth.Medium\" Class=\"mt-4\">\r\n\r\n{2}<MudText Typo=\"Typo.h5\" Class=\"mb-4\">{3}</MudText>\r\n\r\n{4}<MudTextField @bind-Value=\"ContractAddress\" Label=\"{5} Contract Address\" Variant=\"Variant.Outlined\" Class=\"mb-4\" />\r\n\r\n{6}\r\n\r\n</MudContainer>\r\n\r\n@code\r\n{7}{{\r\n{8}[Parameter]\r\n{9}public string ContractAddress {{ get; set; }}\r\n\r\n{10}private void ContractAddressChanged(string address)\r\n{11}{{\r\n{12}ContractAddress = address;\r\n{13}}}\r\n{14}}}", 
+            [this.get_Model().get_ContractName().toLowerCase(), this.get_Model().get_ContractName().toLowerCase(), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().get_ContractName(), 
+                Nethereum.Generators.Core.SpaceUtils().Two___Tabs, this.get_Model().get_ContractName(), 
+                components, Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().One__Tab, 
+                Nethereum.Generators.Core.SpaceUtils().One__Tab, Nethereum.Generators.Core.SpaceUtils().Two___Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().Three____Tabs, 
                 Nethereum.Generators.Core.SpaceUtils().Two___Tabs, Nethereum.Generators.Core.SpaceUtils().One__Tab]);
     };

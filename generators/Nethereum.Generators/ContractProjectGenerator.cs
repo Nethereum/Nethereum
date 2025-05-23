@@ -165,7 +165,7 @@ namespace Nethereum.Generators
             return false;
         }
 
-        public GeneratedFile GenerateAllMessages()
+        public GeneratedFile GenerateAllMessages(bool generateStructs = false)
         {
             var cqsFullNamespace = GetFullNamespace(CQSNamespace);
             var cqsFullPath = GetFullPath(CQSNamespace);
@@ -176,7 +176,7 @@ namespace Nethereum.Generators
                 sharedTypesFullNamespace = GetFullNamespace(SharedTypesNamespace);
             }
 
-            
+
             var generators = new List<IClassGenerator>();
             generators.Add(GetCQSMessageDeploymentGenerator());
 
@@ -191,9 +191,12 @@ namespace Nethereum.Generators
                 generators.AddRange(GetAllEventDTOGenerators());
             }
 
-            if (!AreStructsSharedGenerated())
-            {
-                generators.AddRange(GetAllStructTypeGenerators());
+            if (generateStructs) 
+            { 
+                if (!AreStructsSharedGenerated())
+                {
+                    generators.AddRange(GetAllStructTypeGenerators());
+                }
             }
 
             if (!AreErrorsSharedGenerated())
@@ -342,7 +345,7 @@ namespace Nethereum.Generators
 
         public List<StructTypeGenerator> GetAllStructTypeGenerators()
         {
-            var structTypeNamespace = GetFullPath(DTONamespace);
+            var structTypeNamespace = GetFullNamespace(DTONamespace);
 
             if (!string.IsNullOrEmpty(SharedTypesNamespace) && AreStructsSharedGenerated())
             {

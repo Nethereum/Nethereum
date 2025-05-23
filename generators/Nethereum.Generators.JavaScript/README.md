@@ -92,7 +92,6 @@ var jsonGeneratorSetsExample1 = `[
         "basePath": "codeGenNodeTest/GeneratorSets/Example1/MyProject.Blazor",
         "codeGenLang": 0,
         "sharedTypesNamespace": "SharedTypes",
-        "sharedTypes": ["events", "errors"],
         "generatorType": "BlazorPageService"
       },
       {

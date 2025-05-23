@@ -55,7 +55,7 @@ declare module Nethereum {
             AreFunctionsSharedGenerated(): boolean;
             AreErrorsSharedGenerated(): boolean;
             AreEventsSharedGenerated(): boolean;
-            GenerateAllMessages(): Core.GeneratedFile;
+            GenerateAllMessages(generateStructs?: boolean): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
             GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateMudService(mudNamespace?: string, singleMessagesFile?: boolean): Core.GeneratedFile;

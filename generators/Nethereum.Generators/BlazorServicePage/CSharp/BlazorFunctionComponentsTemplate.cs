@@ -99,7 +99,7 @@ $@"{SpaceUtils.Two___Tabs}<QueryFunctionComponent TFunctionMessage=""{messageTyp
                 return null;
 
             var deploymentType = _model.GetContractDeploymentTypeName();
-            var serviceType = $"typeof({_model.GetTypeName()})";
+            var serviceType = $"typeof({_model.GetServiceTypeName()})";
 
             return
 $@"{SpaceUtils.Two___Tabs}<ContractDeploymentComponent TDeploymentMessage=""{deploymentType}""

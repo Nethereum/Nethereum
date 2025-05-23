@@ -24,7 +24,8 @@ namespace Nethereum.Generators.Service
 
             return
 $@"@page ""/{Model.ContractName.ToLowerInvariant()}""
-@rendermode InteractiveWebAssembly
+@page ""/{Model.ContractName.ToLowerInvariant()}/{{ContractAddress}}""
+
 @inject SelectedEthereumHostProviderService selectedHostProviderService
 
 <MudContainer MaxWidth=""MaxWidth.Medium"" Class=""mt-4"">
@@ -39,7 +40,8 @@ $@"@page ""/{Model.ContractName.ToLowerInvariant()}""
 
 @code
 {SpaceUtils.One__Tab}{{
-{SpaceUtils.Two___Tabs}private string ContractAddress;
+{SpaceUtils.One__Tab}[Parameter]
+{SpaceUtils.One__Tab}public string ContractAddress {{ get; set; }}
 
 {SpaceUtils.Two___Tabs}private void ContractAddressChanged(string address)
 {SpaceUtils.Two___Tabs}{{

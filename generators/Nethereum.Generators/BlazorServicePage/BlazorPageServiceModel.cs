@@ -26,7 +26,6 @@ namespace Nethereum.Generators.Service
                             string cqsNamespace, string functionOutputNamespace, string sharedTypesFullNamespace) :
             base(@namespace, contractName, "Page") // we need to duplicate the name due to typescript
         {
-            System.Console.WriteLine($"Initialising constructor BlazorPageServiceModel ContractName: {ContractName}");
             ContractABI = contractABI;
             CQSNamespace = cqsNamespace;
             ContractName = contractName;
@@ -42,12 +41,12 @@ namespace Nethereum.Generators.Service
 
             if (!string.IsNullOrEmpty(sharedTypesFullNamespace))
                 NamespaceDependencies.Add(sharedTypesFullNamespace);
-            System.Console.WriteLine($"Finished Initialising constructor BlazorPageServiceModel ContractName: {ContractName}");
         }
 
         private void InitialiseNamespaceDependencies()
         {
             NamespaceDependencies.AddRange(new[] {
+                "Nethereum.MudBlazorComponents",
                 "System.Numerics",
                 "Nethereum.UI" });
         }
