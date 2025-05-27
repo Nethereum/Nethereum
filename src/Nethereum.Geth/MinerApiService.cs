@@ -1,5 +1,4 @@
 using Nethereum.Geth.RPC.Miner;
-using Nethereum.Geth.RPC.TxnPool;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 

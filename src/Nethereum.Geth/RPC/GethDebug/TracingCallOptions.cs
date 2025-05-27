@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Nethereum.Hex.HexTypes;
-using Newtonsoft.Json;
 
 namespace Nethereum.Geth.RPC.Debug.DTOs
 {

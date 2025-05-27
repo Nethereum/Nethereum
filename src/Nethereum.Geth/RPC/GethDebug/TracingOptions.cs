@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace Nethereum.Geth.RPC.Debug.DTOs
 {
     public class TracingOptions

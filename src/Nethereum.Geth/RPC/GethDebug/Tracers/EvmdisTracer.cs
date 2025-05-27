@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using Nethereum.Geth.RPC.Debug.DTOs;
-using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Math;
 
 namespace Nethereum.Geth.RPC.Debug.Tracers
 {

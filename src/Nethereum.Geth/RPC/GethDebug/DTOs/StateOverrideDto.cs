@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Math;
 
 namespace Nethereum.Geth.RPC.Debug.DTOs
 {

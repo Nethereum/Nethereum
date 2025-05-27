@@ -227,6 +227,22 @@ cd Nethereum.Reown.AppKit.Blazor
 CALL :restorepack
 cd ..
 
+cd Nethereum.MudBlazorComponents
+CALL :restorepack
+cd ..
+
+cd Nethereum.AccountAbstraction
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction
+CALL :restorepack
+cd..
+
+cd Nethereum.JsonRpc.SystemTextJsonRpcClient
+CALL :restorepack
+cd..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0packages\
