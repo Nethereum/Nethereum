@@ -26,14 +26,22 @@ namespace Nethereum.Geth.RPC.Debug
         {
         } 
 
-        public RpcRequest BuildRequest(CallInput callArgs, string blockNrOrHash, TraceCallOptions options, object id = null)
+        // TODO change blockNrOrHash on BlockParameter?
+        public RpcRequest BuildRequest(CallInput callArgs, string blockNrOrHash, TracingCallOptions options, object id = null)
         {
-            return base.BuildRequest(id, callArgs, blockNrOrHash, options);
+            return base.BuildRequest(id, callArgs, blockNrOrHash, options.ToDto());
         }
 
-        public Task<JObject> SendRequestAsync(CallInput callArgs, string blockNrOrHash, TraceCallOptions options, object id = null)
+        public Task<JObject> SendRequestAsync(CallInput callArgs, string blockNrOrHash, TracingCallOptions options, object id = null)
         {
-            return base.SendRequestAsync(id, callArgs, blockNrOrHash, options);
+            return base.SendRequestAsync(id, callArgs, blockNrOrHash, options.ToDto());
         }
+        
+        public async Task<TOutput> SendRequestAsync<TOutput>(CallInput callArgs, string blockNrOrHash, TracingCallOptions options, object id = null)
+        {
+            var rawResult = await base.SendRequestAsync(id, callArgs, blockNrOrHash, options.ToDto());
+            return rawResult.ToObject<TOutput>();
+        }
+        
     }
 }
