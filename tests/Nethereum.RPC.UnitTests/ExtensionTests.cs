@@ -225,7 +225,7 @@ namespace Nethereum.RPC.UnitTests
         [Fact]
         public void TransactionReceipt_HasLogs_When_Receipt_Logs_Is_Not_Empty_Returns_True()
         {
-            var logs = JArray.FromObject(new[] { "fake log1", "fake log2" });
+            var logs = new FilterLog[] { };
             Assert.True(new TransactionReceipt { Logs = logs }.HasLogs());
         }
 
@@ -233,7 +233,7 @@ namespace Nethereum.RPC.UnitTests
         public void TransactionReceipt_HasLogs_When_Receipt_Logs_Is_Null_Or_Empty_Returns_False()
         {
             Assert.False(new TransactionReceipt { Logs = null }.HasLogs());
-            var logs = JArray.FromObject(Array.Empty<string>());
+            var logs = new FilterLog[] { };
             Assert.False(new TransactionReceipt { Logs = logs }.HasLogs());
         }
     }

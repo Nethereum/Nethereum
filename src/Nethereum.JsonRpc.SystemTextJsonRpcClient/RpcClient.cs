@@ -1,3 +1,4 @@
+#if NET7_0_OR_GREATER
 using System;
 using System.Diagnostics;
 using System.Net.Http;
@@ -157,3 +158,4 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
         }
     }
 }
+#endif

@@ -72,7 +72,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
                 Receipts.AddRange(new[] {new TransactionReceipt {
                         TransactionIndex = tx.TransactionIndex,
                         TransactionHash = tx.TransactionHash,
-                        Logs = logs.ConvertToJArray() },
+                        Logs = logs },
                     });
             }
         }

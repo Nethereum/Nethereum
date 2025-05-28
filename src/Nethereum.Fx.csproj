@@ -26,31 +26,31 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net6.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
 
 
-	<!--
+	
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="BouncyCastle.Cryptography" Version="[2.4.0,3.0)" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="[2.6.0,3.0)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net9.0'">
     <PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
   </ItemGroup>
 
-  Define LATEST_BOUNCYCASTLE as we're using BouncyCastle.Cryptography
+ <!-- Define LATEST_BOUNCYCASTLE as we're using BouncyCastle.Cryptography -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0'">
   
     <DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
   </PropertyGroup>
-	-->
+
 	<PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>..\FxOutput\Nethereum.Fx\</OutputPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net5.0|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
     <Optimize>True</Optimize>
   </PropertyGroup>
 
@@ -62,10 +62,6 @@
 		<Optimize>True</Optimize>
 	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netcoreapp3.1|AnyCPU'">
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
     <Optimize>True</Optimize>
   </PropertyGroup>
@@ -74,11 +70,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="NBitcoin.Secp256k1">
-		<Version>3.1.1</Version>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="NBitcoin.Secp256k1">
 		<Version>3.1.1</Version>
@@ -89,7 +80,7 @@
 		<Version>3.1.1</Version>
     </PackageReference>
   </ItemGroup>
-<ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
 	<PackageReference Include="NBitcoin.Secp256k1">
 		<Version>3.1.1</Version>
 	</PackageReference>
@@ -107,15 +98,21 @@
     <PackageReference Include="NBitcoin" Version="7.0.6" />
     <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
     <PackageReference Include="System.Reactive" Version="4.1.3" />
-	<PackageReference Include="Portable.BouncyCastle" Version="[1.8.2,2.0)" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Nethereum.AccountAbstraction.SimpleAccount\**" />
+    <Compile Remove="Nethereum.AccountAbstraction\**" />
     <Compile Remove="Nethereum.BigInteger.N351\**" />
     <Compile Remove="Nethereum.ClassDiagrams\**" />
     <Compile Remove="Nethereum.ENS\**" />
 	<Compile Remove="Nethereum.Etherscan\**" />
+	<Compile Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\bin\**" />
+	<Compile Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\obj\**" />
 	<Compile Remove="Nethereum.JsonRpc.WebSocketStreamingClient\obj\**" />
+	<Compile Remove="Nethereum.MudBlazorComponents\**" />
+	<None Remove="Nethereum.AccountAbstraction.SimpleAccount\**" />
+	<None Remove="Nethereum.AccountAbstraction\**" />
 	<None Remove="Nethereum.Etherscan\**" />
     <Compile Remove="Nethereum.EVM\obj\**" />
     <Compile Remove="Nethereum.EVM\Properties\**" />
@@ -144,9 +141,15 @@
 
     <Compile Remove="Nethereum.RPC\Properties\**;Nethereum.RPC\bin\**;Nethereum.RPC\obj\**" />
 
+    <None Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\bin\**" />
+
+    <None Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\obj\**" />
+
     <None Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
 
     <None Remove="Nethereum.JsonRpc.WebSocketStreamingClient\obj\**" />
+
+    <None Remove="Nethereum.MudBlazorComponents\**" />
 
 
     <None Remove="Nethereum.RPC\Properties\**;Nethereum.RPC\bin\**;Nethereum.RPC\obj\**" />
@@ -318,6 +321,10 @@
 
     <EmbeddedResource Remove="compiledlibraries\**" />
 
+    <EmbeddedResource Remove="Nethereum.AccountAbstraction.SimpleAccount\**" />
+
+    <EmbeddedResource Remove="Nethereum.AccountAbstraction\**" />
+
     <EmbeddedResource Remove="Nethereum.BigInteger.N351\**" />
 
     <EmbeddedResource Remove="Nethereum.ClassDiagrams\**" />
@@ -330,9 +337,15 @@
 
     <EmbeddedResource Remove="Nethereum.GSN\**" />
 
+    <EmbeddedResource Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\bin\**" />
+
+    <EmbeddedResource Remove="Nethereum.JsonRpc.SystemTextJsonRpcClient\obj\**" />
+
     <EmbeddedResource Remove="Nethereum.JsonRpc.UnixIpcClient\**" />
 
     <EmbeddedResource Remove="Nethereum.JsonRpc.WebSocketStreamingClient\obj\**" />
+
+    <EmbeddedResource Remove="Nethereum.MudBlazorComponents\**" />
 
     <EmbeddedResource Remove="Nethereum.Signer.AzureKeyVault\**" />
 

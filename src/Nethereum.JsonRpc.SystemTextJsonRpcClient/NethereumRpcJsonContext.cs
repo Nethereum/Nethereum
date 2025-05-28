@@ -1,3 +1,4 @@
+#if NET7_0_OR_GREATER
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC.Eth.DTOs;
@@ -73,4 +74,4 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
     }
 }
 
-
+#endif

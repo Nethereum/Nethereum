@@ -107,7 +107,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
 
-            var evmSimulator = new EVMSimulator(null, true);
+            var evmSimulator = new EVMSimulator();
      
             await evmSimulator.ExecuteAsync(program);
             return program.ProgramResult;
@@ -157,7 +157,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             //program with the code
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
-            var evmSimulator = new EVMSimulator(null, true);
+            var evmSimulator = new EVMSimulator();
 
             //execute the program
             var traceResult = await evmSimulator.ExecuteAsync(program);

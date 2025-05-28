@@ -139,5 +139,10 @@ namespace Nethereum.Quorum
             var signedTransaction = await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
             return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
         }
+
+        public override Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
