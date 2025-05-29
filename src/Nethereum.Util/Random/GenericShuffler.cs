@@ -1,14 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿
 namespace Nethereum.Util.Random
 {
 
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Security.Cryptography;
+
     public class GenericShuffler<T>
     {
-        private readonly System.Random _random = new System.Random();
+#if NET6_0_OR_GREATER
+        private static readonly Random _random = Random.Shared;
+#else
+        private static readonly Random _random = new Random();
+#endif
+
+#if NET6_0_OR_GREATER
+    // .NET 6+ has built-in secure random
+    private int SecureRandom(int maxExclusive)
+    {
+        return RandomNumberGenerator.GetInt32(maxExclusive);
+    }
+#else
+        // Compatible with .NET Standard 2.0 and .NET Framework
+        private static readonly RandomNumberGenerator _secureRng = RandomNumberGenerator.Create();
+
+        private int SecureRandom(int maxExclusive)
+        {
+            if (maxExclusive <= 0) throw new ArgumentOutOfRangeException(nameof(maxExclusive));
+
+            byte[] buffer = new byte[4];
+            int result;
+            do
+            {
+                _secureRng.GetBytes(buffer);
+                result = BitConverter.ToInt32(buffer, 0) & int.MaxValue;
+            } while (result >= (int.MaxValue - int.MaxValue % maxExclusive));
+
+            return result % maxExclusive;
+        }
+#endif
 
         public List<T> ShuffleOnce(List<T> items)
         {
@@ -16,12 +48,12 @@ namespace Nethereum.Util.Random
                 throw new ArgumentException("List must have at least 3 items to shuffle.");
 
             int countToShuffle = items.Count / 3;
-            List<T> selectedItems = items.OrderBy(_ => _random.Next()).Take(countToShuffle).ToList();
+            List<T> selectedItems = items.OrderBy(_ => SecureRandom(int.MaxValue)).Take(countToShuffle).ToList();
             List<T> remainingItems = items.Except(selectedItems).ToList();
 
-            foreach (var item in selectedItems.OrderBy(_ => _random.Next()))
+            foreach (var item in selectedItems.OrderBy(_ => SecureRandom(int.MaxValue)))
             {
-                int insertIndex = (_random.Next(1, 10) * _random.Next(1, 10)) % (remainingItems.Count + 1);
+                int insertIndex = SecureRandom(remainingItems.Count + 1);
                 remainingItems.Insert(insertIndex, item);
             }
 
@@ -40,8 +72,9 @@ namespace Nethereum.Util.Random
 
         public List<T> ShuffleRandomTimes(List<T> items)
         {
-            int times = (_random.Next(1, 6) * _random.Next(1, 4)) / 2; // Shuffle between 1 and 10 times, roughly
+            int times = (SecureRandom(5) + 1) * (SecureRandom(3) + 1) / 2; // Roughly 1 to 10
             return ShuffleMultipleTimes(items, times);
         }
     }
+
 }
