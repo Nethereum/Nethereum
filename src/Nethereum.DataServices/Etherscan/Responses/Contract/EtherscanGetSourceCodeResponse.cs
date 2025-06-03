@@ -1,13 +1,16 @@
 ﻿using System;
+
 #if NET8_0_OR_GREATER
 using System.Text.Json.Serialization;
+using Nethereum;
+
 #else
 using Newtonsoft.Json;
 #endif
 
 using Nethereum.ABI.CompilationMetadata;
 
-namespace Nethereum.DataServices.Etherscan.Responses
+namespace Nethereum.DataServices.Etherscan.Responses.Contract
 {
     public class EtherscanGetSourceCodeResponse
     {

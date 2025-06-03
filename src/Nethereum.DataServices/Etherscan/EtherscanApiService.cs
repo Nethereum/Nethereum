@@ -13,18 +13,21 @@ namespace Nethereum.DataServices.Etherscan
         private EtherscanRequestService requestService;
         public EtherscanApiContractsService Contracts { get; private set; }
         public EtherscanApiAccountsService Accounts { get; private set; }
+
+        public EtherscanApiGasTrackerService GasTracker { get; private set; }
+
         public EtherscanApiService(HttpClient httpClient, string baseUrl, string apiKey = EtherscanRequestService.DefaultToken):this(new EtherscanRequestService(httpClient, baseUrl, apiKey))
         {
 
         }
 
-        public EtherscanApiService(HttpClient httpClient, EtherscanChain chain, string apiKey = EtherscanRequestService.DefaultToken):
+        public EtherscanApiService(HttpClient httpClient, long chain, string apiKey = EtherscanRequestService.DefaultToken):
             this(new EtherscanRequestService(httpClient, chain, apiKey))
         {
             
         }
 
-        public EtherscanApiService(EtherscanChain chain = EtherscanChain.Mainnet, string apiKey = EtherscanRequestService.DefaultToken)
+        public EtherscanApiService(long chain = 1, string apiKey = EtherscanRequestService.DefaultToken)
             :this(new EtherscanRequestService(chain, apiKey))
         {
            
@@ -40,6 +43,7 @@ namespace Nethereum.DataServices.Etherscan
         {
             Contracts = new EtherscanApiContractsService(requestService);
             Accounts = new EtherscanApiAccountsService(requestService);
+            GasTracker = new EtherscanApiGasTrackerService(requestService);
         }
     }
 }

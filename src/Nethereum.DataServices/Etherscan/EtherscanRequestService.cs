@@ -22,7 +22,7 @@ namespace Nethereum.DataServices.Etherscan
         }
 
 
-        public EtherscanRequestService(HttpClient httpClient, EtherscanChain chain, string apiKey = DefaultToken)
+        public EtherscanRequestService(HttpClient httpClient, long chain, string apiKey = DefaultToken)
         {
             _restHttpHelper = new RestHttpHelper(httpClient);
             BaseUrl = GetBaseUrl(chain);
@@ -30,14 +30,14 @@ namespace Nethereum.DataServices.Etherscan
         }
 
 
-        public EtherscanRequestService(EtherscanChain chain = EtherscanChain.Mainnet, string apiKey = DefaultToken)
+        public EtherscanRequestService(long chain = 1, string apiKey = DefaultToken)
         {
             _restHttpHelper = new RestHttpHelper(new HttpClient());
             BaseUrl = GetBaseUrl(chain);
             ApiKey = apiKey;
         }
 
-        public EtherscanRequestService(IRestHttpHelper restHttpHelper, EtherscanChain chain = EtherscanChain.Mainnet, string apiKey = DefaultToken)
+        public EtherscanRequestService(IRestHttpHelper restHttpHelper, long chain = 1, string apiKey = DefaultToken)
         {
             _restHttpHelper = restHttpHelper;
             BaseUrl = GetBaseUrl(chain);
@@ -49,28 +49,20 @@ namespace Nethereum.DataServices.Etherscan
         public string BaseUrl { get; }
         public string ApiKey { get; }
 
-        public static string GetBaseUrl(EtherscanChain chain)
+        public static string GetBaseUrl(long chain)
         {
-            switch (chain)
-            {
-                case EtherscanChain.Mainnet:
-                    return "https://api.etherscan.io/";
-                case EtherscanChain.Binance:
-                    return "https://api.bscscan.com/";
-                case EtherscanChain.Optimism:
-                    return "https://api-optimistic.etherscan.io/";
-                case EtherscanChain.Polygon:
-                    return "https://api.polygonscan.com/";
-                case EtherscanChain.Arbitrum:
-                    return "https://api.arbiscan.io/";
-            }
-            throw new NotImplementedException();
+            return $"https://api.etherscan.io/v2/api?chainid={chain}";
         }
 
   
         public async Task<EtherscanResponse<T>> GetDataAsync<T>(string url)
         {
             return await _restHttpHelper.GetAsync<EtherscanResponse<T>>(url).ConfigureAwait(false);
+        }
+
+        public async Task<EtherscanResponse<TResponse>> PostAsync<TResponse, TRequest>(string path, TRequest request)
+        {
+            return await _restHttpHelper.PostAsync<EtherscanResponse<TResponse>, TRequest>(path, request).ConfigureAwait(false);
         }
     }
 }

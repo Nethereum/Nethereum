@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
 {
-    public class SourcifyApiServiceTests
+    public partial class SourcifyApiServiceTests
     {
 
         [Fact]
@@ -22,4 +23,5 @@ namespace Nethereum.DataServices.IntegrationTests
             var files = await sourcifyApiService.GetSourceFilesFullMatchAsync(1, "0x00000000219ab540356cBB839Cbe05303d7705Fa");
         }
     }
+
 }
