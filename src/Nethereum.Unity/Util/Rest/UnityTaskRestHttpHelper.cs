@@ -136,6 +136,42 @@ namespace Nethereum.Unity.Util.Rest
                 }
             }
         }
+
+        public async Task<TResponse> PostMultipartAsync<TResponse>(string path, MultipartFormDataRequest request, Dictionary<string, string> headers = null)
+        {
+            var sections = new List<IMultipartFormSection>();
+
+           
+            foreach (var f in request.Fields)
+                sections.Add(new MultipartFormDataSection(f.Name, f.Value));
+
+           
+            foreach (var f in request.Files)
+                sections.Add(new MultipartFormFileSection(
+                    f.FieldName,
+                    Encoding.UTF8.GetBytes(f.Content),
+                    f.FileName,
+                f.ContentType));
+
+            using (var req = UnityWebRequest.Post(path, sections))   
+            {
+                if (headers != null)
+                    foreach (var h in headers)
+                        req.SetRequestHeader(h.Key, h.Value);
+
+                await req.SendWebRequest();                         
+
+                if (req.result != UnityWebRequest.Result.Success)
+                    throw new Exception($"Error {req.responseCode}: {req.error}");
+
+                var json = req.downloadHandler.text;
+
+                if (typeof(TResponse) == typeof(string))
+                    return (TResponse)(object)json;
+
+                return JsonConvert.DeserializeObject<TResponse>(json);
+            
+       }   }
     }
 
 }
