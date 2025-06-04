@@ -11,6 +11,7 @@ namespace Nethereum.Util.Rest
         Task<TResponse> PostAsync<TResponse, TRequest>(string path, TRequest request,  Dictionary<string, string> headers = null);
         Task<TResponse> PutAsync<TResponse, TRequest>(string path, TRequest request, Dictionary<string, string> headers = null);
         Task DeleteAsync(string path, Dictionary<string, string> headers = null);
+        Task<TResponse> PostMultipartAsync<TResponse>(string path, MultipartFormDataRequest request, Dictionary<string, string> headers = null);
     }
 
 }

@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
+using System.IO;
+
 
 
 #if NET8_0_OR_GREATER
@@ -170,6 +172,75 @@ namespace Nethereum.Util.Rest
 
             return response;
         }
+
+        public async Task<TResponse> PostMultipartAsync<TResponse>(
+            string path,
+            MultipartFormDataRequest request,
+            Dictionary<string, string> headers = null)
+        {
+            var content = new MultipartFormDataContent();
+
+            foreach (var field in request.Fields)
+            {
+                content.Add(new StringContent(field.Value), field.Name);
+            }
+
+            foreach (var file in request.Files)
+            {
+                var fileContent = new StringContent(file.Content, Encoding.UTF8, file.ContentType);
+                content.Add(fileContent, file.FieldName, file.FileName);
+            }
+
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, path)
+            {
+                Content = content
+            };
+
+            if (headers != null)
+            {
+                foreach (var header in headers)
+                {
+                    httpRequest.Headers.Add(header.Key, header.Value);
+                }
+            }
+
+            var response = await _httpClient.SendAsync(httpRequest);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
+            }
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+#if NET8_0_OR_GREATER
+    return await JsonSerializer.DeserializeAsync<TResponse>(responseStream);
+#else
+            using var reader = new StreamReader(responseStream);
+            var contentStr = await reader.ReadToEndAsync();
+            return JsonConvert.DeserializeObject<TResponse>(contentStr);
+#endif
+        }
+    }
+
+    public class MultipartFormDataRequest
+    {
+        public List<MultipartField> Fields { get; set; } = new();
+        public List<MultipartFile> Files { get; set; } = new();
+    }
+
+    public class MultipartField
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+    }
+
+    public class MultipartFile
+    {
+        public string FieldName { get; set; } = "file"; // Default to "file", can be "files"
+        public string FileName { get; set; }             // e.g., "contracts/Token.sol"
+        public string Content { get; set; }              // File content as string
+        public string ContentType { get; set; } = "text/plain"; // MIME type
     }
 }
 #endif
