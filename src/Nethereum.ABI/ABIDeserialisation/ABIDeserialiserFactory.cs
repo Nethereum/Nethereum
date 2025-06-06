@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.Model;
 using System;
+using System.Linq;
 
 
 namespace Nethereum.ABI.ABIDeserialisation
@@ -22,6 +23,26 @@ namespace Nethereum.ABI.ABIDeserialisation
                 throw new FormatException("Invalid ABI, could not be parsed", ex);
             }
             
+        }
+
+        public static FunctionABI DeserialiseFunctionABI(string jsonOrStringSignatureABI)
+        {
+            try
+            {
+                if (IsJson(jsonOrStringSignatureABI))
+                {
+                    return new ABIJsonDeserialiser().DeserialiseContract(jsonOrStringSignatureABI).Functions.FirstOrDefault();
+                }
+                if(!jsonOrStringSignatureABI.Trim().StartsWith("function "))
+                {
+                    jsonOrStringSignatureABI = "function " + jsonOrStringSignatureABI.Trim();
+                }
+                return new ABIStringSignatureDeserialiser().ExtractContractABIWithLineBreakSplitSignatures(jsonOrStringSignatureABI).Functions.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                throw new FormatException("Invalid Function ABI, could not be parsed", ex);
+            }
         }
 
         private static bool IsJson(string value)
