@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using Nethereum.Blazor
 @using Nethereum.Blazor.Storage
+@using Nethereum.JsonRpc.Client
 @using Nethereum.UI
 @using Nethereum.EIP6963WalletInterop
 @implements IDisposable
@@ -50,7 +51,7 @@
 
             </Authorized>
             <NotAuthorized>
-                <button type="button" class="btnWallet" @onclick="@FetchWalletsAsync">Connect Wallet</button>
+                <button type="button" class="btnWallet btnWalletSelected" @onclick="@FetchWalletsAsync">Connect Wallet</button>
             </NotAuthorized>
         </AuthorizeView>
 
@@ -69,11 +70,18 @@
     }
     else
     {
-        <div class="no-wallet">@InstallWalletText</div>
+        <div class="selected-wallet">@InstallWalletText</div>
     }
-</div>
+</div> 
+
+
+
 
 @code {
+
+    private string DisplayName => string.IsNullOrEmpty(EnsName)
+       ? Truncate(SelectedAccount, SelectedAccountTruncateLength)
+       : EnsName;
 
     public enum ThemeType
     {
@@ -99,6 +107,8 @@
     EIP6963WalletInfo SelectedWallet { get; set; } // Stores the selected wallet object
     List<EIP6963WalletInfo> AvailableWallets { get; set; } = new();
 
+
+
     [Parameter]
     public ThemeType Theme { get; set; } = ThemeType.Dark;
 
@@ -113,17 +123,25 @@
     [Parameter]
     public int SelectedAccountTruncateLength { get; set; } = 17;
 
+    [Parameter] public EventCallback<Exception> OnError { get; set; }
+    [Parameter] public EventCallback OnDisconnect { get; set; }
+
+    Task ReportErrorAsync(Exception exception) => OnError.HasDelegate ? OnError.InvokeAsync(exception) : Task.CompletedTask;
+
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             _eip6963HostProvider.SelectedAccountChanged += WalletHostProvider_SelectedAccountChanged;
+            _eip6963HostProvider.AvailabilityChanged += WalletHostProvider_AvailabilityChanged;
             WalletAvailable = await _eip6963HostProvider.CheckProviderAvailabilityAsync();
 
             if (WalletAvailable)
             {
-                SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+                
                 AvailableWallets = (await _eip6963HostProvider.GetAvailableWalletsAsync()).ToList();
+
 
                 // Retrieve the last used wallet (by RDNS) from LocalStorage
                 string? storedWalletRdns = null;
@@ -153,27 +171,58 @@
                     SelectedWallet = AvailableWallets.FirstOrDefault();
                 }
 
+
+                SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+               
+                
                 if (!string.IsNullOrEmpty(SelectedAccount))
                 {
                     await _selectedHostProvider.SetSelectedEthereumHostProvider(_eip6963HostProvider);
                 }
-            }
 
-            StateHasChanged();
+               
+
+            }
+          StateHasChanged();
+            
         }
     }
 
 
+    private async Task HandleDisconnectAsync()
+    {
+        SelectedAccount = null;
+        EnsName = null;
+        SelectedWallet = null;
+
+        if (LocalStorage is not null)
+            await LocalStorage.RemoveItemAsync("selectedWalletRdns");
+
+        if (OnDisconnect.HasDelegate)
+            await OnDisconnect.InvokeAsync();      
+
+        StateHasChanged();
+    }
+
     public void Dispose()
     {
         _eip6963HostProvider.SelectedAccountChanged -= WalletHostProvider_SelectedAccountChanged;
+        _eip6963HostProvider.AvailabilityChanged -= WalletHostProvider_AvailabilityChanged;
     }
 
     private async Task WalletHostProvider_SelectedAccountChanged(string account)
     {
+        Console.WriteLine($"EIP6963Wallet: Selected account changed: {account}");
+        //if (account == SelectedAccount) return; 
+        if (string.IsNullOrWhiteSpace(account))     
+        {
+            await HandleDisconnectAsync();
+            return;
+        }
+
         SelectedAccount = account;
         await SetEnsNameAsync();
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
     }
 
     protected async Task FetchWalletsAsync()
@@ -208,11 +257,17 @@
     protected async Task SelectWalletAsync(string walletUuid)
     {
         ShowWalletSelection = false;
-        await _eip6963HostProvider.SelectWalletAsync(walletUuid);
-        SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+        try
+        {
+            SelectedWallet = AvailableWallets.FirstOrDefault(w => w.Uuid == walletUuid);
 
-        await SetEnsNameAsync();
-        SelectedWallet = AvailableWallets.FirstOrDefault(w => w.Uuid == walletUuid);
+            await _eip6963HostProvider.SelectWalletAsync(walletUuid);
+          
+            SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+
+            StateHasChanged();
+
+            await SetEnsNameAsync();
 
             // Store RDNS instead of UUID for persistence
             if (LocalStorage != null && SelectedWallet != null)
@@ -221,18 +276,66 @@
             }
 
             await _selectedHostProvider.SetSelectedEthereumHostProvider(_eip6963HostProvider);
-            StateHasChanged();
+           
+        }
+        catch (RpcResponseException rpcEx) when (rpcEx.RpcError?.Code == 4001)
+        {
+            ShowWalletSelection = true;
+            await ReportErrorAsync(new Exception("Connection request was declined by the user.", rpcEx));
+        }
+        catch (RpcResponseException rpcEx)
+        {
+            ShowWalletSelection = true;
+            await ReportErrorAsync(new Exception($"Wallet error: {rpcEx.RpcError?.Message ?? "Unknown RPC error."}", rpcEx)
+               );
+        }
+        catch (Exception ex)
+        {
+            ShowWalletSelection = true;
+            await ReportErrorAsync(new Exception("Unexpected error connecting to wallet.", ex));
         }
 
-        private void ToggleDropdown()
+    }
+
+    private void ToggleDropdown()
+    {
+        ShowWalletSelection = !ShowWalletSelection;
+    }
+
+    public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
+    {
+        return value?.Length > maxLength
+            ? value.Substring(0, maxLength) + truncationSuffix
+            : value;
+    }
+
+    private async Task WalletHostProvider_AvailabilityChanged(bool isAvailable)
+    {
+        Console.WriteLine($"EIP6963Wallet: Wallet availability changed: {isAvailable}");
+        WalletAvailable = isAvailable;
+
+        if (!isAvailable)                
         {
-            ShowWalletSelection = !ShowWalletSelection;
+            await HandleDisconnectAsync();  
+            await InvokeAsync(StateHasChanged);
+            return;
         }
 
-        public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
+        /* provider came back — refresh state */
+        AvailableWallets = (await _eip6963HostProvider.GetAvailableWalletsAsync()).ToList();
+        SelectedAccount = await _eip6963HostProvider.GetProviderSelectedAccountAsync();
+        Console.WriteLine($"EIP6963Wallet:  Wallet availability changed, SelectedAccount: {SelectedAccount}");
+
+        if (string.IsNullOrWhiteSpace(SelectedAccount))
         {
-            return value?.Length > maxLength
-                ? value.Substring(0, maxLength) + truncationSuffix
-                : value;
+            await HandleDisconnectAsync();   
         }
+        else
+        {
+            await _selectedHostProvider.SetSelectedEthereumHostProvider(_eip6963HostProvider);
+            await SetEnsNameAsync();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
 }
