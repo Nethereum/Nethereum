@@ -19,7 +19,8 @@ using Nethereum.Web3;
 
 namespace Nethereum.GnosisSafe
 {
-    public partial class GnosisSafeService:ContractWeb3ServiceBase
+
+    public partial class GnosisSafeService : ContractWeb3ServiceBase
     {
         public class SafeSignature
         {
@@ -34,10 +35,8 @@ namespace Nethereum.GnosisSafe
         {
             var nonce = await NonceQueryAsync().ConfigureAwait(false);
             transactionData.SafeNonce = nonce;
-
             return BuildTransaction(transactionData, chainId, privateKeySigners);
         }
-
 
         public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
             EncodeTransactionDataFunction transactionData,
@@ -47,8 +46,7 @@ namespace Nethereum.GnosisSafe
         {
             transactionData.Operation = (int)ContractOperationType.DelegateCall;
             var multiSendFunction = new MultiSendFunction(multiSendInputs);
-            return BuildTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas,
-                privateKeySigner);
+            return BuildMultiSignatureTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas, privateKeySigner);
         }
 
         public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
@@ -59,35 +57,93 @@ namespace Nethereum.GnosisSafe
         {
             transactionData.Operation = (int)ContractOperationType.DelegateCall;
             var multiSendFunction = new MultiSendFunction(multiSendInputs);
-            return BuildTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas,
-                privateKeySigners);
+            return BuildMultiSignatureTransactionAsync(transactionData, multiSendFunction, chainId, estimateSafeTxGas, privateKeySigners);
         }
 
-
-        public async Task<ExecTransactionFunction> BuildTransactionAsync<TFunctionMessage>(
+        public async Task<ExecTransactionFunction> BuildMultiSignatureTransactionAsync<TFunctionMessage>(
             EncodeTransactionDataFunction transactionData,
             TFunctionMessage functionMessage,
             BigInteger chainId,
-             bool estimateSafeTxGas = false, params string[] privateKeySigners) where TFunctionMessage : FunctionMessage, new()
+            bool estimateSafeTxGas = false, params string[] privateKeySigners) where TFunctionMessage : FunctionMessage, new()
         {
-            var nonce = await NonceQueryAsync().ConfigureAwait(false); ;
-
+            var nonce = await NonceQueryAsync().ConfigureAwait(false);
             if (estimateSafeTxGas)
             {
                 var toContract = transactionData.To;
                 var estimateHandler = Web3.Eth.GetContractTransactionHandler<TFunctionMessage>();
                 functionMessage.FromAddress = this.ContractHandler.ContractAddress;
-                var gasEstimateSafe = await estimateHandler.EstimateGasAsync(toContract, functionMessage).ConfigureAwait(false); ;
+                var gasEstimateSafe = await estimateHandler.EstimateGasAsync(toContract, functionMessage).ConfigureAwait(false);
                 transactionData.SafeTxGas = gasEstimateSafe;
             }
 
             transactionData.Data = functionMessage.GetCallData();
             transactionData.SafeNonce = nonce;
-
             return BuildTransaction(transactionData, chainId, privateKeySigners);
         }
 
-        //The generic EIP712 Typed schema defintion for this message
+        public byte[] GetEncodedTransactionDataHash<TFunctionMessage>(
+                TFunctionMessage functionMessage,
+                EncodeTransactionDataFunction transactionData,
+                BigInteger chainId) where TFunctionMessage : FunctionMessage, new()
+        {
+            transactionData.Data = functionMessage.GetCallData();
+            return GetEncodedTransactionDataHash(transactionData, chainId, this.ContractHandler.ContractAddress);
+        }
+
+        public List<SafeSignature> SignMultipleEncodedTransactionData<TFunctionMessage>(
+            TFunctionMessage functionMessage,
+            EncodeTransactionDataFunction transactionData,
+            BigInteger chainId,
+            params string[] privateKeySigners) where TFunctionMessage : FunctionMessage, new()
+        {
+            var hash = GetEncodedTransactionDataHash(functionMessage, transactionData, chainId);
+            return SignMultipleEncodedTransactionDataHash(hash, privateKeySigners);
+        }
+
+        public async Task<string> SignEncodedTransactionDataAsync<TFunctionMessage>(TFunctionMessage functionMessage,
+            EncodeTransactionDataFunction transactionData,
+            BigInteger chainId, bool convertToSafeVFormat = false) where TFunctionMessage : FunctionMessage, new()
+        {
+            var typedData = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
+            transactionData.Data = functionMessage.GetCallData();
+            typedData.SetMessage(transactionData);
+            var signature = await Web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+            if (convertToSafeVFormat)
+            {
+                signature = ConvertSignatureStringToGnosisVFormat(signature);
+            }
+            return signature;
+        }
+
+        public async Task<string> SignEncodedTransactionDataAsync(
+            EncodeTransactionDataFunction transactionData,
+            BigInteger chainId, bool convertToSafeVFormat = false) 
+        {
+            var typedData = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
+            typedData.SetMessage(transactionData);
+            var signature = await Web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
+            if (convertToSafeVFormat)
+            {
+                signature = ConvertSignatureStringToGnosisVFormat(signature);
+            }
+            return signature;
+        }
+
+        public static SafeHashes GetSafeHashes
+            (EncodeTransactionDataFunction transactionData, BigInteger chainId, string verifyingContractAddress)
+        {
+            var typedDefinition = GetGnosisSafeTypedDefinition(chainId, verifyingContractAddress);
+            var safeDomainHash = Eip712TypedDataEncoder.Current.HashDomainSeparator(typedDefinition);
+            var safeMessageHash = Eip712TypedDataEncoder.Current.HashStruct(transactionData, typedDefinition.PrimaryType, typeof(EncodeTransactionDataFunction));
+            var safeTxnHash = Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(transactionData, typedDefinition);
+            return new SafeHashes
+            {
+                SafeDomainHash = safeDomainHash,
+                SafeMessageHash = safeMessageHash,
+                SafeTxnHash = safeTxnHash
+            };
+        }
+
         public static TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(BigInteger chainId, string verifyingContractAddress)
         {
             return new TypedData<GnosisSafeEIP712Domain>
@@ -97,20 +153,41 @@ namespace Nethereum.GnosisSafe
                     ChainId = chainId,
                     VerifyingContract = verifyingContractAddress
                 },
-                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(GnosisSafeEIP712Domain), typeof(EncodeTransactionDataFunction) ),
+                Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(GnosisSafeEIP712Domain), typeof(EncodeTransactionDataFunction)),
                 PrimaryType = "SafeTx",
             };
         }
 
-        public static byte[] GetHashEncoded(EncodeTransactionDataFunction transactionData, BigInteger chainId, string verifyingContractAddress)
+        public static EncodeTransactionDataFunction DeserialiseTransactionData(string json)
+        {
+#if NET6_0_OR_GREATER
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            return System.Text.Json.JsonSerializer.Deserialize<EncodeTransactionDataFunction>(json, options);
+#else
+    return Newtonsoft.Json.JsonConvert.DeserializeObject<EncodeTransactionDataFunction>(json);
+#endif
+        }
+
+        public static byte[] GetEncodedTransactionDataHash
+            (string json, BigInteger chainId, string verifyingContractAddress)
+        {
+           var encodedTransactionData = DeserialiseTransactionData(json);
+           return GetEncodedTransactionDataHash(encodedTransactionData, chainId, verifyingContractAddress);
+        }
+
+        public static byte[] GetEncodedTransactionDataHash
+            (EncodeTransactionDataFunction transactionData, BigInteger chainId, string verifyingContractAddress)
         {
             var typedDefinition = GetGnosisSafeTypedDefinition(chainId, verifyingContractAddress);
             return Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(transactionData, typedDefinition);
         }
 
-        public byte[] GetHashEncoded(EncodeTransactionDataFunction transactionData, BigInteger chainId)
+        public byte[] GetEncodedTransactionDataHash(EncodeTransactionDataFunction transactionData, BigInteger chainId)
         {
-            return GetHashEncoded(transactionData, chainId, this.ContractHandler.ContractAddress);
+            return GetEncodedTransactionDataHash(transactionData, chainId, this.ContractHandler.ContractAddress);
         }
 
         public static byte[] GetHashEncoded(string json)
@@ -118,29 +195,49 @@ namespace Nethereum.GnosisSafe
             return Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(json);
         }
 
+        public List<SafeSignature> SignMultipleEncodedTransactionDataHash(byte[] hashEncoded, params string[] privateKeySigners)
+        {
+            var messageSigner = new EthereumMessageSigner();
+            var signatures = new List<SafeSignature>();
+
+            foreach (var privateKey in privateKeySigners)
+            {
+                var publicAddress = EthECKey.GetPublicAddress(privateKey);
+                var signatureString = messageSigner.Sign(hashEncoded, privateKey);
+                signatureString = ConvertSignatureStringToGnosisVFormat(signatureString);
+
+                signatures.Add(new SafeSignature() { Address = publicAddress, Signature = signatureString });
+            }
+
+            return signatures;
+        }
+
+        public static string ConvertSignatureStringToGnosisVFormat(string signatureString)
+        {
+            var signature = MessageSigner.ExtractEcdsaSignature(signatureString);
+            var v = signature.V.ToBigIntegerFromRLPDecoded();
+            if (VRecoveryAndChainCalculations.IsEthereumV((int)v))
+            {
+                signature.V = new[] { (byte)(v + 4) };
+                signatureString = signature.CreateStringSignature();
+            }
+            return signatureString;
+        }
+
         public ExecTransactionFunction BuildTransaction(
             EncodeTransactionDataFunction transactionData,
             BigInteger chainId,
             params string[] privateKeySigners)
         {
-            var messageSigner = new EthereumMessageSigner();
+            var hashEncoded = GetEncodedTransactionDataHash(transactionData, chainId, this.ContractHandler.ContractAddress);
+            var signatures = SignMultipleEncodedTransactionDataHash(hashEncoded, privateKeySigners);
+            return BuildTransactionWithSignatures(transactionData, signatures);
+        }
 
-            var typedDefinition = GetGnosisSafeTypedDefinition(chainId, this.ContractHandler.ContractAddress);
-
-            var hashEncoded = Eip712TypedDataEncoder.Current.EncodeAndHashTypedData(transactionData, typedDefinition);
-            var signatures = new List<SafeSignature>();
-            foreach (var privateKey in privateKeySigners)
-            {
-                var publicAddress = EthECKey.GetPublicAddress(privateKey);
-                var signatureString = messageSigner.Sign(hashEncoded, privateKey);
-                var signature = MessageSigner.ExtractEcdsaSignature(signatureString);
-                var v = signature.V.ToBigIntegerFromRLPDecoded();
-                signature.V = new[] { (byte)(v + 4) };
-
-                signatureString = signature.CreateStringSignature();
-                signatures.Add(new SafeSignature() { Address = publicAddress, Signature = signatureString });
-            }
-
+        public ExecTransactionFunction BuildTransactionWithSignatures(
+            EncodeTransactionDataFunction transactionData,
+            IEnumerable<SafeSignature> signatures)
+        {
             var fullSignature = GetCombinedSignaturesInOrder(signatures);
 
             return new ExecTransactionFunction()
@@ -155,20 +252,18 @@ namespace Nethereum.GnosisSafe
                 GasToken = transactionData.GasToken,
                 RefundReceiver = transactionData.RefundReceiver,
                 Signatures = fullSignature
-
             };
         }
 
         public byte[] GetCombinedSignaturesInOrder(IEnumerable<SafeSignature> signatures)
         {
-            var orderedSignatures = signatures.OrderBy(x => x.Signature.ToLower());
+            var signaturesFormatted = signatures.Select(x =>  ConvertSignatureStringToGnosisVFormat(x.Signature)).ToList();
+            var orderedSignatures = signaturesFormatted.OrderBy(x => x.ToLower());
             var fullSignatures = "0x";
             foreach (var signature in orderedSignatures)
             {
-               
-                fullSignatures += signature.Signature.RemoveHexPrefix();
+                fullSignatures += signature.RemoveHexPrefix();
             }
-
             return fullSignatures.HexToByteArray();
         }
     }

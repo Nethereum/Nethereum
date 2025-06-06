@@ -89,7 +89,7 @@ namespace Nethereum.GnosisSafe
         private async Task<ExecTransactionFunction> CreateExecTransactionFunction<TEthereumContractFunctionMessage>(TEthereumContractFunctionMessage transactionMessage) where TEthereumContractFunctionMessage : FunctionMessage, new()
         {
             var chainId = await GetChainIdAsync();
-            var execTransactionFunction = await SafeService.BuildTransactionAsync(
+            var execTransactionFunction = await SafeService.BuildMultiSignatureTransactionAsync(
                  new EncodeTransactionDataFunction() { To = ContractAddress }, transactionMessage, (int)chainId, false,
                  _privateKeySigners);
             return execTransactionFunction;

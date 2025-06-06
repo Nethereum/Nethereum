@@ -9,6 +9,9 @@
     <PackageId>Nethereum.GnosisSafe</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="nethereum-gen.settings" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Signer.EIP712\Nethereum.Signer.EIP712.csproj" />
@@ -21,11 +24,6 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="nethereum-gen.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-    </None>
   </ItemGroup>
 
 </Project>

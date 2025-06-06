@@ -22,6 +22,15 @@ namespace Nethereum.DataServices.IntegrationTests
             var sourcifyApiService = new Sourcify.SourcifyApiService();
             var files = await sourcifyApiService.GetSourceFilesFullMatchAsync(1, "0x00000000219ab540356cBB839Cbe05303d7705Fa");
         }
+
+        [Fact]
+        public async void ShouldGetChains()
+        {
+            var sourcifyApiService = new Sourcify.SourcifyApiServiceV2();
+            var chains = await sourcifyApiService.GetChainsAsync();
+            Assert.NotEmpty(chains);
+           
+        }
     }
 
 }

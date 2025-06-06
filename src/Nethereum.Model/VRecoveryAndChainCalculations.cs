@@ -13,6 +13,11 @@ namespace Nethereum.Model
             return GetRecIdFromV(v[0]);
         }
 
+        public static bool IsEthereumV(int v)
+        {
+            return v == 27 || v == 28;
+        }
+
         public static int GetRecIdFromV(byte v)
         {
             var header = v;
