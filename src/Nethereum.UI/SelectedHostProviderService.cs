@@ -24,5 +24,15 @@ namespace Nethereum.UI
             }
             return Task.CompletedTask;
         }
+
+        public Task ClearSelectedEthereumHostProvider()
+        {
+            if (_selectedHostProvider is null)
+                return Task.CompletedTask;
+
+            _selectedHostProvider = null;
+            return SelectedHostProviderChanged?.Invoke(null)
+               ?? Task.CompletedTask;
+        }
     }
 }
