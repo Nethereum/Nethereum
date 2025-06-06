@@ -11,6 +11,7 @@ using System.Linq;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Contracts.Extensions;
 using Nethereum.Contracts.Create2Deployment;
+using Nethereum.RPC.Accounts;
 
 
 namespace Nethereum.Web3
@@ -117,13 +118,18 @@ namespace Nethereum.Web3
 
             }
 
-             public Nethereum.Web3.IWeb3 Web3 { get; }
+            public Nethereum.Web3.IWeb3 Web3 { get; }
 
             public ContractWeb3ServiceBase(Nethereum.Web3.IWeb3 web3, string contractAddress)
             {
                 Web3 = web3;
                 ContractHandler = web3.Eth.GetContractHandler(contractAddress);
-            }
 
-        }
+                if(web3.TransactionManager.Account is IContractServiceConfigurableAccount account)
+                {
+                    account.ConfigureContractHandler(this);
+                 }
+            }
+        
+    }
 }
