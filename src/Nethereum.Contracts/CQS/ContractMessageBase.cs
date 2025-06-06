@@ -15,21 +15,21 @@ namespace Nethereum.Contracts.CQS
         /// <remarks>
         /// The smart contract function will need to mark as payable in latest versions of solidity
         /// </remarks>
-        public BigInteger AmountToSend { get; set; }
+        public virtual BigInteger AmountToSend { get; set; }
 
         /// <summary>
         /// The Maximum Gas to use for the transaction
         /// </summary>
-        public BigInteger? Gas { get; set; }
+        public virtual BigInteger? Gas { get; set; }
 
         /// <summary>
         /// The Gas price per unit of Gas, only used in Legacy transactions
         /// </summary>
-        public BigInteger? GasPrice { get; set; }
+        public virtual BigInteger? GasPrice { get; set; }
         /// <summary>
         /// The address of the sender
         /// </summary>
-        public string FromAddress { get; set; }
+        public virtual string FromAddress { get; set; }
         /// <summary>
         /// The unique number for the contract message transaction
         /// </summary>
@@ -37,31 +37,31 @@ namespace Nethereum.Contracts.CQS
         /// Nonces are ordered based on the number of transactions from an specific account,
         /// so the next nonce for the next transaction will be the total number of transactions for that account
         /// </remarks>
-        public BigInteger? Nonce { get; set; }
+        public virtual BigInteger? Nonce { get; set; }
 
         /// <summary>
         /// Max Fee Per Gas provided by the sender in Wei. Introduced in EIP 1559
         /// </summary>
-        public BigInteger? MaxFeePerGas { get; set; }
+        public virtual BigInteger? MaxFeePerGas { get; set; }
 
         /// <summary>
         ///   Max Priority Fee Per Gas provided by the sender in Wei. Introduced in EIP 1559
         /// </summary>
-        public BigInteger? MaxPriorityFeePerGas { get; set; }
+        public virtual BigInteger? MaxPriorityFeePerGas { get; set; }
 
         /// <summary>
         ///   The transaction type, null for legacy, 0x02 for EIP 1559
         /// </summary>
-        public byte? TransactionType { get;  set; }
+        public virtual byte? TransactionType { get;  set; }
 
         /// <summary>
         ///   Access list. Introduced in EIP 1559
         /// </summary>
-        public List<AccessList> AccessList { get; set; }
+        public virtual List<AccessList> AccessList { get; set; }
 
         /// <summary>
         ///  AuthorisationList. Introduced in EIP 7022
         /// </summary>
-        public List<Authorisation> AuthorisationList { get; set; }
+        public virtual List<Authorisation> AuthorisationList { get; set; }
     }
 }
