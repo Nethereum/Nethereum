@@ -89,7 +89,7 @@ namespace Nethereum.JsonRpc.Client
             HandleRpcError(response, request.Method);
         }
 
-        protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
+        public abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
         protected abstract Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests);
         public virtual async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {

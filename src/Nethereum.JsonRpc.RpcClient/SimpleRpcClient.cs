@@ -24,7 +24,7 @@ namespace Nethereum.JsonRpc.Client
             _httpClient.BaseAddress = baseUrl;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        public override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             try
             {

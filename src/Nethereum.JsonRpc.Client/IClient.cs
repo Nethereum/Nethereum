@@ -1,3 +1,4 @@
+using Nethereum.JsonRpc.Client.RpcMessages;
 using System.Threading.Tasks;
 
 namespace Nethereum.JsonRpc.Client
@@ -6,6 +7,9 @@ namespace Nethereum.JsonRpc.Client
     {
         Task<RpcRequestResponseBatch> SendBatchRequestAsync(RpcRequestResponseBatch rpcRequestResponseBatch);
         Task<T> SendRequestAsync<T>(RpcRequest request, string route = null);
+
+        Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
+
         Task<T> SendRequestAsync<T>(string method, string route = null, params object[] paramList);
     }
 }
