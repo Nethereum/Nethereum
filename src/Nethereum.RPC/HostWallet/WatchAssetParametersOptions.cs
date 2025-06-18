@@ -36,5 +36,17 @@ namespace Nethereum.RPC.HostWallet
 [System.Text.Json.Serialization.JsonPropertyName("image")]
 #endif
         public string Image { get; set; }
-    }
+
+        /// <summary>
+        /// The unique identifier of the NFT (required for ERC-721 and ERC-1155 tokens).
+        /// </summary>
+        [JsonProperty(PropertyName = "tokenId")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("tokenId")]
+#endif
+        public string TokenId { get; set; }
+    
+}
+
+
 }
