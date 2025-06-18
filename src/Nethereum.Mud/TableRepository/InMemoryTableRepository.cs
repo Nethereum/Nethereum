@@ -2,13 +2,9 @@
 using Nethereum.Mud.EncodingDecoding;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Threading;
 using System.Linq;
-using Org.BouncyCastle.Asn1.Cms;
 using System.Numerics;
-using Org.BouncyCastle.Utilities.Net;
 using System;
-using Nethereum.Util;
 
 
 namespace Nethereum.Mud.TableRepository
@@ -170,7 +166,7 @@ namespace Nethereum.Mud.TableRepository
         }
 
         // Set or update static data by splicing and update AllRecords
-        public async Task SetSpliceStaticDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
+        public virtual async Task SetSpliceStaticDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
             var tableIdHex = tableId.ToHex(true);
             var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
@@ -201,7 +197,7 @@ namespace Nethereum.Mud.TableRepository
         }
 
         // Set or update dynamic data by splicing and update AllRecords
-        public async Task SetSpliceDynamicDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData, ulong deleteCount, byte[] encodedLengths, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
+        public virtual async Task SetSpliceDynamicDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData, ulong deleteCount, byte[] encodedLengths, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
             var tableIdHex = tableId.ToHex(true);
             var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
@@ -233,7 +229,7 @@ namespace Nethereum.Mud.TableRepository
         }
 
         // Delete a specific record and remove from AllRecords
-        public Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
+        public virtual Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
             var tableIdHex = tableId.ToHex(true);
             var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
@@ -256,7 +252,7 @@ namespace Nethereum.Mud.TableRepository
         }
 
         // Delete all records in a table and remove from AllRecords
-        public Task DeleteTableAsync(byte[] tableId)
+        public virtual Task DeleteTableAsync(byte[] tableId)
         {
             var tableIdHex = tableId.ToHex(true).EnsureHexPrefix();
 
