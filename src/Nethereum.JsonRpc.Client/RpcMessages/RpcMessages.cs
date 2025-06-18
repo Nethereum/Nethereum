@@ -334,7 +334,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
         [System.Text.Json.Serialization.JsonConverter(typeof(RpcParametersSystemTextJsonConverter))] // STJ
         [JsonPropertyName("params")]
 #endif
-        public object RawParameters { get; private set; }
+        public object RawParameters { get; set; }
     }
     /// <summary>
     /// Json converter for Rpc parameters
@@ -349,6 +349,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
         /// <param name="serializer">Json serializer</param>
         public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
         {
+          
             serializer.Serialize(writer, value);
         }
 
@@ -362,6 +363,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
         /// <returns>The object value of the converted json value</returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
         {
+            
             switch (reader.TokenType)
             {
                 case JsonToken.StartObject:

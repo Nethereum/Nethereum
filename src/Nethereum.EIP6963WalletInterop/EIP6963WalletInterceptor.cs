@@ -5,6 +5,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace Nethereum.EIP6963WalletInterop
 {
@@ -81,6 +82,15 @@ namespace Nethereum.EIP6963WalletInterop
                        parameters)).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
+                else if (request.Method == ApiMethods.wallet_watchAsset.ToString())
+                {
+                    var parameters = (object)request.RawParameters[0];
+                    var requestMessage = new EIP6963RpcRequestMessage(request.Id, request.Method, SelectedAccount,
+                       parameters);
+                    requestMessage.RawParameters = parameters; // Ensure RawParameters is a just an object
+                    var response = await _walletInterop.SendAsync(requestMessage).ConfigureAwait(false);
+                    return ConvertResponse<T>(response);
+                }    
                 else
                 {
                     var response = await _walletInterop.SendAsync(new RpcRequestMessage(request.Id,
@@ -132,6 +142,16 @@ namespace Nethereum.EIP6963WalletInterop
                     var parameters = new object[] { account, paramList[0] };
                     var response = await _walletInterop.SendAsync(new EIP6963RpcRequestMessage(route, method, SelectedAccount,
                        parameters)).ConfigureAwait(false);
+                    return ConvertResponse<T>(response);
+
+                }
+                else if (method == ApiMethods.wallet_watchAsset.ToString())
+                {
+                    var parameters = paramList[0];
+                    var requestMessage = new EIP6963RpcRequestMessage(route, method, SelectedAccount,
+                      parameters);
+                    requestMessage.RawParameters = parameters; // Ensure RawParameters is a just an object
+                    var response = await _walletInterop.SendAsync(requestMessage).ConfigureAwait(false);
                     return ConvertResponse<T>(response);
                 }
                 else
