@@ -5,6 +5,15 @@ using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.RPC.Chain
 {
+    public static class ChainFeatureExtensions
+    {
+        public static ChainFeature ToChainFeature(this AddEthereumChainParameter param)
+        {
+            return ChainFeature.FromAddEthereumChainParameter(param);
+        }
+    }
+
+
     public class ChainFeature
     {
         public BigInteger ChainId { get; set; }
@@ -27,7 +36,24 @@ namespace Nethereum.RPC.Chain
                 NativeCurrency = NativeCurrency.ToRPCNativeCurrency(),
                 RpcUrls = HttpRpcs
             };
-        }   
+        }
+
+        public static ChainFeature FromAddEthereumChainParameter(AddEthereumChainParameter param)
+        {
+            return new ChainFeature
+            {
+                ChainId = param.ChainId.Value,
+                ChainName = param.ChainName,
+                HttpRpcs = param.RpcUrls ?? new List<string>(),
+                Explorers = param.BlockExplorerUrls ?? new List<string>(),
+                NativeCurrency = new NativeCurrency
+                {
+                    Name = param.NativeCurrency?.Name,
+                    Symbol = param.NativeCurrency?.Symbol,
+                    Decimals = (int)(param.NativeCurrency?.Decimals ?? 18)
+                }
+            };
+        }
     }
 
     public class NativeCurrency
