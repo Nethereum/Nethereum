@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nethereum.Hex.HexConvertors.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,79 +7,89 @@ namespace Nethereum.Mud.TableRepository
 {
     public class InMemoryChangeSet
     {
-        private readonly HashSet<StoredRecord> _created = new();
-        private readonly HashSet<StoredRecord> _updated = new();
-        private readonly HashSet<StoredRecord> _deleted = new();
+        private readonly Dictionary<string, Dictionary<string, StoredRecord>> _upserted = new();
+        private readonly Dictionary<string, Dictionary<string, StoredRecord>> _deleted = new();
 
-        public IReadOnlyCollection<StoredRecord> Created => (IReadOnlyCollection<StoredRecord>)_created;
-        public IReadOnlyCollection<StoredRecord> Updated => (IReadOnlyCollection<StoredRecord>)_updated;
-        public IReadOnlyCollection<StoredRecord> Deleted => (IReadOnlyCollection<StoredRecord>)_deleted;
+        public IReadOnlyDictionary<string, Dictionary<string, StoredRecord>> Upserted => _upserted;
+        public IReadOnlyDictionary<string, Dictionary<string, StoredRecord>> Deleted => _deleted;
 
-        public void MarkCreated(StoredRecord record)
+        public void MarkUpserted(StoredRecord record)
         {
-            _created.Add(record);
-            _updated.Remove(record); // a created record cannot be also updated
-            _deleted.Remove(record); // and shouldn't be considered deleted
-        }
+            var tableId = record.TableId;
+            var key = record.Key;
 
-        public void MarkUpdated(StoredRecord record)
-        {
-            if (!_created.Contains(record)) // skip if it's newly created
-                _updated.Add(record);
+            _deleted[tableId]?.Remove(key);
+
+            if (!_upserted.TryGetValue(tableId, out var table))
+                _upserted[tableId] = table = new();
+
+            table[key] = record;
         }
 
         public void MarkDeleted(StoredRecord record)
         {
-            _created.Remove(record); // if it was just created, forget it
-            _updated.Remove(record);
-            _deleted.Add(record);
+            var tableId = record.TableId;
+            var key = record.Key;
+
+            if (!_upserted.TryGetValue(tableId, out var table) || !table.Remove(key))
+                return;
+
+            if (!_deleted.TryGetValue(tableId, out var deletedTable))
+                _deleted[tableId] = deletedTable = new();
+
+            deletedTable[key] = record;
         }
 
         public void Clear()
         {
-            _created.Clear();
-            _updated.Clear();
+            _upserted.Clear();
             _deleted.Clear();
         }
 
         public InMemoryChangeSet CloneAndClear()
         {
             var clone = new InMemoryChangeSet();
-            foreach (var r in _created) clone._created.Add(r);
-            foreach (var r in _updated) clone._updated.Add(r);
-            foreach (var r in _deleted) clone._deleted.Add(r);
+
+            foreach (var kvp in _upserted)
+            {
+                clone._upserted[kvp.Key] = new Dictionary<string, StoredRecord>(kvp.Value);
+            }
+
+            foreach (var kvp in _deleted)
+            {
+                clone._deleted[kvp.Key] = new Dictionary<string, StoredRecord>(kvp.Value);
+            }
+
+
             Clear();
             return clone;
         }
 
         public TableRecordChangeSet<TTableRecord> GetTableRecordChanges<TTableRecord>()
-         where TTableRecord : ITableRecordSingleton, new()
+             where TTableRecord : ITableRecordSingleton, new()
         {
             var tableResource = ResourceRegistry.GetResource<TTableRecord>();
-            var tableId = tableResource.ResourceIdEncoded;
+            var tableIdHex = tableResource.ResourceIdEncoded.ToHex(true);
 
-           
+            _upserted.TryGetValue(tableIdHex, out var upsertedRecords);
+            _deleted.TryGetValue(tableIdHex, out var deletedRecords);
+
             return new TableRecordChangeSet<TTableRecord>
             {
-                Created = GetTableRecords<TTableRecord>(_created
-                    .Where(r => r.TableIdBytes.SequenceEqual(tableId)))
-                    .ToList(),
-                Updated = GetTableRecords<TTableRecord>(_updated
-                    .Where(r => r.TableIdBytes.SequenceEqual(tableId)))
-                    .ToList(),
-
-                Deleted = GetTableRecords<TTableRecord>(_deleted
-                    .Where(r => r.TableIdBytes.SequenceEqual(tableId)))
-                    .ToList()
+                Upserted = GetTableRecords<TTableRecord>(upsertedRecords?.Values).ToList(),
+                Deleted = GetTableRecords<TTableRecord>(deletedRecords?.Values).ToList()
             };
         }
 
         protected IEnumerable<TTableRecord> GetTableRecords<TTableRecord>(IEnumerable<StoredRecord> records) where TTableRecord : ITableRecordSingleton, new ()
         {
             var result = new List<TTableRecord>();
+            if (records == null) return result;
 
             foreach (var record in records)
             {
+                if (record == null) continue;
+
                 var tableRecord = new TTableRecord();
                 tableRecord.DecodeValues(record);
 

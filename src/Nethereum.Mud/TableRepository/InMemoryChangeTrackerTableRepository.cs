@@ -14,25 +14,32 @@ namespace Nethereum.Mud.TableRepository
     public class InMemoryChangeTrackerTableRepository : InMemoryTableRepository
     {
         public InMemoryChangeSet ChangeSet { get; } = new();
+        
+        private bool _trackingEnabled = false;
+
+        public void StartTracking() => _trackingEnabled = true;
+        public void StopTracking() => _trackingEnabled = false;
 
         public override Task SetRecordAsync(byte[] tableId, List<byte[]> key, EncodedValues encodedValues, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
-            TrackChange(tableId, key);
-            return base.SetRecordAsync(tableId, key, encodedValues, address, blockNumber, logIndex);
+            var task = base.SetRecordAsync(tableId, key, encodedValues, address, blockNumber, logIndex);
+            TrackUpsertAfterSet(tableId, key);
+            return task;
         }
 
         public override Task SetRecordAsync(byte[] tableId, List<byte[]> key, byte[] staticData, byte[] encodedLengths, byte[] dynamicData, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
-            TrackChange(tableId, key);
-            return base.SetRecordAsync(tableId, key, staticData, encodedLengths, dynamicData, address, blockNumber, logIndex);
+            var task = base.SetRecordAsync(tableId, key, staticData, encodedLengths, dynamicData, address, blockNumber, logIndex);
+            TrackUpsertAfterSet(tableId, key);
+            return task;
         }
 
         public new Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
-            var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
             var tableIdHex = tableId.ToHex(true).EnsureHexPrefix();
+            var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
 
-            if (Tables.TryGetValue(tableIdHex, out var table) && table.TryGetValue(keyHex, out var record))
+            if (_trackingEnabled && Tables.TryGetValue(tableIdHex, out var table) && table.TryGetValue(keyHex, out var record))
             {
                 ChangeSet.MarkDeleted(record);
             }
@@ -44,7 +51,7 @@ namespace Nethereum.Mud.TableRepository
         {
             var tableIdHex = tableId.ToHex(true).EnsureHexPrefix();
 
-            if (Tables.TryGetValue(tableIdHex, out var records))
+            if (_trackingEnabled && Tables.TryGetValue(tableIdHex, out var records))
             {
                 foreach (var record in records.Values)
                 {
@@ -55,20 +62,14 @@ namespace Nethereum.Mud.TableRepository
             return base.DeleteTableAsync(tableId);
         }
 
-        private void TrackChange(byte[] tableId, List<byte[]> key)
+        private void TrackUpsertAfterSet(byte[] tableId, List<byte[]> key)
         {
+            if (!_trackingEnabled) return;
             var tableIdHex = tableId.ToHex(true).EnsureHexPrefix();
             var keyHex = ConvertKeyToCombinedHex(key).EnsureHexPrefix();
 
-            if (!Tables.TryGetValue(tableIdHex, out var table) || !table.TryGetValue(keyHex, out var record))
-            {
-                var newRecord = new StoredRecord { TableIdBytes = tableId, KeyBytes = ConvertKeyToCombinedHex(key).HexToByteArray() };
-                ChangeSet.MarkCreated(newRecord);
-            }
-            else
-            {
-                ChangeSet.MarkUpdated(record);
-            }
+            var record = Tables[tableIdHex][keyHex];
+            ChangeSet.MarkUpserted(record);
         }
 
         public InMemoryChangeSet GetAndClearChangeSet() => ChangeSet.CloneAndClear();
