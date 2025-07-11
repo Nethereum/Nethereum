@@ -152,19 +152,24 @@ namespace Nethereum.Contracts.Create2Deployment
 
         public async Task ValidateAndSendEnoughBalanceForProxyDeploymentAndWaitForReceiptAsync(Create2DeterministicDeploymentProxyDeployment deployment)
         {
-            var gasRequired = deployment.GasLimit * deployment.GasPrice;
-            var currentBalance = await _ethApiContractService.GetBalance.SendRequestAsync(deployment.SignerAddress);
-            var gasNeeded = (BigInteger)gasRequired - currentBalance;
-            if (gasNeeded > 0)
+            if (deployment.SignerAddress != _ethApiContractService.TransactionManager.Account.Address)
             {
-                var gasPaymentTransactionReceipt = await _ethApiContractService.TransactionManager.SendTransactionAndWaitForReceiptAsync(
-                    new TransactionInput()
-                    {
-                        From = _ethApiContractService.TransactionManager.Account.Address,
-                        To = deployment.SignerAddress,
-                        Value = new HexBigInteger(gasNeeded),
-                    });
+                var gasRequired = deployment.GasLimit * deployment.GasPrice;
 
+                var currentBalance = await _ethApiContractService.GetBalance.SendRequestAsync(deployment.SignerAddress);
+                var gasNeeded = (BigInteger)gasRequired - currentBalance;
+                if (gasNeeded > 0)
+                {
+                    var gasPaymentTransactionReceipt = await _ethApiContractService.TransactionManager.SendTransactionAndWaitForReceiptAsync(
+                        new TransactionInput()
+                        {
+                            From = _ethApiContractService.TransactionManager.Account.Address,
+                            To = deployment.SignerAddress,
+                            Gas = new HexBigInteger(90000),
+                            Value = new HexBigInteger(gasNeeded),
+                        });
+
+                }
             }
         }
 
