@@ -8,6 +8,11 @@ namespace Nethereum.Util.ByteArrayConvertors
         {
             return data.HexToByteArray();
         }
+
+        public string ConvertFromByteArray(byte[] data)
+        {
+            return data.ToHex();
+        }
     }
 
 }
