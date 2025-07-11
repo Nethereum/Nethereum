@@ -21,5 +21,10 @@ namespace Nethereum.ABI.ByteArrayConvertors
             return Sha3Keccack.Current.CalculateHash(encoded);
 
         }
+
+        public T ConvertFromByteArray(byte[] data)
+        {
+            throw new NotSupportedException("Cannot convert from hash back to original data. Hash functions are one-way operations.");
+        }
     }
 }

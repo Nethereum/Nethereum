@@ -14,6 +14,11 @@ namespace Nethereum.ABI.ByteArrayConvertors
         {
             return _abiEncode.GetABIParamsEncoded(data);
         }
+
+        public T ConvertFromByteArray(byte[] data)
+        {
+            return _abiEncode.DecodeEncodedComplexType<T>(data);
+        }
     }
 
 }
