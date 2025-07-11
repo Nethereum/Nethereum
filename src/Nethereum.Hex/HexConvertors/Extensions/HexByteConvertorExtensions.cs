@@ -23,6 +23,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static bool IsHex(this string value)
         {
+            if (value == null) return false;
             bool isHex;
             foreach (var c in value.RemoveHexPrefix())
             {
@@ -38,6 +39,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static string RemoveHexPrefix(this string value)
         {
+            if (value == null) return null;
             return value.Substring(value.StartsWith("0x") ? 2 : 0);
         }
 
