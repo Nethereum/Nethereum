@@ -25,7 +25,7 @@
                         <small id="selectedAccountHelp" class="form-text text-muted">The selected account is bound to the host (ie Metamask) on change</small>
                     </div>
                 </div>
-                 <div class="row">
+                <div class="row">
                     <label class="col-sm-3 col-form-label-lg">Selected Account from Claims Principal</label>
                     <div class="col-sm-6">
                         @context?.User?.FindFirst(c => c.Type.Contains(ClaimTypes.NameIdentifier))?.Value
@@ -33,7 +33,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card-body">
                 <div class="row">
                     <label class="col-sm-3 col-form-label-lg">Selected Network ChainId:</label>
@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-     
+
 
         <div class="card m-1">
             <div class="card-body">
@@ -104,8 +104,21 @@
                     <label class="col-sm-3 col-form-label-lg">Add Chain</label>
                     <div class="col-sm-6">
                         <button @onclick="@AddChain">Add Chain (Optimism)</button>
-                        
+
                         <small id="selectedAccountHelp" class="form-text text-muted">Adds a new chain (Optimism) to Metamask</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card m-1">
+            <div class="card-body">
+                <div class="row">
+                    <label class="col-sm-3 col-form-label-lg">Add Token (DAI)</label>
+                    <div class="col-sm-6">
+                        <button @onclick="@AddTokenToWallet">Add Token</button>
+
+                        <small id="selectedAccountHelp" class="form-text text-muted">Adds a new token to Metamask</small>
                     </div>
                 </div>
             </div>
@@ -244,9 +257,43 @@
         }
         catch(Exception ex)
         {
-            
+            Console.WriteLine("Error adding chain: " + ex.Message);
         }
     }
+
+    private async Task AddTokenToWallet()
+    {
+        try
+        {
+            var web3 = await _ethereumHostProvider.GetWeb3Async();
+
+            Console.WriteLine("Adding token to wallet...");
+            var token = new WatchAssetParameter
+                {
+                    Type = "ERC20",
+                    Options = new WatchAssetParametersOptions
+                    {
+                        Address = "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+                        Symbol = "DAI",
+                        Decimals = 18,
+                        Image = "https://s2.coinmarketcap.com/static/img/coins/64x64/4943.png"
+
+                    }
+                };
+
+            var receipt = await web3.Eth.HostWallet.WatchAsset.SendRequestAsync(token, null);
+
+            
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding token to wallet: {ex.Message}");
+        }
+    }
+
+
+
 
     protected async Task ChangeChainToMainnet()
     {
