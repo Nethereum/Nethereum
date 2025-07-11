@@ -47,7 +47,7 @@ namespace Nethereum.JsonRpc.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        public override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             RpcLogger rpcLogger = new RpcLogger(_log);
             RpcResponseMessage rpcResponseMessage;
