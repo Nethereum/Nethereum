@@ -29,6 +29,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.LeanIMT
         private class IdentityConvertor : IByteArrayConvertor<byte[]>
         {
             public byte[] ConvertToByteArray(byte[] input) => input;
+            public byte[] ConvertFromByteArray(byte[] data) => data;
         }
 
         private class SumHashProvider : IHashProvider
