@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.EIP712;
 using Nethereum.Util;
+using System.Threading.Tasks;
 
 namespace Nethereum.Signer.EIP712
 {
@@ -26,15 +27,27 @@ namespace Nethereum.Signer.EIP712
             return SignTypedData(typedData, key);
         }
 
-       
+
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
         /// </summary>
-        public string SignTypedData<TDomain>(TypedData<TDomain> typedData, EthECKey key) 
-        { 
+        public string SignTypedData<TDomain>(TypedData<TDomain> typedData, EthECKey key)
+        {
             var encodedData = EncodeTypedData(typedData);
             return _signer.HashAndSign(encodedData, key);
         }
+
+        /// <summary>
+        /// Encodes data according to EIP-712, hashes it and signs with <paramref name="ethExternalSigner"/>.
+        /// Matches the signature produced by eth_signTypedData_v4
+        /// </summary>
+        public async Task<string> SignTypedDataV4<TDomain>(TypedData<TDomain> typedData, IEthExternalSigner ethExternalSigner)
+        {
+            var encodedData = EncodeTypedData(typedData);
+            var signature = await ethExternalSigner.SignAsync(Sha3Keccack.Current.CalculateHash(encodedData));
+            return EthECDSASignature.CreateStringSignature(signature);
+        }
+
 
         /// <summary>
         /// Encodes data according to EIP-712, hashes it and signs with <paramref name="key"/>.
