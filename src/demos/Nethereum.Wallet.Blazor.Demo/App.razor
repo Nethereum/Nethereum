@@ -1,0 +1,56 @@
+@using Nethereum.Wallet.Blazor.Demo.Layout
+@using Nethereum.Wallet.Blazor.Demo.Services
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<MudThemeProvider Theme="@_currentTheme" 
+                 IsDarkMode="@_isDarkMode" 
+                 IsDarkModeChanged="@OnMudThemeProviderDarkModeChanged" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    private MudTheme _currentTheme = new();
+    private bool _isDarkMode = false;
+    
+    protected override void OnInitialized()
+    {
+        _currentTheme = ThemeService.CurrentTheme;
+        _isDarkMode = ThemeService.IsDarkMode;
+        ThemeService.ThemeChanged += OnThemeChanged;
+    }
+    
+    private void OnThemeChanged()
+    {
+        _currentTheme = ThemeService.CurrentTheme;
+        _isDarkMode = ThemeService.IsDarkMode;
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnMudThemeProviderDarkModeChanged(bool isDark)
+    {
+        _isDarkMode = isDark;
+        StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        ThemeService.ThemeChanged -= OnThemeChanged;
+    }
+}

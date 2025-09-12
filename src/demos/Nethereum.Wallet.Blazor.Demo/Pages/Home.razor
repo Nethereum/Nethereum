@@ -1,0 +1,263 @@
+@page "/"
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.UI.Components.Blazor.Dashboard
+@using Nethereum.Wallet.UI.Components.Configuration
+@using MudBlazor
+@using Nethereum.Wallet.Blazor.Demo.Services
+@using Nethereum.Wallet.Blazor.Demo.Utilities
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@inject NethereumWalletHostProvider WalletHostProvider
+@inject IDialogService DialogService
+@inject ThemeService ThemeService
+@inject IWalletLocalizationService LocalizationService
+@implements IDisposable
+
+<PageTitle>Nethereum Wallet Demo</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Style="height: 100vh; padding: 16px;">
+    <MudGrid Style="height: 100%;">
+        <!-- Settings Panel -->
+        <MudItem xs="12" md="3" Style="height: 100%;">
+            <MudPaper Class="pa-3" Style="height: 100%; overflow-y: auto;" Elevation="2">
+                <MudText Typo="Typo.h5" Color="Color.Primary" Class="mb-4">Wallet Demo Settings</MudText>
+                
+                <!-- Size Controls -->
+                <MudText Typo="Typo.h6" Class="mb-2">Size</MudText>
+                <MudTextField @bind-Value="walletWidth" 
+                              Label="Width (CSS)" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense"
+                              HelperText="e.g., 800px, 100%, 50vw"
+                              Class="mb-2" />
+                
+                <MudTextField @bind-Value="walletHeight" 
+                              Label="Height (CSS)" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense"
+                              HelperText="e.g., 600px, 100%, 80vh"
+                              Class="mb-3" />
+                
+                <MudStack Row="true" Spacing="1" Class="mb-4">
+                    <MudButton Variant="Variant.Text" 
+                               Size="Size.Small"
+                               OnClick="@(() => SetPresetSize("1200px", "800px"))">
+                        Desktop
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Text" 
+                               Size="Size.Small"
+                               OnClick="@(() => SetPresetSize("768px", "600px"))">
+                        Tablet
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Text" 
+                               Size="Size.Small"
+                               OnClick="@(() => SetPresetSize("375px", "600px"))">
+                        Mobile
+                    </MudButton>
+                </MudStack>
+                
+                <!-- Drawer Behavior -->
+                <MudText Typo="Typo.h6" Class="mb-2">Drawer Behavior</MudText>
+                <MudSelect @bind-Value="drawerBehavior" 
+                           Label="Behavior Mode"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="mb-2">
+                    <MudSelectItem Value="DrawerBehavior.Responsive">Responsive</MudSelectItem>
+                    <MudSelectItem Value="DrawerBehavior.AlwaysShow">Always Show</MudSelectItem>
+                    <MudSelectItem Value="DrawerBehavior.AlwaysHidden">Always Hidden</MudSelectItem>
+                </MudSelect>
+                
+                <MudTextField @bind-Value="responsiveBreakpoint" 
+                              Label="Responsive Breakpoint (px)" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense"
+                              Disabled="@(drawerBehavior != DrawerBehavior.Responsive)"
+                              Class="mb-2" />
+                
+                <MudTextField @bind-Value="sidebarWidth" 
+                              Label="Sidebar Width (px)" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense"
+                              Class="mb-4" />
+                
+                <!-- Display Options -->
+                <MudText Typo="Typo.h6" Class="mb-2">Display Options</MudText>
+                <MudSwitch @bind-Value="showLogo" 
+                           Label="Show Logo" 
+                           Color="Color.Primary" 
+                           Class="mb-1" />
+                
+                <MudSwitch @bind-Value="showApplicationName" 
+                           Label="Show App Name" 
+                           Color="Color.Primary" 
+                           Class="mb-1" />
+                
+                <MudSwitch @bind-Value="showNetworkInHeader" 
+                           Label="Show Network in Header" 
+                           Color="Color.Primary" 
+                           Class="mb-1" />
+                
+                <MudSwitch @bind-Value="showAccountDetailsInHeader" 
+                           Label="Show Account Details in Header" 
+                           Color="Color.Primary" />
+                
+                <!-- Theme Controls -->
+                <MudText Typo="Typo.h6" Class="mb-2 mt-4">Theme Settings</MudText>
+                <MudSwitch Value="isDarkMode" 
+                           Label="Dark Mode" 
+                           Color="Color.Primary" 
+                           Class="mb-2"
+                           ValueChanged="@((bool value) => OnDarkModeChanged(value))" />
+                
+                <MudSelect Value="selectedBrandColor" 
+                           Label="Brand Theme"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="mb-3"
+                           ValueChanged="@((WalletBrandColor value) => OnBrandColorChanged(value))">
+                    @foreach (var theme in ThemeService.AvailableThemes)
+                    {
+                        <MudSelectItem Value="theme.Color">
+                            <div style="display: flex; align-items: center;">
+                                <div style="width: 16px; height: 16px; border-radius: 50%; background: @GetThemePreviewColor(theme.Color); margin-right: 8px; border: 1px solid var(--mud-palette-divider);"></div>
+                                <div>
+                                    <div style="font-weight: 500;">@theme.DisplayName</div>
+                                    <small style="opacity: 0.7; font-size: 11px;">@theme.Description</small>
+                                </div>
+                            </div>
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+                
+                <!-- Language Controls -->
+                <MudText Typo="Typo.h6" Class="mb-2">Language Settings</MudText>
+                <MudSelect Value="selectedLanguage" 
+                           Label="Language"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="mb-2"
+                           ValueChanged="@((string value) => OnLanguageChanged(value))">
+                    @foreach (var language in LocalizationService.AvailableLanguages)
+                    {
+                        <MudSelectItem Value="@language.Code">@language.NativeName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudPaper>
+        </MudItem>
+        
+        <!-- Wallet Container -->
+        <MudItem xs="12" md="9" Style="height: 100%; display: flex; align-items: center; justify-content: center; overflow: auto;">
+            <div style="border: 2px dashed var(--mud-palette-divider); padding: 8px; border-radius: 8px; position: relative;">
+                <div style="position: absolute; top: -16px; left: 8px; background: var(--mud-palette-background); padding: 0 8px; font-size: 12px; color: var(--mud-palette-text-secondary);">
+                    @walletWidth x @walletHeight
+                </div>
+                <NethereumWallet OnConnected="OnWalletConnected" 
+                                Width="@walletWidth"
+                                Height="@walletHeight"
+                                DrawerBehavior="drawerBehavior"
+                                ResponsiveBreakpoint="responsiveBreakpoint"
+                                SidebarWidth="sidebarWidth"
+                                ShowLogo="showLogo"
+                                ShowApplicationName="showApplicationName"
+                                ShowNetworkInHeader="showNetworkInHeader"
+                                ShowAccountDetailsInHeader="showAccountDetailsInHeader" />
+            </div>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+
+@code {
+    // Size settings
+    private string walletWidth = "800px";
+    private string walletHeight = "600px";
+    
+    // Drawer behavior settings
+    private DrawerBehavior drawerBehavior = DrawerBehavior.Responsive;
+    private int responsiveBreakpoint = 1000;
+    private int sidebarWidth = 200;
+    
+    // Display settings
+    private bool showLogo = true;
+    private bool showApplicationName = true;
+    private bool showNetworkInHeader = true;
+    private bool showAccountDetailsInHeader = true;
+    
+    // Theme settings
+    private bool isDarkMode = false;
+    private WalletBrandColor selectedBrandColor = WalletBrandColor.Professional;
+    private string selectedLanguage = "en";
+
+    protected override void OnInitialized()
+    {
+        WalletHostProvider.SelectedAccountChanged += OnSelectedAccountChanged;
+        LocalizationService.LanguageChanged += OnLanguageChangedNotification;
+        
+        // Initialize theme settings
+        isDarkMode = ThemeService.IsDarkMode;
+        selectedBrandColor = ThemeService.CurrentBrandColor;
+        selectedLanguage = LocalizationService.CurrentLanguage;
+    }
+
+    public void Dispose()
+    {
+        WalletHostProvider.SelectedAccountChanged -= OnSelectedAccountChanged;
+        LocalizationService.LanguageChanged -= OnLanguageChangedNotification;
+    }
+
+    private Task OnSelectedAccountChanged(string accountAddress)
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnWalletConnected()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+    
+    private void SetPresetSize(string width, string height)
+    {
+        walletWidth = width;
+        walletHeight = height;
+        StateHasChanged();
+    }
+    
+    private Task OnDarkModeChanged(bool darkMode)
+    {
+        isDarkMode = darkMode;
+        ThemeService.SetDarkMode(darkMode);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+    
+    private Task OnBrandColorChanged(WalletBrandColor brandColor)
+    {
+        selectedBrandColor = brandColor;
+        ThemeService.SetBrandColor(brandColor);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+    
+    private string GetThemePreviewColor(WalletBrandColor brandColor)
+    {
+        var (primary, _) = ThemeService.GetThemePreview(brandColor);
+        return primary;
+    }
+    
+    private async Task OnLanguageChanged(string languageCode)
+    {
+        selectedLanguage = languageCode;
+        await LocalizationService.SetLanguageAsync(languageCode);
+        StateHasChanged();
+    }
+    
+    private void OnLanguageChangedNotification(string languageCode)
+    {
+        selectedLanguage = languageCode;
+        StateHasChanged();
+    }
+}

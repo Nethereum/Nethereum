@@ -1,0 +1,124 @@
+@page "/dapp-demo"
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.RPC.Eth.DTOs
+@using Nethereum.Hex.HexTypes
+@using System.Numerics
+@using Nethereum.Wallet.UI.Components.Prompts
+@inject RpcHandlerRegistry RpcRegistry
+@inject ITransactionPromptService TransactionPromptService
+
+<PageTitle>DApp Integration Demo</PageTitle>
+
+<h1>DApp Integration Demo</h1>
+
+<div class="card">
+    <div class="card-body">
+        <h3>Simulate DApp Transaction Request</h3>
+        <p>This demonstrates how a DApp would request a transaction through the wallet interceptor system.</p>
+        
+        <button class="btn btn-primary" @onclick="SimulateTransactionRequest">
+            Send Test Transaction
+        </button>
+        
+        @if (!string.IsNullOrEmpty(transactionHash))
+        {
+            <div class="alert alert-success mt-3">
+                Transaction sent successfully!<br/>
+                Hash: @transactionHash
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                Error: @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <h3>Direct Prompt Test</h3>
+        <p>Test the transaction prompt service directly.</p>
+        
+        <button class="btn btn-primary" @onclick="TestDirectPrompt">
+            Test Direct Prompt
+        </button>
+        
+        @if (!string.IsNullOrEmpty(directResult))
+        {
+            <div class="alert alert-info mt-3">
+                Result: @directResult
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string? transactionHash;
+    private string? errorMessage;
+    private string? directResult;
+    
+    private async Task SimulateTransactionRequest()
+    {
+        try
+        {
+            errorMessage = null;
+            transactionHash = null;
+            
+            // Create a sample transaction input as a DApp would
+            var transactionInput = new TransactionInput
+            {
+                From = "0x0000000000000000000000000000000000000000", // Will be replaced by wallet
+                To = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7", // Sample address
+                Value = new HexBigInteger(new BigInteger(1000000000000000)), // 0.001 ETH
+                Data = "0x", // Empty data
+                Gas = new HexBigInteger(21000),
+                GasPrice = new HexBigInteger(20000000000) // 20 Gwei
+            };
+            
+            // For now, just use the direct prompt service
+            // TODO: Fix this to properly use the RPC handler with IWalletContext
+            var result = await TransactionPromptService.PromptTransactionAsync(transactionInput);
+            if (!string.IsNullOrEmpty(result))
+            {
+                transactionHash = result;
+            }
+            else
+            {
+                errorMessage = "Transaction was rejected or cancelled.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+    
+    private async Task TestDirectPrompt()
+    {
+        try
+        {
+            directResult = null;
+            errorMessage = null;
+            
+            // Create a test transaction
+            var transactionInput = new TransactionInput
+            {
+                To = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7",
+                Value = new HexBigInteger(new BigInteger(1000000000000000)), // 0.001 ETH
+                Gas = new HexBigInteger(21000)
+            };
+            
+            // Test the prompt service directly
+            var result = await TransactionPromptService.PromptTransactionAsync(transactionInput);
+            directResult = result ?? "User rejected the transaction";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

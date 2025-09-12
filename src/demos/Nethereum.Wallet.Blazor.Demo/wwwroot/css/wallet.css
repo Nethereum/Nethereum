@@ -1,0 +1,151 @@
+/* Mobile wallet container - full screen */
+.mobile-wallet-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--mud-palette-background);
+}
+
+/* Desktop wallet wrapper - centered popup like Metamask */
+.desktop-wallet-wrapper {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--mud-palette-background-grey);
+    padding: 0;
+}
+
+/* Desktop wallet popup card */
+.wallet-popup-card {
+    width: 100%;
+    max-width: 400px;
+    max-height: 80vh;
+    min-height: 600px;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Utility classes */
+.grow {
+    flex-grow: 1;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+/* Typography scale */
+.wallet-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.wallet-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.wallet-body {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+/* Spacing utilities */
+.wallet-spacing-4 > * + * {
+    margin-top: 1rem;
+}
+
+.wallet-spacing-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Reset default styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Enhanced text contrast for better readability */
+.mud-typography-subtitle1,
+.mud-typography-subtitle2,
+.mud-typography-body2,
+.mud-typography-caption {
+    color: var(--mud-palette-text-secondary) !important;
+    font-weight: 500 !important; /* Make subtitles slightly bolder */
+}
+
+.mud-typography-h6 {
+    color: var(--mud-palette-text-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Ensure network card subtitles are visible */
+.network-card .mud-typography-body2,
+.account-card .mud-typography-body2 {
+    color: var(--mud-palette-text-secondary) !important;
+    opacity: 0.9; /* Slight opacity for hierarchy while keeping readable */
+}
+
+/* Form labels should be clearly visible */
+.mud-input-label,
+.mud-form-input-label {
+    color: var(--mud-palette-text-primary) !important;
+    font-weight: 500 !important;
+}
+
+/* Improve welcome screen text readability */
+.mud-typography.mud-color-secondary {
+    color: var(--mud-palette-text-secondary) !important;
+    opacity: 1 !important; /* Remove any opacity that makes text too light */
+}
+
+/* Make secondary buttons more visible */
+.mud-button-text.mud-secondary-text {
+    color: var(--mud-palette-text-primary) !important;
+    opacity: 0.8;
+}
+
+.mud-button-text.mud-secondary-text:hover {
+    opacity: 1;
+    background-color: rgba(var(--mud-palette-text-primary-rgb), 0.08) !important;
+}
+
+/* Improve disabled button visibility */
+.mud-button:disabled {
+    background-color: var(--mud-palette-action-disabled-background) !important;
+    color: var(--mud-palette-action-disabled) !important;
+    opacity: 0.6 !important;
+    border: 1px solid var(--mud-palette-divider) !important;
+}
+
+/* Welcome screen specific improvements - these are fully themable */
+.mud-card .mud-typography-h5 {
+    color: var(--mud-palette-text-primary) !important;
+    font-weight: 600;
+}
+
+.mud-card .mud-typography-h4 {
+    color: var(--mud-palette-text-primary) !important;
+    font-weight: 600;
+}
+
+/* Ensure all text in welcome cards uses theme colors */
+.mud-card .mud-typography {
+    color: var(--mud-palette-text-primary);
+}
+
+.mud-card .mud-typography-body2[style*="color"] {
+    color: var(--mud-palette-text-secondary) !important;
+}
