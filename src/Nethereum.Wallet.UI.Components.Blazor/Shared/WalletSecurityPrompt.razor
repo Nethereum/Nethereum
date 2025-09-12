@@ -1,0 +1,98 @@
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Web
+
+@* Reusable security prompt for password verification before revealing sensitive data *@
+<WalletContentSection Title="@Title" Class="spacing-normal">
+    
+    @if (!string.IsNullOrEmpty(Warning))
+    {
+        <WalletInfoCard Severity="@GetWarningSeverity()"
+                        Title="@Warning"
+                        Description="@WarningMessage"
+                        Icon="@GetWarningIcon()" />
+    }
+    
+    <MudTextField Value="@Password"
+                  ValueChanged="@(EventCallback.Factory.Create<string>(this, HandlePasswordValueChanged))"
+                  Label="@PasswordLabel"
+                  Variant="Variant.Filled"
+                  InputType="InputType.Password"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                  OnKeyUp="HandlePasswordKeyUp"
+                  Disabled="@IsLoading"
+                  Error="@(!string.IsNullOrEmpty(ErrorMessage))"
+                  ErrorText="@ErrorMessage"
+                  Class="wallet-modern-input" />
+    
+</WalletContentSection>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Warning { get; set; }
+    [Parameter] public string? WarningMessage { get; set; }
+    [Parameter] public string PasswordLabel { get; set; } = "Password";
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public SecurityLevel Level { get; set; } = SecurityLevel.High;
+    [Parameter] public string Password { get; set; } = "";
+    
+    [Parameter] public EventCallback<string> PasswordChanged { get; set; }
+    [Parameter] public EventCallback<string> OnPasswordSubmit { get; set; }
+    
+    public enum SecurityLevel
+    {
+        Medium,  // Info level warning
+        High,    // Warning level 
+        Critical // Error level
+    }
+    
+    private async Task HandlePasswordValueChanged(string newPassword)
+    {
+        Password = newPassword;
+        if (PasswordChanged.HasDelegate)
+        {
+            await PasswordChanged.InvokeAsync(newPassword);
+        }
+    }
+    
+    private async Task HandlePasswordKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(Password) && OnPasswordSubmit.HasDelegate)
+        {
+            await OnPasswordSubmit.InvokeAsync(Password);
+        }
+    }
+    
+    public void ClearPassword()
+    {
+        Password = "";
+        StateHasChanged();
+    }
+    
+    public bool HasPassword => !string.IsNullOrEmpty(Password);
+    
+    private WalletInfoCard.WalletInfoSeverity GetWarningSeverity()
+    {
+        return Level switch
+        {
+            SecurityLevel.Medium => WalletInfoCard.WalletInfoSeverity.Info,
+            SecurityLevel.High => WalletInfoCard.WalletInfoSeverity.Warning,
+            SecurityLevel.Critical => WalletInfoCard.WalletInfoSeverity.Error,
+            _ => WalletInfoCard.WalletInfoSeverity.Warning
+        };
+    }
+    
+    private string GetWarningIcon()
+    {
+        return Level switch
+        {
+            SecurityLevel.Medium => Icons.Material.Filled.Info,
+            SecurityLevel.High => Icons.Material.Filled.Warning,
+            SecurityLevel.Critical => Icons.Material.Filled.Error,
+            _ => Icons.Material.Filled.Warning
+        };
+    }
+    
+}
+

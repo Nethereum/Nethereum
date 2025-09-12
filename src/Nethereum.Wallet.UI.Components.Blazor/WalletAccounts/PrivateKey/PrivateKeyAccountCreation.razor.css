@@ -1,0 +1,37 @@
+/* PrivateKeyAccountCreation.razor component scoped styles */
+.wallet-form-steps {
+        width: 100%;
+    }
+    
+    .validation-status {
+        margin-top: var(--wallet-space-sm, 0.5rem);
+    }
+    
+    .format-help {
+        padding: var(--wallet-space-sm, 0.5rem) 0;
+    }
+    
+    .format-example {
+        margin-bottom: var(--wallet-space-xs, 0.25rem);
+        color: var(--mud-palette-text-secondary);
+    }
+    
+    .account-review {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-md, 1rem);
+    }
+    
+    .review-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-xs, 0.25rem);
+    }
+    
+    .wallet-backup-confirmation {
+        margin-top: var(--wallet-space-sm, 0.5rem);
+    }
+    
+    .wallet-backup-checkbox {
+        margin-left: 0;
+    }

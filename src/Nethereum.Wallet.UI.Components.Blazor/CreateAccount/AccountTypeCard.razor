@@ -1,0 +1,108 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.Blazor.Extensions
+
+<MudCard Elevation="1" 
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="@HandleCardClick">
+    
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-4")">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="@(IsCompactMode ? 2 : 3)">
+            
+            <!-- Left: Avatar and Info -->
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="@(IsCompactMode ? 2 : 3)" Style="flex-grow: 1; min-width: 0;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@GetAccountTypeIconStyle()">
+                    <MudIcon Icon="@GetAccountTypeIcon()" Style="color: white;" />
+                </MudAvatar>
+                
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)" Style="flex-grow: 1; min-width: 0;">
+                    <MudStack Spacing="0">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight: 600;">@AccountType.DisplayName</MudText>
+                    </MudStack>
+                    <MudText Typo="@GetDescriptionTypo()" Style="color: var(--mud-palette-text-secondary);">
+                        @AccountType.Description
+                    </MudText>
+                </MudStack>
+            </MudStack>
+            
+            <!-- Right: Arrow Icon -->
+            <MudIcon Icon="Icons.Material.Filled.ChevronRight" 
+                     Color="Color.Secondary" 
+                     Size="Size.Medium" />
+            
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public IAccountCreationViewModel AccountType { get; set; } = null!;
+    [Parameter] public bool IsCompactMode { get; set; }
+    
+    [Parameter] public EventCallback<IAccountCreationViewModel> OnSelect { get; set; }
+
+    private string GetCardClasses()
+    {
+        var classes = "account-type-card";
+        if (IsCompactMode)
+        {
+            classes += " account-type-card-compact";
+        }
+        return classes;
+    }
+    
+    private string GetCardStyle()
+    {
+        return "cursor: pointer; transition: all 0.2s ease;";
+    }
+    
+    private Size GetAvatarSize()
+    {
+        return IsCompactMode ? Size.Medium : Size.Large;
+    }
+    
+    private Typo GetTitleTypo()
+    {
+        return IsCompactMode ? Typo.body1 : Typo.subtitle1;
+    }
+    
+    private Typo GetDescriptionTypo()
+    {
+        return IsCompactMode ? Typo.body2 : Typo.body2;
+    }
+    
+    private async Task HandleCardClick()
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(AccountType);
+        }
+    }
+
+    private string GetAccountTypeIcon()
+    {
+        return AccountType.Icon.ToMudIcon();
+    }
+
+    private string GetAccountTypeIconStyle()
+    {
+        var typeName = AccountType.GetType().Name.ToLowerInvariant();
+        var hash1 = 0;
+        var hash2 = 0;
+        
+        for (int i = 0; i < Math.Min(typeName.Length, 8); i++)
+        {
+            hash1 = hash1 * 31 + typeName[i];
+            if (i + 8 < typeName.Length)
+                hash2 = hash2 * 31 + typeName[i + 8];
+        }
+        
+        var hue = Math.Abs(hash1) % 360;
+        var saturation = 65 + (Math.Abs(hash2) % 20);
+        var lightness = 45 + (Math.Abs(hash1 >> 8) % 20);
+        
+        return $"background: hsl({hue}, {saturation}%, {lightness}%); color: white;";
+    }
+}
+

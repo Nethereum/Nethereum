@@ -1,0 +1,118 @@
+/* WalletCostSummary.razor component scoped styles */
+.wallet-cost-summary {
+        padding: var(--wallet-space-lg, 1.5rem);
+        background: var(--wallet-bg-primary, #ffffff);
+        border: 1px solid var(--wallet-border, #e5e7eb);
+        border-radius: var(--wallet-radius-lg, 12px);
+        box-shadow: var(--wallet-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    }
+    
+    .summary-title {
+        margin-bottom: var(--wallet-space-lg, 1.5rem);
+        font-weight: 600;
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .cost-items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-md, 1rem);
+    }
+    
+    .cost-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--wallet-space-sm, 0.75rem) 0;
+    }
+    
+    .cost-label {
+        font-weight: 500;
+    }
+    
+    .cost-value {
+        font-weight: 600;
+        text-align: right;
+    }
+    
+    .amount-value {
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .gas-value {
+        color: var(--wallet-warning, #ea580c);
+    }
+    
+    .cost-divider {
+        height: 1px;
+        background: var(--wallet-border, #e5e7eb);
+        margin: var(--wallet-space-sm, 0.75rem) 0;
+    }
+    
+    .total-item {
+        padding: var(--wallet-space-md, 1rem) 0 0 0;
+        border-top: 2px solid var(--wallet-primary-light, #dbeafe);
+        background: linear-gradient(135deg, var(--wallet-primary-light, #dbeafe) 0%, transparent 100%);
+        border-radius: var(--wallet-radius-md, 8px);
+        padding: var(--wallet-space-md, 1rem);
+        margin: var(--wallet-space-sm, 0.75rem) 0 0 0;
+    }
+    
+    .total-label {
+        font-weight: 700;
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .total-value {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: var(--wallet-primary, #2563eb);
+    }
+    
+    .cost-note {
+        display: flex;
+        align-items: center;
+        gap: var(--wallet-space-sm, 0.75rem);
+        margin-top: var(--wallet-space-lg, 1.5rem);
+        padding: var(--wallet-space-sm, 0.75rem);
+        background: var(--wallet-bg-secondary, #f9fafb);
+        border-radius: var(--wallet-radius-md, 8px);
+        border: 1px solid var(--wallet-border-light, #f3f4f6);
+    }
+    
+    .note-icon {
+        color: var(--wallet-info, #0ea5e9);
+        flex-shrink: 0;
+    }
+    
+    .note-text {
+        flex: 1;
+        line-height: 1.4;
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .wallet-cost-summary {
+            padding: var(--wallet-space-md, 1rem);
+        }
+        
+        .cost-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--wallet-space-xs, 0.5rem);
+        }
+        
+        .cost-value {
+            text-align: left;
+            align-self: flex-end;
+        }
+        
+        .total-item {
+            flex-direction: row;
+            align-items: center;
+        }
+        
+        .total-value {
+            font-size: 1.125rem;
+        }
+    }

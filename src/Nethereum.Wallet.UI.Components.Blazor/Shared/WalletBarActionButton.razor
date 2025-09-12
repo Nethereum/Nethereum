@@ -1,0 +1,33 @@
+@using MudBlazor
+
+<button class="wallet-tab-button @Class @(Disabled ? "disabled" : "")" 
+        @onclick="HandleClick"
+        disabled="@Disabled">
+    <MudIcon Icon="@Icon" Size="@IconSize" />
+    <span>@Text</span>
+</button>
+
+@code {
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Circle;
+    [Parameter] public string Text { get; set; } = "Action";
+    [Parameter] public Size IconSize { get; set; } = Size.Medium;
+    [Parameter] public bool Disabled { get; set; } = false;
+    [Parameter] public string Class { get; set; } = "wallet-button-action";
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public bool IsNavigation { get; set; } = false;
+    
+    [CascadingParameter] public WalletFormLayout? FormLayout { get; set; }
+    
+    private async Task HandleClick()
+    {
+        if (!Disabled && OnClick.HasDelegate)
+        {
+            if (IsNavigation && FormLayout != null)
+            {
+                await FormLayout.ScrollToTop();
+            }
+            await OnClick.InvokeAsync();
+        }
+    }
+}
+

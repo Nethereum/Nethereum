@@ -1,0 +1,59 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+
+<div class="wallet-network-chip">
+    <div class="network-info">
+        <div class="network-main">
+            <MudIcon Icon="@Icons.Material.Filled.Language" 
+                     Size="Size.Small" 
+                     Class="network-icon" />
+            <MudText Typo="Typo.body1" 
+                     Color="Color.Default"
+                     Class="network-name wallet-text-body">
+                @NetworkName
+            </MudText>
+            @if (!string.IsNullOrEmpty(ChainId))
+            {
+                <MudText Typo="Typo.caption" 
+                         Color="Color.Secondary"
+                         Class="chain-id wallet-text-caption">
+                    (Chain ID: @ChainId)
+                </MudText>
+            }
+        </div>
+        
+        <div class="gas-mode-info">
+            <WalletChip Text="@(IsEip1559 ? "EIP-1559" : "Legacy")"
+                       Variant="@(IsEip1559 ? WalletChipVariant.Status : WalletChipVariant.Default)"
+                       Color="@(IsEip1559 ? Color.Success : Color.Default)"
+                       Size="MudBlazor.Size.Small"
+                       Class="gas-mode-chip" />
+        </div>
+    </div>
+    
+    @if (CanSwitchMode)
+    {
+        <div class="mode-switch">
+            <WalletSegmentedControl TValue="bool" 
+                                   Options="@GetGasModeOptions()"
+                                   SelectedValue="@IsEip1559"
+                                   SelectedValueChanged="@OnModeSwitch"
+                                   Class="gas-mode-toggle" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string NetworkName { get; set; } = "Unknown Network";
+    [Parameter] public string? ChainId { get; set; }
+    [Parameter] public bool IsEip1559 { get; set; }
+    [Parameter] public bool CanSwitchMode { get; set; } = false;
+    [Parameter] public EventCallback<bool> OnModeSwitch { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    
+    private List<WalletSegmentedControl<bool>.WalletSegmentOption<bool>> GetGasModeOptions() => new()
+    {
+        new() { Value = true, Title = "EIP-1559", Description = "Modern", Icon = Icons.Material.Filled.NewReleases },
+        new() { Value = false, Title = "Legacy", Description = "Classic", Icon = Icons.Material.Filled.History }
+    };
+}

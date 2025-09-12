@@ -1,0 +1,116 @@
+@using MudBlazor
+
+@* BaseWalletCard.razor - Simple foundation card component *@
+<MudCard Elevation="@Elevation" 
+         Class="@GetCardClasses()" 
+         Style="@GetCardStyles()"
+         @onclick="OnClick"
+         @attributes="AdditionalAttributes">
+    
+    <MudCardContent Class="@GetContentClass()">
+        @if (ShowHeader)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2" Class="mb-2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Style="flex-grow: 1; min-width: 0;">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <MudAvatar Color="@AvatarColor" Size="@GetAvatarSize()" Class="@GetAvatarClass()">
+                            <MudIcon Icon="@Icon" Size="@GetIconSize()" />
+                        </MudAvatar>
+                    }
+                    @if (!string.IsNullOrEmpty(Title) || !string.IsNullOrEmpty(Subtitle))
+                    {
+                        <MudStack Spacing="0" Style="flex-grow: 1; min-width: 0;">
+                            @if (!string.IsNullOrEmpty(Title))
+                            {
+                                <MudText Typo="@GetTitleTypo()" Class="wallet-card-title" Style="font-weight: 600;">@Title</MudText>
+                            }
+                            @if (!string.IsNullOrEmpty(Subtitle) && !IsCompact)
+                            {
+                                <MudText Typo="@GetSubtitleTypo()" Color="Color.Default" Class="wallet-card-subtitle">@Subtitle</MudText>
+                            }
+                        </MudStack>
+                    }
+                </MudStack>
+                @if (HeaderActions != null)
+                {
+                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="flex-shrink-0">
+                        @HeaderActions
+                    </MudStack>
+                }
+            </MudStack>
+        }
+        
+        @if (MainContent != null)
+        {
+            <div class="wallet-card-main-content">
+                @MainContent
+            </div>
+        }
+    </MudCardContent>
+    
+    @if (FooterActions != null)
+    {
+        <MudCardActions Class="wallet-card-footer">
+            @FooterActions
+        </MudCardActions>
+    }
+</MudCard>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public Color AvatarColor { get; set; } = Color.Primary;
+    [Parameter] public RenderFragment? MainContent { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? FooterActions { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsClickable { get; set; } = true;
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public int Elevation { get; set; } = 1;
+    [Parameter] public WalletCardVariant Variant { get; set; } = WalletCardVariant.Standard;
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+    
+    private string GetCardClasses()
+    {
+        var classes = new List<string> { "wallet-card" };
+        
+        if (IsSelected) classes.Add("wallet-card-selected");
+        if (IsClickable) classes.Add("wallet-card-clickable");
+        if (IsCompact) classes.Add("wallet-card-compact");
+        classes.Add($"wallet-card-{Variant.ToString().ToLower()}");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetCardStyles()
+    {
+        var styles = new List<string> { "border-radius: 12px; transition: all 0.2s ease;" };
+        
+        if (IsCompact)
+            styles.Add("min-height: 60px;");
+        else
+            styles.Add("min-height: 80px;");
+            
+        return string.Join(" ", styles);
+    }
+    
+    private string GetContentClass()
+    {
+        return IsCompact ? "pa-3" : "pa-4";
+    }
+    
+    private string GetAvatarClass()
+    {
+        return "wallet-card-avatar";
+    }
+    
+    private Size GetAvatarSize() => IsCompact ? Size.Medium : Size.Large;
+    private Size GetIconSize() => IsCompact ? Size.Small : Size.Medium;
+    private Typo GetTitleTypo() => IsCompact ? Typo.body1 : Typo.subtitle1;
+    private Typo GetSubtitleTypo() => IsCompact ? Typo.caption : Typo.body2;
+}
+

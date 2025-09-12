@@ -1,0 +1,40 @@
+@using MudBlazor
+
+@* Generic reusable content section with proper spacing *@
+<div class="wallet-content-section @Class" style="@Style">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <MudText Typo="@TitleTypo" Class="section-title" Style="margin-bottom: 0.5rem; font-weight: 600;">
+            @Title
+        </MudText>
+    }
+    
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="section-subtitle" Style="margin-bottom: 0.75rem;">
+            @Subtitle
+        </MudText>
+    }
+    
+    <div class="section-content">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public Typo TitleTypo { get; set; } = Typo.h6;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+    [Parameter] public WalletSpacing Spacing { get; set; } = WalletSpacing.Normal;
+    
+    public enum WalletSpacing
+    {
+        Tight,    // 0.5rem
+        Normal,   // 1rem  
+        Loose     // 1.5rem
+    }
+}
+

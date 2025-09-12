@@ -1,0 +1,48 @@
+@using MudBlazor
+
+@* Generic reusable breadcrumb navigation component *@
+<div class="wallet-breadcrumb @Class" style="@Style">
+    @if (Items?.Any() == true)
+    {
+        @for (int i = 0; i < Items.Count; i++)
+        {
+            var item = Items[i];
+            var isLast = i == Items.Count - 1;
+            
+            @if (item.IsClickable && !isLast)
+            {
+                <MudButton Variant="Variant.Text" 
+                          Color="Color.Primary" 
+                          OnClick="@(() => item.OnClick?.Invoke())"
+                          Style="text-transform: none; padding: 0.25rem 0.5rem; min-height: auto;">
+                    @item.Text
+                </MudButton>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Style="@(isLast ? "font-weight: 500;" : "")">
+                    @item.Text
+                </MudText>
+            }
+            
+            @if (!isLast)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Secondary" />
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<BreadcrumbItem> Items { get; set; } = new();
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+    
+    public class BreadcrumbItem
+    {
+        public string Text { get; set; } = "";
+        public bool IsClickable { get; set; } = false;
+        public Action? OnClick { get; set; }
+    }
+}
+

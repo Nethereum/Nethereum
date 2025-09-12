@@ -1,0 +1,79 @@
+@using MudBlazor
+
+<MudPaper Elevation="0" Class="@($"wallet-account-chip {Class}")" Style="@GetChipStyle()">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        @if (ShowIcon)
+        {
+            <MudIcon Icon="@Icon" Size="@IconSize" Color="@GetIconColor()" />
+        }
+        <MudStack Spacing="0">
+            <MudText Typo="@GetPrimaryTypo()" Style="@GetPrimaryTextStyle()">
+                @GetPrimaryText()
+            </MudText>
+            @if (ShowAccountType && !string.IsNullOrEmpty(AccountType))
+            {
+                <MudText Typo="@GetSecondaryTypo()" Style="@GetSecondaryTextStyle()">
+                    @AccountType
+                </MudText>
+            }
+        </MudStack>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter] public int AccountIndex { get; set; }
+    [Parameter] public string? AccountType { get; set; }
+    [Parameter] public bool ShowIcon { get; set; } = true;
+    [Parameter] public bool ShowAccountType { get; set; } = true;
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.AccountCircle;
+    [Parameter] public string Prefix { get; set; } = "Account";
+    [Parameter] public Size Size { get; set; } = MudBlazor.Size.Medium; // Better default size
+    [Parameter] public Color Color { get; set; } = Color.Primary; // Better default color
+    [Parameter] public Size IconSize { get; set; } = MudBlazor.Size.Medium;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool IsCompact { get; set; } = false;
+    
+    private string GetPrimaryText()
+    {
+        return $"{Prefix} {AccountIndex}";
+    }
+    
+    private string GetChipStyle()
+    {
+        var padding = IsCompact ? "8px 12px" : "12px 16px";
+        var borderRadius = "8px";
+        var backgroundColor = "var(--mud-palette-surface)";
+        var borderColor = Color == Color.Primary ? "var(--mud-palette-primary)" : "var(--mud-palette-divider)";
+        var border = $"1px solid {borderColor}";
+        
+        return $"padding: {padding}; border-radius: {borderRadius}; background-color: {backgroundColor}; border: {border};";
+    }
+    
+    private Color GetIconColor()
+    {
+        return Color;
+    }
+    
+    private Typo GetPrimaryTypo()
+    {
+        return IsCompact ? Typo.caption : Typo.body2;
+    }
+    
+    private Typo GetSecondaryTypo()
+    {
+        return Typo.caption;
+    }
+    
+    private string GetPrimaryTextStyle()
+    {
+        var fontWeight = "600";
+        var color = Color == Color.Primary ? "var(--mud-palette-primary)" : "var(--mud-palette-text-primary)";
+        return $"font-weight: {fontWeight}; color: {color}; margin: 0;";
+    }
+    
+    private string GetSecondaryTextStyle()
+    {
+        var color = "var(--mud-palette-text-secondary)";
+        return $"color: {color}; margin: 0; line-height: 1.2;";
+    }
+}

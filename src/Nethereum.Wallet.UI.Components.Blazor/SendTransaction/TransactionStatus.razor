@@ -1,0 +1,222 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction.Components
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Services.Transactions
+@using static Nethereum.Wallet.UI.Components.SendTransaction.Components.TransactionStatusLocalizer
+@using System.ComponentModel
+@inject IComponentLocalizer<TransactionStatusViewModel> Localizer
+@inject IWalletLocalizationService LocalizationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.TransactionStatus)"
+                  ShowContinue="false"
+                  ShowBack="false">
+   
+    
+    <ChildContent>
+        <!-- Status Display -->
+        <WalletFormSection>
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+        @if (ViewModel.IsMonitoring)
+        {
+            <!-- Real-time Status Display -->
+            <MudIcon Icon="@GetStatusIcon()" 
+                     Color="@GetStatusColor()" 
+                     Size="MudBlazor.Size.Large" 
+                     Style="font-size: 64px;" />
+            
+            <MudText Typo="Typo.h5" Color="@GetStatusColor()" Align="Align.Center">
+                @GetStatusText()
+            </MudText>
+            
+            @if (ViewModel.CurrentStatus == Nethereum.Wallet.Services.Transactions.TransactionStatus.Mining || ViewModel.CurrentStatus == Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            }
+            
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                @if (ViewModel.ConfirmationCount > 0)
+                {
+                    @(string.Format(Localizer.GetString(Keys.ConfirmationsProgress), ViewModel.ConfirmationCount))
+                }
+                else
+                {
+                    @Localizer.GetString(Keys.WaitingForConfirmation)
+                }
+            </MudText>
+        }
+        else if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+        {
+            <!-- Success State -->
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" 
+                     Color="Color.Success" 
+                     Size="MudBlazor.Size.Large" 
+                     Style="font-size: 64px;" />
+            
+            <MudText Typo="Typo.h5" Color="Color.Success" Align="Align.Center">
+                @Localizer.GetString(Keys.TransactionSent)
+            </MudText>
+            
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                @ViewModel.SuccessMessage
+            </MudText>
+        }
+        else if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <!-- Error State -->
+            <MudIcon Icon="@Icons.Material.Filled.Error" 
+                     Color="Color.Error" 
+                     Size="MudBlazor.Size.Large" 
+                     Style="font-size: 64px;" />
+            
+            <MudText Typo="Typo.h5" Color="Color.Error" Align="Align.Center">
+                @Localizer.GetString(Keys.TransactionFailed)
+            </MudText>
+            
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                @ViewModel.ErrorMessage
+            </MudText>
+        }
+            </MudStack>
+        </WalletFormSection>
+
+        <!-- Transaction Details Card -->
+        @if (!string.IsNullOrEmpty(ViewModel.TransactionHash))
+        {
+            <WalletFormSection Title="@Localizer.GetString(Keys.TransactionDetails)">
+                <MudCard Class="wallet-transaction-details">
+                    <MudCardContent>
+                        <MudGrid Spacing="2">
+                            <!-- Transaction Hash using new component -->
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @Localizer.GetString(Keys.TransactionHash)
+                                </MudText>
+                                <TransactionHashDisplay Hash="@ViewModel.TransactionHash" 
+                                                       ShowCopyButton="true"
+                                                       IsCompact="@IsCompactMode" />
+                            </MudItem>
+            
+                            <!-- Status -->
+                            <MudItem xs="12" sm="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @Localizer.GetString(Keys.Status)
+                                </MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusChipColor()" Variant="Variant.Filled">
+                    @ViewModel.CurrentStatus.ToString()
+                                </MudChip>
+                            </MudItem>
+            
+                            <!-- Confirmations -->
+                            <MudItem xs="12" sm="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @Localizer.GetString(Keys.Confirmations)
+                                </MudText>
+                                <MudText Typo="Typo.body2">@ViewModel.ConfirmationCount</MudText>
+                            </MudItem>
+            
+                            @if (!string.IsNullOrEmpty(ViewModel.GasUsed))
+                            {
+                                <!-- Gas Used -->
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.GasUsed)
+                                    </MudText>
+                                    <MudText Typo="Typo.body2">@ViewModel.GasUsed</MudText>
+                                </MudItem>
+                                
+                                <!-- Actual Cost -->
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.TransactionCost)
+                                    </MudText>
+                                    <MudText Typo="Typo.body2">@ViewModel.ActualCost</MudText>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </WalletFormSection>
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter, EditorRequired] public TransactionStatusViewModel ViewModel { get; set; } = null!;
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public string ExitButtonText { get; set; } = "Close";
+    [Parameter] public bool ShowExplorerButton { get; set; } = true;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    
+    protected override void OnInitialized()
+    {
+        LocalizationService.LanguageChanged += OnLanguageChanged;
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.OnClose = () => OnExit.InvokeAsync();
+    }
+    
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    
+    private string GetStatusIcon() => ViewModel.CurrentStatus switch
+    {
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending => Icons.Material.Filled.Pending,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Mining => Icons.Material.Filled.Engineering,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Confirmed => Icons.Material.Filled.CheckCircle,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Failed => Icons.Material.Filled.Error,
+        _ => Icons.Material.Filled.HourglassEmpty
+    };
+    
+    private Color GetStatusColor() => ViewModel.CurrentStatus switch
+    {
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending => Color.Warning,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Mining => Color.Info,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Confirmed => Color.Success,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Failed => Color.Error,
+        _ => Color.Default
+    };
+    
+    private Color GetStatusChipColor() => ViewModel.CurrentStatus switch
+    {
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending => Color.Warning,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Mining => Color.Info,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Confirmed => Color.Success,
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Failed => Color.Error,
+        _ => Color.Default
+    };
+    
+    private string GetStatusText() => ViewModel.CurrentStatus switch
+    {
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending => Localizer.GetString(Keys.StatusPending),
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Mining => Localizer.GetString(Keys.StatusMining),
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Confirmed => Localizer.GetString(Keys.StatusConfirmed),
+        Nethereum.Wallet.Services.Transactions.TransactionStatus.Failed => Localizer.GetString(Keys.StatusFailed),
+        _ => Localizer.GetString(Keys.StatusProcessing)
+    };
+    
+    private async Task OpenExplorer(string? url)
+    {
+        if (!string.IsNullOrEmpty(url))
+        {
+            await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        }
+    }
+    
+    private void OnLanguageChanged(string languageCode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        LocalizationService.LanguageChanged -= OnLanguageChanged;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ViewModel?.Dispose();
+    }
+}

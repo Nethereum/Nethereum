@@ -1,0 +1,23 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Blazor.CreateAccount
+
+<MudStack Spacing="@(IsCompactMode ? 1 : 4)">
+    @foreach (var accountType in AvailableAccountTypes)
+    {
+        <AccountTypeCard AccountType="accountType"
+                       IsCompactMode="@IsCompactMode"
+                       OnSelect="SelectAccountType" />
+    }
+</MudStack>
+
+@code {
+    [Parameter] public IEnumerable<IAccountCreationViewModel> AvailableAccountTypes { get; set; } = Enumerable.Empty<IAccountCreationViewModel>();
+    [Parameter] public EventCallback<IAccountCreationViewModel> OnAccountTypeSelected { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+
+    private async Task SelectAccountType(IAccountCreationViewModel accountType)
+    {
+        await OnAccountTypeSelected.InvokeAsync(accountType);
+    }
+}

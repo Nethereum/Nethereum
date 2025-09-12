@@ -1,0 +1,80 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@inject IJSRuntime JSRuntime
+
+<!-- Master Wallet Form Layout - Used by all wallet forms -->
+<CascadingValue Value="this">
+<div class="wallet-form-layout" @ref="layoutElement">
+    
+    <!-- Compact Header -->
+    <WalletCompactHeader Title="@Title" 
+                         Subtitle="@Subtitle" />
+    
+    <!-- Step Progress (if steps provided) -->
+    @if (Steps?.Any() == true)
+    {
+        <WalletStepProgress Steps="@Steps" 
+                           CurrentStepIndex="@CurrentStepIndex"
+                           Localizer="@StepLocalizer" />
+    }
+    
+    <!-- Form Content Area -->
+    <div class="wallet-form-content">
+        @ChildContent
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <WalletBottomNavigation ExitText="@ExitText"
+                           BackText="@BackText"
+                           ContinueText="@ContinueText"
+                           PrimaryText="@PrimaryText"
+                           ShowBack="@ShowBack"
+                           ShowContinue="@ShowContinue"
+                           ShowPrimary="@ShowPrimary"
+                           ContinueDisabled="@ContinueDisabled"
+                           PrimaryDisabled="@PrimaryDisabled"
+                           ActionButtons="@ActionButtons"
+                           OnExit="@OnExit"
+                           OnBack="@OnBack"
+                           OnContinue="@OnContinue"
+                           OnPrimary="@OnPrimary" />
+</div>
+</CascadingValue>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    
+    [Parameter] public List<WalletFormStep>? Steps { get; set; }
+    [Parameter] public int CurrentStepIndex { get; set; } = 0;
+    [Parameter] public IComponentLocalizer? StepLocalizer { get; set; }
+    
+    [Parameter] public string ExitText { get; set; } = "Exit";
+    [Parameter] public string BackText { get; set; } = "Back";
+    [Parameter] public string ContinueText { get; set; } = "Continue";
+    [Parameter] public string PrimaryText { get; set; } = "Create Account";
+    
+    [Parameter] public bool ShowBack { get; set; } = false;
+    [Parameter] public bool ShowContinue { get; set; } = true;
+    [Parameter] public bool ShowPrimary { get; set; } = false;
+    
+    [Parameter] public bool ContinueDisabled { get; set; } = false;
+    [Parameter] public bool PrimaryDisabled { get; set; } = false;
+    
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public EventCallback OnContinue { get; set; }
+    [Parameter] public EventCallback OnPrimary { get; set; }
+    
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? ActionButtons { get; set; }
+    
+    private ElementReference layoutElement;
+    
+    public async Task ScrollToTop()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "window.scrollTo(0, 0)");
+    }
+}
+

@@ -1,0 +1,490 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.Services
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Blazor.Dialogs
+@using Nethereum.Wallet.UI.Components.AccountList
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.AccountDetails
+@using Nethereum.Wallet.UI.Components.AccountDetails
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Extensions
+@using Nethereum.Wallet.UI.Components.Blazor.AccountList
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.WalletAccounts.Mnemonic
+@using Nethereum.Wallet.UI.Components.Dashboard
+@inject IComponentLocalizer<AccountListViewModel> Localizer
+@inject AccountListViewModel ViewModel
+@implements IDisposable
+@implements INavigatablePlugin
+@inject NethereumWalletHostProvider WalletHostProvider
+@inject IWalletVaultService VaultService
+@inject IDialogService DialogService
+
+<MudStack Spacing="4">
+    @if (selectedAccountForDetails != null)
+    {
+        <!-- Account Details View -->
+        <MudStack Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+                           Variant="Variant.Text"
+                           Color="Color.Default"
+                           OnClick="CloseAccountDetails">
+                    @Localizer.GetString(AccountListLocalizer.Keys.BackToAccounts)
+                </MudButton>
+            </MudStack>
+            <AccountDetails Account="selectedAccountForDetails" OnExit="CloseAccountDetails" />
+        </MudStack>
+    }
+    else if (selectedGroupForDetails != null)
+    {
+        <!-- Group Details View -->
+        <MudStack Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+                           Variant="Variant.Text"
+                           Color="Color.Default"
+                           OnClick="CloseGroupDetails">
+                    @Localizer.GetString(AccountListLocalizer.Keys.BackToAccounts)
+                </MudButton>
+            </MudStack>
+            <MnemonicDetailsView MnemonicId="@selectedGroupForDetails.GroupId" 
+                                OnExit="CloseGroupDetails" />
+        </MudStack>
+    }
+    else
+    {
+        <!-- Account List -->
+        <MudStack Spacing="@(GetEffectiveIsCompact() ? 1 : 6)" Class="@(GetEffectiveIsCompact() ? "pa-1" : "pa-2")">
+            @if (IsLoading)
+            {
+                <MudStack AlignItems="AlignItems.Center" Spacing="4" Class="@(IsCompact ? "py-4" : "py-8")">
+                    <MudProgressCircular Color="Color.Primary" Size="MudBlazor.Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">@Localizer.GetString(AccountListLocalizer.Keys.LoadingAccounts)</MudText>
+                </MudStack>
+            }
+            else if (Accounts.Any())
+            {
+                @if (ViewModel.AccountGroups.Any())
+                {
+                    <!-- Grouped Account Display -->
+                    <WalletContentSection Class="spacing-tight">
+                        @foreach (var group in ViewModel.AccountGroups)
+                        {
+                            <div class="account-group">
+                                <!-- Group Header -->
+                                <div class="account-group-header" @onclick="@(() => ViewModel.ToggleGroupExpanded(group))">
+                                    <div class="account-group-info">
+                                        <MudIcon Icon="@GetGroupIcon(group)" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body" 
+                                                   Text="@group.GroupName" 
+                                                   Class="font-weight-medium" />
+                                        @if (group.CanNavigateToDetails)
+                                        {
+                                            <WalletBarActionButton Icon="@Icons.Material.Filled.Settings"
+                                                                  Text="@Localizer.GetString(AccountListLocalizer.Keys.ManageButton)"
+                                                                  OnClick="@(() => HandleGroupNavigation(group))" />
+                                        }
+                                    </div>
+                                    <MudIcon Icon="@(group.IsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" />
+                                </div>
+
+                                <!-- Group Accounts -->
+                                @if (group.IsExpanded)
+                                {
+                                    <div class="account-list">
+                                        @foreach (var account in group.Accounts)
+                                        {
+                                            <AccountCard Account="account"
+                                                        IsSelected="IsSelectedAccount(account)"
+                                                        AccountDisplayName="@ViewModel.GetAccountDisplayName(account)"
+                                                        AccountIcon="@ViewModel.GetAccountIcon(account)"
+                                                        AccountTypeDescription="@ViewModel.GetAccountTypeDescription(account)"
+                                                        AccountColor="@ViewModel.GetAccountColorTheme(account).ToMudColor()"
+                                                        FormattedAddress="@ViewModel.FormatAddress(account.Address, GetEffectiveIsCompact(), GetEffectiveComponentWidth())"
+                                                        GetEnsNameAsync="@ViewModel.GetEnsNameAsync"
+                                                        IsCompactMode="@GetEffectiveIsCompact()"
+                                                        ComponentWidth="@GetEffectiveComponentWidth()"
+                                                        OnViewDetails="EditAccount"
+                                                        OnSelect="SelectAccount"
+                                                        OnMenu="OnAccountMenu"
+                                                        OnCopyAddress="CopyAddressFromCard" />
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </WalletContentSection>
+                }
+                else
+                {
+                    <!-- Flat Account List Display -->
+                    <WalletContentSection Class="spacing-tight">
+                        <div class="account-list">
+                            @foreach (var account in Accounts)
+                            {
+                                <AccountCard Account="account"
+                                            IsSelected="IsSelectedAccount(account)"
+                                            AccountDisplayName="@ViewModel.GetAccountDisplayName(account)"
+                                            AccountIcon="@ViewModel.GetAccountIcon(account)"
+                                            AccountTypeDescription="@ViewModel.GetAccountTypeDescription(account)"
+                                            AccountColor="@ViewModel.GetAccountColorTheme(account).ToMudColor()"
+                                            FormattedAddress="@ViewModel.FormatAddress(account.Address, GetEffectiveIsCompact(), GetEffectiveComponentWidth())"
+                                            GetEnsNameAsync="@ViewModel.GetEnsNameAsync"
+                                            IsCompactMode="@GetEffectiveIsCompact()"
+                                            ComponentWidth="@GetEffectiveComponentWidth()"
+                                            OnViewDetails="EditAccount"
+                                            OnSelect="SelectAccount"
+                                            OnMenu="OnAccountMenu"
+                                            OnCopyAddress="CopyAddressFromCard" />
+                            }
+                        </div>
+                    </WalletContentSection>
+                }
+            }
+            else
+            {
+                <!-- Clean Empty State -->
+                <MudCard Elevation="0" Class="@(IsCompact ? "pa-4 text-center" : "pa-8 text-center")" Style="border-radius: 1rem;">
+                    <MudStack AlignItems="AlignItems.Center" Spacing="@(IsCompact ? 4 : 6)">
+                        <MudAvatar Color="Color.Secondary" Size="MudBlazor.Size.Large" Style="@(IsCompact ? "width: 60px; height: 60px;" : "width: 80px; height: 80px;")">
+                            <MudIcon Icon="Icons.Material.Outlined.AccountBalanceWallet" Size="@(IsCompact ? MudBlazor.Size.Medium : MudBlazor.Size.Large)" />
+                        </MudAvatar>
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="@(IsCompact ? Typo.h6 : Typo.h5)" Class="font-medium">@Localizer.GetString(AccountListLocalizer.Keys.NoAccountsYet)</MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="text-center">
+                                @Localizer.GetString(AccountListLocalizer.Keys.NoAccountsDescription)
+                            </MudText>
+                        </MudStack>
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   Size="@(IsCompact ? MudBlazor.Size.Medium : MudBlazor.Size.Large)"
+                                   StartIcon="Icons.Material.Filled.Add"
+                                   OnClick="AddNewAccount"
+                                   Class="rounded-lg px-6">
+                            @Localizer.GetString(AccountListLocalizer.Keys.AddFirstAccount)
+                        </MudButton>
+                    </MudStack>
+                </MudCard>
+            }
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public string SelectedAccount { get; set; } = "";
+    [Parameter] public EventCallback OnAddAccount { get; set; }
+    [Parameter] public EventCallback<IWalletAccount> OnShowSecurity { get; set; }
+    [Parameter] public string Title { get; set; } = "My Accounts";
+    [Parameter] public string Subtitle { get; set; } = "Manage and switch between your wallet accounts";
+    
+    // Navigation parameters
+    [Parameter] public IWalletAccount? ShowAccountDetails { get; set; }
+    [Parameter] public string? SelectedAccountAddress { get; set; }
+    
+    // Responsive parameters from Dashboard (kept for compatibility, but will use ViewportService)
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    [Parameter] public bool IsCompact { get; set; } = false;
+    [Parameter] public Action<object>? OnReady { get; set; }
+    
+    private List<IWalletAccount> Accounts = new();
+    private bool IsLoading = true;
+    private IWalletAccount? selectedAccountForDetails = null;
+    private AccountGroupViewModel? selectedGroupForDetails = null;
+    
+    public async Task NavigateWithParametersAsync(Dictionary<string, object> parameters)
+    {
+        try
+        {
+            if (parameters.Count == 0)
+            {
+                selectedAccountForDetails = null;
+            }
+            
+            if (parameters.TryGetValue("ShowAccountDetails", out var showAccountDetailsObj) && 
+                showAccountDetailsObj is IWalletAccount account)
+            {
+                selectedAccountForDetails = account;
+            }
+            
+            if (parameters.TryGetValue("SelectedAccountAddress", out var addressObj) && 
+                addressObj is string address && !string.IsNullOrEmpty(address))
+            {
+                var foundAccount = Accounts.FirstOrDefault(a => a.Address.Equals(address, StringComparison.OrdinalIgnoreCase));
+                if (foundAccount != null)
+                {
+                    selectedAccountForDetails = foundAccount;
+                }
+            }
+            
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing navigation parameters in AccountList: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Notify parent that component is ready
+        OnReady?.Invoke(this);
+        
+        // Subscribe to host provider events
+        WalletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
+        
+        await LoadAccounts();
+        await SyncSelectedAccount();
+        
+        // Preload ENS names for better UX
+        _ = ViewModel.PreloadEnsNamesAsync();
+        
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        StateHasChanged();
+    }
+    
+
+    public void Dispose()
+    {
+        // Unsubscribe from events
+        WalletHostProvider.SelectedAccountChanged -= OnSelectedAccountChangedAsync;
+    }
+
+    private async Task LoadAccounts()
+    {
+        IsLoading = true;
+        try
+        {
+            var accounts = await VaultService.GetAccountsAsync();
+            Accounts = accounts.ToList();
+            
+            // Also load accounts in the ViewModel to populate AccountGroups
+            await ViewModel.LoadAccountsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading accounts: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SyncSelectedAccount()
+    {
+        try
+        {
+            var currentAccount = WalletHostProvider.GetSelectedAccount();
+            if (currentAccount != null)
+            {
+                SelectedAccount = currentAccount.Address;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error syncing selected account: {ex.Message}");
+        }
+    }
+
+    private async Task OnSelectedAccountChangedAsync(string accountAddress)
+    {
+        // Update selected account when host provider notifies of change
+        SelectedAccount = accountAddress;
+        StateHasChanged();
+    }
+
+    private async Task SelectAccount(IWalletAccount account)
+    {
+        try
+        {
+            // Check if account is already selected
+            if (IsSelectedAccount(account))
+            {
+                return; // Already selected, no need to do anything
+            }
+
+            await WalletHostProvider.SetSelectedAccountAsync(account);
+            
+            // Update selected account parameter for UI feedback
+            SelectedAccount = account.Address;
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error selecting account: {ex.Message}");
+            
+            // Show error feedback
+            await DialogService.ShowAsync<MessageDialog>("Error", new DialogParameters
+            {
+                ["Title"] = "Error",
+                ["Message"] = $"Failed to select account: {ex.Message}"
+            });
+        }
+    }
+
+    private bool IsSelectedAccount(IWalletAccount account)
+    {
+        return account.Address.Equals(SelectedAccount, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetCleanAccountCardClass(IWalletAccount account)
+    {
+        var baseClass = "account-card";
+        if (IsSelectedAccount(account))
+        {
+            baseClass += " selected";
+        }
+        return baseClass;
+    }
+
+
+    private string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length <= 16)
+            return address;
+        
+        return $"{address[..8]}...{address[^6..]}";
+    }
+
+    private async Task CopyAddress(MouseEventArgs e, string address)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", address);
+        }
+        catch
+        {
+            // Fallback for older browsers
+        }
+    }
+    
+    private async Task CopyAddressFromCard(string address)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", address);
+        }
+        catch
+        {
+            // Fallback for older browsers
+        }
+    }
+    
+    private async Task OnAccountMenu((MouseEventArgs e, IWalletAccount account) args)
+    {
+        await EditAccountWithStop(args.e, args.account);
+    }
+
+    private async Task ShowAccountSecurity(IWalletAccount account)
+    {
+        if (OnShowSecurity.HasDelegate)
+        {
+            await OnShowSecurity.InvokeAsync(account);
+        }
+    }
+
+    private async Task ShowAccountSecurityWithStop(MouseEventArgs e, IWalletAccount account)
+    {
+       
+        await ShowAccountSecurity(account);
+    }
+
+    private async Task EditAccountWithStop(MouseEventArgs e, IWalletAccount account)
+    {
+       
+        await EditAccount(account);
+    }
+
+    private async Task EditAccount(IWalletAccount account)
+    {
+        // Show the account details view
+        selectedAccountForDetails = account;
+        StateHasChanged();
+    }
+
+    private async Task CloseAccountDetails()
+    {
+        selectedAccountForDetails = null;
+        
+        // Reload accounts to reflect any changes made in details view
+        await LoadAccounts();
+        StateHasChanged();
+    }
+
+    private async Task AddNewAccount()
+    {
+        if (OnAddAccount.HasDelegate)
+        {
+            await OnAddAccount.InvokeAsync();
+        }
+    }
+    
+    private bool GetEffectiveIsCompact()
+    {
+        // Use parameter directly from parent Dashboard
+        return IsCompact;
+    }
+    
+    private int GetEffectiveComponentWidth()
+    {
+        // Use parameter directly from parent Dashboard
+        return ComponentWidth;
+    }
+
+    private string GetGroupIcon(AccountGroupViewModel group)
+    {
+        // Use the account type icon from the first account in the group
+        var firstAccount = group.Accounts.FirstOrDefault();
+        if (firstAccount != null)
+        {
+            var iconName = ViewModel.GetAccountIcon(firstAccount);
+            return iconName.ToMudIcon();
+        }
+
+        // Fallback to group type icons
+        return group.GroupType.ToLower() switch
+        {
+            _ => Icons.Material.Filled.Group
+        };
+    }
+
+
+    private async Task HandleGroupNavigation(AccountGroupViewModel group)
+    {
+        // Show the group details view directly in this component
+        if (group.CanNavigateToDetails)
+        {
+            selectedGroupForDetails = group;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseGroupDetails()
+    {
+        selectedGroupForDetails = null;
+        
+        // Reload accounts to reflect any changes made in details view
+        await LoadAccounts();
+        StateHasChanged();
+    }
+
+    private List<WalletSegmentedControl<bool>.WalletSegmentOption<bool>> GetViewModeOptions()
+    {
+        return new List<WalletSegmentedControl<bool>.WalletSegmentOption<bool>>
+        {
+            new() { Value = false, Title = Localizer.GetString(AccountListLocalizer.Keys.ListView) },
+            new() { Value = true, Title = Localizer.GetString(AccountListLocalizer.Keys.GroupedView) }
+        };
+    }
+}
+
+@inject IJSRuntime JSRuntime
+

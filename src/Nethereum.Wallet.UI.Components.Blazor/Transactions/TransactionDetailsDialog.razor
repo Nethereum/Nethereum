@@ -1,0 +1,127 @@
+@using MudBlazor
+@using Nethereum.Wallet.Services.Transactions
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Transactions
+@inject IComponentLocalizer<TransactionHistoryViewModel> Localizer
+
+<MudDialog @bind-Visible="@IsOpen" Options="@(new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small })">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @Localizer.GetString(TransactionHistoryLocalizer.Keys.TransactionDetails)
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Transaction != null)
+        {
+            <MudStack Spacing="3">
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.TransactionHash)" 
+                         Variant="Variant.Outlined">
+                    <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                        @Transaction.Hash
+                    </MudText>
+                </MudField>
+                
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Status)" 
+                         Variant="Variant.Outlined">
+                    <MudChip T="string" Color="@GetStatusColor()" Size="Size.Small">
+                        @GetStatusText()
+                    </MudChip>
+                </MudField>
+                
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Type)" 
+                         Variant="Variant.Outlined">
+                    @Transaction.DisplayName
+                </MudField>
+                
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.From)" 
+                         Variant="Variant.Outlined">
+                    <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                        @Transaction.From
+                    </MudText>
+                </MudField>
+                
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.To)" 
+                         Variant="Variant.Outlined">
+                    <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                        @Transaction.To
+                    </MudText>
+                </MudField>
+                
+                @if (!string.IsNullOrEmpty(Transaction.Value) && Transaction.Value != "0")
+                {
+                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Value)" 
+                             Variant="Variant.Outlined">
+                        @Transaction.Value ETH
+                    </MudField>
+                }
+                
+                @if (!string.IsNullOrEmpty(Transaction.GasUsed))
+                {
+                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.GasUsed)" 
+                             Variant="Variant.Outlined">
+                        @Transaction.GasUsed
+                    </MudField>
+                }
+                
+                @if (!string.IsNullOrEmpty(Transaction.GasPrice))
+                {
+                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.GasPrice)" 
+                             Variant="Variant.Outlined">
+                        @Transaction.GasPrice
+                    </MudField>
+                }
+                
+                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.SubmittedAt)" 
+                         Variant="Variant.Outlined">
+                    @Transaction.SubmittedAt.ToLocalTime().ToString("g")
+                </MudField>
+                
+                @if (Transaction.ConfirmedAt.HasValue)
+                {
+                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.ConfirmedAt)" 
+                             Variant="Variant.Outlined">
+                        @Transaction.ConfirmedAt.Value.ToLocalTime().ToString("g")
+                    </MudField>
+                }
+                
+                @if (!string.IsNullOrEmpty(Transaction.ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error">
+                        @Transaction.ErrorMessage
+                    </MudAlert>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="OnClose" Color="Color.Primary">
+            @Localizer.GetString(TransactionHistoryLocalizer.Keys.Close)
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public TransactionInfo? Transaction { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    
+    private Color GetStatusColor() => Transaction?.Status switch
+    {
+        TransactionStatus.Pending => Color.Warning,
+        TransactionStatus.Mining => Color.Info,
+        TransactionStatus.Confirmed => Color.Success,
+        TransactionStatus.Failed => Color.Error,
+        TransactionStatus.Dropped => Color.Dark,
+        _ => Color.Default
+    };
+    
+    private string GetStatusText() => Transaction?.Status switch
+    {
+        TransactionStatus.Pending => Localizer.GetString(TransactionHistoryLocalizer.Keys.Pending),
+        TransactionStatus.Mining => Localizer.GetString(TransactionHistoryLocalizer.Keys.Mining),
+        TransactionStatus.Confirmed => Localizer.GetString(TransactionHistoryLocalizer.Keys.Confirmed),
+        TransactionStatus.Failed => Localizer.GetString(TransactionHistoryLocalizer.Keys.Failed),
+        TransactionStatus.Dropped => Localizer.GetString(TransactionHistoryLocalizer.Keys.Dropped),
+        _ => ""
+    };
+}

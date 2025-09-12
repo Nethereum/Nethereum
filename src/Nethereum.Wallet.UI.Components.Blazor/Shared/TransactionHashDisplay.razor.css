@@ -1,0 +1,37 @@
+/* TransactionHashDisplay component scoped styles - matching WalletAddressDisplay */
+.wallet-transaction-hash-display {
+    width: 100%;
+}
+
+.wallet-transaction-hash-content-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+}
+
+.wallet-transaction-hash-text-container {
+    min-width: 0; /* Allow text to wrap/truncate */
+}
+
+.wallet-transaction-hash-copy-container {
+    flex-shrink: 0;
+}
+
+.wallet-transaction-hash-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wallet-copy-button {
+    border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .wallet-transaction-hash-content-container {
+        gap: 0.5rem;
+    }
+}

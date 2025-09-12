@@ -1,0 +1,80 @@
+@using MudBlazor
+
+<div class="wallet-bottom-navigation">
+    <MudStack Row="true" 
+              Justify="Justify.SpaceBetween" 
+              AlignItems="AlignItems.Center"
+              Spacing="2"
+              Class="wallet-nav-stack">
+        
+        <div class="wallet-nav-left">
+            @if (OnExit.HasDelegate)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Close"
+                                       Text="@ExitText"
+                                       OnClick="OnExit"
+                                       Class="wallet-button-exit" />
+            }
+            
+            @if (ShowBack)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.ArrowBack"
+                                       Text="@BackText"
+                                       OnClick="OnBack"
+                                       Class="wallet-button-back" />
+            }
+        </div>
+        
+        @if (ActionButtons != null)
+        {
+            <div class="wallet-nav-actions">
+                @ActionButtons
+            </div>
+        }
+        else
+        {
+            <div class="wallet-nav-spacer"></div>
+        }
+        
+        <div class="wallet-nav-right">
+            @if (ShowPrimary)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Check"
+                                       Text="@PrimaryText"
+                                       OnClick="OnPrimary"
+                                       Disabled="@PrimaryDisabled"
+                                       Class="wallet-button-primary" />
+            }
+            else if (ShowContinue)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.ArrowForward"
+                                       Text="@ContinueText"
+                                       OnClick="OnContinue"
+                                       Disabled="@ContinueDisabled"
+                                       Class="wallet-button-primary" />
+            }
+        </div>
+    </MudStack>
+</div>
+
+@code {
+    [Parameter] public string ExitText { get; set; } = "Exit";
+    [Parameter] public string BackText { get; set; } = "Back";
+    [Parameter] public string ContinueText { get; set; } = "Continue";
+    [Parameter] public string PrimaryText { get; set; } = "Create Account";
+    
+    [Parameter] public bool ShowBack { get; set; } = false;
+    [Parameter] public bool ShowContinue { get; set; } = true;
+    [Parameter] public bool ShowPrimary { get; set; } = false;
+    
+    [Parameter] public bool ContinueDisabled { get; set; } = false;
+    [Parameter] public bool PrimaryDisabled { get; set; } = false;
+    
+    [Parameter] public RenderFragment? ActionButtons { get; set; }
+    
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public EventCallback OnContinue { get; set; }
+    [Parameter] public EventCallback OnPrimary { get; set; }
+}
+

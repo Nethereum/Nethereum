@@ -1,0 +1,77 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction.Models
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+
+<div class="wallet-gas-strategy-card">
+    @if (StrategyOptions?.Any() == true)
+    {
+        <WalletSegmentedControl TValue="GasStrategy" 
+                               Options="@GetSegmentedOptions()"
+                               SelectedValue="@SelectedStrategy"
+                               SelectedValueChanged="@OnStrategySelected"
+                               FullWidth="true" />
+    }
+    else
+    {
+        <div class="no-strategies-message">
+            <MudText Typo="Typo.caption" 
+                     Color="Color.Secondary"
+                     Class="wallet-text-caption">
+                No gas strategies available
+            </MudText>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public GasStrategy SelectedStrategy { get; set; } = GasStrategy.Normal;
+    [Parameter] public List<WalletGasStrategyOption> StrategyOptions { get; set; } = new();
+    [Parameter] public EventCallback<GasStrategy> OnStrategySelected { get; set; }
+    [Parameter] public bool IsEip1559 { get; set; }
+    [Parameter] public string TokenSymbol { get; set; } = "ETH";
+    [Parameter] public string Class { get; set; } = "";
+    
+    private List<WalletSegmentedControl<GasStrategy>.WalletSegmentOption<GasStrategy>> GetSegmentedOptions()
+    {
+        return StrategyOptions
+            .Where(option => option.IsAvailable)
+            .Select(option => new WalletSegmentedControl<GasStrategy>.WalletSegmentOption<GasStrategy>
+            {
+                Value = option.Strategy,
+                Title = option.Title,
+                Description = GetOptionDescription(option),
+                Icon = option.Icon
+            })
+            .ToList();
+    }
+    
+    private string GetOptionDescription(WalletGasStrategyOption option)
+    {
+        var parts = new List<string>();
+        
+        if (!string.IsNullOrEmpty(option.EstimatedCost) && option.EstimatedCost != "?")
+        {
+            parts.Add($"{option.EstimatedCost} {TokenSymbol}");
+        }
+        
+        if (!string.IsNullOrEmpty(option.EstimatedTime))
+        {
+            parts.Add(option.EstimatedTime);
+        }
+        
+        return string.Join(" • ", parts);
+    }
+}
+
+@* Helper class for gas strategy options *@
+@code {
+    public class WalletGasStrategyOption
+    {
+        public GasStrategy Strategy { get; set; }
+        public string Title { get; set; } = "";
+        public string EstimatedCost { get; set; } = "";
+        public string EstimatedTime { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public bool IsAvailable { get; set; } = true;
+    }
+}

@@ -1,0 +1,98 @@
+/* WalletSegmentedControl.razor component scoped styles */
+.wallet-segmented-control {
+        display: flex;
+        border: 1px solid var(--wallet-border, #e5e7eb);
+        border-radius: var(--wallet-radius-md, 8px);
+        overflow: hidden;
+        background: var(--wallet-bg-primary, #ffffff);
+        box-shadow: var(--wallet-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    }
+    
+    .wallet-segmented-control.full-width {
+        width: 100%;
+    }
+    
+    .wallet-segment-button {
+        flex: 1;
+        background: none;
+        border: none;
+        padding: var(--wallet-space-lg, 1.5rem);
+        min-height: 80px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        border-radius: 0;
+    }
+    
+    .wallet-segment-button:not(.first) {
+        border-left: 1px solid var(--wallet-border, #e5e7eb);
+    }
+    
+    .wallet-segment-button:hover:not(.selected):not(:disabled) {
+        background: var(--wallet-bg-secondary, #f9fafb);
+    }
+    
+    .wallet-segment-button.selected {
+        background: var(--wallet-primary, #2563eb);
+        color: white;
+    }
+    
+    .wallet-segment-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+    
+    .wallet-segment-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    .wallet-segment-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .wallet-segment-text {
+        text-align: center;
+    }
+    
+    .wallet-segment-title {
+        font-weight: 600;
+        font-size: var(--wallet-font-base, 1rem);
+        line-height: 1.2;
+    }
+    
+    .wallet-segment-description {
+        font-size: var(--wallet-font-sm, 0.875rem);
+        margin-top: 2px;
+        opacity: 0.8;
+        line-height: 1.3;
+    }
+    
+    .wallet-segment-button.selected .wallet-segment-description {
+        opacity: 0.9;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+        .wallet-segment-button {
+            padding: var(--wallet-space-md, 1rem);
+            min-height: 70px;
+        }
+        
+        .wallet-segment-icon {
+            font-size: 1.25rem;
+        }
+        
+        .wallet-segment-title {
+            font-size: var(--wallet-font-sm, 0.875rem);
+        }
+        
+        .wallet-segment-description {
+            font-size: var(--wallet-font-sm, 0.875rem);
+        }
+    }

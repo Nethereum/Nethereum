@@ -1,0 +1,68 @@
+/* WalletPopup.razor component scoped styles */
+@@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.wallet-popup-overlay {
+    z-index: 9999;
+}
+
+.wallet-popup-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.wallet-popup-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+}
+
+.wallet-popup-header {
+    padding: 48px 24px 16px 24px; /* Extra top padding for close button */
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.wallet-close-button {
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.04);
+    border-radius: 50%;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 480px) {
+    .wallet-popup-container {
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .wallet-popup-actions {
+        flex-direction: column !important;
+    }
+    
+    .wallet-popup-actions .mud-button {
+        width: 100%;
+        min-height: 48px; /* Touch-friendly */
+    }
+}
+
+/* Desktop adjustments */
+@media (min-width: 768px) {
+    .wallet-popup-actions {
+        flex-direction: row !important;
+        justify-content: flex-end !important;
+    }
+    
+    .wallet-popup-actions .mud-button {
+        width: auto !important;
+    }
+}

@@ -1,0 +1,379 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using System.ComponentModel
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.MnemonicDetailsLocalizer
+@implements IDisposable
+@inject MnemonicDetailsViewModel ViewModel
+@inject IComponentLocalizer<MnemonicDetailsViewModel> Localizer
+
+<WalletFormLayout Title="@GetTitle()"
+                  Subtitle="@GetSubtitle()"
+                  ExitText="@Localizer.GetString(Keys.Back)"
+                  BackText="@Localizer.GetString(Keys.Back)"
+                  ContinueText="@Localizer.GetString(Keys.Continue)"
+                  PrimaryText="@GetPrimaryActionText()"
+                  ShowBack="@(currentSection != ViewSection.Overview)"
+                  ShowContinue="false"
+                  ShowPrimary="@ShowPrimaryAction()"
+                  PrimaryDisabled="@(!CanExecutePrimaryAction())"
+                  OnExit="@HandleExit"
+                  OnBack="@HandleBack"
+                  OnPrimary="@HandlePrimaryAction">
+    
+    <ActionButtons>
+        @if (currentSection == ViewSection.Overview && ViewModel.MnemonicInfo != null)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Edit"
+                                   Text="@Localizer.GetString(Keys.EditLabel)"
+                                   OnClick="@(() => NavigateToSection(ViewSection.Settings))" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Security"
+                                   Text="@Localizer.GetString(Keys.ViewSeedPhrase)"
+                                   OnClick="@(() => NavigateToSection(ViewSection.Security))" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Delete"
+                                   Text="@Localizer.GetString(Keys.DeleteMnemonic)"
+                                   Class="wallet-button-danger"
+                                   OnClick="@HandleDeleteMnemonic" />
+        }
+    </ActionButtons>
+    
+    <ChildContent>
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <WalletText TextType="WalletText.WalletTextType.Body"
+                               TextKey="@Keys.LoadingMnemonic"
+                               Localizer="@Localizer"
+                               Class="mt-3" />
+                </div>
+            </WalletContentSection>
+        }
+        else if (ViewModel.MnemonicInfo != null)
+        {
+            @switch (currentSection)
+            {
+                case ViewSection.Overview:
+                    <!-- Overview Section -->
+                    <WalletContentSection Class="spacing-tight" 
+                                        Style="max-width: 600px; margin: 0 auto; margin-top: -1rem;">
+                        
+                        <!-- Mnemonic Overview Card -->
+                        <MudCard Class="wallet-card mb-4">
+                            <MudCardContent>
+                                <MudStack Spacing="3">
+                                    <!-- Name and Type -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   TextKey="@Keys.MnemonicName"
+                                                   Localizer="@Localizer" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                                   Text="@ViewModel.DisplayLabel"
+                                                   Class="mt-1" />
+                                    </div>
+
+                                    <!-- Type -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   Text="Type"
+                                                   Localizer="@Localizer" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                                   TextKey="@Keys.MnemonicType"
+                                                   Localizer="@Localizer"
+                                                   Class="mt-1" />
+                                    </div>
+
+                                    <!-- Passphrase Status -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   Text="Security"
+                                                   Localizer="@Localizer" />
+                                        <MudChip T="string" 
+                                                Size="Size.Small" 
+                                                Color="@(ViewModel.HasPassphrase ? Color.Success : Color.Default)"
+                                                Icon="@(ViewModel.HasPassphrase ? Icons.Material.Filled.Lock : Icons.Material.Filled.LockOpen)">
+                                            @Localizer.GetString(ViewModel.HasPassphrase ? Keys.HasPassphrase : Keys.NoPassphrase)
+                                        </MudChip>
+                                    </div>
+
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                    </WalletContentSection>
+                    break;
+
+                case ViewSection.Settings:
+                    <!-- Settings Section -->
+                    <WalletFormSection Title="@Localizer.GetString(Keys.Settings)">
+                        <WalletTextField @bind-Value="@ViewModel.EditingMnemonicLabel"
+                                        LabelKey="@Keys.MnemonicLabel"
+                                        PlaceholderKey="@Keys.MnemonicLabelPlaceholder"
+                                        HelpKey="@Keys.MnemonicLabelHelperText"
+                                        Required="true"
+                                                                                Localizer="@Localizer" />
+                    </WalletFormSection>
+
+                    break;
+
+                case ViewSection.Security:
+                    <!-- Security Section -->
+                    @if (!ViewModel.ShowRevealedMnemonic)
+                    {
+                        <WalletSecurityPrompt Title="@Localizer.GetString(Keys.RevealSeedPhrase)"
+                                            Warning="@Localizer.GetString(Keys.SecurityWarning)"
+                                            WarningMessage="@Localizer.GetString(Keys.SecurityWarningMessage)"
+                                            PasswordLabel="@Localizer.GetString(Keys.PasswordLabel)"
+                                            @bind-Password="passwordInput"
+                                            OnPasswordSubmit="@HandlePasswordVerified"
+                                            IsLoading="@ViewModel.IsLoading"
+                                            Level="WalletSecurityPrompt.SecurityLevel.High" />
+                    }
+                    else
+                    {
+                        <WalletPrivateKeyDisplay Value="@ViewModel.RevealedMnemonic"
+                                               Title="@Localizer.GetString(Keys.SeedPhraseTitle)"
+                                               SecurityTitle="@Localizer.GetString(Keys.KeepSecure)"
+                                               SecurityMessage="@Localizer.GetString(Keys.KeepSecureMessage)"
+                                               CopyTooltip="@Localizer.GetString(Keys.CopyToClipboard)"
+                                               OnCopy="@HandleSeedPhraseCopied"
+                                               ShowCopyButton="true" />
+                    }
+                    break;
+
+
+                default:
+                    <!-- Placeholder for other sections -->
+                    <WalletContentSection Class="spacing-normal">
+                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                   Text="Section coming soon..."
+                                   Class="text-center" />
+                    </WalletContentSection>
+                    break;
+            }
+
+            <!-- Success/Error Messages -->
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                    Title="@Localizer.GetString(Keys.Error)"
+                                    Description="@ViewModel.ErrorMessage"
+                                    Icon="@Icons.Material.Filled.Error" />
+                </WalletContentSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                    Title="@Localizer.GetString(Keys.Success)"
+                                    Description="@ViewModel.SuccessMessage"
+                                    Icon="@Icons.Material.Filled.CheckCircle" />
+                </WalletContentSection>
+            }
+        }
+        else
+        {
+            <!-- Empty state -->
+            <WalletContentSection Class="spacing-loose">
+                <div class="empty-state">
+                    <MudIcon Icon="@Icons.Material.Outlined.AccountTree" 
+                             Size="Size.Large"
+                             Color="Color.Secondary" />
+                    <WalletText TextType="WalletText.WalletTextType.Heading6"
+                               TextKey="@Keys.MnemonicNotFound"
+                               Localizer="@Localizer"
+                               Class="mt-3" />
+                    <WalletText TextType="WalletText.WalletTextType.Body"
+                               Text="The requested seed phrase could not be found."
+                               Variant="WalletText.WalletTextVariant.Muted" />
+                </div>
+            </WalletContentSection>
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public string? MnemonicId { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+    
+    public enum ViewSection
+    {
+        Overview,
+        Settings,
+        Security
+    }
+    
+    private ViewSection currentSection = ViewSection.Overview;
+    private string passwordInput = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        if (!string.IsNullOrEmpty(MnemonicId))
+        {
+            await ViewModel.InitializeAsync(MnemonicId);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(MnemonicId) && MnemonicId != ViewModel.MnemonicInfo?.Id)
+        {
+            await ViewModel.InitializeAsync(MnemonicId);
+        }
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Navigation methods
+    private void NavigateToSection(ViewSection section)
+    {
+        currentSection = section;
+        StateHasChanged();
+    }
+
+    private void HandleBack()
+    {
+        currentSection = ViewSection.Overview;
+        StateHasChanged();
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandlePrimaryAction()
+    {
+        switch (currentSection)
+        {
+            case ViewSection.Settings:
+                if (!string.IsNullOrWhiteSpace(ViewModel.EditingMnemonicLabel))
+                {
+                    await ViewModel.SaveMnemonicLabelCommand.ExecuteAsync(null);
+                    currentSection = ViewSection.Overview;
+                }
+                break;
+            case ViewSection.Security:
+                if (!ViewModel.ShowRevealedMnemonic && !string.IsNullOrEmpty(passwordInput))
+                {
+                    await ViewModel.RevealMnemonicCommand.ExecuteAsync(passwordInput);
+                    passwordInput = "";
+                }
+                else if (ViewModel.ShowRevealedMnemonic)
+                {
+                    ViewModel.HideMnemonicCommand.Execute(null);
+                }
+                break;
+        }
+        StateHasChanged();
+    }
+
+    // Helper methods for WalletFormLayout
+    private string GetTitle()
+    {
+        return currentSection switch
+        {
+            ViewSection.Overview => ViewModel.DisplayLabel,
+            ViewSection.Settings => Localizer.GetString(Keys.Settings),
+            ViewSection.Security => Localizer.GetString(Keys.Security),
+            _ => Localizer.GetString(Keys.MnemonicDetails)
+        };
+    }
+
+    private string GetSubtitle()
+    {
+        return currentSection switch
+        {
+            ViewSection.Overview => Localizer.GetString(Keys.MnemonicOverview),
+            ViewSection.Settings => "Manage seed phrase settings and deletion",
+            ViewSection.Security => "View and manage your seed phrase",
+            _ => ""
+        };
+    }
+
+    private string GetPrimaryActionText()
+    {
+        return currentSection switch
+        {
+            ViewSection.Settings => Localizer.GetString(Keys.Save),
+            ViewSection.Security when !ViewModel.ShowRevealedMnemonic => Localizer.GetString(Keys.RevealSeedPhrase),
+            ViewSection.Security when ViewModel.ShowRevealedMnemonic => Localizer.GetString(Keys.HideSeedPhrase),
+            _ => ""
+        };
+    }
+
+    private bool ShowPrimaryAction()
+    {
+        return currentSection switch
+        {
+            ViewSection.Settings => true,
+            ViewSection.Security => true,
+            _ => false
+        };
+    }
+
+    private bool CanExecutePrimaryAction()
+    {
+        return currentSection switch
+        {
+            ViewSection.Settings => !ViewModel.IsLoading && !string.IsNullOrWhiteSpace(ViewModel.EditingMnemonicLabel),
+            ViewSection.Security => !ViewModel.IsLoading && (!ViewModel.ShowRevealedMnemonic ? !string.IsNullOrEmpty(passwordInput) : true),
+            _ => false
+        };
+    }
+
+    // Event handlers
+
+    private async Task HandleDeleteMnemonic()
+    {
+        var success = await ViewModel.DeleteMnemonicInternalAsync();
+        if (success)
+        {
+            await HandleExit();
+        }
+    }
+
+    private async Task HandlePasswordVerified(string password)
+    {
+        await ViewModel.RevealMnemonicCommand.ExecuteAsync(password);
+    }
+
+    private async Task HandleSeedPhraseCopied(string seedPhrase)
+    {
+        // Copy feedback handled by the component
+        // Could add additional logging or analytics here
+    }
+
+    private async Task HandleAddressCopied(string address)
+    {
+        // Copy feedback handled by the component
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+}
+

@@ -1,0 +1,78 @@
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using MudBlazor
+
+<WalletFormLayout Title="Signature Request"
+                  Subtitle="@GetSubtitle()"
+                  ShowExit="true"
+                  ExitText="Reject"
+                  ShowPrimary="true"
+                  PrimaryText="Sign"
+                  OnExit="HandleReject"
+                  OnPrimary="HandleSign"
+                  IsPrimaryLoading="@_isSigning">
+    
+    <ChildContent>
+        <WalletFormSection Title="Request Details">
+            @if (SignatureInfo != null && !string.IsNullOrEmpty(SignatureInfo.DAppName))
+            {
+                <WalletInfoCard Icon="@Icons.Material.Filled.Apps"
+                                Title="@SignatureInfo.DAppName"
+                                Subtitle="@SignatureInfo.Origin" />
+            }
+            
+            <MudPaper Class="pa-3 mt-3" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Message to Sign:</MudText>
+                <MudTextField Value="@SignatureInfo?.Message"
+                              ReadOnly="true"
+                              Lines="5"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudPaper>
+            
+            <MudAlert Severity="Severity.Warning" Class="mt-3">
+                <MudText Typo="Typo.body2">
+                    Only sign messages from applications you trust. Signing malicious messages can result in loss of funds.
+                </MudText>
+            </MudAlert>
+        </WalletFormSection>
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = null!;
+    [Parameter] public EventCallback<object?> OnSigned { get; set; }
+    [Parameter] public EventCallback OnRejected { get; set; }
+    
+    private SignaturePromptInfo? SignatureInfo => PromptRequest?.Data as SignaturePromptInfo;
+    private bool _isSigning = false;
+    
+    private string GetSubtitle()
+    {
+        if (SignatureInfo != null && !string.IsNullOrEmpty(SignatureInfo.DAppName))
+        {
+            return $"Request from {SignatureInfo.DAppName}";
+        }
+        return "Signature request from application";
+    }
+    
+    private async Task HandleSign()
+    {
+        _isSigning = true;
+        try
+        {
+            await Task.Delay(1000);
+            await OnSigned.InvokeAsync("0x1234567890abcdef");
+        }
+        finally
+        {
+            _isSigning = false;
+        }
+    }
+    
+    private async Task HandleReject()
+    {
+        await OnRejected.InvokeAsync();
+    }
+}

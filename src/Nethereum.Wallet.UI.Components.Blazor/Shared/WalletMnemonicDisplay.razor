@@ -1,0 +1,163 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+@* Reusable component for securely displaying mnemonic phrases across account types *@
+<WalletContentSection Title="@Title" Class="spacing-normal">
+    
+    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                    Title="@SecurityTitle"
+                    Description="@SecurityMessage"
+                    Icon="@Icons.Material.Filled.Security" />
+    
+    <div class="wallet-mnemonic-display">
+        <div class="mnemonic-content">
+            @if (UseWordChips)
+            {
+                <WalletWordChips Words="@Words"
+                               IsVisible="@IsRevealed"
+                               AllowCopy="@AllowCopy"
+                               OnCopy="@HandleCopy" />
+            }
+            else
+            {
+                <div class="mnemonic-text-grid">
+                    @for (int i = 0; i < Words.Count; i++)
+                    {
+                        var word = Words[i];
+                        var index = i + 1;
+                        <div class="mnemonic-word-item">
+                            <span class="word-number">@index</span>
+                            <span class="word-text">@(IsRevealed ? word : "••••••")</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        
+        <div class="mnemonic-actions">
+            <MudIconButton Icon="@(IsRevealed ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                         Size="Size.Medium"
+                         Color="Color.Primary"
+                         OnClick="@ToggleVisibility"
+                         Class="wallet-toggle-button"
+                         Tooltip="@(IsRevealed ? HideTooltip : ShowTooltip)" />
+            
+            @if (AllowCopy && IsRevealed)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                             Size="Size.Medium"
+                             Color="Color.Primary"
+                             OnClick="@HandleCopyAll"
+                             Class="wallet-copy-button"
+                             Tooltip="@CopyTooltip" />
+            }
+            
+            @if (ShowHideButton)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                             Size="Size.Medium"
+                             Color="Color.Secondary"
+                             OnClick="@HandleHide"
+                             Class="wallet-hide-button"
+                             Tooltip="@HideTooltip" />
+            }
+        </div>
+    </div>
+    
+    @if (ShowQRCode && IsRevealed)
+    {
+        <div class="mnemonic-qr">
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.QrCode"
+                      OnClick="@HandleShowQR"
+                      Size="Size.Medium">
+                @QRButtonText
+            </MudButton>
+        </div>
+    }
+    
+</WalletContentSection>
+
+@code {
+    [Parameter, EditorRequired] public List<string> Words { get; set; } = new();
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string SecurityTitle { get; set; } = "Keep this information secure!";
+    [Parameter] public string SecurityMessage { get; set; } = "Never share your seed phrase with anyone or store it in an insecure location.";
+    [Parameter] public string ShowTooltip { get; set; } = "Reveal seed phrase";
+    [Parameter] public string HideTooltip { get; set; } = "Hide seed phrase";
+    [Parameter] public string CopyTooltip { get; set; } = "Copy seed phrase";
+    [Parameter] public string QRButtonText { get; set; } = "Show QR Code";
+    [Parameter] public bool AllowCopy { get; set; } = true;
+    [Parameter] public bool ShowHideButton { get; set; } = true;
+    [Parameter] public bool ShowQRCode { get; set; } = false;
+    [Parameter] public bool UseWordChips { get; set; } = true;
+    [Parameter] public bool IsRevealed { get; set; } = false;
+    
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+    [Parameter] public EventCallback OnHide { get; set; }
+    [Parameter] public EventCallback<string> OnShowQR { get; set; }
+    [Parameter] public EventCallback<bool> OnVisibilityChanged { get; set; }
+    
+    private async Task ToggleVisibility()
+    {
+        IsRevealed = !IsRevealed;
+        
+        if (OnVisibilityChanged.HasDelegate)
+        {
+            await OnVisibilityChanged.InvokeAsync(IsRevealed);
+        }
+        
+        StateHasChanged();
+    }
+    
+    private async Task HandleCopy(string text)
+    {
+        if (OnCopy.HasDelegate)
+        {
+            await OnCopy.InvokeAsync(text);
+        }
+    }
+    
+    private async Task HandleCopyAll()
+    {
+        if (Words?.Any() == true)
+        {
+            var fullMnemonic = string.Join(" ", Words);
+            
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", fullMnemonic);
+                
+                if (OnCopy.HasDelegate)
+                {
+                    await OnCopy.InvokeAsync(fullMnemonic);
+                }
+            }
+            catch
+            {
+                // Fallback for older browsers
+            }
+        }
+    }
+    
+    private async Task HandleHide()
+    {
+        IsRevealed = false;
+        
+        if (OnHide.HasDelegate)
+        {
+            await OnHide.InvokeAsync();
+        }
+    }
+    
+    private async Task HandleShowQR()
+    {
+        if (Words?.Any() == true && OnShowQR.HasDelegate)
+        {
+            var fullMnemonic = string.Join(" ", Words);
+            await OnShowQR.InvokeAsync(fullMnemonic);
+        }
+    }
+}
+

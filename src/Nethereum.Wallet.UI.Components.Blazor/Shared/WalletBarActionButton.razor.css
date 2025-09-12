@@ -1,0 +1,119 @@
+/* WalletBarActionButton.razor component scoped styles */
+.wallet-tab-button {
+        background: transparent;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex: 1;
+        min-width: 80px;
+        height: auto;
+        min-height: 72px;
+        padding: 12px 6px;
+        border-radius: 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.2;
+        position: relative;
+        border-left: 1px solid var(--mud-palette-divider);
+        box-sizing: border-box;
+    }
+    
+    .wallet-tab-button .mud-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        margin-bottom: 2px;
+    }
+    
+    .wallet-tab-button span {
+        font-size: 0.75rem;
+        line-height: 1.2;
+        text-align: center;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+        display: block;
+    }
+    
+    .wallet-button-exit {
+        color: var(--mud-palette-text-secondary);
+    }
+    
+    .wallet-button-exit:hover {
+        background: var(--mud-palette-action-hover);
+        color: var(--mud-palette-text-primary);
+    }
+    
+    .wallet-button-back {
+        color: var(--mud-palette-primary);
+    }
+    
+    .wallet-button-back:hover {
+        background: var(--mud-palette-primary-lighten);
+    }
+    
+    .wallet-button-primary {
+        background: var(--mud-palette-primary);
+        color: var(--mud-palette-primary-text);
+        font-weight: 600;
+        border-left: 1px solid var(--mud-palette-primary);
+    }
+    
+    .wallet-button-primary:hover:not(.disabled) {
+        background: var(--mud-palette-primary-darken);
+    }
+    
+    .wallet-button-primary:disabled, .wallet-button-primary.disabled {
+        background: var(--mud-palette-action-disabled-background) !important;
+        cursor: not-allowed;
+        border-left: 1px solid var(--mud-palette-action-disabled-background);
+        color: var(--mud-palette-action-disabled);
+    }
+    
+    .wallet-button-action {
+        color: var(--mud-palette-primary);
+    }
+    
+    .wallet-button-action:hover {
+        background: var(--mud-palette-primary-lighten);
+    }
+    
+    .wallet-button-action:disabled, .wallet-button-action.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        color: var(--mud-palette-action-disabled);
+    }
+    
+    /* Danger button styling for delete actions */
+    .wallet-button-danger {
+        color: var(--mud-palette-error, #f44336) !important;
+    }
+    
+    .wallet-button-danger:hover {
+        background: var(--mud-palette-error-lighten, #ffebee) !important;
+        color: var(--mud-palette-error-darken, #d32f2f) !important;
+    }
+    
+    @media (max-width: 600px) {
+        .wallet-tab-button {
+            min-width: 60px;
+            max-width: 80px;
+            padding: 2px 4px;
+            gap: 1px;
+            font-size: 0.65rem;
+        }
+        
+        .wallet-tab-button .mud-icon {
+            font-size: 1rem;
+        }
+        
+        .wallet-tab-button span {
+            font-size: 0.6rem;
+        }
+    }

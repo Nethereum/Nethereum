@@ -1,0 +1,416 @@
+/* WalletHeader.razor component scoped styles */
+/* Professional Component Header */
+.wallet-component-header {
+    background: var(--mud-palette-surface);
+    border-bottom: 1px solid var(--mud-palette-divider);
+    position: relative;
+    z-index: 1;
+}
+
+.header-content {
+    padding: 8px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Mobile Layout */
+.mobile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Line 1: Navigation Bar */
+.mobile-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    width: 100%;
+}
+
+.mobile-page-title-centered {
+    flex: 1;
+    text-align: center;
+    margin: 0 12px;
+}
+
+.page-title-mobile {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-logo-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.logo-image-mobile {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+}
+
+/* Line 2: Context Bar */
+.mobile-context-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--mud-palette-background);
+    border-radius: 8px;
+    border: 1px solid var(--mud-palette-divider);
+    min-height: 44px;
+}
+
+/* Account Section (Left) */
+.account-section-mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.account-section-mobile:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.address-with-copy {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.account-icon-mobile {
+    flex-shrink: 0;
+}
+
+.account-name-mobile {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 6px;
+}
+
+.account-address-mobile {
+    color: var(--mud-palette-text-secondary);
+    font-family: 'Roboto Mono', 'Monaco', 'Courier New', monospace;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.25px;
+}
+
+/* Network Section (Right) */
+.network-section-mobile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.network-section-mobile:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.network-icon-mobile {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    display: block;
+    border-radius: 50%;
+}
+
+.network-name-mobile {
+    color: var(--mud-palette-text-secondary);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: min(30vw, 120px); /* Responsive width */
+}
+
+.menu-button {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Desktop Layout - No logo/brand, centered page title */
+.desktop-layout {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    align-items: center;
+    gap: 32px;
+    min-height: 80px; /* Increased to accommodate 72px card heights + padding */
+}
+
+/* Page Section - Centered */
+.page-section-desktop {
+    text-align: center;
+}
+
+.page-title {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.page-subtitle {
+    color: var(--mud-palette-text-secondary);
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Account Section - More space */
+.account-section-desktop {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.account-card-desktop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 280px;
+    height: 64px; /* Fixed height to fit within 80px container */
+}
+
+.account-card-desktop:hover {
+    background: var(--mud-palette-action-hover);
+    border-color: var(--mud-palette-primary);
+}
+
+.account-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 220px;
+}
+
+.account-card:hover {
+    background: var(--mud-palette-action-hover);
+    border-color: var(--mud-palette-primary);
+}
+
+.network-card-desktop {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 12px;
+    height: 64px; /* Fixed height to match account card */
+}
+
+.network-card-desktop:hover {
+    background: var(--mud-palette-action-hover);
+    border-color: var(--mud-palette-secondary);
+}
+
+.network-logo-desktop {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    display: block;
+    border-radius: 50%;
+}
+
+.network-name-desktop {
+    color: var(--mud-palette-text-secondary);
+    font-weight: 500;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.account-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.account-name {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.account-address {
+    color: var(--mud-palette-text-secondary);
+    font-family: 'Roboto Mono', 'Monaco', 'Courier New', monospace;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: 0.25px;
+}
+
+.account-address-with-copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.copy-button-wrapper {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.copy-button-wrapper:hover {
+    background-color: var(--mud-palette-action-hover);
+}
+
+.copy-button-desktop {
+    flex-shrink: 0;
+}
+
+.account-icon {
+    flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .desktop-layout {
+        gap: 24px;
+    }
+    
+    .account-card-desktop {
+        min-width: 240px;
+        padding: 10px 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        padding: 12px 16px;
+    }
+    
+    .mobile-nav-row {
+        height: 44px;
+    }
+    
+    .mobile-context-row {
+        padding: 6px 10px;
+    }
+    
+    .logo-image-mobile {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .account-name-mobile {
+        font-size: 0.8125rem;
+    }
+    
+    .account-address-mobile {
+        font-size: 0.75rem;
+    }
+    
+    .network-name-mobile {
+        font-size: 0.75rem;
+        max-width: min(35vw, 150px); /* Responsive: More space for full network names on tablets */
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        padding: 12px;
+    }
+    
+    .mobile-page-title-centered {
+        margin: 0 8px;
+    }
+    
+    .mobile-context-row {
+        padding: 4px 8px;
+    }
+    
+    .account-section-mobile {
+        gap: 6px;
+        padding: 4px 6px;
+    }
+    
+    .network-section-mobile {
+        gap: 4px;
+        padding: 4px 6px;
+    }
+    
+    .logo-image-mobile {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .network-icon-mobile {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .network-name-mobile {
+        max-width: min(25vw, 60px); /* Responsive: Smaller on phones */
+    }
+}
+
+@media (max-width: 360px) {
+    .account-section-mobile {
+        gap: 4px;
+    }
+    
+    .network-section-mobile {
+        gap: 3px;
+    }
+    
+    .account-name-mobile,
+    .account-address-mobile,
+    .network-name-mobile {
+        font-size: 0.6875rem;
+    }
+    
+    .network-name-mobile {
+        max-width: min(20vw, 50px); /* Responsive: Very small on tiny screens */
+    }
+}

@@ -1,0 +1,114 @@
+@using MudBlazor
+
+@* WalletLoadingState.razor - Consistent loading indicators across all wallet areas *@
+<div class="wallet-loading-container" style="@GetContainerStyle()">
+    <MudProgressCircular Color="@Color" 
+                        Size="@GetSpinnerSize()" 
+                        Indeterminate="true"
+                        Class="wallet-loading-spinner" />
+    
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <MudText Typo="@GetMessageTypo()" 
+                 Color="@GetMessageColor()" 
+                 Align="Align.Center"
+                 Class="wallet-loading-message">
+            @Message
+        </MudText>
+    }
+    
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <MudIcon Icon="@Icon" 
+                 Size="@GetIconSize()" 
+                 Color="@Color" 
+                 Class="wallet-loading-icon" />
+    }
+</div>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public WalletLoadingSize Size { get; set; } = WalletLoadingSize.Medium;
+    [Parameter] public Color Color { get; set; } = Color.Primary;
+    [Parameter] public string? ContainerHeight { get; set; }
+    
+    private string GetContainerStyle()
+    {
+        var styles = new List<string>
+        {
+            "display: flex",
+            "flex-direction: column", 
+            "align-items: center",
+            "justify-content: center",
+            "text-align: center"
+        };
+        
+        // Default heights based on size
+        var height = Size switch
+        {
+            WalletLoadingSize.Small => "120px",
+            WalletLoadingSize.Medium => "200px", 
+            WalletLoadingSize.Large => "300px",
+            _ => "200px"
+        };
+        
+        styles.Add($"min-height: {ContainerHeight ?? height}");
+        
+        // Spacing
+        var gap = Size switch
+        {
+            WalletLoadingSize.Small => "12px",
+            WalletLoadingSize.Medium => "16px",
+            WalletLoadingSize.Large => "24px", 
+            _ => "16px"
+        };
+        
+        styles.Add($"gap: {gap}");
+        
+        // Padding
+        var padding = Size switch
+        {
+            WalletLoadingSize.Small => "16px",
+            WalletLoadingSize.Medium => "24px",
+            WalletLoadingSize.Large => "32px",
+            _ => "24px"
+        };
+        
+        styles.Add($"padding: {padding}");
+        
+        return string.Join("; ", styles) + ";";
+    }
+    
+    private MudBlazor.Size GetSpinnerSize() => Size switch
+    {
+        WalletLoadingSize.Small => MudBlazor.Size.Small,
+        WalletLoadingSize.Medium => MudBlazor.Size.Medium,
+        WalletLoadingSize.Large => MudBlazor.Size.Large,
+        _ => MudBlazor.Size.Medium
+    };
+    
+    private MudBlazor.Size GetIconSize() => Size switch
+    {
+        WalletLoadingSize.Small => MudBlazor.Size.Medium,
+        WalletLoadingSize.Medium => MudBlazor.Size.Large,
+        WalletLoadingSize.Large => MudBlazor.Size.Large,
+        _ => MudBlazor.Size.Large
+    };
+    
+    private Typo GetMessageTypo() => Size switch
+    {
+        WalletLoadingSize.Small => Typo.body2,
+        WalletLoadingSize.Medium => Typo.h6,
+        WalletLoadingSize.Large => Typo.h5,
+        _ => Typo.h6
+    };
+    
+    private Color GetMessageColor() => Size switch
+    {
+        WalletLoadingSize.Small => Color.Secondary,
+        WalletLoadingSize.Medium => Color.Secondary,
+        WalletLoadingSize.Large => Color.Default,
+        _ => Color.Secondary
+    };
+}

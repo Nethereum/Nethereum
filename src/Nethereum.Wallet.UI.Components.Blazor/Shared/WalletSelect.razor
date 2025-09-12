@@ -1,0 +1,115 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@inherits WalletFormControlBase
+@typeparam T
+
+<MudSelect Value="@Value"
+           ValueChanged="@ValueChanged"
+           Label="@GetLabel()"
+           Placeholder="@GetPlaceholder()"
+           HelperText="@GetHelpText()"
+           Variant="@GetVariant()"
+           Class="@GetClasses()"
+           Style="@Style"
+           Required="@Required"
+           RequiredError="@GetRequiredError()"
+           Disabled="@IsDisabled()"
+           Dense="@Dense"
+           MultiSelection="@MultiSelection"
+           T="T"
+           @attributes="AdditionalAttributes">
+    
+    @if (Items != null && Items.Any())
+    {
+        @foreach (var item in Items)
+        {
+            <MudSelectItem Value="@GetItemValue(item)">@GetItemDisplay(item)</MudSelectItem>
+        }
+    }
+    
+    @if (Options != null && Options.Any())
+    {
+        @foreach (var option in Options)
+        {
+            <MudSelectItem Value="@option.Value">@option.Display</MudSelectItem>
+        }
+    }
+    
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    
+</MudSelect>
+
+@code {
+    #region Value Binding
+    
+    [Parameter] public T Value { get; set; } = default!;
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    
+    #endregion
+
+    #region Select-Specific Parameters
+    
+    [Parameter] public IEnumerable<T>? Items { get; set; }
+    [Parameter] public List<WalletSelectOption<T>>? Options { get; set; }
+    [Parameter] public Func<T, object>? ValueSelector { get; set; }
+    [Parameter] public Func<T, string>? DisplaySelector { get; set; }
+    [Parameter] public bool Dense { get; set; } = false;
+    [Parameter] public bool MultiSelection { get; set; } = false;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    #endregion
+
+    #region Helper Methods
+    
+    private T GetItemValue(T item)
+    {
+        if (ValueSelector != null)
+        {
+            var result = ValueSelector(item);
+            return (T)result;
+        }
+        return item;
+    }
+    
+    private string GetItemDisplay(T item)
+    {
+        if (DisplaySelector != null)
+            return DisplaySelector(item);
+            
+        return item?.ToString() ?? "";
+    }
+    
+    /// <summary>
+    /// Override the base IsDisabled to handle select field specific logic
+    /// </summary>
+    protected override bool IsDisabled()
+    {
+        // Only disable when explicitly disabled via the Disabled parameter
+        // Loading states should NOT disable form controls - users should be able to continue working
+        return Disabled;
+    }
+    
+    protected override string GetClasses()
+    {
+        var baseClasses = base.GetClasses();
+        return $"{baseClasses} wallet-select-field";
+    }
+    
+    #endregion
+}
+
+@code {
+    /// <summary>
+    /// Represents an option in a wallet select dropdown
+    /// </summary>
+    public class WalletSelectOption<TValue>
+    {
+        public TValue Value { get; set; } = default!;
+        public string Display { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool Disabled { get; set; } = false;
+    }
+}

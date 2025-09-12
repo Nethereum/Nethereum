@@ -1,0 +1,240 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.SendTransaction.Models
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject SendNativeTokenViewModel ViewModel
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+@inject IWalletLocalizationService LocalizationService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                  Subtitle=""
+                  Steps="@formSteps"
+                  CurrentStepIndex="@(ViewModel.CurrentStep - 1)"
+                  ExitText="@(ViewModel.CurrentStep == 3 ? Localizer.GetString(Keys.Done) : Localizer.GetString(Keys.Cancel))"
+                  BackText="@Localizer.GetString(Keys.Previous)"
+                  ContinueText="@Localizer.GetString(Keys.ContinueButton)"
+                  PrimaryText="@Localizer.GetString(Keys.ConfirmTransaction)"
+                  StepLocalizer="@Localizer"
+                  ShowBack="@(ViewModel.CanGoBack && ViewModel.CurrentStep != 3)"
+                  ShowContinue="@(ViewModel.CurrentStep == 1)"
+                  ShowPrimary="@(ViewModel.CurrentStep == 2)"
+                  ContinueDisabled="@(!ViewModel.CanProceedToNextStep)"
+                  PrimaryDisabled="@ViewModel.IsLoading"
+                  OnExit="@HandleCancel"
+                  OnBack="@HandleBack"
+                  OnContinue="@HandleContinue"
+                  OnPrimary="@HandleSendTransaction">
+
+    <ActionButtons>
+        @if (ViewModel.CurrentStep == 3 && ViewModel.Transaction.TransactionStatus != null && ViewModel.Transaction.TransactionStatus.HasExplorerUrl)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.OpenInNew"
+                                   Text="@Localizer.GetString(Keys.ViewTransactionButton)"
+                                   OnClick="@(() => OpenExplorer(ViewModel.Transaction.TransactionStatus.ExplorerUrl))" />
+        }
+    </ActionButtons>
+    <ChildContent>
+        
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.body2" Class="mt-3" Color="Color.Secondary">
+                        @(ViewModel.CurrentStep == 2 ? 
+                          Localizer.GetString(Keys.LoadingTransaction) : 
+                          Localizer.GetString(Keys.PreparingTransaction))
+                    </MudText>
+                </div>
+            </WalletContentSection>
+        }
+        else
+        {
+            @switch (ViewModel.CurrentStep)
+            {
+                case 1:
+                    <NativeTokenTransfer ViewModel="ViewModel" />
+                    break;
+                    
+                case 2:
+                    <TransactionInput ViewModel="ViewModel.Transaction" 
+                                     Layout="TransactionInputLayout.Confirmation"
+                                     ShowTransactionDetails="true"
+                                     ShowGasConfiguration="true"
+                                     ShowAdvancedOptions="true"
+                                     ShowDataDecoding="true"
+                                     ShowCostSummary="true"
+                                     RecipientReadOnly="true"
+                                     AmountReadOnly="true"
+                                     AllowGasModeSwitch="true" />
+                    break;
+                    
+                case 3:
+                    @if (ViewModel.Transaction.TransactionStatus != null)
+                    {
+                        <TransactionStatus ViewModel="@ViewModel.Transaction.TransactionStatus" 
+                                          IsCompactMode="@IsCompactMode" />
+                    }
+                    else
+                    {
+                        <!-- Fallback if status not initialized (shouldn't happen) -->
+                        <WalletFormSection>
+                            <MudAlert Severity="Severity.Error">Transaction status not available</MudAlert>
+                        </WalletFormSection>
+                    }
+                    break;
+            }
+        }
+        
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                Title="@Localizer.GetString(Keys.TransactionFailed)"
+                                Description="@ViewModel.ErrorMessage"
+                                Icon="@Icons.Material.Filled.Error" />
+            </WalletContentSection>
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public EventCallback OnTransactionSent { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    
+    [Parameter] public string? FromAddress { get; set; }
+    [Parameter] public string TokenSymbol { get; set; } = "ETH";
+    [Parameter] public int TokenDecimals { get; set; } = 18;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    
+    private List<WalletFormStep> formSteps = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to language changes
+        LocalizationService.LanguageChanged += OnLanguageChanged;
+        
+        // Subscribe to NativeTransfer property changes to update UI
+        if (ViewModel?.NativeTransfer != null)
+        {
+            ViewModel.NativeTransfer.PropertyChanged += OnTransferModelPropertyChanged;
+        }
+        
+        // Set up step names with localization keys
+        formSteps = new List<WalletFormStep>
+        {
+            new WalletFormStep { 
+                LocalizationKey = SendNativeTokenLocalizer.Keys.Step1Title,
+                LocalizationComponentType = typeof(SendNativeTokenViewModel),
+                Label = "Transaction Details" // Fallback
+            },
+            new WalletFormStep { 
+                LocalizationKey = SendNativeTokenLocalizer.Keys.Step2Title,
+                LocalizationComponentType = typeof(SendNativeTokenViewModel),
+                Label = "Confirm Transaction" // Fallback
+            },
+            new WalletFormStep { 
+                LocalizationKey = SendNativeTokenLocalizer.Keys.Step3Title,
+                LocalizationComponentType = typeof(SendNativeTokenViewModel),
+                Label = "Transaction Status" // Fallback
+            }
+        };
+        
+        ViewModel.OnTransactionSent = (txHash) =>
+        {
+            if (OnTransactionSent.HasDelegate)
+                _ = OnTransactionSent.InvokeAsync();
+        };
+        
+        ViewModel.OnExit = () =>
+        {
+            if (OnCancel.HasDelegate)
+                _ = OnCancel.InvokeAsync();
+        };
+        
+        // Initialize the ViewModel with wallet data
+        await ViewModel.InitializeAsync();
+        
+        StateHasChanged();
+    }
+    
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+            await OnCancel.InvokeAsync();
+    }
+    
+    private async Task HandleBack()
+    {
+        ViewModel.PreviousStepCommand.Execute(null);
+        StateHasChanged();
+    }
+    
+    private async Task HandleContinue()
+    {
+        // Clear any previous errors
+        ViewModel.ErrorMessage = null;
+        
+        await ViewModel.NextStepCommand.ExecuteAsync(null);
+        
+        // Force UI update to show any validation errors
+        StateHasChanged();
+    }
+    
+    private async Task HandleSendTransaction()
+    {
+        await ViewModel.SendTransactionCommand.ExecuteAsync(null);
+        StateHasChanged();
+    }
+    
+    private async Task HandleNewTransaction()
+    {
+        ViewModel.ResetCommand.Execute(null);
+        await ViewModel.InitializeAsync();
+        StateHasChanged();
+    }
+    
+    private async Task HandleTransactionExit()
+    {
+        // User wants to exit after viewing transaction status
+        if (OnCancel.HasDelegate)
+            await OnCancel.InvokeAsync();
+    }
+    
+    private void OnLanguageChanged(string languageCode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnTransferModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Update UI when IsValid changes
+        if (e.PropertyName == nameof(ViewModel.NativeTransfer.IsValid))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OpenExplorer(string? url)
+    {
+        if (!string.IsNullOrEmpty(url))
+        {
+            await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        }
+    }
+    
+    public void Dispose()
+    {
+        LocalizationService.LanguageChanged -= OnLanguageChanged;
+        
+        if (ViewModel?.NativeTransfer != null)
+        {
+            ViewModel.NativeTransfer.PropertyChanged -= OnTransferModelPropertyChanged;
+        }
+    }
+}
+

@@ -1,0 +1,30 @@
+/* WalletEmptyState.razor component scoped styles */
+.wallet-empty-state-icon {
+    opacity: 0.6;
+    margin-bottom: 8px;
+}
+
+.wallet-empty-state-content {
+    margin-bottom: 8px;
+}
+
+.wallet-empty-state-action {
+    min-height: 48px; /* Touch-friendly */
+    padding: 12px 24px;
+    border-radius: 12px;
+}
+
+.wallet-empty-state-custom-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .wallet-empty-state-action {
+        width: 100%;
+        max-width: 280px;
+    }
+}

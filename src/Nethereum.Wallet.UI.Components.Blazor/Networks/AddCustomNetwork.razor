@@ -1,0 +1,355 @@
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+@using System.ComponentModel
+@using System.Numerics
+@using static Nethereum.Wallet.UI.Components.Networks.AddCustomNetworkLocalizer
+@implements IDisposable
+@inject AddCustomNetworkViewModel ViewModel
+@inject IComponentLocalizer<AddCustomNetworkViewModel> Localizer
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.AddCustomNetwork)"
+                  Subtitle=""
+                  ExitText="@Localizer.GetString(Keys.BackToNetworks)"
+                  BackText=""
+                  ContinueText=""
+                  PrimaryText="@Localizer.GetString(Keys.CreateNetwork)"
+                  ShowBack="false"
+                  ShowContinue="false"
+                  ShowPrimary="true"
+                  PrimaryDisabled="@(!ViewModel.IsFormValid || ViewModel.IsLoading)"
+                  OnExit="@HandleExit"
+                  OnPrimary="@HandleCreateNetwork">
+
+    <ChildContent>
+        
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.body2" Class="mt-3" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.Loading)
+                    </MudText>
+                </div>
+            </WalletContentSection>
+        }
+        else
+        {
+            <!-- Basic Information Section -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.BasicInformation)">
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @Localizer.GetString(Keys.BasicInformationDescription)
+                </MudText>
+                
+                <MudTextField @bind-Value="ViewModel.Network.ChainId"
+                              Label="@Localizer.GetString(Keys.ChainId)"
+                              Placeholder="@Localizer.GetString(Keys.ChainIdPlaceholder)"
+                              HelperText="@Localizer.GetString(Keys.ChainIdHelperText)"
+                              Variant="Variant.Filled"
+                              Required="true"
+                              RequiredError="@Localizer.GetString(Keys.ChainIdRequired)"
+                              Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.ChainId))"
+                              ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.ChainId))"
+                              Class="wallet-modern-input mb-4" />
+                
+                <MudTextField @bind-Value="ViewModel.Network.NetworkName"
+                              Label="@Localizer.GetString(Keys.NetworkName)"
+                              Placeholder="@Localizer.GetString(Keys.NetworkNamePlaceholder)"
+                              HelperText="@Localizer.GetString(Keys.NetworkNameHelperText)"
+                              Variant="Variant.Filled"
+                              Required="true"
+                              RequiredError="@Localizer.GetString(Keys.NetworkNameRequired)"
+                              Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.NetworkName))"
+                              ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.NetworkName))"
+                              Class="wallet-modern-input" />
+                              
+            </WalletFormSection>
+
+            <!-- Currency Configuration Section -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.CurrencyConfiguration)">
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @Localizer.GetString(Keys.CurrencyConfigurationDescription)
+                </MudText>
+                
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="ViewModel.Network.CurrencySymbol"
+                                      Label="@Localizer.GetString(Keys.CurrencySymbol)"
+                                      Placeholder="@Localizer.GetString(Keys.CurrencySymbolPlaceholder)"
+                                      Variant="Variant.Filled"
+                                      Required="true"
+                                      RequiredError="@Localizer.GetString(Keys.CurrencySymbolRequired)"
+                                      Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.CurrencySymbol))"
+                                      ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.CurrencySymbol))"
+                                      Class="wallet-modern-input" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="ViewModel.Network.CurrencyName"
+                                      Label="@Localizer.GetString(Keys.CurrencyName)"
+                                      Placeholder="@Localizer.GetString(Keys.CurrencyNamePlaceholder)"
+                                      Variant="Variant.Filled"
+                                      Required="true"
+                                      RequiredError="@Localizer.GetString(Keys.CurrencyNameRequired)"
+                                      Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.CurrencyName))"
+                                      ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.CurrencyName))"
+                                      Class="wallet-modern-input" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="ViewModel.Network.CurrencyDecimals"
+                                         Label="@Localizer.GetString(Keys.CurrencyDecimals)"
+                                         HelperText="@Localizer.GetString(Keys.CurrencyDecimalsHelperText)"
+                                         Min="0" Max="18"
+                                         Variant="Variant.Filled"
+                                         Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.CurrencyDecimals))"
+                                         ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.CurrencyDecimals))"
+                                         Class="wallet-modern-input" />
+                    </MudItem>
+                </MudGrid>
+                
+            </WalletFormSection>
+
+            <!-- RPC Endpoints Section -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.RpcEndpoints)">
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @Localizer.GetString(Keys.RpcEndpointsDescription)
+                </MudText>
+                
+                <!-- Add RPC Form -->
+                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2" Class="mb-4">
+                    <MudTextField @bind-Value="ViewModel.Network.NewRpcUrl"
+                                  Label="@Localizer.GetString(Keys.NewRpcUrl)"
+                                  Placeholder="@Localizer.GetString(Keys.NewRpcUrlPlaceholder)"
+                                  Variant="Variant.Filled"
+                                  Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.NewRpcUrl))"
+                                  ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.NewRpcUrl))"
+                                  Class="wallet-modern-input flex-grow-1" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(() => ViewModel.AddRpcEndpointCommand.Execute(null))"
+                               Disabled="@(!ViewModel.Network.CanAddRpcEndpoint)">
+                        @Localizer.GetString(Keys.AddRpcEndpoint)
+                    </MudButton>
+                </MudStack>
+
+                <!-- RPC Endpoints List -->
+                @if (ViewModel.Network.RpcEndpoints.Any())
+                {
+                    <MudStack Spacing="2">
+                        @foreach (var endpoint in ViewModel.Network.RpcEndpoints)
+                        {
+                            <MudCard Outlined="true" Class="pa-3">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                            @endpoint.Url
+                                        </MudText>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudChip T="string" Size="Size.Small" 
+                                                    Color="@(endpoint.IsWebSocket ? Color.Info : Color.Default)">
+                                                @endpoint.TypeDisplayName
+                                            </MudChip>
+                                            @if (!string.IsNullOrEmpty(endpoint.TestResult))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" 
+                                                        Color="@(endpoint.IsHealthy ? Color.Success : Color.Error)">
+                                                    @endpoint.TestResult
+                                                </MudChip>
+                                            }
+                                        </MudStack>
+                                    </MudStack>
+                                    <MudStack Row="true" Spacing="1">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Cable" 
+                                                       Size="Size.Small"
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => ViewModel.TestRpcEndpointCommand.Execute(endpoint))"
+                                                       Disabled="@endpoint.IsTesting"
+                                                        />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                       Size="Size.Small"
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => ViewModel.RemoveRpcEndpointCommand.Execute(endpoint))"
+                                                        />
+                                    </MudStack>
+                                </MudStack>
+                            </MudCard>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                    Title="@Localizer.GetString(Keys.NoRpcEndpoints)"
+                                    Description="@Localizer.GetString(Keys.AtLeastOneRpcRequired)"
+                                    Icon="@Icons.Material.Filled.Info" />
+                }
+                
+            </WalletFormSection>
+
+            <!-- Block Explorers Section -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.BlockExplorers)">
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @Localizer.GetString(Keys.BlockExplorersDescription)
+                </MudText>
+                
+                <!-- Add Explorer Form -->
+                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2" Class="mb-4">
+                    <MudTextField @bind-Value="ViewModel.Network.NewExplorerUrl"
+                                  Label="@Localizer.GetString(Keys.NewExplorerUrl)"
+                                  Placeholder="@Localizer.GetString(Keys.NewExplorerUrlPlaceholder)"
+                                  Variant="Variant.Filled"
+                                  Error="@ViewModel.Network.HasFieldErrors(nameof(ViewModel.Network.NewExplorerUrl))"
+                                  ErrorText="@ViewModel.Network.GetFieldError(nameof(ViewModel.Network.NewExplorerUrl))"
+                                  Class="wallet-modern-input flex-grow-1" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
+                               OnClick="@(() => ViewModel.AddBlockExplorerCommand.Execute(null))"
+                               Disabled="@(!ViewModel.Network.CanAddExplorer)">
+                        @Localizer.GetString(Keys.AddExplorer)
+                    </MudButton>
+                </MudStack>
+
+                <!-- Explorers List -->
+                @if (ViewModel.Network.BlockExplorers.Any())
+                {
+                    <MudStack Spacing="2">
+                        @foreach (var explorer in ViewModel.Network.BlockExplorers)
+                        {
+                            <MudCard Outlined="true" Class="pa-3">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                        @explorer
+                                    </MudText>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                                   Size="Size.Small"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => ViewModel.RemoveBlockExplorerCommand.Execute(explorer))"
+                                                    />
+                                </MudStack>
+                            </MudCard>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                    Title="@Localizer.GetString(Keys.NoExplorers)"
+                                    Description=""
+                                    Icon="@Icons.Material.Filled.Info" />
+                }
+                
+            </WalletFormSection>
+
+            <!-- Advanced Settings Section -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.AdvancedSettings)">
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                    @Localizer.GetString(Keys.AdvancedSettingsDescription)
+                </MudText>
+                
+                <MudStack Spacing="3">
+                    <MudCheckBox @bind-Value="ViewModel.Network.IsTestnet"
+                                 Label="@Localizer.GetString(Keys.IsTestnet)"
+                                 Color="Color.Primary">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                            @Localizer.GetString(Keys.IsTestnetDescription)
+                        </MudText>
+                    </MudCheckBox>
+                    
+                    <MudCheckBox @bind-Value="ViewModel.Network.SupportEip155"
+                                 Label="@Localizer.GetString(Keys.SupportEip155)"
+                                 Color="Color.Primary">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                            @Localizer.GetString(Keys.SupportEip155Description)
+                        </MudText>
+                    </MudCheckBox>
+                    
+                    <MudCheckBox @bind-Value="ViewModel.Network.SupportEip1559"
+                                 Label="@Localizer.GetString(Keys.SupportEip1559)"
+                                 Color="Color.Primary">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="ml-8">
+                            @Localizer.GetString(Keys.SupportEip1559Description)
+                        </MudText>
+                    </MudCheckBox>
+                </MudStack>
+                
+            </WalletFormSection>
+        }
+
+        <!-- Error/Success Messages -->
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                Title="@Localizer.GetString(Keys.Error)"
+                                Description="@ViewModel.ErrorMessage"
+                                Icon="@Icons.Material.Filled.Error" />
+            </WalletContentSection>
+        }
+
+        @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                Title="@Localizer.GetString(Keys.Success)"
+                                Description="@ViewModel.SuccessMessage"
+                                Icon="@Icons.Material.Filled.CheckCircle" />
+            </WalletContentSection>
+        }
+
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public EventCallback<BigInteger> OnNetworkAdded { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        // Set up event handlers
+        ViewModel.OnNetworkAdded = async (networkId) =>
+        {
+            if (OnNetworkAdded.HasDelegate)
+                await OnNetworkAdded.InvokeAsync(networkId);
+        };
+
+        ViewModel.OnCancel = async () =>
+        {
+            if (OnExit.HasDelegate)
+                await OnExit.InvokeAsync();
+        };
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandleCreateNetwork()
+    {
+        await ViewModel.SaveNetworkCommand.ExecuteAsync(null);
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+}
+

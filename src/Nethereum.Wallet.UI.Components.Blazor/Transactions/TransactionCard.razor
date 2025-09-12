@@ -1,0 +1,519 @@
+@using MudBlazor
+@using Nethereum.Wallet.Services.Transactions
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Transactions
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Web3
+@using Nethereum.RPC.Eth.DTOs
+@using System.Numerics
+@inject IComponentLocalizer<TransactionHistoryViewModel> Localizer
+@inject NethereumWalletHostProvider WalletHostProvider
+
+<MudCard Elevation="1" Class="@($"transaction-card {GetCardClass()} {(IsExpanded ? "expanded" : "")}")">
+    <MudCardContent Class="@(IsCompact ? "pa-2" : "pa-3")">
+        <!-- Main Card Content -->
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            
+            <MudStack Spacing="1" Style="flex-grow: 1; min-width: 0;">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@GetTransactionIcon()" Color="@GetStatusColor()" />
+                    <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                        @Transaction.DisplayName
+                    </MudText>
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor()">
+                        @GetStatusText()
+                    </MudChip>
+                </MudStack>
+                
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @FormatHash(Transaction.Hash)
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        • @GetTimeDisplay()
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(Transaction.Value) && Transaction.Value != "0")
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            • @Transaction.Value ETH
+                        </MudText>
+                    }
+                </MudStack>
+            </MudStack>
+            
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                @if (ShowRetry && (Transaction.Status == TransactionStatus.Failed || 
+                     Transaction.Status == TransactionStatus.Dropped))
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => OnRetry.InvokeAsync(Transaction))" />
+                }
+                
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                               Size="Size.Small"
+                               OnClick="@(() => OnCopyHash.InvokeAsync(Transaction))" />
+                
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                               Size="Size.Small"
+                               OnClick="@(() => OnViewOnExplorer.InvokeAsync(Transaction))" />
+                
+                <!-- Changed Info button to expand/collapse -->
+                <MudIconButton Icon="@(IsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                               Size="Size.Small"
+                               OnClick="@ToggleExpansion" />
+            </MudStack>
+        </MudStack>
+        
+        <!-- Expanded Details Section -->
+        @if (IsExpanded)
+        {
+            <MudDivider Class="my-3" />
+            
+            @if (IsLoadingDetails)
+            {
+                <MudStack AlignItems="AlignItems.Center" Class="py-4">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" />
+                    <MudText Typo="Typo.caption">@Localizer.GetString(TransactionHistoryLocalizer.Keys.LoadingBlockchainData)</MudText>
+                </MudStack>
+            }
+            else if (!string.IsNullOrEmpty(DetailsError))
+            {
+                <MudAlert Severity="Severity.Error">
+                    @DetailsError
+                </MudAlert>
+            }
+            else
+            {
+                <MudStack Spacing="2">
+                    <!-- Transaction Details -->
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">
+                        @Localizer.GetString(TransactionHistoryLocalizer.Keys.TransactionDetails)
+                    </MudText>
+                    
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" md="6">
+                            <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.TransactionHash)" 
+                                     Variant="Variant.Outlined">
+                                <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                    @Transaction.Hash
+                                </MudText>
+                            </MudField>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="6">
+                            <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Status)" 
+                                     Variant="Variant.Outlined">
+                                <MudChip T="string" Color="@GetStatusColor()" Size="Size.Small">
+                                    @GetStatusText()
+                                </MudChip>
+                            </MudField>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="6">
+                            <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.From)" 
+                                     Variant="Variant.Outlined">
+                                <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                    @Transaction.From
+                                </MudText>
+                            </MudField>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="6">
+                            <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.To)" 
+                                     Variant="Variant.Outlined">
+                                <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                    @Transaction.To
+                                </MudText>
+                            </MudField>
+                        </MudItem>
+                        
+                        @if (!string.IsNullOrEmpty(Transaction.Value) && Transaction.Value != "0")
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Value)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.Value ETH
+                                </MudField>
+                            </MudItem>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Transaction.Nonce))
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Nonce)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.Nonce
+                                </MudField>
+                            </MudItem>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Transaction.GasPrice))
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.GasPrice)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.GasPrice Gwei
+                                </MudField>
+                            </MudItem>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Transaction.MaxFeePerGas))
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.MaxFeePerGas)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.MaxFeePerGas Gwei
+                                </MudField>
+                            </MudItem>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(Transaction.MaxPriorityFeePerGas))
+                        {
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.MaxPriorityFeePerGas)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.MaxPriorityFeePerGas Gwei
+                                </MudField>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                    
+                    @if (HasReceipt)
+                    {
+                        <!-- Receipt Details -->
+                        <MudDivider />
+                        
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">
+                            @Localizer.GetString(TransactionHistoryLocalizer.Keys.ReceiptDetails)
+                        </MudText>
+                        
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" md="6">
+                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.BlockNumber)" 
+                                         Variant="Variant.Outlined">
+                                    @Transaction.BlockNumber
+                                </MudField>
+                            </MudItem>
+                            
+                            @if (!string.IsNullOrEmpty(Transaction.BlockHash))
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.BlockHash)" 
+                                             Variant="Variant.Outlined">
+                                        <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                            @FormatHash(Transaction.BlockHash)
+                                        </MudText>
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (Transaction.TransactionIndex.HasValue)
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.TransactionIndex)" 
+                                             Variant="Variant.Outlined">
+                                        @Transaction.TransactionIndex
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Transaction.GasUsed))
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.GasUsed)" 
+                                             Variant="Variant.Outlined">
+                                        @Transaction.GasUsed
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Transaction.EffectiveGasPrice))
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.EffectiveGasPrice)" 
+                                             Variant="Variant.Outlined">
+                                        @Transaction.EffectiveGasPrice Gwei
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Transaction.CumulativeGasUsed))
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.CumulativeGasUsed)" 
+                                             Variant="Variant.Outlined">
+                                        @Transaction.CumulativeGasUsed
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (Transaction.ReceiptStatus.HasValue)
+                            {
+                                <MudItem xs="12" md="6">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.ReceiptStatus)" 
+                                             Variant="Variant.Outlined">
+                                        <MudChip T="string" 
+                                                Color="@(Transaction.ReceiptStatus.Value ? Color.Success : Color.Error)" 
+                                                Size="Size.Small">
+                                            @(Transaction.ReceiptStatus.Value ? "Success" : "Failed")
+                                        </MudChip>
+                                    </MudField>
+                                </MudItem>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Transaction.ContractAddress))
+                            {
+                                <MudItem xs="12">
+                                    <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.ContractCreated)" 
+                                             Variant="Variant.Outlined">
+                                        <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                            @Transaction.ContractAddress
+                                        </MudText>
+                                    </MudField>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                        
+                        @if (Transaction.Logs?.Any() == true)
+                        {
+                            <MudDivider />
+                            
+                            <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">
+                                @Localizer.GetString(TransactionHistoryLocalizer.Keys.EventLogs) (@Transaction.Logs.Count)
+                            </MudText>
+                            
+                            <MudExpansionPanels>
+                                @foreach (var log in Transaction.Logs.Take(10)) // Limit to first 10 logs
+                                {
+                                    <MudExpansionPanel Text="@($"Log {log.LogIndex}: {FormatHash(log.Address)}")">
+                                        <MudStack Spacing="1">
+                                            <MudField Label="Contract Address" Variant="Variant.Text">
+                                                <MudText Typo="Typo.caption" Style="word-break: break-all;">
+                                                    @log.Address
+                                                </MudText>
+                                            </MudField>
+                                            
+                                            @if (log.Topics?.Length > 0)
+                                            {
+                                                <MudField Label="Topics" Variant="Variant.Text">
+                                                    <MudStack Spacing="1">
+                                                        @foreach (var topic in log.Topics.Take(4))
+                                                        {
+                                                            <MudText Typo="Typo.caption" Style="word-break: break-all; font-family: monospace;">
+                                                                @topic
+                                                            </MudText>
+                                                        }
+                                                    </MudStack>
+                                                </MudField>
+                                            }
+                                            
+                                            @if (!string.IsNullOrEmpty(log.Data) && log.Data != "0x")
+                                            {
+                                                <MudField Label="Data" Variant="Variant.Text">
+                                                    <MudText Typo="Typo.caption" Style="word-break: break-all; font-family: monospace;">
+                                                        @(log.Data.Length > 66 ? log.Data.Substring(0, 66) + "..." : log.Data)
+                                                    </MudText>
+                                                </MudField>
+                                            }
+                                        </MudStack>
+                                    </MudExpansionPanel>
+                                }
+                            </MudExpansionPanels>
+                        }
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(Transaction.Input) && Transaction.Input != "0x")
+                    {
+                        <MudDivider />
+                        
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">
+                            @Localizer.GetString(TransactionHistoryLocalizer.Keys.InputData)
+                        </MudText>
+                        
+                        <MudField Variant="Variant.Outlined">
+                            <MudText Typo="Typo.caption" Style="word-break: break-all; font-family: monospace;">
+                                @(Transaction.Input.Length > 200 ? Transaction.Input.Substring(0, 200) + "..." : Transaction.Input)
+                            </MudText>
+                        </MudField>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(Transaction.ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error">
+                            @Transaction.ErrorMessage
+                        </MudAlert>
+                    }
+                </MudStack>
+            }
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public TransactionInfo Transaction { get; set; } = null!;
+    [Parameter] public bool ShowRetry { get; set; }
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnRetry { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnCopyHash { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnViewOnExplorer { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnViewDetails { get; set; }
+    
+    private bool IsExpanded { get; set; }
+    private bool IsLoadingDetails { get; set; }
+    private string? DetailsError { get; set; }
+    private bool HasReceipt => !string.IsNullOrEmpty(Transaction.BlockNumber);
+    
+    private async Task ToggleExpansion()
+    {
+        IsExpanded = !IsExpanded;
+        
+        if (IsExpanded && !HasReceipt && Transaction.Status != TransactionStatus.Pending)
+        {
+            await LoadTransactionDetails();
+        }
+    }
+    
+    private async Task LoadTransactionDetails()
+    {
+        IsLoadingDetails = true;
+        DetailsError = null;
+        
+        try
+        {
+            var web3 = await WalletHostProvider.GetWeb3Async();
+            
+            // Fetch transaction details
+            var txTask = web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(Transaction.Hash);
+            
+            // Fetch receipt if transaction is confirmed
+            Task<TransactionReceipt>? receiptTask = null;
+            if (Transaction.Status == TransactionStatus.Confirmed || 
+                Transaction.Status == TransactionStatus.Failed)
+            {
+                receiptTask = web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(Transaction.Hash);
+            }
+            
+            // Wait for both
+            var tx = await txTask;
+            
+            if (tx != null)
+            {
+                // Update transaction details
+                Transaction.Input = tx.Input;
+                Transaction.Nonce = tx.Nonce?.Value.ToString();
+                
+                if (tx.GasPrice != null)
+                {
+                    var gasPriceGwei = Nethereum.Util.UnitConversion.Convert.FromWei(tx.GasPrice.Value, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+                    Transaction.GasPrice = gasPriceGwei.ToString("F2");
+                }
+                
+                if (tx.MaxFeePerGas != null)
+                {
+                    var maxFeeGwei = Nethereum.Util.UnitConversion.Convert.FromWei(tx.MaxFeePerGas.Value, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+                    Transaction.MaxFeePerGas = maxFeeGwei.ToString("F2");
+                }
+                
+                if (tx.MaxPriorityFeePerGas != null)
+                {
+                    var maxPriorityGwei = Nethereum.Util.UnitConversion.Convert.FromWei(tx.MaxPriorityFeePerGas.Value, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+                    Transaction.MaxPriorityFeePerGas = maxPriorityGwei.ToString("F2");
+                }
+                
+                Transaction.TransactionType = tx.Type?.Value.ToString();
+            }
+            
+            if (receiptTask != null)
+            {
+                var receipt = await receiptTask;
+                
+                if (receipt != null)
+                {
+                    // Update receipt details
+                    Transaction.BlockNumber = receipt.BlockNumber?.Value.ToString();
+                    Transaction.BlockHash = receipt.BlockHash;
+                    Transaction.TransactionIndex = (int?)receipt.TransactionIndex?.Value;
+                    Transaction.GasUsed = receipt.GasUsed?.Value.ToString();
+                    Transaction.CumulativeGasUsed = receipt.CumulativeGasUsed?.Value.ToString();
+                    Transaction.ReceiptStatus = receipt.Status?.Value == 1;
+                    Transaction.ContractAddress = receipt.ContractAddress;
+                    
+                    if (receipt.EffectiveGasPrice != null)
+                    {
+                        var effectiveGasPriceGwei = Nethereum.Util.UnitConversion.Convert.FromWei(receipt.EffectiveGasPrice.Value, Nethereum.Util.UnitConversion.EthUnit.Gwei);
+                        Transaction.EffectiveGasPrice = effectiveGasPriceGwei.ToString("F2");
+                    }
+                    
+                    // Convert logs
+                    if (receipt.Logs != null && receipt.Logs.Length > 0)
+                    {
+                        Transaction.Logs = receipt.Logs.Select(l => new TransactionLog
+                        {
+                            Address = l.Address,
+                            Topics = l.Topics?.Select(t => t.ToString()).ToArray() ?? Array.Empty<string>(),
+                            Data = l.Data,
+                            LogIndex = l.LogIndex?.Value.ToString(),
+                            Removed = l.Removed
+                        }).ToList();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DetailsError = $"Failed to load blockchain data: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingDetails = false;
+        }
+    }
+    
+    private string GetCardClass() => Transaction.Status switch
+    {
+        TransactionStatus.Failed => "transaction-failed",
+        TransactionStatus.Confirmed => "transaction-confirmed",
+        _ => ""
+    };
+    
+    private string GetTransactionIcon() => Transaction.Type switch
+    {
+        TransactionType.NativeToken => Icons.Material.Filled.Send,
+        _ => Icons.Material.Filled.Code
+    };
+    
+    private Color GetStatusColor() => Transaction.Status switch
+    {
+        TransactionStatus.Pending => Color.Warning,
+        TransactionStatus.Mining => Color.Info,
+        TransactionStatus.Confirmed => Color.Success,
+        TransactionStatus.Failed => Color.Error,
+        TransactionStatus.Dropped => Color.Dark,
+        _ => Color.Default
+    };
+    
+    private string GetStatusText() => Transaction.Status switch
+    {
+        TransactionStatus.Pending => Localizer.GetString(TransactionHistoryLocalizer.Keys.Pending),
+        TransactionStatus.Mining => Localizer.GetString(TransactionHistoryLocalizer.Keys.Mining),
+        TransactionStatus.Confirmed => Localizer.GetString(TransactionHistoryLocalizer.Keys.Confirmed),
+        TransactionStatus.Failed => Localizer.GetString(TransactionHistoryLocalizer.Keys.Failed),
+        TransactionStatus.Dropped => Localizer.GetString(TransactionHistoryLocalizer.Keys.Dropped),
+        _ => ""
+    };
+    
+    private string FormatHash(string hash) =>
+        hash.Length > 16 ? $"{hash[..6]}...{hash[^4..]}" : hash;
+    
+    private string GetTimeDisplay()
+    {
+        var elapsed = DateTime.UtcNow - Transaction.SubmittedAt;
+        if (elapsed.TotalMinutes < 1) return "Just now";
+        if (elapsed.TotalMinutes < 60) return $"{(int)elapsed.TotalMinutes}m ago";
+        if (elapsed.TotalHours < 24) return $"{(int)elapsed.TotalHours}h ago";
+        return $"{(int)elapsed.TotalDays}d ago";
+    }
+}

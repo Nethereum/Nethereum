@@ -1,0 +1,8 @@
+/* TokenTransfer.razor component scoped styles */
+.loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--wallet-space-xl, 2rem);
+        text-align: center;
+    }

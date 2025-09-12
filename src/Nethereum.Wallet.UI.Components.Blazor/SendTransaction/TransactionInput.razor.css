@@ -1,0 +1,128 @@
+/* Compact transaction form styling - SCOPED to TransactionInput component only */
+.transaction-compact-grid,
+.gas-fields-compact,
+.advanced-options-compact {
+    margin: 0;
+    padding: 0;
+}
+
+.transaction-compact-grid :global(.mud-grid-item),
+.gas-fields-compact :global(.mud-grid-item),
+.advanced-options-compact :global(.mud-grid-item) {
+    padding: 4px 8px;
+}
+
+.wallet-field-compact {
+    margin: 0;
+}
+
+.wallet-field-compact :global(.mud-input-root) {
+    margin: 0;
+}
+
+.wallet-field-compact :global(.mud-input-control) {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.network-field-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-label-compact {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.contract-chip-compact {
+    margin-top: 4px;
+    align-self: flex-start;
+}
+
+.amount-readonly {
+    font-weight: 600;
+}
+
+/* Compact styling for gas and other sections */
+.gas-cost-summary {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--wallet-bg-secondary, #f9fafb);
+    border-radius: 8px;
+    border: 1px solid var(--wallet-border, #e5e7eb);
+}
+
+.cost-summary-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.gas-breakdown {
+    color: var(--wallet-text-secondary, #6b7280);
+    font-size: 0.875em;
+    margin-left: 8px;
+}
+
+.gas-hint-card {
+    margin-top: 12px;
+}
+
+.inline-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+}
+
+.function-info {
+    padding: 12px;
+    background: var(--wallet-bg-tertiary, #f3f4f6);
+    border-radius: 8px;
+    border-left: 4px solid var(--wallet-success, #10b981);
+}
+
+.function-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.function-signature {
+    margin-bottom: 8px;
+    font-family: monospace;
+}
+
+.parameters-compact {
+    margin-top: 8px;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 8px;
+    background: var(--wallet-bg-primary, #ffffff);
+    border-radius: 4px;
+}
+
+.compact-section {
+    margin-bottom: 12px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .transaction-compact-grid :global(.mud-grid-item),
+    .gas-fields-compact :global(.mud-grid-item),
+    .advanced-options-compact :global(.mud-grid-item) {
+        padding: 4px;
+    }
+    
+    .cost-summary-label {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .gas-breakdown {
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}

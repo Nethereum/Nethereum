@@ -1,0 +1,167 @@
+/* WalletWordChips.razor component scoped styles */
+.wallet-word-chips-container {
+        border: 2px solid var(--wallet-primary-light, #dbeafe);
+        border-radius: var(--wallet-radius-lg, 12px);
+        background: var(--wallet-bg-primary, #ffffff);
+        overflow: hidden;
+    }
+    
+    .wallet-word-chips-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--wallet-space-lg, 1.5rem);
+        border-bottom: 1px solid var(--wallet-border-light, #f3f4f6);
+        background: var(--wallet-bg-secondary, #f9fafb);
+    }
+    
+    .wallet-word-chips-info {
+        flex: 1;
+    }
+    
+    .wallet-word-chips-title {
+        font-size: var(--wallet-font-lg, 1.125rem);
+        font-weight: 600;
+        color: var(--wallet-text-primary, #111827);
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .wallet-word-chips-subtitle {
+        font-size: var(--wallet-font-sm, 0.875rem);
+        color: var(--wallet-text-secondary, #6b7280);
+        margin: 4px 0 0 0;
+        line-height: 1.4;
+    }
+    
+    .wallet-word-chips-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--wallet-space-xs, 0.5rem);
+    }
+    
+    .wallet-icon-button {
+        background: none;
+        border: none;
+        padding: var(--wallet-space-sm, 0.75rem);
+        border-radius: var(--wallet-radius-sm, 6px);
+        color: var(--wallet-text-secondary, #6b7280);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        transition: all 0.2s ease;
+    }
+    
+    .wallet-icon-button:hover {
+        background: var(--wallet-bg-tertiary, #f3f4f6);
+        color: var(--wallet-primary, #2563eb);
+    }
+    
+    .wallet-word-chips-content {
+        padding: var(--wallet-space-lg, 1.5rem);
+    }
+    
+    .wallet-word-chips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    .wallet-word-chip {
+        background: var(--wallet-bg-secondary, #f9fafb);
+        border: 1px solid var(--wallet-border, #e5e7eb);
+        border-radius: var(--wallet-radius-md, 8px);
+        padding: var(--wallet-space-md, 1rem);
+        position: relative;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .wallet-word-chip:hover {
+        border-color: var(--wallet-primary-light, #dbeafe);
+        box-shadow: var(--wallet-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    }
+    
+    .wallet-word-number {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: var(--wallet-text-disabled, #9ca3af);
+        line-height: 1;
+    }
+    
+    .wallet-word-text {
+        font-family: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+        font-size: var(--wallet-font-base, 1rem);
+        font-weight: 600;
+        color: var(--wallet-text-primary, #111827);
+        text-align: center;
+        margin-top: 12px;
+        line-height: 1.2;
+    }
+    
+    .wallet-word-chips-hidden,
+    .wallet-word-chips-empty {
+        text-align: center;
+        padding: var(--wallet-space-2xl, 3rem);
+        color: var(--wallet-text-secondary, #6b7280);
+    }
+    
+    .wallet-word-chips-hidden .mud-icon-root,
+    .wallet-word-chips-empty .mud-icon-root {
+        font-size: 3rem;
+        margin-bottom: var(--wallet-space-md, 1rem);
+        opacity: 0.5;
+    }
+    
+    .wallet-word-chips-hidden p,
+    .wallet-word-chips-empty p {
+        font-size: var(--wallet-font-base, 1rem);
+        margin: 0;
+        line-height: 1.5;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+        .wallet-word-chips-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--wallet-space-xs, 0.5rem);
+        }
+        
+        .wallet-word-chip {
+            padding: var(--wallet-space-sm, 0.75rem);
+            min-height: 50px;
+        }
+        
+        .wallet-word-text {
+            font-size: var(--wallet-font-sm, 0.875rem);
+            margin-top: 8px;
+        }
+        
+        .wallet-word-chips-header {
+            padding: var(--wallet-space-md, 1rem);
+        }
+        
+        .wallet-word-chips-content {
+            padding: var(--wallet-space-md, 1rem);
+        }
+        
+        .wallet-word-chips-hidden,
+        .wallet-word-chips-empty {
+            padding: var(--wallet-space-xl, 2rem);
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .wallet-word-chips-grid {
+            grid-template-columns: 1fr;
+        }
+    }

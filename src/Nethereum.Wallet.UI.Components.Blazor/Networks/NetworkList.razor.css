@@ -1,0 +1,38 @@
+/* NetworkList.razor component scoped styles */
+.loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--wallet-space-xl, 2rem);
+        text-align: center;
+    }
+
+    .network-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-sm, 0.75rem);
+    }
+
+    .network-card {
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        border: 2px solid transparent;
+    }
+
+    .network-card:hover {
+        box-shadow: var(--mud-elevation-4);
+        transform: translateY(-1px);
+    }
+
+    .network-card.selected {
+        border-color: var(--mud-palette-success);
+        background-color: var(--mud-palette-success-lighten);
+    }
+
+    @media (max-width: 600px) {
+        .network-card .mud-stack-row {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+    }

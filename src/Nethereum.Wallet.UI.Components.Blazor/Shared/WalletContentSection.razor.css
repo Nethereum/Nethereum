@@ -1,0 +1,24 @@
+/* WalletContentSection.razor component scoped styles */
+.wallet-content-section {
+        margin-bottom: var(--section-spacing, 1rem);
+    }
+    
+    .wallet-content-section.spacing-tight {
+        --section-spacing: 0.5rem;
+    }
+    
+    .wallet-content-section.spacing-normal {
+        --section-spacing: 1rem;
+    }
+    
+    .wallet-content-section.spacing-loose {
+        --section-spacing: 1.5rem;
+    }
+    
+    .section-content > *:not(:last-child) {
+        margin-bottom: 1rem;
+    }
+    
+    .section-content > .wallet-info-card + * {
+        margin-top: 1rem;
+    }

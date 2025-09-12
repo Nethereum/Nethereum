@@ -1,0 +1,29 @@
+/* NetworkCard.razor component scoped styles */
+.network-card {
+        transition: all 0.2s ease-in-out;
+        border-radius: 12px;
+        margin-bottom: 8px;
+    }
+
+    .network-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    }
+
+    .network-card.selected {
+        background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);
+    }
+
+    .network-card.active {
+        background: var(--mud-palette-success-lighten);
+    }
+
+    .network-card.compact {
+        margin-bottom: 4px;
+    }
+
+    .identicon-content {
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+    }

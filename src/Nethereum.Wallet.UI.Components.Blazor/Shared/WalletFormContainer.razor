@@ -1,0 +1,126 @@
+@using MudBlazor
+
+<div class="wallet-form-container">
+    
+    <!-- Header with integrated navigation -->
+    <div class="wallet-form-header">
+        <div class="wallet-form-header-content">
+            <div class="wallet-form-header-left">
+                @if (ShowBackButton)
+                {
+                    <button class="wallet-back-button" @onclick="OnBackClick">
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowBack" />
+                    </button>
+                }
+                <div class="wallet-form-title-section">
+                    <h1 class="wallet-form-title">@Title</h1>
+                    <p class="wallet-form-subtitle">@Subtitle</p>
+                </div>
+            </div>
+            @if (ShowCancelButton)
+            {
+                <button class="wallet-cancel-button" @onclick="OnCancelClick">
+                    @CancelText
+                </button>
+            }
+        </div>
+    </div>
+    
+    <!-- Progress Steps (if provided) -->
+    @if (Steps?.Any() == true)
+    {
+        <div class="wallet-form-progress">
+            <div class="wallet-step-container">
+                @for (int i = 0; i < Steps.Count; i++)
+                {
+                    var step = Steps[i];
+                    var isActive = i == CurrentStepIndex;
+                    var isCompleted = i < CurrentStepIndex;
+                    
+                    <div class="wallet-step-item @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                        <div class="wallet-step-content">
+                            <div class="wallet-step-avatar @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                                @if (isCompleted)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" />
+                                }
+                                else if (!string.IsNullOrEmpty(step.Icon))
+                                {
+                                    <MudIcon Icon="@step.Icon" />
+                                }
+                                else
+                                {
+                                    <span>@(i + 1)</span>
+                                }
+                            </div>
+                            <span class="wallet-step-label @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                                @step.Label
+                            </span>
+                        </div>
+                    </div>
+                    
+                    @if (i < Steps.Count - 1)
+                    {
+                        <div class="wallet-step-connector @(isCompleted ? "completed" : "")"></div>
+                    }
+                }
+            </div>
+        </div>
+    }
+    
+    <!-- Main Content Area -->
+    <div class="wallet-form-content">
+        @ChildContent
+    </div>
+    
+    <!-- Floating Action Area (if primary action provided) -->
+    @if (!string.IsNullOrEmpty(PrimaryActionText))
+    {
+        <div class="wallet-form-action-area">
+            <div class="wallet-form-action-container">
+                <button class="wallet-primary-action @(PrimaryActionDisabled ? "disabled" : "")" 
+                        @onclick="OnPrimaryActionClick" 
+                        disabled="@PrimaryActionDisabled">
+                    @if (!string.IsNullOrEmpty(PrimaryActionIcon))
+                    {
+                        <MudIcon Icon="@PrimaryActionIcon" />
+                    }
+                    @PrimaryActionText
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public List<WalletFormStep>? Steps { get; set; }
+    [Parameter] public int CurrentStepIndex { get; set; } = 0;
+    
+    [Parameter] public bool ShowBackButton { get; set; } = true;
+    [Parameter] public bool ShowCancelButton { get; set; } = true;
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    
+    [Parameter] public string PrimaryActionText { get; set; } = "";
+    [Parameter] public string PrimaryActionIcon { get; set; } = "";
+    [Parameter] public bool PrimaryActionDisabled { get; set; } = false;
+    
+    [Parameter] public EventCallback OnBackClick { get; set; }
+    [Parameter] public EventCallback OnCancelClick { get; set; }
+    [Parameter] public EventCallback OnPrimaryActionClick { get; set; }
+    
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+
+
+
+@* Helper class for step definition *@
+@code {
+    public class WalletFormStep
+    {
+        public string Label { get; set; } = "";
+        public string? Icon { get; set; }
+        public string? Description { get; set; }
+    }
+}

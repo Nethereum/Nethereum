@@ -1,0 +1,14 @@
+<!-- Compact Header Component - Reusable across all wallet forms -->
+<div class="wallet-compact-header">
+    <h2 class="wallet-title">@Title</h2>
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="wallet-subtitle">@Subtitle</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+}
+

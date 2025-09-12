@@ -1,0 +1,60 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+@* Reusable component for securely displaying private keys across all account types *@
+<WalletContentSection Title="@Title" Class="spacing-normal">
+    
+    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                    Title="@SecurityTitle"
+                    Description="@SecurityMessage"
+                    Icon="@Icons.Material.Filled.Security" />
+    
+    <div class="wallet-private-key-display">
+        <div class="private-key-content">
+            <MudText Typo="Typo.body2" Class="private-key-text">
+                @Value
+            </MudText>
+        </div>
+        
+        @if (ShowCopyButton)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                         Size="Size.Medium"
+                         Color="Color.Primary"
+                         OnClick="@HandleCopy"
+                         Class="wallet-copy-button"
+                         Tooltip="@CopyTooltip" />
+        }
+    </div>
+    
+</WalletContentSection>
+
+@code {
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string SecurityTitle { get; set; } = "Keep this information secure!";
+    [Parameter] public string SecurityMessage { get; set; } = "Never share it with anyone or store it in an insecure location.";
+    [Parameter] public string CopyTooltip { get; set; } = "Copy to clipboard";
+    [Parameter] public bool ShowCopyButton { get; set; } = true;
+    
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+    
+    private async Task HandleCopy()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Value);
+            
+            if (OnCopy.HasDelegate)
+            {
+                await OnCopy.InvokeAsync(Value);
+            }
+        }
+        catch
+        {
+            // Fallback for older browsers or clipboard permission issues
+        }
+    }
+    
+}
+

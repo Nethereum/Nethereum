@@ -1,0 +1,57 @@
+/* AccountDetailsLayout.razor component scoped styles */
+.account-details-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+    
+    .account-identity-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        padding: 2rem 1rem;
+        background: var(--mud-palette-surface);
+        border-radius: 16px;
+        border: 1px solid var(--mud-palette-divider);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .account-chip-container {
+        margin-bottom: 0.5rem;
+    }
+    
+    .address-display-container {
+        width: 100%;
+        max-width: 500px;
+    }
+    
+    .additional-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .action-buttons-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: auto;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .account-details-layout {
+            padding: 0.5rem;
+            gap: 1.5rem;
+        }
+        
+        .account-identity-section {
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+        }
+    }

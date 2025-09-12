@@ -1,0 +1,104 @@
+/* WalletStepProgress.razor component scoped styles */
+.wallet-step-progress {
+        padding: var(--wallet-space-xs, 0.5rem) 0;
+        margin-bottom: var(--wallet-space-xs, 0.5rem);
+    }
+    
+    .wallet-step-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+    }
+    
+    .wallet-step-item {
+        flex: 1;
+        text-align: center;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+    }
+    
+    .wallet-step-item.active {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    
+    .wallet-step-item.completed {
+        opacity: 0.8;
+    }
+    
+    .wallet-step-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--wallet-space-xs, 0.5rem);
+    }
+    
+    .wallet-step-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--mud-palette-grey-lighten-4);
+        color: var(--mud-palette-action-disabled);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+    
+    .wallet-step-avatar.active {
+        background: var(--mud-palette-primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+    
+    .wallet-step-avatar.completed {
+        background: var(--mud-palette-success);
+        color: white;
+    }
+    
+    .wallet-step-label {
+        font-size: var(--wallet-font-sm, 0.875rem);
+        font-weight: 500;
+        color: var(--mud-palette-text-secondary);
+        transition: all 0.3s ease;
+    }
+    
+    .wallet-step-label.active {
+        color: var(--mud-palette-primary);
+        font-weight: 600;
+    }
+    
+    .wallet-step-label.completed {
+        color: var(--mud-palette-success);
+    }
+    
+    .wallet-step-connector {
+        flex: 0 0 40px;
+        height: 2px;
+        background: var(--mud-palette-divider);
+        margin: 0 -8px;
+        transition: all 0.3s ease;
+        border-radius: 1px;
+    }
+    
+    .wallet-step-connector.completed {
+        background: var(--mud-palette-success);
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+        .wallet-step-container {
+            gap: 0;
+        }
+        
+        .wallet-step-connector {
+            flex: 0 0 30px;
+        }
+        
+        .wallet-step-avatar {
+            width: 28px;
+            height: 28px;
+        }
+    }

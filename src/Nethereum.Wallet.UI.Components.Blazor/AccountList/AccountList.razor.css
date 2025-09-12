@@ -1,0 +1,81 @@
+/* AccountList.razor component scoped styles */
+.account-card {
+        transition: all 0.2s ease;
+        height: 100%;
+    }
+
+    .account-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .account-card.selected {
+        border: 2px solid var(--mud-palette-primary);
+        box-shadow: 0 0 0 1px var(--mud-palette-primary-lighten);
+        background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);
+    }
+
+    /* Simplified styles without media queries */
+    .account-card {
+        margin-bottom: 8px;
+    }
+    
+    .account-list .mud-card-content {
+        padding: 8px !important;
+    }
+    
+    /* Make touch targets larger - scoped to account cards only */
+    .account-card .mud-button {
+        min-height: 44px;
+        padding: 8px 12px;
+    }
+    
+    .account-card .mud-icon-button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    /* Account list styling to match NetworkList */
+    .account-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    /* Account Group Styling */
+    .account-view-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .account-group {
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 8px;
+        background: var(--mud-palette-surface);
+        margin-bottom: 1rem;
+    }
+    
+    .account-group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+    }
+    
+    .account-group-header:hover {
+        background: var(--mud-palette-action-hover);
+    }
+    
+    .account-group-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .account-list {
+        padding: 0.75rem;
+    }

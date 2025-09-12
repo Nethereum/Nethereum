@@ -1,0 +1,63 @@
+@using Nethereum.Wallet.UI.Components.Abstractions
+@implements IDisposable
+@inject IWalletLoadingService LoadingService
+
+@if (LoadingService.IsLoading)
+{
+    <MudOverlay Visible="@LoadingService.IsLoading" DarkBackground="true" Absolute="false" ZIndex="9999">
+        <MudPaper Class="pa-6 d-flex flex-column align-center gap-4" Style="background: var(--mud-palette-surface); backdrop-filter: blur(10px); border-radius: 16px; min-width: 300px;">
+            @if (LoadingService.Progress > 0 && LoadingService.Progress < 100)
+            {
+                <MudProgressCircular Color="Color.Primary" Size="MudBlazor.Size.Large" Value="@LoadingService.Progress" />
+                <MudText Typo="Typo.h6" Class="text-center">@((int)LoadingService.Progress)%</MudText>
+            }
+            else
+            {
+                <MudProgressCircular Color="Color.Primary" Size="MudBlazor.Size.Large" Indeterminate="true" />
+            }
+            
+            @if (!string.IsNullOrEmpty(LoadingService.LoadingMessage))
+            {
+                <MudText Typo="Typo.body1" Class="text-center text-primary">
+                    @LoadingService.LoadingMessage
+                </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body1" Class="text-center text-secondary">
+                    Please wait...
+                </MudText>
+            }
+        </MudPaper>
+    </MudOverlay>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (LoadingService is Services.MudLoadingService mudLoadingService)
+        {
+            mudLoadingService.LoadingStateChanged += OnLoadingStateChanged;
+            mudLoadingService.ProgressChanged += OnProgressChanged;
+        }
+    }
+
+    private void OnLoadingStateChanged(bool isLoading, string? message)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnProgressChanged(double progress, string? message)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (LoadingService is Services.MudLoadingService mudLoadingService)
+        {
+            mudLoadingService.LoadingStateChanged -= OnLoadingStateChanged;
+            mudLoadingService.ProgressChanged -= OnProgressChanged;
+        }
+    }
+}

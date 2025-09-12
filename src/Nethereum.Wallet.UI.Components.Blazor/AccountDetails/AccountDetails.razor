@@ -1,0 +1,150 @@
+@using Nethereum.Wallet
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.AccountDetails
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using MudBlazor
+@implements IDisposable
+@inject IAccountDetailsRegistry Registry
+@inject IServiceProvider ServiceProvider
+
+<div class="account-details-orchestrator">
+    @if (isLoading)
+    {
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+            <MudGrid Justify="Justify.Center">
+                <MudItem>
+                    <MudProgressCircular Color="Color.Primary" Size="MudBlazor.Size.Large" Indeterminate="true" />
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    }
+    else if (Account != null && selectedViewModel != null && componentType != null)
+    {
+        <!-- Dynamic Component Rendering based on registry -->
+        <DynamicComponent Type="componentType" Parameters="componentParameters" />
+    }
+    else if (Account == null)
+    {
+        <MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+            <MudPaper Elevation="2" Class="pa-8" Style="text-align: center;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="@Icons.Material.Outlined.AccountCircle" 
+                             Style="font-size: 5rem; color: var(--mud-palette-text-secondary);" />
+                    <MudText Typo="Typo.h4" Color="Color.Secondary">
+                        No Account Selected
+                    </MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                        Please select an account to view its details.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudContainer>
+    }
+    else
+    {
+        <MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+            <MudPaper Elevation="2" Class="pa-8" Style="text-align: center;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" 
+                             Style="font-size: 5rem; color: var(--mud-palette-warning-main);" />
+                    <MudText Typo="Typo.h4" Color="Color.Warning">
+                        Unsupported Account Type
+                    </MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                        Details for this account type are not yet implemented.
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Account Type: @Account?.GetType().Name
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudContainer>
+    }
+</div>
+
+@code {
+    [Parameter] public IWalletAccount? Account { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private bool isLoading = false;
+    private IAccountDetailsViewModel? selectedViewModel;
+    private Type? componentType;
+    private Dictionary<string, object>? componentParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeViewModel();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Account != selectedViewModel?.Account)
+        {
+            await InitializeViewModel();
+        }
+    }
+
+    private async Task InitializeViewModel()
+    {
+        if (Account == null)
+        {
+            selectedViewModel = null;
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Find the appropriate ViewModel for this account type
+            var viewModelType = Registry.GetViewModelType(Account);
+            if (viewModelType != null)
+            {
+                // Create ViewModel instance through DI
+                selectedViewModel = ServiceProvider.GetService(viewModelType) as IAccountDetailsViewModel;
+                
+                if (selectedViewModel != null)
+                {
+                    // Subscribe to property changes
+                    if (selectedViewModel is INotifyPropertyChanged notifyPropertyChanged)
+                    {
+                        notifyPropertyChanged.PropertyChanged += OnViewModelPropertyChanged;
+                    }
+
+                    // Initialize with the account
+                    await selectedViewModel.InitializeAsync(Account);
+                    
+                    // Get the component type from registry
+                    componentType = Registry.GetComponentType(viewModelType);
+                    
+                    // Set up parameters for the dynamic component
+                    componentParameters = new Dictionary<string, object>
+                    {
+                        { "Account", Account },
+                        { "OnExit", OnExit }
+                    };
+                }
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (selectedViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+}

@@ -1,0 +1,101 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly.ViewOnlyAccountEditorLocalizer
+
+<MudStack Spacing="4">
+    <!-- Account Name -->
+    <MudTextField Label="@Localizer.GetString(Keys.AccountNameLabel)"
+                  @bind-Value="ViewModel.Label"
+                  HelperText="@Localizer.GetString(Keys.AccountNameHelperText)"
+                  Variant="Variant.Outlined"
+                  Required="false" 
+                  Placeholder="@Localizer.GetString(Keys.AccountNamePlaceholder)" />
+
+    <!-- Address Input -->
+    <MudCard>
+        <MudCardContent>
+            <MudStack Spacing="3">
+                <MudTextField Label="@Localizer.GetString(Keys.AddressLabel)"
+                              @bind-Value="ViewModel.ViewOnlyAddress"
+                              HelperText="@Localizer.GetString(Keys.AddressHelperText)"
+                              Variant="Variant.Outlined"
+                              Error="!string.IsNullOrEmpty(ViewModel.ErrorMessage)"
+                              ErrorText="@ViewModel.ErrorMessage"
+                              Placeholder="@Localizer.GetString(Keys.AddressPlaceholder)" />
+
+                <!-- Validation Info -->
+                @if (!string.IsNullOrEmpty(ViewModel.ViewOnlyAddress))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudChip T="string" Size="MudBlazor.Size.Small" 
+                                 Color="@(ViewModel.CanCreateAccount ? Color.Success : Color.Error)"
+                                 Icon="@(ViewModel.CanCreateAccount ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)">
+                            @(ViewModel.CanCreateAccount ? Localizer.GetString(Keys.ValidAddressText) : Localizer.GetString(Keys.InvalidAddressText))
+                        </MudChip>
+                    </MudStack>
+                }
+
+                <!-- Info Alert -->
+                <MudAlert Severity="Severity.Info">
+                    <MudStack Spacing="1">
+                        <MudText><strong>@Localizer.GetString(Keys.InfoTitle)</strong></MudText>
+                        <MudText>@Localizer.GetString(Keys.ViewBalanceText)</MudText>
+                        <MudText>@Localizer.GetString(Keys.ViewTransactionsText)</MudText>
+                        <MudText>@Localizer.GetString(Keys.ViewNFTsText)</MudText>
+                    </MudStack>
+                </MudAlert>
+            </MudStack>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Action Buttons -->
+    <MudStack Row="true" Justify="Justify.SpaceBetween">
+        <MudStack Row="true" Spacing="2">
+            @if (ShowBackToLogin)
+            {
+                <MudButton Variant="Variant.Text" 
+                           OnClick="@(() => OnBackToLogin.InvokeAsync())"
+                           StartIcon="Icons.Material.Filled.ArrowBack">
+                    @Localizer.GetString(Keys.BackToLoginText)
+                </MudButton>
+            }
+            @if (ShowBackToAccountSelection)
+            {
+                <MudButton Variant="Variant.Text" 
+                           OnClick="@(() => OnBackToAccountSelection.InvokeAsync())"
+                           StartIcon="Icons.Material.Filled.ArrowBack">
+                    @Localizer.GetString(Keys.BackToAccountSelectionText)
+                </MudButton>
+            }
+        </MudStack>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary"
+                   OnClick="CreateAccount"
+                   Disabled="!ViewModel.CanCreateAccount"
+                   StartIcon="Icons.Material.Filled.RemoveRedEye">
+            @Localizer.GetString(Keys.AddAccountText)
+        </MudButton>
+    </MudStack>
+</MudStack>
+
+@inject IComponentLocalizer<ViewOnlyAccountCreationViewModel> Localizer
+
+@code {
+   
+     [Parameter] required public ViewOnlyAccountCreationViewModel ViewModel { get; set; }
+     [Parameter] public EventCallback OnAccountCreated { get; set; }
+     [Parameter] public EventCallback OnBackToLogin { get; set; }
+     [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+     [Parameter] public bool ShowBackToLogin { get; set; } = true;
+     [Parameter] public bool ShowBackToAccountSelection { get; set; } = true;
+
+     private async Task CreateAccount()
+     {
+         if (ViewModel.CanCreateAccount)
+         {
+             await OnAccountCreated.InvokeAsync();
+         }
+     }
+}

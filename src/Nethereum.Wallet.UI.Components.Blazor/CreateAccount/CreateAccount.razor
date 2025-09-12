@@ -1,0 +1,171 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.Services
+@using Nethereum.Wallet.UI.Components.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Blazor
+@using Nethereum.Wallet.UI.Components.CreateAccount
+@using Nethereum.Wallet.UI.Components.Core.Localization
+
+@inject NethereumWalletHostProvider WalletHostProvider
+@inject IWalletVaultService VaultService
+@inject IAccountCreationRegistry AccountCreationRegistry
+@inject IComponentLocalizer<CreateAccountViewModel> Localizer
+
+<MudStack Spacing="@(IsCompactMode ? 2 : 4)" Class="@(IsCompactMode ? "pa-1" : "pa-4")">
+    @if (CurrentState == AddAccountState.Selection)
+    {
+        @if (ShowHeader)
+        {
+            <MudStack Spacing="@(IsCompactMode ? 1 : 2)" Class="mb-4">
+                <MudText Typo="@(IsCompactMode ? Typo.h6 : Typo.h5)">@Localizer.GetString(CreateAccountLocalizer.Keys.PageTitle)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(CreateAccountLocalizer.Keys.PageDescription)</MudText>
+            </MudStack>
+        }
+
+        <AccountTypeSelectionComponent AvailableAccountTypes="@AvailableAccountTypes"
+                                       OnAccountTypeSelected="@SelectAccountType"
+                                       IsCompactMode="@IsCompactMode" />
+    }
+    else if (CurrentState == AddAccountState.Creation)
+    {
+        <MudStack Spacing="@(IsCompactMode ? 2 : 4)">
+            @if (SelectedAccountType != null)
+            {
+                <DynamicComponent Type="@GetComponentType()" 
+                                  Parameters="@GetComponentParameters()" />
+            }
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error">
+                    @ErrorMessage
+                </MudAlert>
+            }
+        </MudStack>
+    }
+    else if (CurrentState == AddAccountState.Success)
+    {
+        <MudCard Class="@(IsCompactMode ? "pa-4" : "pa-6")">
+            <MudStack AlignItems="AlignItems.Center" Spacing="@(IsCompactMode ? 3 : 4)">
+                <MudAvatar Color="Color.Success" Size="@(IsCompactMode ? Size.Large : Size.Large)">
+                    <MudIcon Icon="Icons.Material.Filled.CheckCircle" Size="@(IsCompactMode ? Size.Large : Size.Large)" />
+                </MudAvatar>
+                <MudStack AlignItems="AlignItems.Center" Spacing="@(IsCompactMode ? 1 : 2)">
+                    <MudText Typo="@(IsCompactMode ? Typo.h6 : Typo.h5)">@Localizer.GetString(CreateAccountLocalizer.Keys.AccountAddedSuccessfully)</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="text-center">
+                        @Localizer.GetString(CreateAccountLocalizer.Keys.AccountAddedDescription)
+                    </MudText>
+                </MudStack>
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary"
+                           Size="@(IsCompactMode ? Size.Medium : Size.Large)"
+                           OnClick="ResetToSelection">
+                    @Localizer.GetString(CreateAccountLocalizer.Keys.AddAnotherAccount)
+                </MudButton>
+            </MudStack>
+        </MudCard>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public EventCallback OnAccountAdded { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public bool ShowHeader { get; set; } = false;
+
+    private enum AddAccountState
+    {
+        Selection,
+        Creation,
+        Success
+    }
+
+    private AddAccountState CurrentState = AddAccountState.Selection;
+    private IEnumerable<IAccountCreationViewModel> AvailableAccountTypes => AccountCreationRegistry.GetAvailableAccountTypes();
+    private IAccountCreationViewModel? SelectedAccountType;
+    private string ErrorMessage = "";
+
+    private Type? GetComponentType()
+    {
+        return SelectedAccountType != null 
+            ? AccountCreationRegistry.GetComponentType(SelectedAccountType)
+            : null;
+    }
+
+    private async Task SelectAccountType(IAccountCreationViewModel accountType)
+    {
+        SelectedAccountType = accountType;
+        CurrentState = AddAccountState.Creation;
+        ErrorMessage = "";
+        StateHasChanged();
+    }
+
+    private void BackToSelection()
+    {
+        CurrentState = AddAccountState.Selection;
+        StateHasChanged();
+    }
+
+
+    private void ResetToSelection()
+    {
+        CurrentState = AddAccountState.Selection;
+        SelectedAccountType?.Reset();
+        SelectedAccountType = null;
+        ErrorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task CreateAccountFromEditor()
+    {
+        if (SelectedAccountType?.CanCreateAccount != true)
+            return;
+
+        ErrorMessage = "";
+        
+        try
+        {
+            var vault = VaultService.GetCurrentVault();
+            if (vault == null)
+            {
+                ErrorMessage = Localizer.GetString(CreateAccountLocalizer.Keys.VaultNotAvailable);
+                StateHasChanged();
+                return;
+            }
+
+            var account = SelectedAccountType.CreateAccount(vault);
+            vault.AddAccount(account, setAsSelected: true);
+            await VaultService.SaveAsync();
+            await WalletHostProvider.RefreshAccountsAsync();
+
+            CurrentState = AddAccountState.Success;
+            StateHasChanged();
+            
+            // Notify parent that account was added
+            if (OnAccountAdded.HasDelegate)
+            {
+                await OnAccountAdded.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = Localizer.GetString(CreateAccountLocalizer.Keys.FailedToCreateAccount, ex.Message);
+            StateHasChanged();
+        }
+    }
+
+    private Dictionary<string, object> GetComponentParameters()
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            { "ViewModel", SelectedAccountType! },
+            { "OnAccountCreated", EventCallback.Factory.Create(this, CreateAccountFromEditor) },
+            { "OnBackToAccountSelection", EventCallback.Factory.Create(this, BackToSelection) },
+            { "ShowBackToLogin", false },
+            { "ShowBackToAccountSelection", true }
+        };
+
+        return parameters;
+    }
+
+}

@@ -1,0 +1,106 @@
+@using Nethereum.Wallet.UI.Components.Prompts
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.Prompts.PromptsPluginLocalizer
+@using MudBlazor
+@inject PromptsPluginViewModel ViewModel
+@inject IComponentLocalizer<PromptsPluginViewModel> Localizer
+
+@if (ViewModel.IsEmpty)
+{
+    <WalletEmptyState Icon="@Icons.Material.Outlined.Notifications"
+                      Title="@Localizer.GetString(Keys.EmptyTitle)"
+                      Description="@Localizer.GetString(Keys.EmptyDescription)" />
+}
+else if (ViewModel.CurrentPrompt != null)
+{
+    @if (ViewModel.TotalCount > 1)
+    {
+        <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background: var(--mud-palette-background-grey);">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.Queue" Size="Size.Small" />
+                    <MudText Typo="Typo.body2">
+                        @ViewModel.QueueStatusText
+                    </MudText>
+                </MudStack>
+                
+                <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                           Color="Color.Error"
+                           Variant="Variant.Text"
+                           Size="Size.Small"
+                           OnClick="@(() => ViewModel.RejectAllPromptsCommand.Execute(null))"
+                           Disabled="@ViewModel.IsProcessing">
+                    @Localizer.GetString(Keys.RejectAll)
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    }
+    
+    <div class="prompt-container">
+        @if (ViewModel.IsProcessing)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+        
+        @switch (ViewModel.CurrentPrompt.Type)
+        {
+            case PromptType.Transaction:
+                var txInfo = ViewModel.CurrentPrompt.Data as TransactionPromptInfo;
+                if (txInfo != null)
+                {
+                    <DAppTransactionPromptView 
+                        PromptRequest="@ViewModel.CurrentPrompt"
+                        OnApproved="@HandlePromptApproved"
+                        OnRejected="@HandlePromptRejected" />
+                }
+                break;
+                
+            case PromptType.Signature:
+                var sigInfo = ViewModel.CurrentPrompt.Data as SignaturePromptInfo;
+                if (sigInfo != null)
+                {
+                    <DAppSignaturePromptView 
+                        PromptRequest="@ViewModel.CurrentPrompt"
+                        OnSigned="@HandlePromptApproved"
+                        OnRejected="@HandlePromptRejected" />
+                }
+                break;
+                
+            case PromptType.NetworkSwitch:
+                <MudAlert Severity="Severity.Info">
+                    Network switch prompt - Coming soon
+                </MudAlert>
+                <MudButton Color="Color.Error" 
+                          Variant="Variant.Text"
+                          OnClick="@HandlePromptRejected">
+                    Reject
+                </MudButton>
+                break;
+                
+            default:
+                <MudAlert Severity="Severity.Warning">
+                    @Localizer.GetString(Keys.UnknownPromptType)
+                </MudAlert>
+                <MudButton Color="Color.Error" 
+                          Variant="Variant.Text"
+                          OnClick="@HandlePromptRejected">
+                    Reject
+                </MudButton>
+                break;
+        }
+    </div>
+}
+
+@code {
+    private async Task HandlePromptApproved(object? result = null)
+    {
+        await ViewModel.ApproveCurrentPromptAsync(result);
+    }
+    
+    private async Task HandlePromptRejected()
+    {
+        await ViewModel.RejectCurrentPromptCommand.ExecuteAsync(null);
+    }
+}

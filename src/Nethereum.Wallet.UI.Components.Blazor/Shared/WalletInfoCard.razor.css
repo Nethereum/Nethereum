@@ -1,0 +1,145 @@
+/* WalletInfoCard.razor component scoped styles */
+.wallet-info-card {
+        border-radius: var(--wallet-radius-lg, 12px);
+        padding: var(--wallet-space-lg, 1.5rem);
+        border: 1px solid;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .wallet-info-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0.05;
+        border-radius: inherit;
+        z-index: 0;
+    }
+    
+    .wallet-info-card-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-md, 1rem);
+    }
+    
+    .wallet-info-card-main {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--wallet-space-md, 1rem);
+    }
+    
+    .wallet-info-card-icon {
+        flex-shrink: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }
+    
+    .wallet-info-card-text {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .wallet-info-card-title {
+        font-weight: 600;
+        font-size: var(--wallet-font-base, 1rem);
+        line-height: 1.4;
+        margin-bottom: var(--wallet-space-xs, 0.5rem);
+    }
+    
+    .wallet-info-card-description {
+        font-size: var(--wallet-font-sm, 0.875rem);
+        line-height: 1.5;
+        opacity: 0.9;
+    }
+    
+    .wallet-info-card-children {
+        margin-top: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    .wallet-info-card-actions {
+        padding-top: var(--wallet-space-sm, 0.75rem);
+        border-top: 1px solid;
+        border-color: inherit;
+        opacity: 0.1;
+    }
+    
+    /* Severity Styles */
+    .wallet-info-card.info {
+        background: linear-gradient(135deg, var(--wallet-primary-light, #dbeafe) 0%, transparent 100%);
+        border-color: var(--wallet-primary-light, #dbeafe);
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .wallet-info-card.info::before {
+        background: var(--wallet-primary, #2563eb);
+    }
+    
+    .wallet-info-card.info .wallet-info-card-icon {
+        color: var(--wallet-primary, #2563eb);
+    }
+    
+    .wallet-info-card.success {
+        background: linear-gradient(135deg, var(--wallet-success-light, #dcfce7) 0%, transparent 100%);
+        border-color: var(--wallet-success-light, #dcfce7);
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .wallet-info-card.success::before {
+        background: var(--wallet-success, #16a34a);
+    }
+    
+    .wallet-info-card.success .wallet-info-card-icon {
+        color: var(--wallet-success, #16a34a);
+    }
+    
+    .wallet-info-card.warning {
+        background: linear-gradient(135deg, var(--wallet-warning-light, #fed7aa) 0%, transparent 100%);
+        border-color: var(--wallet-warning-light, #fed7aa);
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .wallet-info-card.warning::before {
+        background: var(--wallet-warning, #ea580c);
+    }
+    
+    .wallet-info-card.warning .wallet-info-card-icon {
+        color: var(--wallet-warning, #ea580c);
+    }
+    
+    .wallet-info-card.error {
+        background: linear-gradient(135deg, var(--wallet-error-light, #fecaca) 0%, transparent 100%);
+        border-color: var(--wallet-error-light, #fecaca);
+        color: var(--wallet-text-primary, #111827);
+    }
+    
+    .wallet-info-card.error::before {
+        background: var(--wallet-error, #dc2626);
+    }
+    
+    .wallet-info-card.error .wallet-info-card-icon {
+        color: var(--wallet-error, #dc2626);
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+        .wallet-info-card {
+            padding: var(--wallet-space-md, 1rem);
+        }
+        
+        .wallet-info-card-main {
+            gap: var(--wallet-space-sm, 0.75rem);
+        }
+        
+        .wallet-info-card-icon {
+            font-size: 1.25rem;
+        }
+    }

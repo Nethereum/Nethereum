@@ -1,0 +1,59 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Shared
+@using static Nethereum.Wallet.UI.Components.Shared.NotificationBadgeLocalizer
+@inject NotificationBadgeViewModel ViewModel
+@inject IComponentLocalizer<NotificationBadgeViewModel> Localizer
+@implements IDisposable
+
+@if (ViewModel.HasNotifications)
+{
+    <MudBadge Content="@ViewModel.NotificationCount" 
+              Color="Color.Error" 
+              Overlap="true"
+              Visible="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                       Color="Color.Inherit"
+                       OnClick="@HandleNotificationClick"
+                       Tooltip="@GetNotificationTitle()">
+        </MudIconButton>
+    </MudBadge>
+}
+else
+{
+    <MudIconButton Icon="@Icons.Material.Outlined.Notifications"
+                   Color="Color.Inherit"
+                   Disabled="true"
+                   Tooltip="@Localizer.GetString(Keys.NoNotifications)">
+    </MudIconButton>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        ViewModel.Initialize();
+    }
+    
+    private async Task HandleNotificationClick()
+    {
+        await ViewModel.NavigateToPromptsCommand.ExecuteAsync(null);
+    }
+    
+    private string GetNotificationTitle()
+    {
+        if (ViewModel.NotificationCount == 1)
+        {
+            return Localizer.GetString(Keys.SingleNotification);
+        }
+        else
+        {
+            return Localizer.GetString(Keys.MultipleNotifications, ViewModel.NotificationCount.ToString());
+        }
+    }
+    
+    public void Dispose()
+    {
+        ViewModel?.Dispose();
+    }
+}

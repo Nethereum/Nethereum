@@ -1,0 +1,28 @@
+/* WalletPrompt.razor component scoped styles */
+.wallet-prompt-input {
+    margin-bottom: 16px;
+}
+
+.wallet-prompt-choices .mud-radio {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--mud-palette-divider);
+    transition: all 0.2s ease;
+}
+
+.wallet-prompt-choices .mud-radio:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.wallet-choice-option {
+    width: 100%;
+}
+
+.wallet-prompt-confirm {
+    min-height: 48px; /* Touch-friendly */
+}
+
+.wallet-prompt-cancel {
+    min-height: 48px; /* Touch-friendly */
+}

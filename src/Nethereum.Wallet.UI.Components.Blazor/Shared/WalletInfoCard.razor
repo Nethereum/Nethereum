@@ -1,0 +1,62 @@
+@using MudBlazor
+
+<div class="wallet-info-card @GetSeverityClass()">
+    <div class="wallet-info-card-content">
+        <div class="wallet-info-card-main">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <div class="wallet-info-card-icon">
+                    <MudIcon Icon="@Icon" />
+                </div>
+            }
+            <div class="wallet-info-card-text">
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <div class="wallet-info-card-title">@Title</div>
+                }
+                @if (!string.IsNullOrEmpty(Description))
+                {
+                    <div class="wallet-info-card-description">@Description</div>
+                }
+                @if (ChildContent != null)
+                {
+                    <div class="wallet-info-card-children">
+                        @ChildContent
+                    </div>
+                }
+            </div>
+        </div>
+        @if (Actions != null)
+        {
+            <div class="wallet-info-card-actions">
+                @Actions
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public WalletInfoSeverity Severity { get; set; } = WalletInfoSeverity.Info;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+
+    private string GetSeverityClass() => Severity switch
+    {
+        WalletInfoSeverity.Success => "success",
+        WalletInfoSeverity.Warning => "warning",
+        WalletInfoSeverity.Error => "error",
+        _ => "info"
+    };
+
+    public enum WalletInfoSeverity
+    {
+        Info,
+        Success,
+        Warning,
+        Error
+    }
+}
+

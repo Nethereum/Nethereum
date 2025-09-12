@@ -1,0 +1,41 @@
+/* WalletPrivateKeyDisplay.razor component scoped styles */
+.wallet-private-key-display {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--wallet-space-sm, 0.5rem);
+        padding: var(--wallet-space-md, 1rem);
+        border: 2px dashed var(--wallet-error, #dc2626);
+        border-radius: var(--wallet-radius-md, 8px);
+        background: var(--wallet-error-light, #fef2f2);
+        margin: var(--wallet-space-md, 1rem) 0;
+    }
+    
+    .private-key-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .private-key-text {
+        font-family: var(--wallet-font-mono, 'JetBrains Mono', 'SF Mono', 'Monaco', monospace);
+        word-break: break-all;
+        font-size: var(--wallet-font-sm, 0.875rem);
+        line-height: 1.5;
+        color: var(--wallet-text-primary, #111827);
+        user-select: all;
+    }
+    
+    .wallet-copy-button {
+        flex-shrink: 0;
+    }
+    
+    @media (max-width: 600px) {
+        .wallet-private-key-display {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .wallet-copy-button {
+            margin-top: var(--wallet-space-sm, 0.5rem);
+            align-self: center;
+        }
+    }

@@ -1,0 +1,61 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+
+<!-- Step Progress Component - Reusable step indicators -->
+<div class="wallet-step-progress">
+    <div class="wallet-step-container">
+        @for (int i = 0; i < Steps.Count; i++)
+        {
+            var step = Steps[i];
+            var isActive = i == CurrentStepIndex;
+            var isCompleted = i < CurrentStepIndex;
+            
+            <div class="wallet-step-item @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                <div class="wallet-step-content">
+                    <div class="wallet-step-avatar @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                        @if (isCompleted)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" />
+                        }
+                        else if (!string.IsNullOrEmpty(step.Icon))
+                        {
+                            <MudIcon Icon="@step.Icon" />
+                        }
+                        else
+                        {
+                            <span>@(i + 1)</span>
+                        }
+                    </div>
+                    <span class="wallet-step-label @(isActive ? "active" : "") @(isCompleted ? "completed" : "")">
+                        @GetStepLabel(step)
+                    </span>
+                </div>
+            </div>
+            
+            @if (i < Steps.Count - 1)
+            {
+                <div class="wallet-step-connector @(isCompleted ? "completed" : "")"></div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<WalletFormStep> Steps { get; set; } = new();
+    [Parameter] public int CurrentStepIndex { get; set; } = 0;
+    [Parameter] public IComponentLocalizer? Localizer { get; set; }
+    
+    private string GetStepLabel(WalletFormStep step)
+    {
+        // If localization key is provided and localizer is available, use localized text
+        if (!string.IsNullOrEmpty(step.LocalizationKey) && Localizer != null)
+        {
+            return Localizer.GetString(step.LocalizationKey);
+        }
+        
+        // Fall back to static label
+        return step.Label;
+    }
+}
+

@@ -1,0 +1,202 @@
+@using MudBlazor
+@using Nethereum.RPC.Chain
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Networks
+@using System.Numerics
+@using System.Collections.Generic
+@inject IComponentLocalizer<NetworkListViewModel> Localizer
+@inject INetworkIconProvider NetworkIconProvider
+
+@* NetworkCard.razor - Mobile-friendly network display *@
+<MudCard Elevation="@(IsSelected ? 2 : 1)" 
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="@HandleCardClick">
+    
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-4")">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="@(IsCompactMode ? 2 : 3)">
+            
+            <!-- Left: Chain Icon and Info -->
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="@(IsCompactMode ? 2 : 3)" Style="flex-grow: 1; min-width: 0;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@GetNetworkAvatarStyle()">
+                    @if (HasNetworkIcon())
+                    {
+                        <MudImage Src="@GetNetworkIconUrl()" Alt="@NetworkDisplayName" Style="width: 100%; height: 100%; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">
+                            @IdenticonGenerator.GetNetworkIdenticonText(NetworkDisplayName)
+                        </div>
+                    }
+                </MudAvatar>
+                
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)" Style="flex-grow: 1; min-width: 0;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight: 600;">@NetworkDisplayName</MudText>
+                        @if (IsActive)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle">
+                                Active
+                            </MudChip>
+                        }
+                        @if (IsTestnet)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                Testnet
+                            </MudChip>
+                        }
+                    </MudStack>
+                    @if (!IsMobileSimplified)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                Chain ID: @Network.ChainId
+                            </MudText>
+                            @if (RpcCount > 0)
+                            {
+                                <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                    • @RpcCount RPC@(RpcCount == 1 ? "" : "s")
+                                </MudText>
+                            }
+                        </MudStack>
+                    }
+                </MudStack>
+            </MudStack>
+            
+            <!-- Right: Action Buttons -->
+            @if (ShowActions)
+            {
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                    @if (!IsSelected)
+                    {
+                        <MudButton Variant="Variant.Text" 
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  OnClick="@HandleSelectClick"
+                                  Class="wallet-touch-target">
+                            @Localizer.GetString(NetworkListLocalizer.Keys.SelectButton)
+                        </MudButton>
+                    }
+                    <MudIconButton Icon="@Icons.Material.Filled.MoreVert"
+                                  Size="Size.Medium"
+                                  Color="Color.Default"
+                                  OnClick="@HandleMenuClick"
+                                  Class="wallet-touch-target" />
+                </MudStack>
+            }
+            else if (IsSelected)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+            }
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public ChainFeature Network { get; set; } = new();
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public bool IsMobileSimplified { get; set; } = false;
+    [Parameter] public EventCallback<ChainFeature> OnNetworkClick { get; set; }
+    [Parameter] public EventCallback<ChainFeature> OnSelectNetwork { get; set; }
+    [Parameter] public EventCallback<ChainFeature> OnNetworkDetails { get; set; }
+
+    private string NetworkDisplayName => !string.IsNullOrEmpty(Network?.ChainName) ? Network.ChainName : $"Chain {Network?.ChainId}";
+    
+    private bool IsTestnet => Network?.IsTestnet == true || ChainCategories.IsTestnet(Network?.ChainId ?? 0);
+    
+    private int RpcCount => (Network?.HttpRpcs?.Count ?? 0) + (Network?.WsRpcs?.Count ?? 0);
+
+    private bool HasNetworkIcon() => NetworkIconProvider.HasNetworkIcon(Network?.ChainId ?? 0);
+    
+    private string? GetNetworkIconUrl() => NetworkIconProvider.GetNetworkIcon(Network?.ChainId ?? 0);
+    
+    private string GetNetworkAvatarStyle()
+    {
+        if (HasNetworkIcon())
+        {
+            // For image icons, just provide basic styling
+            return "background: var(--mud-palette-background-grey); display: flex; align-items: center; justify-content: center;";
+        }
+        else
+        {
+            // Use IdenticonGenerator for consistent styling with accounts
+            return IdenticonGenerator.GetIdenticonStyle(NetworkDisplayName);
+        }
+    }
+
+    private string GetCardClasses()
+    {
+        var classes = new List<string> { "wallet-card", "network-card" };
+        
+        if (IsSelected)
+            classes.Add("wallet-card-selected");
+            
+        if (IsActive)
+            classes.Add("wallet-card-active");
+            
+        return string.Join(" ", classes);
+    }
+
+    private async Task HandleCardClick()
+    {
+        // Card click navigates to network details
+        if (OnNetworkDetails.HasDelegate)
+        {
+            await OnNetworkDetails.InvokeAsync(Network);
+        }
+    }
+
+    private async Task HandleSelectClick()
+    {
+        // Select button selects network for wallet use
+        if (OnSelectNetwork.HasDelegate)
+        {
+            await OnSelectNetwork.InvokeAsync(Network);
+        }
+    }
+    
+    private async Task HandleMenuClick()
+    {
+        // Menu shows additional options - for now also navigate to details
+        if (OnNetworkDetails.HasDelegate)
+        {
+            await OnNetworkDetails.InvokeAsync(Network);
+        }
+    }
+
+    private async Task HandleDetailsClick()
+    {
+        if (OnNetworkDetails.HasDelegate)
+        {
+            await OnNetworkDetails.InvokeAsync(Network);
+        }
+    }
+
+    private string GetCardStyle()
+    {
+        var styles = new List<string>();
+        
+        if (IsSelected)
+        {
+            styles.Add("border: 2px solid var(--mud-palette-primary); background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);");
+        }
+
+        return string.Join("; ", styles);
+    }
+
+    private Size GetAvatarSize() => IsCompactMode ? Size.Small : Size.Medium;
+    
+    private Typo GetTitleTypo() => IsCompactMode ? Typo.subtitle2 : Typo.subtitle1;
+    
+    private Typo GetSubtitleTypo() => IsCompactMode ? Typo.caption : Typo.body2;
+
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+
+}
+

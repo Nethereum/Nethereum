@@ -1,0 +1,300 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Services
+@using System.Text.Json
+
+<MudDialog>
+    <DialogContent>
+        <div class="message-signing">
+            <!-- Header -->
+            <div class="signing-header mb-6">
+                <MudIcon Icon="@GetSigningIcon()" 
+                         Size="MudBlazor.Size.Large" 
+                         Color="Color.Primary" 
+                         Class="mb-2" />
+                <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2">
+                    <!--@GetTitle()-->
+                </MudText>
+            </div>
+
+            <!-- Warning Message -->
+            @if (!string.IsNullOrEmpty(GetWarningMessage()) || IsHighRiskSigning())
+            {
+                <MudAlert Severity="@(IsHighRiskSigning() ? Severity.Warning : Severity.Info)" 
+                          Class="mb-4" Variant="Variant.Filled">
+                    @if (IsHighRiskSigning())
+                    {
+                        <div class="d-flex align-center mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" />
+                            <span>High Risk Signing Request</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(GetWarningMessage()))
+                    {
+                        <MudText Typo="Typo.body2">@GetWarningMessage()</MudText>
+                    }
+                </MudAlert>
+            }
+
+            <!-- Origin Information (for dApp requests) -->
+            @if (!string.IsNullOrEmpty(GetOrigin()))
+            {
+                <MudCard Class="mb-4" Style="@OriginCardStyle">
+                    <MudCardContent Class="pa-4">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Language" Color="Color.Primary" Class="mr-3" />
+                            <div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Request from:</MudText>
+                                <MudText Typo="Typo.subtitle1" Class="font-weight-medium">@GetOrigin()</MudText>
+                            </div>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            }
+
+            <!-- Domain Information (for EIP-712) -->
+            @if (TypedDataInfo != null && !string.IsNullOrEmpty(TypedDataInfo.DomainName))
+            {
+                <MudCard Class="mb-4" Outlined="true">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Domain Information</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudList T="string" Dense="true">
+                            @if (!string.IsNullOrEmpty(TypedDataInfo.DomainName))
+                            {
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Domain">
+                                    <div class="d-flex justify-space-between align-center">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Name:</MudText>
+                                        <MudText Typo="Typo.body2">@TypedDataInfo.DomainName</MudText>
+                                    </div>
+                                </MudListItem>
+                            }
+                            @if (!string.IsNullOrEmpty(TypedDataInfo.DomainVersion))
+                            {
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Tag">
+                                    <div class="d-flex justify-space-between align-center">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Version:</MudText>
+                                        <MudText Typo="Typo.body2">@TypedDataInfo.DomainVersion</MudText>
+                                    </div>
+                                </MudListItem>
+                            }
+                            @if (!string.IsNullOrEmpty(TypedDataInfo.VerifyingContract))
+                            {
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.AccountBalance">
+                                    <div class="d-flex justify-space-between align-center">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Contract:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-family-monospace">
+                                            @FormatAddress(TypedDataInfo.VerifyingContract)
+                                        </MudText>
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    </MudCardContent>
+                </MudCard>
+            }
+
+            <!-- Message Content -->
+            <MudCard Class="message-content mb-4" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(IsTypedData() ? "Structured Data" : "Message")</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@(showRawData ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                       OnClick="@(() => showRawData = !showRawData)"
+                                       Size="MudBlazor.Size.Small" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (IsTypedData() && TypedDataInfo?.ParsedMessage != null && !showRawData)
+                    {
+                        <!-- Structured view for EIP-712 -->
+                        <div class="structured-data">
+                            @RenderStructuredData(TypedDataInfo.ParsedMessage)
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Raw message view -->
+                        <MudTextField Value="@GetRawMessage()"
+                                      ReadOnly="true"
+                                      Lines="@GetMessageLines()"
+                                      Variant="Variant.Outlined"
+                                      Class="font-family-monospace message-text" />
+                    }
+                    
+                    @if (IsTypedData())
+                    {
+                        <MudButton Variant="Variant.Text" 
+                                   Size="MudBlazor.Size.Small" 
+                                   OnClick="@(() => showRawData = !showRawData)"
+                                   StartIcon="@(showRawData ? Icons.Material.Filled.ViewCompact : Icons.Material.Filled.Code)"
+                                   Class="mt-2">
+                            @(showRawData ? "Show Structured View" : "Show Raw JSON")
+                        </MudButton>
+                    }
+                </MudCardContent>
+            </MudCard>
+
+            <!-- Network Information -->
+            @if (!string.IsNullOrEmpty(GetNetworkName()))
+            {
+                <MudCard Class="mb-4" Style="@NetworkCardStyle">
+                    <MudCardContent Class="pa-4">
+                        <div class="d-flex align-center justify-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Language" Color="Color.Primary" Class="mr-2" />
+                            <div class="text-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Network</MudText>
+                                <MudText Typo="Typo.subtitle1" Class="font-weight-medium">@GetNetworkName()</MudText>
+                            </div>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            }
+
+            <!-- Security Notice -->
+            <MudAlert Severity="Severity.Info" Class="mb-4">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Security" Class="mr-2" />
+                    <div>
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">Security Notice</MudText>
+                        <MudText Typo="Typo.caption">
+                            @if (IsTypedData())
+                            {
+                                <text>Signing this structured data will authorize the action described above. Only sign if you trust the requesting application.</text>
+                            }
+                            else
+                            {
+                                <text>Signing this message proves you own this account. Only sign if you trust the requesting application.</text>
+                            }
+                        </MudText>
+                    </div>
+                </div>
+            </MudAlert>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="d-flex justify-space-between w-100">
+            <MudButton OnClick="Reject" 
+                       Variant="Variant.Outlined" 
+                       Color="Color.Default"
+                       Size="MudBlazor.Size.Large"
+                       StartIcon="@Icons.Material.Filled.Close">
+                Cancel
+            </MudButton>
+            <MudButton OnClick="Sign" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Primary"
+                       Size="MudBlazor.Size.Large"
+                       StartIcon="@Icons.Material.Filled.Edit"
+                       Disabled="@isSigning">
+                @if (isSigning)
+                {
+                    <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Signing...</span>
+                }
+                else
+                {
+                    <span>Sign Message</span>
+                }
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+
+
+@code {
+    [CascadingParameter] MudBlazor.IDialogReference MudDialog { get; set; } = null!;
+    [Parameter] public PersonalSigningInfo? PersonalInfo { get; set; }
+    [Parameter] public TypedDataSigningInfo? TypedDataInfo { get; set; }
+
+    private bool showRawData = false;
+    private bool isSigning = false;
+
+    private string OriginCardStyle => 
+        "background: linear-gradient(145deg, rgba(var(--mud-palette-info-rgb), 0.05), rgba(var(--mud-palette-primary-rgb), 0.05));";
+    
+    private string NetworkCardStyle => 
+        "background: linear-gradient(145deg, rgba(var(--mud-palette-primary-rgb), 0.05), rgba(var(--mud-palette-secondary-rgb), 0.05));";
+
+    private async Task Sign()
+    {
+        isSigning = true;
+        try
+        {
+            // Return the appropriate info to indicate signing confirmation
+            var result = IsTypedData() ? (object)TypedDataInfo! : PersonalInfo!;
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        finally
+        {
+            isSigning = false;
+        }
+    }
+
+    private void Reject()
+    {
+        MudDialog.Close(DialogResult.Cancel());
+    }
+
+    private bool IsTypedData() => TypedDataInfo != null;
+
+    private string? GetWarningMessage() => IsTypedData() ? TypedDataInfo?.WarningMessage : PersonalInfo?.WarningMessage;
+
+    private bool IsHighRiskSigning() => IsTypedData() ? TypedDataInfo!.IsHighRiskSigning : PersonalInfo!.IsHighRiskSigning;
+
+    private string? GetOrigin() => PersonalInfo?.Origin;
+
+    private string? GetNetworkName() => TypedDataInfo?.NetworkName;
+
+    private string GetRawMessage() => IsTypedData() ? TypedDataInfo!.TypedData : PersonalInfo!.Message;
+
+    private string GetSigningIcon() => IsTypedData() ? Icons.Material.Filled.Description : Icons.Material.Filled.Edit;
+
+    private int GetMessageLines()
+    {
+        var message = GetRawMessage();
+        if (string.IsNullOrEmpty(message)) return 2;
+        var lines = message.Split('\n').Length;
+        return Math.Min(Math.Max(lines, 3), 12);
+    }
+
+    private string FormatAddress(string? address)
+    {
+        if (string.IsNullOrEmpty(address)) return "N/A";
+        return $"{address[..6]}...{address[^4..]}";
+    }
+
+    private RenderFragment RenderStructuredData(object data)
+    {
+        return builder =>
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                var formatted = FormatJsonForDisplay(json);
+                
+                builder.OpenElement(0, "pre");
+                builder.AddAttribute(1, "class", "structured-json");
+                builder.AddContent(2, formatted);
+                builder.CloseElement();
+            }
+            catch
+            {
+                builder.OpenElement(0, "div");
+                builder.AddContent(1, "Unable to display structured data");
+                builder.CloseElement();
+            }
+        };
+    }
+
+    private string FormatJsonForDisplay(string json)
+    {
+        // Simple JSON formatting for better readability
+        return json.Replace("\"", "").Replace("{", "").Replace("}", "").Replace(",", "\n").Trim();
+    }
+}

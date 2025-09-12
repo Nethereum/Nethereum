@@ -1,0 +1,59 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@inherits WalletFormControlBase
+
+<MudNumericField Value="@Value"
+                 ValueChanged="@ValueChanged"
+                 Label="@GetLabel()"
+                 Placeholder="@GetPlaceholder()"
+                 HelperText="@GetHelpText()"
+                 Variant="@GetVariant()"
+                 Class="@GetClasses()"
+                 Style="@Style"
+                 Required="@Required"
+                 RequiredError="@GetRequiredError()"
+                 Disabled="@IsDisabled()"
+                 Min="@Min"
+                 Max="@Max"
+                 Step="@Step"
+                 HideSpinButtons="@HideSpinButtons"
+                 T="int"
+                 @attributes="AdditionalAttributes" />
+
+@code {
+    #region Value Binding
+    
+    [Parameter] public int Value { get; set; } = 0;
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+    
+    #endregion
+
+    #region NumericField-Specific Parameters
+    
+    [Parameter] public int Min { get; set; } = int.MinValue;
+    [Parameter] public int Max { get; set; } = int.MaxValue;
+    [Parameter] public int Step { get; set; } = 1;
+    [Parameter] public bool HideSpinButtons { get; set; } = false;
+    
+    #endregion
+
+    #region Helper Methods
+    
+    /// <summary>
+    /// Override the base IsDisabled to handle numeric field specific logic
+    /// </summary>
+    protected override bool IsDisabled()
+    {
+        // Only disable when explicitly disabled via the Disabled parameter
+        // Loading states should NOT disable form controls - users should be able to continue working
+        return Disabled;
+    }
+    
+    protected override string GetClasses()
+    {
+        var baseClasses = base.GetClasses();
+        return $"{baseClasses} wallet-numeric-field";
+    }
+    
+    #endregion
+}

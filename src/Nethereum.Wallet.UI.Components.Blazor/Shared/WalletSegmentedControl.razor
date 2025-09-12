@@ -1,0 +1,66 @@
+@using MudBlazor
+@typeparam TValue
+
+<div class="wallet-segmented-control @(FullWidth ? "full-width" : "")">
+    @if (Options?.Any() == true)
+    {
+        @for (int i = 0; i < Options.Count; i++)
+        {
+            var option = Options[i];
+            var isSelected = EqualityComparer<TValue>.Default.Equals(option.Value, SelectedValue);
+            var isFirst = i == 0;
+            var isLast = i == Options.Count - 1;
+            
+            <button class="wallet-segment-button @(isSelected ? "selected" : "") @(isFirst ? "first" : "") @(isLast ? "last" : "")"
+                    @onclick="() => SelectOption(option.Value)"
+                    disabled="@Disabled">
+                
+                <div class="wallet-segment-content">
+                    @if (!string.IsNullOrEmpty(option.Icon))
+                    {
+                        <div class="wallet-segment-icon">
+                            <MudIcon Icon="@option.Icon" />
+                        </div>
+                    }
+                    <div class="wallet-segment-text">
+                        <div class="wallet-segment-title">@option.Title</div>
+                        @if (!string.IsNullOrEmpty(option.Description))
+                        {
+                            <div class="wallet-segment-description">@option.Description</div>
+                        }
+                    </div>
+                </div>
+            </button>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<WalletSegmentOption<TValue>> Options { get; set; } = new();
+    [Parameter] public TValue? SelectedValue { get; set; }
+    [Parameter] public EventCallback<TValue> SelectedValueChanged { get; set; }
+    [Parameter] public bool FullWidth { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; } = false;
+
+    private async Task SelectOption(TValue value)
+    {
+        if (!Disabled && !EqualityComparer<TValue>.Default.Equals(SelectedValue, value))
+        {
+            SelectedValue = value;
+            await SelectedValueChanged.InvokeAsync(value);
+        }
+    }
+}
+
+
+
+@* Helper class for segment options *@
+@code {
+    public class WalletSegmentOption<T>
+    {
+        public T Value { get; set; } = default!;
+        public string Title { get; set; } = "";
+        public string? Description { get; set; }
+        public string? Icon { get; set; }
+    }
+}

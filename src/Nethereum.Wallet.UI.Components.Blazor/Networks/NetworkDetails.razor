@@ -1,0 +1,977 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using System.Numerics
+@using System.Linq
+@using Nethereum.RPC.Chain
+@using static Nethereum.Wallet.UI.Components.Networks.NetworkDetailsLocalizer
+@using Nethereum.Wallet.Services.Network
+@implements IDisposable
+@inject NetworkDetailsViewModel ViewModel
+@inject IComponentLocalizer<NetworkDetailsViewModel> Localizer
+@inject IChainManagementService ChainManagementService
+
+<MudStack Spacing="4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+                   Variant="Variant.Text"
+                   OnClick="HandleExit">
+            @Localizer.GetString(Keys.BackToNetworks)
+        </MudButton>
+    </MudStack>
+
+<WalletFormLayout Title="@GetTitle()" 
+                  Subtitle="@GetSubtitle()"
+                  BackText="@Localizer.GetString(Keys.Back)"
+                  ShowBack="@(ViewModel.CurrentSection != NetworkDetailsViewModel.ViewSection.Overview)"
+                  ShowContinue="false"
+                  ShowPrimary="@ShowPrimaryAction()"
+                  PrimaryDisabled="@(!CanExecutePrimaryAction())"
+                  PrimaryText="@GetPrimaryActionText()"
+                  OnBack="@HandleBack"
+                  OnPrimary="@HandlePrimaryAction">
+    
+    <ActionButtons>
+        @if (ViewModel.CurrentSection == NetworkDetailsViewModel.ViewSection.Overview && ViewModel.Network != null)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.CheckCircle"
+                                   Text="@Localizer.GetString(Keys.SelectNetwork)"
+                                   OnClick="@HandleSelectNetwork"
+                                   Class="wallet-button-primary" />
+            
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Edit"
+                                   Text="@Localizer.GetString(Keys.EditNetwork)"
+                                   OnClick="@(() => NavigateToSection(NetworkDetailsViewModel.ViewSection.EditNetwork))" />
+            
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Settings"
+                                   Text="@Localizer.GetString(Keys.RpcConfiguration)"
+                                   OnClick="@(() => NavigateToSection(NetworkDetailsViewModel.ViewSection.RpcConfiguration))" />
+            
+            @if (CanRemoveNetwork())
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Delete"
+                                       Text="@Localizer.GetString(Keys.RemoveNetwork)"
+                                       Class="wallet-button-danger"
+                                       OnClick="@HandleRemoveNetwork" />
+            }
+        }
+        else if (ViewModel.CurrentSection == NetworkDetailsViewModel.ViewSection.RpcConfiguration && ViewModel.Network != null)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Refresh"
+                                   Text="@Localizer.GetString(Keys.RefreshFromChainList)"
+                                   OnClick="@HandleRefreshRpcsFromChainList" />
+            
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Cable"
+                                   Text="@Localizer.GetString(Keys.TestConnection)"
+                                   OnClick="@(() => ViewModel.TestNetworkConnectionCommand.ExecuteAsync(null))"
+                                   Disabled="@ViewModel.IsLoading" />
+            
+            <WalletBarActionButton Icon="@Icons.Material.Filled.NetworkCheck"
+                                   Text="@Localizer.GetString(Keys.TestAllRpcs)"
+                                   OnClick="@HandleTestAllRpcs"
+                                   Disabled="@ViewModel.IsLoading" />
+            
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Save"
+                                   Text="@Localizer.GetString(Keys.Save)"
+                                   OnClick="@(() => ViewModel.SaveRpcConfigurationCommand.ExecuteAsync(null))"
+                                   Class="wallet-button-primary"
+                                   Disabled="@ViewModel.IsLoading" />
+        }
+    </ActionButtons>
+    
+    <ChildContent>
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <WalletText TextType="WalletText.WalletTextType.Body"
+                               TextKey="@Keys.LoadingNetwork"
+                               Localizer="@Localizer"
+                               Class="mt-3" />
+                </div>
+            </WalletContentSection>
+        }
+        else if (ViewModel.Network != null)
+        {
+            @switch (ViewModel.CurrentSection)
+            {
+                case NetworkDetailsViewModel.ViewSection.Overview:
+                    <!-- Overview Section -->
+                    <WalletContentSection Class="spacing-tight">
+                        
+                        <!-- Network Overview Card -->
+                        <MudCard Class="wallet-card mb-4">
+                            <MudCardContent>
+                                <MudStack Spacing="3">
+                                    
+                                    <!-- Network Name -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   TextKey="@Keys.NetworkName"
+                                                   Localizer="@Localizer" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                                   Text="@ViewModel.DisplayName"
+                                                   Class="mt-1" />
+                                    </div>
+
+                                    <!-- Chain ID -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   TextKey="@Keys.ChainId"
+                                                   Localizer="@Localizer" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                                   Text="@ViewModel.Network.ChainId.ToString()"
+                                                   Class="mt-1" />
+                                    </div>
+
+                                    <!-- Native Currency -->
+                                    @if (ViewModel.Network.NativeCurrency != null)
+                                    {
+                                        <div>
+                                            <WalletText TextType="WalletText.WalletTextType.Label"
+                                                       TextKey="@Keys.Currency"
+                                                       Localizer="@Localizer" />
+                                            <WalletText TextType="WalletText.WalletTextType.Body"
+                                                       Text="@($"{ViewModel.Network.NativeCurrency.Name} ({ViewModel.Network.NativeCurrency.Symbol})")"
+                                                       Class="mt-1" />
+                                        </div>
+                                    }
+
+                                    <!-- RPC Endpoints Summary -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   TextKey="@Keys.RpcEndpoints"
+                                                   Localizer="@Localizer" />
+                                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                                   Text="@($"{ViewModel.TotalRpcCount} total, {ViewModel.ActiveRpcCount} active")"
+                                                   Class="mt-1" />
+                                    </div>
+
+                                    <!-- Block Explorers -->
+                                    @if (ViewModel.HasExplorers)
+                                    {
+                                        <div>
+                                            <WalletText TextType="WalletText.WalletTextType.Label"
+                                                       TextKey="@Keys.BlockExplorers"
+                                                       Localizer="@Localizer" />
+                                            <MudStack Spacing="1" Class="mt-1">
+                                                @foreach (var explorer in ViewModel.Explorers.Take(3))
+                                                {
+                                                    <MudLink Href="@explorer.Url" Target="_blank" Class="d-flex align-center">
+                                                        <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Class="mr-2" />
+                                                        @explorer.Name
+                                                    </MudLink>
+                                                }
+                                            </MudStack>
+                                        </div>
+                                    }
+
+                                    <!-- Network Status -->
+                                    <div>
+                                        <WalletText TextType="WalletText.WalletTextType.Label"
+                                                   TextKey="@Keys.NetworkStatus"
+                                                   Localizer="@Localizer" />
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                                            <MudChip T="string" Size="Size.Small" 
+                                                    Color="@(ViewModel.IsActive ? Color.Success : Color.Default)">
+                                                @(ViewModel.IsActive ? Localizer.GetString(Keys.Active) : Localizer.GetString(Keys.Inactive))
+                                            </MudChip>
+                                        </MudStack>
+                                    </div>
+
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                    </WalletContentSection>
+                    break;
+
+                case NetworkDetailsViewModel.ViewSection.EditNetwork:
+                    <!-- Edit Network Section -->
+                    <WalletFormSection>
+                        
+                        <MudStack Spacing="3">
+                            <!-- Network Name -->
+                            <WalletTextField @bind-Value="@ViewModel.NetworkConfig.NetworkName"
+                                           LabelKey="@Keys.NetworkName"
+                                           Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.NetworkName))"
+                                           ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.NetworkName))"
+                                           Required="true"
+                                           Disabled="false"
+                                           Loading="false"
+                                           Localizer="@Localizer" />
+                            
+                            <!-- Currency Information -->
+                            <MudText Typo="Typo.h6" Class="mt-4">@Localizer.GetString(Keys.CurrencySettings)</MudText>
+                            
+                            <MudGrid>
+                                <MudItem xs="12">
+                                    <WalletTextField @bind-Value="@ViewModel.NetworkConfig.CurrencySymbol"
+                                                   LabelKey="@Keys.CurrencySymbol"
+                                                   Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.CurrencySymbol))"
+                                                   ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.CurrencySymbol))"
+                                                   Required="true"
+                                                   Disabled="false"
+                                                   Loading="false"
+                                                   Localizer="@Localizer" />
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <WalletTextField @bind-Value="@ViewModel.NetworkConfig.CurrencyName"
+                                                   LabelKey="@Keys.CurrencyName"
+                                                   Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.CurrencyName))"
+                                                   ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.CurrencyName))"
+                                                   Required="true"
+                                                   Disabled="false"
+                                                   Loading="false"
+                                                   Localizer="@Localizer" />
+                                </MudItem>
+                            </MudGrid>
+                            
+                            <WalletNumericField @bind-Value="@ViewModel.NetworkConfig.CurrencyDecimals"
+                                              LabelKey="@Keys.CurrencyDecimals"
+                                              Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.CurrencyDecimals))"
+                                              ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.CurrencyDecimals))"
+                                              Min="0"
+                                              Max="18"
+                                              Disabled="false"
+                                              Localizer="@Localizer" />
+                            
+                            <!-- Network Flags -->
+                            <MudText Typo="Typo.h6" Class="mt-4">@Localizer.GetString(Keys.NetworkType)</MudText>
+                            
+                            <MudSwitch @bind-Value="@ViewModel.NetworkConfig.IsTestnet"
+                                      Label="@Localizer.GetString(Keys.TestnetNetwork)"
+                                      Color="Color.Primary" />
+                            
+                            <!-- EIP Support -->
+                            <MudText Typo="Typo.h6" Class="mt-4">@Localizer.GetString(Keys.ProtocolSupport)</MudText>
+                            
+                            <MudSwitch @bind-Value="@ViewModel.NetworkConfig.SupportEip155"
+                                      Label="@Localizer.GetString(Keys.Eip155Support)"
+                                      Color="Color.Primary" />
+                            
+                            <MudSwitch @bind-Value="@ViewModel.NetworkConfig.SupportEip1559"
+                                      Label="@Localizer.GetString(Keys.Eip1559Support)"
+                                      Color="Color.Primary" />
+                            
+                            <!-- Block Explorers -->
+                            <MudText Typo="Typo.h6" Class="mt-4">@Localizer.GetString(Keys.BlockExplorers)</MudText>
+                            
+                            @if (ViewModel.NetworkConfig.BlockExplorers.Any())
+                            {
+                                <MudStack Spacing="2">
+                                    @foreach (var explorer in ViewModel.NetworkConfig.BlockExplorers.ToList())
+                                    {
+                                        var explorerIndex = ViewModel.NetworkConfig.BlockExplorers.IndexOf(explorer);
+                                        <MudCard Outlined="true" Class="pa-3">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                <WalletTextField Value="@explorer"
+                                                            ValueChanged="@((string value) => UpdateExplorer(explorerIndex, value))"
+                                                            Label="@Localizer.GetString(Keys.ExplorerUrl)"
+                                                            Error="@ViewModel.NetworkConfig.HasExplorerError(explorerIndex)"
+                                                            ErrorText="@ViewModel.NetworkConfig.GetExplorerError(explorerIndex)"
+                                                            Style="flex-grow: 1; margin-right: 16px;"
+                                                            Placeholder="https://example.com"
+                                                            FieldType="WalletTextField.WalletTextFieldType.Url" />
+                                                
+                                                <!-- Action buttons grouped on the right -->
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <!-- Explore/Open button -->
+                                                    @if (!string.IsNullOrWhiteSpace(explorer) && !ViewModel.NetworkConfig.HasExplorerError(explorerIndex))
+                                                    {
+                                                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                                                                      Color="Color.Primary"
+                                                                      Size="Size.Small"
+                                                                      Href="@explorer"
+                                                                      Target="_blank"
+                                                                      />
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                                                                      Color="Color.Primary"
+                                                                      Size="Size.Small"
+                                                                      Disabled="true"
+                                                                      />
+                                                    }
+                                                    
+                                                    <!-- Delete button -->
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                  Color="Color.Error"
+                                                                  Size="Size.Small"
+                                                                  OnClick="@(() => ViewModel.RemoveExplorerCommand.Execute(explorer))"
+                                                                  />
+                                                </MudStack>
+                                            </MudStack>
+                                        </MudCard>
+                                    }
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudAlert Severity="Severity.Info" Class="mt-2">
+                                    @Localizer.GetString(Keys.NoExplorers)
+                                </MudAlert>
+                            }
+                            
+                            <!-- Add Explorer Form -->
+                            <MudCard Outlined="true" Class="pa-3 mt-4">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <WalletTextField @bind-Value="@ViewModel.NetworkConfig.NewExplorerUrl"
+                                                   LabelKey="@Keys.NewExplorerUrl"
+                                                   Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.NewExplorerUrl))"
+                                                   ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.NewExplorerUrl))"
+                                                   Placeholder="https://etherscan.io"
+                                                   Disabled="false"
+                                                   Style="flex-grow: 1; margin-right: 16px;"
+                                                   FieldType="WalletTextField.WalletTextFieldType.Search"
+                                                   Localizer="@Localizer" />
+                                    
+                                    <!-- Add button - more prominent -->
+                                    <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                  Color="Color.Primary"
+                                                  Size="Size.Large"
+                                                  OnClick="@(() => ViewModel.AddExplorerCommand.Execute(null))"
+                                                  Disabled="@(!ViewModel.NetworkConfig.CanAddExplorer)"
+                                                  />
+                                </MudStack>
+                            </MudCard>
+                            
+                        </MudStack>
+                        
+                    </WalletFormSection>
+                    break;
+
+                case NetworkDetailsViewModel.ViewSection.RpcConfiguration:
+                    <!-- RPC Configuration Section -->
+                    <WalletFormSection Title="@Localizer.GetString(Keys.RpcConfiguration)">
+                        
+                        <!-- RPC Selection Strategy and Endpoints List Combined -->
+                        <MudCard Class="wallet-card mb-4">
+                            <MudCardContent>
+                                <MudStack Spacing="3">
+                                    
+                                    <!-- RPC Selection Mode -->
+                                    <div>
+                                        <MudText Typo="Typo.h6">@Localizer.GetString(Keys.RpcSelectionStrategy)</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @Localizer.GetString(Keys.RpcSelectionStrategyDescription)
+                                        </MudText>
+                                    </div>
+                                    
+                                    <MudSelect T="RpcSelectionMode" @bind-Value="@ViewModel.RpcSelectionMode"
+                                              Label="@Localizer.GetString(Keys.SelectionStrategy)"
+                                              Variant="Variant.Filled">
+                                        <MudSelectItem Value="@Nethereum.Wallet.Services.Network.RpcSelectionMode.Single">
+                                            @Localizer.GetString(Keys.Single)
+                                        </MudSelectItem>
+                                        <MudSelectItem Value="@Nethereum.Wallet.Services.Network.RpcSelectionMode.RandomMultiple">
+                                            @Localizer.GetString(Keys.RandomMultiple)
+                                        </MudSelectItem>
+                                        <MudSelectItem Value="@Nethereum.Wallet.Services.Network.RpcSelectionMode.LoadBalanced">
+                                            @Localizer.GetString(Keys.LoadBalanced)
+                                        </MudSelectItem>
+                                    </MudSelect>
+                                    
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @GetRpcSelectionModeDescription(ViewModel.RpcSelectionMode)
+                                    </MudText>
+                                    
+                                    <!-- RPC Endpoints List -->
+                                    @if (ViewModel.HasRpcEndpoints)
+                                    {
+                                        <MudDivider />
+                                        
+                                        <div>
+                                            <MudText Typo="Typo.h6">@Localizer.GetString(Keys.RpcEndpoints)</MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                @if (ViewModel.RpcSelectionMode == Nethereum.Wallet.Services.Network.RpcSelectionMode.Single)
+                                                {
+                                                    @Localizer.GetString(Keys.SingleRpcModeDescription)
+                                                }
+                                                else
+                                                {
+                                                    @Localizer.GetString(Keys.MultipleRpcModeDescription)
+                                                }
+                                            </MudText>
+                                        </div>
+                            
+                                        @if (ViewModel.RpcSelectionMode == Nethereum.Wallet.Services.Network.RpcSelectionMode.Single)
+                                        {
+                                            <MudRadioGroup @bind-Value="SelectedSingleRpcUrl">
+                                                <MudStack Spacing="2">
+                                                @foreach (var rpc in ViewModel.RpcEndpoints)
+                                                {
+                                                    <MudCard Elevation="1" Class="@GetRpcCardClass(rpc)" Style="cursor: pointer;">
+                                                        <MudCardContent Class="pa-3">
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                                <MudStack Spacing="1" Style="flex-grow: 1; min-width: 0;">
+                                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                                        <MudRadio Value="@rpc.Url" Size="Size.Small" Color="Color.Primary" />
+                                                                            
+                                                                            <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                                                                @rpc.TypeDisplayName
+                                                                            </MudChip>
+                                                                            <MudChip T="string" Size="Size.Small" 
+                                                                                    Color="@(rpc.IsEnabled ? Color.Success : Color.Default)">
+                                                                                @rpc.StatusDisplayName
+                                                                            </MudChip>
+                                                                            
+                                                                            @if (rpc.IsTesting)
+                                                                            {
+                                                                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                                                            }
+                                                                            else if (!string.IsNullOrEmpty(rpc.TestResult))
+                                                                            {
+                                                                                @if (rpc.IsHealthy == true)
+                                                                                {
+                                                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Small" />
+                                                                                }
+                                                                            }
+                                                                            else if (!rpc.IsCustom)
+                                                                            {
+                                                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                                            }
+                                                                            
+                                                                            @if (rpc.IsCustom)
+                                                                            {
+                                                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                                                                    @Localizer.GetString(Keys.Custom)
+                                                                                </MudChip>
+                                                                            }
+                                                                        </MudStack>
+                                                                        <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                                                                            @rpc.Url
+                                                                        </MudText>
+                                                                    </MudStack>
+                                                                    <MudStack Row="true" Spacing="1">
+                                                                        <MudIconButton Icon="@Icons.Material.Filled.Cable"
+                                                                                      Size="Size.Small"
+                                                                                      Color="Color.Primary"
+                                                                                      OnClick="@(() => TestRpcEndpoint(rpc))"
+                                                                                      Disabled="@(rpc.IsTesting)" />
+                                                                        
+                                                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                                      Size="Size.Small"
+                                                                                      Color="Color.Error"
+                                                                                      OnClick="@(() => ViewModel.RemoveRpcEndpointCommand.ExecuteAsync(rpc))" />
+                                                                    </MudStack>
+                                                                </MudStack>
+                                                            </MudCardContent>
+                                                        </MudCard>
+                                                    }
+                                                </MudStack>
+                                            </MudRadioGroup>
+                                        }
+                                        else
+                                        {
+                                            <MudStack Spacing="2">
+                                                @foreach (var rpc in ViewModel.RpcEndpoints)
+                                                {
+                                                    <MudCard Elevation="1" Class="@GetRpcCardClass(rpc)" Style="cursor: pointer;">
+                                                        <MudCardContent Class="pa-3">
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                                <MudStack Spacing="1" Style="flex-grow: 1; min-width: 0;">
+                                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                                        <MudCheckBox T="bool" Value="@rpc.IsEnabled" 
+                                                                                    Size="Size.Small" Color="Color.Primary" 
+                                                                                    ValueChanged="@((bool value) => HandleMultipleRpcChange(rpc, value))" />
+                                                                    
+                                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                                                        @rpc.TypeDisplayName
+                                                                    </MudChip>
+                                                                    <MudChip T="string" Size="Size.Small" 
+                                                                            Color="@(rpc.IsEnabled ? Color.Success : Color.Default)">
+                                                                        @rpc.StatusDisplayName
+                                                                    </MudChip>
+                                                                    
+                                                                    <!-- RPC Health Status Indicator -->
+                                                                    @if (rpc.IsTesting)
+                                                                    {
+                                                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                                                    }
+                                                                    else if (!string.IsNullOrEmpty(rpc.TestResult))
+                                                                    {
+                                                                        @if (rpc.IsHealthy == true)
+                                                                        {
+                                                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Small" />
+                                                                        }
+                                                                    }
+                                                                    else if (!rpc.IsCustom)
+                                                                    {
+                                                                        <!-- ChainList RPCs start as presumed valid until tested -->
+                                                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                                    }
+                                                                    
+                                                                    @if (rpc.IsCustom)
+                                                                    {
+                                                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                                                            @Localizer.GetString(Keys.Custom)
+                                                                        </MudChip>
+                                                                    }
+                                                                </MudStack>
+                                                                <MudText Typo="Typo.body2" Style="word-break: break-all;">
+                                                                    @rpc.Url
+                                                                </MudText>
+                                                            </MudStack>
+                                                            <MudStack Row="true" Spacing="1">
+                                                                <!-- Individual RPC Test Button -->
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Cable"
+                                                                              Size="Size.Small"
+                                                                              Color="Color.Primary"
+                                                                              OnClick="@(() => TestRpcEndpoint(rpc))"
+                                                                              Disabled="@(rpc.IsTesting)" />
+                                                                
+                                                                <!-- Delete button for all RPCs -->
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                              Size="Size.Small"
+                                                                              Color="Color.Error"
+                                                                              OnClick="@(() => ViewModel.RemoveRpcEndpointCommand.ExecuteAsync(rpc))" />
+                                                            </MudStack>
+                                                        </MudStack>
+                                                    </MudCardContent>
+                                                </MudCard>
+                                                }
+                                            </MudStack>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                                      Title="@Localizer.GetString(Keys.NoRpcEndpoints)"
+                                                      Description="@Localizer.GetString(Keys.AddRpcEndpointsDescription)"
+                                                      Icon="@Icons.Material.Filled.Info" />
+                                    }
+                                    
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Add RPC Endpoint Section -->
+                        <MudCard Class="wallet-card">
+                            <MudCardContent>
+                                <MudStack Spacing="3">
+                                    <div>
+                                        <MudText Typo="Typo.h6">@Localizer.GetString(Keys.AddRpcEndpoint)</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @Localizer.GetString(Keys.AddRpcEndpointsDescription)
+                                        </MudText>
+                                    </div>
+                                    
+                                    <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
+                                        <WalletTextField @bind-Value="@ViewModel.NetworkConfig.NewRpcUrl"
+                                                       Label="@Localizer.GetString(Keys.RpcUrl)"
+                                                       Error="@ViewModel.NetworkConfig.HasFieldErrors(nameof(ViewModel.NetworkConfig.NewRpcUrl))"
+                                                       ErrorText="@ViewModel.NetworkConfig.GetFieldError(nameof(ViewModel.NetworkConfig.NewRpcUrl))"
+                                                       Placeholder="e.g., https://mainnet.infura.io/v3/your-project-id"
+                                                       Disabled="false"
+                                                       Style="flex-grow: 1;" />
+                                        
+                                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                     Color="Color.Primary" 
+                                                     Size="Size.Large"
+                                                     OnClick="@(() => ViewModel.AddCustomRpcCommand.ExecuteAsync(null))"
+                                                     Title="@Localizer.GetString(Keys.AddRpcEndpoint)" />
+                                    </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                    </WalletFormSection>
+                    break;
+
+            }
+
+            <!-- Success/Error Messages -->
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                  Title="@Localizer.GetString(Keys.Error)"
+                                  Description="@ViewModel.ErrorMessage"
+                                  Icon="@Icons.Material.Filled.Error" />
+                </WalletContentSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                  Title="@Localizer.GetString(Keys.Success)"
+                                  Description="@ViewModel.SuccessMessage"
+                                  Icon="@Icons.Material.Filled.CheckCircle" />
+                </WalletContentSection>
+            }
+        }
+        else
+        {
+            <!-- Empty state -->
+            <WalletContentSection Class="spacing-loose">
+                <WalletEmptyState Icon="@Icons.Material.Outlined.Language"
+                                Title="@Localizer.GetString(Keys.NetworkNotFound)"
+                                Description="@Localizer.GetString(Keys.NetworkNotFoundDescription)" />
+            </WalletContentSection>
+        }
+    </ChildContent>
+</WalletFormLayout>
+</MudStack>
+
+@code {
+    [Parameter] public BigInteger? NetworkId { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private string? SelectedSingleRpcUrl
+    {
+        get
+        {
+            return ViewModel.RpcEndpoints?.FirstOrDefault(r => r.IsEnabled)?.Url;
+        }
+        set
+        {
+            if (!string.IsNullOrEmpty(value) && ViewModel.RpcEndpoints != null)
+            {
+                // Clear previous error messages
+                ViewModel.ErrorMessage = null;
+                
+                // Update all endpoints - only the selected one should be enabled
+                foreach (var endpoint in ViewModel.RpcEndpoints)
+                {
+                    endpoint.IsEnabled = endpoint.Url == value;
+                }
+                
+                StateHasChanged();
+            }
+        }
+    }
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        if (NetworkId.HasValue)
+        {
+            await ViewModel.InitializeCommand.ExecuteAsync(NetworkId.Value);
+            // Initialize selected RPC state after loading network data
+            InitializeSelectedRpc();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (NetworkId.HasValue && NetworkId != ViewModel.Network?.ChainId)
+        {
+            await ViewModel.InitializeCommand.ExecuteAsync(NetworkId.Value);
+            // Initialize selected RPC for Single mode
+            InitializeSelectedRpc();
+        }
+    }
+
+    private void InitializeSelectedRpc()
+    {
+        // Ensure at least one RPC is selected for both modes
+        if (ViewModel.RpcEndpoints?.Any() == true && !ViewModel.RpcEndpoints.Any(r => r.IsEnabled))
+        {
+            ViewModel.RpcEndpoints.First().IsEnabled = true;
+        }
+        
+        // For single mode, ensure only one RPC is selected
+        if (ViewModel.RpcSelectionMode == Nethereum.Wallet.Services.Network.RpcSelectionMode.Single)
+        {
+            var enabledRpcs = ViewModel.RpcEndpoints?.Where(r => r.IsEnabled).ToList();
+            if (enabledRpcs?.Count > 1)
+            {
+                // Disable all except the first enabled one
+                var firstEnabled = enabledRpcs.First();
+                foreach (var rpc in enabledRpcs.Where(r => r.Url != firstEnabled.Url))
+                {
+                    rpc.IsEnabled = false;
+                }
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // If RPC selection mode changed, reinitialize the selection state
+        if (e.PropertyName == nameof(ViewModel.RpcSelectionMode))
+        {
+            InitializeSelectedRpc();
+        }
+        
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Navigation methods
+    private void NavigateToSection(NetworkDetailsViewModel.ViewSection section)
+    {
+        ViewModel.NavigateToSection(section);
+        StateHasChanged();
+    }
+
+    private void HandleBack()
+    {
+        ViewModel.NavigateToSection(NetworkDetailsViewModel.ViewSection.Overview);
+        StateHasChanged();
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandleRefreshRpcsFromChainList()
+    {
+        if (ViewModel.Network?.ChainId != null)
+        {
+            var success = await ChainManagementService.RefreshRpcsFromChainListAsync(ViewModel.Network.ChainId);
+            if (success)
+            {
+                await ViewModel.LoadNetworkAsync(ViewModel.Network.ChainId);
+            }
+        }
+    }
+
+    // Helper methods for WalletFormLayout
+    private string GetTitle()
+    {
+        return ViewModel.DisplayName; // Always show network name for ALL sections
+    }
+
+    private string GetSubtitle()
+    {
+        return ViewModel.CurrentSection switch
+        {
+            NetworkDetailsViewModel.ViewSection.Overview => Localizer.GetString(Keys.NetworkOverview),
+            NetworkDetailsViewModel.ViewSection.EditNetwork => Localizer.GetString(Keys.EditNetwork),
+            NetworkDetailsViewModel.ViewSection.RpcConfiguration => Localizer.GetString(Keys.RpcConfiguration),
+            _ => Localizer.GetString(Keys.NetworkDetails)
+        };
+    }
+
+    private string GetRpcSelectionModeDescription(RpcSelectionMode mode)
+    {
+        return mode switch
+        {
+            Nethereum.Wallet.Services.Network.RpcSelectionMode.Single => Localizer.GetString(Keys.SingleDescription),
+            Nethereum.Wallet.Services.Network.RpcSelectionMode.RandomMultiple => Localizer.GetString(Keys.RandomMultipleDescription),
+            Nethereum.Wallet.Services.Network.RpcSelectionMode.LoadBalanced => Localizer.GetString(Keys.LoadBalancedDescription),
+            _ => Localizer.GetString(Keys.DefaultStrategyDescription)
+        };
+    }
+
+    private string GetPrimaryActionText()
+    {
+        return ViewModel.CurrentSection switch
+        {
+            NetworkDetailsViewModel.ViewSection.EditNetwork => Localizer.GetString(Keys.SaveChanges),
+            _ => ""
+        };
+    }
+
+    private bool ShowPrimaryAction()
+    {
+        return ViewModel.CurrentSection switch
+        {
+            NetworkDetailsViewModel.ViewSection.EditNetwork => true,
+            NetworkDetailsViewModel.ViewSection.RpcConfiguration => false, // Action buttons handled in ActionButtons section
+            _ => false
+        };
+    }
+
+    private bool CanExecutePrimaryAction()
+    {
+        return ViewModel.CurrentSection switch
+        {
+            NetworkDetailsViewModel.ViewSection.EditNetwork => !ViewModel.IsLoading && ViewModel.IsEditFormValid,
+            NetworkDetailsViewModel.ViewSection.RpcConfiguration => false, // Action buttons handled in ActionButtons section
+            _ => false
+        };
+    }
+
+    private async Task HandlePrimaryAction()
+    {
+        switch (ViewModel.CurrentSection)
+        {
+            case NetworkDetailsViewModel.ViewSection.EditNetwork:
+                if (ViewModel.SaveNetworkChangesCommand.CanExecute(null))
+                {
+                    await ViewModel.SaveNetworkChangesCommand.ExecuteAsync(null);
+                    ViewModel.NavigateToSection(NetworkDetailsViewModel.ViewSection.Overview);
+                }
+                break;
+        }
+        StateHasChanged();
+    }
+
+    private bool CanRemoveNetwork()
+    {
+        return ViewModel.Network != null && 
+               !ChainDefaultFeaturesServicesRepository.GetDefaultChainFeatures()
+                   .Any(c => c.ChainId == ViewModel.Network.ChainId);
+    }
+
+    private async Task HandleRemoveNetwork()
+    {
+        try
+        {
+            await ViewModel.RemoveNetworkCommand.ExecuteAsync(null);
+            
+            // If no exception, removal was successful, navigate back
+            await OnExit.InvokeAsync();
+        }
+        catch
+        {
+            // Error handling is done in the ViewModel
+            // No additional action needed here
+        }
+    }
+
+    private void UpdateExplorer(int index, string value)
+    {
+        if (index >= 0 && index < ViewModel.NetworkConfig.BlockExplorers.Count)
+        {
+            ViewModel.NetworkConfig.UpdateExplorerUrl(index, value);
+        }
+    }
+
+    private async Task TestRpcEndpoint(dynamic rpc)
+    {
+        // Test individual RPC endpoint
+        if (ViewModel.TestRpcEndpointCommand != null && ViewModel.TestRpcEndpointCommand.CanExecute(rpc))
+        {
+            await ViewModel.TestRpcEndpointCommand.ExecuteAsync(rpc);
+        }
+    }
+
+    private async Task HandleSelectNetwork()
+    {
+        if (ViewModel.Network != null)
+        {
+            // Select this network for wallet use
+            if (ViewModel.ActivateNetworkCommand != null && ViewModel.ActivateNetworkCommand.CanExecute(null))
+            {
+                await ViewModel.ActivateNetworkCommand.ExecuteAsync(null);
+            }
+        }
+    }
+
+    private async Task HandleTestAllRpcs()
+    {
+        if (ViewModel.RpcEndpoints?.Any() == true)
+        {
+            // Test all RPC endpoints
+            foreach (var rpc in ViewModel.RpcEndpoints)
+            {
+                await TestRpcEndpoint(rpc);
+            }
+        }
+    }
+
+    private async Task HandleRemoveFailedRpcs()
+    {
+        if (ViewModel.RpcEndpoints?.Any() == true)
+        {
+            var failedRpcs = ViewModel.RpcEndpoints.Where(rpc => rpc.IsHealthy == false).ToList();
+            
+            foreach (var failedRpc in failedRpcs)
+            {
+                if (ViewModel.RemoveRpcEndpointCommand != null && ViewModel.RemoveRpcEndpointCommand.CanExecute(failedRpc))
+                {
+                    await ViewModel.RemoveRpcEndpointCommand.ExecuteAsync(failedRpc);
+                }
+            }
+        }
+    }
+
+    private string GetRpcCardClass(dynamic rpc)
+    {
+        var baseClass = "rpc-endpoint-card";
+        
+        if (rpc.IsEnabled)
+        {
+            baseClass += " active";
+        }
+        else
+        {
+            baseClass += " inactive";
+        }
+        
+        // Add health status classes
+        if (rpc.IsTesting)
+        {
+            baseClass += " testing";
+        }
+        else if (rpc.IsHealthy == true)
+        {
+            baseClass += " healthy";
+        }
+        else if (rpc.IsHealthy == false)
+        {
+            baseClass += " unhealthy";
+        }
+        else if (!rpc.IsCustom && string.IsNullOrEmpty(rpc.TestResult))
+        {
+            // ChainList RPCs without test results are presumed valid
+            baseClass += " presumed-valid";
+        }
+        
+        return baseClass;
+    }
+
+
+    private void HandleMultipleRpcChange(RpcEndpointViewModel rpc, bool isChecked)
+    {
+        // Clear any previous error messages
+        ViewModel.ErrorMessage = null;
+        
+        if (!isChecked)
+        {
+            // Trying to disable - ensure at least one remains enabled
+            var enabledCount = ViewModel.RpcEndpoints.Count(r => r.IsEnabled);
+            if (enabledCount <= 1)
+            {
+                // Don't allow disabling the last enabled RPC
+                ViewModel.ErrorMessage = "At least one RPC endpoint must remain selected";
+                // Force the checkbox back to checked state
+                rpc.IsEnabled = true;
+                StateHasChanged();
+                return;
+            }
+        }
+        
+        // Update the state (both enabling and valid disabling)
+        rpc.IsEnabled = isChecked;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+        ViewModel?.Dispose();
+    }
+}
+

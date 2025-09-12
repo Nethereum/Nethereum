@@ -1,0 +1,86 @@
+/* WalletMnemonicDisplay.razor component scoped styles */
+.wallet-mnemonic-display {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-md, 1rem);
+        padding: var(--wallet-space-md, 1rem);
+        border: 2px dashed var(--wallet-error, #dc2626);
+        border-radius: var(--wallet-radius-md, 8px);
+        background: var(--wallet-error-light, #fef2f2);
+        margin: var(--wallet-space-md, 1rem) 0;
+    }
+    
+    .mnemonic-content {
+        flex: 1;
+    }
+    
+    .mnemonic-text-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: var(--wallet-space-sm, 0.5rem);
+        margin-bottom: var(--wallet-space-md, 1rem);
+    }
+    
+    .mnemonic-word-item {
+        display: flex;
+        align-items: center;
+        gap: var(--wallet-space-xs, 0.25rem);
+        padding: var(--wallet-space-xs, 0.25rem) var(--wallet-space-sm, 0.5rem);
+        background: var(--wallet-surface, #ffffff);
+        border: 1px solid var(--wallet-border, #e5e7eb);
+        border-radius: var(--wallet-radius-sm, 4px);
+    }
+    
+    .word-number {
+        font-size: var(--wallet-font-xs, 0.75rem);
+        color: var(--wallet-text-secondary, #6b7280);
+        min-width: 20px;
+        text-align: center;
+    }
+    
+    .word-text {
+        font-family: var(--wallet-font-mono, 'JetBrains Mono', monospace);
+        font-size: var(--wallet-font-sm, 0.875rem);
+        color: var(--wallet-text-primary, #111827);
+        user-select: all;
+    }
+    
+    .mnemonic-actions {
+        display: flex;
+        justify-content: center;
+        gap: var(--wallet-space-sm, 0.5rem);
+        flex-shrink: 0;
+    }
+    
+    .mnemonic-qr {
+        display: flex;
+        justify-content: center;
+        margin-top: var(--wallet-space-md, 1rem);
+        padding-top: var(--wallet-space-md, 1rem);
+        border-top: 1px solid var(--wallet-border, #e5e7eb);
+    }
+    
+    @media (max-width: 600px) {
+        .mnemonic-text-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .mnemonic-word-item {
+            padding: var(--wallet-space-xs, 0.25rem);
+        }
+        
+        .word-number {
+            min-width: 16px;
+            font-size: 0.6875rem;
+        }
+        
+        .word-text {
+            font-size: 0.8125rem;
+        }
+    }
+    
+    @media (max-width: 400px) {
+        .mnemonic-text-grid {
+            grid-template-columns: 1fr;
+        }
+    }

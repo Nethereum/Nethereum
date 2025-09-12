@@ -1,0 +1,261 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@inherits WalletFormControlBase
+
+<MudTextField Value="@Value"
+              ValueChanged="@ValueChanged"
+              Label="@GetLabel()"
+              Placeholder="@GetPlaceholder()"
+              HelperText="@GetHelpText()"
+              Variant="@GetVariant()"
+              Class="@GetClasses()"
+              Style="@GetFieldStyle()"
+              Required="@Required"
+              RequiredError="@GetRequiredError()"
+              Disabled="@IsDisabled()"
+              ReadOnly="@ReadOnly"
+              InputType="@GetInputType()"
+              Lines="@Lines"
+              MaxLength="@MaxLength"
+              Error="@Error"
+              ErrorText="@ErrorText"
+              Adornment="@GetAdornment()"
+              AdornmentIcon="@GetAdornmentIcon()"
+              OnAdornmentClick="@HandleAdornmentClick"
+              AdornmentAriaLabel="@GetAdornmentAriaLabel()"
+              Suffix="@Suffix"
+              Margin="Margin.Dense"
+              T="string"
+              @attributes="GetFilteredAdditionalAttributes()" />
+
+@code {
+    #region Value Binding
+    
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    
+    #endregion
+
+    #region TextField-Specific Parameters
+    
+    [Parameter] public WalletTextFieldType FieldType { get; set; } = WalletTextFieldType.Text;
+    [Parameter] public int Lines { get; set; } = 1;
+    [Parameter] public int MaxLength { get; set; } = 1000;
+    [Parameter] public string ValidationPattern { get; set; } = "";
+    
+    // Error handling parameters
+    [Parameter] public bool Error { get; set; }
+    [Parameter] public string ErrorText { get; set; } = "";
+    
+    // Reveal toggle parameters (for Password/PrivateKey fields)
+    [Parameter] public bool ShowRevealToggle { get; set; }
+    [Parameter] public bool IsRevealed { get; set; }
+    [Parameter] public EventCallback OnToggleReveal { get; set; }
+    [Parameter] public string ToggleRevealAriaLabel { get; set; } = "";
+    
+    // Action icon parameters (for refresh, decode, copy, etc.)
+    [Parameter] public string ActionIcon { get; set; } = "";
+    [Parameter] public EventCallback OnActionClick { get; set; }
+    [Parameter] public string ActionTooltip { get; set; } = "";
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsMonospace { get; set; }
+    [Parameter] public string Suffix { get; set; } = "";
+    
+    #endregion
+
+    #region Helper Methods
+    
+    /// <summary>
+    /// Override the base IsDisabled to handle text field specific logic
+    /// </summary>
+    protected override bool IsDisabled()
+    {
+        // Only disable when explicitly disabled via the Disabled parameter
+        // Loading states should NOT disable form controls - users should be able to continue working
+        return Disabled;
+    }
+    
+    private InputType GetInputType()
+    {
+        // Handle reveal toggle for password and private key fields
+        if (ShowRevealToggle && (FieldType == WalletTextFieldType.Password || FieldType == WalletTextFieldType.PrivateKey))
+        {
+            return IsRevealed ? InputType.Text : InputType.Password;
+        }
+        
+        return FieldType switch
+        {
+            WalletTextFieldType.Password => InputType.Password,
+            WalletTextFieldType.PrivateKey => InputType.Password,
+            WalletTextFieldType.Email => InputType.Email,
+            WalletTextFieldType.Tel => InputType.Telephone,
+            WalletTextFieldType.Url => InputType.Url,
+            WalletTextFieldType.Search => InputType.Search,
+            _ => InputType.Text
+        };
+    }
+    
+    protected override string GetClasses()
+    {
+        var baseClasses = base.GetClasses();
+        
+        // Add field-type specific classes
+        var typeClass = FieldType switch
+        {
+            WalletTextFieldType.Address => "wallet-address-field",
+            WalletTextFieldType.Mnemonic => "wallet-mnemonic-field",
+            WalletTextFieldType.PrivateKey => "wallet-privatekey-field",
+            WalletTextFieldType.Password => "wallet-password-field",
+            _ => ""
+        };
+        
+        return !string.IsNullOrEmpty(typeClass) ? $"{baseClasses} {typeClass}" : baseClasses;
+    }
+    
+    private Adornment GetAdornment()
+    {
+        if (ShowRevealToggle || 
+            (FieldType == WalletTextFieldType.Search && !string.IsNullOrEmpty(Value)) || 
+            HasActionButton() ||
+            (FieldType == WalletTextFieldType.Address && !string.IsNullOrEmpty(Value)))
+            return Adornment.End;
+        return Adornment.None;
+    }
+    
+    private bool HasActionButton()
+    {
+        return !string.IsNullOrEmpty(ActionIcon) && OnActionClick.HasDelegate;
+    }
+    
+    private string GetAdornmentIcon()
+    {
+        if (ShowRevealToggle)
+        {
+            return IsRevealed ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility;
+        }
+        
+        if (FieldType == WalletTextFieldType.Search && !string.IsNullOrEmpty(Value))
+        {
+            return Icons.Material.Filled.Clear;
+        }
+        
+        if (HasActionButton())
+        {
+            return ActionIcon;
+        }
+        
+        if (FieldType == WalletTextFieldType.Address && !string.IsNullOrEmpty(Value))
+        {
+            return Icons.Material.Filled.ContentCopy;
+        }
+        
+        return "";
+    }
+    
+    private async Task HandleAdornmentClick()
+    {
+        if (ShowRevealToggle && OnToggleReveal.HasDelegate)
+        {
+            await OnToggleReveal.InvokeAsync();
+        }
+        else if (FieldType == WalletTextFieldType.Search && !string.IsNullOrEmpty(Value))
+        {
+            // Clear search field
+            await ValueChanged.InvokeAsync("");
+        }
+        else if (HasActionButton())
+        {
+            await HandleActionClick();
+        }
+        else if (FieldType == WalletTextFieldType.Address && !string.IsNullOrEmpty(Value))
+        {
+            await CopyToClipboard(Value);
+        }
+    }
+    
+    private async Task HandleActionClick()
+    {
+        if (OnActionClick.HasDelegate)
+        {
+            await OnActionClick.InvokeAsync();
+        }
+    }
+    
+    private string GetAdornmentAriaLabel()
+    {
+        if (ShowRevealToggle)
+            return ToggleRevealAriaLabel;
+            
+        if (FieldType == WalletTextFieldType.Search && !string.IsNullOrEmpty(Value))
+            return "Clear search";
+            
+        if (HasActionButton())
+            return ActionTooltip;
+            
+        return "";
+    }
+    
+    private string GetFieldStyle()
+    {
+        var baseStyle = Style ?? "";
+        if (IsMonospace)
+        {
+            var monoStyle = "font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;";
+            baseStyle = string.IsNullOrEmpty(baseStyle) ? monoStyle : $"{baseStyle} {monoStyle}";
+        }
+        return baseStyle;
+    }
+    
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            // TODO: Show "Copied!" notification - could add a parameter for this
+        }
+        catch (Exception)
+        {
+            // Fallback for browsers that don't support clipboard API
+            Console.WriteLine("Clipboard copy failed - browser may not support navigator.clipboard");
+        }
+    }
+    
+    /// <summary>
+    /// Filter out attributes that could conflict with our explicit settings
+    /// </summary>
+    private Dictionary<string, object> GetFilteredAdditionalAttributes()
+    {
+        if (AdditionalAttributes == null) return new Dictionary<string, object>();
+        
+        var filtered = new Dictionary<string, object>(AdditionalAttributes);
+        
+        // Remove attributes that we set explicitly to prevent conflicts
+        filtered.Remove("disabled");
+        filtered.Remove("Disabled");
+        filtered.Remove("loading");
+        filtered.Remove("Loading");
+        
+        return filtered;
+    }
+    
+    #endregion
+}
+
+@code {
+    /// <summary>
+    /// Defines the types of wallet-specific text fields
+    /// </summary>
+    public enum WalletTextFieldType
+    {
+        Text,
+        Password,
+        Email,
+        Tel,
+        Url,
+        Search,
+        Address,      // Ethereum address
+        Mnemonic,     // Mnemonic phrase
+        PrivateKey    // Private key
+    }
+}

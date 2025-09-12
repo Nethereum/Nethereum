@@ -1,0 +1,94 @@
+/* AccountCard.razor component scoped styles */
+.wallet-card {
+    transition: all 0.2s ease-in-out;
+    border-radius: 12px;
+    width: 100%;
+}
+
+.account-card {
+    margin-bottom: 8px;
+}
+
+.account-card .mud-card-content {
+    width: 100%;
+}
+
+.wallet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.wallet-card-selected {
+    background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);
+}
+
+.wallet-card-compact {
+    margin-bottom: 4px;
+}
+
+.wallet-card-compact .mud-card-content {
+    padding: 8px !important;
+}
+
+.wallet-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.identicon-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}.wallet-card {
+    transition: all 0.2s ease-in-out;
+    border-radius: 12px;
+    width: 100%;
+}
+
+.account-card {
+    margin-bottom: 8px;
+}
+
+.account-card .mud-card-content {
+    width: 100%;
+}
+
+.wallet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.wallet-card-selected {
+    background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);
+}
+
+.wallet-card-compact {
+    margin-bottom: 4px;
+}
+
+.wallet-card-compact .mud-card-content {
+    padding: 8px !important;
+}
+
+.wallet-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.identicon-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}

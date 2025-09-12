@@ -1,0 +1,10 @@
+/* ViewOnlyAccountCreation.razor component scoped styles */
+.wallet-form-steps {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wallet-space-md, 1rem);
+    }
+
+    .wallet-monospace {
+        font-family: 'Roboto Mono', 'Courier New', monospace !important;
+    }

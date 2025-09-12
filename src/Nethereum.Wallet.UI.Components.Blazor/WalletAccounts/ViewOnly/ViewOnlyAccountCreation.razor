@@ -1,0 +1,273 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly.ViewOnlyAccountEditorLocalizer
+@inject IJSRuntime JSRuntime
+@inject IComponentLocalizer<ViewOnlyAccountCreationViewModel> Localizer
+@inject ISnackbar Snackbar
+
+<WalletFormLayout Title="@GetTitle()"
+                  Subtitle="@GetSubtitle()"
+                  Steps="@formSteps"
+                  CurrentStepIndex="@((int)CurrentStep)"
+                  ExitText="@GetExitText()"
+                  BackText="@Localizer.GetString(Keys.BackButtonText)"
+                  ContinueText="@Localizer.GetString(Keys.ContinueButtonText)"
+                  PrimaryText="@Localizer.GetString(Keys.AddAccountText)"
+                  StepLocalizer="@Localizer"
+                  ShowBack="@(CurrentStep > FormStep.Setup)"
+                  ShowContinue="@(CurrentStep < FormStep.Confirm && CanContinue())"
+                  ShowPrimary="@(CurrentStep == FormStep.Confirm)"
+                  ContinueDisabled="@(!CanContinue())"
+                  PrimaryDisabled="@(!ViewModel.CanCreateAccount)"
+                  OnExit="@HandleExit"
+                  OnBack="@HandleBack"
+                  OnContinue="@HandleContinue"
+                  OnPrimary="@CreateAccount">
+    
+    <div class="wallet-form-steps">
+        @switch (CurrentStep)
+        {
+            case FormStep.Setup:
+                <!-- Step 1: Account Name -->
+                <WalletFormSection Title="@Localizer.GetString(Keys.AccountNameLabel)">
+                    <WalletTextField @bind-Value="ViewModel.Label"
+                                     LabelKey="@Keys.AccountNameLabel"
+                                     PlaceholderKey="@Keys.AccountNamePlaceholder"
+                                     HelpKey="@Keys.AccountNameHelperText"
+                                     Localizer="@Localizer" />
+                </WalletFormSection>
+                
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                Title="@Localizer.GetString(Keys.ViewOnlyAccountTitle)"
+                                Description="@Localizer.GetString(Keys.ViewOnlyAccountDescription)"
+                                Icon="@Icons.Material.Filled.Visibility" />
+                break;
+
+            case FormStep.Address:
+                <!-- Step 2: Enter Address -->
+                <WalletFormSection Title="@Localizer.GetString(Keys.EnterAddressTitle)">
+                    <WalletTextField @bind-Value="ViewModel.ViewOnlyAddress"
+                                     LabelKey="@Keys.AddressLabel"
+                                     PlaceholderKey="@Keys.AddressPlaceholder"
+                                     HelpKey="@Keys.AddressHelperText"
+                                     RequiredErrorKey="@Keys.AddressRequired"
+                                     FieldType="WalletTextField.WalletTextFieldType.Address"
+                                     Required="true"
+                                     Class="wallet-monospace"
+                                     Localizer="@Localizer" />
+                </WalletFormSection>
+
+                @if (!string.IsNullOrEmpty(ViewModel.ViewOnlyAddress))
+                {
+                    @if (IsValidAddress())
+                    {
+                        <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                        Title="@Localizer.GetString(Keys.ValidAddressText)"
+                                        Description="@Localizer.GetString(Keys.ValidAddressDescription)"
+                                        Icon="@Icons.Material.Filled.CheckCircle" />
+                    }
+                    else
+                    {
+                        <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
+                                        Title="@Localizer.GetString(Keys.InvalidAddressText)"
+                                        Description="@Localizer.GetString(Keys.InvalidEthereumAddressError)"
+                                        Icon="@Icons.Material.Filled.Warning" />
+                    }
+                }
+
+                <!-- What You Can Do with View-Only -->
+                <WalletContentSection Class="spacing-tight">
+                    <MudText Typo="Typo.h6" Class="mb-3">@Localizer.GetString(Keys.WhatYouCanDoTitle)</MudText>
+                    <MudList T="string" Dense="true">
+                        <MudListItem T="string" Icon="@Icons.Material.Filled.AccountBalance">
+                            @Localizer.GetString(Keys.ViewBalanceText)
+                        </MudListItem>
+                        <MudListItem T="string" Icon="@Icons.Material.Filled.History">
+                            @Localizer.GetString(Keys.ViewTransactionsText)
+                        </MudListItem>
+                        <MudListItem T="string" Icon="@Icons.Material.Filled.Collections">
+                            @Localizer.GetString(Keys.ViewNFTsText)
+                        </MudListItem>
+                        <MudListItem T="string" Icon="@Icons.Material.Filled.Analytics">
+                            @Localizer.GetString(Keys.TrackPortfolioText)
+                        </MudListItem>
+                    </MudList>
+                </WalletContentSection>
+                break;
+
+            case FormStep.Confirm:
+                <!-- Step 3: Confirm -->
+                <WalletFormSection Title="@Localizer.GetString(Keys.ConfirmDetailsTitle)">
+                    <MudStack Spacing="3">
+                        <!-- Account Name -->
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.AccountNameLabel)
+                            </MudText>
+                            <MudText Typo="Typo.body1">
+                                @(!string.IsNullOrWhiteSpace(ViewModel.Label) ? ViewModel.Label : Localizer.GetString(Keys.UnnamedAccount))
+                            </MudText>
+                        </div>
+
+                        <!-- Address -->
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.AddressLabel)
+                            </MudText>
+                            <MudText Typo="Typo.body1" Class="wallet-monospace">
+                                @ViewModel.ViewOnlyAddress
+                            </MudText>
+                        </div>
+
+                        <!-- Account Type -->
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.AccountTypeLabel)
+                            </MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Visibility">
+                                @Localizer.GetString(Keys.ViewOnlyAccountType)
+                            </MudChip>
+                        </div>
+                    </MudStack>
+                </WalletFormSection>
+
+                <!-- Security Notice -->
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                Title="@Localizer.GetString(Keys.SecurityNoticeTitle)"
+                                Description="@Localizer.GetString(Keys.ViewOnlySecurityNotice)"
+                                Icon="@Icons.Material.Filled.Security" />
+                break;
+        }
+
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                            Title="@Localizer.GetString(Keys.Error)"
+                            Description="@ViewModel.ErrorMessage"
+                            Icon="@Icons.Material.Filled.Error" />
+        }
+    </div>
+</WalletFormLayout>
+
+@code {
+    [Parameter] required public ViewOnlyAccountCreationViewModel ViewModel { get; set; }
+    [Parameter] public EventCallback OnAccountCreated { get; set; }
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+    [Parameter] public bool ShowBackToLogin { get; set; } = true;
+    [Parameter] public bool ShowBackToAccountSelection { get; set; } = true;
+
+    private enum FormStep
+    {
+        Setup = 0,
+        Address = 1,
+        Confirm = 2
+    }
+
+    private FormStep CurrentStep = FormStep.Setup;
+
+    private List<WalletFormStep> formSteps = new()
+    {
+        new() { LocalizationKey = "StepSetupLabel", Icon = Icons.Material.Filled.Label },
+        new() { LocalizationKey = "StepAddressLabel", Icon = Icons.Material.Filled.AccountBox },
+        new() { LocalizationKey = "StepConfirmLabel", Icon = Icons.Material.Filled.CheckCircle }
+    };
+
+    protected override void OnInitialized()
+    {
+        // Reset ViewModel state when component is initialized
+        ViewModel.Reset();
+    }
+
+    private string GetTitle()
+    {
+        return CurrentStep switch
+        {
+            FormStep.Setup => Localizer.GetString(Keys.SetupAccountTitle),
+            FormStep.Address => Localizer.GetString(Keys.EnterAddressTitle),
+            FormStep.Confirm => Localizer.GetString(Keys.ConfirmDetailsTitle),
+            _ => Localizer.GetString(Keys.AddViewOnlyAccount)
+        };
+    }
+
+    private string GetSubtitle()
+    {
+        return CurrentStep switch
+        {
+            FormStep.Setup => Localizer.GetString(Keys.SetupAccountSubtitle),
+            FormStep.Address => Localizer.GetString(Keys.EnterAddressSubtitle),
+            FormStep.Confirm => Localizer.GetString(Keys.ConfirmDetailsSubtitle),
+            _ => ""
+        };
+    }
+
+    private string GetExitText()
+    {
+        if (ShowBackToLogin)
+            return Localizer.GetString(Keys.BackToLoginText);
+        if (ShowBackToAccountSelection)
+            return Localizer.GetString(Keys.BackToAccountSelectionText);
+        return Localizer.GetString(Keys.Exit);
+    }
+
+    private bool CanContinue()
+    {
+        return CurrentStep switch
+        {
+            FormStep.Setup => true, // Name is optional
+            FormStep.Address => IsValidAddress(),
+            _ => false
+        };
+    }
+
+    private bool IsValidAddress()
+    {
+        return !string.IsNullOrWhiteSpace(ViewModel.ViewOnlyAddress) && 
+               ViewModel.ViewOnlyAddress.StartsWith("0x") && 
+               ViewModel.ViewOnlyAddress.Length == 42;
+    }
+
+    private async Task HandleExit()
+    {
+        if (ShowBackToLogin && OnBackToLogin.HasDelegate)
+        {
+            await OnBackToLogin.InvokeAsync();
+        }
+        else if (ShowBackToAccountSelection && OnBackToAccountSelection.HasDelegate)
+        {
+            await OnBackToAccountSelection.InvokeAsync();
+        }
+    }
+
+    private void HandleBack()
+    {
+        if (CurrentStep > FormStep.Setup)
+        {
+            CurrentStep--;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleContinue()
+    {
+        if (CanContinue() && CurrentStep < FormStep.Confirm)
+        {
+            CurrentStep++;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateAccount()
+    {
+        if (ViewModel.CanCreateAccount)
+        {
+            await OnAccountCreated.InvokeAsync();
+        }
+    }
+}
+

@@ -1,0 +1,356 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+@* WalletHeader.razor - Professional component header *@
+<div class="wallet-component-header">
+    <div class="header-content">
+        @if (IsMobile)
+        {
+            <!-- Mobile/Tablet: Optimized two-line layout -->
+            <div class="mobile-layout">
+                <!-- Line 1: Hamburger + Centered Page Title + App Logo -->
+                <div class="mobile-nav-row">
+                    @if (ShowMenuButton)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
+                                       Color="Color.Default"
+                                       Size="Size.Medium"
+                                       OnClick="OnMenuClick"
+                                       Class="menu-button" />
+                    }
+                    
+                    <!-- Centered Page Title -->
+                    <div class="mobile-page-title-centered">
+                        @if (!string.IsNullOrEmpty(Title))
+                        {
+                            <MudText Typo="Typo.h6" Class="page-title-mobile">@Title</MudText>
+                        }
+                    </div>
+                    
+                    <!-- App Logo on the right -->
+                    @if (ShowLogo && !string.IsNullOrEmpty(LogoPath))
+                    {
+                        <div class="app-logo-mobile">
+                            <img src="@LogoPath" alt="@AppName" class="logo-image-mobile" />
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Spacer to maintain layout balance -->
+                        <div style="width: 44px;"></div>
+                    }
+                </div>
+                
+                <!-- Line 2: Account Info (left) + Network Info (right) -->
+                @if (ShowAccountInfo && !string.IsNullOrEmpty(AccountAddress))
+                {
+                    <div class="mobile-context-row">
+                        <!-- Account Section (left) -->
+                        <div class="account-section-mobile" @onclick="OnAccountClick">
+                            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" 
+                                     Color="Color.Primary"
+                                     Size="Size.Small"
+                                     Class="account-icon-mobile" />
+                            @if (!string.IsNullOrEmpty(AccountName) && ComponentWidth >= 480)
+                            {
+                                <span class="account-name-mobile">@AccountName</span>
+                            }
+                            <div class="address-with-copy">
+                                @if (ComponentWidth >= 600 && !string.IsNullOrEmpty(AccountAddress))
+                                {
+                                    <WalletAddressDisplay Address="@AccountAddress"
+                                                          IsCompact="true"
+                                                          ComponentWidth="@(ComponentWidth - 100)"
+                                                          ShowCopyButton="true" />
+                                }
+                                else
+                                {
+                                    <span class="account-address-mobile">@FormatAddressForMobile(AccountAddress)</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Network Section (right) -->
+                        @if (ShowNetworkInfo && !string.IsNullOrEmpty(NetworkName))
+                        {
+                            <div class="network-section-mobile" @onclick="OnNetworkClick">
+                                @if (!string.IsNullOrEmpty(NetworkLogoPath))
+                                {
+                                    <img src="@NetworkLogoPath" alt="@NetworkName" class="network-icon-mobile" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Language" 
+                                             Color="Color.Secondary"
+                                             Size="Size.Small"
+                                             Class="network-icon-mobile" />
+                                }
+                                <span class="network-name-mobile">@GetMobileNetworkName()</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- Desktop: Clean layout without logo/brand -->
+            <div class="desktop-layout">
+                <!-- Page Information - Centered -->
+                <div class="page-section-desktop">
+                    @if (!string.IsNullOrEmpty(Title))
+                    {
+                        <MudText Typo="Typo.h5" Class="page-title">@Title</MudText>
+                    }
+                </div>
+                
+                <!-- Account Information - More Space -->
+                <div class="account-section-desktop">
+                    @if (ShowAccountInfo && !string.IsNullOrEmpty(AccountName))
+                    {
+                        <div class="account-card-desktop" @onclick="OnAccountClick">
+                            <div class="account-info">
+                                <MudText Typo="Typo.body2" Class="account-name">@AccountName</MudText>
+                                @if (!string.IsNullOrEmpty(AccountAddress))
+                                {
+                                    <div class="account-address-with-copy">
+                                        <MudText Typo="Typo.caption" Class="account-address">@FormatAddressForWidth(AccountAddress)</MudText>
+                                        <span @onclick="@CopyAddressToClipboard" @onclick:stopPropagation="true" class="copy-button-wrapper">
+                                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           Class="copy-button-desktop"
+                                                           title="Copy address"
+                                                           DisableRipple="true" />
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" Size="Size.Large" Class="account-icon" />
+                        </div>
+                    }
+                    
+                    @if (ShowNetworkInfo && !string.IsNullOrEmpty(NetworkName))
+                    {
+                        <div class="network-card-desktop" @onclick="OnNetworkClick">
+                            @if (!string.IsNullOrEmpty(NetworkLogoPath))
+                            {
+                                <img src="@NetworkLogoPath" alt="@NetworkName" class="network-logo-desktop" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Language" Color="Color.Secondary" Size="Size.Medium" />
+                            }
+                            <MudText Typo="Typo.caption" Class="network-name-desktop">@NetworkName</MudText>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? AppName { get; set; }
+    [Parameter] public string? LogoPath { get; set; }
+    [Parameter] public bool ShowLogo { get; set; } = true;
+    [Parameter] public bool ShowAppName { get; set; } = true;
+    [Parameter] public bool ShowMenuButton { get; set; }
+    [Parameter] public bool ShowSettingsButton { get; set; }
+    [Parameter] public bool ShowAccountInfo { get; set; } = true;
+    [Parameter] public bool IsMobile { get; set; }
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    
+    // Account information
+    [Parameter] public string? AccountName { get; set; }
+    [Parameter] public string? AccountAddress { get; set; }
+    
+    // Network information
+    [Parameter] public string? NetworkName { get; set; }
+    [Parameter] public string? NetworkLogoPath { get; set; }
+    [Parameter] public string? ChainId { get; set; }
+    [Parameter] public bool ShowNetworkInfo { get; set; } = true;
+    
+    // Content slots
+    [Parameter] public RenderFragment? CenterContent { get; set; }
+    [Parameter] public RenderFragment? ActionsContent { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback OnMenuClick { get; set; }
+    [Parameter] public EventCallback OnSettingsClick { get; set; }
+    [Parameter] public EventCallback OnAccountClick { get; set; }
+    [Parameter] public EventCallback OnNetworkClick { get; set; }
+    
+    private string FormatAddressForWidth(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10)
+            return address;
+        
+        // Progressive disclosure based on available width
+        if (ComponentWidth >= 1000 && !IsMobile)
+        {
+            // Desktop with good space: Show full address
+            return address;
+        }
+        else if (ComponentWidth >= 800)
+        {
+            // Wide desktop: Show substantial portion
+            return $"{address[..16]}...{address[^8..]}";
+        }
+        else if (ComponentWidth >= 600)
+        {
+            // Standard desktop: Good amount of detail
+            return $"{address[..12]}...{address[^6..]}";
+        }
+        else if (ComponentWidth >= 400)
+        {
+            // Tablet: Medium detail
+            return $"{address[..8]}...{address[^4..]}";
+        }
+        else
+        {
+            // Phone: Minimal detail
+            return $"{address[..6]}...{address[^4..]}";
+        }
+    }
+    
+    private string FormatAddressForMobile(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10)
+            return address;
+        
+        // Dynamic truncation based on available space
+        var availableChars = Math.Max(8, ComponentWidth / 25); // Rough calculation
+        
+        if (availableChars >= 20)
+        {
+            // Tablet: Show more detail
+            return $"{address[..12]}...{address[^6..]}";
+        }
+        else if (availableChars >= 16)
+        {
+            // Large phone: Good detail  
+            return $"{address[..10]}...{address[^4..]}";
+        }
+        else if (availableChars >= 12)
+        {
+            // Standard phone: Medium detail
+            return $"{address[..8]}...{address[^4..]}";
+        }
+        else
+        {
+            // Small screen: Minimal detail
+            return $"{address[..6]}...{address[^2..]}";
+        }
+    }
+    
+    private string GetNetworkDisplayName()
+    {
+        if (string.IsNullOrEmpty(NetworkName))
+            return "";
+        
+        // Dynamic network name display based on available space
+        var maxChars = Math.Max(6, ComponentWidth / 40); // Responsive calculation
+        
+        if (maxChars >= 15)
+        {
+            // Tablets and larger: Show full network name
+            return NetworkName;
+        }
+        else if (maxChars >= 10)
+        {
+            // Medium screens: Moderate truncation
+            return NetworkName.Length > maxChars ? $"{NetworkName[..(maxChars-3)]}..." : NetworkName;
+        }
+        else
+        {
+            // Small screens: Smart abbreviation - first word + first letters
+            return CreateSmartAbbreviation(NetworkName, maxChars);
+        }
+    }
+    
+    private string CreateSmartAbbreviation(string networkName, int maxChars)
+    {
+        var words = networkName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        
+        if (words.Length == 1)
+        {
+            // Single word: truncate normally
+            return networkName.Length > maxChars ? $"{networkName[..(maxChars-3)]}..." : networkName;
+        }
+        
+        // Multiple words: first word + first letters of remaining words
+        var firstWord = words[0];
+        var abbreviation = firstWord;
+        
+        // Add first letters of remaining words
+        for (int i = 1; i < words.Length && abbreviation.Length < maxChars - 1; i++)
+        {
+            if (words[i].Length > 0)
+            {
+                abbreviation += char.ToUpper(words[i][0]);
+            }
+        }
+        
+        // If still too long, truncate the first word
+        if (abbreviation.Length > maxChars)
+        {
+            var remainingSpace = maxChars - (words.Length - 1); // Space for first letters
+            if (remainingSpace > 3)
+            {
+                abbreviation = $"{firstWord[..(remainingSpace-3)]}...";
+                for (int i = 1; i < words.Length; i++)
+                {
+                    if (words[i].Length > 0)
+                    {
+                        abbreviation += char.ToUpper(words[i][0]);
+                    }
+                }
+            }
+            else
+            {
+                // Very limited space: just use first letters
+                abbreviation = "";
+                foreach (var word in words)
+                {
+                    if (word.Length > 0 && abbreviation.Length < maxChars)
+                    {
+                        abbreviation += char.ToUpper(word[0]);
+                    }
+                }
+            }
+        }
+        
+        return abbreviation;
+    }
+    
+    private string GetMobileNetworkName()
+    {
+        if (string.IsNullOrEmpty(NetworkName))
+            return "";
+        
+        // For mobile, always show just the clean network name
+        // Remove any extra descriptive text and keep it simple
+        return NetworkName switch
+        {
+            "Ethereum Mainnet" => "Ethereum",
+            _ => NetworkName.Split(' ')[0] // Just take the first word for simplicity
+        };
+    }
+    
+    private async Task CopyAddressToClipboard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", AccountAddress);
+        }
+        catch (Exception)
+        {
+            // Fallback for older browsers - could show a message or alternative copy method
+        }
+    }
+}
+

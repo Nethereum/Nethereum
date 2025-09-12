@@ -1,0 +1,157 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+@* WalletAddressDisplay.razor - Consistent address display with copy functionality *@
+<MudPaper Elevation="0" Class="wallet-address-display" Style="@GetContainerStyle()">
+    <MudStack Spacing="1">
+        @if (!string.IsNullOrEmpty(EnsName))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Primary" Style="font-weight: 600; margin-bottom: 0.25rem;">
+                @EnsName
+            </MudText>
+        }
+        
+        <div class="wallet-address-content-container">
+            <div class="wallet-address-text-container">
+                <MudText Typo="@GetTextTypo()" 
+                         Style="@GetTextStyle()" 
+                         Class="wallet-address-text"
+                         Title="@Address">
+                    @GetDisplayAddress()
+                </MudText>
+            </div>
+            
+            @if (ShowCopyButton)
+            {
+                <div class="wallet-address-copy-container">
+                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                   Size="@GetButtonSize()"
+                                   Color="Color.Primary"
+                                   OnClick="@CopyAddressAsync"
+                                   Class="wallet-copy-button"
+                                   Tooltip="Copy address" />
+                </div>
+            }
+        </div>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string Address { get; set; } = "";
+    [Parameter] public bool ShowCopyButton { get; set; } = true;
+    [Parameter] public int? MaxDisplayLength { get; set; }
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public bool IsHeaderMode { get; set; } // Extra compact mode for headers
+    [Parameter] public int ComponentWidth { get; set; } = 400; // Default width for calculation
+    [Parameter] public bool ShowFullAddress { get; set; } = false; // Show full address without clipping
+    [Parameter] public string? EnsName { get; set; } // ENS name if available
+    
+    private string GetDisplayAddress()
+    {
+        if (string.IsNullOrEmpty(Address)) return "";
+        
+        // If ShowFullAddress is true, always return full address
+        if (ShowFullAddress) return Address;
+        
+        var maxLength = MaxDisplayLength ?? CalculateMaxLength();
+        
+        if (Address.Length <= maxLength) return Address;
+        
+        var prefixLength = IsCompact ? 6 : 8;
+        var suffixLength = IsCompact ? 4 : 6;
+        
+        return $"{Address[..prefixLength]}...{Address[^suffixLength..]}";
+    }
+    
+    private int CalculateMaxLength()
+    {
+        // Based on component width and whether copy button is shown
+        var availableWidth = ComponentWidth - (ShowCopyButton ? 48 : 0) - 24; // Button + padding
+        
+        if (availableWidth < 200) return 12;  // Very small mobile
+        if (availableWidth < 300) return 16;  // Mobile  
+        if (availableWidth < 400) return 20;  // Large mobile
+        if (availableWidth < 600) return 30;  // Tablet
+        return 42; // Full address on desktop
+    }
+    
+    private async Task CopyAddressAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Address);
+            
+            if (OnCopy.HasDelegate)
+            {
+                await OnCopy.InvokeAsync(Address);
+            }
+        }
+        catch (Exception)
+        {
+            // Fallback for older browsers - could show a message or alternative copy method
+        }
+    }
+    
+    private string GetContainerStyle()
+    {
+        var backgroundColor = "var(--mud-palette-surface)";
+        var borderColor = "var(--mud-palette-divider)";
+        
+        // Header mode: minimal padding for tight integration
+        string padding;
+        if (IsHeaderMode)
+            padding = "4px 8px";
+        else if (IsCompact)
+            padding = "12px 16px";
+        else
+            padding = "16px 20px";
+            
+        var borderRadius = "12px";
+        var border = $"1px solid {borderColor}";
+        var boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+        
+        return $"background-color: {backgroundColor}; padding: {padding}; border-radius: {borderRadius}; border: {border}; box-shadow: {boxShadow};";
+    }
+    
+    private string GetTextStyle()
+    {
+        var fontFamily = "'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace";
+        var color = "var(--mud-palette-text-primary)";
+        var fontSize = IsCompact ? "0.875rem" : "1rem";
+        var fontWeight = "500";
+        
+        // Smart text handling based on context
+        string textOverflow;
+        if (ShowFullAddress)
+        {
+            // Always show full address but control wrapping based on available width
+            if (ComponentWidth >= 600)
+            {
+                // Desktop: single line if possible, gentle wrap if needed
+                textOverflow = "word-break: break-word; white-space: normal; line-height: 1.4;";
+            }
+            else if (ComponentWidth >= 400)
+            {
+                // Medium width - allow wrapping at word boundaries
+                textOverflow = "word-break: break-word; white-space: normal; line-height: 1.4;";
+            }
+            else
+            {
+                // Small width - aggressive wrapping to fit
+                textOverflow = "word-break: break-all; white-space: normal; line-height: 1.5;";
+            }
+        }
+        else
+        {
+            // Standard truncation for non-full display
+            textOverflow = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+        }
+        
+        return $"font-family: {fontFamily}; color: {color}; font-size: {fontSize}; font-weight: {fontWeight}; {textOverflow}";
+    }
+    
+    private Typo GetTextTypo() => IsCompact ? Typo.caption : Typo.body2;
+    private MudBlazor.Size GetButtonSize() => IsCompact ? MudBlazor.Size.Small : MudBlazor.Size.Medium;
+}
+

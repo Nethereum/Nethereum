@@ -1,0 +1,257 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.Services
+@using Nethereum.Wallet.Services.Transactions
+@using Nethereum.Wallet.UI.Components.WalletOverview
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.SendTransaction
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Transactions
+@using Nethereum.Wallet.UI.Components.Blazor.AccountDetails
+@using Microsoft.JSInterop
+@inject IComponentLocalizer<WalletOverviewViewModel> Localizer
+@inject WalletOverviewViewModel ViewModel
+@inject WalletOverviewConfiguration Config
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+<MudStack Spacing="@(IsCompactMode ? 2 : 4)" Class="@(IsCompactMode ? "pa-1" : "pa-4")">
+@if (_showSendTransaction)
+{
+    <!-- TokenTransfer has its own complete WalletFormLayout -->
+    <TokenTransfer OnTransactionSent="@OnTransactionSent" 
+                   OnCancel="@ShowWalletOverview" 
+                   IsCompactMode="@IsCompactMode" />
+}
+else if (_showTransactionHistory)
+{
+    <!-- TransactionHistory with back navigation -->
+    <WalletFormLayout Title="@Localizer.GetString(WalletOverviewLocalizer.Keys.TransactionHistory)"
+                      ShowBack="true"
+                      ShowContinue="false"
+                      ShowPrimary="false"
+                      BackText="@Localizer.GetString(WalletOverviewLocalizer.Keys.BackButton)"
+                      OnBack="@ShowWalletOverview">
+        <ChildContent>
+            <TransactionHistory IsCompact="@IsCompactMode" />
+        </ChildContent>
+    </WalletFormLayout>
+}
+else
+{
+    <!-- Main wallet overview -->
+    <WalletFormLayout Title="@Localizer.GetString(WalletOverviewLocalizer.Keys.WalletOverview)"
+                      ShowPrimary="false"
+                      ShowContinue="false"
+                      ShowBack="@_showAccountDetails"
+                      BackText="@Localizer.GetString(WalletOverviewLocalizer.Keys.BackButton)"
+                      OnBack="ShowWalletOverview">
+        
+        <ActionButtons>
+            @if (!_showAccountDetails)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.History"
+                                     Text="@Localizer.GetString(WalletOverviewLocalizer.Keys.TransactionHistory)"
+                                     OnClick="ShowTransactionHistory"
+                                     IsNavigation="true"
+                                     Disabled="@(ViewModel.SelectedAccount == null)" />
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Send"
+                                     Text="@Localizer.GetString(WalletOverviewLocalizer.Keys.SendButton)"
+                                     OnClick="ShowSendTransaction"
+                                     IsNavigation="true"
+                                     Disabled="@(ViewModel.SelectedAccount == null)" />
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Token"
+                                     Text="@Localizer.GetString(WalletOverviewLocalizer.Keys.TokenBalances)"
+                                     Disabled="true" />
+            }
+        </ActionButtons>
+        
+        <ChildContent>
+            @if (_showAccountDetails)
+            {
+                <AccountDetails Account="@ViewModel.SelectedAccount" OnExit="@ShowWalletOverview" />
+            }
+            else
+            {
+            @if (ViewModel.IsLoading)
+            {
+                <WalletLoadingState Message="@Localizer.GetString(WalletOverviewLocalizer.Keys.LoadingBalance)" />
+            }
+            else
+            {
+                <!-- Account Header - Click to show account details -->
+                <WalletContentSection>
+                    <MudCard Elevation="0" Class="pa-2 cursor-pointer" @onclick="ShowAccountDetails">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.h6">@(ViewModel.SelectedAccount?.Name ?? "Wallet")</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                        </MudStack>
+                    </MudCard>
+                </WalletContentSection>
+
+                <!-- Balance and Address Display -->
+                @if (Config.ShowBalance)
+                {
+                    <WalletContentSection>
+                        <MudCard Elevation="1" Class="pa-4">
+                            <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                                <MudStack AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                                        @Localizer.GetString(WalletOverviewLocalizer.Keys.TotalBalance)
+                                    </MudText>
+                                    <MudText Typo="Typo.h5" Style="font-weight: 600;">
+                                        @ViewModel.FormattedBalance @ViewModel.CurrencySymbol
+                                    </MudText>
+                                    @if (Config.ShowFiatBalance && ViewModel.HasFiatBalance)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @ViewModel.BalanceUsd
+                                        </MudText>
+                                    }
+                                    else if (Config.ShowFiatBalance && ViewModel.IsLoadingPrice)
+                                    {
+                                        <MudSkeleton Width="100px" Height="20px" />
+                                    }
+                                </MudStack>
+                                
+                                <!-- Address Display with Copy -->
+                                @if (ViewModel.SelectedAccount != null)
+                                {
+                                    <WalletAddressDisplay Address="@ViewModel.SelectedAccount.Address"
+                                                        ShowCopyButton="true"
+                                                        IsCompact="false"
+                                                        OnCopy="@(() => ViewModel.CopyAddressCommand.ExecuteAsync(null))" />
+                                }
+                                
+                                @if (ViewModel.HasBalanceError)
+                                {
+                                    <MudAlert Severity="Severity.Warning" Variant="Variant.Text" Dense="true">
+                                        @Localizer.GetString(WalletOverviewLocalizer.Keys.BalanceLoadError)
+                                    </MudAlert>
+                                }
+                            </MudStack>
+                        </MudCard>
+                    </WalletContentSection>
+                }
+
+                <!-- Pending Transactions Section -->
+                @if (ViewModel.HasPendingTransactions)
+                {
+                    <WalletContentSection Title="@Localizer.GetString(WalletOverviewLocalizer.Keys.PendingTransactions)">
+                        <MudStack Spacing="2">
+                            <PendingTransactionsList Transactions="@ViewModel.PendingTransactions" 
+                                                   IsCompact="@IsCompactMode"
+                                                   ShowViewAll="true"
+                                                   OnViewAll="ShowTransactionHistory"
+                                                   OnCopyHash="@HandleCopyHash"
+                                                   OnViewOnExplorer="@HandleViewOnExplorer"
+                                                   OnViewDetails="@HandleViewDetails" />
+                        </MudStack>
+                    </WalletContentSection>
+                    }
+                }
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+</MudStack>
+@code {
+    private bool _showSendTransaction = false;
+    private bool _showTransactionHistory = false;
+    private bool _showAccountDetails = false;
+    
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel.OnSendTransactionRequested = ShowSendTransaction;
+        ViewModel.OnNavigateToTransactionHistory = ShowTransactionHistory;
+        ViewModel.OnNavigateToAccountDetails = ShowAccountDetails;
+        
+        // Set up URL and clipboard handlers
+        ViewModel.OnOpenUrlRequested = async (url) => 
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("window.open", url, "_blank");
+            }
+            catch { }
+        };
+        
+        ViewModel.OnCopyToClipboardRequested = async (text) =>
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            }
+            catch { }
+        };
+        
+        ViewModel.OnShowTransactionDetailsRequested = (transaction) =>
+        {
+            // Could implement a dialog here in the future
+            StateHasChanged();
+        };
+        
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+    }
+    
+    private void ShowWalletOverview()
+    {
+        _showSendTransaction = false;
+        _showTransactionHistory = false;
+        _showAccountDetails = false;
+        StateHasChanged();
+    }
+    
+    private void ShowSendTransaction()
+    {
+        _showSendTransaction = true;
+        _showTransactionHistory = false;
+        _showAccountDetails = false;
+        StateHasChanged();
+    }
+    
+    private void ShowTransactionHistory()
+    {
+        _showSendTransaction = false;
+        _showTransactionHistory = true;
+        _showAccountDetails = false;
+        StateHasChanged();
+    }
+    
+    private void ShowAccountDetails()
+    {
+        _showSendTransaction = false;
+        _showTransactionHistory = false;
+        _showAccountDetails = true;
+        StateHasChanged();
+    }
+    
+    private void OnTransactionSent()
+    {
+        // Don't hide the TokenTransfer component - let the user dismiss the status screen
+        // Just reload pending transactions in the background
+        _ = ViewModel.LoadPendingTransactionsCommand.ExecuteAsync(null);
+    }
+    
+    private async Task HandleCopyHash(TransactionInfo transaction)
+    {
+        ViewModel.CopyTransactionHashCommand.Execute(transaction);
+    }
+    
+    private async Task HandleViewOnExplorer(TransactionInfo transaction)
+    {
+        await ViewModel.ViewTransactionOnExplorerCommand.ExecuteAsync(transaction);
+    }
+    
+    private void HandleViewDetails(TransactionInfo transaction)
+    {
+        ViewModel.ShowTransactionDetailsCommand.Execute(transaction);
+    }
+    
+    public void Dispose()
+    {
+        ViewModel?.Dispose();
+    }
+}

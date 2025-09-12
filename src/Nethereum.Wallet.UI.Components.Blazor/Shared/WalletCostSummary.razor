@@ -1,0 +1,82 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+
+<div class="wallet-cost-summary">
+    <MudText Typo="Typo.subtitle2" 
+             Color="Color.Default"
+             Class="summary-title wallet-text-subtitle2">
+        Cost Summary
+    </MudText>
+    
+    <div class="cost-items">
+        <div class="cost-item">
+            <MudText Typo="Typo.caption" 
+                     Color="Color.Secondary"
+                     Class="cost-label wallet-text-caption">
+                @AmountLabel
+            </MudText>
+            <MudText Typo="Typo.body1" 
+                     Color="Color.Default"
+                     Class="cost-value amount-value wallet-text-body">
+                @Amount @TokenSymbol
+            </MudText>
+        </div>
+        
+        <div class="cost-item">
+            <MudText Typo="Typo.caption" 
+                     Color="Color.Secondary"
+                     Class="cost-label wallet-text-caption">
+                @GasFeeLabel
+            </MudText>
+            <MudText Typo="Typo.body1" 
+                     Color="Color.Default"
+                     Class="cost-value gas-value wallet-text-body">
+                @GasFee @TokenSymbol
+            </MudText>
+        </div>
+        
+        <div class="cost-divider"></div>
+        
+        <div class="cost-item total-item">
+            <MudText Typo="Typo.body1" 
+                     Color="Color.Default"
+                     Class="cost-label total-label wallet-text-body">
+                @TotalLabel
+            </MudText>
+            <MudText Typo="Typo.h6" 
+                     Color="Color.Primary"
+                     Class="cost-value total-value wallet-text-heading6">
+                @TotalCost @TokenSymbol
+            </MudText>
+        </div>
+    </div>
+    
+    @if (!string.IsNullOrEmpty(Note))
+    {
+        <div class="cost-note">
+            <MudIcon Icon="@Icons.Material.Filled.Info" 
+                     Size="Size.Small" 
+                     Class="note-icon" />
+            <MudText Typo="Typo.caption" 
+                     Color="Color.Secondary"
+                     Class="note-text wallet-text-caption">
+                @Note
+            </MudText>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Amount { get; set; } = "0";
+    [Parameter] public string GasFee { get; set; } = "0";
+    [Parameter] public string TotalCost { get; set; } = "0";
+    [Parameter] public string TokenSymbol { get; set; } = "ETH";
+    
+    [Parameter] public string AmountLabel { get; set; } = "Amount to Send";
+    [Parameter] public string GasFeeLabel { get; set; } = "Gas Fee";
+    [Parameter] public string TotalLabel { get; set; } = "Total Cost";
+    
+    [Parameter] public string? Note { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+}
+

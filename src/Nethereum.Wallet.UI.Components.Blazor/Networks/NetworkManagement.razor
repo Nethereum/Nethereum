@@ -1,0 +1,164 @@
+@using Microsoft.AspNetCore.Components
+@using System.Numerics
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Dashboard
+@using MudBlazor
+@inject IComponentLocalizer<NetworkManagementPluginViewModel> Localizer
+@implements INavigatablePlugin
+
+@* 
+Network Management Dashboard Plugin Component
+Routes between NetworkList (selection) and NetworkDetails (configuration)
+*@
+
+@if (_currentView == NetworkView.List)
+{
+    <NetworkList @ref="_networkListComponent"
+                OnNetworkSelected="@HandleNetworkDetails" 
+                OnExit="@HandleExitFromList"
+                OnAddCustomNetwork="@HandleAddCustomNetwork"
+                ShowNetworkDetails="@ShowNetworkDetails"
+                ChainId="@ChainId"
+                ComponentWidth="@ComponentWidth"
+                IsCompact="@IsCompact" />
+}
+else if (_currentView == NetworkView.Details && _selectedNetworkId.HasValue)
+{
+    <NetworkDetails NetworkId="@_selectedNetworkId" 
+                   OnExit="@HandleExitDetails" />
+}
+else if (_currentView == NetworkView.AddCustom)
+{
+    <AddCustomNetwork OnNetworkAdded="@HandleCustomNetworkAdded" 
+                     OnExit="@HandleExitAddCustom" />
+}
+
+@code {
+    [Parameter] public EventCallback OnExit { get; set; }
+    
+    
+    // Navigation parameters for showing specific network details
+    [Parameter] public bool ShowNetworkDetails { get; set; } = false;
+    [Parameter] public string? ChainId { get; set; }
+    
+    // Responsive parameters from Dashboard
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    [Parameter] public bool IsCompact { get; set; } = false;
+    [Parameter] public Action<object>? OnReady { get; set; }
+    
+    private enum NetworkView
+    {
+        List,
+        Details,
+        AddCustom
+    }
+
+    private NetworkView _currentView = NetworkView.List;
+    private BigInteger? _selectedNetworkId;
+    private NetworkList? _networkListComponent;
+    
+    public async Task NavigateWithParametersAsync(Dictionary<string, object> parameters)
+    {
+        try
+        {
+            if (parameters.Count == 0)
+            {
+                _selectedNetworkId = null;
+                _currentView = NetworkView.List;
+            }
+            
+            if (parameters.TryGetValue("ShowNetworkDetails", out var showDetailsObj) && 
+                showDetailsObj is bool showDetails && showDetails &&
+                parameters.TryGetValue("ChainId", out var chainIdObj))
+            {
+                if (chainIdObj is string chainIdStr && BigInteger.TryParse(chainIdStr, out var chainId))
+                {
+                    _selectedNetworkId = chainId;
+                    _currentView = NetworkView.Details;
+                }
+                else if (chainIdObj is BigInteger directChainId)
+                {
+                    _selectedNetworkId = directChainId;
+                    _currentView = NetworkView.Details;
+                }
+                else if (chainIdObj is long longChainId)
+                {
+                    _selectedNetworkId = new BigInteger(longChainId);
+                    _currentView = NetworkView.Details;
+                }
+            }
+            
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing navigation parameters in NetworkManagement: {ex.Message}");
+        }
+    }
+    
+    protected override void OnInitialized()
+    {
+        // Notify parent that component is ready
+        OnReady?.Invoke(this);
+        
+        if (ShowNetworkDetails && !string.IsNullOrEmpty(ChainId))
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                ["ShowNetworkDetails"] = ShowNetworkDetails,
+                ["ChainId"] = ChainId
+            };
+            
+            _ = Task.Run(async () => await NavigateWithParametersAsync(parameters));
+        }
+    }
+
+    private void HandleNetworkDetails(BigInteger networkId)
+    {
+        _selectedNetworkId = networkId;
+        _currentView = NetworkView.Details;
+        StateHasChanged();
+    }
+
+    private void HandleExitDetails()
+    {
+        _selectedNetworkId = null;
+        _currentView = NetworkView.List;
+        StateHasChanged();
+    }
+    
+    private async Task HandleExitFromList()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private void HandleAddCustomNetwork()
+    {
+        _currentView = NetworkView.AddCustom;
+        StateHasChanged();
+    }
+
+    private void HandleExitAddCustom()
+    {
+        _currentView = NetworkView.List;
+        StateHasChanged();
+    }
+
+    private async Task HandleCustomNetworkAdded(BigInteger networkId)
+    {
+        // Navigate back to the network list after successfully adding a network
+        _selectedNetworkId = null;
+        _currentView = NetworkView.List;
+        StateHasChanged();
+        
+        // Refresh the network list to show the newly added network
+        if (_networkListComponent?.NetworkListViewModel != null)
+        {
+            await _networkListComponent.NetworkListViewModel.RefreshNetworksCommand.ExecuteAsync(null);
+        }
+    }
+}

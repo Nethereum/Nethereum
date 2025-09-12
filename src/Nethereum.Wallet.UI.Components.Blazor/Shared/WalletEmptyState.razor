@@ -1,0 +1,162 @@
+@using MudBlazor
+
+@* WalletEmptyState.razor - Consistent empty states with call-to-action across all wallet areas *@
+<div class="wallet-empty-state" style="@GetContainerStyle()">
+    <MudIcon Icon="@Icon" 
+             Size="@GetIconSize()" 
+             Color="@GetIconColor()"
+             Class="wallet-empty-state-icon" />
+    
+    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="wallet-empty-state-content">
+        <MudText Typo="@GetTitleTypo()" 
+                 Align="Align.Center"
+                 Class="wallet-empty-state-title"
+                 Style="font-weight: 600;">
+            @Title
+        </MudText>
+        
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <MudText Typo="@GetDescriptionTypo()" 
+                     Color="Color.Secondary" 
+                     Align="Align.Center"
+                     Class="wallet-empty-state-description"
+                     Style="@GetDescriptionStyle()">
+                @Description
+            </MudText>
+        }
+    </MudStack>
+    
+    @if (!string.IsNullOrEmpty(ActionText) && OnAction.HasDelegate)
+    {
+        <MudButton Variant="Variant.Filled" 
+                   Color="@ActionColor"
+                   Size="@GetButtonSize()"
+                   StartIcon="@ActionIcon"
+                   OnClick="@OnAction"
+                   Class="wallet-empty-state-action">
+            @ActionText
+        </MudButton>
+    }
+    
+    @if (CustomActions != null)
+    {
+        <div class="wallet-empty-state-custom-actions">
+            @CustomActions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = Icons.Material.Outlined.Inbox;
+    [Parameter] public string Title { get; set; } = "No items";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? ActionText { get; set; }
+    [Parameter] public string? ActionIcon { get; set; }
+    [Parameter] public EventCallback OnAction { get; set; }
+    [Parameter] public Color ActionColor { get; set; } = Color.Primary;
+    [Parameter] public WalletEmptyStateSize Size { get; set; } = WalletEmptyStateSize.Medium;
+    [Parameter] public RenderFragment? CustomActions { get; set; }
+    [Parameter] public string? ContainerHeight { get; set; }
+    
+    private string GetContainerStyle()
+    {
+        var styles = new List<string>
+        {
+            "display: flex",
+            "flex-direction: column", 
+            "align-items: center",
+            "justify-content: center",
+            "text-align: center"
+        };
+        
+        // Default heights based on size
+        var height = Size switch
+        {
+            WalletEmptyStateSize.Small => "200px",
+            WalletEmptyStateSize.Medium => "300px", 
+            WalletEmptyStateSize.Large => "400px",
+            _ => "300px"
+        };
+        
+        styles.Add($"min-height: {ContainerHeight ?? height}");
+        
+        // Spacing between elements
+        var gap = Size switch
+        {
+            WalletEmptyStateSize.Small => "16px",
+            WalletEmptyStateSize.Medium => "24px",
+            WalletEmptyStateSize.Large => "32px", 
+            _ => "24px"
+        };
+        
+        styles.Add($"gap: {gap}");
+        
+        // Container padding
+        var padding = Size switch
+        {
+            WalletEmptyStateSize.Small => "16px",
+            WalletEmptyStateSize.Medium => "24px",
+            WalletEmptyStateSize.Large => "32px",
+            _ => "24px"
+        };
+        
+        styles.Add($"padding: {padding}");
+        
+        return string.Join("; ", styles) + ";";
+    }
+    
+    private string GetDescriptionStyle()
+    {
+        var maxWidth = Size switch
+        {
+            WalletEmptyStateSize.Small => "280px",
+            WalletEmptyStateSize.Medium => "320px",
+            WalletEmptyStateSize.Large => "400px",
+            _ => "320px"
+        };
+        
+        return $"max-width: {maxWidth}; line-height: 1.5;";
+    }
+    
+    private MudBlazor.Size GetIconSize() => Size switch
+    {
+        WalletEmptyStateSize.Small => MudBlazor.Size.Large,
+        WalletEmptyStateSize.Medium => MudBlazor.Size.Large,
+        WalletEmptyStateSize.Large => MudBlazor.Size.Large,
+        _ => MudBlazor.Size.Large
+    };
+    
+    private Color GetIconColor() => Size switch
+    {
+        WalletEmptyStateSize.Small => Color.Secondary,
+        WalletEmptyStateSize.Medium => Color.Secondary,
+        WalletEmptyStateSize.Large => Color.Secondary,
+        _ => Color.Secondary
+    };
+    
+    private Typo GetTitleTypo() => Size switch
+    {
+        WalletEmptyStateSize.Small => Typo.h6,
+        WalletEmptyStateSize.Medium => Typo.h5,
+        WalletEmptyStateSize.Large => Typo.h4,
+        _ => Typo.h5
+    };
+    
+    private Typo GetDescriptionTypo() => Size switch
+    {
+        WalletEmptyStateSize.Small => Typo.body2,
+        WalletEmptyStateSize.Medium => Typo.body1,
+        WalletEmptyStateSize.Large => Typo.body1,
+        _ => Typo.body1
+    };
+    
+    private MudBlazor.Size GetButtonSize() => Size switch
+    {
+        WalletEmptyStateSize.Small => MudBlazor.Size.Medium,
+        WalletEmptyStateSize.Medium => MudBlazor.Size.Large,
+        WalletEmptyStateSize.Large => MudBlazor.Size.Large,
+        _ => MudBlazor.Size.Large
+    };
+}
+

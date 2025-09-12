@@ -1,0 +1,12 @@
+/* WalletGasStrategyCard component scoped styles */
+.wallet-gas-strategy-card {
+    width: 100%;
+}
+
+.no-strategies-message {
+    padding: var(--wallet-space-lg, 1.5rem);
+    text-align: center;
+    background: var(--wallet-bg-secondary, #f9fafb);
+    border-radius: var(--wallet-radius-md, 8px);
+    border: 1px dashed var(--wallet-border, #e5e7eb);
+}

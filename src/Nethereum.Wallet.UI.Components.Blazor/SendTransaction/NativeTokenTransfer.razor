@@ -1,0 +1,87 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.SendTransaction.Components
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.Blazor.Shared.WalletTextField
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+@inject IWalletLocalizationService LocalizationService
+@implements IDisposable
+
+<WalletFormSection Title="@Localizer.GetString(Keys.RecipientSection)">
+    <WalletTextField @bind-Value="ViewModel.NativeTransfer.RecipientAddress"
+                     LabelKey="@Keys.RecipientAddress"
+                     PlaceholderKey="@Keys.RecipientAddressPlaceholder"
+                     Localizer="@Localizer"
+                     FieldType="WalletTextFieldType.Address"
+                     Required="true"
+                     Error="@ViewModel.NativeTransfer.HasFieldErrors(nameof(ViewModel.NativeTransfer.RecipientAddress))"
+                     ErrorText="@ViewModel.NativeTransfer.GetFieldError(nameof(ViewModel.NativeTransfer.RecipientAddress))"
+                     IsMonospace="true" />
+</WalletFormSection>
+
+<WalletFormSection>
+    <WalletTextField @bind-Value="ViewModel.NativeTransfer.Amount"
+                     LabelKey="@Keys.Amount"
+                     PlaceholderKey="@Keys.AmountPlaceholder"
+                     Localizer="@Localizer"
+                     Suffix="@ViewModel.NativeTransfer.TokenSymbol"
+                     Required="true"
+                     Error="@ViewModel.NativeTransfer.HasFieldErrors(nameof(ViewModel.NativeTransfer.Amount))"
+                     ErrorText="@ViewModel.NativeTransfer.GetFieldError(nameof(ViewModel.NativeTransfer.Amount))" />
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mt-2">
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            @Localizer.GetString(Keys.AvailableBalance): @ViewModel.NativeTransfer.FormattedAvailableBalance @ViewModel.NativeTransfer.TokenSymbol
+        </MudText>
+        <MudButton Size="MudBlazor.Size.Small" 
+                   Variant="Variant.Text" 
+                   Color="Color.Primary"
+                   OnClick="@(() => ViewModel.NativeTransfer.SetMaxAmount())">
+            @Localizer.GetString(Keys.MaxButton)
+        </MudButton>
+    </MudStack>
+</WalletFormSection>
+
+@code {
+    [Parameter] public SendNativeTokenViewModel ViewModel { get; set; } = null!;
+    
+    protected override void OnInitialized()
+    {
+        LocalizationService.LanguageChanged += OnLanguageChanged;
+        
+        // Subscribe to ViewModel changes to update the UI when validation changes
+        if (ViewModel?.NativeTransfer != null)
+        {
+            ViewModel.NativeTransfer.PropertyChanged += OnViewModelPropertyChanged;
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+    
+    private void OnLanguageChanged(string languageCode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Update UI when validation state changes
+        if (e.PropertyName == nameof(ViewModel.NativeTransfer.IsValid) ||
+            e.PropertyName?.EndsWith("Error") == true ||
+            e.PropertyName == "HasErrors")
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    public void Dispose()
+    {
+        LocalizationService.LanguageChanged -= OnLanguageChanged;
+        
+        if (ViewModel?.NativeTransfer != null)
+        {
+            ViewModel.NativeTransfer.PropertyChanged -= OnViewModelPropertyChanged;
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+}

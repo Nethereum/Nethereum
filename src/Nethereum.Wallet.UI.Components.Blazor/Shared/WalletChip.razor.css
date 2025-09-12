@@ -1,0 +1,43 @@
+/* WalletChip.razor component scoped styles */
+.wallet-chip {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.wallet-chip-clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.wallet-chip-clickable:active {
+    transform: translateY(0);
+}
+
+.wallet-chip-status {
+    border-radius: 12px !important;
+}
+
+.wallet-chip-balance {
+    font-family: 'Roboto Mono', monospace !important;
+}
+
+.wallet-chip-small {
+    font-size: 0.75rem;
+}
+
+.wallet-chip-medium {
+    font-size: 0.875rem;
+}
+
+.wallet-chip-large {
+    font-size: 1rem;
+}
+
+/* Mobile touch targets */
+@media (max-width: 768px) {
+    .wallet-chip-clickable {
+        min-height: 44px !important;
+        padding: 8px 12px !important;
+    }
+}

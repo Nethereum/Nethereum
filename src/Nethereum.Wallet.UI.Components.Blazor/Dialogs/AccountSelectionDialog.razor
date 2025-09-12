@@ -1,0 +1,36 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.WalletAccounts
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Select an Account</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudList T="string">
+            @foreach (var account in Accounts)
+            {
+                <MudListItem T="string" OnClick="@(() => SelectAccount(account))">
+                    <MudText>@account.Name</MudText>
+                    <MudText Typo="Typo.body2">@account.Address</MudText>
+                </MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudBlazor.IDialogReference MudDialog { get; set; } = null!;
+
+    [Parameter] public List<IWalletAccount> Accounts { get; set; } = new List<IWalletAccount>();
+
+    private void SelectAccount(IWalletAccount account)
+    {
+        MudDialog.Close(DialogResult.Ok(account));
+    }
+
+    void Cancel() => MudDialog.Close(DialogResult.Cancel());
+}

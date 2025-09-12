@@ -1,0 +1,288 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.Services
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.Bip32
+@using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.VaultMnemonicAccountEditorLocalizer
+@using System.Linq
+
+@inject IWalletVaultService VaultService
+@inject IJSRuntime JSRuntime
+@inject IComponentLocalizer<VaultMnemonicAccountViewModel> Localizer
+
+@if (ViewModel.AvailableMnemonics.Any())
+{
+    <!-- Using New Reusable Wallet Form Layout -->
+    <WalletFormLayout Title="@ViewModel.GetStepTitle()"
+                      Subtitle="@ViewModel.GetStepSubtitle()"
+                      Steps="@formSteps"
+                      CurrentStepIndex="@((int)ViewModel.CurrentStep)"
+                      ExitText="@GetExitText()"
+                      BackText="@Localizer.GetString(Keys.Back)"
+                      ContinueText="@Localizer.GetString(Keys.Continue)"
+                      PrimaryText="@Localizer.GetString(Keys.AddAccount)"
+                      StepLocalizer="@Localizer"
+                      ShowBack="@(ViewModel.CurrentStep > VaultMnemonicAccountViewModel.FormStep.SelectMnemonic)"
+                      ShowContinue="@(ViewModel.CurrentStep < VaultMnemonicAccountViewModel.FormStep.Confirm && ViewModel.CanContinue)"
+                      ShowPrimary="@(ViewModel.CurrentStep == VaultMnemonicAccountViewModel.FormStep.Confirm)"
+                      ContinueDisabled="@(!ViewModel.CanContinue)"
+                      PrimaryDisabled="@(!ViewModel.CanCreateAccount)"
+                      OnExit="@HandleExit"
+                      OnBack="@(async () => ViewModel.GoToPreviousStepCommand.Execute(null))"
+                      OnContinue="@(async () => await ViewModel.ContinueToNextStepCommand.ExecuteAsync(null))"
+                      OnPrimary="@CreateAccount">
+        
+        <div class="wallet-form-steps">
+            @switch (ViewModel.CurrentStep)
+            {
+                case VaultMnemonicAccountViewModel.FormStep.SelectMnemonic:
+                    <!-- Step 1: Mnemonic Selection -->
+                    <WalletFormSection Title="@Localizer.GetString(Keys.SelectMnemonicTitle)">
+                        <WalletSelect @bind-Value="@ViewModel.SelectedMnemonicId"
+                                      LabelKey="@Keys.SelectMnemonicLabel"
+                                      RequiredErrorKey="@Keys.MnemonicRequired"
+                                      Items="@ViewModel.AvailableMnemonics.Select(m => m.Id)"
+                                      DisplaySelector="@ViewModel.GetMnemonicDisplayName"
+                                      Required="true"
+                                      Localizer="@Localizer"
+                                      T="string" />
+                    </WalletFormSection>
+                    
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                    Title="@Localizer.GetString(Keys.MnemonicSelection)"
+                                    Description="@Localizer.GetString(Keys.PageDescription)"
+                                    Icon="@Icons.Material.Filled.AccountTree" />
+                    break;
+
+                case VaultMnemonicAccountViewModel.FormStep.Configure:
+                    <!-- Step 2: Account Configuration -->
+                    <WalletFormSection Title="@Localizer.GetString(Keys.ConfigureAccountTitle)">
+                        <MudStack Spacing="3">
+                            <!-- Account Index -->
+                            <WalletNumericField @bind-Value="@ViewModel.AccountIndex"
+                                                LabelKey="@Keys.AccountIndexLabel"
+                                                HelpKey="@Keys.AccountIndexHelperText"
+                                                RequiredErrorKey="@Keys.AccountIndexRequired"
+                                                Min="0"
+                                                Max="2147483647"
+                                                Required="true"
+                                                Localizer="@Localizer" />
+
+                            <!-- Account Name -->
+                            <WalletTextField @bind-Value="@ViewModel.AccountName"
+                                             LabelKey="@Keys.AccountNameLabel"
+                                             PlaceholderKey="@Keys.AccountNamePlaceholder"
+                                             HelpKey="@Keys.AccountNameHelperText"
+                                             Localizer="@Localizer" />
+                        </MudStack>
+                    </WalletFormSection>
+
+                    <!-- Derived Address Preview -->
+                    @if (!string.IsNullOrEmpty(ViewModel.DerivedAddress))
+                    {
+                        <WalletContentSection Class="spacing-tight">
+                            <MudText Typo="Typo.h6" Class="mb-3">@Localizer.GetString(Keys.DerivedAccountPreview)</MudText>
+                            <WalletAddressDisplay Address="@ViewModel.DerivedAddress"
+                                                ComponentWidth="400"
+                                                IsCompact="false"
+                                                ShowFullAddress="true"
+                                                OnCopy="@HandleAddressCopied" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                                @Localizer.GetString(Keys.DerivationPathText, ViewModel.AccountIndex)
+                            </MudText>
+                        </WalletContentSection>
+                        
+                        <!-- Duplicate Account Warning -->
+                        @if (ViewModel.HasDuplicateAccount)
+                        {
+                            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
+                                            Title="Duplicate Account"
+                                            Description="@ViewModel.DuplicateAccountMessage"
+                                            Icon="@Icons.Material.Filled.Warning" />
+                        }
+                    }
+                    break;
+
+                case VaultMnemonicAccountViewModel.FormStep.Confirm:
+                    <!-- Step 3: Confirm -->
+                    <WalletFormSection Title="@Localizer.GetString(Keys.ConfirmDetailsTitle)">
+                        <MudStack Spacing="3">
+                            <!-- Selected Mnemonic -->
+                            <div>
+                                <WalletText TextType="WalletText.WalletTextType.Label"
+                                           TextKey="@Keys.SelectMnemonicLabel"
+                                           Localizer="@Localizer" />
+                                <WalletText TextType="WalletText.WalletTextType.Body"
+                                           Text="@ViewModel.GetSelectedMnemonicName()"
+                                           Class="mt-1" />
+                            </div>
+
+                            <!-- Account Name -->
+                            <div>
+                                <WalletText TextType="WalletText.WalletTextType.Label"
+                                           TextKey="@Keys.AccountNameLabel"
+                                           Localizer="@Localizer" />
+                                <WalletText TextType="WalletText.WalletTextType.Body"
+                                           Text="@(!string.IsNullOrWhiteSpace(ViewModel.AccountName) ? ViewModel.AccountName : Localizer.GetString(Keys.UnnamedAccount))"
+                                           Class="mt-1" />
+                            </div>
+
+                            <!-- Account Index -->
+                            <div>
+                                <WalletText TextType="WalletText.WalletTextType.Label"
+                                           TextKey="@Keys.AccountIndexLabel"
+                                           Localizer="@Localizer" />
+                                <WalletText TextType="WalletText.WalletTextType.Body"
+                                           Text="@($"{ViewModel.AccountIndex} ({Localizer.GetString(Keys.DerivationPathText, ViewModel.AccountIndex)})")"
+                                           Class="mt-1" />
+                            </div>
+
+                            <!-- Derived Address -->
+                            <div>
+                                <WalletText TextType="WalletText.WalletTextType.Label"
+                                           TextKey="@Keys.AddressPreviewTitle"
+                                           Localizer="@Localizer" />
+                                <WalletText TextType="WalletText.WalletTextType.Body"
+                                           Text="@ViewModel.DerivedAddress"
+                                           Class="wallet-monospace mt-1" />
+                            </div>
+
+                            <!-- Account Type -->
+                            <div>
+                                <WalletText TextType="WalletText.WalletTextType.Label"
+                                           TextKey="@Keys.AccountType"
+                                           Localizer="@Localizer" />
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.AccountTree">
+                                    @Localizer.GetString(Keys.MnemonicDerivedAccount)
+                                </MudChip>
+                            </div>
+                        </MudStack>
+                    </WalletFormSection>
+
+                    <!-- Security Notice -->
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                    Title="@Localizer.GetString(Keys.SecurityInfo)"
+                                    Description="@Localizer.GetString(Keys.MnemonicSecurityNotice)"
+                                    Icon="@Icons.Material.Filled.Security" />
+                    break;
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                Title="@Localizer.GetString(Keys.Error)"
+                                Description="@ViewModel.ErrorMessage"
+                                Icon="@Icons.Material.Filled.Error" />
+            }
+        </div>
+    </WalletFormLayout>
+}
+else
+{
+    <!-- No Mnemonics Available -->
+    <WalletContentSection Class="spacing-loose">
+        <div class="empty-state">
+            <MudIcon Icon="@Icons.Material.Outlined.Warning" 
+                     Size="Size.Large"
+                     Color="Color.Warning" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-3">
+                @Localizer.GetString(Keys.NoMnemonicsTitle)
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2 text-center">
+                @Localizer.GetString(Keys.NoMnemonicsDescription)
+            </MudText>
+            <MudStack Row="true" Spacing="2" Class="mt-4">
+                @if (ShowBackToLogin)
+                {
+                    <MudButton Variant="Variant.Outlined" 
+                              OnClick="@(async () => await OnBackToLogin.InvokeAsync())"
+                              StartIcon="Icons.Material.Filled.ArrowBack">
+                        @Localizer.GetString(Keys.BackToLoginText)
+                    </MudButton>
+                }
+                @if (ShowBackToAccountSelection)
+                {
+                    <MudButton Variant="Variant.Outlined" 
+                              OnClick="@(async () => await OnBackToAccountSelection.InvokeAsync())"
+                              StartIcon="Icons.Material.Filled.AccountCircle">
+                        @Localizer.GetString(Keys.BackToAccountSelectionText)
+                    </MudButton>
+                }
+            </MudStack>
+        </div>
+    </WalletContentSection>
+}
+
+@code {
+    [Parameter] public required VaultMnemonicAccountViewModel ViewModel { get; set; }
+    [Parameter] public EventCallback OnAccountCreated { get; set; }
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+    [Parameter] public bool ShowBackToLogin { get; set; } = false;
+    [Parameter] public bool ShowBackToAccountSelection { get; set; } = false;
+
+    private List<WalletFormStep> formSteps = new()
+    {
+        new() { LocalizationKey = "StepSelectMnemonicLabel", Icon = Icons.Material.Filled.AccountTree },
+        new() { LocalizationKey = "StepConfigureLabel", Icon = Icons.Material.Filled.Settings },
+        new() { LocalizationKey = "StepConfirmLabel", Icon = Icons.Material.Filled.CheckCircle }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+    }
+
+
+    private string GetExitText()
+    {
+        if (ShowBackToLogin)
+            return Localizer.GetString(Keys.BackToLoginText);
+        if (ShowBackToAccountSelection)
+            return Localizer.GetString(Keys.BackToAccountSelectionText);
+        return Localizer.GetString(Keys.Exit);
+    }
+
+    private async Task HandleExit()
+    {
+        if (ShowBackToLogin && OnBackToLogin.HasDelegate)
+        {
+            await OnBackToLogin.InvokeAsync();
+        }
+        else if (ShowBackToAccountSelection && OnBackToAccountSelection.HasDelegate)
+        {
+            await OnBackToAccountSelection.InvokeAsync();
+        }
+    }
+
+    private async Task HandleAddressCopied(string address)
+    {
+        // Copy feedback handled by the component
+    }
+
+    // Legacy methods for backward compatibility
+    public MnemonicWalletAccount CreateAccount(WalletVault vault)
+    {
+        return (MnemonicWalletAccount)ViewModel.CreateAccount(vault);
+    }
+
+    public void Reset()
+    {
+        ViewModel.Reset();
+    }
+
+    private async Task CreateAccount()
+    {
+        if (ViewModel.CanCreateAccount)
+        {
+            await OnAccountCreated.InvokeAsync();
+        }
+    }
+}
+

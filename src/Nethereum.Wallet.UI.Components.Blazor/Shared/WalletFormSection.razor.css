@@ -1,0 +1,16 @@
+/* WalletFormSection.razor component scoped styles */
+.wallet-form-section {
+        margin-bottom: var(--wallet-space-lg, 1.5rem);
+    }
+    
+    .wallet-form-section:last-child {
+        margin-bottom: 0;
+    }
+    
+    .wallet-section-title {
+        font-size: var(--wallet-font-base, 1rem);
+        font-weight: 600;
+        color: var(--wallet-text-primary, #111827);
+        margin: 0 0 var(--wallet-space-sm, 0.75rem) 0;
+        line-height: 1.4;
+    }

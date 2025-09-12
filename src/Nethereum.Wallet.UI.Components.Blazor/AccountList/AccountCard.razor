@@ -1,0 +1,225 @@
+@using MudBlazor
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.AccountList
+@inject IComponentLocalizer<AccountListViewModel> Localizer
+
+@* AccountCard.razor - Mobile-friendly account display *@
+<MudCard Elevation="@(IsSelected ? 2 : 1)" 
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="@HandleCardClick">
+    
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-4")">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="@(IsCompactMode ? 2 : 3)" Style="width: 100%;">
+            
+            <!-- Left: Avatar and Info -->
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="@(IsCompactMode ? 2 : 3)" Style="flex: 1 1 auto; min-width: 0; overflow: hidden;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@IdenticonGenerator.GetIdenticonStyle(Account.Address)">
+                    <div class="identicon-content">
+                        @IdenticonGenerator.GetIdenticonText(Account.Address)
+                    </div>
+                </MudAvatar>
+                
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)" Style="flex: 1 1 auto; min-width: 0; overflow: hidden;">
+                    <MudStack Spacing="0">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight: 600;">@AccountDisplayName</MudText>
+                        @if (!string.IsNullOrEmpty(GetEnsName()))
+                        {
+                            <MudText Typo="@GetEnsTypo()" Color="Color.Primary" Style="font-weight: 500;">
+                                @GetEnsName()
+                            </MudText>
+                        }
+                    </MudStack>
+                    <MudText Typo="@GetAddressTypo()" Style="@GetAddressStyle()">
+                        @GetDisplayAddress()
+                    </MudText>
+                </MudStack>
+            </MudStack>
+            
+            <!-- Right: Action Buttons -->
+            @if (ShowActions)
+            {
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Style="flex: 0 0 auto;">
+                    @if (!IsSelected)
+                    {
+                        <MudButton Variant="Variant.Text" 
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  OnClick="@(async (e) => await HandleSelectClick(e))"
+                                  Class="wallet-touch-target">
+                            @Localizer.GetString(AccountListLocalizer.Keys.SelectButton)
+                        </MudButton>
+                    }
+                    <MudIconButton Icon="@Icons.Material.Filled.MoreVert"
+                                  Size="Size.Medium"
+                                  Color="Color.Default"
+                                  OnClick="@(async (e) => await HandleMenuClick(e))"
+                                  Class="wallet-touch-target" />
+                </MudStack>
+            }
+            
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public IWalletAccount Account { get; set; } = null!;
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 400;
+    
+    // Display customization - parent component provides these based on account type
+    [Parameter] public string? AccountDisplayName { get; set; }
+    [Parameter] public string? AccountIcon { get; set; }
+    [Parameter] public string? AccountTypeDescription { get; set; }
+    [Parameter] public string? FormattedAddress { get; set; }
+    [Parameter] public Color AccountColor { get; set; } = Color.Primary;
+    
+    // ENS integration
+    [Parameter] public Func<string, Task<string?>>? GetEnsNameAsync { get; set; }
+    
+    // Additional content slot for any chips/badges the parent wants to show
+    [Parameter] public RenderFragment? AdditionalChips { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<IWalletAccount> OnViewDetails { get; set; }
+    [Parameter] public EventCallback<IWalletAccount> OnSelect { get; set; }
+    [Parameter] public EventCallback<(MouseEventArgs, IWalletAccount)> OnMenu { get; set; }
+    [Parameter] public EventCallback<string> OnCopyAddress { get; set; }
+
+    private string _ensName = "";
+    private bool _ensLoading = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (GetEnsNameAsync != null && !_ensLoading && string.IsNullOrEmpty(_ensName))
+        {
+            _ensLoading = true;
+            try
+            {
+                var ensName = await GetEnsNameAsync(Account.Address);
+                if (!string.IsNullOrEmpty(ensName))
+                {
+                    _ensName = ensName;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // ENS resolution failed, ignore
+            }
+            finally
+            {
+                _ensLoading = false;
+            }
+        }
+    }
+
+    private string GetEnsName()
+    {
+        return _ensName;
+    }
+    
+    private string GetCardClasses()
+    {
+        var classes = "wallet-card account-card";
+        if (IsSelected)
+        {
+            classes += " wallet-card-selected";
+        }
+        if (IsCompactMode)
+        {
+            classes += " wallet-card-compact";
+        }
+        return classes;
+    }
+    
+    private string GetCardStyle()
+    {
+        var style = "cursor: pointer; transition: all 0.2s ease;";
+        if (IsSelected)
+        {
+            style += " border: 2px solid var(--mud-palette-primary); background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);";
+        }
+        return style;
+    }
+    
+    private async Task HandleCardClick()
+    {
+        if (OnViewDetails.HasDelegate)
+        {
+            await OnViewDetails.InvokeAsync(Account);
+        }
+    }
+    
+    private async Task HandleSelectClick(MouseEventArgs e)
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Account);
+        }
+    }
+    
+    private async Task HandleMenuClick(MouseEventArgs e)
+    {
+        if (OnMenu.HasDelegate)
+        {
+            await OnMenu.InvokeAsync((e, Account));
+        }
+    }
+
+    
+    private Size GetAvatarSize()
+    {
+        return IsCompactMode ? Size.Medium : Size.Large;
+    }
+    
+    private Typo GetTitleTypo()
+    {
+        return IsCompactMode ? Typo.body1 : Typo.subtitle1;
+    }
+    
+    private Typo GetEnsTypo()
+    {
+        return IsCompactMode ? Typo.body2 : Typo.body2;
+    }
+    
+    private Typo GetAddressTypo()
+    {
+        return IsCompactMode ? Typo.body2 : Typo.body2;
+    }
+    
+    private string GetAddressStyle()
+    {
+        var fontSize = IsCompactMode ? "0.7rem" : "0.75rem";
+        return $"font-family: 'Roboto Mono', monospace; font-size: {fontSize}; color: var(--mud-palette-text-secondary);";
+    }
+    
+    private string GetDisplayAddress()
+    {
+        // If FormattedAddress was provided by the parent (from ViewModel), prefer that
+        if (!string.IsNullOrEmpty(FormattedAddress))
+            return FormattedAddress;
+            
+        if (string.IsNullOrEmpty(Account.Address))
+            return "";
+            
+        // Fallback: local computation for dynamic responsiveness
+        // Truncate in compact mode (when viewport is below responsive breakpoint)
+        if (IsCompactMode)
+        {
+            if (Account.Address.Length > 16)
+            {
+                return $"{Account.Address.Substring(0, 6)}...{Account.Address.Substring(Account.Address.Length - 4)}";
+            }
+        }
+        
+        // Show full address on tablet/desktop
+        return Account.Address;
+    }
+}
+

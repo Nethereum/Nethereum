@@ -1,0 +1,66 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+
+@* AccountDetailsLayout.razor - Generic welcoming layout for all account types *@
+<div class="account-details-layout">
+    
+    <!-- Account Identity Section -->
+    <div class="account-identity-section">
+        @if (AccountChip != null)
+        {
+            <div class="account-chip-container">
+                @AccountChip
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(AccountName))
+        {
+            <MudText Typo="Typo.h5" Style="font-weight: 600; color: var(--mud-palette-text-primary); margin: 1rem 0 0.5rem 0;">
+                @AccountName
+            </MudText>
+        }
+        
+        @if (!string.IsNullOrEmpty(AccountDescription))
+        {
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary); margin-bottom: 1.5rem;">
+                @AccountDescription
+            </MudText>
+        }
+        
+        @if (AddressDisplay != null)
+        {
+            <div class="address-display-container">
+                @AddressDisplay
+            </div>
+        }
+    </div>
+    
+    <!-- Additional Content -->
+    @if (ChildContent != null)
+    {
+        <div class="additional-content">
+            @ChildContent
+        </div>
+    }
+    
+    <!-- Action Buttons Section -->
+    @if (ActionButtons != null)
+    {
+        <div class="action-buttons-section">
+            @ActionButtons
+        </div>
+    }
+    
+</div>
+
+@code {
+    [Parameter] public string? AccountName { get; set; }
+    [Parameter] public string? AccountDescription { get; set; }
+    [Parameter] public RenderFragment? AccountChip { get; set; }
+    [Parameter] public RenderFragment? AddressDisplay { get; set; }
+    [Parameter] public RenderFragment? ActionButtons { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool IsCompact { get; set; } = false;
+    [Parameter] public string Class { get; set; } = "";
+}
+

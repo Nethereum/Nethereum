@@ -1,0 +1,285 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.SendTransaction.Models
+@using static Nethereum.Wallet.UI.Components.SendTransaction.TransactionLocalizer
+@inject IComponentLocalizer<TransactionViewModel> Localizer
+@inject IWalletLocalizationService LocalizationService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<!-- Transaction Details Section -->
+<WalletFormSection Title="@Localizer.GetString(Keys.TransactionDetails)">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.From)
+            </MudText>
+            <div class="address-display">
+                <MudText Typo="Typo.body2" Style="word-break: break-all; font-family: monospace;">
+                    @ViewModel.Transaction.FromAddress
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" 
+                               Size="Size.Small"
+                               OnClick="@(() => CopyToClipboard(ViewModel.Transaction.FromAddress))" />
+            </div>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.To)
+            </MudText>
+            <div class="address-display">
+                <MudText Typo="Typo.body2" Style="word-break: break-all; font-family: monospace;">
+                    @ViewModel.Transaction.RecipientAddress
+                </MudText>
+                @if (ViewModel.TransactionDataInfo.IsContract)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text" Class="ml-2">
+                        @Localizer.GetString(Keys.Contract)
+                    </MudChip>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" 
+                               Size="Size.Small"
+                               OnClick="@(() => CopyToClipboard(ViewModel.Transaction.RecipientAddress))" />
+            </div>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.Amount)
+            </MudText>
+            <MudText Typo="Typo.h6" Class="amount-display">
+                @ViewModel.Transaction.Amount @ViewModel.TokenSymbol
+            </MudText>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.Network)
+            </MudText>
+            <MudText Typo="Typo.body2">
+                @ViewModel.NetworkName
+                @if (!string.IsNullOrEmpty(ViewModel.ChainId))
+                {
+                    <span class="chain-id">(Chain ID: @ViewModel.ChainId)</span>
+                }
+            </MudText>
+        </MudItem>
+    </MudGrid>
+</WalletFormSection>
+
+<!-- Transaction Parameters Section -->
+<WalletFormSection Title="@Localizer.GetString(Keys.TransactionParameters)">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="6">
+            <div class="nonce-field">
+                <MudTextField @bind-Value="ViewModel.Transaction.Nonce" 
+                              Label="@Localizer.GetString(Keys.Nonce)"
+                              Variant="Variant.Filled"
+                              Disabled="@(!ViewModel.IsNonceEditable || ViewModel.IsLoadingNonce)"
+                              Error="@(!string.IsNullOrEmpty(ViewModel.NonceError))"
+                              ErrorText="@ViewModel.NonceError"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Refresh"
+                              OnAdornmentClick="@(() => ViewModel.RefreshNonceCommand.ExecuteAsync(null))"
+                              Class="wallet-modern-input" />
+            </div>
+        </MudItem>
+        
+        @if (ViewModel.TransactionDataInfo.IsContract)
+        {
+            <MudItem xs="12">
+                <div class="transaction-data-section">
+                    <div class="data-header">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localizer.GetString(Keys.TransactionData)
+                        </MudText>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info">
+                            @($"{ViewModel.TransactionDataInfo.DataSizeInBytes} bytes")
+                        </MudChip>
+                    </div>
+
+                    @if (ViewModel.IsLoadingDecoding)
+                    {
+                        <div class="decoding-loader">
+                            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" />
+                            <MudText Typo="Typo.caption" Class="ml-2">
+                                @Localizer.GetString(Keys.DecodingTransaction)
+                            </MudText>
+                        </div>
+                    }
+                    else if (ViewModel.TransactionDataInfo.HasError)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">
+                            <strong>@Localizer.GetString(Keys.DecodingError):</strong> @ViewModel.TransactionDataInfo.DecodingError
+                        </MudAlert>
+                    }
+                    else if (ViewModel.TransactionDataInfo.IsDecoded)
+                    {
+                        <div class="decoded-data">
+                            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                                <strong>@Localizer.GetString(Keys.FunctionCall):</strong> @ViewModel.TransactionDataInfo.FunctionName
+                                <br />
+                                <small>@ViewModel.TransactionDataInfo.TextSignature</small>
+                            </MudAlert>
+                        </div>
+                    }
+
+                    <MudCollapse Expanded="ViewModel.ShowRawData">
+                        <div class="raw-data">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.RawTransactionData)
+                            </MudText>
+                            <MudTextField Value="@ViewModel.TransactionDataInfo.RawData"
+                                          ReadOnly="true"
+                                          Variant="Variant.Filled"
+                                          Lines="3"
+                                          Style="font-family: monospace; font-size: 0.8rem;" />
+                        </div>
+                    </MudCollapse>
+
+                    <MudButton Variant="Variant.Text" 
+                               Size="Size.Small"
+                               StartIcon="@(ViewModel.ShowRawData ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                               OnClick="@(() => ViewModel.ToggleRawDataDisplayCommand.Execute(null))">
+                        @(ViewModel.ShowRawData ? Localizer.GetString(Keys.HideRawData) : Localizer.GetString(Keys.ShowRawData))
+                    </MudButton>
+                </div>
+            </MudItem>
+        }
+    </MudGrid>
+</WalletFormSection>
+
+<!-- Gas Configuration Section -->
+<WalletFormSection Title="@Localizer.GetString(Keys.GasConfiguration)">
+    @if (ViewModel.Transaction.GasConfiguration != null)
+    {
+        <div class="gas-configuration">
+            <!-- Gas Strategy Selection -->
+            <MudGrid Spacing="2" Class="mb-4">
+                <MudItem xs="12">
+                    <MudButtonGroup Variant="Variant.Text" Color="Color.Primary">
+                        <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.Strategy == GasStrategy.Slow ? Variant.Filled : Variant.Text)"
+                                   OnClick="@(() => ViewModel.Transaction.GasConfiguration.Strategy = GasStrategy.Slow)">
+                            @Localizer.GetString(Keys.GasSlow)
+                        </MudButton>
+                        <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.Strategy == GasStrategy.Normal ? Variant.Filled : Variant.Text)"
+                                   OnClick="@(() => ViewModel.Transaction.GasConfiguration.Strategy = GasStrategy.Normal)">
+                            @Localizer.GetString(Keys.GasNormal)
+                        </MudButton>
+                        <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.Strategy == GasStrategy.Fast ? Variant.Filled : Variant.Text)"
+                                   OnClick="@(() => ViewModel.Transaction.GasConfiguration.Strategy = GasStrategy.Fast)">
+                            @Localizer.GetString(Keys.GasFast)
+                        </MudButton>
+                        <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.Strategy == GasStrategy.Custom ? Variant.Filled : Variant.Text)"
+                                   OnClick="@(() => ViewModel.Transaction.GasConfiguration.Strategy = GasStrategy.Custom)">
+                            @Localizer.GetString(Keys.GasCustom)
+                        </MudButton>
+                    </MudButtonGroup>
+                </MudItem>
+            </MudGrid>
+
+            <!-- Gas Parameters -->
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasLimit" 
+                                  Label="@Localizer.GetString(Keys.GasLimit)"
+                                  Variant="Variant.Filled"
+                                  Disabled="@(!ViewModel.IsGasEditable || ViewModel.Transaction.GasConfiguration.Strategy != GasStrategy.Custom)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Calculate"
+                                  OnAdornmentClick="@(() => ViewModel.EstimateGasLimitCommand.ExecuteAsync(null))"
+                                  Class="wallet-modern-input" />
+                </MudItem>
+
+                @if (ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomMaxFee" 
+                                      Label="@Localizer.GetString(Keys.MaxFee)"
+                                      Variant="Variant.Filled"
+                                      Disabled="@(!ViewModel.IsGasEditable || ViewModel.Transaction.GasConfiguration.Strategy != GasStrategy.Custom)"
+                                      Suffix="Gwei"
+                                      Class="wallet-modern-input" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomPriorityFee" 
+                                      Label="@Localizer.GetString(Keys.PriorityFee)"
+                                      Variant="Variant.Filled"
+                                      Disabled="@(!ViewModel.IsGasEditable || ViewModel.Transaction.GasConfiguration.Strategy != GasStrategy.Custom)"
+                                      Suffix="Gwei"
+                                      Class="wallet-modern-input" />
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasPrice" 
+                                      Label="@Localizer.GetString(Keys.GasPrice)"
+                                      Variant="Variant.Filled"
+                                      Disabled="@(!ViewModel.IsGasEditable || ViewModel.Transaction.GasConfiguration.Strategy != GasStrategy.Custom)"
+                                      Suffix="Gwei"
+                                      Class="wallet-modern-input" />
+                    </MudItem>
+                }
+            </MudGrid>
+        </div>
+    }
+</WalletFormSection>
+
+<!-- Cost Summary Section -->
+<WalletFormSection Title="@Localizer.GetString(Keys.CostSummary)">
+    <MudGrid Spacing="2">
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.EstimatedGasFee)
+            </MudText>
+            <MudText Typo="Typo.body1">
+                @ViewModel.TotalGasCost @ViewModel.TokenSymbol
+            </MudText>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(Keys.TotalCost)
+            </MudText>
+            <MudText Typo="Typo.h6" Color="Color.Primary" Class="total-cost">
+                @ViewModel.TotalTransactionCost @ViewModel.TokenSymbol
+            </MudText>
+        </MudItem>
+    </MudGrid>
+</WalletFormSection>
+
+@code {
+    [Parameter] public TransactionViewModel ViewModel { get; set; } = null!;
+    
+    protected override void OnInitialized()
+    {
+        LocalizationService.LanguageChanged += OnLanguageChanged;
+    }
+    
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // Fallback or ignore if clipboard API is not available
+        }
+    }
+    
+    private void OnLanguageChanged(string languageCode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        LocalizationService.LanguageChanged -= OnLanguageChanged;
+    }
+}
+

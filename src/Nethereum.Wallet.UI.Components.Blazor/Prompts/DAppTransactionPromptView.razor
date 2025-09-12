@@ -1,0 +1,191 @@
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.SendTransaction.Models
+@using Nethereum.Wallet.UI.Components.Blazor.SendTransaction
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Prompts
+@using static Nethereum.Wallet.UI.Components.Prompts.DAppTransactionPromptLocalizer
+@using MudBlazor
+@inject DAppTransactionPromptViewModel ViewModel
+@inject IComponentLocalizer<DAppTransactionPromptViewModel> Localizer
+
+<WalletFormLayout Title="@GetTitle()"
+                  Subtitle="@GetSubtitle()"
+                  Steps="@_steps"
+                  CurrentStepIndex="@ViewModel.CurrentStep"
+                  ExitText="@Localizer.GetString(Keys.Reject)"
+                  BackText="@Localizer.GetString(Keys.Back)"
+                  ContinueText="@Localizer.GetString(Keys.Continue)"
+                  PrimaryText="@GetPrimaryButtonText()"
+                  ShowBack="@(ViewModel.CurrentStep > 0 && ViewModel.CurrentStep < 2)"
+                  ShowContinue="@(ViewModel.CurrentStep == 0)"
+                  ShowPrimary="@(ViewModel.CurrentStep == 1)"
+                  ShowExit="@(ViewModel.CurrentStep < 2)"
+                  OnExit="HandleReject"
+                  OnBack="HandleBack"
+                  OnContinue="HandleContinue"
+                  OnPrimary="HandlePrimary"
+                  IsPrimaryDisabled="@(!ViewModel.CanApprove)"
+                  IsPrimaryLoading="@ViewModel.IsLoading">
+    
+    <ChildContent>
+        @if (ViewModel.CurrentStep == 0)
+        {
+            <WalletFormSection Title="@Localizer.GetString(Keys.RequestDetails)">
+                @if (PromptInfo != null && !string.IsNullOrEmpty(PromptInfo.DAppName))
+                {
+                    <WalletInfoCard Icon="@Icons.Material.Filled.Apps"
+                                    Title="@PromptInfo.DAppName"
+                                    Subtitle="@PromptInfo.Origin" />
+                }
+                
+                
+                
+                <TransactionInput ViewModel="@ViewModel.Transaction"
+                                Layout="TransactionInputLayout.Confirmation"
+                                ShowTransactionDetails="true"
+                                ShowDataDecoding="true"
+                                RecipientReadOnly="true"
+                                AmountReadOnly="true"
+                                ShowGasConfiguration="false" />
+                
+                @if (!string.IsNullOrEmpty(PromptInfo?.WarningMessage))
+                {
+                    <MudAlert Severity="Severity.Warning" Class="mt-3">
+                        @PromptInfo.WarningMessage
+                    </MudAlert>
+                }
+            </WalletFormSection>
+        }
+        else if (ViewModel.CurrentStep == 1)
+        {
+            <WalletFormSection Title="@Localizer.GetString(Keys.GasConfiguration)">
+                <TransactionInput ViewModel="@ViewModel.Transaction"
+                                Layout="TransactionInputLayout.Confirmation"
+                                ShowTransactionDetails="true"
+                                ShowGasConfiguration="true"
+                                ShowCostSummary="true"
+                                RecipientReadOnly="true"
+                                AmountReadOnly="true"
+                                AllowGasModeSwitch="true" />
+            </WalletFormSection>
+            
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">
+                    @ViewModel.ErrorMessage
+                    @if (ViewModel.ShowRetry)
+                    {
+                        <MudButton Color="Color.Primary" 
+                                  Variant="Variant.Text"
+                                  Size="Size.Small"
+                                  StartIcon="@Icons.Material.Filled.Refresh"
+                                  OnClick="@(() => ViewModel.RetryTransactionCommand.Execute(null))"
+                                  Class="ml-2">
+                            @Localizer.GetString(Keys.Retry)
+                        </MudButton>
+                    }
+                </MudAlert>
+            }
+        }
+        else if (ViewModel.CurrentStep == 2)
+        {
+            <TransactionStatus ViewModel="@ViewModel.TransactionStatus" />
+            
+            @if (!string.IsNullOrEmpty(ViewModel.TransactionHash))
+            {
+                <MudAlert Severity="Severity.Success" Class="mt-3">
+                    @Localizer.GetString(Keys.TransactionSent)
+                </MudAlert>
+            }
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = null!;
+    [Parameter] public EventCallback<object?> OnApproved { get; set; }
+    [Parameter] public EventCallback OnRejected { get; set; }
+    
+    private TransactionPromptInfo? PromptInfo => PromptRequest?.Data as TransactionPromptInfo;
+    private List<WalletFormStep> _steps = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _steps = new List<WalletFormStep>
+        {
+            new WalletFormStep { Label = Localizer.GetString(Keys.StepReview), Icon = Icons.Material.Filled.Preview },
+            new WalletFormStep { Label = Localizer.GetString(Keys.StepConfirm), Icon = Icons.Material.Filled.Check },
+            new WalletFormStep { Label = Localizer.GetString(Keys.StepStatus), Icon = Icons.Material.Filled.Done }
+        };
+        
+        if (PromptInfo != null)
+        {
+            await ViewModel.InitializeAsync(PromptInfo);
+            
+            ViewModel.OnTransactionSent = async (txHash) =>
+            {
+                await Task.Delay(2000);
+                await OnApproved.InvokeAsync(txHash);
+            };
+            
+            ViewModel.OnRejected = async () =>
+            {
+                await OnRejected.InvokeAsync();
+            };
+        }
+    }
+    
+    private string GetTitle()
+    {
+        return ViewModel.CurrentStep switch
+        {
+            0 => Localizer.GetString(Keys.ReviewTransaction),
+            1 => Localizer.GetString(Keys.ConfirmTransaction),
+            2 => Localizer.GetString(Keys.TransactionStatus),
+            _ => Localizer.GetString(Keys.TransactionRequest)
+        };
+    }
+    
+    private string GetSubtitle()
+    {
+        if (PromptInfo != null && !string.IsNullOrEmpty(PromptInfo.DAppName))
+        {
+            return Localizer.GetString(Keys.RequestFrom, PromptInfo.DAppName);
+        }
+        return "";
+    }
+    
+    private string GetPrimaryButtonText()
+    {
+        return ViewModel.CurrentStep switch
+        {
+            1 => Localizer.GetString(Keys.SendTransaction),
+            _ => Localizer.GetString(Keys.Continue)
+        };
+    }
+    
+    private async Task HandleReject()
+    {
+        ViewModel.RejectTransactionCommand.Execute(null);
+    }
+    
+    private void HandleBack()
+    {
+        ViewModel.PreviousStepCommand.Execute(null);
+    }
+    
+    private void HandleContinue()
+    {
+        ViewModel.NextStepCommand.Execute(null);
+    }
+    
+    private async Task HandlePrimary()
+    {
+        if (ViewModel.CurrentStep == 1)
+        {
+            await ViewModel.ApproveAndSendTransactionCommand.ExecuteAsync(null);
+        }
+    }
+}

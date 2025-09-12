@@ -1,0 +1,35 @@
+/* ViewOnlyAccountDetails.razor component scoped styles */
+.account-description {
+        margin-bottom: var(--wallet-space-md, 1rem);
+    }
+
+    .account-description .text-center {
+        text-align: center;
+        color: var(--mud-palette-text-primary);
+        line-height: 1.4;
+    }
+
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--wallet-space-xl, 2rem);
+        text-align: center;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--wallet-space-xl, 3rem) var(--wallet-space-md, 1rem);
+        text-align: center;
+    }
+
+    .empty-state .mud-icon {
+        font-size: 4rem;
+        margin-bottom: var(--wallet-space-md, 1rem);
+    }
+    
+    .text-center {
+        text-align: center;
+    }

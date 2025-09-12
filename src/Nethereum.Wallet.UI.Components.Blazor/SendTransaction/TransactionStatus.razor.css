@@ -1,0 +1,9 @@
+/* TransactionStatus.razor component scoped styles */
+.transaction-status-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--wallet-space-md, 1rem);
+        padding: var(--wallet-space-lg, 1.5rem) 0;
+        text-align: center;
+    }

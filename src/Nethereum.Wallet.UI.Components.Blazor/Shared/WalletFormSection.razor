@@ -1,0 +1,14 @@
+<!-- Form Section Wrapper - Provides consistent spacing for form sections -->
+<div class="wallet-form-section">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <h3 class="wallet-section-title">@Title</h3>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+

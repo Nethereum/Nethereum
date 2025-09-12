@@ -1,0 +1,504 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Dashboard.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Dashboard
+@using Nethereum.Wallet.Hosting
+@using Microsoft.AspNetCore.Components
+@using System.Linq
+@using Nethereum.Wallet.UI.Components.Configuration
+@using Microsoft.JSInterop
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Dashboard
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.Dashboard.WalletDashboardLocalizer
+@inject Nethereum.Wallet.UI.Components.Dashboard.IDashboardPluginRegistry PluginRegistry
+@inject IDashboardNavigationService DashboardNavService
+@inject NethereumWalletHostProvider WalletHostProvider
+@inject INethereumWalletUIConfiguration GlobalConfig
+@inject IJSRuntime JSRuntime
+@inject IComponentLocalizer<WalletDashboardViewModel> Localizer
+@inject WalletDashboardViewModel ViewModel
+@implements IDisposable
+
+<div @ref="containerRef" data-dashboard-container style="height: 100%; width: 100%; display: flex; position: relative;">
+    
+    <!-- Desktop: Always visible side menu -->
+    @if (ShouldShowSidebar())
+    {
+        <div class="desktop-sidemenu" style="width: @($"{GlobalConfig.SidebarWidth}px"); background: var(--mud-palette-surface); border-right: 1px solid var(--mud-palette-divider); flex-shrink: 0; height: 100vh; overflow-y: auto;">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header" style="padding: 20px; border-bottom: 1px solid var(--mud-palette-divider); background: var(--mud-palette-background-grey);">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    @if (GlobalConfig.ShowLogo)
+                    {
+                        <MudAvatar Size="Size.Large" Style="background: transparent;">
+                            <MudImage Src="@GlobalConfig.LogoPath" Alt="@GlobalConfig.ApplicationName" Height="48" Width="48" />
+                        </MudAvatar>
+                    }
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Style="font-weight: 600; text-align: center;">
+                        @GlobalConfig.ApplicationName
+                    </MudText>
+                </MudStack>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <MudNavMenu Class="pa-2" Style="padding-top: 16px;">
+                @foreach (var plugin in AvailablePlugins.Select((p, i) => new { Plugin = p, Index = i }))
+                {
+                    <MudNavLink Icon="@plugin.Plugin.Icon"
+                               OnClick="@(() => OnTabChanged(plugin.Index))"
+                               Class="@(ActivePluginIndex == plugin.Index ? "mud-nav-link-active" : "")"
+                               Style="margin-bottom: 4px; border-radius: 8px;">
+                        @GetLocalizedPluginName(plugin.Plugin)
+                    </MudNavLink>
+                }
+            </MudNavMenu>
+        </div>
+    }
+    
+    <!-- Main Content Area -->
+    <div style="flex: 1; display: flex; flex-direction: column;">
+    <!-- NEW Professional Header -->
+    <WalletHeader Title="@(SelectedPlugin != null ? GetLocalizedPluginName(SelectedPlugin) : Title)"
+                  Subtitle="@Subtitle"
+                  AppName="@GlobalConfig.ApplicationName"
+                  LogoPath="@GlobalConfig.LogoPath"
+                  ShowLogo="@GlobalConfig.ShowLogo"
+                  ShowAppName="@ShouldShowMobileHeader()"
+                  ShowMenuButton="@ShouldShowMobileHeader()"
+                  ShowAccountInfo="@(GlobalConfig.ShowAccountDetailsInHeader && WalletHostProvider.GetSelectedAccount() != null)"
+                  AccountName="@ViewModel.SelectedAccountName"
+                  AccountAddress="@ViewModel.SelectedAccountAddress"
+                  NetworkName="@ViewModel.SelectedNetworkName"
+                  NetworkLogoPath="@ViewModel.SelectedNetworkLogoPath"
+                  ChainId="@ViewModel.SelectedChainId"
+                  ShowNetworkInfo="true"
+                  IsMobile="@ShouldShowMobileHeader()"
+                  IsCompact="@isCompact"
+                  ComponentWidth="@componentWidth"
+                  OnMenuClick="ToggleDrawer"
+                  OnAccountClick="NavigateToAccountDetails"
+                  OnNetworkClick="NavigateToNetworkDetails">
+        <ActionsContent>
+            <NotificationBadge />
+        </ActionsContent>
+    </WalletHeader>
+
+        
+        <!-- Main Content -->
+        <div class="pa-3" style="flex: 1; overflow-y: auto;">
+            @if (SelectedPlugin != null)
+            {
+                <DynamicComponent Type="@GetPluginComponentType(SelectedPlugin)" 
+                                  Parameters="@GetPluginParameters(SelectedPlugin)"
+                                  @key="@GetPluginKey(SelectedPlugin)"
+                                  @ref="activePluginComponentRef" />
+            }
+            else
+            {
+                <MudStack Justify="Justify.Center" Style="height: 400px;">
+                    <MudIcon Icon="Icons.Material.Filled.Dashboard" Size="MudBlazor.Size.Large" Color="Color.Secondary" />
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">@Localizer.GetString(Keys.SelectSectionMessage)</MudText>
+                </MudStack>
+            }
+        </div>
+    </div>
+    
+    <!-- Mobile: Overlay menu -->
+    @if (ShouldShowMobileOverlay())
+    {
+        <MudOverlay Visible="@drawerOpen" DarkBackground="true" Absolute="true" OnClick="CloseMobileMenu" Style="display: flex; justify-content: flex-start; align-items: stretch;">
+            <div class="mobile-sidemenu" style="width: @($"{GlobalConfig.SidebarWidth}px"); height: 100%; background: var(--mud-palette-surface);">
+                <MudNavMenu Class="pa-2">
+                    <MudStack AlignItems="AlignItems.Center" Class="pa-3">
+                        @if (GlobalConfig.ShowLogo)
+                        {
+                            <MudImage Src="@GlobalConfig.LogoPath" Alt="@GlobalConfig.ApplicationName" Height="48" Width="48" />
+                        }
+                        <MudText Typo="Typo.h6" Color="Color.Primary" Style="margin-top: 8px;">
+                            @GlobalConfig.ApplicationName
+                        </MudText>
+                    </MudStack>
+                    <MudDivider Class="my-2" />
+                    
+                    @foreach (var plugin in AvailablePlugins.Select((p, i) => new { Plugin = p, Index = i }))
+                    {
+                        <MudNavLink Icon="@plugin.Plugin.Icon"
+                                   OnClick="@(() => SelectPluginAndCloseMenu(plugin.Index))"
+                                   Class="@(ActivePluginIndex == plugin.Index ? "mud-nav-link-active" : "")">
+                            @GetLocalizedPluginName(plugin.Plugin)
+                        </MudNavLink>
+                    }
+                </MudNavMenu>
+            </div>
+        </MudOverlay>
+    }
+</div>
+@code {
+    [Parameter] public EventCallback OnLogout { get; set; }
+    [Parameter] public string? SelectedAccount { get; set; }
+    [Parameter] public string Title { get; set; } = "Wallet Dashboard";
+    [Parameter] public string Subtitle { get; set; } = "Manage your accounts, security, and wallet settings";
+    [Parameter] public string MobileTitle { get; set; } = "Wallet";
+
+    private IEnumerable<IDashboardPluginViewModel> AvailablePlugins => PluginRegistry.GetAvailablePlugins();
+    private IDashboardPluginViewModel? SelectedPlugin;
+    private int ActivePluginIndex = 0;
+    private bool drawerOpen = false; // Start closed, will be set based on screen size
+    private int navigationCounter = 0; // Counter to force component recreation on navigation
+    
+    // Component width tracking
+    private ElementReference containerRef;
+    private DynamicComponent? activePluginComponentRef;
+    private int componentWidth = 0;
+    private bool disposed = false;
+    private bool isCompact = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to events
+        WalletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
+        WalletHostProvider.NetworkChanged += OnNetworkChangedAsync;
+        DashboardNavService.NavigationRequested += OnNavigationRequestedAsync;
+        
+        // Subscribe to ViewModel property changes
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        
+        // Language changes are handled by individual plugins
+        
+        // Initialize view model
+        await ViewModel.InitializeAsync();
+        
+        // Sync with current selected account from host provider
+        var currentAccount = WalletHostProvider.GetSelectedAccount();
+        if (currentAccount != null)
+        {
+            SelectedAccount = currentAccount.Address;
+        }
+        
+        var plugins = AvailablePlugins.ToList();
+        if (plugins.Any())
+        {
+            SelectedPlugin = plugins.First();
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateComponentSize();
+            
+            // Register the initial active plugin
+            await RegisterActivePluginAsync();
+            
+            // Start polling for size changes (fallback if resize events don't work)
+            _ = Task.Run(async () =>
+            {
+                while (!disposed)
+                {
+                    await Task.Delay(1000);
+                    await InvokeAsync(UpdateComponentSize);
+                }
+            });
+        }
+        else
+        {
+            // Register active plugin after each render (component may have changed)
+            await RegisterActivePluginAsync();
+        }
+    }
+    
+    private async Task UpdateComponentSize()
+    {
+        try
+        {
+            // Get element width directly
+            var width = await JSRuntime.InvokeAsync<int>("eval", "document.querySelector('[data-dashboard-container]').offsetWidth || 0");
+            
+            if (width <= 0)
+            {
+                // Try parent element
+                width = await JSRuntime.InvokeAsync<int>("eval", "document.querySelector('[data-dashboard-container]').parentElement.offsetWidth || 800");
+            }
+            
+            // Update local component state only when there's a meaningful change
+            if (Math.Abs(componentWidth - width) > 10)
+            {
+                var oldCompact = isCompact;
+                componentWidth = width;
+                isCompact = width < GlobalConfig.ResponsiveBreakpoint;
+                
+                // Only log when responsive state actually changes
+                if (oldCompact != isCompact)
+                {
+                    Console.WriteLine($"Dashboard: Responsive state changed to {(isCompact ? "compact" : "desktop")} mode (width: {componentWidth}px)");
+                }
+                
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Fallback to reasonable defaults
+            componentWidth = 800;
+            isCompact = false;
+            Console.WriteLine($"Dashboard: Width detection failed, using fallback - {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        
+        // Unsubscribe from events
+        WalletHostProvider.SelectedAccountChanged -= OnSelectedAccountChangedAsync;
+        WalletHostProvider.NetworkChanged -= OnNetworkChangedAsync;
+        DashboardNavService.NavigationRequested -= OnNavigationRequestedAsync;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        
+        // No language change cleanup needed
+    }
+
+    private async Task OnSelectedAccountChangedAsync(string accountAddress)
+    {
+        // Update selected account when host provider notifies of change
+        SelectedAccount = accountAddress;
+        await ViewModel.RefreshSelectedAccount();
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private async Task OnNetworkChangedAsync(long chainId)
+    {
+        // Update network info when network changes
+        await ViewModel.RefreshNetworkInfo();
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Update UI when ViewModel properties change
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnTabChanged(int activeIndex)
+    {
+        var plugins = AvailablePlugins.ToList();
+        if (activeIndex >= 0 && activeIndex < plugins.Count)
+        {
+            SelectedPlugin = plugins[activeIndex];
+            ActivePluginIndex = activeIndex;
+            navigationCounter++;
+            StateHasChanged();
+            
+            await RegisterActivePluginAsync();
+        }
+    }
+    
+    private string GetPluginKey(IDashboardPluginViewModel plugin)
+    {
+        return $"{plugin.PluginId}_{navigationCounter}";
+    }
+
+    private Type? GetPluginComponentType(IDashboardPluginViewModel plugin)
+    {
+        return PluginRegistry.GetComponentType(plugin);
+    }
+    
+    private string GetLocalizedPluginName(IDashboardPluginViewModel plugin)
+    {
+        return plugin.DisplayName;
+    }
+    
+    private Dictionary<string, object> GetPluginParameters(IDashboardPluginViewModel plugin)
+    {
+        var parameters = new Dictionary<string, object>();
+        var componentType = GetPluginComponentType(plugin);
+        
+        if (componentType != null)
+        {
+            // Use reflection to check what parameters the plugin component accepts
+            var properties = componentType.GetProperties();
+            
+            // Add common parameters only if the plugin supports them
+            if (properties.Any(p => p.Name == "SelectedAccount"))
+                parameters.Add("SelectedAccount", SelectedAccount ?? "");
+                
+            if (properties.Any(p => p.Name == "SelectedAccountAddress"))
+                parameters.Add("SelectedAccountAddress", SelectedAccount ?? "");
+                
+            if (properties.Any(p => p.Name == "ComponentWidth"))
+                parameters.Add("ComponentWidth", componentWidth);
+                
+            if (properties.Any(p => p.Name == "IsCompact"))
+                parameters.Add("IsCompact", isCompact);
+                
+            // Dashboard-specific navigation callback for create-account workflow
+            if (plugin.PluginId == "create-account" && properties.Any(p => p.Name == "OnAccountAdded"))
+                parameters.Add("OnAccountAdded", EventCallback.Factory.Create(this, OnAccountAdded));
+                
+            // Add OnReady callback for all components
+            if (properties.Any(p => p.Name == "OnReady"))
+                parameters.Add("OnReady", (Action<object>)OnPluginReady);
+        }
+
+        return parameters;
+    }
+
+    private async Task SwitchToPlugin(string pluginId)
+    {
+        var plugins = AvailablePlugins.ToList();
+        var targetPlugin = plugins.FirstOrDefault(p => p.PluginId == pluginId);
+        if (targetPlugin != null)
+        {
+            var targetIndex = plugins.IndexOf(targetPlugin);
+            await OnTabChanged(targetIndex);
+        }
+    }
+    
+
+    private async Task OnAccountAdded()
+    {
+        // After account is added, switch back to account list and refresh
+        await SwitchToPlugin("account-list");
+        StateHasChanged();
+    }
+
+    // Mobile menu methods
+    private void ToggleDrawer()
+    {
+        drawerOpen = !drawerOpen;
+    }
+
+    private void CloseMobileMenu()
+    {
+        drawerOpen = false;
+    }
+
+    private void CloseDrawerIfNeeded()
+    {
+        // Close mobile menu after navigation
+        drawerOpen = false;
+    }
+
+    private async Task SelectPluginAndCloseMenu(int pluginIndex)
+    {
+        await OnTabChanged(pluginIndex);
+        CloseDrawerIfNeeded();
+    }
+
+    // Navigation parameters are stored temporarily and delivered when the plugin component is ready.
+    // This avoids Blazor's component parameter caching issues and ensures navigation parameters
+    // are delivered fresh to the plugin component through the INavigatablePlugin interface.
+    private Dictionary<string, object>? pendingNavigationParameters;
+    
+    private async Task OnNavigationRequestedAsync(object sender, Nethereum.Wallet.UI.Components.Dashboard.Services.DashboardNavigationEventArgs e)
+    {
+        pendingNavigationParameters = e.Parameters;
+        await SwitchToPlugin(e.PluginId);
+    }
+    
+    // Called by plugin components when they're ready to receive navigation parameters.
+    // This callback pattern ensures the component instance is fully initialized before
+    // attempting to call navigation methods on it.
+    private async void OnPluginReady(object pluginInstance)
+    {
+        if (pendingNavigationParameters != null && pluginInstance is INavigatablePlugin nav)
+        {
+            await nav.NavigateWithParametersAsync(pendingNavigationParameters);
+            pendingNavigationParameters = null;
+        }
+    }
+
+    private string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length <= 16)
+            return address;
+        
+        return $"{address[..8]}...{address[^6..]}";
+    }
+    
+
+    private async Task NavigateToAccountDetails()
+    {
+        if (!ViewModel.HasSelectedAccount || ViewModel.SelectedAccount == null) return;
+        
+        // Navigate to account list plugin with simple parameters
+        var parameters = new Dictionary<string, object>
+        {
+            { "ShowAccountDetails", ViewModel.SelectedAccount },
+            { "SelectedAccountAddress", ViewModel.SelectedAccountAddress }
+        };
+        
+        await DashboardNavService.NavigateToPluginAsync("account-list", parameters);
+    }
+    
+    private async Task NavigateToNetworkDetails()
+    {
+        // Navigate to network management plugin with simple parameters
+        var parameters = new Dictionary<string, object>
+        {
+            { "ChainId", ViewModel.SelectedChainId },
+            { "ShowNetworkDetails", true }
+        };
+        
+        await DashboardNavService.NavigateToPluginAsync("network_management", parameters);
+    }
+    
+    private async void OnLanguageChanged(string language)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+    
+    private int GetAvailableAddressWidth()
+    {
+        // Calculate available width for address display in header
+        // Since we know minimum width is 960px (Breakpoint.Md), we can estimate
+        // Drawer is ~280px, leaving ~680px for content, header account section uses ~300px
+        // So we have roughly 200-250px for the address display
+        return componentWidth < GlobalConfig.ResponsiveBreakpoint ? 150 : 200;
+    }
+    
+    
+    private bool ShouldShowSidebar()
+    {
+        return GlobalConfig.DrawerBehavior switch
+        {
+            DrawerBehavior.AlwaysShow => true,
+            DrawerBehavior.AlwaysHidden => false,
+            DrawerBehavior.Responsive => !isCompact,
+            _ => !isCompact
+        };
+    }
+    
+    private bool ShouldShowMobileOverlay()
+    {
+        return GlobalConfig.DrawerBehavior switch
+        {
+            DrawerBehavior.AlwaysShow => false, // No overlay needed when always showing sidebar
+            DrawerBehavior.AlwaysHidden => true, // Always use overlay when hidden
+            DrawerBehavior.Responsive => isCompact,
+            _ => isCompact
+        };
+    }
+    
+    private async Task RegisterActivePluginAsync()
+    {
+        if (SelectedPlugin != null && activePluginComponentRef?.Instance != null)
+        {
+            DashboardNavService.RegisterActivePlugin(SelectedPlugin.PluginId, activePluginComponentRef.Instance);
+        }
+    }
+    
+    private bool ShouldShowMobileHeader()
+    {
+        return GlobalConfig.DrawerBehavior switch
+        {
+            DrawerBehavior.AlwaysShow => false, // No mobile header when sidebar always visible
+            DrawerBehavior.AlwaysHidden => true, // Always show mobile header
+            DrawerBehavior.Responsive => isCompact,
+            _ => isCompact
+        };
+    }
+}
+

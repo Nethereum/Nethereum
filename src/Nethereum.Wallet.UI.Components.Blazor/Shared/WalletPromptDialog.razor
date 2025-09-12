@@ -1,0 +1,109 @@
+@using MudBlazor
+@using Microsoft.AspNetCore.Components
+
+<MudDialog Options="@(new DialogOptions { BackdropClick = false, MaxWidth = MaxWidth.Small })">
+    <TitleContent>
+        <!-- Empty - we handle everything in DialogContent -->
+    </TitleContent>
+    <DialogContent>
+        <div class="wallet-prompt-dialog">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <div class="wallet-prompt-icon">
+                    <MudIcon Icon="@Icon" Size="Size.Large" Color="@IconColor" />
+                </div>
+            }
+            
+            <div class="wallet-prompt-content">
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <MudText Typo="Typo.h6" Class="wallet-prompt-title">
+                        @Title
+                    </MudText>
+                }
+                
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <MudText Typo="Typo.body1" Class="wallet-prompt-message">
+                        @Message
+                    </MudText>
+                }
+                
+                @if (ChildContent != null)
+                {
+                    <div class="wallet-prompt-custom-content">
+                        @ChildContent
+                    </div>
+                }
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="wallet-prompt-actions">
+            @if (ShowCancel)
+            {
+                <MudButton Variant="Variant.Text" 
+                           Color="Color.Default"
+                           OnClick="HandleCancel"
+                           Class="wallet-prompt-cancel"
+                           FullWidth="true">
+                    @CancelText
+                </MudButton>
+            }
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="@ConfirmColor"
+                       OnClick="HandleConfirm"
+                       Disabled="@IsLoading"
+                       Class="wallet-prompt-confirm"
+                       FullWidth="true">
+                @if (IsLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                }
+                else
+                {
+                    @ConfirmText
+                }
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public Color IconColor { get; set; } = Color.Primary;
+    
+    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public Color ConfirmColor { get; set; } = Color.Primary;
+    
+    [Parameter] public bool ShowCancel { get; set; } = true;
+    [Parameter] public bool IsLoading { get; set; } = false;
+    
+    [Parameter] public EventCallback<bool> OnResult { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    private async Task HandleConfirm()
+    {
+        if (OnResult.HasDelegate)
+        {
+            await OnResult.InvokeAsync(true);
+        }
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    
+    private async Task HandleCancel()
+    {
+        if (OnResult.HasDelegate)
+        {
+            await OnResult.InvokeAsync(false);
+        }
+        MudDialog.Close(DialogResult.Cancel());
+    }
+}
+

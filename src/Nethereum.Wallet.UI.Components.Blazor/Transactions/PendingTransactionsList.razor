@@ -1,0 +1,41 @@
+@using MudBlazor
+@using Nethereum.Wallet.Services.Transactions
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Transactions
+@inject IComponentLocalizer<TransactionHistoryViewModel> Localizer
+
+<MudStack Spacing="2">
+    @foreach (var transaction in Transactions.Take(MaxItems))
+    {
+        <TransactionCard Transaction="transaction"
+                       IsCompact="@IsCompact"
+                       ShowRetry="false"
+                       OnCopyHash="@OnCopyHash"
+                       OnViewOnExplorer="@OnViewOnExplorer"
+                       OnViewDetails="@OnViewDetails" />
+    }
+    
+    @if (ShowViewAll && Transactions.Count() > MaxItems)
+    {
+        <MudButton Variant="Variant.Text" 
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   FullWidth="true"
+                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                   OnClick="@OnViewAll">
+            @Localizer.GetString(TransactionHistoryLocalizer.Keys.ViewAll) (@Transactions.Count())
+        </MudButton>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public IEnumerable<TransactionInfo> Transactions { get; set; } = new List<TransactionInfo>();
+    [Parameter] public bool IsCompact { get; set; } = true;
+    [Parameter] public int MaxItems { get; set; } = 3;
+    [Parameter] public bool ShowViewAll { get; set; } = true;
+    [Parameter] public EventCallback OnViewAll { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnViewDetails { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnCopyHash { get; set; }
+    [Parameter] public EventCallback<TransactionInfo> OnViewOnExplorer { get; set; }
+}

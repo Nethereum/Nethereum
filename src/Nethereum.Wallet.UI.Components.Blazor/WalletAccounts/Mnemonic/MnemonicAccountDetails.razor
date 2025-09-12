@@ -1,0 +1,384 @@
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
+@using Nethereum.Wallet.UI.Components.Abstractions
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using System.ComponentModel
+@using MudBlazor
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.MnemonicAccountDetailsLocalizer
+@implements IDisposable
+@inject MnemonicAccountDetailsViewModel ViewModel
+@inject IComponentLocalizer<MnemonicAccountDetailsViewModel> Localizer
+@inject IJSRuntime JSRuntime
+
+<!-- Using New Reusable Wallet Form Layout for Compact Design -->
+<WalletFormLayout Title="@GetTitle()"
+                  Subtitle="@GetSubtitle()"
+                  ExitText="@Localizer.GetString(Keys.BackToAccounts)"
+                  BackText="@Localizer.GetString(Keys.Back)"
+                  ContinueText="@Localizer.GetString(Keys.Continue)"
+                  PrimaryText="@GetPrimaryActionText()"
+                  ShowBack="@(currentSection != ViewSection.Overview)"
+                  ShowContinue="false"
+                  ShowPrimary="@ShowPrimaryAction()"
+                  PrimaryDisabled="@(!CanExecutePrimaryAction())"
+                  OnExit="@HandleExit"
+                  OnBack="@HandleBack"
+                  OnPrimary="@HandlePrimaryAction">
+    <ActionButtons>
+        @if (currentSection == ViewSection.Overview && ViewModel.Account != null)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Edit"
+                                   Text="@Localizer.GetString(Keys.EditAccountName)"
+                                   OnClick="@(() => NavigateToSection(ViewSection.EditName))" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Security"
+                                   Text="@Localizer.GetString(Keys.ViewPrivateKey)"
+                                   OnClick="@(() => NavigateToSection(ViewSection.Security))" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Delete"
+                                   Text="@Localizer.GetString(Keys.RemoveAccount)"
+                                   Class="wallet-button-danger"
+                                   OnClick="@HandleRemoveAccount" />
+        }
+    </ActionButtons>
+    <ChildContent>
+
+    @if (ViewModel.IsLoading)
+    {
+        <WalletContentSection Class="spacing-normal">
+            <div class="loading-state">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                <MudText Typo="Typo.body2" Class="mt-3" Color="Color.Secondary">
+                    @Localizer.GetString(Keys.LoadingAccount)
+                </MudText>
+            </div>
+        </WalletContentSection>
+    }
+    else if (ViewModel.Account != null)
+    {
+        <!-- Switch between different sections based on currentSection -->
+        @switch (currentSection)
+        {
+            case ViewSection.Overview:
+                <!-- Account Overview Section -->
+                <WalletContentSection Class="spacing-tight" 
+                                    Style="max-width: 500px; margin: 0 auto; margin-top: -1rem;">
+                    
+                    <WalletBreadcrumb Items="@GetBreadcrumbItems()" />
+                    
+                    <div class="account-description">
+                        <MudText Typo="Typo.body2" Class="text-center">
+                            @string.Format(Localizer.GetString(Keys.AccountDerivedFromSeedPhrase), 
+                                ViewModel.Account?.Name ?? $"Account {ViewModel.GetAccountIndex()}", 
+                                ViewModel.GetAccountIndex(), 
+                                ViewModel.GetMnemonicName())
+                        </MudText>
+                    </div>
+                    
+                    <WalletAddressDisplay Address="@ViewModel.Account.Address"
+                                        ComponentWidth="@ComponentWidth"
+                                        IsCompact="@IsCompactMode"
+                                        ShowFullAddress="true"
+                                        OnCopy="@HandleAddressCopied" />
+                    
+                </WalletContentSection>
+                break;
+
+            case ViewSection.EditName:
+                <!-- Edit Account Name Section -->
+                <WalletFormSection Title="@Localizer.GetString(Keys.EditAccountName)">
+                    <MudTextField @bind-Value="ViewModel.EditingAccountName" 
+                                  Label="@Localizer.GetString(Keys.AccountNameLabel)"
+                                  Variant="Variant.Filled"
+                                  Placeholder="@Localizer.GetString(Keys.AccountNamePlaceholder)"
+                                  HelperText="@Localizer.GetString(Keys.AccountNameHelperText)"
+                                                                    Required="true"
+                                  RequiredError="@Localizer.GetString(Keys.AccountNameRequired)"
+                                  Class="wallet-modern-input" />
+                </WalletFormSection>
+                break;
+
+            case ViewSection.Security:
+                <!-- Security Section -->
+                @if (!ViewModel.ShowRevealedPrivateKey)
+                {
+                    <WalletSecurityPrompt Title="@Localizer.GetString(Keys.RevealPrivateKey)"
+                                        Warning="@Localizer.GetString(Keys.SecurityWarning)"
+                                        WarningMessage="@Localizer.GetString(Keys.SecurityWarningMessage)"
+                                        PasswordLabel="@Localizer.GetString(Keys.PasswordLabel)"
+                                        @bind-Password="passwordInput"
+                                        OnPasswordSubmit="@HandlePasswordVerified"
+                                        IsLoading="@ViewModel.IsLoading"
+                                        Level="WalletSecurityPrompt.SecurityLevel.High" />
+                }
+                else
+                {
+                    <WalletPrivateKeyDisplay Value="@ViewModel.RevealedPrivateKey"
+                                           Title="@Localizer.GetString(Keys.PrivateKeyTitle)"
+                                           SecurityTitle="@Localizer.GetString(Keys.KeepSecure)"
+                                           SecurityMessage="@Localizer.GetString(Keys.KeepSecureMessage)"
+                                           CopyTooltip="@Localizer.GetString(Keys.CopyToClipboard)"
+                                           OnCopy="@HandlePrivateKeyCopied"
+                                           ShowCopyButton="true" />
+                }
+                break;
+        }
+
+        <!-- Success/Error Messages -->
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                Title="@Localizer.GetString(Keys.Error)"
+                                Description="@ViewModel.ErrorMessage"
+                                Icon="@Icons.Material.Filled.Error" />
+            </WalletContentSection>
+        }
+
+        @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                Title="@Localizer.GetString(Keys.Success)"
+                                Description="@ViewModel.SuccessMessage"
+                                Icon="@Icons.Material.Filled.CheckCircle" />
+            </WalletContentSection>
+        }
+    }
+    else
+    {
+        <!-- Empty state -->
+        <WalletContentSection Class="spacing-loose">
+            <div class="empty-state">
+                <MudIcon Icon="@Icons.Material.Outlined.AccountCircle" 
+                         Size="Size.Large"
+                         Color="Color.Secondary" />
+                <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-3">
+                    @Localizer.GetString(Keys.NoAccountSelected)
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @Localizer.GetString(Keys.SelectAccountMessage)
+                </MudText>
+            </div>
+        </WalletContentSection>
+    }
+
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public IWalletAccount? Account { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 400;
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<string> OnNavigateToMnemonic { get; set; }
+    
+    public enum ViewSection
+    {
+        Overview,
+        EditName,
+        Security
+    }
+    
+    private ViewSection currentSection = ViewSection.Overview;
+    private string passwordInput = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        if (Account != null)
+        {
+            await ViewModel.InitializeAsync(Account);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Account != null && Account != ViewModel.Account)
+        {
+            await ViewModel.InitializeAsync(Account);
+        }
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Navigation methods
+    private void NavigateToSection(ViewSection section)
+    {
+        currentSection = section;
+        StateHasChanged();
+    }
+
+    private void HandleBack()
+    {
+        currentSection = ViewSection.Overview;
+        StateHasChanged();
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandlePrimaryAction()
+    {
+        switch (currentSection)
+        {
+            case ViewSection.EditName:
+                if (!string.IsNullOrEmpty(ViewModel.EditingAccountName) && ViewModel.SaveAccountNameCommand.CanExecute(null))
+                {
+                    ViewModel.SaveAccountNameCommand.Execute(null);
+                    currentSection = ViewSection.Overview;
+                }
+                else if (string.IsNullOrEmpty(ViewModel.EditingAccountName))
+                {
+                    // Validation will be handled by the ViewModel
+                }
+                break;
+            case ViewSection.Security:
+                if (!ViewModel.ShowRevealedPrivateKey && !string.IsNullOrEmpty(passwordInput))
+                {
+                    await ViewModel.RevealPrivateKeyCommand.ExecuteAsync(passwordInput);
+                    passwordInput = "";
+                }
+                else if (ViewModel.ShowRevealedPrivateKey)
+                {
+                    if (ViewModel.CloseRevealedPrivateKeyCommand.CanExecute(null))
+                    {
+                        ViewModel.CloseRevealedPrivateKeyCommand.Execute(null);
+                    }
+                }
+                break;
+        }
+        StateHasChanged();
+    }
+
+    // Helper methods for WalletFormLayout
+    private string GetTitle()
+    {
+        return currentSection switch
+        {
+            ViewSection.Overview => ViewModel.Account?.Name ?? Localizer.GetString(Keys.AccountDetails),
+            ViewSection.EditName => Localizer.GetString(Keys.EditAccountName),
+            ViewSection.Security => Localizer.GetString(Keys.SecuritySection),
+            _ => Localizer.GetString(Keys.AccountDetails)
+        };
+    }
+
+    private string GetSubtitle()
+    {
+        return currentSection switch
+        {
+            ViewSection.Overview => Localizer.GetString(Keys.MnemonicAccountType),
+            ViewSection.EditName => Localizer.GetString(Keys.ChangeAccountName),
+            ViewSection.Security => Localizer.GetString(Keys.ViewPrivateKeySubtitle),
+            _ => ""
+        };
+    }
+
+    private string GetPrimaryActionText()
+    {
+        return currentSection switch
+        {
+            ViewSection.EditName => Localizer.GetString(Keys.SaveChanges),
+            ViewSection.Security when !ViewModel.ShowRevealedPrivateKey => Localizer.GetString(Keys.RevealKeyButton),
+            ViewSection.Security when ViewModel.ShowRevealedPrivateKey => Localizer.GetString(Keys.HideKey),
+            _ => ""
+        };
+    }
+
+    private bool ShowPrimaryAction()
+    {
+        return currentSection switch
+        {
+            ViewSection.EditName => true,
+            ViewSection.Security => true,
+            _ => false
+        };
+    }
+
+    private bool CanExecutePrimaryAction()
+    {
+        return currentSection switch
+        {
+            ViewSection.EditName => !ViewModel.IsLoading,
+            ViewSection.Security => !ViewModel.IsLoading && (!ViewModel.ShowRevealedPrivateKey ? !string.IsNullOrEmpty(passwordInput) : true),
+            _ => false
+        };
+    }
+
+
+    private async Task HandleAddressCopied(string address)
+    {
+        // Copy feedback handled by the component
+    }
+
+    private async Task HandlePasswordVerified(string password)
+    {
+        await ViewModel.RevealPrivateKeyCommand.ExecuteAsync(password);
+    }
+
+    private async Task HandlePrivateKeyCopied(string privateKey)
+    {
+        // Copy feedback handled by the component
+    }
+
+    private async Task HandleHidePrivateKey()
+    {
+        if (ViewModel.CloseRevealedPrivateKeyCommand.CanExecute(null))
+        {
+            ViewModel.CloseRevealedPrivateKeyCommand.Execute(null);
+        }
+    }
+
+    private async Task NavigateToMnemonic()
+    {
+        // Navigate to mnemonic details showing all accounts
+        if (OnNavigateToMnemonic.HasDelegate && ViewModel.Account is MnemonicWalletAccount mnemonicAccount)
+        {
+            await OnNavigateToMnemonic.InvokeAsync(mnemonicAccount.MnemonicId);
+        }
+    }
+
+    private List<WalletBreadcrumb.BreadcrumbItem> GetBreadcrumbItems()
+    {
+        return new List<WalletBreadcrumb.BreadcrumbItem>
+        {
+            new() { Text = ViewModel.GetMnemonicName(), IsClickable = true, OnClick = () => _ = NavigateToMnemonic() },
+            new() { Text = ViewModel.Account?.Name ?? $"Account {ViewModel.GetAccountIndex()}", IsClickable = false }
+        };
+    }
+
+    private async Task HandleRemoveAccount()
+    {
+        var success = await ViewModel.RemoveAccountInternalAsync();
+        
+        // If successful, navigate back to account list
+        if (success)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+}
+
+

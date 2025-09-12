@@ -1,0 +1,405 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.MnemonicAccountEditorLocalizer
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@inject IJSRuntime JSRuntime
+@inject IComponentLocalizer<MnemonicAccountCreationViewModel> Localizer
+@implements IDisposable
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.DisplayName)"
+                  Subtitle="@Localizer.GetString(Keys.Description)"
+                  Steps="@formSteps"
+                  CurrentStepIndex="@((int)CurrentStep)"
+                  ExitText="@Localizer.GetString(Keys.ExitButtonText)"
+                  BackText="@Localizer.GetString(Keys.BackButtonText)"
+                  ContinueText="@Localizer.GetString(Keys.ContinueButtonText)"
+                  PrimaryText="@Localizer.GetString(Keys.CreateAccountButtonText)"
+                  StepLocalizer="@Localizer"
+                  ShowBack="@(CurrentStep > FormStep.Setup)"
+                  ShowContinue="@(CurrentStep != FormStep.Security)"
+                  ShowPrimary="@(CurrentStep == FormStep.Security)"
+                  ContinueDisabled="@(!CanProceedToNextStep())"
+                  PrimaryDisabled="@(!ViewModel.CanCreateAccount)"
+                  OnExit="@BackToAccountSelection"
+                  OnBack="@GoToPreviousStep"
+                  OnContinue="@HandleContinue"
+                  OnPrimary="@CreateAccount">
+
+    <!-- Current Step Description -->
+    <div>
+        <p>@GetStepDescription()</p>
+    </div>
+    
+    <!-- Form Content -->
+    <div>
+        @switch (CurrentStep)
+        {
+            case FormStep.Setup:
+                <WalletFormSection>
+                    <WalletTextField @bind-Value="ViewModel.MnemonicLabel"
+                                     LabelKey="@Keys.WalletNameLabel"
+                                     PlaceholderKey="@Keys.AccountNamePlaceholder"
+                                     HelpKey="@Keys.WalletNameHelperText"
+                                     Localizer="@Localizer" />
+                </WalletFormSection>
+                
+                <WalletFormSection Title="@($"{Localizer.GetString(Keys.GenerateTabText)} / {Localizer.GetString(Keys.ImportTabText)}")">
+                    <WalletSegmentedControl @bind-SelectedValue="isGenerateMode" 
+                                            Options="@modeOptions" />
+                </WalletFormSection>
+                
+                <WalletInfoCard Severity="@(ViewModel.IsGenerateMode ? WalletInfoCard.WalletInfoSeverity.Info : WalletInfoCard.WalletInfoSeverity.Warning)"
+                                Title="@GetModeTitle()"
+                                Description="@GetModeDescription()"
+                                Icon="@(ViewModel.IsGenerateMode ? Icons.Material.Filled.Info : Icons.Material.Filled.Warning)" />
+                break;
+                
+            case FormStep.Mnemonic:
+                @if (ViewModel.IsGenerateMode)
+                {
+                    <WalletFormSection>
+                        @if (Configuration.MnemonicBehavior.ShowWordCountButtons)
+                        {
+                            <MudStack Row="true" Justify="Justify.Center" Spacing="2">
+                                <MudButton Variant="@(ViewModel.WordCount == 12 ? Variant.Filled : Variant.Outlined)"
+                                           Color="@(ViewModel.WordCount == 12 ? Color.Primary : Color.Default)"
+                                           OnClick="ViewModel.GenerateMnemonicAsync"
+                                           Size="Size.Medium">
+                                    @Localizer.GetString(Keys.Generate12WordsText)
+                                </MudButton>
+                                <MudButton Variant="@(ViewModel.WordCount == 24 ? Variant.Filled : Variant.Outlined)"
+                                           Color="@(ViewModel.WordCount == 24 ? Color.Primary : Color.Default)"
+                                           OnClick="ViewModel.GenerateMnemonic24Async"
+                                           Size="Size.Medium">
+                                    @Localizer.GetString(Keys.Generate24WordsText)
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </WalletFormSection>
+                    
+                    @if (!string.IsNullOrEmpty(ViewModel.Mnemonic) && GetMnemonicWordsList().Any())
+                    {
+                        <WalletFormSection>
+                            <WalletWordChips Words="@GetMnemonicWordsList()"
+                                             @bind-IsVisible="ViewModel.IsRevealed"
+                                             AllowCopy="@Configuration.MnemonicBehavior.EnableClipboardCopy"
+                                             OnCopy="CopyToClipboard" />
+                        </WalletFormSection>
+                    }
+                    
+                    @if (Configuration.MnemonicBehavior.EnablePassphraseEntry)
+                    {
+                        <WalletFormSection Title="@Localizer.GetString(Keys.PassphraseLabel)">
+                            <WalletTextField @bind-Value="ViewModel.MnemonicPassphrase"
+                                             LabelKey="@Keys.PassphraseLabel"
+                                             HelpKey="@Keys.PassphraseHelperText"
+                                             FieldType="WalletTextField.WalletTextFieldType.Password"
+                                             MaxLength="@Configuration.MnemonicSecurity.MaxPassphraseLength"
+                                             Localizer="@Localizer" />
+                        </WalletFormSection>
+                    }
+                }
+                else
+                {
+                    <WalletFormSection>
+                        <WalletTextField @bind-Value="ViewModel.Mnemonic"
+                                         LabelKey="@Keys.SeedPhraseLabel"
+                                         HelpKey="@Keys.SeedPhraseHelperText"
+                                         FieldType="WalletTextField.WalletTextFieldType.Mnemonic"
+                                         Lines="4"
+                                         Localizer="@Localizer" />
+                        
+                        @if (!string.IsNullOrEmpty(ViewModel.Mnemonic))
+                        {
+                            <div class="wallet-validation-section">
+                                <MudChip T="string" 
+                                         Color="@(ViewModel.IsValidMnemonic ? Color.Success : Color.Error)"
+                                         Icon="@(ViewModel.IsValidMnemonic ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)"
+                                         Class="wallet-validation-chip">
+                                    @(ViewModel.IsValidMnemonic 
+                                        ? $"{Localizer.GetString(Keys.ValidMnemonicMessage)} ({ViewModel.WordCount} {Localizer.GetString(Keys.WordCountDisplay)})" 
+                                        : Localizer.GetString(Keys.InvalidMnemonicMessage))
+                                </MudChip>
+                            </div>
+                        }
+                    </WalletFormSection>
+                    
+                    @if (Configuration.MnemonicBehavior.EnablePassphraseEntry)
+                    {
+                        <WalletFormSection Title="@Localizer.GetString(Keys.PassphraseLabel)">
+                            <WalletTextField @bind-Value="ViewModel.MnemonicPassphrase"
+                                             LabelKey="@Keys.PassphraseLabel"
+                                             HelpKey="@Keys.PassphraseHelperText"
+                                             FieldType="WalletTextField.WalletTextFieldType.Password"
+                                             MaxLength="@Configuration.MnemonicSecurity.MaxPassphraseLength"
+                                             Localizer="@Localizer" />
+                        </WalletFormSection>
+                    }
+                }
+                break;
+                
+            case FormStep.Security:
+                <WalletFormSection Title="@Localizer.GetString(Keys.AccountNameLabel)">
+                    <WalletTextField @bind-Value="ViewModel.FinalAccountName"
+                                     LabelKey="@Keys.AccountNameLabel"
+                                     PlaceholderKey="@Keys.AccountNameDefaultPlaceholder"
+                                     HelpKey="@Keys.AccountNameFinalHelperText"
+                                     Localizer="@Localizer" />
+                </WalletFormSection>
+                
+                @if (Configuration.MnemonicBehavior.RequireBackupConfirmation && !ViewModel.IsBackedUp)
+                {
+                    <WalletFormSection>
+                        <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
+                                        Title="@Localizer.GetString(Keys.BackupWarningTitle)"
+                                        Description="@Localizer.GetString(Keys.BackupWarningMessage)"
+                                        Icon="@Icons.Material.Filled.Warning">
+                            <div class="wallet-backup-confirmation">
+                                <MudCheckBox @bind-Value="ViewModel.IsBackedUp" 
+                                             Color="Color.Primary"
+                                             Class="wallet-backup-checkbox">
+                                    @Localizer.GetString(Keys.BackupConfirmationText)
+                                </MudCheckBox>
+                            </div>
+                        </WalletInfoCard>
+                    </WalletFormSection>
+                }
+                
+                @if (!string.IsNullOrEmpty(ViewModel.DerivedAddress))
+                {
+                    <WalletFormSection Title="@Localizer.GetString(Keys.AccountPreviewTitle)">
+                        <div class="wallet-address-preview">
+                            <div class="wallet-address-content">
+                                <span class="wallet-address-label">@Localizer.GetString(Keys.DerivedAddressLabel)</span>
+                                <span class="wallet-address-value">@ViewModel.DerivedAddress</span>
+                            </div>
+                            <button class="wallet-icon-button" @onclick="ViewModel.CopyAddressToClipboardAsync">
+                                <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                            </button>
+                        </div>
+                    </WalletFormSection>
+                }
+                break;
+        }
+    </div>
+    
+</WalletFormLayout>
+
+@code {
+    [Parameter] public required MnemonicAccountCreationViewModel ViewModel { get; set; }
+    [Parameter] public MnemonicAccountEditorConfiguration Configuration { get; set; } = new();
+    [Parameter] public EventCallback OnAccountCreated { get; set; }
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+    [Parameter] public bool ShowBackToLogin { get; set; } = true;
+    [Parameter] public bool ShowBackToAccountSelection { get; set; } = true;
+    
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 400;
+    
+    public enum FormStep
+    {
+        Setup = 0,
+        Mnemonic = 1,
+        Security = 2
+    }
+    
+    public FormStep CurrentStep { get; set; } = FormStep.Setup;
+    
+    private bool isGenerateMode = true;
+    private List<WalletFormStep> formSteps = new();
+    private List<WalletSegmentedControl<bool>.WalletSegmentOption<bool>> modeOptions = new();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+        // Reset ViewModel to ensure clean state
+        ViewModel.Reset();
+        
+        if (string.IsNullOrEmpty(ViewModel.MnemonicLabel))
+        {
+            ViewModel.MnemonicLabel = Localizer.GetString(Keys.AccountNamePlaceholder);
+        }
+        
+        if (string.IsNullOrEmpty(ViewModel.FinalAccountName))
+        {
+            ViewModel.FinalAccountName = Localizer.GetString(Keys.AccountNameDefaultPlaceholder);
+        }
+        
+        isGenerateMode = ViewModel.IsGenerateMode;
+        ViewModel.CopyToClipboardRequested += CopyToClipboard;
+        
+        SetupFormSteps();
+        SetupModeOptions();
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.CopyToClipboardRequested -= CopyToClipboard;
+        }
+    }
+    
+    private void SetupFormSteps()
+    {
+        formSteps = new List<WalletFormStep>
+        {
+            new() { LocalizationKey = Keys.StepSetupLabel, Icon = Icons.Material.Filled.Settings },
+            new() { LocalizationKey = Keys.StepSeedPhraseLabel, Icon = Icons.Material.Filled.Key },
+            new() { LocalizationKey = Keys.StepConfirmLabel, Icon = Icons.Material.Filled.Shield }
+        };
+    }
+    
+    private void SetupModeOptions()
+    {
+        modeOptions = new List<WalletSegmentedControl<bool>.WalletSegmentOption<bool>>
+        {
+            new() 
+            { 
+                Value = true, 
+                Title = Localizer.GetString(Keys.GenerateTabText), 
+                Description = Localizer.GetString(Keys.GenerateDescription),
+                Icon = Icons.Material.Filled.AutoAwesome 
+            },
+            new() 
+            { 
+                Value = false, 
+                Title = Localizer.GetString(Keys.ImportTabText), 
+                Description = Localizer.GetString(Keys.ImportDescription),
+                Icon = Icons.Material.Filled.FileUpload 
+            }
+        };
+    }
+    
+    private async Task SwitchMode(bool newIsGenerateMode)
+    {
+        if (newIsGenerateMode != ViewModel.IsGenerateMode)
+        {
+            if (newIsGenerateMode)
+                await ViewModel.SwitchToGenerateModeAsync();
+            else
+                await ViewModel.SwitchToImportModeAsync();
+            StateHasChanged();
+        }
+    }
+    
+    
+    private void GoToNextStep()
+    {
+        if (CurrentStep < FormStep.Security)
+        {
+            CurrentStep = (FormStep)((int)CurrentStep + 1);
+            StateHasChanged();
+        }
+    }
+    
+    private void GoToPreviousStep()
+    {
+        if (CurrentStep > FormStep.Setup)
+        {
+            CurrentStep = (FormStep)((int)CurrentStep - 1);
+            StateHasChanged();
+        }
+    }
+    
+    private async Task HandleContinue()
+    {
+        // Handle mode switching on setup step
+        if (CurrentStep == FormStep.Setup && isGenerateMode != ViewModel.IsGenerateMode)
+        {
+            await SwitchMode(isGenerateMode);
+        }
+        GoToNextStep();
+    }
+    
+    private bool CanProceedToNextStep()
+    {
+        return CurrentStep switch
+        {
+            FormStep.Setup => !string.IsNullOrEmpty(ViewModel.MnemonicLabel),
+            FormStep.Mnemonic => ViewModel.IsGenerateMode ? !string.IsNullOrEmpty(ViewModel.Mnemonic) : ViewModel.IsValidMnemonic,
+            FormStep.Security => ViewModel.CanCreateAccount && !string.IsNullOrEmpty(ViewModel.FinalAccountName),
+            _ => false
+        };
+    }
+    
+    private string GetStepDescription()
+    {
+        return CurrentStep switch
+        {
+            FormStep.Setup => Localizer.GetString(Keys.Description),
+            FormStep.Mnemonic => ViewModel.IsGenerateMode 
+                ? Localizer.GetString(Keys.StepMnemonicGenerate) 
+                : Localizer.GetString(Keys.StepMnemonicImport), 
+            FormStep.Security => Localizer.GetString(Keys.StepSecurityDescription),
+            _ => ""
+        };
+    }
+    
+    private string GetModeTitle()
+    {
+        return ViewModel.IsGenerateMode 
+            ? Localizer.GetString(Keys.GenerateModeTitle) 
+            : Localizer.GetString(Keys.ImportModeTitle);
+    }
+    
+    private string GetModeDescription()
+    {
+        return ViewModel.IsGenerateMode 
+            ? Localizer.GetString(Keys.GenerateModeDescription)
+            : Localizer.GetString(Keys.ImportModeDescription);
+    }
+    
+    private List<string> GetMnemonicWordsList()
+    {
+        if (string.IsNullOrEmpty(ViewModel.Mnemonic))
+            return new List<string>();
+            
+        return ViewModel.Mnemonic.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+    }
+    
+    private async Task CreateAccount()
+    {
+        if (ViewModel.CanCreateAccount)
+        {
+            // The ViewModel now properly uses FinalAccountName for the account name
+            await OnAccountCreated.InvokeAsync();
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        if (!Configuration.MnemonicBehavior.EnableClipboardCopy)
+            return;
+            
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // Fallback for older browsers
+        }
+    }
+
+    private async Task BackToLogin()
+    {
+        if (OnBackToLogin.HasDelegate)
+        {
+            await OnBackToLogin.InvokeAsync();
+        }
+    }
+
+    private async Task BackToAccountSelection()
+    {
+        if (OnBackToAccountSelection.HasDelegate)
+        {
+            await OnBackToAccountSelection.InvokeAsync();
+        }
+    }
+}
+
+@inject IComponentLocalizer<MnemonicAccountCreationViewModel> Localizer

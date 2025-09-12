@@ -1,0 +1,207 @@
+@using MudBlazor
+
+@* WalletPopup.razor - Mobile-first popup component for all wallet areas *@
+<MudOverlay Visible="@IsVisible" 
+            DarkBackground="true" 
+            Absolute="false" 
+            ZIndex="9999"
+            OnClick="@HandleBackdropClick"
+            Class="wallet-popup-overlay">
+    
+    <div class="wallet-popup-container" style="@GetContainerStyle()" @onclick:stopPropagation="true">
+        
+        @if (ShowCloseButton)
+        {
+            <div class="wallet-popup-close">
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Size="MudBlazor.Size.Medium"
+                               Color="Color.Secondary"
+                               OnClick="@HandleCloseClick"
+                               Class="wallet-close-button" />
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="wallet-popup-header">
+                <MudText Typo="@GetTitleTypo()" 
+                         Class="wallet-popup-title"
+                         Style="font-weight: 600; text-align: center;">
+                    @Title
+                </MudText>
+                @if (!string.IsNullOrEmpty(Subtitle))
+                {
+                    <MudText Typo="Typo.body2" 
+                             Color="Color.Secondary" 
+                             Class="wallet-popup-subtitle"
+                             Style="text-align: center; margin-top: 8px;">
+                        @Subtitle
+                    </MudText>
+                }
+            </div>
+        }
+        
+        @if (Content != null)
+        {
+            <div class="wallet-popup-content" style="@GetContentStyle()">
+                @Content
+            </div>
+        }
+        
+        @if (Actions != null)
+        {
+            <div class="wallet-popup-actions" style="@GetActionsStyle()">
+                @Actions
+            </div>
+        }
+        
+    </div>
+</MudOverlay>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? Content { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public bool CloseOnBackdropClick { get; set; } = true;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public WalletPopupSize Size { get; set; } = WalletPopupSize.Medium;
+    [Parameter] public WalletPopupPosition Position { get; set; } = WalletPopupPosition.Center;
+    
+    private string GetContainerStyle()
+    {
+        var styles = new List<string>
+        {
+            "background: var(--mud-palette-surface)",
+            "border-radius: 16px 16px 0 0", // Mobile bottom sheet style
+            "box-shadow: 0 -4px 20px rgba(0,0,0,0.15)",
+            "max-width: 100vw",
+            "max-height: 90vh",
+            "overflow-y: auto",
+            "animation: slideUp 0.3s ease-out"
+        };
+        
+        // Position styles
+        switch (Position)
+        {
+            case WalletPopupPosition.Bottom:
+                styles.Add("position: fixed");
+                styles.Add("bottom: 0");
+                styles.Add("left: 0");
+                styles.Add("right: 0");
+                styles.Add("width: 100%");
+                break;
+                
+            case WalletPopupPosition.Center:
+                styles.Add("position: fixed");
+                styles.Add("top: 50%");
+                styles.Add("left: 50%");
+                styles.Add("transform: translate(-50%, -50%)");
+                styles.Add("border-radius: 16px");
+                styles.Add("width: 90vw");
+                styles.Add("max-width: 400px");
+                break;
+                
+            case WalletPopupPosition.Top:
+                styles.Add("position: fixed");
+                styles.Add("top: 0");
+                styles.Add("left: 0");
+                styles.Add("right: 0");
+                styles.Add("width: 100%");
+                styles.Add("border-radius: 0 0 16px 16px");
+                break;
+        }
+        
+        // Size adjustments
+        switch (Size)
+        {
+            case WalletPopupSize.Small:
+                styles.Add("min-height: 200px");
+                break;
+            case WalletPopupSize.Medium:
+                styles.Add("min-height: 300px");
+                break;
+            case WalletPopupSize.Large:
+                styles.Add("min-height: 400px");
+                break;
+            case WalletPopupSize.Auto:
+                // Let content determine height
+                break;
+        }
+        
+        return string.Join("; ", styles) + ";";
+    }
+    
+    private string GetContentStyle()
+    {
+        var padding = Size switch
+        {
+            WalletPopupSize.Small => "16px",
+            WalletPopupSize.Medium => "24px",
+            WalletPopupSize.Large => "32px",
+            _ => "24px"
+        };
+        
+        return $"padding: 0 {padding} {padding} {padding}; flex-grow: 1;";
+    }
+    
+    private string GetActionsStyle()
+    {
+        var padding = "16px 24px 32px 24px"; // Extra bottom padding for mobile
+        var styles = new List<string>
+        {
+            $"padding: {padding}",
+            "display: flex",
+            "flex-direction: column", // Mobile-first: stack buttons
+            "gap: 12px",
+            "border-top: 1px solid var(--mud-palette-divider)"
+        };
+        
+        // On larger screens, use row layout
+        styles.Add("@media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }");
+        
+        return string.Join("; ", styles) + ";";
+    }
+    
+    private Typo GetTitleTypo() => Size switch
+    {
+        WalletPopupSize.Small => Typo.h6,
+        WalletPopupSize.Medium => Typo.h5,
+        WalletPopupSize.Large => Typo.h4,
+        _ => Typo.h5
+    };
+    
+    private async Task HandleBackdropClick()
+    {
+        if (CloseOnBackdropClick)
+        {
+            await HandleCloseClick();
+        }
+    }
+    
+    private async Task HandleCloseClick()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}
+
+public enum WalletPopupSize
+{
+    Small,   // Compact popups
+    Medium,  // Standard size
+    Large,   // Full content popups
+    Auto     // Size based on content
+}
+
+public enum WalletPopupPosition
+{
+    Center,  // Center of screen (default for dialogs)
+    Bottom,  // Bottom sheet (mobile-friendly)
+    Top      // Top sheet (less common)
+}
+

@@ -1,0 +1,22 @@
+/* WalletCompactHeader.razor component scoped styles */
+.wallet-compact-header {
+        text-align: center;
+        padding: var(--wallet-space-sm, 0.75rem) 0;
+        margin-bottom: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    .wallet-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--wallet-text-primary, #111827);
+        margin: 0 0 var(--wallet-space-xs, 0.5rem) 0;
+        line-height: 1.2;
+    }
+    
+    .wallet-subtitle {
+        font-size: var(--wallet-font-base, 1rem);
+        font-weight: 500;
+        color: var(--wallet-text-secondary, #6b7280);
+        margin: 0;
+        line-height: 1.4;
+    }

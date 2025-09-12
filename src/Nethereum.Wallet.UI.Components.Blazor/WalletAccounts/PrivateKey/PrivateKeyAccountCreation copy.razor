@@ -1,0 +1,197 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey.PrivateKeyAccountEditorLocalizer
+
+<MudStack Spacing="4">
+    <!-- Account Name -->
+    <MudTextField Label="@Localizer.GetString(Keys.AccountNameLabel)"
+                  @bind-Value="ViewModel.Label"
+                  HelperText="@Localizer.GetString(Keys.AccountNameHelperText)"
+                  Variant="Variant.Outlined"
+                  Required="false" 
+                  Placeholder="@Localizer.GetString(Keys.AccountNamePlaceholder)" />
+
+    <!-- Private Key Input -->
+    <MudCard>
+        <MudCardContent>
+            <MudStack Spacing="3">
+                <MudTextField Label="@Localizer.GetString(Keys.PrivateKeyLabel)"
+                              @bind-Value="ViewModel.PrivateKey"
+                              HelperText="@Localizer.GetString(Keys.PrivateKeyHelperText)"
+                              Variant="Variant.Outlined"
+                              InputType="@(ViewModel.IsRevealed ? InputType.Text : InputType.Password)"
+                              Error="!string.IsNullOrEmpty(ViewModel.ErrorMessage)"
+                              ErrorText="@ViewModel.ErrorMessage"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(ViewModel.IsRevealed ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                              OnAdornmentClick="ViewModel.ToggleRevealAsync"
+                              AdornmentAriaLabel="@Localizer.GetString(Keys.ToggleVisibilityLabel)" />
+
+                <!-- Format and Validation Info -->
+                @if (!string.IsNullOrEmpty(ViewModel.PrivateKey))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudChip T="string" Size="MudBlazor.Size.Small" 
+                                 Color="@(ViewModel.IsValidPrivateKey ? Color.Success : Color.Error)"
+                                 Icon="@(ViewModel.IsValidPrivateKey ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)">
+                            @(ViewModel.IsValidPrivateKey ? Localizer.GetString(Keys.ValidFormatText) : Localizer.GetString(Keys.InvalidFormatText))
+                        </MudChip>
+                    </MudStack>
+                }
+
+                <!-- Security Warning -->
+                <MudAlert Severity="Severity.Warning">
+                    <MudStack Spacing="1">
+                        <MudText><strong>@Localizer.GetString(Keys.SecurityWarningTitle)</strong></MudText>
+                        <MudText>@Localizer.GetString(Keys.NeverShareAdvice)</MudText>
+                        <MudText>@Localizer.GetString(Keys.SecureEnvironmentAdvice)</MudText>
+                        <MudText>@Localizer.GetString(Keys.FullControlAdvice)</MudText>
+                    </MudStack>
+                </MudAlert>
+            </MudStack>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Derived Address Preview -->
+    @if (!string.IsNullOrEmpty(ViewModel.DerivedAddress))
+    {
+        <MudCard Elevation="1">
+            <MudCardContent>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(Keys.DerivedAddressLabel)</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace;">@ViewModel.DerivedAddress</MudText>
+                        <MudIconButton Icon="Icons.Material.Filled.ContentCopy"
+                                       Size="MudBlazor.Size.Small"
+                                       OnClick="@(() => CopyToClipboard(ViewModel.DerivedAddress))"
+                                       Tooltip="@Localizer.GetString(Keys.CopyAddressTitle)" />
+                    </MudStack>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    }
+
+    <!-- Error Messages -->
+    @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error">
+            @ViewModel.ErrorMessage
+        </MudAlert>
+    }
+
+    <!-- Validation Messages -->
+    @if (ViewModel.IsValidPrivateKey && !string.IsNullOrEmpty(ViewModel.PrivateKey))
+    {
+        <MudAlert Severity="Severity.Success">
+            @Localizer.GetString(Keys.ValidPrivateKeyMessage)
+        </MudAlert>
+    }
+    @if (!ViewModel.IsValidPrivateKey && !string.IsNullOrEmpty(ViewModel.PrivateKey))
+    {
+        <MudAlert Severity="Severity.Error">
+            @Localizer.GetString(Keys.InvalidPrivateKeyMessage)
+        </MudAlert>
+    }
+
+    <!-- Format Help -->
+    <MudCard Elevation="1">
+        <MudCardContent>
+            <MudStack Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="Icons.Material.Filled.Info" Size="MudBlazor.Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.caption" Color="Color.Primary"><strong>@Localizer.GetString(Keys.SupportedFormatsTitle)</strong></MudText>
+                </MudStack>
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.HexWithPrefixExample)
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.HexWithoutPrefixExample)
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.LengthRequirement)
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Navigation and Action Buttons -->
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Row="true" Spacing="2">
+            @if (ShowBackToLogin)
+            {
+                <MudButton Variant="Variant.Outlined" 
+                          OnClick="BackToLogin"
+                          StartIcon="Icons.Material.Filled.ArrowBack">
+                    @Localizer.GetString(Keys.BackToLoginText)
+                </MudButton>
+            }
+            @if (ShowBackToAccountSelection)
+            {
+                <MudButton Variant="Variant.Outlined" 
+                          OnClick="BackToAccountSelection"
+                          StartIcon="Icons.Material.Filled.AccountCircle">
+                    @Localizer.GetString(Keys.BackToAccountSelectionText)
+                </MudButton>
+            }
+        </MudStack>
+        <MudButton Variant="Variant.Filled" 
+                  Color="Color.Primary" 
+                  OnClick="CreateAccount"
+                  Disabled="!ViewModel.CanCreateAccount"
+                  StartIcon="Icons.Material.Filled.Add">
+            @Localizer.GetString(Keys.AddAccountText)
+        </MudButton>
+    </MudStack>
+</MudStack>
+
+
+@code {
+    [Parameter] required public PrivateKeyAccountCreationViewModel ViewModel { get; set; }
+    [Parameter] public EventCallback OnAccountCreated { get; set; }
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+    [Parameter] public bool ShowBackToLogin { get; set; } = true;
+    [Parameter] public bool ShowBackToAccountSelection { get; set; } = true;
+
+    private async Task CreateAccount()
+    {
+        if (ViewModel.CanCreateAccount)
+        {
+            await OnAccountCreated.InvokeAsync();
+        }
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+            // Fallback for older browsers or when clipboard API is not available
+        }
+    }
+
+    private async Task BackToLogin()
+    {
+        if (OnBackToLogin.HasDelegate)
+        {
+            await OnBackToLogin.InvokeAsync();
+        }
+    }
+
+    private async Task BackToAccountSelection()
+    {
+        if (OnBackToAccountSelection.HasDelegate)
+        {
+            await OnBackToAccountSelection.InvokeAsync();
+        }
+    }
+}
+
+@inject IJSRuntime JSRuntime
+@inject IComponentLocalizer<PrivateKeyAccountCreationViewModel> Localizer

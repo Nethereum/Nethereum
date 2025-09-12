@@ -1,0 +1,72 @@
+/* NetworkDetails.razor component scoped styles */
+.loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--wallet-space-xl, 2rem);
+        text-align: center;
+    }
+
+    .rpc-endpoint-card {
+        border-left: 3px solid var(--mud-palette-info);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .rpc-endpoint-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    }
+
+    .rpc-endpoint-card.active {
+        border-left-color: var(--mud-palette-success);
+        background-color: rgba(var(--mud-palette-success-rgb), 0.05);
+        box-shadow: 0 2px 4px rgba(var(--mud-palette-success-rgb), 0.2);
+    }
+
+    .rpc-endpoint-card.inactive {
+        border-left-color: var(--mud-palette-text-disabled);
+        opacity: 0.7;
+    }
+
+    .rpc-endpoint-card.testing {
+        border-left-color: var(--mud-palette-info);
+        background-color: rgba(var(--mud-palette-info-rgb), 0.05);
+    }
+
+    .rpc-endpoint-card.healthy {
+        border-left-color: var(--mud-palette-success);
+        background-color: rgba(var(--mud-palette-success-rgb), 0.05);
+        box-shadow: 0 2px 4px rgba(var(--mud-palette-success-rgb), 0.15);
+    }
+
+    .rpc-endpoint-card.unhealthy {
+        border-left-color: var(--mud-palette-error);
+        background-color: rgba(var(--mud-palette-error-rgb), 0.05);
+        box-shadow: 0 2px 4px rgba(var(--mud-palette-error-rgb), 0.15);
+    }
+
+    .rpc-endpoint-card.presumed-valid {
+        border-left-color: var(--mud-palette-success);
+        background-color: rgba(var(--mud-palette-success-rgb), 0.02);
+        box-shadow: 0 1px 2px rgba(var(--mud-palette-success-rgb), 0.1);
+    }
+
+    .rpc-endpoint-card .mud-card-content {
+        padding: 0.75rem !important;
+    }
+
+    .danger-zone {
+        border-left: 3px solid var(--mud-palette-error) !important;
+    }
+
+    .danger-zone .mud-card-content {
+        background-color: rgba(var(--mud-palette-error-rgb), 0.02);
+    }
+
+    @media (max-width: 600px) {
+        .rpc-endpoint-card .mud-stack-row {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+    }

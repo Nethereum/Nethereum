@@ -1,0 +1,126 @@
+/* WalletPromptDialog.razor component scoped styles */
+.wallet-prompt-dialog {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 2rem 1.5rem 1rem 1.5rem;
+        min-width: 300px;
+        max-width: 400px;
+        background: var(--wallet-bg-primary, #ffffff);
+    }
+    
+    .wallet-prompt-icon {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border-radius: 50%;
+        background: var(--wallet-bg-secondary, #f8f9fa);
+    }
+    
+    .wallet-prompt-icon .mud-icon {
+        font-size: 2.5rem;
+    }
+    
+    .wallet-prompt-content {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .wallet-prompt-title {
+        margin-bottom: 1rem;
+        font-weight: 600;
+        font-size: 1.25rem;
+        color: var(--wallet-text-primary, #1f2937);
+        line-height: 1.3;
+    }
+    
+    .wallet-prompt-message {
+        margin-bottom: 1.5rem;
+        color: var(--wallet-text-secondary, #6b7280);
+        line-height: 1.5;
+        font-size: 1rem;
+    }
+    
+    .wallet-prompt-custom-content {
+        margin-top: 1rem;
+    }
+    
+    .wallet-prompt-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .wallet-prompt-confirm {
+        height: 48px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    
+    .wallet-prompt-cancel {
+        height: 48px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--wallet-text-secondary, #6b7280);
+    }
+    
+    .wallet-prompt-cancel:hover {
+        background: var(--wallet-bg-secondary, #f8f9fa);
+        color: var(--wallet-text-primary, #1f2937);
+    }
+    
+    /* Primary button styling */
+    .wallet-prompt-confirm.mud-button-filled.mud-primary {
+        background: var(--wallet-primary, #3b82f6);
+        color: white;
+        box-shadow: none;
+    }
+    
+    .wallet-prompt-confirm.mud-button-filled.mud-primary:hover {
+        background: var(--wallet-primary-hover, #2563eb);
+    }
+    
+    /* Error/Danger button styling */
+    .wallet-prompt-confirm.mud-button-filled.mud-error {
+        background: var(--wallet-error, #ef4444);
+        color: white;
+        box-shadow: none;
+    }
+    
+    .wallet-prompt-confirm.mud-button-filled.mud-error:hover {
+        background: var(--wallet-error-hover, #dc2626);
+    }
+    
+    /* Warning button styling */
+    .wallet-prompt-confirm.mud-button-filled.mud-warning {
+        background: var(--wallet-warning, #f59e0b);
+        color: white;
+        box-shadow: none;
+    }
+    
+    .wallet-prompt-confirm.mud-button-filled.mud-warning:hover {
+        background: var(--wallet-warning-hover, #d97706);
+    }
+
+    /* Dialog container styling - scoped to wallet prompt dialogs */
+    .wallet-prompt-dialog .mud-dialog-container .mud-paper {
+        border-radius: 12px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Remove default MudBlazor dialog padding - scoped to wallet prompt dialogs */
+    .wallet-prompt-dialog .mud-dialog-content {
+        padding: 0 !important;
+    }
+    
+    .wallet-prompt-dialog .mud-dialog-actions {
+        padding: 0 !important;
+    }

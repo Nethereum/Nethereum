@@ -1,0 +1,95 @@
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+<MudPaper Elevation="0" Class="wallet-transaction-hash-display" Style="@GetContainerStyle()">
+    <div class="wallet-transaction-hash-content-container">
+        <div class="wallet-transaction-hash-text-container">
+            <MudText Typo="@GetTextTypo()" 
+                     Style="@GetTextStyle()"
+                     Class="wallet-transaction-hash-text">
+                @GetDisplayHash()
+            </MudText>
+        </div>
+        
+        @if (ShowCopyButton)
+        {
+            <div class="wallet-transaction-hash-copy-container">
+                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                               Size="@GetButtonSize()"
+                               Color="Color.Primary"
+                               OnClick="@CopyHashAsync"
+                               Class="wallet-copy-button" />
+            </div>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public string Hash { get; set; } = "";
+    [Parameter] public bool ShowCopyButton { get; set; } = true;
+    [Parameter] public bool IsCompact { get; set; }
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+    
+    private string GetDisplayHash()
+    {
+        if (string.IsNullOrEmpty(Hash) || Hash.Length < 18) return Hash;
+        
+        // Match WalletAddressDisplay truncation exactly
+        var prefixLength = IsCompact ? 6 : 8;
+        var suffixLength = IsCompact ? 4 : 6;
+        
+        return $"{Hash[..prefixLength]}...{Hash[^suffixLength..]}";
+    }
+    
+    private async Task CopyHashAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Hash);
+            
+            if (OnCopy.HasDelegate)
+            {
+                await OnCopy.InvokeAsync(Hash);
+            }
+        }
+        catch (Exception)
+        {
+            // Fallback for older browsers
+        }
+    }
+    
+    private string GetContainerStyle()
+    {
+        var backgroundColor = "var(--mud-palette-surface)";
+        var borderColor = "var(--mud-palette-divider)";
+        
+        // Match WalletAddressDisplay padding exactly
+        string padding;
+        if (IsCompact)
+            padding = "12px 16px";
+        else
+            padding = "16px 20px";
+            
+        var borderRadius = "12px";
+        var border = $"1px solid {borderColor}";
+        var boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+        
+        return $"background-color: {backgroundColor}; padding: {padding}; border-radius: {borderRadius}; border: {border}; box-shadow: {boxShadow}; width: 100%;";
+    }
+    
+    private string GetTextStyle()
+    {
+        var fontFamily = "'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace";
+        var color = "var(--mud-palette-text-primary)";
+        var fontSize = IsCompact ? "0.875rem" : "1rem";
+        var fontWeight = "500";
+        
+        // Standard truncation for hash display
+        var textOverflow = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+        
+        return $"font-family: {fontFamily}; color: {color}; font-size: {fontSize}; font-weight: {fontWeight}; {textOverflow}";
+    }
+    
+    private Typo GetTextTypo() => IsCompact ? Typo.caption : Typo.body2;
+    private MudBlazor.Size GetButtonSize() => IsCompact ? MudBlazor.Size.Small : MudBlazor.Size.Medium;
+}

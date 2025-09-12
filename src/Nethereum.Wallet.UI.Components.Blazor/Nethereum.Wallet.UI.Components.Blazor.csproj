@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+   <ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+	    <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.1" />
+	    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
+		<PackageReference Include="MudBlazor" Version="8.*" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Wallet.UI.Components\Nethereum.Wallet.UI.Components.csproj" />
+    <ProjectReference Include="..\Nethereum.Blazor\Nethereum.Blazor.csproj" />
+    <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

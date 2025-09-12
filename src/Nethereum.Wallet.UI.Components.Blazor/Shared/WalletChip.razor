@@ -1,0 +1,130 @@
+@using MudBlazor
+
+@* WalletChip.razor - Small status indicators and data display for all wallet areas *@
+<MudChip T="string" 
+         Text="@Text"
+         Icon="@Icon"
+         Color="@Color"
+         Size="@Size"
+         Variant="@GetChipVariant()"
+         OnClick="@(IsClickable ? OnClick : EventCallback.Empty)"
+         Class="@GetChipClasses()"
+         Style="@GetChipStyles()"
+         @attributes="AdditionalAttributes">
+</MudChip>
+
+@code {
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public Color Color { get; set; } = Color.Default;
+    [Parameter] public MudBlazor.Size Size { get; set; } = MudBlazor.Size.Small;
+    [Parameter] public bool IsClickable { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public WalletChipVariant Variant { get; set; } = WalletChipVariant.Default;
+    [Parameter] public bool ShowBorder { get; set; } = true;
+    [Parameter] public string? CustomStyle { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+    
+    private string GetChipClasses()
+    {
+        var classes = new List<string> { "wallet-chip" };
+        
+        if (IsClickable) 
+        {
+            classes.Add("wallet-chip-clickable");
+        }
+        
+        classes.Add($"wallet-chip-{Variant.ToString().ToLower()}");
+        classes.Add($"wallet-chip-{Size.ToString().ToLower()}");
+        
+        return string.Join(" ", classes);
+    }
+    
+    private string GetChipStyles()
+    {
+        var styles = new List<string>();
+        
+        // Base styles
+        styles.Add("transition: all 0.2s ease");
+        
+        // Variant-specific styles
+        switch (Variant)
+        {
+            case WalletChipVariant.Outlined:
+                styles.Add("background: transparent");
+                if (ShowBorder)
+                {
+                    styles.Add($"border: 1px solid {GetBorderColor()}");
+                }
+                break;
+                
+            case WalletChipVariant.Filled:
+                styles.Add("font-weight: 500");
+                break;
+                
+            case WalletChipVariant.Status:
+                styles.Add("border-radius: 12px");
+                styles.Add("font-weight: 600");
+                styles.Add("font-size: 0.75rem");
+                break;
+                
+            case WalletChipVariant.Balance:
+                styles.Add("font-family: 'Roboto Mono', monospace");
+                styles.Add("font-weight: 500");
+                break;
+        }
+        
+        // Size-specific styles
+        switch (Size)
+        {
+            case MudBlazor.Size.Small:
+                styles.Add("min-height: 24px");
+                styles.Add("padding: 4px 8px");
+                break;
+            case MudBlazor.Size.Medium:
+                styles.Add("min-height: 32px");
+                styles.Add("padding: 6px 12px");
+                break;
+            case MudBlazor.Size.Large:
+                styles.Add("min-height: 40px");
+                styles.Add("padding: 8px 16px");
+                break;
+        }
+        
+        // Clickable styles
+        if (IsClickable)
+        {
+            styles.Add("cursor: pointer");
+            styles.Add("min-height: 44px"); // Touch target for clickable chips
+        }
+        
+        // Custom styles
+        if (!string.IsNullOrEmpty(CustomStyle))
+        {
+            styles.Add(CustomStyle);
+        }
+        
+        return string.Join("; ", styles) + ";";
+    }
+    
+    private MudBlazor.Variant GetChipVariant() => Variant switch
+    {
+        WalletChipVariant.Outlined => MudBlazor.Variant.Outlined,
+        WalletChipVariant.Filled => MudBlazor.Variant.Filled,
+        WalletChipVariant.Status => MudBlazor.Variant.Filled,
+        WalletChipVariant.Balance => MudBlazor.Variant.Outlined,
+        _ => MudBlazor.Variant.Filled
+    };
+    
+    private string GetBorderColor() => Color switch
+    {
+        Color.Primary => "var(--mud-palette-primary)",
+        Color.Secondary => "var(--mud-palette-secondary)",
+        Color.Success => "var(--mud-palette-success)",
+        Color.Warning => "var(--mud-palette-warning)",
+        Color.Error => "var(--mud-palette-error)",
+        Color.Info => "var(--mud-palette-info)",
+        _ => "var(--mud-palette-divider)"
+    };
+}
+

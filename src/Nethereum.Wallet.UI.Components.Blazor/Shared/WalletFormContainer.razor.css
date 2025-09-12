@@ -1,0 +1,297 @@
+/* WalletFormContainer.razor component scoped styles */
+/* =============================================================================
+       WALLET FORM CONTAINER - Base Design System
+       Any developer can use this by just changing CSS custom properties
+       ============================================================================= */
+    
+    .wallet-form-container {
+        --wallet-primary: #2563eb;
+        --wallet-primary-hover: #1d4ed8;
+        --wallet-primary-light: #dbeafe;
+        --wallet-success: #16a34a;
+        --wallet-success-light: #dcfce7;
+        --wallet-warning: #ea580c;
+        --wallet-warning-light: #fed7aa;
+        --wallet-error: #dc2626;
+        --wallet-error-light: #fecaca;
+        
+        --wallet-text-primary: #111827;
+        --wallet-text-secondary: #6b7280;
+        --wallet-text-disabled: #9ca3af;
+        
+        --wallet-bg-primary: #ffffff;
+        --wallet-bg-secondary: #f9fafb;
+        --wallet-bg-tertiary: #f3f4f6;
+        
+        --wallet-border: #e5e7eb;
+        --wallet-border-light: #f3f4f6;
+        
+        --wallet-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --wallet-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --wallet-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --wallet-shadow-primary: 0 4px 12px rgba(37, 99, 235, 0.3);
+        
+        --wallet-radius-sm: 6px;
+        --wallet-radius-md: 8px;
+        --wallet-radius-lg: 12px;
+        --wallet-radius-xl: 16px;
+        
+        --wallet-space-xs: 0.5rem;
+        --wallet-space-sm: 0.75rem;
+        --wallet-space-md: 1rem;
+        --wallet-space-lg: 1.5rem;
+        --wallet-space-xl: 2rem;
+        --wallet-space-2xl: 3rem;
+        
+        --wallet-font-sm: 0.875rem;
+        --wallet-font-base: 1rem;
+        --wallet-font-lg: 1.125rem;
+        --wallet-font-xl: 1.25rem;
+        --wallet-font-2xl: 1.5rem;
+        
+        padding: 0;
+        max-width: 500px;
+        margin: 0 auto;
+        background: var(--wallet-bg-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Header */
+    .wallet-form-header {
+        padding: var(--wallet-space-lg) var(--wallet-space-md);
+        margin-bottom: var(--wallet-space-md);
+    }
+    
+    .wallet-form-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .wallet-form-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--wallet-space-md);
+        flex: 1;
+    }
+    
+    .wallet-back-button {
+        background: none;
+        border: none;
+        padding: var(--wallet-space-sm);
+        border-radius: var(--wallet-radius-md);
+        color: var(--wallet-text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        margin-left: -8px;
+        transition: all 0.2s ease;
+    }
+    
+    .wallet-back-button:hover {
+        background: var(--wallet-bg-secondary);
+        color: var(--wallet-text-primary);
+    }
+    
+    .wallet-form-title {
+        font-size: var(--wallet-font-xl);
+        font-weight: 600;
+        color: var(--wallet-text-primary);
+        margin: 0;
+        line-height: 1.2;
+    }
+    
+    .wallet-form-subtitle {
+        font-size: var(--wallet-font-sm);
+        color: var(--wallet-text-secondary);
+        margin: 2px 0 0 0;
+        line-height: 1.4;
+    }
+    
+    .wallet-cancel-button {
+        background: none;
+        border: none;
+        color: var(--wallet-text-secondary);
+        font-size: var(--wallet-font-sm);
+        cursor: pointer;
+        padding: var(--wallet-space-sm) var(--wallet-space-md);
+        border-radius: var(--wallet-radius-md);
+        transition: all 0.2s ease;
+        min-height: 44px;
+    }
+    
+    .wallet-cancel-button:hover {
+        color: var(--wallet-text-primary);
+        background: var(--wallet-bg-secondary);
+    }
+    
+    /* Progress Steps */
+    .wallet-form-progress {
+        padding: var(--wallet-space-md);
+        margin-bottom: var(--wallet-space-xl);
+    }
+    
+    .wallet-step-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+    }
+    
+    .wallet-step-item {
+        flex: 1;
+        text-align: center;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+    }
+    
+    .wallet-step-item.active {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    
+    .wallet-step-item.completed {
+        opacity: 0.8;
+    }
+    
+    .wallet-step-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--wallet-space-xs);
+    }
+    
+    .wallet-step-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--wallet-bg-tertiary);
+        color: var(--wallet-text-disabled);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--wallet-font-sm);
+        transition: all 0.3s ease;
+    }
+    
+    .wallet-step-avatar.active {
+        background: var(--wallet-primary);
+        color: white;
+        box-shadow: var(--wallet-shadow-primary);
+    }
+    
+    .wallet-step-avatar.completed {
+        background: var(--wallet-success);
+        color: white;
+    }
+    
+    .wallet-step-label {
+        font-size: var(--wallet-font-sm);
+        font-weight: 500;
+        color: var(--wallet-text-secondary);
+        transition: all 0.3s ease;
+    }
+    
+    .wallet-step-label.active {
+        color: var(--wallet-primary);
+        font-weight: 600;
+    }
+    
+    .wallet-step-label.completed {
+        color: var(--wallet-success);
+    }
+    
+    .wallet-step-connector {
+        flex: 0 0 60px;
+        height: 2px;
+        background: var(--wallet-border);
+        margin: 0 -10px;
+        transition: all 0.3s ease;
+        border-radius: 1px;
+    }
+    
+    .wallet-step-connector.completed {
+        background: var(--wallet-success);
+    }
+    
+    /* Content Area */
+    .wallet-form-content {
+        flex: 1;
+        padding: 0 var(--wallet-space-md);
+        margin-bottom: 120px; /* Space for floating action */
+    }
+    
+    /* Floating Action Area */
+    .wallet-form-action-area {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: var(--wallet-space-md);
+        background: linear-gradient(to top, var(--wallet-bg-primary) 80%, transparent);
+        backdrop-filter: blur(12px);
+        z-index: 100;
+    }
+    
+    .wallet-form-action-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .wallet-primary-action {
+        width: 100%;
+        background: var(--wallet-primary);
+        color: white;
+        border: none;
+        border-radius: var(--wallet-radius-lg);
+        padding: var(--wallet-space-lg);
+        font-size: var(--wallet-font-base);
+        font-weight: 600;
+        letter-spacing: 0.025em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--wallet-space-sm);
+        min-height: 56px;
+        box-shadow: var(--wallet-shadow-primary);
+        transition: all 0.2s ease;
+    }
+    
+    .wallet-primary-action:hover:not(.disabled) {
+        background: var(--wallet-primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    }
+    
+    .wallet-primary-action.disabled {
+        background: var(--wallet-text-disabled);
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+        .wallet-form-header {
+            padding: var(--wallet-space-md) var(--wallet-space-sm);
+        }
+        
+        .wallet-form-content {
+            padding: 0 var(--wallet-space-sm);
+        }
+        
+        .wallet-step-connector {
+            flex: 0 0 40px;
+        }
+        
+        .wallet-step-avatar {
+            width: 36px;
+            height: 36px;
+        }
+    }

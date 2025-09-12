@@ -1,0 +1,20 @@
+/* WalletAddressDisplay component scoped styles */
+.wallet-address-content-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+}
+
+.wallet-address-text-container {
+    min-width: 0; /* Allow text to wrap/truncate */
+}
+
+.wallet-address-copy-container {
+    flex-shrink: 0;
+}
+
+.wallet-copy-button {
+    border-radius: 8px;
+}

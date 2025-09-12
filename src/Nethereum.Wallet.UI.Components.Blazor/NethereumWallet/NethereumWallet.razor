@@ -1,0 +1,328 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.NethereumWallet
+@using static Nethereum.Wallet.UI.Components.NethereumWallet.NethereumWalletLocalizer
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.Hosting
+@using Nethereum.Wallet.UI.Components.Blazor.Dashboard
+@using Nethereum.Wallet.UI.Components.Blazor.CreateAccount
+@using Microsoft.AspNetCore.Components
+@using Nethereum.Wallet.UI.Components.Configuration
+@using System.Collections.Generic
+@using System.Linq
+
+@inject NethereumWalletViewModel ViewModel
+@inject NethereumWalletHostProvider WalletHostProvider
+@inject IWalletVaultService VaultService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NethereumWalletConfiguration Config
+@inject IComponentLocalizer<NethereumWalletViewModel> Localizer
+@inject INethereumWalletUIConfiguration GlobalConfig
+
+<div style="@GetContainerStyle()">
+    <div style="padding: 24px; height: 100%; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
+        @if (ViewModel.IsBusy)
+    {
+        @if (Config.ShowProgressIndicators)
+        {
+            <MudCard Class="pa-6">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudProgressCircular Indeterminate="true" Size="MudBlazor.Size.Large" />
+                    <MudText Typo="Typo.h6">@Localizer.GetString(Keys.LoadingText)</MudText>
+                </MudStack>
+            </MudCard>
+        }
+    }
+    else if (ViewModel.VaultExists && !ViewModel.IsWalletUnlocked)
+    {
+        <!-- Login Form -->
+        <MudCard Class="pa-6">
+            <MudStack Spacing="4">
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    @if (GlobalConfig.ShowLogo)
+                    {
+                        <MudAvatar Size="MudBlazor.Size.Large" Style="background: transparent; padding: 8px;">
+                            <MudImage Src="@GlobalConfig.WelcomeLogoPath" Alt="@GlobalConfig.ApplicationName" Height="64" Width="64" />
+                        </MudAvatar>
+                    }
+                    @if (GlobalConfig.ShowApplicationName)
+                    {
+                        <MudText Typo="Typo.h4" Style="font-weight: 600;">@GlobalConfig.ApplicationName</MudText>
+                    }
+                    <MudText Typo="Typo.h5">@Localizer.GetString(Keys.LoginTitle)</MudText>
+                    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary); font-weight: 400;">
+                        @Localizer.GetString(Keys.LoginSubtitle)
+                    </MudText>
+                </MudStack>
+
+                <MudTextField @bind-Value="ViewModel.Password" 
+                              Label="@Localizer.GetString(Keys.PasswordLabel)" 
+                              InputType="@(showPassword ? InputType.Text : InputType.Password)"
+                              Variant="Variant.Outlined"
+                              @onkeydown="@(Config.EnableKeyboardShortcuts ? OnKeyDown : null)"
+                              @ref="passwordField"
+                              Immediate="true"
+                              Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
+                              AdornmentIcon="@(showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? TogglePasswordVisibility : null)" />
+
+                @if (!string.IsNullOrEmpty(ViewModel.LoginError))
+                {
+                    <MudAlert Severity="Severity.Error">@ViewModel.LoginError</MudAlert>
+                }
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudButton Variant="Variant.Text" 
+                               Style="color: var(--mud-palette-text-primary); opacity: 0.8;"
+                               OnClick="ShowCreateNewWallet">
+                        @Localizer.GetString(Keys.CreateNewWalletLinkText)
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary"
+                               OnClick="ViewModel.LoginCommand.ExecuteAsync"
+                               Disabled="@(!ViewModel.CanLogin)">
+                        @Localizer.GetString(Keys.LoginButton)
+                    </MudButton>
+                </MudStack>
+                
+                @if (Config.Behavior.EnableWalletReset)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Class="mt-2">
+                        <MudButton Variant="Variant.Text" 
+                                   Color="Color.Error"
+                                   Size="MudBlazor.Size.Small"
+                                   OnClick="ViewModel.ShowResetWalletConfirmationAsync">
+                            @Localizer.GetString(Keys.ResetWallet)
+                        </MudButton>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudCard>
+    }
+    else if (ViewModel.IsWalletUnlocked && !ViewModel.HasAccounts)
+    {
+        <!-- Account Creation State -->
+        <CreateAccount OnAccountAdded="OnAccountAdded" 
+                       ShowHeader="true"
+                       IsCompactMode="false" />
+    }
+    else if (ViewModel.IsWalletUnlocked && ViewModel.HasAccounts)
+    {
+        <!-- Dashboard State -->
+        <WalletDashboard SelectedAccount="@WalletHostProvider.SelectedAccount" 
+                         OnLogout="OnLogout" />
+    }
+    else
+    {
+        <!-- Wallet Creation Form -->
+        <MudCard Class="pa-6">
+            <MudStack Spacing="4">
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    @if (GlobalConfig.ShowLogo)
+                    {
+                        <MudAvatar Size="MudBlazor.Size.Large" Style="background: transparent; padding: 8px;">
+                            <MudImage Src="@GlobalConfig.WelcomeLogoPath" Alt="@GlobalConfig.ApplicationName" Height="64" Width="64" />
+                        </MudAvatar>
+                    }
+                    @if (GlobalConfig.ShowApplicationName)
+                    {
+                        <MudText Typo="Typo.h4" Style="font-weight: 600;">@GlobalConfig.ApplicationName</MudText>
+                    }
+                    <MudText Typo="Typo.h5">@Localizer.GetString(Keys.CreateTitle)</MudText>
+                    <MudText Typo="Typo.body2" Align="Align.Center" Style="color: var(--mud-palette-text-secondary); font-weight: 400;">
+                        @Localizer.GetString(Keys.CreateSubtitle)
+                    </MudText>
+                </MudStack>
+
+                <MudTextField @bind-Value="ViewModel.NewPassword" 
+                              Label="@Localizer.GetString(Keys.CreatePasswordLabel)" 
+                              InputType="@(showNewPassword ? InputType.Text : InputType.Password)"
+                              Variant="Variant.Outlined"
+                              HelperText="@Localizer.GetString(Keys.PasswordHelperText)"
+                              Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
+                              AdornmentIcon="@(showNewPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleNewPasswordVisibility : null)" />
+
+                <MudTextField @bind-Value="ViewModel.ConfirmPassword" 
+                              Label="@Localizer.GetString(Keys.ConfirmPasswordLabel)" 
+                              InputType="@(showConfirmPassword ? InputType.Text : InputType.Password)"
+                              Variant="Variant.Outlined"
+                              Error="@(!string.IsNullOrEmpty(ViewModel.ConfirmPassword) && ViewModel.NewPassword != ViewModel.ConfirmPassword)"
+                              ErrorText="@Localizer.GetString(Keys.PasswordMismatch)"
+                              Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
+                              AdornmentIcon="@(showConfirmPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleConfirmPasswordVisibility : null)" />
+
+                @if (ViewModel.ShowPasswordStrengthIndicator)
+                {
+                    <div>
+                        <MudText Typo="Typo.caption">Password Strength:</MudText>
+                        <MudProgressLinear Color="@GetMudColor(ViewModel.PasswordStrengthColor)" Value="@ViewModel.PasswordStrength" />
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewModel.CreateError))
+                {
+                    <MudAlert Severity="Severity.Error">@ViewModel.CreateError</MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary"
+                           OnClick="ViewModel.CreateWalletCommand.ExecuteAsync"
+                           FullWidth="true"
+                           Disabled="@(!ViewModel.CanCreateWallet)">
+                    @Localizer.GetString(Keys.CreateButtonText)
+                </MudButton>
+            </MudStack>
+        </MudCard>
+    }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnConnected { get; set; }
+    
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public DrawerBehavior? DrawerBehavior { get; set; }
+    [Parameter] public int? ResponsiveBreakpoint { get; set; }
+    [Parameter] public int? SidebarWidth { get; set; }
+    [Parameter] public bool? ShowLogo { get; set; }
+    [Parameter] public bool? ShowApplicationName { get; set; }
+    [Parameter] public bool? ShowNetworkInHeader { get; set; }
+    [Parameter] public bool? ShowAccountDetailsInHeader { get; set; }
+    private bool showPassword = false;
+    private bool showNewPassword = false;
+    private bool showConfirmPassword = false;
+    private MudTextField<string> passwordField;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplyParameterOverrides();
+        await ViewModel.InitializeAsync();
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        
+        ViewModel.OnWalletConnected = async () =>
+        {
+            if (OnConnected.HasDelegate)
+            {
+                await OnConnected.InvokeAsync();
+            }
+        };
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        ApplyParameterOverrides();
+    }
+    
+    private void ApplyParameterOverrides()
+    {
+        if (DrawerBehavior.HasValue)
+            GlobalConfig.DrawerBehavior = DrawerBehavior.Value;
+        if (ResponsiveBreakpoint.HasValue)
+            GlobalConfig.ResponsiveBreakpoint = ResponsiveBreakpoint.Value;
+        if (SidebarWidth.HasValue)
+            GlobalConfig.SidebarWidth = SidebarWidth.Value;
+        if (ShowLogo.HasValue)
+            GlobalConfig.ShowLogo = ShowLogo.Value;
+        if (ShowApplicationName.HasValue)
+            GlobalConfig.ShowApplicationName = ShowApplicationName.Value;
+        if (ShowNetworkInHeader.HasValue)
+            GlobalConfig.ShowNetworkInHeader = ShowNetworkInHeader.Value;
+        if (ShowAccountDetailsInHeader.HasValue)
+            GlobalConfig.ShowAccountDetailsInHeader = ShowAccountDetailsInHeader.Value;
+    }
+    
+    private string GetContainerStyle()
+    {
+        var styles = new List<string> { "height: 100%", "width: 100%" };
+        
+        if (!string.IsNullOrEmpty(Width))
+            styles[1] = $"width: {Width}";
+        if (!string.IsNullOrEmpty(Height))
+            styles[0] = $"height: {Height}";
+            
+        return string.Join("; ", styles);
+    }
+
+    private async Task OnAccountAdded()
+    {
+        // When an account is added, refresh our state to transition to dashboard
+        await ViewModel.CheckAccountsAsync();
+        
+        // If we now have accounts, enable the provider for the dashboard
+        if (ViewModel.HasAccounts)
+        {
+            await WalletHostProvider.EnableProviderAsync();
+        }
+        
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && ViewModel.VaultExists && passwordField != null && Config.Behavior.AutoFocusPasswordField)
+        {
+            await passwordField.FocusAsync();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(ViewModel.Password))
+        {
+            await ViewModel.LoginCommand.ExecuteAsync(null);
+        }
+    }
+
+    private void TogglePasswordVisibility() => showPassword = !showPassword;
+    private void ToggleNewPasswordVisibility() => showNewPassword = !showNewPassword;
+    private void ToggleConfirmPasswordVisibility() => showConfirmPassword = !showConfirmPassword;
+
+   
+
+    private void ShowCreateNewWallet()
+    {
+        ViewModel.VaultExists = false;
+        StateHasChanged();
+    }
+
+    private async Task OnLogout()
+    {
+        // Reset all states to initial
+        ViewModel.IsWalletUnlocked = false;
+        ViewModel.HasAccounts = false;
+        await ViewModel.InitializeAsync();
+        StateHasChanged();
+    }
+
+
+    // Helper to convert string color to MudBlazor Color enum
+    private Color GetMudColor(string colorString)
+    {
+        return colorString switch
+        {
+            "error" => Color.Error,
+            "warning" => Color.Warning,
+            "success" => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    [Parameter] public EventCallback OnWalletReset { get; set; }
+
+    public void Dispose()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+}

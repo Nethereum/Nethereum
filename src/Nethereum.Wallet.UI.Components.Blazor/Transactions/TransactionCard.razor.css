@@ -1,0 +1,43 @@
+.transaction-card {
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 0.5rem;
+}
+
+.transaction-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-failed {
+    border-left: 3px solid var(--mud-palette-error);
+}
+
+.transaction-confirmed {
+    border-left: 3px solid var(--mud-palette-success);
+}
+
+.transaction-card.expanded {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.3s ease;
+}
+
+.transaction-card ::deep .mud-expansion-panels {
+    background-color: transparent;
+}
+
+.transaction-card ::deep .mud-expansion-panel {
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    margin-bottom: 8px;
+}
+
+.transaction-card ::deep .mud-field-outlined {
+    margin-bottom: 0;
+}
+
+.transaction-card ::deep .mud-grid {
+    margin: -8px;
+}
+
+.transaction-card ::deep .mud-grid > .mud-grid-item {
+    padding: 8px;
+}

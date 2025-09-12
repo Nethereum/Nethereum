@@ -1,0 +1,95 @@
+@using MudBlazor
+
+<div class="wallet-word-chips-container">
+    @if (ShowHeader)
+    {
+        <div class="wallet-word-chips-header">
+            <div class="wallet-word-chips-info">
+                <h3 class="wallet-word-chips-title">@Title</h3>
+                @if (!string.IsNullOrEmpty(Subtitle))
+                {
+                    <p class="wallet-word-chips-subtitle">@Subtitle</p>
+                }
+            </div>
+            <div class="wallet-word-chips-actions">
+                @if (AllowToggleVisibility)
+                {
+                    <button class="wallet-icon-button" @onclick="ToggleVisibility" title="@(IsVisible ? "Hide phrase" : "Show phrase")">
+                        <MudIcon Icon="@(IsVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)" />
+                    </button>
+                }
+                @if (AllowCopy && IsVisible)
+                {
+                    <button class="wallet-icon-button" @onclick="CopyToClipboard" title="Copy to clipboard">
+                        <MudIcon Icon="@Icons.Material.Filled.ContentCopy" />
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    
+    <div class="wallet-word-chips-content">
+        @if (IsVisible && Words?.Any() == true)
+        {
+            <div class="wallet-word-chips-grid">
+                @foreach (var (index, word) in GetIndexedWords())
+                {
+                    <div class="wallet-word-chip">
+                        <span class="wallet-word-number">@index</span>
+                        <span class="wallet-word-text">@word</span>
+                    </div>
+                }
+            </div>
+        }
+        else if (!IsVisible)
+        {
+            <div class="wallet-word-chips-hidden">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" />
+                <p>@HiddenMessage</p>
+            </div>
+        }
+        else
+        {
+            <div class="wallet-word-chips-empty">
+                <p>@EmptyMessage</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<string> Words { get; set; } = new();
+    [Parameter] public string Title { get; set; } = "Your Seed Phrase";
+    [Parameter] public string Subtitle { get; set; } = "Write these words down in order";
+    [Parameter] public string HiddenMessage { get; set; } = "Click the eye icon to reveal your seed phrase";
+    [Parameter] public string EmptyMessage { get; set; } = "No words to display";
+    
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool AllowToggleVisibility { get; set; } = true;
+    [Parameter] public bool AllowCopy { get; set; } = true;
+    [Parameter] public bool IsVisible { get; set; } = false;
+    
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+
+    private async Task ToggleVisibility()
+    {
+        IsVisible = !IsVisible;
+        await IsVisibleChanged.InvokeAsync(IsVisible);
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (Words?.Any() == true)
+        {
+            var phraseText = string.Join(" ", Words);
+            await OnCopy.InvokeAsync(phraseText);
+        }
+    }
+
+    private IEnumerable<(int index, string word)> GetIndexedWords()
+    {
+        return Words?.Select((word, i) => (i + 1, word)) ?? Enumerable.Empty<(int, string)>();
+    }
+}
+

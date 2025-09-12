@@ -1,0 +1,16 @@
+/* WalletFormLayout component scoped styles */
+.wallet-form-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+}
+
+.wallet-form-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

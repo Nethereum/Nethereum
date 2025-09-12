@@ -1,0 +1,53 @@
+/* TransactionConfirmation.razor component scoped styles */
+.address-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .amount-display {
+        font-weight: 600;
+        color: var(--mud-palette-primary-main);
+    }
+
+    .chain-id {
+        color: var(--mud-palette-text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .transaction-data-section {
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background: var(--mud-palette-surface-variant);
+    }
+
+    .data-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .decoding-loader {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .decoded-data {
+        margin-bottom: 1rem;
+    }
+
+    .gas-configuration {
+        padding: 0.5rem 0;
+    }
+
+    .total-cost {
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
+    .wallet-modern-input {
+        margin-bottom: 0.5rem;
+    }

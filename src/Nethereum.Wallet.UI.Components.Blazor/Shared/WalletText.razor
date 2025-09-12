@@ -1,0 +1,180 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Core.Localization
+
+<MudText Typo="@GetTypography()"
+         Color="@GetColor()"
+         Class="@GetClasses()"
+         Style="@Style"
+         Align="@Align"
+         GutterBottom="@GutterBottom"
+         Inline="@Inline"
+         @attributes="AdditionalAttributes">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else if (!string.IsNullOrEmpty(TextKey) && Localizer != null)
+    {
+        @Localizer.GetString(TextKey)
+    }
+    else
+    {
+        @Text
+    }
+</MudText>
+
+@code {
+    #region Text Content Parameters
+    
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public string TextKey { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    #endregion
+
+    #region Typography Parameters
+    
+    [Parameter] public WalletTextType TextType { get; set; } = WalletTextType.Body;
+    [Parameter] public WalletTextVariant Variant { get; set; } = WalletTextVariant.Default;
+    [Parameter] public Typo? CustomTypo { get; set; }
+    [Parameter] public Color? CustomColor { get; set; }
+    
+    #endregion
+
+    #region MudText Pass-through Parameters
+    
+    [Parameter] public Align Align { get; set; } = Align.Inherit;
+    [Parameter] public bool GutterBottom { get; set; }
+    [Parameter] public bool Inline { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+    
+    #endregion
+
+    #region Localization
+    
+    [Parameter] public IComponentLocalizer? Localizer { get; set; }
+    
+    #endregion
+
+    #region Pass-through Parameters
+    
+    [Parameter(CaptureUnmatchedValues = true)] 
+    public Dictionary<string, object> AdditionalAttributes { get; set; } = new();
+    
+    #endregion
+
+    #region Helper Methods
+    
+    private Typo GetTypography()
+    {
+        if (CustomTypo.HasValue)
+            return CustomTypo.Value;
+            
+        return TextType switch
+        {
+            WalletTextType.Heading1 => Typo.h1,
+            WalletTextType.Heading2 => Typo.h2,
+            WalletTextType.Heading3 => Typo.h3,
+            WalletTextType.Heading4 => Typo.h4,
+            WalletTextType.Heading5 => Typo.h5,
+            WalletTextType.Heading6 => Typo.h6,
+            WalletTextType.Subtitle1 => Typo.subtitle1,
+            WalletTextType.Subtitle2 => Typo.subtitle2,
+            WalletTextType.Body => Typo.body1,
+            WalletTextType.BodySmall => Typo.body2,
+            WalletTextType.Label => Typo.subtitle2,  // More visible than caption
+            WalletTextType.Caption => Typo.caption,
+            WalletTextType.Button => Typo.button,
+            WalletTextType.Overline => Typo.overline,
+            _ => Typo.body1
+        };
+    }
+    
+    private Color GetColor()
+    {
+        if (CustomColor.HasValue)
+            return CustomColor.Value;
+            
+        return Variant switch
+        {
+            WalletTextVariant.Primary => Color.Primary,
+            WalletTextVariant.Secondary => Color.Default,  // Use Default instead of Secondary for better visibility
+            WalletTextVariant.Success => Color.Success,
+            WalletTextVariant.Warning => Color.Warning,
+            WalletTextVariant.Error => Color.Error,
+            WalletTextVariant.Info => Color.Info,
+            WalletTextVariant.Muted => Color.Secondary,
+            WalletTextVariant.Inherit => Color.Inherit,
+            _ => Color.Default
+        };
+    }
+    
+    private string GetClasses()
+    {
+        var classes = new List<string>();
+        
+        // Add base wallet text class
+        classes.Add("wallet-text");
+        
+        // Add variant-specific classes
+        classes.Add($"wallet-text-{Variant.ToString().ToLowerInvariant()}");
+        
+        // Add type-specific classes
+        classes.Add($"wallet-text-{TextType.ToString().ToLowerInvariant()}");
+        
+        // Add weight classes for labels to make them more prominent
+        if (TextType == WalletTextType.Label)
+        {
+            classes.Add("font-weight-medium");
+        }
+        
+        // Add custom classes
+        if (!string.IsNullOrEmpty(Class))
+            classes.Add(Class);
+            
+        return string.Join(" ", classes);
+    }
+    
+    #endregion
+}
+
+@code {
+    /// <summary>
+    /// Defines the semantic types of wallet text
+    /// </summary>
+    public enum WalletTextType
+    {
+        Heading1,
+        Heading2,
+        Heading3,
+        Heading4,
+        Heading5,
+        Heading6,
+        Subtitle1,
+        Subtitle2,
+        Body,
+        BodySmall,
+        Label,      // For form labels - more prominent than caption
+        Caption,    // For helper text and subtle information
+        Button,
+        Overline
+    }
+    
+    /// <summary>
+    /// Defines the visual variants of wallet text
+    /// </summary>
+    public enum WalletTextVariant
+    {
+        Default,
+        Primary,
+        Secondary,   // Will map to Default for better visibility
+        Success,
+        Warning,
+        Error,
+        Info,
+        Muted,      // Will map to Secondary for subtle text
+        Inherit
+    }
+}

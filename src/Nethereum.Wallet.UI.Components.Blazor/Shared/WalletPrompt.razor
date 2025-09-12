@@ -1,0 +1,200 @@
+@using MudBlazor
+
+@* WalletPrompt.razor - Quick mobile-friendly prompt/confirmation for all wallet areas *@
+<WalletPopup IsVisible="@IsVisible"
+             Title="@Title"
+             Subtitle="@Message"
+             OnClose="@HandleCancel"
+             Size="@Size"
+             Position="@Position"
+             CloseOnBackdropClick="@AllowBackdropClose">
+    
+    <Content>
+        @if (PromptType == WalletPromptType.Input && ShowInput)
+        {
+            <MudTextField @bind-Value="InputValue"
+                         Label="@InputLabel"
+                         Placeholder="@InputPlaceholder"
+                         Variant="Variant.Outlined"
+                         FullWidth="true"
+                         Lines="@(InputType == WalletInputType.MultiLine ? 3 : 1)"
+                         InputType="@GetInputType()"
+                         Class="wallet-prompt-input"
+                         Style="margin-bottom: 16px;" />
+        }
+        
+        @if (PromptType == WalletPromptType.Choice && ChoiceOptions?.Any() == true)
+        {
+            <MudRadioGroup @bind-Value="SelectedChoice" Class="wallet-prompt-choices">
+                @foreach (var option in ChoiceOptions)
+                {
+                    <MudRadio Value="@option.Value" Color="Color.Primary" Class="wallet-choice-option">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body1">@option.Label</MudText>
+                            @if (!string.IsNullOrEmpty(option.Description))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@option.Description</MudText>
+                            }
+                        </MudStack>
+                    </MudRadio>
+                }
+            </MudRadioGroup>
+        }
+        
+        @if (CustomContent != null)
+        {
+            @CustomContent
+        }
+    </Content>
+    
+    <Actions>
+        @if (ShowCancelButton)
+        {
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Secondary"
+                      OnClick="@HandleCancel"
+                      Size="MudBlazor.Size.Large"
+                      Class="wallet-prompt-cancel">
+                @CancelText
+            </MudButton>
+        }
+        
+        <MudButton Variant="Variant.Filled"
+                  Color="@ConfirmColor"
+                  OnClick="@HandleConfirm"
+                  Size="MudBlazor.Size.Large"
+                  Disabled="@(!CanConfirm())"
+                  StartIcon="@ConfirmIcon"
+                  Class="wallet-prompt-confirm">
+            @ConfirmText
+        </MudButton>
+    </Actions>
+</WalletPopup>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public WalletPromptType PromptType { get; set; } = WalletPromptType.Confirm;
+    [Parameter] public string ConfirmText { get; set; } = "OK";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public string? ConfirmIcon { get; set; }
+    [Parameter] public Color ConfirmColor { get; set; } = Color.Primary;
+    [Parameter] public bool ShowCancelButton { get; set; } = true;
+    [Parameter] public bool AllowBackdropClose { get; set; } = true;
+    [Parameter] public WalletPopupSize Size { get; set; } = WalletPopupSize.Medium;
+    [Parameter] public WalletPopupPosition Position { get; set; } = WalletPopupPosition.Center;
+    
+    // Input specific
+    [Parameter] public bool ShowInput { get; set; } = true;
+    [Parameter] public string? InputLabel { get; set; }
+    [Parameter] public string? InputPlaceholder { get; set; }
+    [Parameter] public string InputValue { get; set; } = "";
+    [Parameter] public WalletInputType InputType { get; set; } = WalletInputType.Text;
+    [Parameter] public EventCallback<string> InputValueChanged { get; set; }
+    
+    // Choice specific
+    [Parameter] public List<WalletChoiceOption>? ChoiceOptions { get; set; }
+    [Parameter] public string? SelectedChoice { get; set; }
+    [Parameter] public EventCallback<string> SelectedChoiceChanged { get; set; }
+    
+    // Custom content
+    [Parameter] public RenderFragment? CustomContent { get; set; }
+    
+    // Events
+    [Parameter] public EventCallback<WalletPromptResultData> OnResult { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    
+    private async Task HandleConfirm()
+    {
+        var result = new WalletPromptResultData
+        {
+            IsConfirmed = true,
+            InputValue = InputValue,
+            SelectedChoice = SelectedChoice
+        };
+        
+        if (OnResult.HasDelegate)
+        {
+            await OnResult.InvokeAsync(result);
+        }
+        
+        if (OnConfirm.HasDelegate)
+        {
+            await OnConfirm.InvokeAsync();
+        }
+    }
+    
+    private async Task HandleCancel()
+    {
+        var result = new WalletPromptResultData
+        {
+            IsConfirmed = false,
+            InputValue = null,
+            SelectedChoice = null
+        };
+        
+        if (OnResult.HasDelegate)
+        {
+            await OnResult.InvokeAsync(result);
+        }
+        
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+    
+    private bool CanConfirm()
+    {
+        return PromptType switch
+        {
+            WalletPromptType.Input => !string.IsNullOrWhiteSpace(InputValue),
+            WalletPromptType.Choice => !string.IsNullOrEmpty(SelectedChoice),
+            _ => true
+        };
+    }
+    
+    private InputType GetInputType() => InputType switch
+    {
+        WalletInputType.Text => MudBlazor.InputType.Text,
+        WalletInputType.Password => MudBlazor.InputType.Password,
+        WalletInputType.Email => MudBlazor.InputType.Email,
+        WalletInputType.Number => MudBlazor.InputType.Number,
+        WalletInputType.MultiLine => MudBlazor.InputType.Text,
+        _ => MudBlazor.InputType.Text
+    };
+}
+
+public enum WalletPromptType
+{
+    Confirm,    // Simple OK/Cancel
+    Input,      // Text input with confirm
+    Choice      // Radio button selection
+}
+
+public enum WalletInputType
+{
+    Text,
+    Password,
+    Email,
+    Number,
+    MultiLine
+}
+
+public class WalletChoiceOption
+{
+    public string Value { get; set; } = "";
+    public string Label { get; set; } = "";
+    public string? Description { get; set; }
+    public string? Icon { get; set; }
+}
+
+public class WalletPromptResult
+{
+    public bool IsConfirmed { get; set; }
+    public string? InputValue { get; set; }
+    public string? SelectedChoice { get; set; }
+}
+

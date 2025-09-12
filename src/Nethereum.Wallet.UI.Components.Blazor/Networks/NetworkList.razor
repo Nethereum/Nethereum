@@ -1,0 +1,207 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using System.Numerics
+@using System.Linq
+@using static Nethereum.Wallet.UI.Components.Networks.NetworkListLocalizer
+@using Nethereum.Wallet.Hosting
+@using Nethereum.RPC.Chain
+@implements IDisposable
+@inject NetworkListViewModel ViewModel
+@inject IComponentLocalizer<NetworkListViewModel> Localizer
+@inject NethereumWalletHostProvider WalletHostProvider
+
+<MudStack Spacing="4">
+    @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <WalletText TextType="WalletText.WalletTextType.Body"
+                               TextKey="@Keys.LoadingNetworks"
+                               Localizer="@Localizer"
+                               Class="mt-3" />
+                </div>
+            </WalletContentSection>
+        }
+        else if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletContentSection Class="spacing-normal">
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                              Title="Error"
+                              Description="@ViewModel.ErrorMessage"
+                              Icon="@Icons.Material.Filled.Error" />
+            </WalletContentSection>
+        }
+        else
+        {
+            <!-- Search and Filters -->
+            <WalletContentSection Class="spacing-tight">
+                <WalletTextField @bind-Value="@ViewModel.SearchText"
+                               LabelKey="@Keys.SearchNetworks"
+                               PlaceholderKey="@Keys.SearchNetworks"
+                               Required="false"
+                               Localizer="@Localizer"
+                               FieldType="WalletTextField.WalletTextFieldType.Search" />
+                
+                <div class="mt-3">
+                    <MudCheckBox @bind-Value="@ViewModel.ShowTestnets" 
+                                Color="Color.Primary">
+                        @Localizer.GetString(Keys.ShowTestnets)
+                    </MudCheckBox>
+                </div>
+                
+                <!-- Add Custom Network Button -->
+                <div class="mt-3">
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="@HandleAddCustomNetwork"
+                              FullWidth="true">
+                        @Localizer.GetString(Keys.AddCustomNetwork)
+                    </MudButton>
+                </div>
+            </WalletContentSection>
+
+            <!-- Network List -->
+            <WalletContentSection Class="spacing-tight">
+                @if (ViewModel.FilteredNetworks?.Any() == true)
+                {
+                    <div class="network-list">
+                        @foreach (var network in ViewModel.FilteredNetworks)
+                        {
+                            <NetworkCard Network="@network.ChainFeature"
+                                        IsSelected="@(WalletHostProvider.SelectedNetworkChainId == (long)network.ChainId)"
+                                        IsActive="@(WalletHostProvider.SelectedNetworkChainId == (long)network.ChainId)"
+                                        ShowActions="true"
+                                        IsCompactMode="@IsCompact"
+                                        IsMobileSimplified="@(ComponentWidth < 600)"
+                                        OnNetworkClick="@((chainFeature) => HandleNetworkSelectByChainFeature(chainFeature))"
+                                        OnSelectNetwork="@((chainFeature) => HandleNetworkSelectByChainFeature(chainFeature))"
+                                        OnNetworkDetails="@((chainFeature) => HandleNetworkDetailsByChainFeature(chainFeature))" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <WalletEmptyState Icon="@Icons.Material.Outlined.Language"
+                                    Title="@Localizer.GetString(Keys.NoNetworksFound)"
+                                    Description="Try adjusting your search or filter settings" />
+                }
+            </WalletContentSection>
+        }
+</MudStack>
+
+@code {
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<BigInteger> OnNetworkSelected { get; set; }
+    [Parameter] public EventCallback OnAddCustomNetwork { get; set; }
+    
+    // Public property to allow parent components to access the ViewModel for refresh operations
+    public NetworkListViewModel? NetworkListViewModel => ViewModel;
+    
+    // Navigation parameters for showing specific network details
+    [Parameter] public bool ShowNetworkDetails { get; set; } = false;
+    [Parameter] public string? ChainId { get; set; }
+    
+    // Responsive parameters from Dashboard
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    [Parameter] public bool IsCompact { get; set; } = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+        
+        // If navigation parameters indicate to show specific network details, navigate to it
+        if (ShowNetworkDetails && !string.IsNullOrEmpty(ChainId) && BigInteger.TryParse(ChainId, out var chainId))
+        {
+            await HandleNetworkDetailsByChainId(chainId);
+        }
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleNetworkSelectByChainFeature(ChainFeature chainFeature)
+    {
+        try
+        {
+            // Check if network is already selected - avoid unnecessary operations
+            if (WalletHostProvider.SelectedNetworkChainId == (long)chainFeature.ChainId)
+            {
+                return; // Already selected, no need to do anything
+            }
+            
+            // Find the corresponding NetworkItemViewModel
+            var networkItem = ViewModel.Networks.FirstOrDefault(n => n.ChainId == chainFeature.ChainId);
+            if (networkItem != null)
+            {
+               
+                if (ViewModel.SelectNetworkCommand.CanExecute(networkItem))
+                {
+                    await ViewModel.SelectNetworkCommand.ExecuteAsync(networkItem);
+                }
+                
+                
+            }
+        }
+        catch (Exception ex)
+        {
+           
+            Console.WriteLine($"Network selection failed: {ex.Message}");
+        }
+    }
+
+    private async Task HandleNetworkDetailsByChainFeature(ChainFeature chainFeature)
+    {
+        // Navigate to network details via parent callback
+        if (OnNetworkSelected.HasDelegate)
+        {
+            await OnNetworkSelected.InvokeAsync(chainFeature.ChainId);
+        }
+    }
+    
+    private async Task HandleNetworkDetailsByChainId(BigInteger chainId)
+    {
+        // Navigate to network details for a specific chain ID
+        if (OnNetworkSelected.HasDelegate)
+        {
+            await OnNetworkSelected.InvokeAsync(chainId);
+        }
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandleAddCustomNetwork()
+    {
+        if (OnAddCustomNetwork.HasDelegate)
+        {
+            await OnAddCustomNetwork.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+}
+

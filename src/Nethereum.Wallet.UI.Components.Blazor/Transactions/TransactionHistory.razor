@@ -1,0 +1,139 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Transactions
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Services.Transactions
+@using static Nethereum.Wallet.UI.Components.Transactions.TransactionHistoryLocalizer
+@inject TransactionHistoryViewModel ViewModel
+@inject IComponentLocalizer<TransactionHistoryViewModel> Localizer
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<MudStack Spacing="4">
+    <WalletContentSection Title="@Localizer.GetString(Keys.Title)"
+                         Subtitle="@Localizer.GetString(Keys.Subtitle)"
+                         Class="spacing-tight">
+        <WalletTextField @bind-Value="@ViewModel.FilterText"
+                        LabelKey="@Keys.FilterPlaceholder"
+                        PlaceholderKey="@Keys.FilterPlaceholder"
+                        Error="@(!string.IsNullOrEmpty(ViewModel.FilterTextError))"
+                        ErrorText="@ViewModel.FilterTextError"
+                        Required="false"
+                        Localizer="@Localizer"
+                        FieldType="WalletTextField.WalletTextFieldType.Search" />
+    </WalletContentSection>
+    
+    <WalletContentSection Class="spacing-tight">
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
+            <MudTabPanel Text="@($"{Localizer.GetString(Keys.PendingTab)} ({ViewModel.PendingCount})")">
+                @if (ViewModel.IsLoading)
+                {
+                    <div class="loading-state pa-8 text-center">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                        <MudText Typo="Typo.body1" Class="mt-3">
+                            @Localizer.GetString(Keys.LoadingTransactions)
+                        </MudText>
+                    </div>
+                }
+                else if (ViewModel.FilteredPendingTransactions?.Any() == true)
+                {
+                    <div class="transaction-list">
+                        @foreach (var transaction in ViewModel.FilteredPendingTransactions)
+                        {
+                            <TransactionCard Transaction="transaction"
+                                           ShowRetry="true"
+                                           IsCompact="@IsCompact"
+                                           OnRetry="@(async (t) => await ViewModel.RetryTransactionCommand.ExecuteAsync(t))"
+                                           OnCopyHash="@((t) => CopyToClipboard(t.Hash))"
+                                           OnViewOnExplorer="@(async (t) => await ViewModel.RequestViewOnExplorerCommand.ExecuteAsync(t))"
+                                           OnViewDetails="@((t) => ViewModel.ShowTransactionDetailsCommand.Execute(t))" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <WalletEmptyState Icon="@Icons.Material.Outlined.Pending"
+                                    Title="@Localizer.GetString(Keys.NoPendingTransactions)"
+                                    Description="@Localizer.GetString(Keys.NoPendingDescription)" />
+                }
+            </MudTabPanel>
+            
+            <MudTabPanel Text="@($"{Localizer.GetString(Keys.RecentTab)} ({ViewModel.RecentCount})")">
+                @if (ViewModel.FilteredRecentTransactions?.Any() == true)
+                {
+                    <div class="transaction-list">
+                        @foreach (var transaction in ViewModel.FilteredRecentTransactions)
+                        {
+                            <TransactionCard Transaction="transaction"
+                                           ShowRetry="false"
+                                           IsCompact="@IsCompact"
+                                           OnCopyHash="@((t) => CopyToClipboard(t.Hash))"
+                                           OnViewOnExplorer="@(async (t) => await ViewModel.RequestViewOnExplorerCommand.ExecuteAsync(t))"
+                                           OnViewDetails="@((t) => ViewModel.ShowTransactionDetailsCommand.Execute(t))" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <WalletEmptyState Icon="@Icons.Material.Outlined.History"
+                                    Title="@Localizer.GetString(Keys.NoRecentTransactions)"
+                                    Description="@Localizer.GetString(Keys.NoRecentDescription)" />
+                }
+            </MudTabPanel>
+        </MudTabs>
+    </WalletContentSection>
+    
+    @if (ViewModel.SelectedTransaction != null && ViewModel.ShowDetails)
+    {
+        <TransactionDetailsDialog Transaction="@ViewModel.SelectedTransaction"
+                                IsOpen="@ViewModel.ShowDetails"
+                                OnClose="@(() => ViewModel.CloseDetailsCommand.Execute(null))" />
+    }
+</MudStack>
+
+@code {
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    [Parameter] public bool IsCompact { get; set; } = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel.CopyToClipboardRequested += OnCopyToClipboardRequested;
+        ViewModel.OpenUrlRequested += OnOpenUrlRequested;
+        
+        await ViewModel.InitializeAsync();
+    }
+    
+    private async void OnCopyToClipboardRequested(object? sender, string text)
+    {
+        await CopyToClipboard(text);
+    }
+    
+    private async Task CopyToClipboard(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        }
+        catch
+        {
+        }
+    }
+    
+    private async void OnOpenUrlRequested(object? sender, string url)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("window.open", url, "_blank");
+        }
+        catch
+        {
+        }
+    }
+    
+    public void Dispose()
+    {
+        ViewModel.CopyToClipboardRequested -= OnCopyToClipboardRequested;
+        ViewModel.OpenUrlRequested -= OnOpenUrlRequested;
+        ViewModel.Dispose();
+    }
+}

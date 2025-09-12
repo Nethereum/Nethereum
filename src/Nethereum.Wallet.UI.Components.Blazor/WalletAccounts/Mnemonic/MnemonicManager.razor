@@ -1,0 +1,272 @@
+@using MudBlazor
+@using Nethereum.Wallet
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.MnemonicDetailsLocalizer
+@implements IDisposable
+@inject MnemonicListViewModel ViewModel
+@inject IComponentLocalizer<MnemonicListViewModel> Localizer
+
+@if (selectedMnemonicId != null)
+{
+    <!-- Mnemonic Details View -->
+    <MnemonicDetailsView MnemonicId="@selectedMnemonicId"
+                        OnExit="@HandleExitDetails"
+                        OnCreateAccount="@HandleCreateAccount"
+                        OnViewAccount="@HandleViewAccount" />
+}
+else
+{
+    <!-- Mnemonic List View -->
+    <WalletFormLayout Title="Seed Phrases"
+                      Subtitle="Manage your seed phrases and derived accounts"
+                      ShowBack="false"
+                      ShowContinue="false"
+                      ShowPrimary="false"
+                      OnExit="@HandleExit">
+        
+        <ActionButtons>
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Add"
+                                   Text="Add Seed Phrase"
+                                   OnClick="@HandleAddMnemonic" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Refresh"
+                                   Text="Refresh"
+                                   OnClick="@(async () => await ViewModel.RefreshCommand.ExecuteAsync(null))" />
+        </ActionButtons>
+        
+        <ChildContent>
+            @if (ViewModel.IsLoading)
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <div class="loading-state">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                   Text="Loading seed phrases..."
+                                   Class="mt-3" />
+                    </div>
+                </WalletContentSection>
+            }
+            else if (ViewModel.HasMnemonics)
+            {
+                <!-- Search Bar -->
+                @if (ViewModel.TotalMnemonics > 3)
+                {
+                    <WalletContentSection Class="spacing-tight">
+                        <MudTextField @bind-Value="ViewModel.SearchText"
+                                     Placeholder="Search seed phrases..."
+                                     Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start"
+                                     AdornmentIcon="@Icons.Material.Filled.Search"
+                                     Immediate="true"
+                                     Class="mb-3" />
+                    </WalletContentSection>
+                }
+
+                <!-- Summary Stats -->
+                <WalletContentSection Class="spacing-tight">
+                    <MudStack Row="true" Spacing="2" Class="mb-4">
+                        <MudChip T="string" Color="Color.Primary" Icon="@Icons.Material.Filled.Key">
+                            @ViewModel.TotalMnemonics @(ViewModel.TotalMnemonics == 1 ? "Seed Phrase" : "Seed Phrases")
+                        </MudChip>
+                        <MudChip T="string" Color="Color.Secondary" Icon="@Icons.Material.Filled.AccountCircle">
+                            @ViewModel.TotalAccounts @(ViewModel.TotalAccounts == 1 ? "Account" : "Accounts")
+                        </MudChip>
+                    </MudStack>
+                </WalletContentSection>
+
+                <!-- Mnemonic List -->
+                <WalletContentSection Class="spacing-tight">
+                    <MudStack Spacing="2">
+                        @foreach (var mnemonic in ViewModel.FilteredMnemonics)
+                        {
+                            <MudCard Class="wallet-card wallet-card-clickable" 
+                                    @onclick="@(() => HandleSelectMnemonic(mnemonic))">
+                                <MudCardContent>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                        <div style="flex-grow: 1;">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Filled.AccountTree" Color="Color.Primary" />
+                                                <div>
+                                                    <WalletText TextType="WalletText.WalletTextType.Body"
+                                                               Text="@mnemonic.DisplayName"
+                                                               Class="font-weight-medium" />
+                                                    <MudStack Row="true" Spacing="1" Class="mt-1">
+                                                        @if (mnemonic.HasPassphrase)
+                                                        {
+                                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.Lock">
+                                                                Protected
+                                                            </MudChip>
+                                                        }
+                                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
+                                                            @mnemonic.AccountCount @(mnemonic.AccountCount == 1 ? "account" : "accounts")
+                                                        </MudChip>
+                                                    </MudStack>
+                                                </div>
+                                            </MudStack>
+                                        </div>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            @if (mnemonic.AccountCount == 0)
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                              Tooltip="Delete seed phrase"
+                                                              Size="Size.Small"
+                                                              Color="Color.Error"
+                                                              OnClick="@(async () => await HandleDeleteMnemonic(mnemonic))" />
+                                            }
+                                            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" 
+                                                          Size="Size.Small" />
+                                        </MudStack>
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudStack>
+                </WalletContentSection>
+            }
+            else
+            {
+                <!-- Empty State -->
+                <WalletContentSection Class="spacing-loose">
+                    <div class="empty-state">
+                        <MudIcon Icon="@Icons.Material.Outlined.AccountTree" 
+                                 Size="Size.Large"
+                                 Color="Color.Secondary" />
+                        <WalletText TextType="WalletText.WalletTextType.Heading6"
+                                   Text="No Seed Phrases"
+                                   Class="mt-3" />
+                        <WalletText TextType="WalletText.WalletTextType.Body"
+                                   Text="You haven't added any seed phrases yet. Add one to create derived accounts."
+                                   Variant="WalletText.WalletTextVariant.Muted"
+                                   Class="mt-2" />
+                        <MudButton Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.Add"
+                                  OnClick="@HandleAddMnemonic"
+                                  Class="mt-4">
+                            Add Seed Phrase
+                        </MudButton>
+                    </div>
+                </WalletContentSection>
+            }
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                    Title="Error"
+                                    Description="@ViewModel.ErrorMessage"
+                                    Icon="@Icons.Material.Filled.Error" />
+                </WalletContentSection>
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+
+@code {
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<string> OnAddMnemonic { get; set; }
+    [Parameter] public EventCallback<string> OnCreateAccount { get; set; }
+    [Parameter] public EventCallback<IWalletAccount> OnViewAccount { get; set; }
+    [Parameter] public string? ShowMnemonicId { get; set; }
+
+    private string? selectedMnemonicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        await ViewModel.InitializeAsync();
+        
+        // If ShowMnemonicId is provided, navigate directly to that mnemonic
+        if (!string.IsNullOrEmpty(ShowMnemonicId))
+        {
+            selectedMnemonicId = ShowMnemonicId;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ShowMnemonicId) && ShowMnemonicId != selectedMnemonicId)
+        {
+            selectedMnemonicId = ShowMnemonicId;
+        }
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleSelectMnemonic(MnemonicItemViewModel mnemonic)
+    {
+        if (mnemonic?.MnemonicInfo != null)
+        {
+            selectedMnemonicId = mnemonic.MnemonicInfo.Id;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDeleteMnemonic(MnemonicItemViewModel mnemonic)
+    {
+        if (ViewModel.DeleteMnemonicCommand.CanExecute(mnemonic))
+        {
+            await ViewModel.DeleteMnemonicCommand.ExecuteAsync(mnemonic);
+        }
+    }
+
+    private async Task HandleAddMnemonic()
+    {
+        if (OnAddMnemonic.HasDelegate)
+        {
+            await OnAddMnemonic.InvokeAsync("");
+        }
+    }
+
+    private async Task HandleCreateAccount(string mnemonicId)
+    {
+        if (OnCreateAccount.HasDelegate)
+        {
+            await OnCreateAccount.InvokeAsync(mnemonicId);
+        }
+    }
+
+    private async Task HandleViewAccount(IWalletAccount account)
+    {
+        if (OnViewAccount.HasDelegate)
+        {
+            await OnViewAccount.InvokeAsync(account);
+        }
+    }
+
+    private void HandleExitDetails()
+    {
+        selectedMnemonicId = null;
+        _ = ViewModel.RefreshCommand.ExecuteAsync(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+    }
+}
+

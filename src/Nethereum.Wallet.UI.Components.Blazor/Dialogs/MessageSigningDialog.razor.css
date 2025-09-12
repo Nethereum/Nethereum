@@ -1,0 +1,30 @@
+/* MessageSigningDialog.razor component scoped styles */
+.message-signing .signing-header {
+        text-align: center;
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+        padding-bottom: 1rem;
+    }
+
+    .message-signing .message-content {
+        background: rgba(var(--mud-palette-primary-rgb), 0.02);
+    }
+
+    .message-signing .message-text {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .message-signing .structured-data {
+        background: var(--mud-palette-background-grey);
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid var(--mud-palette-primary);
+    }
+
+    .message-signing .font-family-monospace {
+        font-family: 'Courier New', Monaco, monospace;
+    }
+
+    .message-signing .font-weight-medium {
+        font-weight: 500;
+    }

@@ -1,0 +1,79 @@
+/* WalletNetworkChip component scoped styles */
+.wallet-network-chip {
+    padding: var(--wallet-space-lg, 1.5rem);
+    background: linear-gradient(135deg, var(--wallet-primary-light, #dbeafe) 0%, var(--wallet-bg-primary, #ffffff) 100%);
+    border: 1px solid var(--wallet-primary-light, #dbeafe);
+    border-radius: var(--wallet-radius-lg, 12px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--wallet-space-md, 1rem);
+}
+
+.network-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--wallet-space-md, 1rem);
+}
+
+.network-main {
+    display: flex;
+    align-items: center;
+    gap: var(--wallet-space-sm, 0.75rem);
+    flex: 1;
+    min-width: 0;
+}
+
+.network-icon {
+    color: var(--wallet-primary, #2563eb);
+    flex-shrink: 0;
+}
+
+.network-name {
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.chain-id {
+    white-space: nowrap;
+}
+
+.gas-mode-info {
+    flex-shrink: 0;
+}
+
+.gas-mode-chip {
+    font-weight: 500;
+}
+
+.mode-switch {
+    width: 100%;
+}
+
+.gas-mode-toggle {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .network-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--wallet-space-sm, 0.75rem);
+    }
+    
+    .network-main {
+        width: 100%;
+    }
+    
+    .chain-id {
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    .gas-mode-toggle {
+        max-width: none;
+    }
+}

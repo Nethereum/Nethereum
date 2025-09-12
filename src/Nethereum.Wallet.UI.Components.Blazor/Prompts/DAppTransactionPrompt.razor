@@ -1,0 +1,202 @@
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.SendTransaction.Models
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.SendTransaction
+@using MudBlazor
+@inject DAppTransactionPromptViewModel ViewModel
+
+<div class="dapp-transaction-prompt">
+    @if (ViewModel.CurrentStep == 0)
+    {
+        <WalletFormSection Title="Transaction Request">
+            @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.DAppName))
+            {
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3 pa-2" Style="background: var(--mud-palette-background-grey); border-radius: 8px;">
+                    @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.DAppIcon))
+                    {
+                        <MudAvatar Size="Size.Small">
+                            <MudImage Src="@ViewModel.PromptInfo.DAppIcon" Alt="@ViewModel.PromptInfo.DAppName" />
+                        </MudAvatar>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Apps" Size="Size.Small" />
+                    }
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Request from</MudText>
+                        <MudText Typo="Typo.body1"><strong>@ViewModel.PromptInfo.DAppName</strong></MudText>
+                        @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.Origin))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@ViewModel.PromptInfo.Origin</MudText>
+                        }
+                    </MudStack>
+                </MudStack>
+            }
+            
+           
+            
+            <TransactionInput ViewModel="@ViewModel.Transaction"
+                            Layout="TransactionInputLayout.Confirmation"
+                            ShowTransactionDetails="true"
+                            ShowDataDecoding="true"
+                            RecipientReadOnly="true"
+                            AmountReadOnly="true"
+                            ShowGasConfiguration="false" />
+            
+            @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.WarningMessage))
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-3">
+                    @ViewModel.PromptInfo.WarningMessage
+                </MudAlert>
+            }
+        </WalletFormSection>
+        
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-4">
+            <MudButton Color="Color.Error" 
+                      Variant="Variant.Text"
+                      OnClick="@(() => ViewModel.RejectTransactionCommand.Execute(null))">
+                Reject
+            </MudButton>
+            <MudButton Color="Color.Primary" 
+                      Variant="Variant.Filled"
+                      OnClick="@(() => ViewModel.NextStepCommand.Execute(null))"
+                      Disabled="@(!ViewModel.CanProceedToNextStep)">
+                Review Gas Settings
+            </MudButton>
+        </MudStack>
+    }
+    else if (ViewModel.CurrentStep == 1)
+    {
+        <WalletFormSection Title="Confirm Transaction">
+            <TransactionInput ViewModel="@ViewModel.Transaction"
+                            Layout="TransactionInputLayout.Confirmation"
+                            ShowTransactionDetails="true"
+                            ShowGasConfiguration="true"
+                            ShowCostSummary="true"
+                            RecipientReadOnly="true"
+                            AmountReadOnly="true"
+                            AllowGasModeSwitch="true" />
+        </WalletFormSection>
+        
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3">
+                @ViewModel.ErrorMessage
+            </MudAlert>
+        }
+        
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-4">
+            <MudButton Color="Color.Default" 
+                      Variant="Variant.Text"
+                      OnClick="@(() => ViewModel.PreviousStepCommand.Execute(null))"
+                      Disabled="@ViewModel.IsLoading">
+                Back
+            </MudButton>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Color="Color.Error" 
+                          Variant="Variant.Text"
+                          OnClick="@(() => ViewModel.RejectTransactionCommand.Execute(null))"
+                          Disabled="@ViewModel.IsLoading">
+                    Reject
+                </MudButton>
+                <MudButton Color="Color.Primary" 
+                          Variant="Variant.Filled"
+                          OnClick="@(() => ViewModel.ApproveAndSendTransactionCommand.ExecuteAsync(null))"
+                          Disabled="@(!ViewModel.CanApprove)">
+                    @if (ViewModel.IsLoading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Approve & Send
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    }
+    else if (ViewModel.CurrentStep == 2)
+    {
+        <WalletFormSection Title="Transaction Status">
+            @if (ViewModel.IsLoading)
+            {
+                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">
+                        Sending transaction...
+                    </MudText>
+                </MudStack>
+            }
+            else if (ViewModel.TransactionStatus != null && !string.IsNullOrEmpty(ViewModel.TransactionHash))
+            {
+                <TransactionStatus ViewModel="@ViewModel.TransactionStatus" IsCompactMode="false" />
+            }
+            else if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-3">
+                    <strong>Transaction Failed</strong><br/>
+                    @ViewModel.ErrorMessage
+                </MudAlert>
+                
+                @if (ViewModel.ShowRetry)
+                {
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-3">
+                        <MudButton Color="Color.Default" 
+                                  Variant="Variant.Text"
+                                  OnClick="@(() => ViewModel.CancelWithErrorCommand.Execute(null))">
+                            Cancel
+                        </MudButton>
+                        <MudButton Color="Color.Primary" 
+                                  Variant="Variant.Filled"
+                                  StartIcon="@Icons.Material.Filled.Refresh"
+                                  OnClick="@(() => ViewModel.RetryTransactionCommand.ExecuteAsync(null))"
+                                  Disabled="@ViewModel.IsLoading">
+                            Retry Transaction
+                        </MudButton>
+                    </MudStack>
+                }
+            }
+        </WalletFormSection>
+        
+        @if (ViewModel.TransactionStatus != null && !string.IsNullOrEmpty(ViewModel.TransactionHash) && !ViewModel.IsLoading)
+        {
+            <MudStack Row="true" Justify="Justify.Center" Class="mt-4">
+                <MudButton Color="Color.Primary" 
+                          Variant="Variant.Filled"
+                          OnClick="Complete">
+                    Done
+                </MudButton>
+            </MudStack>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = new();
+    [Parameter] public EventCallback<object?> OnComplete { get; set; }
+    [Parameter] public EventCallback OnReject { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (PromptRequest?.Data is TransactionPromptInfo promptInfo)
+        {
+            await ViewModel.InitializeAsync(promptInfo);
+            
+            ViewModel.OnTransactionSent = async (txHash) =>
+            {
+                await OnComplete.InvokeAsync(txHash);
+            };
+            
+            ViewModel.OnRejected = async () =>
+            {
+                await OnReject.InvokeAsync();
+            };
+        }
+    }
+    
+    private async Task Complete()
+    {
+        if (!string.IsNullOrEmpty(ViewModel.TransactionHash))
+        {
+            await OnComplete.InvokeAsync(ViewModel.TransactionHash);
+        }
+    }
+}
