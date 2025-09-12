@@ -1,0 +1,94 @@
+using Nethereum.Wallet.UI.Components.Core.Localization;
+using Nethereum.Wallet.UI.Components.SendTransaction;
+using System.Collections.Generic;
+
+namespace Nethereum.Wallet.UI.Components.Prompts
+{
+    public class DAppTransactionPromptLocalizer : ComponentLocalizerBase<DAppTransactionPromptViewModel>
+    {
+        public DAppTransactionPromptLocalizer(IWalletLocalizationService globalService) : base(globalService)
+        {
+        }
+        
+        public static class Keys
+        {
+            public const string TransactionRequest = "TransactionRequest";
+            public const string ReviewTransaction = "ReviewTransaction";
+            public const string ConfirmTransaction = "ConfirmTransaction";
+            public const string TransactionStatus = "TransactionStatus";
+            public const string RequestDetails = "RequestDetails";
+            public const string RequestFrom = "RequestFrom";
+            public const string StepReview = "StepReview";
+            public const string StepConfirm = "StepConfirm";
+            public const string StepStatus = "StepStatus";
+            public const string SendTransaction = "SendTransaction";
+            public const string Continue = "Continue";
+            public const string Back = "Back";
+            public const string Reject = "Reject";
+            public const string Approve = "Approve";
+            public const string Processing = "Processing";
+            public const string TransactionSent = "TransactionSent";
+            public const string TransactionFailed = "TransactionFailed";
+            public const string Retry = "Retry";
+            public const string Close = "Close";
+            public const string GasConfiguration = "GasConfiguration";
+            public const string EstimatedCost = "EstimatedCost";
+            public const string TransactionDetails = "TransactionDetails";
+        }
+        
+        protected override void RegisterTranslations()
+        {
+            _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
+            {
+                [Keys.TransactionRequest] = "Transaction Request",
+                [Keys.ReviewTransaction] = "Review Transaction",
+                [Keys.ConfirmTransaction] = "Confirm Transaction",
+                [Keys.TransactionStatus] = "Transaction Status",
+                [Keys.RequestDetails] = "Request Details",
+                [Keys.RequestFrom] = "Request from {0}",
+                [Keys.StepReview] = "Review",
+                [Keys.StepConfirm] = "Confirm",
+                [Keys.StepStatus] = "Status",
+                [Keys.SendTransaction] = "Send Transaction",
+                [Keys.Continue] = "Continue",
+                [Keys.Back] = "Back",
+                [Keys.Reject] = "Reject",
+                [Keys.Approve] = "Approve",
+                [Keys.Processing] = "Processing transaction...",
+                [Keys.TransactionSent] = "Transaction sent successfully",
+                [Keys.TransactionFailed] = "Transaction failed",
+                [Keys.Retry] = "Retry",
+                [Keys.Close] = "Close",
+                [Keys.GasConfiguration] = "Gas Configuration",
+                [Keys.EstimatedCost] = "Estimated Cost",
+                [Keys.TransactionDetails] = "Transaction Details"
+            });
+            
+            _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
+            {
+                [Keys.TransactionRequest] = "Solicitud de Transacción",
+                [Keys.ReviewTransaction] = "Revisar Transacción",
+                [Keys.ConfirmTransaction] = "Confirmar Transacción",
+                [Keys.TransactionStatus] = "Estado de Transacción",
+                [Keys.RequestDetails] = "Detalles de Solicitud",
+                [Keys.RequestFrom] = "Solicitud de {0}",
+                [Keys.StepReview] = "Revisar",
+                [Keys.StepConfirm] = "Confirmar",
+                [Keys.StepStatus] = "Estado",
+                [Keys.SendTransaction] = "Enviar Transacción",
+                [Keys.Continue] = "Continuar",
+                [Keys.Back] = "Atrás",
+                [Keys.Reject] = "Rechazar",
+                [Keys.Approve] = "Aprobar",
+                [Keys.Processing] = "Procesando transacción...",
+                [Keys.TransactionSent] = "Transacción enviada exitosamente",
+                [Keys.TransactionFailed] = "Transacción fallida",
+                [Keys.Retry] = "Reintentar",
+                [Keys.Close] = "Cerrar",
+                [Keys.GasConfiguration] = "Configuración de Gas",
+                [Keys.EstimatedCost] = "Costo Estimado",
+                [Keys.TransactionDetails] = "Detalles de Transacción"
+            });
+        }
+    }
+}

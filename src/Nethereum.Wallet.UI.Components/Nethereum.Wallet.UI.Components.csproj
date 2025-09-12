@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+
+      <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+      <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+    </ItemGroup>
+
+
+
+  
+  <ItemGroup>
+    <Compile Update="ViewModels\NetworkSelectorViewModel.cs">
+      <DependentUpon>NetworkSelector.razor</DependentUpon>
+    </Compile>
+    <Compile Update="AccountFactories\ViewModels\MnemonicAccountCreationViewModel.cs" />
+    <Compile Update="AccountFactories\MnemonicAccountFactory.cs" />
+    <Compile Update="AccountFactories\ViewModels\PrivateKeyAccountCreationViewModel.cs" />
+    <Compile Update="AccountFactories\PrivateKeyAccountFactory.cs" />
+    <Compile Update="AccountFactories\ViewModels\ViewOnlyAccountCreationViewModel.cs" />
+    <Compile Update="AccountFactories\ViewOnlyAccountFactory.cs" />
+  </ItemGroup>
+
+</Project>
+
