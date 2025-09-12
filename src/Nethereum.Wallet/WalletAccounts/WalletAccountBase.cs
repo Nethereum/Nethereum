@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Nethereum.RPC.Accounts;
 using Nethereum.Web3;
@@ -10,10 +10,12 @@ namespace Nethereum.Wallet.WalletAccounts
     {
         public string Address { get; protected set; }
         public abstract string Type { get; }
-        public string Label { get;  set; }
+        public string Label { get; set; }
+        public abstract string Name { get; }
 
-        public abstract object Settings { get; }
+        public abstract object? Settings { get; }
         public bool IsSelected { get; set; } = false;
+        public virtual string? GroupId => null;
 
         protected WalletAccountBase(string address, string label)
         {

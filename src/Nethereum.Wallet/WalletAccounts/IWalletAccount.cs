@@ -1,15 +1,21 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
+using Nethereum.Web3;
+using System.Text.Json.Nodes;
 
 public interface IWalletAccount
 {
     string Address { get; }
     string Type { get; }
     string Label { get; set; }
-    object Settings { get; }
+    string Name { get; }
+    object? Settings { get; }
 
     bool IsSelected { get; set; }
+    string? GroupId { get; }
 
     Task<IAccount> GetAccountAsync();
+    Task<IWeb3> CreateWeb3Async(IClient client);
+    JsonObject ToJson();
 }

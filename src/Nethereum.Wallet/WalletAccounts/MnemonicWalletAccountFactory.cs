@@ -1,4 +1,6 @@
-﻿using Nethereum.Wallet.Bip32;
+﻿using System.Linq;
+using System;
+using Nethereum.Wallet.Bip32;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -8,18 +10,19 @@ namespace Nethereum.Wallet.WalletAccounts
     {
         public override string Type => MnemonicWalletAccount.TypeName;
 
-        private readonly IMnemonicProvider _provider;
-
-        public MnemonicWalletAccountFactory(IMnemonicProvider provider)
+        public MnemonicWalletAccountFactory()
         {
-            _provider = provider;
         }
 
-        public override IWalletAccount FromJson(JsonElement element)
+        public override IWalletAccount FromJson(JsonElement element, WalletVault vault)
         {
             var mnemonicId = element.GetProperty("mnemonicId").GetString()!;
-            var mnemonic = _provider.GetMnemonic(mnemonicId);
-            var minimalHDWallet = new MinimalHDWallet(mnemonic.Mnemonic, mnemonic.Passphrase);
+            var mnemonic = vault.Mnemonics.FirstOrDefault(m => m.Id == mnemonicId);
+            if (mnemonic == null)
+            {
+                throw new InvalidOperationException($"Mnemonic with ID {mnemonicId} not found.");
+            }
+            var minimalHDWallet = new MinimalHDWallet(mnemonic.Mnemonic, mnemonic.Passphrase ?? string.Empty);
             return  MnemonicWalletAccount.FromJson(element, minimalHDWallet);
 
         }

@@ -7,10 +7,11 @@ namespace Nethereum.Wallet
 {
     public interface IWalletConfigurationService
     {
-        ChainFeature ActiveChain { get; }
+        ChainFeature? ActiveChain { get; }
         Task AddOrUpdateChainAsync(ChainFeature chainFeature);
-        ChainFeature GetChain(BigInteger chainId);
+        ChainFeature? GetChain(BigInteger chainId);
         Task<bool> SetActiveChainAsync(BigInteger chainId);
+        Task<List<ChainFeature>> GetAvailableChainsAsync();
     }
 
 }

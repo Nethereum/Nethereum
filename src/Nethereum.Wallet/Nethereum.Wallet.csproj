@@ -2,14 +2,24 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
     <ProjectReference Include="..\Nethereum.GnosisSafe\Nethereum.GnosisSafe.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
+    <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
+    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

@@ -11,10 +11,6 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.Bip32
 {
-    /// <summary>
-    /// Minimal HD Wallet to provide key derivation from a mnemonic
-    /// </summary>
-    /// Note: To visualise the process check https://entropy.to/hd-wallet (great documentation and visualisation of the BIP32 derivation process)
     public class MinimalHDWallet
     {
         public byte[] Seed { get; }
@@ -39,6 +35,7 @@ namespace Nethereum.Wallet.Bip32
                 throw new ArgumentException("Derivation path must start with 'm'");
 
             byte[] key, chainCode;
+            Span<byte> data = stackalloc byte[37];
 
             using (var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(MasterKeyHmacKey)))
             {
@@ -72,7 +69,6 @@ namespace Nethereum.Wallet.Bip32
                 Debug.WriteLine($"Parent Key: {key.ToHex()}");
                 Debug.WriteLine($"Parent Chain Code: {chainCode.ToHex()}");
 
-                Span<byte> data = stackalloc byte[37];
                 if (hardened)
                 {
                     data[0] = 0x00;

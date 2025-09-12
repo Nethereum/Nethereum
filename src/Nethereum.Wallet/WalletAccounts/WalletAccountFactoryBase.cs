@@ -8,7 +8,7 @@ namespace Nethereum.Wallet.WalletAccounts
          where TWalletAccount : WalletAccountBase
     {
         public abstract string Type { get; }
-        public abstract IWalletAccount FromJson(JsonElement element);
+        public abstract IWalletAccount FromJson(JsonElement element, WalletVault vault);
         public virtual bool CanHandle(IWalletAccount account)
             => account is TWalletAccount;
 

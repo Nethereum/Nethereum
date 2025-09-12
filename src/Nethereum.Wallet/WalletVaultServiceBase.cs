@@ -1,5 +1,8 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nethereum.Wallet;
@@ -7,20 +10,62 @@ namespace Nethereum.Wallet;
 public abstract class WalletVaultServiceBase : IWalletVaultService
 {
     protected WalletVault? _vault;
+    protected string? _currentPassword;
+    protected virtual IEncryptionStrategy GetEncryptionStrategy() => new DefaultAes256EncryptionStrategy();
 
     public Task<IReadOnlyList<IWalletAccount>> GetAccountsAsync()
         => Task.FromResult((IReadOnlyList<IWalletAccount>)(_vault?.Accounts ?? new List<IWalletAccount>()));
 
-    public async Task CreateNewAsync(string password)
+    public Task<IReadOnlyList<AccountGroup>> GetAccountGroupsAsync()
     {
-        _vault = new WalletVault();
+        var accounts = _vault?.Accounts ?? new List<IWalletAccount>();
+        var groups = new List<AccountGroup>();
+        
+        var accountsWithGroup = accounts.Where(a => !string.IsNullOrEmpty(a.GroupId)).ToList();
+        foreach (var group in accountsWithGroup.GroupBy(account => account.GroupId))
+        {
+            object? groupMetadata = null;
+            if (!string.IsNullOrEmpty(group.Key))
+            {
+                groupMetadata = GetGroupMetadata(group.Key);
+            }
+            
+            groups.Add(new AccountGroup(group.Key, group, groupMetadata));
+        }
+        
+        // Handle accounts without GroupId - group them by account type
+        var accountsWithoutGroup = accounts.Where(a => string.IsNullOrEmpty(a.GroupId)).ToList();
+        foreach (var typeGroup in accountsWithoutGroup.GroupBy(account => account.Type))
+        {
+            // Use account type as the group ID for accounts without explicit grouping
+            groups.Add(new AccountGroup($"type:{typeGroup.Key}", typeGroup));
+        }
+        
+        return Task.FromResult((IReadOnlyList<AccountGroup>)groups);
+    }
+    protected virtual object? GetGroupMetadata(string groupId)
+    {
+        var mnemonicInfo = _vault?.Mnemonics?.FirstOrDefault(m => m.Id == groupId);
+        if (mnemonicInfo != null)
+        {
+            return mnemonicInfo;
+        }
+        
+        return null;
+    }
+
+    public virtual async Task CreateNewAsync(string password)
+    {
+        _vault = new WalletVault(GetEncryptionStrategy());
+        _currentPassword = password;
         await SaveAsync(password);
     }
 
-    public async Task CreateNewVaultWithAccountAsync(string password, IWalletAccount account)
+    public virtual async Task CreateNewVaultWithAccountAsync(string password, IWalletAccount account)
     {
-        _vault = new WalletVault();
+        _vault = new WalletVault(GetEncryptionStrategy());
         _vault.AddAccount(account);
+        _currentPassword = password;
         await SaveAsync(password);
     }
 
@@ -33,12 +78,18 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
         await SaveEncryptedAsync(encrypted);
     }
 
-    public async Task<bool> UnlockAsync(string password)
+    public async Task SaveAsync()
+    {
+        if (_currentPassword == null) throw new InvalidOperationException("No current password available. Vault must be unlocked first.");
+        await SaveAsync(_currentPassword);
+    }
+
+    public virtual async Task<bool> UnlockAsync(string password)
     {
         var encrypted = await GetEncryptedAsync();
         if (string.IsNullOrEmpty(encrypted)) return false;
 
-        var tmp = new WalletVault();
+        var tmp = new WalletVault(GetEncryptionStrategy());
         try
         {
             tmp.Decrypt(encrypted, password);
@@ -49,10 +100,20 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
         }
 
         _vault = tmp;
+        _currentPassword = password;
         return true;
     }
 
     public abstract Task<bool> VaultExistsAsync();
+    
+    public virtual async Task ResetAsync()
+    {
+        await ResetStorageAsync();
+        _vault = null;
+        _currentPassword = null;
+    }
+    
+    protected abstract Task ResetStorageAsync();
     protected abstract Task<string?> GetEncryptedAsync();
     protected abstract Task SaveEncryptedAsync(string encrypted);
 }

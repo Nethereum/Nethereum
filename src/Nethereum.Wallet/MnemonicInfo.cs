@@ -1,7 +1,11 @@
-﻿namespace Nethereum.Wallet;
+﻿using System;
+#nullable enable
+
+namespace Nethereum.Wallet;
 
 public class MnemonicInfo
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Label { get; set; } = string.Empty;
     public string Mnemonic { get; set; } = string.Empty;
     public string? Passphrase { get; set; }

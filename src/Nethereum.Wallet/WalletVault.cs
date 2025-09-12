@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿#nullable enable
+
+using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Security.Cryptography;
@@ -12,18 +14,22 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Wallet;
 
-public class WalletVault : IMnemonicProvider
+public class WalletVault
 {
-    public Dictionary<string, MnemonicInfo> Mnemonics { get; private set; } = new();
+    public List<MnemonicInfo> Mnemonics { get; private set; } = new();
     public List<IWalletAccount> Accounts { get; private set; } = new();
 
     public List<IWalletAccountJsonFactory> Factories { get; private set; } = new();
 
-    public WalletVault()
+    private readonly IEncryptionStrategy _encryptionStrategy;
+
+    public WalletVault(IEncryptionStrategy encryptionStrategy)
     {
+        _encryptionStrategy = encryptionStrategy;
         RegisterFactory(new PrivateKeyWalletAccountFactory());
-        RegisterFactory(new MnemonicWalletAccountFactory(this)); // 'this' implements IMnemonicProvider
+        RegisterFactory(new MnemonicWalletAccountFactory());
         RegisterFactory(new ViewOnlyWalletAccountFactory());
+        RegisterFactory(new SmartContractWalletAccountFactory());
     }
 
     public void AddAccount(IWalletAccount account)
@@ -34,11 +40,14 @@ public class WalletVault : IMnemonicProvider
         Accounts.Add(account);
     }
 
-    public string AddMnemonic(string label, string mnemonic, string? passphrase = null)
+    public void AddMnemonic(MnemonicInfo mnemonicInfo)
     {
-        var id = $"mnemonic-{Mnemonics.Count}";
-        Mnemonics[id] = new MnemonicInfo(label, mnemonic, passphrase);
-        return id;
+        Mnemonics.Add(mnemonicInfo);
+    }
+
+    public MnemonicInfo? FindMnemonicById(string? mnemonicId)
+    {
+        return Mnemonics.FirstOrDefault(m => m.Id == mnemonicId);
     }
 
     public void AddAccount(IWalletAccount account, bool setAsSelected = false)
@@ -63,23 +72,19 @@ public class WalletVault : IMnemonicProvider
         Factories.Add(factory);
     }
 
-    public MnemonicInfo? GetMnemonic(string id)
-    => Mnemonics.TryGetValue(id, out var info) ? info : null;
-
     public string Encrypt(string password)
     {
         var jsonObject = new JsonObject
         {
-            ["mnemonics"] = new JsonObject(Mnemonics.Select(kvp =>
-                    new KeyValuePair<string, JsonNode>(
-                        kvp.Key,
-                        new JsonObject
-                        {
-                            ["label"] = kvp.Value.Label,
-                            ["mnemonic"] = kvp.Value.Mnemonic,
-                            ["passphrase"] = kvp.Value.Passphrase
-                        })
-                )),
+            ["mnemonics"] = new JsonArray(Mnemonics.Select(m =>
+                    new JsonObject
+                    {
+                        ["label"] = m.Label,
+                        ["mnemonic"] = m.Mnemonic,
+                        ["passphrase"] = m.Passphrase != null ? JsonValue.Create(m.Passphrase) : null,
+                        ["id"] = m.Id
+                    }).ToArray()
+                ),
             ["accounts"] = new JsonArray(Accounts.Select(a =>
             {
                 var factory = Factories.FirstOrDefault(f => f.Type == a.Type)
@@ -89,52 +94,30 @@ public class WalletVault : IMnemonicProvider
         };
 
         var json = jsonObject.ToJsonString();
-
-        using var aes = Aes.Create();
-        aes.KeySize = 256;
-        aes.BlockSize = 128;
-        aes.GenerateIV();
-        aes.Key = new Rfc2898DeriveBytes(password, aes.IV, 10000).GetBytes(32);
-
-        using var encryptor = aes.CreateEncryptor();
         var plainBytes = Encoding.UTF8.GetBytes(json);
-        var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+        var encryptedBytes = _encryptionStrategy.Encrypt(plainBytes, password);
 
-        var result = new byte[aes.IV.Length + cipherBytes.Length];
-        Array.Copy(aes.IV, 0, result, 0, aes.IV.Length);
-        Array.Copy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
-        return Convert.ToBase64String(result);
+        return Convert.ToBase64String(encryptedBytes);
     }
 
     public void Decrypt(string encrypted, string password)
     {
         var data = Convert.FromBase64String(encrypted);
-        var iv = data.Take(16).ToArray();
-        var cipher = data.Skip(16).ToArray();
-
-        using var aes = Aes.Create();
-        aes.KeySize = 256;
-        aes.BlockSize = 128;
-        aes.IV = iv;
-        aes.Key = new Rfc2898DeriveBytes(password, iv, 10000).GetBytes(32);
-
-        using var decryptor = aes.CreateDecryptor();
-        var plainBytes = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+        var plainBytes = _encryptionStrategy.Decrypt(data, password);
         var json = Encoding.UTF8.GetString(plainBytes);
 
         var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        Mnemonics = root.GetProperty("mnemonics").EnumerateObject()
-            .ToDictionary(e => e.Name, e =>
+        Mnemonics = root.GetProperty("mnemonics").EnumerateArray()
+            .Select(element =>
             {
-                var obj = e.Value;
                 return new MnemonicInfo(
-                    obj.GetProperty("label").GetString()!,
-                    obj.GetProperty("mnemonic").GetString()!,
-                    obj.TryGetProperty("passphrase", out var p) ? p.GetString() : null
-                );
-            });
+                    element.GetProperty("label").GetString()!,
+                    element.GetProperty("mnemonic").GetString()!,
+                    element.TryGetProperty("passphrase", out var p) ? p.GetString() : null
+                ) { Id = element.GetProperty("id").GetString()! };
+            }).ToList();
 
         var accountsArray = root.GetProperty("accounts").EnumerateArray();
 
@@ -144,7 +127,7 @@ public class WalletVault : IMnemonicProvider
                 ?? throw new InvalidOperationException("Account type missing.");
             var factory = Factories.FirstOrDefault(f => f.Type == type)
                 ?? throw new NotSupportedException($"No factory for type: {type}");
-            return factory.FromJson(element);
+            return factory.FromJson(element, this);
         }).ToList();
     }
 }

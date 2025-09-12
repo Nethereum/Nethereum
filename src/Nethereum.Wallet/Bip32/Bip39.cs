@@ -71,7 +71,7 @@ namespace Nethereum.Wallet.Bip32
                 HashAlgorithmName.SHA512
             );
 
-            return derive.GetBytes(64); // 512 bits
+            return derive.GetBytes(64);
         }
     }
 }

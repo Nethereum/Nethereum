@@ -14,6 +14,7 @@ namespace Nethereum.Wallet.WalletAccounts
         public string PrivateKey { get; private set; }
         private readonly EthECKey _key;
 
+        public override string Name => Label ?? "Private Key Account";
         public override object Settings => new { PrivateKey };
 
         public PrivateKeyWalletAccount(string address, string label, string privateKey)

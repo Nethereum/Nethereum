@@ -1,4 +1,6 @@
-﻿namespace Nethereum.Wallet
+﻿#nullable enable
+
+namespace Nethereum.Wallet
 {
     public interface IMnemonicProvider
     {

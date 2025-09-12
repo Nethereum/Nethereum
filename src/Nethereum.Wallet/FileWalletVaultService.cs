@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿#nullable enable
+
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Nethereum.Wallet;
@@ -14,6 +16,16 @@ public class FileWalletVaultService : WalletVaultServiceBase
 
     public override Task<bool> VaultExistsAsync()
         => Task.FromResult(File.Exists(_filePath));
+
+    protected override Task ResetStorageAsync()
+    {
+        if (File.Exists(_filePath))
+        {
+            File.Delete(_filePath);
+        }
+        
+        return Task.CompletedTask;
+    }
 
     protected override async Task<string?> GetEncryptedAsync()
     {
