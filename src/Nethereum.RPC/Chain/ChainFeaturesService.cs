@@ -7,7 +7,7 @@ using System.Text;
 namespace Nethereum.RPC.Chain
 {
 
-    public class ChainFeaturesService
+    public class ChainFeaturesService : IChainFeaturesService
     {
         private static ChainFeaturesService _current;
         public static ChainFeaturesService Current

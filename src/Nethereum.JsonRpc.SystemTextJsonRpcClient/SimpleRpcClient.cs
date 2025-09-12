@@ -61,7 +61,7 @@ namespace Nethereum.JsonRpc.SystemTextJsonRpcClient
             return rpcResponseMessage.GetResultSTJ<T>(true, _serializerOptions);
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        public override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
             try
             {
