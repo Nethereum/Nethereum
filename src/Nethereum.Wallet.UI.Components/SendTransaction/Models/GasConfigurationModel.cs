@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Numerics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Nethereum.Util;
@@ -46,13 +47,13 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             {
                 if (IsCustomMode)
                 {
-                    return decimal.TryParse(CustomGasPrice, out var price)
+                    return decimal.TryParse(CustomGasPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price)
                         ? UnitConversion.Convert.ToWei(price, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
                 else
                 {
-                    return decimal.TryParse(AdjustedGasPrice, out var price)
+                    return decimal.TryParse(AdjustedGasPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price)
                         ? UnitConversion.Convert.ToWei(price, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
@@ -65,13 +66,13 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             {
                 if (IsCustomMode)
                 {
-                    return decimal.TryParse(CustomMaxFee, out var fee)
+                    return decimal.TryParse(CustomMaxFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee)
                         ? UnitConversion.Convert.ToWei(fee, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
                 else
                 {
-                    return decimal.TryParse(AdjustedMaxFee, out var fee)
+                    return decimal.TryParse(AdjustedMaxFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee)
                         ? UnitConversion.Convert.ToWei(fee, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
@@ -84,13 +85,13 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             {
                 if (IsCustomMode)
                 {
-                    return decimal.TryParse(CustomPriorityFee, out var fee)
+                    return decimal.TryParse(CustomPriorityFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee)
                         ? UnitConversion.Convert.ToWei(fee, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
                 else
                 {
-                    return decimal.TryParse(AdjustedPriorityFee, out var fee)
+                    return decimal.TryParse(AdjustedPriorityFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee)
                         ? UnitConversion.Convert.ToWei(fee, UnitConversion.EthUnit.Gwei)
                         : BigInteger.Zero;
                 }
@@ -152,7 +153,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             ValidateField(nameof(CustomGasPrice),
                 (string.IsNullOrWhiteSpace(CustomGasPrice), 
                     SharedValidationLocalizer.Keys.FieldRequired),
-                (!decimal.TryParse(CustomGasPrice, out var price) || price <= 0, 
+                (!decimal.TryParse(CustomGasPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price) || price <= 0, 
                     SharedValidationLocalizer.Keys.AmountMustBePositive));
         }
         
@@ -167,7 +168,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             ValidateField(nameof(CustomMaxFee),
                 (string.IsNullOrWhiteSpace(CustomMaxFee), 
                     SharedValidationLocalizer.Keys.FieldRequired),
-                (!decimal.TryParse(CustomMaxFee, out var fee) || fee <= 0, 
+                (!decimal.TryParse(CustomMaxFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee) || fee <= 0, 
                     SharedValidationLocalizer.Keys.AmountMustBePositive),
                 (PriorityFeeValue > MaxFeeValue && MaxFeeValue > 0, 
                     SharedValidationLocalizer.Keys.ValueOutOfRange));
@@ -184,7 +185,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             ValidateField(nameof(CustomPriorityFee),
                 (string.IsNullOrWhiteSpace(CustomPriorityFee), 
                     SharedValidationLocalizer.Keys.FieldRequired),
-                (!decimal.TryParse(CustomPriorityFee, out var fee) || fee < 0, 
+                (!decimal.TryParse(CustomPriorityFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee) || fee < 0, 
                     SharedValidationLocalizer.Keys.ValueMustBeNonNegative));
                     
             ValidateMaxFee();
@@ -203,7 +204,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             {
                 if (IsEip1559Enabled)
                 {
-                    if (decimal.TryParse(AdjustedMaxFee, out var fee))
+                    if (decimal.TryParse(AdjustedMaxFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var fee))
                     {
                         var weiValue = UnitConversion.Convert.ToWei(fee, UnitConversion.EthUnit.Gwei);
                         return GasLimitValue * weiValue;
@@ -211,7 +212,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
                 }
                 else
                 {
-                    if (decimal.TryParse(AdjustedGasPrice, out var price))
+                    if (decimal.TryParse(AdjustedGasPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var price))
                     {
                         var weiValue = UnitConversion.Convert.ToWei(price, UnitConversion.EthUnit.Gwei);
                         return GasLimitValue * weiValue;
@@ -241,17 +242,17 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
                 IsEip1559Enabled = true;
                 CustomMaxFee = UnitConversion.Convert
                     .FromWei(suggestion.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
                 CustomPriorityFee = UnitConversion.Convert
                     .FromWei(suggestion.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
             }
             else if (suggestion.GasPrice.HasValue)
             {
                 IsEip1559Enabled = false;
                 CustomGasPrice = UnitConversion.Convert
                     .FromWei(suggestion.GasPrice.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
             }
         }
         
@@ -268,16 +269,16 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             {
                 BaseMaxFee = UnitConversion.Convert
                     .FromWei(suggestion.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
                 BasePriorityFee = UnitConversion.Convert
                     .FromWei(suggestion.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
             }
             else if (!IsEip1559Enabled && suggestion.GasPrice.HasValue)
             {
                 BaseGasPrice = UnitConversion.Convert
                     .FromWei(suggestion.GasPrice.Value, UnitConversion.EthUnit.Gwei)
-                    .ToString("F2");
+                    .ToString("F2", CultureInfo.InvariantCulture);
             }
             
             RecalculateAdjustedValues();
@@ -321,15 +322,15 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
 
             if (IsEip1559Enabled)
             {
-                if (decimal.TryParse(BaseMaxFee, out var maxFee))
-                    AdjustedMaxFee = (maxFee * SelectedMultiplier).ToString("F2");
-                if (decimal.TryParse(BasePriorityFee, out var priorityFee))
-                    AdjustedPriorityFee = (priorityFee * SelectedMultiplier).ToString("F2");
+                if (decimal.TryParse(BaseMaxFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var maxFee))
+                    AdjustedMaxFee = (maxFee * SelectedMultiplier).ToString("F2", CultureInfo.InvariantCulture);
+                if (decimal.TryParse(BasePriorityFee, NumberStyles.Number, CultureInfo.InvariantCulture, out var priorityFee))
+                    AdjustedPriorityFee = (priorityFee * SelectedMultiplier).ToString("F2", CultureInfo.InvariantCulture);
             }
             else
             {
-                if (decimal.TryParse(BaseGasPrice, out var gasPrice))
-                    AdjustedGasPrice = (gasPrice * SelectedMultiplier).ToString("F2");
+                if (decimal.TryParse(BaseGasPrice, NumberStyles.Number, CultureInfo.InvariantCulture, out var gasPrice))
+                    AdjustedGasPrice = (gasPrice * SelectedMultiplier).ToString("F2", CultureInfo.InvariantCulture);
             }
         }
         
