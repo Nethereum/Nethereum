@@ -3,6 +3,7 @@
 @using static Nethereum.Wallet.UI.Components.NethereumWallet.NethereumWalletLocalizer
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.Hosting
+@using Nethereum.UI
 @using Nethereum.Wallet.UI.Components.Blazor.Dashboard
 @using Nethereum.Wallet.UI.Components.Blazor.CreateAccount
 @using Microsoft.AspNetCore.Components
@@ -12,6 +13,7 @@
 
 @inject NethereumWalletViewModel ViewModel
 @inject NethereumWalletHostProvider WalletHostProvider
+@inject SelectedEthereumHostProviderService SelectedHostProviderService
 @inject IWalletVaultService VaultService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -256,6 +258,7 @@
         if (ViewModel.HasAccounts)
         {
             await WalletHostProvider.EnableProviderAsync();
+            await SelectedHostProviderService.SetSelectedEthereumHostProvider(WalletHostProvider);
         }
         
         StateHasChanged();
@@ -296,10 +299,7 @@
 
     private async Task OnLogout()
     {
-        // Reset all states to initial
-        ViewModel.IsWalletUnlocked = false;
-        ViewModel.HasAccounts = false;
-        await ViewModel.InitializeAsync();
+        await ViewModel.LogoutCommand.ExecuteAsync(null);
         StateHasChanged();
     }
 

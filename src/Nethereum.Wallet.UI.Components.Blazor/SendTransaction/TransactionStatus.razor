@@ -13,7 +13,9 @@
 
 <WalletFormLayout Title="@Localizer.GetString(Keys.TransactionStatus)"
                   ShowContinue="false"
-                  ShowBack="false">
+                  ShowBack="false"
+                  ExitText="@ExitButtonText"
+                  OnExit="@(() => ViewModel.CloseCommand.Execute(null))">
    
     
     <ChildContent>

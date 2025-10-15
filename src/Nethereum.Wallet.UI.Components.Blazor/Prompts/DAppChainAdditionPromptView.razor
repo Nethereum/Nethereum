@@ -1,0 +1,53 @@
+@using System.Numerics
+@using Nethereum.Hex.HexTypes
+@using Nethereum.RPC.Chain
+@using Nethereum.RPC.HostWallet
+@using Nethereum.Wallet.UI
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Blazor.Networks
+@using Nethereum.Wallet.UI.Components.Services
+
+<AddCustomNetwork InitialChain="@InitialChain"
+                  OnNetworkAdded="HandleNetworkAdded"
+                  OnExit="HandleReject" />
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = null!;
+    [Parameter] public EventCallback<object?> OnApproved { get; set; }
+    [Parameter] public EventCallback OnRejected { get; set; }
+    [Inject] public IWalletContext WalletContext { get; set; } = null!;
+
+    private ChainAdditionPromptInfo? PromptInfo => PromptRequest?.Data as ChainAdditionPromptInfo;
+    private ChainFeature? InitialChain { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (PromptInfo?.ChainFeature != null)
+        {
+            InitialChain = PromptInfo.ChainFeature;
+        }
+    }
+
+    private async Task HandleNetworkAdded(BigInteger chainId)
+    {
+        bool switchSucceeded = false;
+        if (PromptInfo?.SwitchAfterAdd == true && WalletContext != null)
+        {
+            try
+            {
+                var hex = new HexBigInteger(chainId).HexValue;
+                switchSucceeded = await WalletContext.SwitchChainAsync(hex);
+            }
+            catch
+            {
+                switchSucceeded = false;
+            }
+        }
+
+        var result = ChainAdditionPromptResult.ApprovedResult((BigInteger?)chainId, PromptInfo?.SwitchAfterAdd ?? false, switchSucceeded);
+        await OnApproved.InvokeAsync(result);
+    }
+
+    private Task HandleReject()
+        => OnRejected.InvokeAsync();
+}

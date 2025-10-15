@@ -1,3 +1,4 @@
+@using Nethereum.RPC.Chain
 @using Nethereum.Wallet.UI.Components.Networks
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
@@ -304,6 +305,10 @@
 @code {
     [Parameter] public EventCallback<BigInteger> OnNetworkAdded { get; set; }
     [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public ChainFeature? InitialChain { get; set; }
+
+    private bool _initialisedFromParameters;
+    private BigInteger? _initialChainId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -329,6 +334,25 @@
     private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         InvokeAsync(StateHasChanged);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (InitialChain != null)
+        {
+            var chainId = InitialChain.ChainId;
+            if (!_initialisedFromParameters || _initialChainId != chainId)
+            {
+                ViewModel.Network.LoadFromChainFeature(InitialChain);
+                _initialisedFromParameters = true;
+                _initialChainId = chainId;
+            }
+        }
+        else if (!_initialisedFromParameters)
+        {
+            ViewModel.ResetCommand.Execute(null);
+            _initialisedFromParameters = true;
+        }
     }
 
     private async Task HandleExit()

@@ -67,16 +67,36 @@ else if (ViewModel.CurrentPrompt != null)
                         OnRejected="@HandlePromptRejected" />
                 }
                 break;
+
+            case PromptType.Permission:
+                var permissionInfo = ViewModel.CurrentPrompt.Data as DappPermissionPromptInfo;
+                if (permissionInfo != null)
+                {
+                    <DAppPermissionPromptView
+                        PromptRequest="@ViewModel.CurrentPrompt"
+                        OnApproved="@HandlePromptApproved"
+                        OnRejected="@HandlePromptRejected" />
+                }
+                break;
                 
             case PromptType.NetworkSwitch:
-                <MudAlert Severity="Severity.Info">
-                    Network switch prompt - Coming soon
-                </MudAlert>
-                <MudButton Color="Color.Error" 
-                          Variant="Variant.Text"
-                          OnClick="@HandlePromptRejected">
-                    Reject
-                </MudButton>
+                if (ViewModel.CurrentPrompt.Data is ChainSwitchPromptInfo)
+                {
+                    <DAppChainSwitchPromptView
+                        PromptRequest="@ViewModel.CurrentPrompt"
+                        OnApproved="@HandlePromptApproved"
+                        OnRejected="@HandlePromptRejected" />
+                }
+                break;
+
+            case PromptType.ChainAddition:
+                if (ViewModel.CurrentPrompt.Data is ChainAdditionPromptInfo)
+                {
+                    <DAppChainAdditionPromptView
+                        PromptRequest="@ViewModel.CurrentPrompt"
+                        OnApproved="@HandlePromptApproved"
+                        OnRejected="@HandlePromptRejected" />
+                }
                 break;
                 
             default:
@@ -86,7 +106,7 @@ else if (ViewModel.CurrentPrompt != null)
                 <MudButton Color="Color.Error" 
                           Variant="Variant.Text"
                           OnClick="@HandlePromptRejected">
-                    Reject
+                    @Localizer.GetString(Keys.Reject)
                 </MudButton>
                 break;
         }

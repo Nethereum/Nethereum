@@ -1,42 +1,120 @@
 @using Nethereum.Wallet.UI.Components.Services
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Prompts
+@using Nethereum.Wallet.UI.Components.Blazor.Prompts
 @using MudBlazor
+@inject IComponentLocalizer<DAppSignaturePromptView> Localizer
 
-<WalletFormLayout Title="Signature Request"
+<WalletFormLayout Title="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Title)"
                   Subtitle="@GetSubtitle()"
-                  ShowExit="true"
-                  ExitText="Reject"
+                  ExitText="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Reject)"
                   ShowPrimary="true"
-                  PrimaryText="Sign"
+                  PrimaryText="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Sign)"
                   OnExit="HandleReject"
                   OnPrimary="HandleSign"
-                  IsPrimaryLoading="@_isSigning">
+                  PrimaryDisabled="@_isSigning">
     
     <ChildContent>
-        <WalletFormSection Title="Request Details">
+        @if (SignatureInfo != null)
+        {
+            <WalletFormSection Title="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.RequestDetails)">
             @if (SignatureInfo != null && !string.IsNullOrEmpty(SignatureInfo.DAppName))
             {
                 <WalletInfoCard Icon="@Icons.Material.Filled.Apps"
                                 Title="@SignatureInfo.DAppName"
-                                Subtitle="@SignatureInfo.Origin" />
+                                Description="@SignatureInfo.Origin" />
+            }
+
+            @if (!string.IsNullOrEmpty(SignatureInfo?.Address))
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-3">
+                    <MudText Typo="Typo.body2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.AccountDisplay, SignatureInfo.Address)</MudText>
+                </MudAlert>
+            }
+
+            @if (!string.IsNullOrEmpty(SignatureInfo?.Method))
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="mt-2">@SignatureInfo.Method</MudChip>
+            }
+
+            @if (SignatureInfo?.Method == "eth_signTypedData_v4")
+            {
+                <MudPaper Class="pa-3 mt-3" Elevation="1">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.subtitle2" FontWeight="FontWeight.Bold">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.DomainSectionTitle)</MudText>
+
+                        @if (!string.IsNullOrEmpty(SignatureInfo.DomainName))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.DomainName)</MudText>
+                            <MudText Typo="Typo.body2">@SignatureInfo.DomainName</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SignatureInfo.DomainVersion))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.DomainVersion)</MudText>
+                            <MudText Typo="Typo.body2">@SignatureInfo.DomainVersion</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SignatureInfo.VerifyingContract))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.VerifyingContract)</MudText>
+                            <MudText Typo="Typo.body2">@SignatureInfo.VerifyingContract</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SignatureInfo.PrimaryType))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.PrimaryType)</MudText>
+                            <MudText Typo="Typo.body2">@SignatureInfo.PrimaryType</MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(SignatureInfo.ChainId))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.ChainId)</MudText>
+                            <MudText Typo="Typo.body2">@SignatureInfo.ChainId</MudText>
+                        }
+                    </MudStack>
+                </MudPaper>
             }
             
             <MudPaper Class="pa-3 mt-3" Elevation="1">
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Message to Sign:</MudText>
-                <MudTextField Value="@SignatureInfo?.Message"
-                              ReadOnly="true"
-                              Lines="5"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
+                <MudStack Spacing="2">
+                    <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudText Typo="Typo.subtitle2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.MessageLabel)</MudText>
+                        @if (SignatureInfo?.IsMessageHex == true)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.HexChip)</MudChip>
+                        }
+                    </MudStack>
+
+                    @if (SignatureInfo?.IsMessageHex == true && !string.IsNullOrEmpty(SignatureInfo.DecodedMessage))
+                    {
+                        <MudToggleIconButton @bind-Value="_showRaw" 
+                                           Size="Size.Small" 
+                                           Color="Color.Primary" 
+                                           CheckedIcon="@Icons.Material.Filled.Code" 
+                                           UncheckedIcon="@Icons.Material.Filled.Translate">
+                        <ChildContent>
+                            <MudTooltip Text="@(_showRaw ? Localizer.GetString(DAppSignaturePromptLocalizer.Keys.TooltipViewDecoded) : Localizer.GetString(DAppSignaturePromptLocalizer.Keys.TooltipViewRaw))" />
+                        </ChildContent>
+                    </MudToggleIconButton>
+                    }
+
+                    <MudTextField Value="@GetDisplayMessage()"
+                                  ReadOnly="true"
+                                  Lines="6"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
+                </MudStack>
             </MudPaper>
             
             <MudAlert Severity="Severity.Warning" Class="mt-3">
                 <MudText Typo="Typo.body2">
-                    Only sign messages from applications you trust. Signing malicious messages can result in loss of funds.
+                    @Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Warning)
                 </MudText>
             </MudAlert>
-        </WalletFormSection>
+            </WalletFormSection>
+        }
     </ChildContent>
 </WalletFormLayout>
 
@@ -47,14 +125,15 @@
     
     private SignaturePromptInfo? SignatureInfo => PromptRequest?.Data as SignaturePromptInfo;
     private bool _isSigning = false;
+    private bool _showRaw;
     
     private string GetSubtitle()
     {
         if (SignatureInfo != null && !string.IsNullOrEmpty(SignatureInfo.DAppName))
         {
-            return $"Request from {SignatureInfo.DAppName}";
+            return Localizer.GetString(DAppSignaturePromptLocalizer.Keys.SubtitleFrom, SignatureInfo.DAppName);
         }
-        return "Signature request from application";
+        return Localizer.GetString(DAppSignaturePromptLocalizer.Keys.SubtitleGeneric);
     }
     
     private async Task HandleSign()
@@ -62,8 +141,7 @@
         _isSigning = true;
         try
         {
-            await Task.Delay(1000);
-            await OnSigned.InvokeAsync("0x1234567890abcdef");
+            await OnSigned.InvokeAsync(true);
         }
         finally
         {
@@ -74,5 +152,25 @@
     private async Task HandleReject()
     {
         await OnRejected.InvokeAsync();
+    }
+
+    private string GetDisplayMessage()
+    {
+        if (SignatureInfo == null)
+        {
+            return string.Empty;
+        }
+
+        if (_showRaw || string.IsNullOrEmpty(SignatureInfo.DecodedMessage))
+        {
+            return SignatureInfo.RawMessage;
+        }
+
+        return SignatureInfo.DecodedMessage;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _showRaw = string.IsNullOrEmpty(SignatureInfo?.DecodedMessage);
     }
 }

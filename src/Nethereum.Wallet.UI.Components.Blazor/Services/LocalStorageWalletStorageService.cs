@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Nethereum.Wallet.Services;
 
 namespace Nethereum.Wallet.UI.Components.Blazor.Services
 {
@@ -532,6 +533,21 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Services
             catch
             {
             }
+        }
+
+        public Task<List<DappPermission>> GetDappPermissionsAsync(string? accountAddress = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddDappPermissionAsync(string accountAddress, string origin)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RemoveDappPermissionAsync(string accountAddress, string origin)
+        {
+            throw new NotImplementedException();
         }
     }
 }

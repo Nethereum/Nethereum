@@ -383,7 +383,7 @@
         
         try
         {
-            var web3 = await WalletHostProvider.GetWeb3Async();
+            var web3 = await WalletHostProvider.GetWalletWeb3Async();
             
             // Fetch transaction details
             var txTask = web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(Transaction.Hash);

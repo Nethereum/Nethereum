@@ -18,6 +18,7 @@
 @inject IJSRuntime JSRuntime
 @inject IComponentLocalizer<WalletDashboardViewModel> Localizer
 @inject WalletDashboardViewModel ViewModel
+@inject IPromptQueueService PromptQueueService
 @implements IDisposable
 
 <div @ref="containerRef" data-dashboard-container style="height: 100%; width: 100%; display: flex; position: relative;">
@@ -160,6 +161,7 @@
         WalletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
         WalletHostProvider.NetworkChanged += OnNetworkChangedAsync;
         DashboardNavService.NavigationRequested += OnNavigationRequestedAsync;
+        PromptQueueService.QueueChanged += OnPromptQueueChanged;
         
         // Subscribe to ViewModel property changes
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -256,6 +258,7 @@
         WalletHostProvider.NetworkChanged -= OnNetworkChangedAsync;
         DashboardNavService.NavigationRequested -= OnNavigationRequestedAsync;
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        PromptQueueService.QueueChanged -= OnPromptQueueChanged;
         
         // No language change cleanup needed
     }
@@ -396,6 +399,34 @@
     {
         pendingNavigationParameters = e.Parameters;
         await SwitchToPlugin(e.PluginId);
+    }
+
+    private async void OnPromptQueueChanged(object? sender, PromptQueueChangedEventArgs e)
+    {
+        try
+        {
+            await InvokeAsync(StateHasChanged);
+
+            if (e.ChangeType == PromptQueueChangeType.Added)
+            {
+                await DashboardNavService.NavigateToPluginAsync("Prompts");
+            }
+            else if (!PromptQueueService.HasPendingPrompts && SelectedPlugin?.PluginId == "Prompts")
+            {
+                await InvokeAsync(() =>
+                {
+                    var plugins = AvailablePlugins.ToList();
+                    SelectedPlugin = plugins.FirstOrDefault();
+                    ActivePluginIndex = SelectedPlugin != null ? plugins.IndexOf(SelectedPlugin) : 0;
+                    StateHasChanged();
+                    return Task.CompletedTask;
+                });
+            }
+        }
+        catch
+        {
+            // Suppress exceptions from async void event handler
+        }
     }
     
     // Called by plugin components when they're ready to receive navigation parameters.

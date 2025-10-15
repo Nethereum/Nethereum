@@ -7,6 +7,7 @@
 @using Nethereum.Wallet.UI.Components.Prompts
 @using static Nethereum.Wallet.UI.Components.Prompts.DAppTransactionPromptLocalizer
 @using MudBlazor
+@implements IDisposable
 @inject DAppTransactionPromptViewModel ViewModel
 @inject IComponentLocalizer<DAppTransactionPromptViewModel> Localizer
 
@@ -14,20 +15,19 @@
                   Subtitle="@GetSubtitle()"
                   Steps="@_steps"
                   CurrentStepIndex="@ViewModel.CurrentStep"
-                  ExitText="@Localizer.GetString(Keys.Reject)"
+                  ExitText="@GetExitText()"
                   BackText="@Localizer.GetString(Keys.Back)"
                   ContinueText="@Localizer.GetString(Keys.Continue)"
                   PrimaryText="@GetPrimaryButtonText()"
                   ShowBack="@(ViewModel.CurrentStep > 0 && ViewModel.CurrentStep < 2)"
                   ShowContinue="@(ViewModel.CurrentStep == 0)"
                   ShowPrimary="@(ViewModel.CurrentStep == 1)"
-                  ShowExit="@(ViewModel.CurrentStep < 2)"
-                  OnExit="HandleReject"
+                  ContinueDisabled="@(!ViewModel.CanProceedToNextStep)"
+                  PrimaryDisabled="@(!ViewModel.CanApprove)"
+                  OnExit="HandleExit"
                   OnBack="HandleBack"
                   OnContinue="HandleContinue"
-                  OnPrimary="HandlePrimary"
-                  IsPrimaryDisabled="@(!ViewModel.CanApprove)"
-                  IsPrimaryLoading="@ViewModel.IsLoading">
+                  OnPrimary="HandlePrimary">
     
     <ChildContent>
         @if (ViewModel.CurrentStep == 0)
@@ -54,6 +54,13 @@
                 {
                     <MudAlert Severity="Severity.Warning" Class="mt-3">
                         @PromptInfo.WarningMessage
+                    </MudAlert>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewModel.ValidationError))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-3">
+                        @ViewModel.ValidationError
                     </MudAlert>
                 }
             </WalletFormSection>
@@ -91,8 +98,22 @@
         }
         else if (ViewModel.CurrentStep == 2)
         {
-            <TransactionStatus ViewModel="@ViewModel.TransactionStatus" />
-            
+            @if (ViewModel.TransactionStatus != null)
+            {
+                <TransactionStatus ViewModel="@ViewModel.TransactionStatus"
+                                   ExitButtonText="@Localizer.GetString(Keys.Close)"
+                                   OnExit="HandleStatusExit" />
+            }
+            else
+            {
+                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">
+                        @Localizer.GetString(Keys.Processing)
+                    </MudText>
+                </MudStack>
+            }
+
             @if (!string.IsNullOrEmpty(ViewModel.TransactionHash))
             {
                 <MudAlert Severity="Severity.Success" Class="mt-3">
@@ -109,25 +130,28 @@
     [Parameter] public EventCallback OnRejected { get; set; }
     
     private TransactionPromptInfo? PromptInfo => PromptRequest?.Data as TransactionPromptInfo;
-    private List<WalletFormStep> _steps = new();
+    private readonly List<WalletFormStep> _steps = new();
+    private string? _completedTransactionHash;
     
     protected override async Task OnInitializedAsync()
     {
-        _steps = new List<WalletFormStep>
+        _steps.AddRange(new[]
         {
             new WalletFormStep { Label = Localizer.GetString(Keys.StepReview), Icon = Icons.Material.Filled.Preview },
             new WalletFormStep { Label = Localizer.GetString(Keys.StepConfirm), Icon = Icons.Material.Filled.Check },
             new WalletFormStep { Label = Localizer.GetString(Keys.StepStatus), Icon = Icons.Material.Filled.Done }
-        };
+        });
+
+        _completedTransactionHash = null;
         
         if (PromptInfo != null)
         {
             await ViewModel.InitializeAsync(PromptInfo);
             
-            ViewModel.OnTransactionSent = async (txHash) =>
+            ViewModel.OnTransactionSent = async txHash =>
             {
-                await Task.Delay(2000);
-                await OnApproved.InvokeAsync(txHash);
+                _completedTransactionHash = txHash;
+                await InvokeAsync(StateHasChanged);
             };
             
             ViewModel.OnRejected = async () =>
@@ -165,10 +189,15 @@
             _ => Localizer.GetString(Keys.Continue)
         };
     }
-    
-    private async Task HandleReject()
+
+    private string GetExitText()
     {
-        ViewModel.RejectTransactionCommand.Execute(null);
+        if (!string.IsNullOrEmpty(_completedTransactionHash) || !string.IsNullOrEmpty(ViewModel.TransactionHash))
+        {
+            return Localizer.GetString(Keys.Close);
+        }
+
+        return Localizer.GetString(Keys.Reject);
     }
     
     private void HandleBack()
@@ -187,5 +216,32 @@
         {
             await ViewModel.ApproveAndSendTransactionCommand.ExecuteAsync(null);
         }
+    }
+
+    private async Task HandleExit()
+    {
+        if (!string.IsNullOrEmpty(_completedTransactionHash) || !string.IsNullOrEmpty(ViewModel.TransactionHash))
+        {
+            var hash = _completedTransactionHash ?? ViewModel.TransactionHash;
+            _completedTransactionHash = null;
+            await OnApproved.InvokeAsync(hash);
+            return;
+        }
+
+        _completedTransactionHash = null;
+        ViewModel.RejectTransactionCommand.Execute(null);
+        await OnRejected.InvokeAsync();
+    }
+
+    private async Task HandleStatusExit()
+    {
+        await HandleExit();
+    }
+
+    public void Dispose()
+    {
+        ViewModel.OnTransactionSent = null;
+        ViewModel.OnRejected = null;
+        ViewModel.Dispose();
     }
 }

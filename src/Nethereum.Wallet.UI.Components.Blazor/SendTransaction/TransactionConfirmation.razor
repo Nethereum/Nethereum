@@ -51,7 +51,7 @@
                 @Localizer.GetString(Keys.Amount)
             </MudText>
             <MudText Typo="Typo.h6" Class="amount-display">
-                @ViewModel.Transaction.Amount @ViewModel.TokenSymbol
+                @ViewModel.Transaction.Amount @ViewModel.TokenDisplay
             </MudText>
         </MudItem>
         
@@ -237,7 +237,7 @@
                 @Localizer.GetString(Keys.EstimatedGasFee)
             </MudText>
             <MudText Typo="Typo.body1">
-                @ViewModel.TotalGasCost @ViewModel.TokenSymbol
+                @ViewModel.TotalGasCost @ViewModel.TokenDisplay
             </MudText>
         </MudItem>
         
@@ -246,7 +246,7 @@
                 @Localizer.GetString(Keys.TotalCost)
             </MudText>
             <MudText Typo="Typo.h6" Color="Color.Primary" Class="total-cost">
-                @ViewModel.TotalTransactionCost @ViewModel.TokenSymbol
+                @ViewModel.TotalTransactionCost @ViewModel.TokenDisplay
             </MudText>
         </MudItem>
     </MudGrid>

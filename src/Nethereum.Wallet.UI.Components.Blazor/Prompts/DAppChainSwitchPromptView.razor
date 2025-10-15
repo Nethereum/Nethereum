@@ -1,0 +1,104 @@
+@using System.Numerics
+@using System.Linq
+@using Nethereum.Wallet.UI
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Prompts
+@using Nethereum.Wallet.UI.Components.Blazor.Prompts
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using MudBlazor
+@inject IComponentLocalizer<DAppChainSwitchPromptView> Localizer
+
+<WalletFormLayout Title="@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.Title)"
+                  Subtitle="@GetSubtitle()"
+                  ShowPrimary="true"
+                  PrimaryText="@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.Switch)"
+                  ExitText="@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.Reject)"
+                  OnPrimary="HandleApprove"
+                  OnExit="HandleReject">
+
+    <ChildContent>
+        @if (Info != null)
+        {
+            <WalletFormSection Title="@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.TargetSection)">
+                @if (Info.TargetChain != null)
+                {
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.ChainId)</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-2">@Info.TargetChain.ChainId</MudText>
+
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.Name)</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-2">@Info.TargetChain.ChainName</MudText>
+
+                            @if (Info.TargetChain.NativeCurrency != null)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.Currency)</MudText>
+                                <MudText Typo="Typo.body2" Class="mb-2">
+                                    @Info.TargetChain.NativeCurrency.Name (@Info.TargetChain.NativeCurrency.Symbol)
+                                </MudText>
+                            }
+
+                            @if (Info.TargetChain.HttpRpcs?.Any() == true)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.RpcEndpoint)</MudText>
+                                <MudText Typo="Typo.body2">@Info.TargetChain.HttpRpcs.First()</MudText>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Warning">
+                        @Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.MetadataWarning)
+                    </MudAlert>
+                }
+            </WalletFormSection>
+
+            <WalletFormSection Title="@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.CurrentSection)">
+                @if (Info.CurrentChain != null)
+                {
+                    <MudText Typo="Typo.body2">@Info.CurrentChain.ChainName (@Info.CurrentChain.ChainId)</MudText>
+                }
+                else if (Info.CurrentChainId.HasValue)
+                {
+                    <MudText Typo="Typo.body2">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.CurrentChainIdTemplate, Info.CurrentChainId)</MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">@Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.CurrentUnknown)</MudText>
+                }
+            </WalletFormSection>
+
+            @if (!Info.IsKnown)
+            {
+                <MudAlert Severity="Severity.Info">
+                    @Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.AdditionInfo)
+                </MudAlert>
+            }
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = null!;
+    [Parameter] public EventCallback<object?> OnApproved { get; set; }
+    [Parameter] public EventCallback OnRejected { get; set; }
+
+    private ChainSwitchPromptInfo? Info => PromptRequest?.Data as ChainSwitchPromptInfo;
+
+    private string GetSubtitle()
+    {
+        if (!string.IsNullOrWhiteSpace(PromptRequest?.Origin))
+        {
+            return Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.SubtitleFrom, PromptRequest.Origin);
+        }
+        return Localizer.GetString(DAppChainSwitchPromptLocalizer.Keys.SubtitleGeneric);
+    }
+
+    private Task HandleApprove()
+        => OnApproved.InvokeAsync(true);
+
+    private Task HandleReject()
+        => OnRejected.InvokeAsync();
+}

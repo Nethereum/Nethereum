@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MudBlazor;
 using MudBlazor.Services;
 using Nethereum.Wallet.UI.Components.Abstractions;
@@ -31,14 +32,17 @@ using Nethereum.Wallet.Services.Transaction;
 using Nethereum.Wallet.Services.Transactions;
 using Nethereum.Wallet.UI.Components.Transactions;
 using Nethereum.Wallet.UI;
+using Nethereum.UI;
 using Nethereum.Wallet.UI.Components.Prompts;
+using Nethereum.Wallet.UI.Components.Blazor.Prompts;
 using Nethereum.Wallet.UI.Components.Shared;
+
 
 namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddNethereumWalletUI(this IServiceCollection services)
+        public static IServiceCollection AddNethereumWalletUIScoped(this IServiceCollection services)
         {
             services.AddMudServices(config =>
             {
@@ -53,15 +57,15 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             });
 
             services.AddScoped<IWalletNotificationService, BlazorWalletNotificationService>();
+            services.TryAddSingleton<SelectedEthereumHostProviderService>();
             services.AddScoped<IWalletDialogService, BlazorWalletDialogService>();
+            services.AddSingleton<ILoginSessionState, LoginSessionState>();
+            services.AddScoped<ILoginPromptService, LoginPromptService>();
 
             services.AddScoped<IWalletLoadingService, MudLoadingService>();
             
-            services.AddSingleton<IPromptQueueService, PromptQueueService>();
-            services.AddSingleton<IPromptOverlayService, PromptOverlayService>();
-            
-            services.AddScoped<Nethereum.Wallet.UI.ITransactionPromptService, QueuedTransactionPromptService>();
-            services.AddScoped<Nethereum.Wallet.UI.ISignaturePromptService, QueuedSignaturePromptService>();
+            services.AddWalletPromptServices(ServiceLifetime.Scoped);
+            services.AddScoped<IChainAdditionPromptService, QueuedChainAdditionPromptService>();
 
             services.AddScoped<NethereumWalletViewModel>();
             services.AddScoped<AccountListViewModel>();
@@ -74,9 +78,10 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             services.AddSingleton<IComponentRegistry, ComponentRegistry>();
             services.AddScoped<IAccountCreationRegistry, AccountCreationRegistry>();
             services.AddScoped<IAccountDetailsRegistry, AccountDetailsRegistry>();
+            services.AddScoped<IGroupDetailsRegistry, GroupDetailsRegistry>();
             
             services.AddSingleton<IAccountTypeMetadataRegistry, AccountTypeMetadataRegistry>();
-            services.AddScoped<Nethereum.Wallet.UI.Components.Dashboard.IDashboardPluginRegistry, Nethereum.Wallet.UI.Components.Dashboard.DashboardPluginRegistry>();
+            services.AddScoped<Nethereum.Wallet.UI.Components.Dashboard.IDashboardPluginRegistry, Nethereum.Wallet.UI.Components.Dashboard.StaticDashboardPluginRegistry>();
 
             // Register account creation ViewModels as IAccountCreationViewModel
             services.AddScoped<IAccountCreationViewModel, MnemonicAccountCreationViewModel>();
@@ -100,65 +105,161 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             services.AddScoped<IAccountDetailsViewModel, ViewOnlyAccountDetailsViewModel>();
             services.AddScoped<ViewOnlyAccountDetailsViewModel>();
 
-            services.AddScoped<IGroupDetailsRegistry, GroupDetailsRegistry>();
             services.AddScoped<IGroupDetailsViewModel, MnemonicDetailsViewModel>();
 
-            services.AddSingleton<ILocalizationStorageProvider, BrowserLocalizationStorageProvider>();
-            services.AddSingleton<IWalletLocalizationService>(provider =>
-            {
-                var storageProvider = provider.GetService<ILocalizationStorageProvider>();
-                return new WalletLocalizationService(storageProvider);
-            });
-            
-            services.AddSingleton<IComponentLocalizer<NethereumWalletViewModel>, NethereumWalletLocalizer>();
-            services.AddSingleton<IComponentLocalizer<MnemonicAccountCreationViewModel>, MnemonicAccountEditorLocalizer>();
-            services.AddSingleton<IComponentLocalizer<VaultMnemonicAccountViewModel>, VaultMnemonicAccountEditorLocalizer>();
-            services.AddSingleton<IComponentLocalizer<PrivateKeyAccountCreationViewModel>, PrivateKeyAccountEditorLocalizer>();
-            services.AddSingleton<IComponentLocalizer<ViewOnlyAccountCreationViewModel>, ViewOnlyAccountEditorLocalizer>();
-            services.AddSingleton<IComponentLocalizer<AccountListViewModel>, AccountListLocalizer>();
-            services.AddSingleton<IComponentLocalizer<MnemonicAccountDetailsViewModel>, MnemonicAccountDetailsLocalizer>();
-            services.AddSingleton<IComponentLocalizer<MnemonicDetailsViewModel>, MnemonicDetailsViewModelLocalizer>();
-            services.AddSingleton<IComponentLocalizer<MnemonicListViewModel>, MnemonicListViewModelLocalizer>();
-            services.AddSingleton<IComponentLocalizer<PrivateKeyAccountDetailsViewModel>, PrivateKeyAccountDetailsLocalizer>();
-            services.AddSingleton<IComponentLocalizer<ViewOnlyAccountDetailsViewModel>, ViewOnlyAccountDetailsLocalizer>();
-            services.AddSingleton<IComponentLocalizer<WalletDashboardViewModel>, WalletDashboardLocalizer>();
-            services.AddSingleton<IComponentLocalizer<WalletOverviewViewModel>, WalletOverviewLocalizer>();
-            
-            services.AddSingleton<IComponentLocalizer<AccountListViewModel>, AccountListLocalizer>();
-            services.AddSingleton<IComponentLocalizer<AccountListPluginViewModel>, AccountListPluginLocalizer>();
-            services.AddSingleton<IComponentLocalizer<CreateAccountViewModel>, CreateAccountLocalizer>();
-            services.AddSingleton<IComponentLocalizer<CreateAccountPluginViewModel>, CreateAccountPluginLocalizer>();
-            services.AddSingleton<IComponentLocalizer<WalletOverviewViewModel>, WalletOverviewLocalizer>();
-            services.AddSingleton<IComponentLocalizer<WalletOverviewPluginViewModel>, WalletOverviewPluginLocalizer>();
-            
+            RegisterWalletUILocalization(services);
+
             services.AddSingleton<NethereumWalletConfiguration>();
-            
+
             services.AddSingleton<MnemonicAccountDetailsConfiguration>();
-            
+
             services.AddTransient<TransactionViewModel>();
             services.AddTransient<SendNativeTokenViewModel>();
-            services.AddSingleton<IComponentLocalizer<SendNativeTokenViewModel>, SendNativeTokenLocalizer>();
-            services.AddSingleton<IComponentLocalizer<TransactionViewModel>, TransactionLocalizer>();
             
             services.AddSingleton<WalletOverviewConfiguration>();
             services.AddSingleton<AccountListConfiguration>(); 
             services.AddSingleton<BaseWalletConfiguration>(sp => sp.GetRequiredService<AccountListConfiguration>());
 
             services.AddNetworkManagement();
-            
+
             services.AddTokenTransferServices();
-            
+
             services.AddTransactionServices();
-            
+
             services.AddPromptsServices();
-            
+
+            services.AddScoped<WalletUIBootstrapper>();
+
             services.AddScoped<IGasConfigurationPersistenceService, LocalStorageGasConfigurationPersistenceService>();
 
             // Register default network icon provider (can be overridden by applications)
             services.AddSingleton<INetworkIconProvider, DefaultNetworkIconProvider>();
 
+
             return services;
         }
+
+        public static IServiceCollection AddNethereumWalletUI(this IServiceCollection services)
+            => services.AddNethereumWalletUIScoped();
+
+        public static IServiceCollection AddNethereumWalletUISingleton(this IServiceCollection services)
+        {
+            services.AddMudServices(config =>
+            {
+                config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomLeft;
+                config.SnackbarConfiguration.PreventDuplicates = false;
+                config.SnackbarConfiguration.NewestOnTop = false;
+                config.SnackbarConfiguration.ShowCloseIcon = true;
+                config.SnackbarConfiguration.VisibleStateDuration = 10000;
+                config.SnackbarConfiguration.HideTransitionDuration = 500;
+                config.SnackbarConfiguration.ShowTransitionDuration = 500;
+                config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+            });
+
+            services.AddScoped<IWalletNotificationService, BlazorWalletNotificationService>();
+            services.TryAddSingleton<SelectedEthereumHostProviderService>();
+            services.AddScoped<IWalletDialogService, BlazorWalletDialogService>();
+            services.TryAddSingleton<ILoginSessionState, LoginSessionState>();
+            services.AddScoped<ILoginPromptService, LoginPromptService>();
+            services.AddScoped<IWalletLoadingService, MudLoadingService>();
+
+            services.AddWalletPromptServices(ServiceLifetime.Singleton);
+            services.AddSingleton<IChainAdditionPromptService, QueuedChainAdditionPromptService>();
+
+            services.AddTransient<NethereumWalletViewModel>();
+            services.AddTransient<AccountListViewModel>();
+            services.AddTransient<CreateAccountViewModel>();
+            services.AddTransient<WalletDashboardViewModel>();
+            services.AddTransient<WalletOverviewViewModel>();
+
+            services.AddPendingTransactionNotifications();
+            services.AddScoped<WalletUIBootstrapper>();
+
+            services.AddSingleton<IComponentRegistry, ComponentRegistry>();
+            services.AddSingleton<IAccountCreationRegistry, AccountCreationRegistry>();
+            services.AddSingleton<IAccountDetailsRegistry, AccountDetailsRegistry>();
+            services.AddSingleton<IAccountTypeMetadataRegistry, AccountTypeMetadataRegistry>();
+            services.AddSingleton<Nethereum.Wallet.UI.Components.Dashboard.IDashboardPluginRegistry, Nethereum.Wallet.UI.Components.Dashboard.StaticDashboardPluginRegistry>();
+
+            services.AddTransient<IAccountCreationViewModel, MnemonicAccountCreationViewModel>();
+            services.AddTransient<IAccountCreationViewModel, PrivateKeyAccountCreationViewModel>();
+            services.AddTransient<IAccountCreationViewModel, ViewOnlyAccountCreationViewModel>();
+            services.AddTransient<IAccountCreationViewModel, VaultMnemonicAccountViewModel>();
+
+            services.AddTransient<VaultMnemonicAccountViewModel>();
+            services.AddTransient<MnemonicDetailsViewModel>();
+            services.AddTransient<MnemonicListViewModel>();
+
+            services.AddTransient<IDashboardPluginViewModel, AccountListPluginViewModel>();
+            services.AddTransient<IDashboardPluginViewModel, CreateAccountPluginViewModel>();
+            services.AddTransient<IDashboardPluginViewModel, WalletOverviewPluginViewModel>();
+
+            services.AddTransient<IAccountDetailsViewModel, MnemonicAccountDetailsViewModel>();
+            services.AddTransient<MnemonicAccountDetailsViewModel>();
+            services.AddTransient<IAccountDetailsViewModel, PrivateKeyAccountDetailsViewModel>();
+            services.AddTransient<PrivateKeyAccountDetailsViewModel>();
+            services.AddTransient<IAccountDetailsViewModel, ViewOnlyAccountDetailsViewModel>();
+            services.AddTransient<ViewOnlyAccountDetailsViewModel>();
+
+            services.AddSingleton<IGroupDetailsRegistry, GroupDetailsRegistry>();
+            services.AddTransient<IGroupDetailsViewModel, MnemonicDetailsViewModel>();
+
+            RegisterWalletUILocalization(services);
+
+            services.AddSingleton<NethereumWalletConfiguration>();
+            services.AddSingleton<MnemonicAccountDetailsConfiguration>();
+
+            services.AddTransient<TransactionViewModel>();
+            services.AddTransient<SendNativeTokenViewModel>();
+
+            services.AddSingleton<WalletOverviewConfiguration>();
+            services.AddSingleton<AccountListConfiguration>();
+            services.AddSingleton<BaseWalletConfiguration>(sp => sp.GetRequiredService<AccountListConfiguration>());
+
+            services.AddNetworkManagement();
+            services.AddTokenTransferServices();
+            services.AddTransactionServices();
+            services.AddPromptsServices();
+            services.AddScoped<WalletUIBootstrapper>();
+
+            services.AddSingleton<IGasConfigurationPersistenceService, LocalStorageGasConfigurationPersistenceService>();
+            services.AddSingleton<INetworkIconProvider, DefaultNetworkIconProvider>();
+
+            return services;
+        }
+
+        private static void RegisterWalletUILocalization(IServiceCollection services)
+        {
+            services.TryAddSingleton<ILocalizationStorageProvider, BrowserLocalizationStorageProvider>();
+            services.TryAddSingleton<IWalletLocalizationService>(provider =>
+            {
+                var storageProvider = provider.GetService<ILocalizationStorageProvider>();
+                return new WalletLocalizationService(storageProvider);
+            });
+
+            services.TryAddSingleton<IComponentLocalizer<NethereumWalletViewModel>, NethereumWalletLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<MnemonicAccountCreationViewModel>, MnemonicAccountEditorLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<VaultMnemonicAccountViewModel>, VaultMnemonicAccountEditorLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<PrivateKeyAccountCreationViewModel>, PrivateKeyAccountEditorLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<ViewOnlyAccountCreationViewModel>, ViewOnlyAccountEditorLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<AccountListViewModel>, AccountListLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<AccountListPluginViewModel>, AccountListPluginLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<CreateAccountViewModel>, CreateAccountLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<CreateAccountPluginViewModel>, CreateAccountPluginLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<WalletDashboardViewModel>, WalletDashboardLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<WalletOverviewViewModel>, WalletOverviewLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<WalletOverviewPluginViewModel>, WalletOverviewPluginLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<MnemonicAccountDetailsViewModel>, MnemonicAccountDetailsLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<MnemonicDetailsViewModel>, MnemonicDetailsViewModelLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<MnemonicListViewModel>, MnemonicListViewModelLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<PrivateKeyAccountDetailsViewModel>, PrivateKeyAccountDetailsLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<ViewOnlyAccountDetailsViewModel>, ViewOnlyAccountDetailsLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<SendNativeTokenViewModel>, SendNativeTokenLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<TransactionViewModel>, TransactionLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<DAppSignaturePromptView>, DAppSignaturePromptLocalizer>();
+            services.TryAddSingleton<IComponentLocalizer<DAppChainSwitchPromptView>, DAppChainSwitchPromptLocalizer>();
+        }
+
         public static IServiceCollection AddNethereumWalletUICore(this IServiceCollection services)
         {
             services.AddTransient<NethereumWalletViewModel>();
@@ -215,3 +316,4 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
 
     }
 }
+

@@ -1,0 +1,62 @@
+@using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Prompts
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using MudBlazor
+@inject DAppPermissionPromptViewModel ViewModel
+@inject IComponentLocalizer<DAppPermissionPromptViewModel> Localizer
+
+<div class="permission-prompt">
+    <MudCard Class="pa-4" Elevation="2">
+        <MudStack Spacing="3">
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.h5" FontWeight="FontWeight.Bold">@Localizer.GetString(DAppPermissionPromptLocalizer.Keys.Title)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(DAppPermissionPromptLocalizer.Keys.Subtitle)</MudText>
+            </MudStack>
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.overline" Color="Color.Primary">@Localizer.GetString(DAppPermissionPromptLocalizer.Keys.OriginLabel)</MudText>
+                <MudText Typo="Typo.subtitle2">@ViewModel.PromptInfo?.Origin</MudText>
+            </MudStack>
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.overline" Color="Color.Primary">@Localizer.GetString(DAppPermissionPromptLocalizer.Keys.AccountLabel)</MudText>
+                <MudText Typo="Typo.subtitle2">@ViewModel.PromptInfo?.AccountAddress</MudText>
+            </MudStack>
+
+            <MudStack Direction="Row" Spacing="2" Justify="Justify.FlexEnd">
+                <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="HandleReject">
+                    @Localizer.GetString(DAppPermissionPromptLocalizer.Keys.Reject)
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleApprove">
+                    @Localizer.GetString(DAppPermissionPromptLocalizer.Keys.Approve)
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudCard>
+</div>
+
+@code {
+    [Parameter] public PromptRequest PromptRequest { get; set; } = null!;
+    [Parameter] public EventCallback<object?> OnApproved { get; set; }
+    [Parameter] public EventCallback OnRejected { get; set; }
+
+    private DappPermissionPromptInfo? Info => PromptRequest?.Data as DappPermissionPromptInfo;
+
+    protected override void OnParametersSet()
+    {
+        if (Info != null)
+        {
+            ViewModel.Initialize(Info);
+        }
+    }
+
+    private Task HandleApprove()
+    {
+        return OnApproved.InvokeAsync(true);
+    }
+
+    private Task HandleReject()
+    {
+        return OnRejected.InvokeAsync();
+    }
+}

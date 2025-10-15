@@ -44,7 +44,7 @@
             
             @if (AmountReadOnly)
             {
-                <WalletTextField Value="@($"{ViewModel.Transaction.Amount} {ViewModel.TokenSymbol}")"
+                <WalletTextField Value="@($"{ViewModel.Transaction.Amount} {ViewModel.TokenDisplay}")"
                                 LabelKey="@Keys.Amount"
                                 Localizer="@Localizer"
                                 ReadOnly="true" />
@@ -89,7 +89,7 @@
         else if (!string.IsNullOrEmpty(ViewModel.GasEstimationError))
         {
             <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
-                           Title="@Localizer.GetString(Keys.GasStrategyLoadFailed)"
+                           Title="@Localizer.GetString(Keys.GasConfigurationIssue)"
                            Description="@ViewModel.GasEstimationError"
                            Icon="@Icons.Material.Filled.Warning" />
         }
@@ -261,10 +261,10 @@
     
     @* Total Cost Summary *@
     <WalletFormSection>
-        <WalletTextField Value="@($"{ViewModel.TotalTransactionCost} {ViewModel.TokenSymbol}")"
+                <WalletTextField Value="@($"{ViewModel.TotalTransactionCost} {ViewModel.TokenDisplay}")"
                         LabelKey="@Keys.TotalCost"
                         Localizer="@Localizer"
-                        HelpText="@($"{Localizer.GetString(Keys.GasCost)}: {ViewModel.TotalGasCost} {ViewModel.TokenSymbol}")"
+                        HelpText="@($"{Localizer.GetString(Keys.GasCost)}: {ViewModel.TotalGasCost} {ViewModel.TokenDisplay}")"
                         ReadOnly="true"
                         Class="wallet-cost-summary" />
     </WalletFormSection>
