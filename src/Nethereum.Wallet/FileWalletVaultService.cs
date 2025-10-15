@@ -8,11 +8,21 @@ namespace Nethereum.Wallet;
 public class FileWalletVaultService : WalletVaultServiceBase
 {
     private readonly string _filePath;
+    private readonly IEncryptionStrategy? _strategy;
 
     public FileWalletVaultService(string filePath)
     {
         _filePath = filePath;
     }
+
+    public FileWalletVaultService(string filePath, IEncryptionStrategy strategy)
+    {
+        _filePath = filePath;
+        _strategy = strategy;
+    }
+
+    protected override IEncryptionStrategy GetEncryptionStrategy()
+        => _strategy ?? base.GetEncryptionStrategy();
 
     public override Task<bool> VaultExistsAsync()
         => Task.FromResult(File.Exists(_filePath));

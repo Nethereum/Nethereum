@@ -54,7 +54,7 @@ namespace Nethereum.Wallet.Services.Transactions
         
         public async Task<string> RetryTransactionAsync(TransactionInfo transaction)
         {
-            var web3 = await _walletHostProvider.GetWeb3Async();
+            var web3 = await _walletHostProvider.GetWalletWeb3Async();
             
             var transactionInput = new TransactionInput
             {
@@ -144,7 +144,7 @@ namespace Nethereum.Wallet.Services.Transactions
         
         private async Task MonitorTransactionAsync(TransactionInfo transaction)
         {
-            var web3 = await _walletHostProvider.GetWeb3Async();
+            var web3 = await _walletHostProvider.GetWalletWeb3Async();
             var maxAttempts = 120;
             var attemptCount = 0;
             

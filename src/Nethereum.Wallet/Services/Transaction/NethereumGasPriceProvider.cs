@@ -36,7 +36,7 @@ namespace Nethereum.Wallet.Services.Transaction
 
         public async Task<GasPriceSuggestion> GetGasPriceAsync()
         {
-            var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
+            var web3 = await _hostProvider.GetWalletWeb3Async().ConfigureAwait(false);
             
             if (await GetSupportsEIP1559Async().ConfigureAwait(false))
             {
@@ -60,7 +60,7 @@ namespace Nethereum.Wallet.Services.Transaction
 
         public async Task<IList<GasPriceSuggestion>> GetGasPriceLevelsAsync()
         {
-            var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
+            var web3 = await _hostProvider.GetWalletWeb3Async().ConfigureAwait(false);
             
             if (await GetSupportsEIP1559Async().ConfigureAwait(false))
             {
@@ -84,7 +84,7 @@ namespace Nethereum.Wallet.Services.Transaction
         
         public async Task<GasPriceSuggestion> GetLegacyGasPriceAsync()
         {
-            var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
+            var web3 = await _hostProvider.GetWalletWeb3Async().ConfigureAwait(false);
             
             var gasPrice = await web3.Eth.GasPrice.SendRequestAsync().ConfigureAwait(false);
             
@@ -96,7 +96,7 @@ namespace Nethereum.Wallet.Services.Transaction
         
         public async Task<GasPriceSuggestion> GetEIP1559GasPriceAsync()
         {
-            var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
+            var web3 = await _hostProvider.GetWalletWeb3Async().ConfigureAwait(false);
             
             try
             {

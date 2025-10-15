@@ -9,7 +9,7 @@ using Nethereum.Wallet.UI;
 
 namespace Nethereum.Wallet.Hosting
 {
-    public class NethereumWalletInterceptor : RequestInterceptor
+    public class NethereumWalletInterceptor: RequestInterceptor
     {
         private readonly RpcHandlerRegistry _handlerRegistry;
         private readonly IWalletContext _walletContext;
@@ -28,8 +28,7 @@ namespace Nethereum.Wallet.Hosting
             "wallet_requestPermissions",
             "wallet_switchEthereumChain",
             "wallet_addEthereumChain",
-            "eth_accounts",
-            "eth_chainId"
+            "eth_accounts"
         };
         
         public NethereumWalletInterceptor(
@@ -45,6 +44,7 @@ namespace Nethereum.Wallet.Hosting
             RpcRequest request,
             string? route = null)
         {
+            Console.WriteLine($"Intercepting method: {request.Method}");
             if (request?.Method != null && InterceptedMethods.Contains(request.Method))
             {
                 if (_handlerRegistry.TryGetHandler(request.Method, out var handler) && handler != null)
@@ -83,6 +83,7 @@ namespace Nethereum.Wallet.Hosting
             string? route = null,
             params object[] paramList)
         {
+            Console.WriteLine($"Intercepting method: {method}");
             if (InterceptedMethods.Contains(method))
             {
                 if (_handlerRegistry.TryGetHandler(method, out var handler) && handler != null)

@@ -112,7 +112,14 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
         _vault = null;
         _currentPassword = null;
     }
-    
+
+    public virtual Task LockAsync()
+    {
+        _vault = null;
+        _currentPassword = null;
+        return Task.CompletedTask;
+    }
+
     protected abstract Task ResetStorageAsync();
     protected abstract Task<string?> GetEncryptedAsync();
     protected abstract Task SaveEncryptedAsync(string encrypted);

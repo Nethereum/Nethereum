@@ -11,9 +11,9 @@ public interface IWalletVaultService
     Task<bool> VaultExistsAsync();
     Task CreateNewAsync(string password);
     Task ResetAsync();
-    
     WalletVault? GetCurrentVault();
     Task SaveAsync(string password);
     Task SaveAsync();
     Task CreateNewVaultWithAccountAsync(string password, IWalletAccount account);
+    Task LockAsync();
 }

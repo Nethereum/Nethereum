@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.RPC.Chain;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.Services.Transactions;
+using Nethereum.Wallet.Services;
 
 namespace Nethereum.Wallet.Storage
 {
@@ -44,6 +45,10 @@ namespace Nethereum.Wallet.Storage
         Task<TransactionInfo?> GetTransactionByHashAsync(BigInteger chainId, string hash);
         Task DeleteTransactionAsync(BigInteger chainId, string hash);
         Task ClearTransactionsAsync(BigInteger chainId);
+
+        Task<List<Nethereum.Wallet.Services.DappPermission>> GetDappPermissionsAsync(string? accountAddress = null);
+        Task AddDappPermissionAsync(string accountAddress, string origin);
+        Task RemoveDappPermissionAsync(string accountAddress, string origin);
     }
     public class RpcEndpointHealthCache
     {

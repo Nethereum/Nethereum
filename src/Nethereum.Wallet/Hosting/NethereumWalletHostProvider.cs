@@ -9,10 +9,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Chain;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Wallet.Services;
+using System.Text;
 
 namespace Nethereum.Wallet.Hosting
 {
@@ -32,6 +34,8 @@ namespace Nethereum.Wallet.Hosting
         // IWalletContext specific
         public IReadOnlyList<IWalletAccount> Accounts => _accounts;
         public IWalletAccount? SelectedWalletAccount => _selectedAccount;
+        public DappConnectionContext? SelectedDapp { get; set; }
+        public IDappPermissionService DappPermissions => _dappPermissionService;
         public HexBigInteger? ChainId => _activeChain != null ? new HexBigInteger(_activeChain.ChainId) : null;
         public IWalletConfigurationService Configuration => _configurationService;
 
@@ -42,13 +46,21 @@ namespace Nethereum.Wallet.Hosting
 
         private readonly IWalletVaultService _vaultService;
         private readonly ILoginPromptService _loginPromptService;          
+        private readonly IDappPermissionService _dappPermissionService;
         private readonly IRpcClientFactory _rpcClientFactory;
         private readonly IWalletStorageService _storageService;
         private readonly Services.Network.IChainManagementService _chainManagementService;
         private readonly RpcHandlerRegistry _handlerRegistry;
         private readonly ITransactionPromptService _transactionPromptService;
         private readonly ISignaturePromptService _signaturePromptService;
+        private readonly IDappPermissionPromptService _dappPermissionPromptService;
+        private readonly IChainAdditionPromptService _chainAdditionPromptService;
+        private readonly IChainSwitchPromptService _chainSwitchPromptService;
+        private readonly Guid _instanceId = Guid.NewGuid();
+        public Guid InstanceId => _instanceId;
         private readonly IWalletConfigurationService _configurationService;
+
+        public ChainFeature? ActiveChain => _activeChain;
 
         private NethereumWalletInterceptor? _interceptor;
         private IWalletAccount? _selectedAccount;
@@ -65,7 +77,11 @@ namespace Nethereum.Wallet.Hosting
             ITransactionPromptService transactionPromptService,
             ISignaturePromptService signaturePromptService,
             IWalletConfigurationService configurationService,
-            ILoginPromptService loginPromptService,                   
+            ILoginPromptService loginPromptService,
+            IDappPermissionService dappPermissionService,
+            IDappPermissionPromptService dappPermissionPromptService,
+            IChainAdditionPromptService chainAdditionPromptService,
+            IChainSwitchPromptService chainSwitchPromptService,
             long defaultChainId = 1)
         {
             _vaultService = vaultService ?? throw new ArgumentNullException(nameof(vaultService));
@@ -77,8 +93,13 @@ namespace Nethereum.Wallet.Hosting
             _signaturePromptService = signaturePromptService ?? throw new ArgumentNullException(nameof(signaturePromptService));
             _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
             _loginPromptService = loginPromptService ?? throw new ArgumentNullException(nameof(loginPromptService));
+            _dappPermissionService = dappPermissionService ?? throw new ArgumentNullException(nameof(dappPermissionService));
+            _dappPermissionPromptService = dappPermissionPromptService ?? throw new ArgumentNullException(nameof(dappPermissionPromptService));
+            _chainAdditionPromptService = chainAdditionPromptService ?? throw new ArgumentNullException(nameof(chainAdditionPromptService));
+            _chainSwitchPromptService = chainSwitchPromptService ?? throw new ArgumentNullException(nameof(chainSwitchPromptService));
             _defaultChainId = defaultChainId;
 
+            Console.WriteLine($"[WalletHostProvider] instance={_instanceId} promptService={_dappPermissionPromptService.GetType().FullName}");
             InitializeInterceptor();
             _ = InitializeActiveChainAsync();
         }
@@ -100,7 +121,7 @@ namespace Nethereum.Wallet.Hosting
                 throw new InvalidOperationException("No chain selected. Please select a network first.");
 
             var client = await _rpcClientFactory.CreateClientAsync(_activeChain);
-            var web3 = await _selectedAccount.CreateWeb3Async(client);
+            var web3 = new Web3.Web3(client);
 
             if (_interceptor == null)
             {
@@ -110,7 +131,19 @@ namespace Nethereum.Wallet.Hosting
             _interceptor!.SetSelectedAccount(_selectedAccount.Address);
 
             web3.Client.OverridingRequestInterceptor = _interceptor;
-            return (Web3.IWeb3)web3;
+            return web3;
+        }
+
+        public async Task<IWeb3> GetWalletWeb3Async()
+        {
+            if (_selectedAccount == null)
+                throw new InvalidOperationException("No account selected. Please select an account first.");
+
+            if (_activeChain == null)
+                throw new InvalidOperationException("No chain selected. Please select a network first.");
+
+            var client = await _rpcClientFactory.CreateClientAsync(_activeChain);
+            return await _selectedAccount.CreateWeb3Async(client);
         }
 
         public async Task<string> EnableProviderAsync()
@@ -143,13 +176,38 @@ namespace Nethereum.Wallet.Hosting
             return SelectedAccount;
         }
 
+        public async Task LogoutAsync()
+        {
+            await _vaultService.LockAsync();
+            if (_selectedAccount != null)
+            {
+                _selectedAccount.IsSelected = false;
+                _selectedAccount = null;
+                if (SelectedAccountChanged != null)
+                    await SelectedAccountChanged.Invoke(string.Empty);
+            }
+            _accounts.Clear();
+            Enabled = false;
+            await RaiseEnabledChangedAsync(false);
+        }
+
         public Task<string> GetProviderSelectedAccountAsync() => Task.FromResult(SelectedAccount);
 
         public async Task<string> SignMessageAsync(string message)
         {
             if (_selectedAccount == null)
                 throw new InvalidOperationException("No account selected.");
-            return await ShowSignPromptAsync(message);
+            var promptContext = CreatePersonalSignContext(message, _selectedAccount.Address);
+            var approved = await RequestPersonalSignAsync(promptContext).ConfigureAwait(false);
+
+            if (!approved)
+            {
+                throw new OperationCanceledException("User rejected personal_sign request.");
+            }
+
+            var web3 = await GetWalletWeb3Async().ConfigureAwait(false);
+            var messageHex = message.IsHex() ? message : message.ToHexUTF8();
+            return await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(message.HexToByteArray(), _selectedAccount.Address).ConfigureAwait(false);
         }
 
         // IWalletContext additions
@@ -172,8 +230,139 @@ namespace Nethereum.Wallet.Hosting
         public Task<string?> ShowTransactionDialogAsync(TransactionInput input)
             => _transactionPromptService.PromptTransactionAsync(input);
 
-        public Task<string> ShowSignPromptAsync(string message)
-            => _signaturePromptService.PromptSignatureAsync(message);
+        public Task<bool> RequestPersonalSignAsync(SignaturePromptContext context)
+            => _signaturePromptService.PromptSignatureAsync(context);
+
+        public Task<bool> RequestTypedDataSignAsync(TypedDataSignPromptContext context)
+            => _signaturePromptService.PromptTypedDataSignAsync(context);
+
+        public async Task<bool> RequestDappPermissionAsync(DappConnectionContext dappContext, string accountAddress)
+        {
+            if (dappContext == null || string.IsNullOrWhiteSpace(dappContext.Origin))
+            {
+                return true;
+            }
+
+            var normalizedAccount = accountAddress?.Trim().ToLowerInvariant() ?? string.Empty;
+            var normalizedOrigin = dappContext.Origin.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrEmpty(normalizedAccount))
+            {
+                return false;
+            }
+
+            if (await _dappPermissionService.IsApprovedAsync(normalizedOrigin, normalizedAccount).ConfigureAwait(false))
+            {
+                return true;
+            }
+
+            Console.WriteLine($"[WalletHostProvider] RequestDappPermissionAsync instance={_instanceId} origin={dappContext.Origin} account={accountAddress}");
+
+            var approved = await _dappPermissionPromptService.RequestPermissionAsync(new DappPermissionPromptRequest
+            {
+                Origin = dappContext.Origin,
+                DappName = dappContext.Title,
+                DappIcon = dappContext.Icon,
+                AccountAddress = accountAddress
+            }).ConfigureAwait(false);
+
+            Console.WriteLine($"[WalletHostProvider] Prompt result instance={_instanceId} approved={approved}");
+            if (approved)
+            {
+                await _dappPermissionService.ApproveAsync(normalizedOrigin, normalizedAccount).ConfigureAwait(false);
+                return true;
+            }
+
+            await _dappPermissionService.RevokeAsync(normalizedOrigin, normalizedAccount).ConfigureAwait(false);
+            return false;
+        }
+
+        public Task<ChainAdditionPromptResult> RequestChainAdditionAsync(ChainAdditionPromptRequest request)
+            => _chainAdditionPromptService.RequestAddChainAsync(request);
+
+        public async Task<ChainSwitchPromptResult> RequestChainSwitchAsync(ChainSwitchPromptRequest request)
+        {
+            if (request == null)
+            {
+                return ChainSwitchPromptResult.Rejected("Invalid request");
+            }
+
+            var chainId = request.ChainId;
+            if (chainId == default)
+            {
+                return ChainSwitchPromptResult.Rejected("Invalid chain identifier");
+            }
+
+            try
+            {
+                if (_activeChain != null)
+                {
+                    try
+                    {
+                        request.CurrentChainId = (long)_activeChain.ChainId;
+                    }
+                    catch
+                    {
+                        request.CurrentChainId = SelectedNetworkChainId;
+                    }
+
+                    request.CurrentChain = _activeChain;
+                }
+                else
+                {
+                    request.CurrentChainId = SelectedNetworkChainId;
+                    request.CurrentChain = _configurationService.ActiveChain;
+                }
+
+                var knownChain = _configurationService.GetChain(chainId);
+                request.IsKnown = knownChain != null;
+
+                if (request.Chain == null)
+                {
+                    request.Chain = knownChain ?? await _chainManagementService.GetCompleteChainAsync(chainId).ConfigureAwait(false);
+                }
+
+                var approved = await _chainSwitchPromptService.RequestSwitchAsync(request).ConfigureAwait(false);
+                if (!approved)
+                {
+                    return ChainSwitchPromptResult.Rejected();
+                }
+
+                var chainFeature = request.Chain;
+                var chainAdded = false;
+
+                if (!request.IsKnown && request.AllowAdd)
+                {
+                    if (chainFeature == null)
+                    {
+                        return ChainSwitchPromptResult.Failure("Network metadata unavailable to add.");
+                    }
+
+                    try
+                    {
+                        await _chainManagementService.AddCustomChainAsync(chainFeature).ConfigureAwait(false);
+                        await _configurationService.AddOrUpdateChainAsync(chainFeature).ConfigureAwait(false);
+                        chainAdded = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        return ChainSwitchPromptResult.Failure($"Failed to add network: {ex.Message}");
+                    }
+                }
+
+                var switched = await SetSelectedNetworkAsync((long)chainId).ConfigureAwait(false);
+                if (!switched)
+                {
+                    return ChainSwitchPromptResult.Failure("Failed to switch network.", chainAdded, false);
+                }
+
+                return ChainSwitchPromptResult.Success(chainAdded);
+            }
+            catch (Exception ex)
+            {
+                return ChainSwitchPromptResult.Failure(ex.Message);
+            }
+        }
 
         public async Task AddChainAsync(ChainFeature chainMetadata)
         {
@@ -257,19 +446,13 @@ namespace Nethereum.Wallet.Hosting
                     return;
                 }
             }
-
-            var next = _accounts.FirstOrDefault(a => a.IsSelected) ?? _accounts.FirstOrDefault();
-            if (next != null)
-            {
-                await SetSelectedWalletAccountAsync(next);
-            }
             else
             {
-                if (_selectedAccount != null)
-                {
-                    _selectedAccount = null;
-                    await RaiseSelectedAccountChangedAsync(null);
-                }
+                var storedAccountAddress = await _storageService.GetSelectedAccountAsync();
+                var candidate = string.IsNullOrEmpty(storedAccountAddress)
+                    ? _accounts.First()
+                    : _accounts.FirstOrDefault(a => a.Address.Equals(storedAccountAddress, StringComparison.OrdinalIgnoreCase)) ?? _accounts.First();
+                await SetSelectedWalletAccountAsync(candidate);
             }
         }
 
@@ -342,6 +525,37 @@ namespace Nethereum.Wallet.Hosting
                     ChainName = $"Chain {_defaultChainId}"
                 };
             }
+        }
+
+        private SignaturePromptContext CreatePersonalSignContext(string message, string address)
+        {
+            var isHex = message.IsHex();
+            string? decoded = null;
+
+            if (isHex)
+            {
+                try
+                {
+                    var bytes = message.HexToByteArray();
+                    decoded = System.Text.Encoding.UTF8.GetString(bytes);
+                }
+                catch
+                {
+                    decoded = null;
+                }
+            }
+
+            return new SignaturePromptContext
+            {
+                Method = "personal_sign",
+                Message = message,
+                DecodedMessage = decoded,
+                IsMessageHex = isHex,
+                Address = address,
+                Origin = SelectedDapp?.Origin,
+                DappName = SelectedDapp?.Title,
+                DappIcon = SelectedDapp?.Icon
+            };
         }
 
         private async Task RaiseSelectedAccountChangedAsync(string? address)
