@@ -8,12 +8,28 @@ namespace Nethereum.Wallet.RpcRequests
     {
         public override string MethodName => "eth_accounts";
 
-        public override Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, IWalletContext context)
+        public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, IWalletContext context)
         {
-            var selected = context.SelectedWalletAccount?.Address ?? "0x0000000000000000000000000000000000000000";
-            var accounts = new[] { selected };
-            var result = JArray.FromObject(accounts);
-            return Task.FromResult(new RpcResponseMessage(request.Id, result));
+            var selectedAccount = context.SelectedWalletAccount?.Address;
+            if (string.IsNullOrWhiteSpace(selectedAccount))
+            {
+                return new RpcResponseMessage(request.Id, new JArray());
+            }
+
+            var origin = context.SelectedDapp?.Origin;
+            if (!string.IsNullOrWhiteSpace(origin))
+            {
+                var normalizedOrigin = origin.Trim().ToLowerInvariant();
+                var normalizedAccount = selectedAccount.Trim().ToLowerInvariant();
+
+                if (!await context.DappPermissions.IsApprovedAsync(normalizedOrigin, normalizedAccount).ConfigureAwait(false))
+                {
+                    return new RpcResponseMessage(request.Id, new JArray());
+                }
+            }
+
+            var result = JArray.FromObject(new[] { selectedAccount });
+            return new RpcResponseMessage(request.Id, result);
         }
     }
 
