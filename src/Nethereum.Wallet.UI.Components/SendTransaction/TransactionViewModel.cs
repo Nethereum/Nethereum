@@ -1,13 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.AspNetCore.Components;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Chain;
 using Nethereum.Wallet.Hosting;
+using Nethereum.Util;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.Services.Transaction;
 using Nethereum.Wallet.Services.Transactions;
@@ -26,6 +31,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         private readonly IGasConfigurationPersistenceService _gasPersistenceService;
         private readonly IPendingTransactionService _pendingTransactionService;
         private readonly Components.TransactionStatusViewModel _statusViewModel;
+        private int _nativeCurrencyDecimals = 18;
         
         private const string DEFAULT_TOKEN_SYMBOL = "ETH";
         
@@ -43,7 +49,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [ObservableProperty] private string? _simulationResult;
         [ObservableProperty] private bool _isLoadingDecoding = false;
         
-        [ObservableProperty] private string _tokenSymbol = "ETH";
+        [ObservableProperty] private string _tokenSymbol = DEFAULT_TOKEN_SYMBOL;
+        [ObservableProperty] private string _tokenName = string.Empty;
         [ObservableProperty] private string _networkName = "";
         [ObservableProperty] private string _chainId = "";
         [ObservableProperty] private bool _isNonceEditable = true;
@@ -60,6 +67,34 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [ObservableProperty] private string _adjustedGasDisplay = "";
         [ObservableProperty] private string _multiplierDescription = "";
         [ObservableProperty] private string? _validationError;
+
+        private string DefaultTokenName => _localizer.GetString(TransactionLocalizer.Keys.DefaultNativeTokenName);
+
+        public string TokenDisplay
+        {
+            get
+            {
+                var name = string.IsNullOrWhiteSpace(TokenName) ? null : TokenName;
+                var symbol = string.IsNullOrWhiteSpace(TokenSymbol) ? null : TokenSymbol;
+
+                if (name == null && symbol == null)
+                {
+                    return DefaultTokenName;
+                }
+
+                if (name == null)
+                {
+                    return symbol!;
+                }
+
+                if (symbol == null || string.Equals(name, symbol, StringComparison.OrdinalIgnoreCase))
+                {
+                    return name;
+                }
+
+                return $"{name} ({symbol})";
+            }
+        }
         
         public TransactionViewModel(
             IComponentLocalizer<TransactionViewModel> localizer,
@@ -83,6 +118,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             _transaction = new TransactionModel(localizer);
             
             SetupPropertyListeners();
+
+            ApplyNativeCurrencyMetadata(null);
         }
         
         public void Initialize(TransactionModel transaction)
@@ -96,11 +133,38 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             if (transactionInput == null)
                 throw new ArgumentNullException(nameof(transactionInput));
             
+            ValidationError = null;
+
             var model = new TransactionModel(_localizer);
-            
-            model.FromAddress = transactionInput.From ?? _walletHostProvider.SelectedAccount ?? "";
+
+            var selectedChainId = new BigInteger(_walletHostProvider.SelectedNetworkChainId);
+            ChainFeature? chainInfo = null;
+            try
+            {
+                chainInfo = await _chainManagementService.GetChainAsync(selectedChainId).ConfigureAwait(false);
+            }
+            catch
+            {
+                chainInfo = null;
+            }
+
+            ApplyNativeCurrencyMetadata(chainInfo?.NativeCurrency);
+
+            var selectedAccount = _walletHostProvider.SelectedAccount ?? string.Empty;
+            var providedFrom = transactionInput.From ?? string.Empty;
+            var effectiveFrom = string.IsNullOrEmpty(providedFrom) ? selectedAccount : providedFrom;
+
+            model.FromAddress = effectiveFrom;
             model.RecipientAddress = transactionInput.To ?? "";
-            model.Amount = transactionInput.Value?.Value.ToString() ?? "0";
+            if (transactionInput.Value != null)
+            {
+                var amountInNative = UnitConversion.Convert.FromWei(transactionInput.Value.Value, _nativeCurrencyDecimals);
+                model.Amount = amountInNative.ToString("0.############################", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                model.Amount = "0";
+            }
             model.Data = transactionInput.Data ?? "";
             model.Nonce = transactionInput.Nonce?.Value.ToString() ?? "";
             
@@ -123,14 +187,20 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             }
             
             Initialize(model);
-            
-            var chainInfo = await _chainManagementService.GetChainAsync(new BigInteger(_walletHostProvider.SelectedNetworkChainId));
-            if (chainInfo != null)
+
+            if (!string.IsNullOrEmpty(selectedAccount))
             {
-                TokenSymbol = chainInfo.NativeCurrency?.Symbol ?? DEFAULT_TOKEN_SYMBOL;
-                NetworkName = chainInfo.ChainName ?? "";
-                ChainId = chainInfo.ChainId.ToString();
+                if (!Transaction.FromAddress.IsTheSameAddress(selectedAccount))
+                {
+                    ValidationError = _localizer.GetString(TransactionLocalizer.Keys.FromAddressMismatch);
+                    return;
+                }
+
+                Transaction.FromAddress = selectedAccount;
             }
+            
+            ChainId = selectedChainId.ToString();
+            NetworkName = chainInfo?.ChainName ?? string.Empty;
             
             if (string.IsNullOrWhiteSpace(model.Nonce))
             {
@@ -183,7 +253,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         
         public bool HasValidTransaction()
         {
-            return Transaction.IsValid && 
+            return Transaction.IsValid &&
                    Transaction.GasConfiguration?.IsValid == true &&
                    !string.IsNullOrWhiteSpace(Transaction.Nonce);
         }
@@ -198,10 +268,13 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 return ValidationError;
             }
             
-            if (string.IsNullOrWhiteSpace(Transaction.Amount) || !decimal.TryParse(Transaction.Amount, out var amt) || amt <= 0)
+            if (RequiresPositiveAmount(Transaction.Data))
             {
-                ValidationError = _localizer.GetString(TransactionLocalizer.Keys.InvalidAmount);
-                return ValidationError;
+                if (string.IsNullOrWhiteSpace(Transaction.Amount) || !decimal.TryParse(Transaction.Amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amt) || amt <= 0)
+                {
+                    ValidationError = _localizer.GetString(TransactionLocalizer.Keys.InvalidAmount);
+                    return ValidationError;
+                }
             }
             
             if (Transaction.GasConfiguration?.IsValid != true)
@@ -217,6 +290,11 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             }
             
             return null;
+        }
+
+        private static bool RequiresPositiveAmount(string? data)
+        {
+            return string.IsNullOrWhiteSpace(data);
         }
         
         [RelayCommand]
@@ -254,14 +332,14 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var web3 = await _walletHostProvider.GetWeb3Async();
-                var transactionInput = Transaction.BuildTransactionInput();
-                
+                var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                var transactionInput = BuildEstimationTransactionInput();
+
                 if (transactionInput != null)
                 {
                     var gasEstimate = await web3.Eth.Transactions.EstimateGas.SendRequestAsync(transactionInput);
                     var gasLimitWithBuffer = BigInteger.Multiply(gasEstimate.Value, new BigInteger((double)GasBufferPercentage * 100)) / 100;
-                    
+
                     Transaction.GasConfiguration.CustomGasLimit = gasLimitWithBuffer.ToString();
                 }
             }
@@ -275,7 +353,37 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 IsEstimatingGas = false;
             }
         }
-        
+
+        private TransactionInput? BuildEstimationTransactionInput()
+        {
+            if (!Transaction.IsValid)
+            {
+                return null;
+            }
+
+            try
+            {
+                var input = new TransactionInput
+                {
+                    From = Transaction.FromAddress,
+                    To = Transaction.RecipientAddress,
+                    Value = new HexBigInteger(Transaction.GetAmountInWei(_nativeCurrencyDecimals)),
+                    Data = string.IsNullOrWhiteSpace(Transaction.Data) ? null : Transaction.Data
+                };
+
+                if (!string.IsNullOrWhiteSpace(Transaction.Nonce) && BigInteger.TryParse(Transaction.Nonce, out var nonceValue))
+                {
+                    input.Nonce = new HexBigInteger(nonceValue);
+                }
+
+                return input;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         [RelayCommand]
         public async Task FetchGasPriceAsync()
         {
@@ -317,7 +425,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var web3 = await _walletHostProvider.GetWeb3Async();
+                var web3 = await _walletHostProvider.GetWalletWeb3Async();
                 var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(Transaction.FromAddress);
                 Transaction.Nonce = nonce.Value.ToString();
             }
@@ -347,10 +455,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var transactionInput = Transaction.BuildTransactionInput();
+                var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
                 if (transactionInput != null)
                 {
-                    var web3 = await _walletHostProvider.GetWeb3Async();
+                    var web3 = await _walletHostProvider.GetWalletWeb3Async();
                     var result = await web3.Eth.Transactions.Call.SendRequestAsync(transactionInput);
                     SimulationResult = result;
                 }
@@ -377,7 +485,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 await EstimateGasLimitAsync();
             }
             
-            return Transaction.BuildTransactionInput(tokenDecimals);
+            var decimalsToUse = tokenDecimals == 18 ? _nativeCurrencyDecimals : tokenDecimals;
+            return Transaction.BuildTransactionInput(decimalsToUse);
         }
         
         public async Task<string?> SendTransactionAsync()
@@ -386,10 +495,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var transactionInput = Transaction.BuildTransactionInput();
+                var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
                 if (transactionInput == null) return null;
                 
-                var web3 = await _walletHostProvider.GetWeb3Async();
+                var web3 = await _walletHostProvider.GetWalletWeb3Async();
                 var txHash = await web3.TransactionManager.SendTransactionAsync(transactionInput);
                 
                 TransactionStatus = _statusViewModel;
@@ -401,6 +510,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     startMonitoring: true
                 );
                 
+                var transferDisplay = _localizer.GetString(TransactionLocalizer.Keys.NativeTransferDisplay, TokenDisplay);
+                var contractDisplay = _localizer.GetString(TransactionLocalizer.Keys.ContractInteractionDisplay);
+
                 var transactionInfo = new TransactionInfo
                 {
                     Hash = txHash,
@@ -409,7 +521,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     Value = Transaction.Amount,
                     Type = string.IsNullOrWhiteSpace(Transaction.Data) ? TransactionType.NativeToken : TransactionType.GeneralTransaction,
                     ChainId = new BigInteger(_walletHostProvider.SelectedNetworkChainId),
-                    DisplayName = string.IsNullOrWhiteSpace(Transaction.Data) ? "ETH Transfer" : "Contract Interaction",
+                    DisplayName = string.IsNullOrWhiteSpace(Transaction.Data) ? transferDisplay : contractDisplay,
                     Status = Nethereum.Wallet.Services.Transactions.TransactionStatus.Pending,
                     SubmittedAt = DateTime.UtcNow,
                     Data = Transaction.Data,
@@ -439,20 +551,18 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         public string GetTotalGasCost()
         {
             var totalCostWei = Transaction.GasConfiguration?.CalculateTotalCost() ?? BigInteger.Zero;
-            var gasCostEther = Nethereum.Util.UnitConversion.Convert.FromWei(
-                totalCostWei, 
-                Nethereum.Util.UnitConversion.EthUnit.Ether);
-            return FormatCurrency(gasCostEther);
+            var gasCostNative = UnitConversion.Convert.FromWei(totalCostWei, _nativeCurrencyDecimals);
+            return FormatCurrency(gasCostNative);
         }
         
         public string GetTotalTransactionCost(int tokenDecimals = 18)
         {
-            if (!decimal.TryParse(Transaction.Amount, out var amountValue)) 
+            if (!decimal.TryParse(Transaction.Amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amountValue)) 
                 return GetTotalGasCost();
                 
             var gasCostWei = Transaction.GasConfiguration?.CalculateTotalCost() ?? BigInteger.Zero;
-            var gasCostEther = Nethereum.Util.UnitConversion.Convert.FromWei(gasCostWei, Nethereum.Util.UnitConversion.EthUnit.Ether);
-            var total = amountValue + gasCostEther;
+            var gasCostNative = UnitConversion.Convert.FromWei(gasCostWei, _nativeCurrencyDecimals);
+            var total = amountValue + gasCostNative;
             return FormatCurrency(total);
         }
         
@@ -605,6 +715,49 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             };
         }
 
+        private void ApplyNativeCurrencyMetadata(NativeCurrency? nativeCurrency)
+        {
+            if (nativeCurrency == null)
+            {
+                TokenSymbol = DEFAULT_TOKEN_SYMBOL;
+                TokenName = DefaultTokenName;
+                _nativeCurrencyDecimals = 18;
+                return;
+            }
+
+            var symbol = nativeCurrency.Symbol;
+            var name = nativeCurrency.Name;
+
+            if (!string.IsNullOrWhiteSpace(symbol))
+            {
+                TokenSymbol = symbol!;
+            }
+            else if (!string.IsNullOrWhiteSpace(name))
+            {
+                TokenSymbol = name!;
+            }
+            else
+            {
+                TokenSymbol = DEFAULT_TOKEN_SYMBOL;
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                TokenName = name!;
+            }
+            else if (!string.IsNullOrWhiteSpace(symbol))
+            {
+                TokenName = symbol!;
+            }
+            else
+            {
+                TokenName = DefaultTokenName;
+            }
+
+            var decimals = nativeCurrency.Decimals;
+            _nativeCurrencyDecimals = decimals > 0 ? decimals : 18;
+        }
+
         [RelayCommand]
         private async Task SwitchGasModeAsync(bool useEip1559)
         {
@@ -664,12 +817,12 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 totalCost = gasLimit * suggestion.GasPrice.Value;
             }
             
-            var costInEther = Nethereum.Util.UnitConversion.Convert.FromWei(totalCost, Nethereum.Util.UnitConversion.EthUnit.Ether);
-            
+            var costInNative = UnitConversion.Convert.FromWei(totalCost, _nativeCurrencyDecimals);
+
             return new GasStrategyDisplay
             {
                 Strategy = strategy,
-              EstimatedCost = FormatCurrency(costInEther),
+                EstimatedCost = FormatCurrency(costInNative),
                 MaxFee = suggestion.MaxFeePerGas,
                 PriorityFee = suggestion.MaxPriorityFeePerGas,
                 GasPrice = suggestion.GasPrice,
@@ -690,18 +843,18 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     if (chainInfo != null)
                     {
                         NetworkName = !string.IsNullOrEmpty(chainInfo.ChainName) ? chainInfo.ChainName : ChainId;
-                        TokenSymbol = chainInfo.NativeCurrency?.Symbol ?? chainInfo.NativeCurrency?.Name ?? DEFAULT_TOKEN_SYMBOL;
+                        ApplyNativeCurrencyMetadata(chainInfo.NativeCurrency);
                     }
                     else
                     {
                         NetworkName = ChainId;
-                        TokenSymbol = DEFAULT_TOKEN_SYMBOL;
+                        ApplyNativeCurrencyMetadata(null);
                     }
                 }
                 catch (Exception ex)
                 {
                     NetworkName = ChainId;
-                    TokenSymbol = DEFAULT_TOKEN_SYMBOL;
+                    ApplyNativeCurrencyMetadata(null);
                     GasEstimationError = _localizer.GetString(TransactionLocalizer.Keys.NetworkInitializationWarning);
                 }
                 
@@ -740,5 +893,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         public TransactionDataInfo TransactionDataInfo => DecodedData;
         public string TotalGasCost => GetTotalGasCost();
         public string TotalTransactionCost => GetTotalTransactionCost();
+
+        partial void OnTokenSymbolChanged(string value) => OnPropertyChanged(nameof(TokenDisplay));
+
+        partial void OnTokenNameChanged(string value) => OnPropertyChanged(nameof(TokenDisplay));
     }
 }

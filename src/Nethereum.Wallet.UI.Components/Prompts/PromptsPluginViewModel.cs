@@ -19,7 +19,7 @@ namespace Nethereum.Wallet.UI.Components.Prompts
         public string Description => _localizer.GetString(PromptsPluginLocalizer.Keys.PluginDescription);
         public string Icon => "Notifications";
         public int SortOrder => -1;
-        public bool IsVisible => false;
+        public bool IsVisible => _queueService.HasPendingPrompts;
         public bool IsEnabled => true;
         
         public bool IsAvailable() => true;
@@ -62,6 +62,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 IsEmpty = true;
             }
             UpdateQueueStatus();
+            OnPropertyChanged(nameof(HasPrompts));
+            OnPropertyChanged(nameof(IsVisible));
         }
         
         private void UpdateQueueStatus()
@@ -123,6 +125,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
         
         private void OnQueueChanged(object? sender, PromptQueueChangedEventArgs e)
         {
+            OnPropertyChanged(nameof(HasPrompts));
+            OnPropertyChanged(nameof(IsVisible));
             if (CurrentPrompt == null || CurrentPrompt.Status != PromptStatus.InProgress)
             {
                 LoadNextPrompt();

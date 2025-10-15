@@ -62,6 +62,8 @@ namespace Nethereum.Wallet.UI.Components.AccountList
         public event EventHandler<AccountActionEventArgs>? AccountRemoved;
         public event EventHandler<AccountActionEventArgs>? AccountUpdated;
 
+        public string CurrencySymbol => _walletHostProvider.ActiveChain?.NativeCurrency.Symbol ?? Core.Constants.DefaultNativeCurrencySymbol;
+
         public AccountListViewModel(
             NethereumWalletHostProvider walletHostProvider,
             IWalletVaultService vaultService,

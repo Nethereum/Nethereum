@@ -52,7 +52,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
         public TransactionStatusViewModel(
             IComponentLocalizer<TransactionStatusViewModel> localizer,
             IPendingTransactionService? pendingTransactionService,
-            ChainManagementService chainManagementService,
+            IChainManagementService chainManagementService,
             NethereumWalletHostProvider walletHostProvider)
         {
             _localizer = localizer;
@@ -87,7 +87,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                 ExplorerUrl = $"{explorerUrl}/tx/{TransactionHash}";
             }
             
-            _web3 = await _walletHostProvider.GetWeb3Async();
+            _web3 = await _walletHostProvider.GetWalletWeb3Async();
             
             if (startMonitoring)
             {

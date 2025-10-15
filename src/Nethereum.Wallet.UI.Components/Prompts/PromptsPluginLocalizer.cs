@@ -19,6 +19,7 @@ namespace Nethereum.Wallet.UI.Components.Prompts
             public const string SinglePrompt = "SinglePrompt";
             public const string NoPrompts = "NoPrompts";
             public const string RejectAll = "RejectAll";
+            public const string Reject = "Reject";
             public const string UserRejected = "UserRejected";
             public const string UnknownPromptType = "UnknownPromptType";
             public const string ProcessingRequest = "ProcessingRequest";
@@ -37,6 +38,7 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.SinglePrompt] = "1 pending request",
                 [Keys.NoPrompts] = "No pending requests",
                 [Keys.RejectAll] = "Reject All",
+                [Keys.Reject] = "Reject",
                 [Keys.UserRejected] = "User rejected the request",
                 [Keys.UnknownPromptType] = "Unknown request type",
                 [Keys.ProcessingRequest] = "Processing request...",
@@ -53,6 +55,7 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.SinglePrompt] = "1 solicitud pendiente",
                 [Keys.NoPrompts] = "Sin solicitudes pendientes",
                 [Keys.RejectAll] = "Rechazar Todas",
+                [Keys.Reject] = "Rechazar",
                 [Keys.UserRejected] = "El usuario rechazó la solicitud",
                 [Keys.UnknownPromptType] = "Tipo de solicitud desconocido",
                 [Keys.ProcessingRequest] = "Procesando solicitud...",

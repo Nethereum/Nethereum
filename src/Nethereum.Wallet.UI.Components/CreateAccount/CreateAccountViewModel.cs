@@ -39,6 +39,12 @@ namespace Nethereum.Wallet.UI.Components.CreateAccount
         }
 
         [RelayCommand]
+        public void SelectAccountType(IAccountCreationViewModel accountType)
+        {
+            SelectedCreationViewModel = accountType;
+        }
+
+        [RelayCommand]
         public async Task CreateAccountAsync()
         {
             if (SelectedCreationViewModel?.CanCreateAccount != true) return;

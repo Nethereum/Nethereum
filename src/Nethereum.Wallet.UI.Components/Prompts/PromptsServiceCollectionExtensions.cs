@@ -21,10 +21,16 @@ namespace Nethereum.Wallet.UI.Components.Prompts
             services.AddTransient<IComponentLocalizer<PromptsPluginViewModel>>(provider =>
                 provider.GetRequiredService<PromptsPluginLocalizer>());
             
+            services.AddTransient<DAppTransactionPromptViewModel>();
             services.AddSingleton<DAppTransactionPromptLocalizer>();
             services.AddTransient<IComponentLocalizer<DAppTransactionPromptViewModel>>(provider =>
                 provider.GetRequiredService<DAppTransactionPromptLocalizer>());
-            
+
+            services.AddTransient<DAppPermissionPromptViewModel>();
+            services.AddSingleton<DAppPermissionPromptLocalizer>();
+            services.AddTransient<IComponentLocalizer<DAppPermissionPromptViewModel>>(provider =>
+                provider.GetRequiredService<DAppPermissionPromptLocalizer>());
+
             return services;
         }
     }

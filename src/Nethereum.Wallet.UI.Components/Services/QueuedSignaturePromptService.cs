@@ -1,7 +1,8 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Wallet.UI;
+using System.Text.Json;
+using Nethereum.Wallet.UI.Components.Core.Localization;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {
@@ -9,58 +10,50 @@ namespace Nethereum.Wallet.UI.Components.Services
     {
         private readonly IPromptQueueService _queueService;
         private readonly IPromptOverlayService _overlayService;
+        private readonly IComponentLocalizer<PromptInfrastructureLocalizer> _messages;
         private readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);
-        
+
         public QueuedSignaturePromptService(
             IPromptQueueService queueService,
-            IPromptOverlayService overlayService)
+            IPromptOverlayService overlayService,
+            IComponentLocalizer<PromptInfrastructureLocalizer> messages)
         {
             _queueService = queueService;
             _overlayService = overlayService;
+            _messages = messages;
         }
-        
-        public async Task<string> PromptSignatureAsync(string message)
+
+        public async Task<bool> PromptSignatureAsync(SignaturePromptContext context)
         {
-            var result = await PromptPersonalSignAsync(message, null);
-            return result ?? string.Empty;
+            var promptInfo = CreateSignaturePromptInfo(context);
+            return await ProcessSignaturePromptAsync(promptInfo).ConfigureAwait(false);
         }
-        
-        public async Task<string?> PromptPersonalSignAsync(string message, string? description = null)
+
+        public async Task<bool> PromptTypedDataSignAsync(TypedDataSignPromptContext context)
         {
+            var formatted = FormatTypedDataJson(context.TypedDataJson);
+
             var promptInfo = new SignaturePromptInfo
             {
-                Message = message,
-                Origin = description
+                Method = "eth_signTypedData_v4",
+                RawMessage = context.TypedDataJson ?? string.Empty,
+                DecodedMessage = formatted,
+                IsMessageHex = false,
+                Address = context.Address,
+                Origin = context.Origin,
+                DAppIcon = context.DappIcon,
+                DAppName = context.DappName,
+                DomainName = context.DomainName,
+                DomainVersion = context.DomainVersion,
+                VerifyingContract = context.VerifyingContract,
+                PrimaryType = context.PrimaryType,
+                ChainId = context.ChainId
             };
-            
-            return await ProcessSignaturePromptAsync(promptInfo);
+
+            return await ProcessSignaturePromptAsync(promptInfo).ConfigureAwait(false);
         }
-        
-        public async Task<string?> PromptTypedDataSignAsync(string typedData, string? description = null)
-        {
-            var promptInfo = new SignaturePromptInfo
-            {
-                Message = typedData,
-                Origin = description
-            };
-            
-            return await ProcessSignaturePromptAsync(promptInfo);
-        }
-        
-        public async Task<string?> PromptTypedDataSignAsync(TypedDataSigningInfo signingInfo)
-        {
-            var promptInfo = new SignaturePromptInfo
-            {
-                Message = signingInfo.TypedData,
-                Origin = signingInfo.Origin,
-                DAppIcon = signingInfo.DAppIcon,
-                DAppName = signingInfo.DAppName,
-            };
-            
-            return await ProcessSignaturePromptAsync(promptInfo);
-        }
-        
-        private async Task<string?> ProcessSignaturePromptAsync(SignaturePromptInfo promptInfo)
+
+        private async Task<bool> ProcessSignaturePromptAsync(SignaturePromptInfo promptInfo)
         {
             var promptId = await _queueService.EnqueueSignaturePromptAsync(promptInfo);
             
@@ -74,44 +67,86 @@ namespace Nethereum.Wallet.UI.Components.Services
             {
                 try
                 {
-                    using var cts = new CancellationTokenSource(_defaultTimeout);
-                    
-                    var tcs = new TaskCompletionSource<bool>();
-                    using (cts.Token.Register(() => tcs.TrySetCanceled()))
+                    var timeoutTask = Task.Delay(_defaultTimeout);
+                    var completedTask = await Task.WhenAny(prompt.CompletionSource.Task, timeoutTask).ConfigureAwait(false);
+
+                    if (completedTask == prompt.CompletionSource.Task)
                     {
-                        var completedTask = await Task.WhenAny(
-                            prompt.CompletionSource.Task,
-                            tcs.Task
-                        );
-                        
-                        if (completedTask == prompt.CompletionSource.Task)
-                        {
-                            var result = await prompt.CompletionSource.Task;
-                            return result as string;
-                        }
-                        else
-                        {
-                            prompt.Status = PromptStatus.TimedOut;
-                            await _queueService.RejectPromptAsync(promptId, "Request timed out");
-                            throw new TimeoutException("Signature prompt timed out");
-                        }
+                        var result = await prompt.CompletionSource.Task.ConfigureAwait(false);
+                        return result is bool approved && approved;
                     }
+
+                    prompt.Status = PromptStatus.TimedOut;
+                    await _queueService.RejectPromptAsync(
+                        promptId,
+                        _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut)).ConfigureAwait(false);
+                    return false;
                 }
                 catch (TaskCanceledException)
                 {
-                    return null;
+                    return false;
                 }
                 catch (TimeoutException)
                 {
-                    return null;
+                    return false;
                 }
                 catch (Exception)
                 {
-                    return null;
+                    return false;
                 }
             }
-            
-            return null;
+
+            return false;
+        }
+
+        private static SignaturePromptInfo CreateSignaturePromptInfo(SignaturePromptContext context)
+        {
+            var info = new SignaturePromptInfo
+            {
+                Method = string.IsNullOrEmpty(context.Method) ? "personal_sign" : context.Method,
+                RawMessage = context.Message ?? string.Empty,
+                Address = context.Address ?? string.Empty,
+                Origin = context.Origin,
+                DAppName = context.DappName,
+                DAppIcon = context.DappIcon,
+                IsMessageHex = context.IsMessageHex,
+                DecodedMessage = context.Message
+            };
+
+            if (!info.IsMessageHex && !string.IsNullOrEmpty(context.Message) && context.Message.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                info.IsMessageHex = true;
+            }
+
+            if (info.IsMessageHex)
+            {
+                info.IsMessageHex = true;
+                info.DecodedMessage = context.DecodedMessage ?? context.Message;
+            }
+            else if (!string.IsNullOrEmpty(context.DecodedMessage))
+            {
+                info.DecodedMessage = context.DecodedMessage;
+            }
+
+            return info;
+        }
+
+        private static string? FormatTypedDataJson(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return json;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                return json;
+            }
         }
     }
 }

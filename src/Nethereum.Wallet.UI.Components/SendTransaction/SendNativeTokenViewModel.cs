@@ -74,7 +74,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 NativeTransfer.TokenSymbol = tokenSymbol;
                 NativeTransfer.TokenDecimals = 18;
                 
-                var web3 = await _walletHostProvider.GetWeb3Async();
+                var web3 = await _walletHostProvider.GetWalletWeb3Async();
                 var balance = await web3.Eth.GetBalance.SendRequestAsync(selectedAccount.Address);
                 NativeTransfer.AvailableBalance = balance.Value;
                 

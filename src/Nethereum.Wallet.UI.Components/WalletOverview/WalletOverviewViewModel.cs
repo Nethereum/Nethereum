@@ -68,8 +68,8 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                     return etherValue.ToString("F8").TrimEnd('0').TrimEnd('.');
             }
         }
-        
-        public string CurrencySymbol => GetCurrencySymbol(ChainId);
+
+        public string CurrencySymbol;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -133,7 +133,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             try
             {
                 ChainId = _walletHostProvider.SelectedNetworkChainId;
-                NetworkName = GetNetworkName(_walletHostProvider.SelectedNetworkChainId);
+               
 
                 await LoadAccountsAsync();
                 if (SelectedAccount != null)
@@ -262,7 +262,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             HasBalanceError = false;
             try
             {
-                var web3 = await _walletHostProvider.GetWeb3Async();
+                var web3 = await _walletHostProvider.GetWalletWeb3Async();
                 
                 var balanceWei = await web3.Eth.GetBalance.SendRequestAsync(SelectedAccount.Address);
                 BalanceWei = balanceWei.Value;
@@ -381,9 +381,8 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         private async Task OnNetworkChangedAsync(long chainId)
         {
             ChainId = chainId;
-            NetworkName = GetNetworkName(chainId);
             
-            _notificationService.ShowInfo($"{_localizer.GetString(Keys.NetworkSwitched)}: {NetworkName}");
+           
             
             if (SelectedAccount != null)
             {
@@ -392,23 +391,9 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             }
         }
 
-        private string GetNetworkName(long chainId) => chainId switch
-        {
-            1 => "Ethereum Mainnet",
-            11155111 => "Sepolia Testnet",
-            137 => "Polygon",
-            80001 => "Polygon Mumbai",
-            _ => $"Chain {chainId}"
-        };
+       
 
-        private string GetCurrencySymbol(long chainId) => chainId switch
-        {
-            1 => "ETH",
-            11155111 => "ETH",
-            137 => "MATIC",
-            80001 => "MATIC",
-            _ => "ETH"
-        };
+       
         [RelayCommand]
         public async Task ViewTransactionOnExplorerAsync(TransactionInfo transaction)
         {

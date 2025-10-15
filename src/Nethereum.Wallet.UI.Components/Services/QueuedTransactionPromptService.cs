@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Wallet.UI;
+using Nethereum.Wallet.UI.Components.Core.Localization;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {
@@ -11,14 +12,17 @@ namespace Nethereum.Wallet.UI.Components.Services
     {
         private readonly IPromptQueueService _queueService;
         private readonly IPromptOverlayService _overlayService;
+        private readonly IComponentLocalizer<PromptInfrastructureLocalizer> _messages;
         private readonly TimeSpan _defaultTimeout = TimeSpan.FromMinutes(5);
-        
+
         public QueuedTransactionPromptService(
             IPromptQueueService queueService,
-            IPromptOverlayService overlayService)
+            IPromptOverlayService overlayService,
+            IComponentLocalizer<PromptInfrastructureLocalizer> messages)
         {
             _queueService = queueService;
             _overlayService = overlayService;
+            _messages = messages;
         }
         
         public async Task<string?> PromptTransactionAsync(TransactionInput transactionInput)
@@ -63,8 +67,11 @@ namespace Nethereum.Wallet.UI.Components.Services
                         else
                         {
                             prompt.Status = PromptStatus.TimedOut;
-                            await _queueService.RejectPromptAsync(promptId, "Request timed out");
-                            throw new TimeoutException("Transaction prompt timed out");
+                            await _queueService.RejectPromptAsync(
+                                promptId,
+                                _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut));
+                            throw new TimeoutException(
+                                _messages.GetString(PromptInfrastructureLocalizer.Keys.TransactionPromptTimedOut));
                         }
                     }
                 }

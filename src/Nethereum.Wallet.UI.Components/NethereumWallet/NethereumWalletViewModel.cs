@@ -4,6 +4,8 @@ using Nethereum.Wallet;
 using Nethereum.Wallet.UI.Components.Abstractions;
 using Nethereum.Wallet.UI.Components.Core.Localization;
 using Nethereum.Wallet.Hosting;
+using Nethereum.Wallet.UI;
+using Nethereum.UI;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -17,6 +19,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         private readonly IComponentLocalizer<NethereumWalletViewModel> _localizer;
         private readonly NethereumWalletConfiguration _config;
         private readonly NethereumWalletHostProvider _walletHostProvider;
+        private readonly SelectedEthereumHostProviderService _selectedHostProvider;
 
         public Func<Task>? OnWalletConnected { get; set; }
 
@@ -67,7 +70,8 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             IWalletDialogService dialogService,
             IComponentLocalizer<NethereumWalletViewModel> localizer,
             NethereumWalletConfiguration config,
-            NethereumWalletHostProvider walletHostProvider)
+            NethereumWalletHostProvider walletHostProvider,
+            SelectedEthereumHostProviderService selectedHostProvider)
         {
             _walletVaultService = walletVaultService;
             _notificationService = notificationService;
@@ -75,16 +79,23 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             _localizer = localizer;
             _config = config;
             _walletHostProvider = walletHostProvider;
+            _selectedHostProvider = selectedHostProvider;
         }
 
         public async Task InitializeAsync()
         {
             VaultExists = await _walletVaultService.VaultExistsAsync();
-            
+
             if (VaultExists && _walletVaultService.GetCurrentVault() != null)
             {
                 IsWalletUnlocked = true;
                 await CheckAccountsAsync();
+
+                if (HasAccounts)
+                {
+                    await _walletHostProvider.EnableProviderAsync();
+                    await _selectedHostProvider.SetSelectedEthereumHostProvider(_walletHostProvider);
+                }
             }
         }
 
@@ -122,6 +133,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                     if (HasAccounts)
                     {
                         await _walletHostProvider.EnableProviderAsync();
+                        await _selectedHostProvider.SetSelectedEthereumHostProvider(_walletHostProvider);
                     }
                     
                     if (OnWalletConnected != null)
@@ -145,6 +157,19 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                 IsBusy = false;
                 Password = string.Empty;
             }
+        }
+
+        [RelayCommand]
+        private async Task LogoutAsync()
+        {
+            await _walletHostProvider.LogoutAsync();
+            await _walletVaultService.LockAsync();
+            IsWalletUnlocked = false;
+            HasAccounts = false;
+            VaultExists = await _walletVaultService.VaultExistsAsync();
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
+            await _selectedHostProvider.ClearSelectedEthereumHostProvider();
         }
 
         [RelayCommand]
@@ -290,6 +315,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             {
                 await _walletVaultService.ResetAsync();
                 VaultExists = false;
+                await _selectedHostProvider.ClearSelectedEthereumHostProvider();
                 _notificationService.ShowSuccess(_localizer.GetString("WalletResetSuccess"));
             }
             catch (System.Exception ex)
@@ -303,3 +329,4 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         }
     }
 }
+

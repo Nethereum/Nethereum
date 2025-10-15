@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Numerics;
 using Nethereum.RPC.Eth.DTOs;
-using Org.BouncyCastle.Asn1.Mozilla;
+using Nethereum.RPC.HostWallet;
+using Nethereum.RPC.Chain;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {
@@ -17,6 +19,9 @@ namespace Nethereum.Wallet.UI.Components.Services
         
         Task<string> EnqueueTransactionPromptAsync(TransactionPromptInfo promptInfo);
         Task<string> EnqueueSignaturePromptAsync(SignaturePromptInfo promptInfo);
+        Task<string> EnqueuePermissionPromptAsync(DappPermissionPromptInfo promptInfo);
+        Task<string> EnqueueChainAdditionPromptAsync(ChainAdditionPromptInfo promptInfo);
+        Task<string> EnqueueNetworkSwitchPromptAsync(ChainSwitchPromptInfo promptInfo);
         PromptRequest? GetNextPrompt();
         PromptRequest? GetPromptById(string id);
         Task CompletePromptAsync(string promptId, object? result);
@@ -42,6 +47,7 @@ namespace Nethereum.Wallet.UI.Components.Services
     {
         Transaction,
         Signature,
+        Permission,
         AccountSelection,
         NetworkSwitch,
         ChainAddition
@@ -86,10 +92,40 @@ namespace Nethereum.Wallet.UI.Components.Services
         public TransactionInput TransactionInput { get; set; } = new TransactionInput();
     }
     
-    public class SignaturePromptInfo:PromptInfo
+    public class SignaturePromptInfo : PromptInfo
     {
-        public string Message { get; set; } = string.Empty;  
-       
+        public string Method { get; set; } = string.Empty;
+        public string RawMessage { get; set; } = string.Empty;
+        public string? DecodedMessage { get; set; }
+        public bool IsMessageHex { get; set; }
+        public string Address { get; set; } = string.Empty;
+        public string? DomainName { get; set; }
+        public string? DomainVersion { get; set; }
+        public string? VerifyingContract { get; set; }
+        public string? PrimaryType { get; set; }
+        public string? ChainId { get; set; }
+    }
+
+    public class DappPermissionPromptInfo : PromptInfo
+    {
+        public string AccountAddress { get; set; } = string.Empty;
+    }
+
+    public class ChainAdditionPromptInfo : PromptInfo
+    {
+        public AddEthereumChainParameter Parameter { get; set; } = new();
+        public ChainFeature ChainFeature { get; set; } = new();
+        public bool SwitchAfterAdd { get; set; } = true;
+    }
+
+    public class ChainSwitchPromptInfo : PromptInfo
+    {
+        public BigInteger ChainId { get; set; }
+        public ChainFeature? TargetChain { get; set; }
+        public bool IsKnown { get; set; }
+        public bool AllowAdd { get; set; } = true;
+        public long? CurrentChainId { get; set; }
+        public ChainFeature? CurrentChain { get; set; }
     }
 
     public class TypedDataSigningInfo: PromptInfo

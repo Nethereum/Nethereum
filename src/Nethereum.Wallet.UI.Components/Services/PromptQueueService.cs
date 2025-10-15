@@ -4,13 +4,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Nethereum.Wallet.UI.Components.Core.Localization;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {
     public partial class PromptQueueService : ObservableObject, IPromptQueueService
     {
         private readonly ConcurrentDictionary<string, PromptRequest> _prompts = new();
-        
+        private readonly IComponentLocalizer<PromptInfrastructureLocalizer> _messages;
+
         public event EventHandler<PromptQueueChangedEventArgs>? QueueChanged;
         
         public IReadOnlyList<PromptRequest> PendingPrompts => 
@@ -18,9 +20,14 @@ namespace Nethereum.Wallet.UI.Components.Services
                 .Where(p => p.Status == PromptStatus.Pending || p.Status == PromptStatus.InProgress)
                 .OrderBy(p => p.CreatedAt)
                 .ToList();
-        
+
         public int PendingCount => PendingPrompts.Count;
         public bool HasPendingPrompts => PendingCount > 0;
+
+        public PromptQueueService(IComponentLocalizer<PromptInfrastructureLocalizer> messages)
+        {
+            _messages = messages;
+        }
         
         public async Task<string> EnqueueTransactionPromptAsync(TransactionPromptInfo promptInfo)
         {
@@ -73,6 +80,84 @@ namespace Nethereum.Wallet.UI.Components.Services
             
             return prompt.Id;
         }
+
+        public async Task<string> EnqueuePermissionPromptAsync(DappPermissionPromptInfo promptInfo)
+        {
+            var prompt = new PromptRequest
+            {
+                Type = PromptType.Permission,
+                Data = promptInfo,
+                Origin = promptInfo.Origin,
+                DAppName = promptInfo.DAppName,
+                DAppIcon = promptInfo.DAppIcon
+            };
+
+            _prompts[prompt.Id] = prompt;
+            OnPropertyChanged(nameof(PendingPrompts));
+            OnPropertyChanged(nameof(PendingCount));
+            OnPropertyChanged(nameof(HasPendingPrompts));
+
+            QueueChanged?.Invoke(this, new PromptQueueChangedEventArgs
+            {
+                ChangeType = PromptQueueChangeType.Added,
+                Prompt = prompt,
+                NewCount = PendingCount
+            });
+
+            return prompt.Id;
+        }
+
+        public async Task<string> EnqueueChainAdditionPromptAsync(ChainAdditionPromptInfo promptInfo)
+        {
+            var prompt = new PromptRequest
+            {
+                Type = PromptType.ChainAddition,
+                Data = promptInfo,
+                Origin = promptInfo.Origin,
+                DAppName = promptInfo.DAppName,
+                DAppIcon = promptInfo.DAppIcon
+            };
+
+            _prompts[prompt.Id] = prompt;
+            OnPropertyChanged(nameof(PendingPrompts));
+            OnPropertyChanged(nameof(PendingCount));
+            OnPropertyChanged(nameof(HasPendingPrompts));
+
+            QueueChanged?.Invoke(this, new PromptQueueChangedEventArgs
+            {
+                ChangeType = PromptQueueChangeType.Added,
+                Prompt = prompt,
+                NewCount = PendingCount
+            });
+
+            return prompt.Id;
+        }
+
+        public async Task<string> EnqueueNetworkSwitchPromptAsync(ChainSwitchPromptInfo promptInfo)
+        {
+            var prompt = new PromptRequest
+            {
+                Type = PromptType.NetworkSwitch,
+                Data = promptInfo,
+                Origin = promptInfo.Origin,
+                DAppName = promptInfo.DAppName,
+                DAppIcon = promptInfo.DAppIcon
+            };
+
+            _prompts[prompt.Id] = prompt;
+            OnPropertyChanged(nameof(PendingPrompts));
+            OnPropertyChanged(nameof(PendingCount));
+            OnPropertyChanged(nameof(HasPendingPrompts));
+
+            QueueChanged?.Invoke(this, new PromptQueueChangedEventArgs
+            {
+                ChangeType = PromptQueueChangeType.Added,
+                Prompt = prompt,
+                NewCount = PendingCount
+            });
+
+            return prompt.Id;
+        }
         
         public PromptRequest? GetNextPrompt()
         {
@@ -111,7 +196,7 @@ namespace Nethereum.Wallet.UI.Components.Services
             {
                 prompt.Status = PromptStatus.Rejected;
                 prompt.CompletionSource.SetException(
-                    new Exception(reason ?? "User rejected the request"));
+                    new Exception(reason ?? _messages.GetString(PromptInfrastructureLocalizer.Keys.UserRejected)));
                 
                 _prompts.TryRemove(promptId, out _);
                 OnPropertyChanged(nameof(PendingPrompts));
@@ -132,7 +217,7 @@ namespace Nethereum.Wallet.UI.Components.Services
             var pendingPrompts = PendingPrompts.ToList();
             foreach (var prompt in pendingPrompts)
             {
-                await RejectPromptAsync(prompt.Id, "Bulk rejection");
+                await RejectPromptAsync(prompt.Id, _messages.GetString(PromptInfrastructureLocalizer.Keys.BulkRejection));
             }
         }
         

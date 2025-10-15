@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Numerics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Nethereum.Hex.HexTypes;
@@ -114,7 +115,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
         {
             if (!string.IsNullOrWhiteSpace(Amount))
             {
-                if (!decimal.TryParse(Amount, out var amt))
+                if (!decimal.TryParse(Amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amt))
                 {
                     ClearCustomErrors(nameof(Amount));
                     AddCustomError(SharedValidationLocalizer.Keys.AmountMustBeValidNumber, nameof(Amount));
@@ -138,7 +139,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
         public BigInteger GetAmountInWei(int decimals = 18)
         {
             if (string.IsNullOrWhiteSpace(Amount)) return BigInteger.Zero;
-            if (!decimal.TryParse(Amount, out var amt)) return BigInteger.Zero;
+            if (!decimal.TryParse(Amount, NumberStyles.Number, CultureInfo.InvariantCulture, out var amt)) return BigInteger.Zero;
             return UnitConversion.Convert.ToWei(amt, decimals);
         }
 

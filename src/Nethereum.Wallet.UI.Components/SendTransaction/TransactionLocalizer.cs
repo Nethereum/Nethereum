@@ -26,8 +26,12 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             public const string TotalGasCost = "TotalGasCost";
             public const string TotalTransactionCost = "TotalTransactionCost";
+            public const string DefaultNativeTokenName = "DefaultNativeTokenName";
+            public const string NativeTransferDisplay = "NativeTransferDisplay";
+            public const string ContractInteractionDisplay = "ContractInteractionDisplay";
             
             public const string CannotSendToSelf = "CannotSendToSelf";
+            public const string FromAddressMismatch = "FromAddressMismatch";
             public const string DataMustStartWith0x = "DataMustStartWith0x";
             public const string NonceMustBeNonNegative = "NonceMustBeNonNegative";
             
@@ -68,6 +72,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             public const string LoadingGasPrices = "LoadingGasPrices";
             public const string NoValidGasPriceData = "NoValidGasPriceData";
             public const string GasStrategyLoadFailed = "GasStrategyLoadFailed";
+            public const string GasConfigurationIssue = "GasConfigurationIssue";
             public const string RefreshGasStrategiesFailed = "RefreshGasStrategiesFailed";
             public const string InitializationFailed = "InitializationFailed";
             public const string UsingStrategy = "UsingStrategy";
@@ -142,8 +147,12 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 
                 [Keys.TotalGasCost] = "Total Gas Cost",
                 [Keys.TotalTransactionCost] = "Total Transaction Cost",
+                [Keys.DefaultNativeTokenName] = "Ether",
+                [Keys.NativeTransferDisplay] = "{0} transfer",
+                [Keys.ContractInteractionDisplay] = "Contract interaction",
                 
                 [Keys.CannotSendToSelf] = "Cannot send to self",
+                [Keys.FromAddressMismatch] = "Transaction from address does not match the selected account",
                 [Keys.DataMustStartWith0x] = "Data must start with 0x",
                 [Keys.NonceMustBeNonNegative] = "Nonce must be non-negative",
                 
@@ -187,6 +196,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.LoadingGasPrices] = "Loading gas prices...",
                 [Keys.NoValidGasPriceData] = "No valid gas price data available",
                 [Keys.GasStrategyLoadFailed] = "Failed to load gas strategy",
+                [Keys.GasConfigurationIssue] = "Gas configuration issue",
                 [Keys.RefreshGasStrategiesFailed] = "Failed to refresh gas strategies",
                 [Keys.InitializationFailed] = "Transaction initialization failed",
                 [Keys.NetworkInitializationWarning] = "Network initialization warning",
@@ -251,8 +261,12 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 
                 [Keys.TotalGasCost] = "Costo Total de Gas",
                 [Keys.TotalTransactionCost] = "Costo Total de Transacción",
+                [Keys.DefaultNativeTokenName] = "Éter",
+                [Keys.NativeTransferDisplay] = "Transferencia de {0}",
+                [Keys.ContractInteractionDisplay] = "Interacción con contrato",
                 
                 [Keys.CannotSendToSelf] = "No se puede enviar a sí mismo",
+                [Keys.FromAddressMismatch] = "La dirección de origen de la transacción no coincide con la cuenta seleccionada",
                 [Keys.DataMustStartWith0x] = "Los datos deben empezar con 0x",
                 [Keys.NonceMustBeNonNegative] = "El nonce debe ser no negativo",
                 
@@ -296,6 +310,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.LoadingGasPrices] = "Cargando precios de gas...",
                 [Keys.NoValidGasPriceData] = "No hay datos válidos de precio de gas disponibles",
                 [Keys.GasStrategyLoadFailed] = "Error al cargar estrategia de gas",
+                [Keys.GasConfigurationIssue] = "Problema con la configuración de gas",
                 [Keys.RefreshGasStrategiesFailed] = "Error al actualizar estrategias de gas",
                 [Keys.InitializationFailed] = "Error en la inicialización de transacción",
                 [Keys.NetworkInitializationWarning] = "Advertencia de inicialización de red",

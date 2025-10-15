@@ -29,6 +29,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
             public const string Processing = "Processing";
             public const string TransactionSent = "TransactionSent";
             public const string TransactionFailed = "TransactionFailed";
+            public const string TransactionFailedToSend = "TransactionFailedToSend";
+            public const string TransactionFailedWithReason = "TransactionFailedWithReason";
             public const string Retry = "Retry";
             public const string Close = "Close";
             public const string GasConfiguration = "GasConfiguration";
@@ -57,6 +59,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.Processing] = "Processing transaction...",
                 [Keys.TransactionSent] = "Transaction sent successfully",
                 [Keys.TransactionFailed] = "Transaction failed",
+                [Keys.TransactionFailedToSend] = "Transaction failed to send.",
+                [Keys.TransactionFailedWithReason] = "Transaction failed: {0}",
                 [Keys.Retry] = "Retry",
                 [Keys.Close] = "Close",
                 [Keys.GasConfiguration] = "Gas Configuration",
@@ -83,6 +87,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.Processing] = "Procesando transacción...",
                 [Keys.TransactionSent] = "Transacción enviada exitosamente",
                 [Keys.TransactionFailed] = "Transacción fallida",
+                [Keys.TransactionFailedToSend] = "La transacción no se pudo enviar.",
+                [Keys.TransactionFailedWithReason] = "Transacción fallida: {0}",
                 [Keys.Retry] = "Reintentar",
                 [Keys.Close] = "Cerrar",
                 [Keys.GasConfiguration] = "Configuración de Gas",
