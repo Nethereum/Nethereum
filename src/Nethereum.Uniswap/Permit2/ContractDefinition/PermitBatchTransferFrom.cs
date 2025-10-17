@@ -7,7 +7,7 @@ namespace Nethereum.Uniswap.Core.Permit2.ContractDefinition
     public partial class PermitBatchTransferFrom : PermitBatchTransferFromBase {
 
         [Parameter("tuple[]", "permitted", 1, "TokenPermissions[]")]
-        public virtual new List<TokenPermissions> Permitted { get; set; }
+        public new virtual List<TokenPermissions> Permitted { get; set; }
 
     }
 }

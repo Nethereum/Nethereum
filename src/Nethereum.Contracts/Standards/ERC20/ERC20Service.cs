@@ -84,6 +84,7 @@ namespace Nethereum.Contracts.Standards.ERC20
 
             }
 
+          
             var multiqueryHandler = this._ethApiContractService.GetMultiQueryHandler(multiCallAddress);
             var results = await multiqueryHandler.MultiCallAsync(numberOfCallsPerRequest, balanceCalls.ToArray()).ConfigureAwait(false);
             return balanceCalls.Select(x => new TokenOwnerBalance()

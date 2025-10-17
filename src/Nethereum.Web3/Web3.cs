@@ -110,7 +110,7 @@ namespace Nethereum.Web3
             TransactionManager.DefaultGas = LegacyTransaction.DEFAULT_GAS_LIMIT;
             TransactionManager.DefaultGasPrice = LegacyTransaction.DEFAULT_GAS_PRICE;
 
-           
+
 #endif
         }
 
@@ -118,7 +118,7 @@ namespace Nethereum.Web3
         public static string GetAddressFromPrivateKey(string privateKey)
         {
 
-            return EthECKey.GetPublicAddress(privateKey);  
+            return EthECKey.GetPublicAddress(privateKey);
 
         }
 #endif
@@ -161,6 +161,6 @@ namespace Nethereum.Web3
             Client = new RpcClient(new Uri(url), authenticationHeader, null, null, log);
         }
 
-         
+
     }
 }

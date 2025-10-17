@@ -20,7 +20,7 @@
         public static string MainnetPositionManagerV4 = "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e";
         public static string MainnetQuoterV4 = "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203";
         public static string MainnetStateViewV4 = "0x7ffe42c4a5deea5b0fec41c94c136cf115597227";
-        public static string MainnetUsdcWhale = "0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa";
+       
 
 
         public static string OptimismPoolManagerV4 = "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3";
