@@ -5,12 +5,12 @@
 		<Description>A lightweight and AOT-friendly JSON-RPC client for Ethereum, using System.Text.Json. Part of the Nethereum suite.</Description>
 		<AssemblyTitle>Nethereum.JsonRpc.SystemTextJsonRpcClient</AssemblyTitle>
 		<VersionPrefix>$(NethereumVersion)</VersionPrefix>
-		<TargetFrameworks>net9.0</TargetFrameworks>
+		<TargetFrameworks>net9.0;net10.0</TargetFrameworks>
 		<AssemblyName>Nethereum.JsonRpc.SystemTextJsonRpcClient</AssemblyName>
 		<PackageId>Nethereum.JsonRpc.SystemTextJsonRpcClient</PackageId>
 		<PackageTags>Ethereum;JsonRpc;Nethereum;System.Text.Json;AOT;Client;Web3</PackageTags>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
 		<ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
