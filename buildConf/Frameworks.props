@@ -9,24 +9,24 @@
     <TargetUnityNet472AOT>false</TargetUnityNet472AOT>
     <TargetUnityAOT>false</TargetUnityAOT>
     <TargetUnityAOT Condition="'$(TargetUnityNet461AOT)' == 'true' Or '$(TargetUnityNet472AOT)' == 'true'">true</TargetUnityAOT>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard2.0;net35;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard2.0;net451;net461;net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard2.0;net35;net451;net461;net6.0;net8.0;net9.0;net10.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard2.0;net451;net461;net6.0;net8.0;net9.0;net10.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworksUnitySupport>
-    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">net6.0;net8.0;net9.0</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNetCore)'== 'true'">net6.0;net8.0;net9.0;net10.0</DefaultFrameworksUnitySupport>
     <DefaultFrameworksUnitySupport Condition=" '$(TargetNetStandard)'== 'true'">netstandard2.0</DefaultFrameworksUnitySupport>
-    <DefaultFrameworks>net451;net461;netstandard2.0;net6.0;net8.0;net9.0</DefaultFrameworks>
+    <DefaultFrameworks>net451;net461;netstandard2.0;net6.0;net8.0;net9.0;net10.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</DefaultFrameworks>
-    <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</DefaultFrameworks>
+    <DefaultFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0;net10.0</DefaultFrameworks>
     <DefaultFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</DefaultFrameworks>
-    <UIFrameworks>netstandard2.0;net6.0;net472;net8.0;net9.0</UIFrameworks>
-    <UIFrameworksCore>net6.0;net8.0;net9.0</UIFrameworksCore>
-    <UIFrameworksBlazor>net6.0;net8.0;net9.0</UIFrameworksBlazor>
-    <ENSFrameworks>net451;net461;netstandard2.0;net6.0;net8.0;net9.0</ENSFrameworks>
+    <UIFrameworks>netstandard2.0;net6.0;net472;net8.0;net9.0;net10.0</UIFrameworks>
+    <UIFrameworksCore>net6.0;net8.0;net9.0;net10.0</UIFrameworksCore>
+    <UIFrameworksBlazor>net6.0;net8.0;net9.0;net10.0</UIFrameworksBlazor>
+    <ENSFrameworks>net451;net461;netstandard2.0;net6.0;net8.0;net9.0;net10.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNet461)' == 'true'">net461</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNet472)' == 'true'">net472</ENSFrameworks>
-    <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</ENSFrameworks>
+    <ENSFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0;net10.0</ENSFrameworks>
     <ENSFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</ENSFrameworks>
 
     <HdWalletFrameworks>netstandard2.0;net452;net461;</HdWalletFrameworks>
@@ -34,25 +34,25 @@
     <HdWalletFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetCore)' == 'true'">netstandard2.0</HdWalletFrameworks>
     <HdWalletFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0</HdWalletFrameworks>
-    <ExternalSignerFrameworks>netstandard2.0;net461;net6.0;net8.0;net9.0</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks>netstandard2.0;net461;net6.0;net8.0;net9.0;net10.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ExternalSignerFrameworks>
-    <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</ExternalSignerFrameworks>
+    <ExternalSignerFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0;net10.0</ExternalSignerFrameworks>
     <ExternalSignerFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ExternalSignerFrameworks>
     <UnityFrameworks>net461;net472;netstandard2.1</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</UnityFrameworks>
     <UnityFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.1;</UnityFrameworks>
-    <IpcWebSocketsFrameworks>net461;netstandard2.0;net6.0;net8.0;net9.0</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard2.0;net6.0;net8.0;net9.0;net10.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</IpcWebSocketsFrameworks>
-    <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0;net10.0</IpcWebSocketsFrameworks>
     <IpcWebSocketsFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</IpcWebSocketsFrameworks>
 
-    <ReactiveFrameworks>net461;netstandard2.0;net6.0;net8.0;net9.0</ReactiveFrameworks>
+    <ReactiveFrameworks>net461;netstandard2.0;net6.0;net8.0;net9.0;net10.0</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNet472)' == 'true'">net472;</ReactiveFrameworks>
-    <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0</ReactiveFrameworks>
+    <ReactiveFrameworks Condition=" '$(TargetNetCore)' == 'true'">net6.0;net8.0;net9.0;net10.0</ReactiveFrameworks>
     <ReactiveFrameworks Condition=" '$(TargetNetStandard)' == 'true'">netstandard2.0;</ReactiveFrameworks>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -78,7 +78,7 @@
     </Reference>
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' Or  '$(TargetFramework)' == 'netstandard2.0' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' Or  '$(TargetFramework)' == 'netcoreapp3.1' Or  '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net9.0' Or '$(TargetFramework)' == 'net10.0' Or  '$(TargetFramework)' == 'netstandard1.1' Or '$(TargetFramework)' == 'net35' Or  '$(TargetFramework)' == 'netstandard2.0' ">
     <DefineConstants>$(DefineConstants);PCL</DefineConstants>
   </PropertyGroup>
 
@@ -86,7 +86,7 @@
     <Reference Include="System" />
     <Reference Include="System.Numerics" />
     <Reference Include="Microsoft.CSharp" />
- 
+
   </ItemGroup>
 
 <!--Note Bouncy Portable is not included here to enable Web3.Lite-->
