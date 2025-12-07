@@ -52,7 +52,7 @@ namespace Nethereum.ABI.EIP712
             var encodedData = EncodeTypedData(json);
             return Sha3Keccack.Current.CalculateHash(encodedData);
         }
-
+         
         /// <summary>
         /// Encode typed data using a non standard json, which may not include the Domain type and uses a different key selector for message
         /// </summary>
@@ -60,6 +60,12 @@ namespace Nethereum.ABI.EIP712
         {
             var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData<DomainType>(json, messageKeySelector);
             return EncodeTypedDataRaw(typedDataRaw);
+        }
+
+        public byte[] EncodeAndHashTypedData<TDomain>(string json, string messageKeySelector = "message")
+        {
+            var encodedData = EncodeTypedData<TDomain>(json, messageKeySelector);
+            return Sha3Keccack.Current.CalculateHash(encodedData);
         }
 
         public byte[] EncodeAndHashTypedData<T, TDomain>(T message, TypedData<TDomain> typedData)
@@ -101,13 +107,23 @@ namespace Nethereum.ABI.EIP712
         public byte[] HashDomainSeparator<TDomain>(TypedData<TDomain> typedData)
         {
             typedData.EnsureDomainRawValuesAreInitialised();
+            return HashDomainSeparator((TypedDataRaw)typedData);
+        }
+
+        public byte[] HashDomainSeparator(TypedDataRaw typedData)
+        {
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            if (typedData.DomainRawValues == null)
+            {
+                throw new ArgumentException("Typed data domain values have not been initialised.", nameof(typedData));
+            }
+
             using (var memoryStream = new MemoryStream())
             using (var writer = new BinaryWriter(memoryStream))
             {
                 writer.Write(HashStruct(typedData.Types, "EIP712Domain", typedData.DomainRawValues));
                 writer.Flush();
-                var result = memoryStream.ToArray();
-                return result;
+                return memoryStream.ToArray();
             }
         }
 
@@ -135,6 +151,57 @@ namespace Nethereum.ABI.EIP712
         {
             typedData.EnsureDomainRawValuesAreInitialised();
             return EncodeType(typedData.Types, "EIP712Domain");
+        }
+
+        public TypedDataHashResult CalculateTypedDataHashes<TDomain>(TypedData<TDomain> typedData)
+        {
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            typedData.EnsureDomainRawValuesAreInitialised();
+            if (typedData.Message == null)
+            {
+                throw new ArgumentException("Typed data message has not been initialised. Call SetMessage before calculating hashes.", nameof(typedData));
+            }
+
+            return CalculateTypedDataHashes((TypedDataRaw)typedData);
+        }
+
+        public TypedDataHashResult CalculateTypedDataHashes<TDomain, TMessage>(TMessage message, TypedData<TDomain> typedData)
+        {
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            typedData.SetMessage(message);
+            return CalculateTypedDataHashes(typedData);
+        }
+
+        public TypedDataHashResult CalculateTypedDataHashes(string json)
+        {
+            var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData(json);
+            return CalculateTypedDataHashes(typedDataRaw);
+        }
+
+        public TypedDataHashResult CalculateTypedDataHashes<TDomain>(string json, string messageKeySelector = "message")
+        {
+            var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData<TDomain>(json, messageKeySelector);
+            return CalculateTypedDataHashes(typedDataRaw);
+        }
+
+        public TypedDataHashResult CalculateTypedDataHashes(TypedDataRaw typedData)
+        {
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            if (typedData.DomainRawValues == null)
+            {
+                throw new ArgumentException("Typed data domain values have not been initialised.", nameof(typedData));
+            }
+
+            if (typedData.Message == null)
+            {
+                throw new ArgumentException("Typed data message has not been initialised.", nameof(typedData));
+            }
+
+            var domainHash = HashDomainSeparator(typedData);
+            var messageHash = HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message);
+            var typedDataHash = Sha3Keccack.Current.CalculateHash(EncodeTypedDataRaw(typedData));
+
+            return new TypedDataHashResult(domainHash, messageHash, typedDataHash);
         }
 
         private byte[] HashStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
@@ -341,5 +408,19 @@ namespace Nethereum.ABI.EIP712
 
             return result;
         }
+    }
+
+    public sealed class TypedDataHashResult
+    {
+        public TypedDataHashResult(byte[] domainHash, byte[] messageHash, byte[] typedDataHash)
+        {
+            DomainHash = domainHash ?? throw new ArgumentNullException(nameof(domainHash));
+            MessageHash = messageHash ?? throw new ArgumentNullException(nameof(messageHash));
+            TypedDataHash = typedDataHash ?? throw new ArgumentNullException(nameof(typedDataHash));
+        }
+
+        public byte[] DomainHash { get; }
+        public byte[] MessageHash { get; }
+        public byte[] TypedDataHash { get; }
     }
 }
