@@ -1,18 +1,22 @@
-﻿using System;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Nethereum.ABI.EIP712;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Signer.Trezor.Abstractions;
+using Nethereum.Signer.Trezor;
 using Nethereum.Web3.Accounts;
-using Org.BouncyCastle.Asn1.Ocsp;
-using Trezor.Net.Contracts.Ethereum;
+using System;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
+using Trezor.Net;
+using Account = Nethereum.Web3.Accounts.Account;
 
 // ReSharper disable AsyncConverter.AsyncWait
 
@@ -20,15 +24,51 @@ namespace Nethereum.Signer.Trezor.Console
 {
     class Program
     {
-        private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => _ = builder.AddDebug().SetMinimumLevel(LogLevel.Trace));
+        private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder
+                .AddSimpleConsole(options =>
+                {
+                    options.IncludeScopes = true;
+                    options.SingleLine = true;
+                    options.TimestampFormat = "HH:mm:ss ";
+                })
+                .AddDebug()
+                .SetMinimumLevel(LogLevel.Debug);
+        });
+        private static readonly ITrezorPromptHandler _promptHandler = new ConsolePromptHandler();
+
+        private static ILogger logger = _loggerFactory.CreateLogger<Program>();
 
         static async Task Main(string[] args)
         {
-            await TestMessageSigningAsync();
-            await TestDeployment1559Async();
-            await TestDeploymentAsync();
-            await TestTransactionSigning();
-            await TestTransferTokenSigning();
+            var signer = await CreateSignerAsync();
+
+            await TestMessageSigningAsync(signer);
+            await TestTypedDataSigningAsync(signer);
+            await TestDeployment1559Async(signer);
+            //await TestDeploymentAsync(signer);
+            await TestTransactionSigning(signer);
+            await TestTransferTokenSigning(signer);
+        }
+
+        private static async Task<TrezorSessionExternalSigner> CreateSignerAsync()
+        {
+            logger.LogInformation("Creating Trezor Signer...");   
+            var platformProviders = new NethereumTrezorManagerBrokerFactory.PlatformDeviceFactoryProviders();
+            // TODO: assign platformProviders.LinuxProvider/MacProvider/AndroidProvider with custom implementations when targeting those OSes.
+            logger.LogInformation("Creating Trezor Broker...");
+            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateDefault(_promptHandler, _loggerFactory, platformProviders);
+            logger.LogInformation("Waiting for Trezor Device...");
+            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
+            var signer = new TrezorSessionExternalSigner(trezorManager, 0);
+            logger.LogInformation("Initializing Trezor Signer...");
+            await signer.InitializeAsync();
+            var address = await signer.GetAddressAsync();
+            System.Console.WriteLine($"Trezor Address: {address}");
+            logger.LogInformation($"Using Trezor Address: {address}");
+            logger.LogInformation("Trezor Signer is ready.");
+            return signer;
         }
 
         /*
@@ -57,23 +97,25 @@ namespace Nethereum.Signer.Trezor.Console
         limb
         knock
         */
-        public static async Task TestMessageSigningAsync()
+        public static async Task TestMessageSigningAsync(TrezorSessionExternalSigner signer)
         {
-            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
-            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
-
-
-            await trezorManager.InitializeAsync();
-
-            var signer = new TrezorExternalSigner(trezorManager, 0);
+            System.Console.WriteLine("Testing Message Signing...");
             var address = await signer.GetAddressAsync();
-            var messageSignature = await signer.SignAsync(Encoding.UTF8.GetBytes("Hello"));
+            var message = "hello hello hello";
+            var padmessagetimes = 100;
+            for (int i = 0; i < padmessagetimes; i++)
+            {
+                message += " hello";
+            }
+            var messageSignature = await signer.SignAsync(Encoding.UTF8.GetBytes(message));
 
             var nethereumMessageSigner = new Nethereum.Signer.EthereumMessageSigner();
-            var nethereumMessageSignature = nethereumMessageSigner.EncodeUTF8AndSign("Hello", new EthECKey(
+            var nethereumMessageSignature = nethereumMessageSigner.EncodeUTF8AndSign(message, new EthECKey(
                 "0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29"));
             System.Console.WriteLine("Trezor: " + EthECDSASignature.CreateStringSignature(messageSignature));
             System.Console.WriteLine("Nethereum: " + nethereumMessageSignature);
+            var recovered = nethereumMessageSigner.EncodeUTF8AndEcRecover(message, messageSignature.CreateStringSignature());
+            System.Console.WriteLine("Recovered: " + recovered);
             System.Console.WriteLine(EthECDSASignature.CreateStringSignature(messageSignature).IsTheSameHex(nethereumMessageSignature));
 
         }
@@ -91,34 +133,99 @@ namespace Nethereum.Signer.Trezor.Console
         }
 
 
-        public static async Task TestDeployment1559Async()
+        private static async Task TestTypedDataSigningAsync(TrezorSessionExternalSigner signer)
         {
-            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
-            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
+            const string typedDataJson = @"{
+  ""types"": {
+    ""EIP712Domain"": [
+      { ""name"": ""name"", ""type"": ""string"" },
+      { ""name"": ""version"", ""type"": ""string"" },
+      { ""name"": ""chainId"", ""type"": ""uint256"" },
+      { ""name"": ""verifyingContract"", ""type"": ""address"" }
+    ],
+    ""Group"": [
+      { ""name"": ""name"", ""type"": ""string"" },
+      { ""name"": ""members"", ""type"": ""Person[]"" }
+    ],
+    ""Mail"": [
+      { ""name"": ""from"", ""type"": ""Person"" },
+      { ""name"": ""to"", ""type"": ""Person[]"" },
+      { ""name"": ""contents"", ""type"": ""string"" }
+    ],
+    ""Person"": [
+      { ""name"": ""name"", ""type"": ""string"" },
+      { ""name"": ""wallets"", ""type"": ""address[]"" }
+    ]
+  },
+  ""primaryType"": ""Mail"",
+  ""domain"": {
+    ""name"": ""Ether Mail"",
+    ""version"": ""1"",
+    ""chainId"": 1,
+    ""verifyingContract"": ""0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC""
+  },
+  ""message"": {
+    ""from"": {
+      ""name"": ""Cow"",
+      ""wallets"": [
+        ""0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"",
+        ""0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF""
+      ]
+    },
+    ""to"": [
+      {
+        ""name"": ""Bob"",
+        ""wallets"": [
+          ""0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"",
+          ""0xB0BdaBea57B0BDABeA57b0bdABEA57b0BDabEa57"",
+          ""0xB0B0b0b0b0b0B000000000000000000000000000""
+        ]
+      }
+    ],
+    ""contents"": ""Hello, Bob!""
+  }
+}";
 
+            System.Console.WriteLine("Signing typed data (JSON) with Trezor...");
+            var signature = await signer.SignTypedDataJsonAsync(typedDataJson);
 
-            await trezorManager.InitializeAsync();
-            var signer = new TrezorExternalSigner(trezorManager, 0);
+            var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData(typedDataJson);
+            var hashResult = Eip712TypedDataEncoder.Current.CalculateTypedDataHashes(typedDataRaw);
+            System.Console.WriteLine("Typed Data DomainHash: " + hashResult.DomainHash.ToHex());
+            System.Console.WriteLine("Typed Data MessageHash: " + (hashResult.MessageHash?.ToHex() ?? "null"));
+            System.Console.WriteLine("Typed Data Hash: " + hashResult.TypedDataHash.ToHex());
+            System.Console.WriteLine("Expected Hash: a85c2e2b118698e88db68a8105b794a8cc7cec074e89ef991cb4f5f533819cc2");
 
+            var nethereumSigner = new Nethereum.Signer.EIP712.Eip712TypedDataSigner();
+            var typedSignature = EthECDSASignature.CreateStringSignature(signature);
+            var recovered = nethereumSigner.RecoverFromSignatureHashV4(hashResult.TypedDataHash, typedSignature);
+
+            System.Console.WriteLine("Typed Data Signature: " + typedSignature);
+            System.Console.WriteLine("Recovered Address: " + recovered);
+        }
+
+        public static async Task TestDeployment1559Async(TrezorSessionExternalSigner signer)
+        {
+            System.Console.WriteLine("Testing Deployment Signing EIP-1559...");
             var account = new ExternalAccount(signer, 1);
             await account.InitialiseAsync();
+            var address = await signer.GetAddressAsync();
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             account.InitialiseDefaultTransactionManager(rpcClient);
             var web3 = new Web3.Web3(account, rpcClient);
             var deployment = new StandardTokenDeployment();
-            deployment.FromAddress = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399";
+           // deployment.FromAddress = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399";
             deployment.TotalSupply = 1000;
             deployment.Nonce = 1;
             deployment.MaxPriorityFeePerGas = 10;
             deployment.MaxFeePerGas = 10;
             deployment.Gas = 21000;
-
-            var transactionInput = deployment.CreateTransactionInput();
-            transactionInput.To = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399";
+            
 
             var signature = await web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SignTransactionAsync(deployment);
 
-            var web32 = new Web3.Web3(new Account("0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29", 1));
+            var web32 = new Web3.Web3(new Web3.Accounts.Account("0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29", 1));
+            deployment.FromAddress = web32.TransactionManager.Account.Address;
             var signatureNethereum = await web32.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SignTransactionAsync(deployment);
 
             System.Console.WriteLine("Trezor: " + signature);
@@ -126,33 +233,29 @@ namespace Nethereum.Signer.Trezor.Console
             System.Console.WriteLine(signature.IsTheSameHex(signatureNethereum));
         }
 
-        public static async Task TestDeploymentAsync()
+        public static async Task TestDeploymentAsync(TrezorSessionExternalSigner signer)
         {
-            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
-            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
-
-
-            await trezorManager.InitializeAsync();
-            var signer = new TrezorExternalSigner(trezorManager, 0);
-
+            System.Console.WriteLine("Testing Deployment Signing...");
             var account = new ExternalAccount(signer, 1);
             await account.InitialiseAsync();
+            var address = await signer.GetAddressAsync();
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
             account.InitialiseDefaultTransactionManager(rpcClient);
             var web3 = new Web3.Web3(account, rpcClient);
             var deployment = new StandardTokenDeployment();
-            deployment.FromAddress = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399";
+            
             deployment.TotalSupply = 1000;
             deployment.Nonce = 1;
             deployment.GasPrice = 10;
             deployment.Gas = 21000;
 
-            var transactionInput = deployment.CreateTransactionInput();
-            transactionInput.To = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399";
+          
+            
 
             var signature = await web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SignTransactionAsync(deployment);
 
             var web32 = new Web3.Web3(new Account("0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29", 1));
+            deployment.FromAddress = web32.TransactionManager.Account.Address;
             var signatureNethereum = await web32.Eth.GetContractDeploymentHandler<StandardTokenDeployment>().SignTransactionAsync(deployment);
 
             System.Console.WriteLine("Trezor: " + signature);
@@ -161,15 +264,12 @@ namespace Nethereum.Signer.Trezor.Console
 
         }
 
-        public static async Task TestTransactionSigning()
+        public static async Task TestTransactionSigning(TrezorSessionExternalSigner signer)
         {
-            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
-            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
-            await trezorManager.InitializeAsync();
-            var signer = new TrezorExternalSigner(trezorManager, 0);
-
+            System.Console.WriteLine("Testing Transaction Signing...");
             var account = new ExternalAccount(signer, 1);
             await account.InitialiseAsync();
+            var address = await signer.GetAddressAsync();
             account.InitialiseDefaultTransactionManager(new RpcClient(new Uri("http://localhost:8545")));
 
             var tx = new TransactionInput()
@@ -179,12 +279,14 @@ namespace Nethereum.Signer.Trezor.Console
                 Gas = new HexBigInteger(21000),
                 To = "0x689c56aef474df92d44a1b70850f808488f9769c",
                 Value = new HexBigInteger(BigInteger.Parse("10000000000000000000")),
-                From = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399"
+                From = address,
+                
             };
             var signature = await account.TransactionManager.SignTransactionAsync(tx);
 
             var accountNethereum = new Account("0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29", 1);
             accountNethereum.TransactionManager.Client = new RpcClient(new Uri("http://localhost:8545"));
+            tx.From = accountNethereum.Address;
             var signatureNethereum = await accountNethereum.TransactionManager.SignTransactionAsync(tx);
             System.Console.WriteLine("Trezor: " + signature);
             System.Console.WriteLine("Nethereum: " + signatureNethereum);
@@ -208,15 +310,9 @@ namespace Nethereum.Signer.Trezor.Console
         }
 
 
-        public static async Task TestTransferTokenSigning()
+        public static async Task TestTransferTokenSigning(TrezorSessionExternalSigner signer)
         {
-            var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateWindowsHidUsb(GetPin, GetPassphrase, _loggerFactory);
-            var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
-
-
-            await trezorManager.InitializeAsync();
-            var signer = new TrezorExternalSigner(trezorManager, 0);
-
+            System.Console.WriteLine("Testing Transfer Token Signing...");
             var account = new ExternalAccount(signer, 1);
             await account.InitialiseAsync();
             var rpcClient = new RpcClient(new Uri("http://localhost:8545"));
@@ -229,12 +325,13 @@ namespace Nethereum.Signer.Trezor.Console
                 Gas = 21000,
                 To = "0x689c56aef474df92d44a1b70850f808488f9769c",
                 Value = 100,
-                FromAddress = "0x6A1D4583b83E5ef91EeA1E591aD333BD04853399"
+               
             };
 
             var signature = await web3.Eth.GetContractTransactionHandler<TransferFunction>().SignTransactionAsync("0x6810e776880c02933d47db1b9fc05908e5386b96", tx);
 
             var web32 = new Web3.Web3(new Account("0x2e14c29aaecd1b7c681154d41f50c4bb8b6e4299a431960ed9e860e39cae6d29", 1));
+            tx.FromAddress = web32.TransactionManager.Account.Address;
             var signatureNethereum = await web32.Eth.GetContractTransactionHandler<TransferFunction>()
                 .SignTransactionAsync("0x6810e776880c02933d47db1b9fc05908e5386b96", tx);
 
@@ -242,37 +339,6 @@ namespace Nethereum.Signer.Trezor.Console
             System.Console.WriteLine("Nethereum: " + signatureNethereum);
             System.Console.WriteLine(signature.IsTheSameHex(signatureNethereum));
 
-        }
-
-
-        /// <summary>
-        /// When entering your pin remember that the order of the keys is in the format of:
-        /// 
-        /// 7 8 9
-        /// 4 5 6
-        /// 1 2 3
-        /// 
-        /// like in your keyboard
-        /// 
-        /// so if it is displayed
-        /// 9 8 7
-        /// 5 6 4
-        /// 3 1 2
-        /// 
-        /// and you want to enter 2 2 2 2
-        /// you will input 3 3 3 3 
-        /// </summary>
-
-        private async static Task<string> GetPin()
-        {
-            System.Console.WriteLine("Enter PIN based on Trezor values: ");
-            return System.Console.ReadLine().Trim();
-        }
-
-        private async static Task<string> GetPassphrase()
-        {
-            System.Console.WriteLine("Enter passphrase based on Trezor values: ");
-            return System.Console.ReadLine().Trim();
         }
     }
 }
