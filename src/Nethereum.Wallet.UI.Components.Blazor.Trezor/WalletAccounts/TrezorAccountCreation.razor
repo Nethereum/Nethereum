@@ -1,0 +1,443 @@
+@using MudBlazor
+@using Nethereum.Wallet.Trezor
+@using static Nethereum.Wallet.UI.Components.Trezor.Localization.TrezorAccountCreationLocalizer
+@inject IComponentLocalizer<TrezorAccountCreationViewModel> Localizer
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.DisplayName)"
+                  Subtitle="@Localizer.GetString(Keys.Description)"
+                  Steps="@formSteps"
+                  CurrentStepIndex="@((int)CurrentStep)"
+                  ExitText="@GetExitText()"
+                  BackText="@Localizer.GetString(Keys.BackButtonText)"
+                  ContinueText="@Localizer.GetString(Keys.ContinueButtonText)"
+                  PrimaryText="@Localizer.GetString(Keys.CreateAccountButtonText)"
+                  ShowBack="@(CurrentStep > FormStep.Connect)"
+                  ShowContinue="@(CurrentStep != FormStep.Confirm)"
+                  ShowPrimary="@(CurrentStep == FormStep.Confirm)"
+                  ContinueDisabled="@(!CanProceedToNextStep())"
+                  PrimaryDisabled="@(!ViewModel.CanCreateAccount)"
+                  OnExit="@BackToAccountSelection"
+                  OnBack="@GoToPreviousStep"
+                  OnContinue="@HandleContinue"
+                  OnPrimary="@CreateAccount">
+
+    <div class="wallet-step-description">
+        <p>@GetStepDescription()</p>
+    </div>
+
+    <div>
+        @switch (CurrentStep)
+        {
+            case FormStep.Connect:
+                <WalletContentSection Class="spacing-tight">
+                    <WalletTextField @bind-Value="ViewModel.WalletName"
+                                     LabelKey="@Keys.WalletNameLabel"
+                                     PlaceholderKey="@Keys.WalletNamePlaceholder"
+                                     HelpKey="@Keys.WalletNameHelper"
+                                     Localizer="@Localizer" />
+                </WalletContentSection>
+
+                <WalletContentSection Class="spacing-tight">
+                    <WalletInfoCard Icon="@Icons.Material.Filled.Usb"
+                                    Title="@Localizer.GetString(Keys.StepConnectLabel)"
+                                    Description="@Localizer.GetString(Keys.ConnectInstruction)" />
+                </WalletContentSection>
+
+                <WalletContentSection Class="spacing-tight">
+                    <MudStack Spacing="2">
+                        <MudNumericField T="int"
+                                         @bind-Value="ViewModel.DiscoveryStartIndex"
+                                         Label="@Localizer.GetString(Keys.StartIndexLabel)"
+                                         Min="0"
+                                         Variant="Variant.Outlined" />
+                        <MudButton Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   Disabled="@IsScanDisabled()"
+                                   OnClick="HandleScanAddresses"
+                                   Class="wallet-touch-target">
+                            @if (isScanning)
+                            {
+                                <MudProgressCircular Indeterminate="true" Class="me-2" />
+                            }
+                            @Localizer.GetString(Keys.ScanButtonText)
+                        </MudButton>
+
+                        @if (isScanning)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.ScanningProgressMessage)
+                            </MudText>
+                        }
+
+                        @if (!string.IsNullOrEmpty(scanError))
+                        {
+                            <MudAlert Severity="Severity.Error">@scanError</MudAlert>
+                        }
+                        else if (ViewModel.Previews.Any())
+                        {
+                            <MudAlert Severity="Severity.Success">
+                                @Localizer.GetString(Keys.ScanSuccessMessage)
+                            </MudAlert>
+                        }
+
+                        <MudDivider Class="my-2" />
+
+                        <MudStack Spacing="1">
+                            <MudNumericField T="int"
+                                             @bind-Value="ViewModel.SingleIndexInput"
+                                             Label="@Localizer.GetString(Keys.SingleIndexLabel)"
+                                             Min="0"
+                                             Variant="Variant.Outlined" />
+                            <MudButton Color="Color.Secondary"
+                                       Variant="Variant.Outlined"
+                                       Disabled="@IsSingleIndexDisabled()"
+                                       OnClick="HandleLoadSingleIndex"
+                                       Class="wallet-touch-target">
+                                @Localizer.GetString(Keys.LoadIndexButtonText)
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                </WalletContentSection>
+                break;
+
+            case FormStep.Select:
+                <WalletContentSection Class="spacing-tight">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.subtitle2" FontWeight="FontWeight.Bold">
+                            @Localizer.GetString(Keys.AccountPreviewTitle)
+                        </MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @Localizer.GetString(Keys.AccountPreviewDescription)
+                        </MudText>
+                    </MudStack>
+                </WalletContentSection>
+
+                @if (!ViewModel.Previews.Any())
+                {
+                    <WalletContentSection Class="spacing-tight">
+                        <MudAlert Severity="Severity.Info">
+                            @Localizer.GetString(Keys.NoAddressesDiscovered)
+                        </MudAlert>
+                    </WalletContentSection>
+                }
+                else
+                {
+                    <WalletContentSection Class="spacing-tight">
+                        <MudStack Spacing="@GetPreviewSpacing()">
+                            @foreach (var preview in ViewModel.Previews)
+                            {
+                                <MudCard Class="@GetPreviewCardClasses(preview)"
+                                         Style="cursor: pointer;"
+                                         @onclick="@(() => SelectPreview(preview))">
+                                    <MudCardContent Class="@(IsCompactLayout ? "pa-2" : "pa-3")">
+                                        <MudStack Spacing="@(IsCompactLayout ? 1 : 2)">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                                    <MudChip T="string"
+                                                             Color="@(IsSelected(preview) ? Color.Primary : Color.Default)"
+                                                             Variant="Variant.Outlined"
+                                                             Class="wallet-touch-target">
+                                                        @($"#{preview.Index}")
+                                                    </MudChip>
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                        @GetDerivationPath(preview.Index)
+                                                    </MudText>
+                                                </MudStack>
+                                                @if (IsSelected(preview))
+                                                {
+                                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                                                }
+                                            </MudStack>
+
+                                            <WalletAddressDisplay Address="@preview.Address"
+                                                                  ComponentWidth="@ComponentWidth"
+                                                                  IsCompact="@IsCompactLayout"
+                                                                  ShowFullAddress="@(ComponentWidth >= 720)"
+                                                                  ShowCopyButton="false" />
+                                        </MudStack>
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+                        </MudStack>
+                    </WalletContentSection>
+                }
+
+                <WalletContentSection Class="spacing-tight">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.subtitle2">
+                            @Localizer.GetString(Keys.SelectedAddressLabel)
+                        </MudText>
+                        @if (string.IsNullOrEmpty(ViewModel.SelectedAddress))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localizer.GetString(Keys.SelectedAddressPlaceholder)
+                            </MudText>
+                        }
+                        else
+                        {
+                            <WalletAddressDisplay Address="@ViewModel.SelectedAddress"
+                                                  ComponentWidth="@ComponentWidth"
+                                                  IsCompact="@IsCompactLayout"
+                                                  ShowFullAddress="true" />
+                        }
+                    </MudStack>
+                </WalletContentSection>
+                break;
+
+            case FormStep.Confirm:
+                <WalletFormSection Title="@Localizer.GetString(Keys.AccountLabelField)">
+                    <WalletTextField @bind-Value="ViewModel.AccountLabel"
+                                     LabelKey="@Keys.AccountLabelField"
+                                     HelpKey="@Keys.AccountLabelHelper"
+                                     Localizer="@Localizer" />
+                </WalletFormSection>
+
+                <WalletFormSection Title="@Localizer.GetString(Keys.ConfirmSummaryTitle)">
+                    <MudPaper Class="pa-3">
+                        <MudStack Spacing="2">
+                            <MudStack>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(Keys.SelectedAddressLabel)</MudText>
+                                <MudText Typo="Typo.body1">@ViewModel.SelectedAddress</MudText>
+                            </MudStack>
+                            <MudStack>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(Keys.DeviceSummaryLabel)</MudText>
+                                <MudText Typo="Typo.body1">@ViewModel.DeviceId</MudText>
+                            </MudStack>
+                            <MudStack>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(Keys.IndexSummaryLabel)</MudText>
+                                <MudText Typo="Typo.body1">@ViewModel.SelectedIndex</MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+                </WalletFormSection>
+                break;
+        }
+    </div>
+
+</WalletFormLayout>
+
+@code {
+    [Parameter] public required TrezorAccountCreationViewModel ViewModel { get; set; }
+    [Parameter] public EventCallback OnAccountCreated { get; set; }
+    [Parameter] public EventCallback OnBackToAccountSelection { get; set; }
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public bool ShowBackToAccountSelection { get; set; } = true;
+    [Parameter] public bool ShowBackToLogin { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 400;
+
+    private enum FormStep
+    {
+        Connect = 0,
+        Select = 1,
+        Confirm = 2
+    }
+
+    private FormStep CurrentStep { get; set; } = FormStep.Connect;
+    private List<WalletFormStep> formSteps = new();
+    private bool isScanning;
+    private string? scanError;
+
+    protected override void OnInitialized()
+    {
+        ViewModel.Reset();
+        ViewModel.PrepareForNewDevice();
+        SetupFormSteps();
+    }
+
+    private void SetupFormSteps()
+    {
+        formSteps = new List<WalletFormStep>
+        {
+            new() { LocalizationKey = Keys.StepConnectLabel, Icon = Icons.Material.Filled.Usb },
+            new() { LocalizationKey = Keys.StepSelectLabel, Icon = Icons.Material.Filled.ListAlt },
+            new() { LocalizationKey = Keys.StepConfirmLabel, Icon = Icons.Material.Filled.CheckCircle }
+        };
+    }
+
+    private string GetExitText()
+    {
+        if (ShowBackToLogin)
+        {
+            return Localizer.GetString(Keys.ExitButtonText);
+        }
+
+        if (ShowBackToAccountSelection)
+        {
+            return Localizer.GetString(Keys.ExitButtonText);
+        }
+
+        return Localizer.GetString(Keys.ExitButtonText);
+    }
+
+    private string GetStepDescription() =>
+        CurrentStep switch
+        {
+            FormStep.Connect => Localizer.GetString(Keys.Description),
+            FormStep.Select => Localizer.GetString(Keys.AccountPreviewTitle),
+            FormStep.Confirm => Localizer.GetString(Keys.ConfirmSummaryDescription),
+            _ => string.Empty
+        };
+
+    private async Task HandleScanAddresses()
+    {
+        if (IsScanDisabled())
+        {
+            return;
+        }
+
+        try
+        {
+            isScanning = true;
+            scanError = null;
+            StateHasChanged();
+
+            await ViewModel.DiscoverAsync(System.Threading.CancellationToken.None);
+            if (ViewModel.Previews.Any())
+            {
+                CurrentStep = FormStep.Select;
+            }
+        }
+        catch (Exception ex)
+        {
+            scanError = ex.Message;
+        }
+        finally
+        {
+            isScanning = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleLoadSingleIndex()
+    {
+        if (IsSingleIndexDisabled())
+        {
+            return;
+        }
+
+        try
+        {
+            isScanning = true;
+            scanError = null;
+            StateHasChanged();
+
+            await ViewModel.LoadSingleIndexAsync(System.Threading.CancellationToken.None);
+            if (ViewModel.Previews.Any())
+            {
+                CurrentStep = FormStep.Select;
+            }
+        }
+        catch (Exception ex)
+        {
+            scanError = ex.Message;
+        }
+        finally
+        {
+            isScanning = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool IsCompactLayout => IsCompactMode || ComponentWidth < 600;
+
+    private int GetPreviewSpacing() => IsCompactLayout ? 1 : 2;
+
+    private string GetPreviewCardClasses(TrezorDerivationPreview preview)
+    {
+        var classes = "wallet-card wallet-selectable-card";
+        if (IsCompactLayout)
+        {
+            classes += " wallet-card-compact";
+        }
+
+        if (IsSelected(preview))
+        {
+            classes += " wallet-card-selected";
+        }
+
+        return classes;
+    }
+
+    private static string GetDerivationPath(uint index) => $"m/44'/60'/{index}'/0/0";
+
+    private void SelectPreview(TrezorDerivationPreview preview)
+    {
+        ViewModel.SelectedIndex = preview.Index;
+        ViewModel.SelectedAddress = preview.Address;
+    }
+
+    private bool IsSelected(TrezorDerivationPreview preview) =>
+        ViewModel.SelectedAddress == preview.Address;
+
+    private bool CanProceedToNextStep() =>
+        CurrentStep switch
+        {
+            FormStep.Connect => ViewModel.Previews.Any(),
+            FormStep.Select => !string.IsNullOrEmpty(ViewModel.SelectedAddress),
+            FormStep.Confirm => ViewModel.CanCreateAccount,
+            _ => false
+        };
+
+    private void HandleContinue()
+    {
+        if (!CanProceedToNextStep())
+        {
+            return;
+        }
+
+        if (CurrentStep == FormStep.Connect)
+        {
+            CurrentStep = FormStep.Select;
+        }
+        else if (CurrentStep == FormStep.Select)
+        {
+            CurrentStep = FormStep.Confirm;
+        }
+    }
+
+    private void GoToPreviousStep()
+    {
+        if (CurrentStep == FormStep.Select)
+        {
+            CurrentStep = FormStep.Connect;
+        }
+        else if (CurrentStep == FormStep.Confirm)
+        {
+            CurrentStep = FormStep.Select;
+        }
+    }
+
+    private async Task CreateAccount()
+    {
+        if (!ViewModel.CanCreateAccount)
+        {
+            return;
+        }
+
+        if (OnAccountCreated.HasDelegate)
+        {
+            await OnAccountCreated.InvokeAsync();
+        }
+    }
+
+    private async Task BackToAccountSelection()
+    {
+        if (ShowBackToLogin && OnBackToLogin.HasDelegate)
+        {
+            await OnBackToLogin.InvokeAsync();
+            return;
+        }
+
+        if (ShowBackToAccountSelection && OnBackToAccountSelection.HasDelegate)
+        {
+            await OnBackToAccountSelection.InvokeAsync();
+        }
+    }
+
+    private bool IsScanDisabled() =>
+        isScanning || string.IsNullOrWhiteSpace(ViewModel.DeviceId);
+
+    private bool IsSingleIndexDisabled() =>
+        isScanning || string.IsNullOrWhiteSpace(ViewModel.DeviceId);
+}

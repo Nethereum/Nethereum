@@ -1,0 +1,233 @@
+@using MudBlazor
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Nethereum.Wallet
+@using Nethereum.Wallet.Trezor
+@using Nethereum.Wallet.UI.Components.Trezor.ViewModels
+@using Nethereum.Wallet.UI.Components.Trezor.Localization
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.AccountList
+@using System.ComponentModel
+@inject TrezorGroupDetailsViewModel ViewModel
+@inject IComponentLocalizer<TrezorGroupDetailsViewModel> Localizer
+@implements IDisposable
+
+<WalletFormLayout Title="@ViewModel.DisplayName"
+                  Subtitle="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.Subtitle)"
+                  ExitText="Back"
+                  BackText="Back"
+                  ContinueText=""
+                  PrimaryText=""
+                  ShowBack="false"
+                  ShowContinue="false"
+                  ShowPrimary="false"
+                  OnExit="HandleExit">
+
+    <ActionButtons>
+        @if (!ViewModel.IsEditingLabel)
+        {
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Edit"
+                                   Text="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.RenameButton)"
+                                   Disabled="@(ViewModel.IsLoading || ViewModel.IsAdding)"
+                                   OnClick="@ViewModel.BeginEditDeviceLabel" />
+        }
+        <WalletBarActionButton Icon="@Icons.Material.Filled.Refresh"
+                               Text="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.RefreshButton)"
+                               Disabled="@(ViewModel.IsLoading || ViewModel.IsAdding)"
+                               OnClick="ViewModel.RefreshAsync" />
+        <WalletBarActionButton Icon="@Icons.Material.Filled.Add"
+                               Text="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.AddAccountButton)"
+                               Disabled="@(ViewModel.IsLoading || ViewModel.IsAdding)"
+                               OnClick="ViewModel.AddNextAccountAsync" />
+    </ActionButtons>
+
+    <ChildContent>
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection Class="spacing-normal">
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                </div>
+            </WalletContentSection>
+        }
+        else
+        {
+            <WalletContentSection Class="spacing-tight" Title="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.DeviceOverviewTitle)">
+                <MudCard Class="wallet-card wallet-detail-card">
+                    <MudCardContent>
+                        <MudStack Spacing="@(IsCompactLayout ? 1 : 2)">
+                            <MudStack Row="true" Spacing="1">
+                                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">
+                                    @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.HardwareTypeLabel)
+                                </MudChip>
+                                <MudChip T="string" Color="Color.Secondary" Variant="Variant.Outlined" Size="Size.Small">
+                                    @($"{ViewModel.Accounts.Count} {Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.AccountCountLabel)}")
+                                </MudChip>
+                            </MudStack>
+
+                            <MudDivider />
+
+                            <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center">
+                                <MudStack>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.NextIndexLabel)
+                                    </MudText>
+                                    <MudText Typo="Typo.h6">@ViewModel.NextIndex</MudText>
+                                </MudStack>
+                                <MudStack>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.AccountListTitle)
+                                    </MudText>
+                                    <MudText Typo="Typo.h6">@ViewModel.Accounts.Count</MudText>
+                                </MudStack>
+                            </MudStack>
+
+                            @if (ViewModel.IsAdding)
+                            {
+                                <MudAlert Severity="Severity.Info" Dense="true">
+                                    @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.AddAccountSubtitle)
+                                </MudAlert>
+                            }
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </WalletContentSection>
+
+            @if (ViewModel.IsEditingLabel)
+            {
+                <WalletFormSection Title="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.DeviceLabelField)">
+                    <WalletTextField @bind-Value="ViewModel.EditingDeviceLabel"
+                                     LabelKey="@TrezorGroupDetailsLocalizer.Keys.DeviceLabelField"
+                                     HelpKey="@TrezorGroupDetailsLocalizer.Keys.DeviceLabelHelper"
+                                     Localizer="@Localizer" />
+                    <MudStack Row="true" Spacing="2" Class="mt-3">
+                        <MudButton Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   Disabled="@ViewModel.IsSavingLabel"
+                                   OnClick="ViewModel.SaveDeviceLabelAsync">
+                            @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.SaveDeviceLabelButton)
+                        </MudButton>
+                        <MudButton Color="Color.Default"
+                                   Variant="Variant.Text"
+                                   Disabled="@ViewModel.IsSavingLabel"
+                                   OnClick="@ViewModel.CancelEditDeviceLabel">
+                            @Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.CancelEditButton)
+                        </MudButton>
+                    </MudStack>
+                </WalletFormSection>
+            }
+
+            @if (ViewModel.Accounts.Any())
+            {
+                <WalletContentSection Class="spacing-tight" Title="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.AccountListTitle)">
+                    <MudStack Spacing="@(IsCompactLayout ? 1 : 2)">
+                        @foreach (var account in ViewModel.Accounts)
+                        {
+                            <MudStack Spacing="0">
+                                <AccountCard Account="account"
+                                             ShowActions="false"
+                                             AccountDisplayName="@GetAccountDisplayName(account)"
+                                             FormattedAddress="@account.Address"
+                                             AccountColor="Color.Primary"
+                                             IsCompactMode="@IsCompactLayout"
+                                             ComponentWidth="@ComponentWidth" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="pl-1 pb-2">
+                                    @FormatDerivationPath(account.Index)
+                                </MudText>
+                            </MudStack>
+                        }
+                    </MudStack>
+                </WalletContentSection>
+            }
+            else
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Info"
+                                    Title="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.EmptyStateTitle)"
+                                    Description="@Localizer.GetString(TrezorGroupDetailsLocalizer.Keys.EmptyStateDescription)"
+                                    Icon="@Icons.Material.Filled.Info" />
+                </WalletContentSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                                    Title="Error"
+                                    Description="@ViewModel.ErrorMessage"
+                                    Icon="@Icons.Material.Filled.Error" />
+                </WalletContentSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                                    Title="Success"
+                                    Description="@ViewModel.SuccessMessage"
+                                    Icon="@Icons.Material.Filled.CheckCircle" />
+                </WalletContentSection>
+            }
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public string? GroupId { get; set; }
+    [Parameter] public IReadOnlyList<IWalletAccount> Accounts { get; set; } = Array.Empty<IWalletAccount>();
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 400;
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnViewModelPropertyChanged;
+        }
+
+        if (!string.IsNullOrEmpty(GroupId))
+        {
+            await ViewModel.InitializeAsync(GroupId, Accounts);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(GroupId) &&
+            !string.Equals(GroupId, ViewModel.DeviceId, StringComparison.Ordinal))
+        {
+            await ViewModel.InitializeAsync(GroupId, Accounts);
+        }
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+
+    private bool IsCompactLayout => IsCompactMode || ComponentWidth < 600;
+
+    private static string GetAccountDisplayName(TrezorWalletAccount account) =>
+        string.IsNullOrWhiteSpace(account.Name) ? $"Account {account.Index}" : account.Name;
+
+    private static string FormatDerivationPath(uint index) => $"m/44'/60'/0'/0/{index}";
+}

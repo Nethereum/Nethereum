@@ -1,0 +1,109 @@
+@using System.Linq
+@using MudBlazor
+@using static Nethereum.Wallet.UI.Components.Blazor.Trezor.Prompts.TrezorPinPromptLocalizer
+@inject IComponentLocalizer<TrezorPinPrompt> Localizer
+
+<MudDialog Class="hardware-prompt-shell"
+           Options="@DialogOptions">
+    <DialogContent>
+        <div class="hardware-prompt-dialog">
+        <div class="hardware-prompt-header">
+            <MudAvatar Color="Color.Primary"
+                       Icon="@Icons.Material.Filled.Password"
+                       Size="Size.Large" />
+            <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h6">@Localizer.GetString(Keys.Title)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    @Localizer.GetString(Keys.Description)
+                </MudText>
+            </MudStack>
+        </div>
+
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            @Localizer.GetString(Keys.Helper)
+        </MudAlert>
+
+        <div class="pin-display">
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @Localizer.GetString(Keys.PinHelper)
+                </MudText>
+                <MudText Typo="Typo.subtitle1">@MaskedPin</MudText>
+            </MudStack>
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Secondary"
+                       OnClick="@ClearPin">
+                @Localizer.GetString(Keys.ClearButtonText)
+            </MudButton>
+        </div>
+
+        <div class="pin-grid">
+            @foreach (var key in keypadLayout)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(!CanAppendDigit(key))"
+                           Class="pin-key"
+                           OnClick="@(() => AppendDigit(key))">
+                    &#9679;
+                </MudButton>
+            }
+        </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="hardware-prompt-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="@Cancel">
+                @Localizer.GetString(Keys.CancelButtonText)
+            </MudButton>
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       Disabled="@(!CanSubmit)"
+                       OnClick="@Submit">
+                @Localizer.GetString(Keys.ConfirmButtonText)
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
+    private static readonly DialogOptions DialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        FullWidth = true,
+        MaxWidth = MaxWidth.ExtraSmall,
+        Position = DialogPosition.Center
+    };
+
+    private readonly string[] keypadLayout = new[] { "7", "8", "9", "4", "5", "6", "1", "2", "3" };
+    private string pinValue = string.Empty;
+
+    private string MaskedPin => new string('•', pinValue.Length);
+
+    private bool CanSubmit => pinValue.Length >= 1;
+
+    private void AppendDigit(string digit)
+    {
+        if (!CanAppendDigit(digit))
+        {
+            return;
+        }
+
+        pinValue += digit;
+    }
+
+    private bool CanAppendDigit(string digit) => pinValue.Length < 9 && digit.Length == 1 && char.IsDigit(digit[0]);
+
+    private void ClearPin() => pinValue = string.Empty;
+
+    private void Submit()
+    {
+        if (CanSubmit)
+        {
+            MudDialog.Close(DialogResult.Ok(pinValue));
+        }
+    }
+
+    private void Cancel() => MudDialog.Close(DialogResult.Cancel());
+}

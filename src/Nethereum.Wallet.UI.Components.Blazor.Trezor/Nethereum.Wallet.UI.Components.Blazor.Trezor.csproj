@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Blazor prompt components and services tailored for Trezor hardware wallets.</Description>
+    <AssemblyTitle>Nethereum.Wallet.UI.Components.Blazor.Trezor</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.Wallet.UI.Components.Blazor.Trezor</AssemblyName>
+    <PackageId>Nethereum.Wallet.UI.Components.Blazor.Trezor</PackageId>
+    <PackageTags>Nethereum;Ethereum;Wallet;Blazor;Trezor</PackageTags>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Wallet.UI.Components.Blazor\Nethereum.Wallet.UI.Components.Blazor.csproj" />
+    <ProjectReference Include="..\Nethereum.Wallet.UI.Components.Trezor\Nethereum.Wallet.UI.Components.Trezor.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>

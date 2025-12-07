@@ -1,0 +1,70 @@
+@using MudBlazor
+@using static Nethereum.Wallet.UI.Components.Blazor.Trezor.Prompts.TrezorPassphrasePromptLocalizer
+@inject IComponentLocalizer<TrezorPassphrasePrompt> Localizer
+
+<MudDialog Class="hardware-prompt-shell"
+           Options="@DialogOptions">
+    <DialogContent>
+        <div class="hardware-prompt-dialog">
+        <div class="hardware-prompt-header">
+            <MudAvatar Color="Color.Primary"
+                       Icon="@Icons.Material.Filled.VpnKey"
+                       Size="Size.Large" />
+            <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h6">@Localizer.GetString(Keys.Title)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    @Localizer.GetString(Keys.Description)
+                </MudText>
+            </MudStack>
+        </div>
+
+        <MudTextField @bind-Value="Passphrase"
+                      Class="hardware-passphrase-input"
+                      Label="@Localizer.GetString(Keys.PassphraseLabel)"
+                      Placeholder="@Localizer.GetString(Keys.PassphrasePlaceholder)"
+                      HelperText="@Localizer.GetString(Keys.PassphraseHelper)"
+                      InputType="@(showPassphrase ? InputType.Text : InputType.Password)"
+                      Immediate="true"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@(showPassphrase ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                      OnAdornmentClick="ToggleVisibility"
+                      AdornmentAriaLabel="@Localizer.GetString(Keys.ToggleVisibilityLabel)" />
+
+        <MudAlert Severity="Severity.Info" Dense="true">
+            @Localizer.GetString(Keys.PassphraseInfo)
+        </MudAlert>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="hardware-prompt-actions">
+            <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="@Cancel">
+                @Localizer.GetString(Keys.CancelButtonText)
+            </MudButton>
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       OnClick="@Submit">
+                @Localizer.GetString(Keys.ConfirmButtonText)
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
+    private static readonly DialogOptions DialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        FullWidth = true,
+        MaxWidth = MaxWidth.ExtraSmall,
+        Position = DialogPosition.Center
+    };
+
+    private string Passphrase { get; set; } = string.Empty;
+    private bool showPassphrase;
+
+    private void ToggleVisibility() => showPassphrase = !showPassphrase;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Passphrase ?? string.Empty));
+
+    private void Cancel() => MudDialog.Close(DialogResult.Cancel());
+}
