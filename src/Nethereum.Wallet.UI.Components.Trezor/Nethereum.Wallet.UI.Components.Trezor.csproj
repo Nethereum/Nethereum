@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Shared view models and helpers for integrating Trezor devices into Nethereum wallet UIs.</Description>
+    <AssemblyTitle>Nethereum.Wallet.UI.Components.Trezor</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.Wallet.UI.Components.Trezor</AssemblyName>
+    <PackageId>Nethereum.Wallet.UI.Components.Trezor</PackageId>
+    <PackageTags>Nethereum;Ethereum;Wallet;Trezor;UI</PackageTags>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Wallet.Trezor\Nethereum.Wallet.Trezor.csproj" />
+    <ProjectReference Include="..\Nethereum.Wallet.UI.Components\Nethereum.Wallet.UI.Components.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>
