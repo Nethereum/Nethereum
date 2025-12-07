@@ -1,4 +1,5 @@
 @using MudBlazor
+@using System.Linq
 @using Nethereum.Wallet
 @using Nethereum.Wallet.Hosting
 @using Nethereum.Wallet.Services
@@ -50,8 +51,9 @@
                     @Localizer.GetString(AccountListLocalizer.Keys.BackToAccounts)
                 </MudButton>
             </MudStack>
-            <MnemonicDetailsView MnemonicId="@selectedGroupForDetails.GroupId" 
-                                OnExit="CloseGroupDetails" />
+            <GroupDetails GroupId="@selectedGroupForDetails.GroupId"
+                          Accounts="@selectedGroupForDetails.Accounts.ToList()"
+                          OnExit="CloseGroupDetails" />
         </MudStack>
     }
     else

@@ -49,6 +49,9 @@ namespace Nethereum.Wallet.Storage
         Task<List<Nethereum.Wallet.Services.DappPermission>> GetDappPermissionsAsync(string? accountAddress = null);
         Task AddDappPermissionAsync(string accountAddress, string origin);
         Task RemoveDappPermissionAsync(string accountAddress, string origin);
+
+        Task SaveNetworkPreferenceAsync(string key, bool value);
+        Task<bool?> GetNetworkPreferenceAsync(string key);
     }
     public class RpcEndpointHealthCache
     {

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Nethereum.Wallet.UI.Components.NethereumWallet;
 using Nethereum.Wallet.UI.Components.Core.Localization;
+using System;
 
 namespace Nethereum.Wallet.UI.Components.Blazor.NethereumWallet
 {

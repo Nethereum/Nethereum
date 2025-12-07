@@ -36,8 +36,8 @@ namespace Nethereum.Wallet.UI
         Task<string?> ShowTransactionDialogAsync(TransactionInput input);
 
         // Message / arbitrary data signing prompt.
-        Task<bool> RequestPersonalSignAsync(SignaturePromptContext context);
-        Task<bool> RequestTypedDataSignAsync(TypedDataSignPromptContext context);
+        Task<string?> RequestPersonalSignAsync(SignaturePromptContext context);
+        Task<string?> RequestTypedDataSignAsync(TypedDataSignPromptContext context);
 
         // Request permission for the current dapp to access the selected account.
         Task<bool> RequestDappPermissionAsync(DappConnectionContext dappContext, string accountAddress);
@@ -55,6 +55,7 @@ namespace Nethereum.Wallet.UI
 
         // Convenience address-based selection (case‑insensitive).
         void SetSelectedAccount(string account);
+        Task InitialiseAccountSignerAsync();
 
         IWalletConfigurationService Configuration { get; }
     }

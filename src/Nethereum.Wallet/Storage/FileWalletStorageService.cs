@@ -121,6 +121,12 @@ namespace Nethereum.Wallet.Storage
         public Task<string?> GetSelectedAccountAsync()
             => ReadAsync<string>("selected-account.json");
 
+        public Task SaveNetworkPreferenceAsync(string key, bool value)
+            => WriteAsync(Path.Combine("network-preferences", $"{Encode(key)}.json"), value);
+
+        public Task<bool?> GetNetworkPreferenceAsync(string key)
+            => ReadAsync<bool?>(Path.Combine("network-preferences", $"{Encode(key)}.json"));
+
         public Task<RpcSelectionConfiguration?> GetRpcSelectionConfigAsync(BigInteger chainId)
             => ReadAsync<RpcSelectionConfiguration>(Path.Combine("rpc-selection", $"{chainId}.json"));
 

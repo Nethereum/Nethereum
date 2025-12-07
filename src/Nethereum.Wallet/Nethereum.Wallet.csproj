@@ -1,25 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Description>Core wallet services for managing accounts, vaults, and configuration across the Nethereum stack.</Description>
+    <AssemblyTitle>Nethereum.Wallet</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
+    <AssemblyName>Nethereum.Wallet</AssemblyName>
+    <PackageId>Nethereum.Wallet</PackageId>
+    <PackageTags>Nethereum;Ethereum;Wallet;Accounts</PackageTags>
+    <LangVersion>latest</LangVersion> 
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+    <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
     <ProjectReference Include="..\Nethereum.GnosisSafe\Nethereum.GnosisSafe.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
-    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
-    <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
-    <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
-    <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
   </ItemGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
 </Project>

@@ -9,7 +9,7 @@ namespace Nethereum.Wallet.UI
 {
     public interface ISignaturePromptService
     {
-        Task<bool> PromptSignatureAsync(SignaturePromptContext context);
-        Task<bool> PromptTypedDataSignAsync(TypedDataSignPromptContext context);
+        Task<string?> PromptSignatureAsync(SignaturePromptContext context);
+        Task<string?> PromptTypedDataSignAsync(TypedDataSignPromptContext context);
     }
 }

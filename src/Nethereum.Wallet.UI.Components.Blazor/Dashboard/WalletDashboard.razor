@@ -46,11 +46,20 @@
             <MudNavMenu Class="pa-2" Style="padding-top: 16px;">
                 @foreach (var plugin in AvailablePlugins.Select((p, i) => new { Plugin = p, Index = i }))
                 {
-                    <MudNavLink Icon="@plugin.Plugin.Icon"
+                    <MudNavLink Icon="@GetNavIcon(plugin.Plugin)"
                                OnClick="@(() => OnTabChanged(plugin.Index))"
                                Class="@(ActivePluginIndex == plugin.Index ? "mud-nav-link-active" : "")"
                                Style="margin-bottom: 4px; border-radius: 8px;">
                         @GetLocalizedPluginName(plugin.Plugin)
+                    </MudNavLink>
+                }
+                @if (OnLogout.HasDelegate)
+                {
+                    <MudDivider Class="my-2" />
+                    <MudNavLink Icon="@Icons.Material.Filled.Logout"
+                               OnClick="HandleLogout"
+                               Style="margin-bottom: 4px; border-radius: 8px;">
+                        @Localizer.GetString(Keys.Logout)
                     </MudNavLink>
                 }
             </MudNavMenu>
@@ -124,10 +133,18 @@
                     
                     @foreach (var plugin in AvailablePlugins.Select((p, i) => new { Plugin = p, Index = i }))
                     {
-                        <MudNavLink Icon="@plugin.Plugin.Icon"
+                        <MudNavLink Icon="@(isCompact ? null : GetNavIcon(plugin.Plugin))"
                                    OnClick="@(() => SelectPluginAndCloseMenu(plugin.Index))"
                                    Class="@(ActivePluginIndex == plugin.Index ? "mud-nav-link-active" : "")">
                             @GetLocalizedPluginName(plugin.Plugin)
+                        </MudNavLink>
+                    }
+                    @if (OnLogout.HasDelegate)
+                    {
+                        <MudDivider Class="my-2" />
+                        <MudNavLink Icon="@(isCompact ? null : Icons.Material.Filled.Logout)"
+                                   OnClick="@(async () => { await HandleLogout(); CloseMobileMenu(); })">
+                            @Localizer.GetString(Keys.Logout)
                         </MudNavLink>
                     }
                 </MudNavMenu>
@@ -312,6 +329,13 @@
     {
         return plugin.DisplayName;
     }
+
+    private string GetNavIcon(IDashboardPluginViewModel plugin)
+    {
+        return string.IsNullOrWhiteSpace(plugin.Icon)
+            ? Icons.Material.Filled.Dashboard
+            : plugin.Icon;
+    }
     
     private Dictionary<string, object> GetPluginParameters(IDashboardPluginViewModel plugin)
     {
@@ -382,6 +406,14 @@
     {
         // Close mobile menu after navigation
         drawerOpen = false;
+    }
+
+    private async Task HandleLogout()
+    {
+        if (OnLogout.HasDelegate)
+        {
+            await OnLogout.InvokeAsync();
+        }
     }
 
     private async Task SelectPluginAndCloseMenu(int pluginIndex)

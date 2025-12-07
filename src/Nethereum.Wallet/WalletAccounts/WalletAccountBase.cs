@@ -25,9 +25,19 @@ namespace Nethereum.Wallet.WalletAccounts
 
         public abstract Task<IAccount> GetAccountAsync();
 
+        public virtual Task EnsureReadyAsync(System.Threading.CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
         public virtual async Task<IWeb3> CreateWeb3Async(IClient client)
         {
             var account = await GetAccountAsync();
+
+            if (account is Nethereum.Web3.Accounts.ExternalAccount externalAccount &&
+                externalAccount.TransactionManager == null)
+            {
+                externalAccount.InitialiseDefaultTransactionManager(client);
+            }
+
             return new Nethereum.Web3.Web3(account, client);
         }
 

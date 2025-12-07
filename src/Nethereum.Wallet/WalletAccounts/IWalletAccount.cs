@@ -16,6 +16,7 @@ public interface IWalletAccount
     string? GroupId { get; }
 
     Task<IAccount> GetAccountAsync();
+    Task EnsureReadyAsync(System.Threading.CancellationToken cancellationToken = default);
     Task<IWeb3> CreateWeb3Async(IClient client);
     JsonObject ToJson();
 }

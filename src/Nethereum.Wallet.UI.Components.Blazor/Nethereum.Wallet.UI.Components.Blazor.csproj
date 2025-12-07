@@ -1,23 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Blazor components and layouts for building Nethereum-powered wallets.</Description>
+    <AssemblyTitle>Nethereum.Wallet.UI.Components.Blazor</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.Wallet.UI.Components.Blazor</AssemblyName>
+    <PackageId>Nethereum.Wallet.UI.Components.Blazor</PackageId>
+    <PackageTags>Nethereum;Ethereum;Wallet;Blazor;UI</PackageTags>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-   <ItemGroup>
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-	    <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.1" />
-	    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
-		<PackageReference Include="MudBlazor" Version="8.*" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
+    <PackageReference Include="MudBlazor" Version="8.*" />
+  </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nethereum.Wallet.UI.Components\Nethereum.Wallet.UI.Components.csproj" />
     <ProjectReference Include="..\Nethereum.Blazor\Nethereum.Blazor.csproj" />
+    <ProjectReference Include="..\Nethereum.Wallet.UI.Components\Nethereum.Wallet.UI.Components.csproj" />
     <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
 </Project>

@@ -8,8 +8,11 @@
 @using Nethereum.Wallet.UI.Components.Blazor.CreateAccount
 @using Microsoft.AspNetCore.Components
 @using Nethereum.Wallet.UI.Components.Configuration
+@using Nethereum.Wallet.Diagnostics
+@using Nethereum.Wallet.UI.Components.Blazor.Services
 @using System.Collections.Generic
 @using System.Linq
+@using System.Threading.Tasks
 
 @inject NethereumWalletViewModel ViewModel
 @inject NethereumWalletHostProvider WalletHostProvider
@@ -17,12 +20,15 @@
 @inject IWalletVaultService VaultService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject Nethereum.Wallet.UI.Components.Blazor.Services.IWalletDialogAccessor DialogAccessor
 @inject NethereumWalletConfiguration Config
 @inject IComponentLocalizer<NethereumWalletViewModel> Localizer
 @inject INethereumWalletUIConfiguration GlobalConfig
 
+@implements IDisposable
+
 <div style="@GetContainerStyle()">
-    <div style="padding: 24px; height: 100%; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
+    <div style="padding:2px; height: 100%; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
         @if (ViewModel.IsBusy)
     {
         @if (Config.ShowProgressIndicators)
@@ -169,13 +175,22 @@
                     <MudAlert Severity="Severity.Error">@ViewModel.CreateError</MudAlert>
                 }
 
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Primary"
-                           OnClick="ViewModel.CreateWalletCommand.ExecuteAsync"
-                           FullWidth="true"
-                           Disabled="@(!ViewModel.CanCreateWallet)">
-                    @Localizer.GetString(Keys.CreateButtonText)
-                </MudButton>
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    @if (_isCreateFlowOverride)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Secondary"
+                                   OnClick="CancelCreateNewWallet">
+                            @Localizer.GetString(Keys.CreateCancelButtonText)
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary"
+                               OnClick="ViewModel.CreateWalletCommand.ExecuteAsync"
+                               Disabled="@(!ViewModel.CanCreateWallet)">
+                        @Localizer.GetString(Keys.CreateButtonText)
+                    </MudButton>
+                </MudStack>
             </MudStack>
         </MudCard>
     }
@@ -183,6 +198,7 @@
 </div>
 
 @code {
+    private Func<Func<Task>, Task>? _dispatcherHandle;
     [Parameter] public EventCallback OnConnected { get; set; }
     
     [Parameter] public string? Width { get; set; }
@@ -197,7 +213,16 @@
     private bool showPassword = false;
     private bool showNewPassword = false;
     private bool showConfirmPassword = false;
+    private bool _isCreateFlowOverride;
     private MudTextField<string> passwordField;
+
+    protected override void OnInitialized()
+    {
+        _dispatcherHandle = RunOnUiThreadAsync;
+        WalletBlazorDispatcher.Register(RunOnUiThreadAsync);
+        DialogAccessor.DialogService = DialogService;
+        base.OnInitialized();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -288,13 +313,40 @@
     private void TogglePasswordVisibility() => showPassword = !showPassword;
     private void ToggleNewPasswordVisibility() => showNewPassword = !showNewPassword;
     private void ToggleConfirmPasswordVisibility() => showConfirmPassword = !showConfirmPassword;
+    private Task RunOnUiThreadAsync(Func<Task> work)
+    {
+        WalletDiagnosticsLogger.Log("WalletDispatcher", "Invoking work on UI thread");
+        return InvokeAsync(work);
+    }
 
    
 
     private void ShowCreateNewWallet()
     {
+        _isCreateFlowOverride = true;
+        ClearCreateFormFields();
         ViewModel.VaultExists = false;
         StateHasChanged();
+    }
+
+    private void CancelCreateNewWallet()
+    {
+        if (!_isCreateFlowOverride)
+        {
+            return;
+        }
+
+        _isCreateFlowOverride = false;
+        ClearCreateFormFields();
+        ViewModel.VaultExists = true;
+        StateHasChanged();
+    }
+
+    private void ClearCreateFormFields()
+    {
+        ViewModel.NewPassword = string.Empty;
+        ViewModel.ConfirmPassword = string.Empty;
+        ViewModel.CreateError = string.Empty;
     }
 
     private async Task OnLogout()
@@ -320,6 +372,15 @@
 
     public void Dispose()
     {
+        if (_dispatcherHandle != null)
+        {
+            WalletBlazorDispatcher.Unregister(_dispatcherHandle);
+            _dispatcherHandle = null;
+        }
+        if (DialogAccessor != null)
+        {
+            DialogAccessor.DialogService = null;
+        }
         if (ViewModel != null)
         {
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;

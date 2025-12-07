@@ -36,6 +36,7 @@ using Nethereum.UI;
 using Nethereum.Wallet.UI.Components.Prompts;
 using Nethereum.Wallet.UI.Components.Blazor.Prompts;
 using Nethereum.Wallet.UI.Components.Shared;
+using System;
 
 
 namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
@@ -66,6 +67,7 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             
             services.AddWalletPromptServices(ServiceLifetime.Scoped);
             services.AddScoped<IChainAdditionPromptService, QueuedChainAdditionPromptService>();
+            services.AddSingleton<IWalletDialogAccessor, WalletDialogAccessor>();
 
             services.AddScoped<NethereumWalletViewModel>();
             services.AddScoped<AccountListViewModel>();
@@ -165,6 +167,7 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
 
             services.AddWalletPromptServices(ServiceLifetime.Singleton);
             services.AddSingleton<IChainAdditionPromptService, QueuedChainAdditionPromptService>();
+            services.AddSingleton<IWalletDialogAccessor, WalletDialogAccessor>();
 
             services.AddTransient<NethereumWalletViewModel>();
             services.AddTransient<AccountListViewModel>();

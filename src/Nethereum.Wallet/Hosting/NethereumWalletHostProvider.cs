@@ -15,6 +15,7 @@ using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Wallet.Services;
 using System.Text;
+using Nethereum.Wallet.Diagnostics;
 
 namespace Nethereum.Wallet.Hosting
 {
@@ -43,6 +44,7 @@ namespace Nethereum.Wallet.Hosting
         public event Func<long, Task> NetworkChanged;
         public event Func<bool, Task> AvailabilityChanged;
         public event Func<bool, Task> EnabledChanged;
+        public event Func<Task>? AccountsRefreshed;
 
         private readonly IWalletVaultService _vaultService;
         private readonly ILoginPromptService _loginPromptService;          
@@ -136,6 +138,7 @@ namespace Nethereum.Wallet.Hosting
 
         public async Task<IWeb3> GetWalletWeb3Async()
         {
+            WalletDiagnosticsLogger.Log("WalletHostProvider", $"GetWalletWeb3Async start account={_selectedAccount?.Address ?? "null"} chain={_activeChain?.ChainId.ToString() ?? "null"}");
             if (_selectedAccount == null)
                 throw new InvalidOperationException("No account selected. Please select an account first.");
 
@@ -143,7 +146,9 @@ namespace Nethereum.Wallet.Hosting
                 throw new InvalidOperationException("No chain selected. Please select a network first.");
 
             var client = await _rpcClientFactory.CreateClientAsync(_activeChain);
-            return await _selectedAccount.CreateWeb3Async(client);
+            var web3 = await _selectedAccount.CreateWeb3Async(client);
+            WalletDiagnosticsLogger.Log("WalletHostProvider", $"GetWalletWeb3Async completed account={_selectedAccount.Address}");
+            return web3;
         }
 
         public async Task<string> EnableProviderAsync()
@@ -198,16 +203,22 @@ namespace Nethereum.Wallet.Hosting
             if (_selectedAccount == null)
                 throw new InvalidOperationException("No account selected.");
             var promptContext = CreatePersonalSignContext(message, _selectedAccount.Address);
-            var approved = await RequestPersonalSignAsync(promptContext).ConfigureAwait(false);
+            string? signature;
+            try
+            {
+                signature = await RequestPersonalSignAsync(promptContext).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
 
-            if (!approved)
+            if (string.IsNullOrEmpty(signature))
             {
                 throw new OperationCanceledException("User rejected personal_sign request.");
             }
 
-            var web3 = await GetWalletWeb3Async().ConfigureAwait(false);
-            var messageHex = message.IsHex() ? message : message.ToHexUTF8();
-            return await web3.Eth.AccountSigning.PersonalSign.SendRequestAsync(message.HexToByteArray(), _selectedAccount.Address).ConfigureAwait(false);
+            return signature;
         }
 
         // IWalletContext additions
@@ -230,10 +241,10 @@ namespace Nethereum.Wallet.Hosting
         public Task<string?> ShowTransactionDialogAsync(TransactionInput input)
             => _transactionPromptService.PromptTransactionAsync(input);
 
-        public Task<bool> RequestPersonalSignAsync(SignaturePromptContext context)
+        public Task<string?> RequestPersonalSignAsync(SignaturePromptContext context)
             => _signaturePromptService.PromptSignatureAsync(context);
 
-        public Task<bool> RequestTypedDataSignAsync(TypedDataSignPromptContext context)
+        public Task<string?> RequestTypedDataSignAsync(TypedDataSignPromptContext context)
             => _signaturePromptService.PromptTypedDataSignAsync(context);
 
         public async Task<bool> RequestDappPermissionAsync(DappConnectionContext dappContext, string accountAddress)
@@ -370,6 +381,14 @@ namespace Nethereum.Wallet.Hosting
             await _chainManagementService.AddCustomChainAsync(chainMetadata);
         }
 
+        public async Task InitialiseAccountSignerAsync()
+        {
+            if (_selectedAccount == null) return;
+            WalletDiagnosticsLogger.Log("WalletHostProvider", $"InitialiseAccountSignerAsync start account={_selectedAccount.Address} type={_selectedAccount.Type}");
+            await _selectedAccount.EnsureReadyAsync();
+            WalletDiagnosticsLogger.Log("WalletHostProvider", $"InitialiseAccountSignerAsync completed account={_selectedAccount.Address}");
+        }
+
         public void Initialise(IReadOnlyList<IWalletAccount> accounts, IWalletAccount? selected)
         {
             _accounts.Clear();
@@ -443,10 +462,18 @@ namespace Nethereum.Wallet.Hosting
                         _selectedAccount.IsSelected = true;
                         await RaiseSelectedAccountChangedAsync(_selectedAccount.Address);
                     }
-                    return;
+                }
+                else if (_accounts.Any())
+                {
+                    await SetSelectedWalletAccountAsync(_accounts.First());
+                }
+                else
+                {
+                    _selectedAccount = null;
+                    await RaiseSelectedAccountChangedAsync(string.Empty);
                 }
             }
-            else
+            else if (_accounts.Any())
             {
                 var storedAccountAddress = await _storageService.GetSelectedAccountAsync();
                 var candidate = string.IsNullOrEmpty(storedAccountAddress)
@@ -454,6 +481,8 @@ namespace Nethereum.Wallet.Hosting
                     : _accounts.FirstOrDefault(a => a.Address.Equals(storedAccountAddress, StringComparison.OrdinalIgnoreCase)) ?? _accounts.First();
                 await SetSelectedWalletAccountAsync(candidate);
             }
+
+            await RaiseAccountsRefreshedAsync();
         }
 
         public async Task<bool> SetSelectedAccountAsync(IWalletAccount account)
@@ -571,6 +600,22 @@ namespace Nethereum.Wallet.Hosting
         }
 
         public List<IWalletAccount> GetAccounts() => _accounts;
+
+        private async Task RaiseAccountsRefreshedAsync()
+        {
+            if (AccountsRefreshed == null)
+            {
+                return;
+            }
+
+            foreach (var handler in AccountsRefreshed.GetInvocationList())
+            {
+                if (handler is Func<Task> asyncHandler)
+                {
+                    await asyncHandler().ConfigureAwait(false);
+                }
+            }
+        }
         public IWalletAccount GetSelectedAccount() => _selectedAccount;
         public bool IsWalletUnlocked() => _vaultService.GetCurrentVault() != null;
     }

@@ -44,11 +44,7 @@ namespace Nethereum.Wallet.Bip32
                 chainCode = i[32..];
             }
 
-            Debug.WriteLine("Seed: " + Seed.ToHex());
-            Debug.WriteLine("HMAC-SHA512 (m): " + key.Concat(chainCode).ToArray().ToHex());
-            Debug.WriteLine("Private Key (m): " + key.ToHex());
-            Debug.WriteLine("Chain Code (m): " + chainCode.ToHex());
-
+           
             for (int i = 1; i < segments.Length; i++)
             {
                 var segment = segments[i];
@@ -64,10 +60,7 @@ namespace Nethereum.Wallet.Bip32
                 if (BitConverter.IsLittleEndian)
                     Array.Reverse(indexBytes);
 
-                Debug.WriteLine($"\nStep: {segment}");
-                Debug.WriteLine($"Index: {indexBytes.ToHex()} (hardened: {hardened})");
-                Debug.WriteLine($"Parent Key: {key.ToHex()}");
-                Debug.WriteLine($"Parent Chain Code: {chainCode.ToHex()}");
+                
 
                 if (hardened)
                 {
@@ -77,8 +70,7 @@ namespace Nethereum.Wallet.Bip32
                 else
                 {
                     var pubKey = new EthECKey(key, true).GetPubKey(true);
-                    Debug.WriteLine("Public Key: " + pubKey.ToHex());
-                    Debug.WriteLine("Public Key Length: " + pubKey.Length);
+                   
                     pubKey.CopyTo(data[0..33]);
                 }
 
@@ -90,9 +82,7 @@ namespace Nethereum.Wallet.Bip32
                 var IL = iBytes[..32];
                 var IR = iBytes[32..];
 
-                Debug.WriteLine("HMAC-SHA512: " + iBytes.ToHex());
-                Debug.WriteLine("Child Tweak: " + IL.ToHex());
-                Debug.WriteLine("Chain Code: " + IR.ToHex());
+               
 
                 var tweakInt = new BigInteger(IL, isUnsigned: true, isBigEndian: true);
                 var parentKeyInt = new BigInteger(key, isUnsigned: true, isBigEndian: true);
@@ -109,7 +99,7 @@ namespace Nethereum.Wallet.Bip32
                 }
 
                 chainCode = IR;
-                Debug.WriteLine("Child Private Key: " + key.ToHex());
+                
             }
 
             return new EthECKey(key, true);

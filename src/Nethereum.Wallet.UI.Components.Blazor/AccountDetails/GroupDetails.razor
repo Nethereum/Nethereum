@@ -1,0 +1,136 @@
+@using MudBlazor
+@using System
+@using System.Collections.Generic
+@using System.ComponentModel
+@using Microsoft.AspNetCore.Components
+@using Nethereum.Wallet
+@using Nethereum.Wallet.UI.Components.AccountDetails
+@inject IGroupDetailsRegistry Registry
+@inject IServiceProvider ServiceProvider
+@implements IDisposable
+
+<div class="group-details-orchestrator">
+    @if (isLoading)
+    {
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+            <MudGrid Justify="Justify.Center">
+                <MudItem>
+                    <MudProgressCircular Color="Color.Primary" Size="MudBlazor.Size.Large" Indeterminate="true" />
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    }
+    else if (!string.IsNullOrEmpty(GroupId) && Accounts.Count > 0 && componentType != null)
+    {
+        <DynamicComponent Type="componentType" Parameters="componentParameters" />
+    }
+    else
+    {
+        <MudContainer MaxWidth="MaxWidth.Small" Class="py-8">
+            <MudPaper Elevation="2" Class="pa-8" Style="text-align: center;">
+                <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                    <MudIcon Icon="@Icons.Material.Outlined.Group" 
+                             Style="font-size: 5rem; color: var(--mud-palette-text-secondary);" />
+                    <MudText Typo="Typo.h4" Color="Color.Secondary">
+                        No group selected
+                    </MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                        Select a wallet group to manage its addresses.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudContainer>
+    }
+</div>
+
+@code {
+    [Parameter] public string? GroupId { get; set; }
+    [Parameter] public IReadOnlyList<IWalletAccount> Accounts { get; set; } = Array.Empty<IWalletAccount>();
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private bool isLoading;
+    private IGroupDetailsViewModel? selectedViewModel;
+    private Type? componentType;
+    private Dictionary<string, object>? componentParameters;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await InitializeViewModelAsync();
+    }
+
+    private async Task InitializeViewModelAsync()
+    {
+        if (string.IsNullOrEmpty(GroupId) || Accounts.Count == 0)
+        {
+            selectedViewModel = null;
+            componentType = null;
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+
+            DisposeCurrentViewModel();
+
+            var viewModelType = Registry.GetViewModelType(GroupId, Accounts);
+            if (viewModelType == null)
+            {
+                selectedViewModel = null;
+                componentType = null;
+                componentParameters = null;
+                return;
+            }
+
+            selectedViewModel = ServiceProvider.GetService(viewModelType) as IGroupDetailsViewModel;
+            if (selectedViewModel == null)
+            {
+                componentType = null;
+                return;
+            }
+
+            if (selectedViewModel is INotifyPropertyChanged notifyPropertyChanged)
+            {
+                notifyPropertyChanged.PropertyChanged += OnViewModelPropertyChanged;
+            }
+
+            await selectedViewModel.InitializeAsync(GroupId, Accounts);
+            componentType = Registry.GetComponentType(viewModelType);
+
+            componentParameters = componentType != null
+                ? new Dictionary<string, object>
+                {
+                    { "GroupId", GroupId },
+                    { "Accounts", Accounts },
+                    { "OnExit", OnExit }
+                }
+                : null;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void DisposeCurrentViewModel()
+    {
+        if (selectedViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+        selectedViewModel = null;
+        componentType = null;
+        componentParameters = null;
+    }
+
+    public void Dispose()
+    {
+        DisposeCurrentViewModel();
+    }
+}

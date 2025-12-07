@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -50,7 +51,13 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
         {
             return mnemonicInfo;
         }
-        
+
+        var hardwareInfo = _vault?.FindHardwareDevice(groupId);
+        if (hardwareInfo != null)
+        {
+            return hardwareInfo;
+        }
+
         return null;
     }
 
@@ -94,8 +101,18 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
         {
             tmp.Decrypt(encrypted, password);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Vault unlock failed: {ex}");
+            Console.WriteLine($"Vault unlock failed: {ex}");
+            try
+            {
+                File.AppendAllText("VaultUnlock.log", $"{DateTime.UtcNow:u} {ex}\n");
+            }
+            catch
+            {
+                // ignore logging errors
+            }
             return false;
         }
 
