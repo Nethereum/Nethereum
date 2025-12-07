@@ -18,7 +18,7 @@ namespace Nethereum.Signer
             ECDSASignature.V = v;
         }
 
-        internal EthECDSASignature(ECDSASignature signature)
+        public EthECDSASignature(ECDSASignature signature)
         {
             ECDSASignature = signature;
         }

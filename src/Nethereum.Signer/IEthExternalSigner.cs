@@ -1,4 +1,5 @@
-﻿using Nethereum.Model;
+﻿
+using Nethereum.Model;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -17,6 +18,7 @@ namespace Nethereum.Signer
         Task SignAsync(LegacyTransactionChainId transaction);
         Task SignAsync(Transaction1559 transaction);
         Task SignAsync(Transaction7702 transaction);
+        Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message");
 
         bool Supported1559 { get; }
     }

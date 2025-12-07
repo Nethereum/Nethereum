@@ -1,10 +1,13 @@
 ﻿using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Signer.Crypto;
 using Nethereum.Util;
+using Nethereum.ABI.EIP712;
+
 
 namespace Nethereum.Signer
 {
@@ -59,7 +62,9 @@ namespace Nethereum.Signer
             return new EthECDSASignature(signature);
         }
 
-        public Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes)
+        
+
+        public virtual Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes)
         {
             var messageSigner = new EthereumMessageSigner();
             var hash = messageSigner.HashPrefixedMessage(rawBytes);
@@ -155,6 +160,29 @@ namespace Nethereum.Signer
                 var signature = await SignAndCalculateYParityVAsync(transaction.GetRLPEncodedRaw()).ConfigureAwait(false);
                 transaction.SetSignature(signature);
             }
+        }
+
+        public virtual Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData)
+        {
+            if (typedData == null) throw new System.ArgumentNullException(nameof(typedData));
+            var encoder = new Eip712TypedDataEncoder();
+            var encoded = encoder.EncodeTypedData(typedData);
+            var hash = Sha3Keccack.Current.CalculateHash(encoded);
+            return SignAsync(hash);
+        }
+
+        public virtual async Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message")
+        {
+            if (string.IsNullOrWhiteSpace(typedDataJson))
+            {
+                throw new System.ArgumentException("Typed data json cannot be null or empty.", nameof(typedDataJson));
+            }
+
+            var encoder = new Eip712TypedDataEncoder();
+            var encoded = encoder.EncodeTypedData<Domain>(typedDataJson, messageKeySelector);
+            var hash = Sha3Keccack.Current.CalculateHash(encoded);
+            var signature = await SignAsync(hash).ConfigureAwait(false);
+            return EthECDSASignature.CreateStringSignature(signature);
         }
 
 

@@ -13,6 +13,7 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
@@ -20,28 +21,18 @@
   </ItemGroup>
 
 	<!-- Use Portable.BouncyCastle for other frameworks -->
-	<ItemGroup Condition="'$(TargetFramework)' != 'net472' 
-                  And '$(TargetFramework)' != 'net6.0' 
-                  And '$(TargetFramework)' != 'net8.0' 
-                  And '$(TargetFramework)' != 'net9.0'
-				  ">  
+	<ItemGroup Condition="'$(TargetFramework)' != 'net472' &#xD;&#xA;                  And '$(TargetFramework)' != 'net6.0' &#xD;&#xA;                  And '$(TargetFramework)' != 'net8.0' &#xD;&#xA;                  And '$(TargetFramework)' != 'net9.0'&#xD;&#xA;				  ">  
 		
 		<PackageReference Include="Portable.BouncyCastle" Version="[1.9.0,2.0)" />
 	</ItemGroup>
 
 	<!-- Use BouncyCastle.Cryptography for specific frameworks -->
-	<ItemGroup Condition="'$(TargetFramework)' == 'net472' 
-                  Or '$(TargetFramework)' == 'net6.0' 
-                  Or '$(TargetFramework)' == 'net8.0' 
-                  Or '$(TargetFramework)' == 'net9.0'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net472' &#xD;&#xA;                  Or '$(TargetFramework)' == 'net6.0' &#xD;&#xA;                  Or '$(TargetFramework)' == 'net8.0' &#xD;&#xA;                  Or '$(TargetFramework)' == 'net9.0'">
 		<PackageReference Include="BouncyCastle.Cryptography" Version="[2.5.1,3.0)" />
 	</ItemGroup>
 
 	<!-- Define constant -->
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net472' 
-                      Or '$(TargetFramework)' == 'net6.0' 
-                      Or '$(TargetFramework)' == 'net8.0' 
-                      Or '$(TargetFramework)' == 'net9.0'">
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net472' &#xD;&#xA;                      Or '$(TargetFramework)' == 'net6.0' &#xD;&#xA;                      Or '$(TargetFramework)' == 'net8.0' &#xD;&#xA;                      Or '$(TargetFramework)' == 'net9.0'">
 		<DefineConstants>$(DefineConstants);LATEST_BOUNCYCASTLE</DefineConstants>
 	</PropertyGroup>
 
