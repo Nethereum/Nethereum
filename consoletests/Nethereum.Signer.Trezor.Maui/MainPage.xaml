@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Nethereum.Signer.Trezor.Maui.MainPage"
+             Title="Trezor Signer">
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="24">
+            <Label Text="Trezor External Signer"
+                   FontAttributes="Bold"
+                   FontSize="20" />
+
+            <Label Text="Enter a message to sign using your connected Trezor device. PIN / passphrase requests will appear as prompts."
+                   FontSize="14" />
+
+            <Entry x:Name="MessageEntry"
+                   Placeholder="Message to sign"
+                   Text="Hello from MAUI" />
+
+            <Button Text="Check Device"
+                    x:Name="CheckButton"
+                    Clicked="OnCheckDeviceClicked" />
+
+            <Button Text="Raw USB Test"
+                    x:Name="RawUsbButton"
+                    Clicked="OnRawUsbTestClicked" />
+
+            <Button Text="Connect &amp; Sign"
+                    x:Name="SignButton"
+                    Clicked="OnSignClicked" />
+
+            <Label x:Name="StatusLabel"
+                   TextColor="Gray"
+                   FontSize="12" />
+
+            <Label x:Name="SignatureLabel"
+                   FontAttributes="Bold"
+                   FontSize="14"
+                   LineBreakMode="CharacterWrap" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

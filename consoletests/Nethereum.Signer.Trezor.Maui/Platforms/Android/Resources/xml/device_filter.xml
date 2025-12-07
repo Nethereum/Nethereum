@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Trezor One legacy VID/PID -->
+  <usb-device vendor-id="21324" product-id="1" />
+  <!-- Trezor Model T variants -->
+  <usb-device vendor-id="4617" product-id="21440" />
+  <usb-device vendor-id="4617" product-id="21441" />
+</resources>
