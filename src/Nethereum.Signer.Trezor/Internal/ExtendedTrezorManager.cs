@@ -9,30 +9,24 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Trezor.Net.Contracts;
-using Trezor.Net.Contracts.Bitcoin;
-using Trezor.Net.Contracts.Bootloader;
-using Trezor.Net.Contracts.Cardano;
-using Trezor.Net.Contracts.Common;
-using Trezor.Net.Contracts.Crypto;
-using Trezor.Net.Contracts.Debug;
-using Trezor.Net.Contracts.Ethereum;
-using Trezor.Net.Contracts.Lisk;
-using Trezor.Net.Contracts.Management;
-using Trezor.Net.Contracts.Monero;
-using Trezor.Net.Contracts.NEM;
-using Trezor.Net.Contracts.Ontology;
-using Trezor.Net.Contracts.Ripple;
-using Trezor.Net.Contracts.Stellar;
-using Trezor.Net.Contracts.Tezos;
+using hw.trezor.messages;
+using hw.trezor.messages.common;
+using hw.trezor.messages.ethereum;
+using hw.trezor.messages.ethereumeip712;
+using hw.trezor.messages.management;
+using hw.trezor.messages.crypto;
+using hw.trezor.messages.debug;
+using hw.trezor.messages.bootloader;
+using hw.trezor.messages.bitcoin;
+using hw.trezor.messages.definitions;
 using Trezor.Net;
 using BackwardsCompatible = Trezor.Net.Contracts.BackwardsCompatible;
-using static Nethereum.Signer.Trezor.TrezorExternalSigner;
 using Trezor.Net.Manager;
 
 namespace Nethereum.Signer.Trezor.Internal
 {
 
-    public class ExtendedTrezorManager : TrezorManagerBase<ExtendedMessageType.MessageType>
+    public class ExtendedTrezorManager : TrezorManagerBase<MessageType>
         {
 
             #region Private Fields
@@ -63,12 +57,12 @@ namespace Nethereum.Signer.Trezor.Internal
             #region Public Properties
 
             public static IReadOnlyList<FilterDeviceDefinition> DeviceDefinitions { get; } = new ReadOnlyCollection<FilterDeviceDefinition>(new List<FilterDeviceDefinition>
-        {
-            new FilterDeviceDefinition(vendorId: 0x534C, productId: 0x0001, label: "Trezor One Firmware 1.6.x", usagePage: 65280),
-            new FilterDeviceDefinition(vendorId: 0x534C, productId: 0x0001, label: "Trezor One Firmware 1.6.x (Android Only)"),
-            new FilterDeviceDefinition(vendorId: 0x1209, productId: 0x53C1, label: "Trezor One Firmware 1.7.x"),
-            new FilterDeviceDefinition(vendorId: 0x1209, productId: 0x53C0, label: "Model T")
-        });
+            {
+                new FilterDeviceDefinition(vendorId: 0x534C, productId: 0x0001, label: "Trezor One Firmware 1.6.x", usagePage: 65280),
+                new FilterDeviceDefinition(vendorId: 0x534C, productId: 0x0001, label: "Trezor One Firmware 1.6.x (Android Only)"),
+                new FilterDeviceDefinition(vendorId: 0x1209, productId: 0x53C1, label: "Trezor One Firmware 1.7.x"),
+                new FilterDeviceDefinition(vendorId: 0x1209, productId: 0x53C0, label: "Model T")
+            });
 
             public Features Features { get; private set; }
 
@@ -158,21 +152,6 @@ namespace Nethereum.Signer.Trezor.Internal
                         case AddressType.Ethereum:
                             return await GetEthereumAddress(display, path).ConfigureAwait(false);
 
-
-                        case AddressType.Cardano:
-                            CheckForSupported(nameof(AddressType.Cardano));
-                            return (await SendMessageAsync<CardanoAddress, CardanoGetAddress>(new CardanoGetAddress { ShowDisplay = display, AddressNs = path }).ConfigureAwait(false)).Address;
-
-                        case AddressType.Stellar:
-                            return (await SendMessageAsync<StellarAddress, StellarGetAddress>(new StellarGetAddress { ShowDisplay = display, AddressNs = path }).ConfigureAwait(false)).Address;
-
-                        case AddressType.Tezoz:
-                            CheckForSupported(nameof(AddressType.Tezoz));
-                            return (await SendMessageAsync<TezosAddress, TezosGetAddress>(new TezosGetAddress { ShowDisplay = display, AddressNs = path }).ConfigureAwait(false)).Address;
-
-                        case AddressType.NEM:
-                            return (await SendMessageAsync<NEMAddress, NEMGetAddress>(new NEMGetAddress { ShowDisplay = display, AddressNs = path }).ConfigureAwait(false)).Address;
-
                         default:
                             throw new NotImplementedException();
                     }
@@ -190,9 +169,11 @@ namespace Nethereum.Signer.Trezor.Internal
             public override async Task InitializeAsync()
             {
                 if (disposed) throw new ManagerException("Initialization cannot occur after disposal");
-
+                Logger.LogInformation("Initializing Trezor {LogSection}", LogSection);
                 Features = await SendMessageAsync<Features, Initialize>(new Initialize()).ConfigureAwait(false);
 
+                Logger.LogInformation("Trezor Initialized. Model: {Model}, Firmware Version: {MajorVersion}.{MinorVersion}.{PatchVersion} {LogSection}", Features.Model, Features.MajorVersion, Features.MinorVersion, Features.PatchVersion, LogSection);
+            
                 if (Features == null)
                 {
                     throw new ManagerException("Error initializing Trezor. Features were not retrieved");
@@ -222,154 +203,160 @@ namespace Nethereum.Signer.Trezor.Internal
             /// TODO: Nasty. This at least needs some caching or something...
             /// </summary>
 #pragma warning disable CA1502
-            protected override Type GetContractType(ExtendedMessageType.MessageType messageType, string typeName)
+            protected override Type GetContractType(MessageType messageType, string typeName)
             {
                 switch (messageType)
                 {
-                    case ExtendedMessageType.MessageType.MessageTypeAddress:
+                    case MessageType.MessageTypeAddress:
                         return typeof(Address);
-                    case ExtendedMessageType.MessageType.MessageTypeGetAddress:
+                    case MessageType.MessageTypeGetAddress:
                         return typeof(GetAddress);
-                    case ExtendedMessageType.MessageType.MessageTypeButtonAck:
+                    case MessageType.MessageTypeButtonAck:
                         return typeof(ButtonAck);
-                    case ExtendedMessageType.MessageType.MessageTypeButtonRequest:
+                    case MessageType.MessageTypeButtonRequest:
                         return typeof(ButtonRequest);
-                    case ExtendedMessageType.MessageType.MessageTypePublicKey:
+                    case MessageType.MessageTypePublicKey:
                         return typeof(PublicKey);
-                    case ExtendedMessageType.MessageType.MessageTypeFeatures:
+                    case MessageType.MessageTypeFeatures:
                         return typeof(Features);
-                    case ExtendedMessageType.MessageType.MessageTypePinMatrixAck:
+                    case MessageType.MessageTypePinMatrixAck:
                         return typeof(PinMatrixAck);
-                    case ExtendedMessageType.MessageType.MessageTypePinMatrixRequest:
+                    case MessageType.MessageTypePinMatrixRequest:
                         return typeof(PinMatrixRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeApplyFlags:
+                    case MessageType.MessageTypeApplyFlags:
                         return typeof(ApplyFlags);
-                    case ExtendedMessageType.MessageType.MessageTypeApplySettings:
+                    case MessageType.MessageTypeApplySettings:
                         return typeof(ApplySettings);
-                    case ExtendedMessageType.MessageType.MessageTypeBackupDevice:
+                    case MessageType.MessageTypeBackupDevice:
                         return typeof(BackupDevice);
-                    case ExtendedMessageType.MessageType.MessageTypeCancel:
+                    case MessageType.MessageTypeCancel:
                         return typeof(Cancel);
                   
              
-                    case ExtendedMessageType.MessageType.MessageTypeSuccess:
+                    case MessageType.MessageTypeSuccess:
                         return typeof(Success);
                 
-                    case ExtendedMessageType.MessageType.MessageTypeTxAck:
+                    case MessageType.MessageTypeTxAck:
                         return typeof(TxAck);
-                    case ExtendedMessageType.MessageType.MessageTypeTxRequest:
+                    case MessageType.MessageTypeTxRequest:
                         return typeof(TxRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeVerifyMessage:
+                    case MessageType.MessageTypeVerifyMessage:
                         return typeof(VerifyMessage);
-                    case ExtendedMessageType.MessageType.MessageTypeWipeDevice:
+                    case MessageType.MessageTypeWipeDevice:
                         return typeof(WipeDevice);
-                    case ExtendedMessageType.MessageType.MessageTypeWordAck:
+                    case MessageType.MessageTypeWordAck:
                         return typeof(WordAck);
-                    case ExtendedMessageType.MessageType.MessageTypeWordRequest:
+                    case MessageType.MessageTypeWordRequest:
                         return typeof(WordRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeInitialize:
+                    case MessageType.MessageTypeInitialize:
                         return typeof(Initialize);
-                    case ExtendedMessageType.MessageType.MessageTypePing:
+                    case MessageType.MessageTypePing:
                         return typeof(Ping);
-                    case ExtendedMessageType.MessageType.MessageTypeFailure:
+                    case MessageType.MessageTypeFailure:
                         return typeof(Failure);
-                    case ExtendedMessageType.MessageType.MessageTypeChangePin:
+                    case MessageType.MessageTypeChangePin:
                         return typeof(ChangePin);
-                    case ExtendedMessageType.MessageType.MessageTypeGetEntropy:
+                    case MessageType.MessageTypeGetEntropy:
                         return typeof(GetEntropy);
-                    case ExtendedMessageType.MessageType.MessageTypeEntropy:
+                    case MessageType.MessageTypeEntropy:
                         return typeof(Entropy);
-                    case ExtendedMessageType.MessageType.MessageTypeLoadDevice:
+                    case MessageType.MessageTypeLoadDevice:
                         return typeof(LoadDevice);
-                    case ExtendedMessageType.MessageType.MessageTypeResetDevice:
+                    case MessageType.MessageTypeResetDevice:
                         return typeof(ResetDevice);
                    
-                    case ExtendedMessageType.MessageType.MessageTypeEntropyRequest:
+                    case MessageType.MessageTypeEntropyRequest:
                         return typeof(EntropyRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeEntropyAck:
+                    case MessageType.MessageTypeEntropyAck:
                         return typeof(EntropyAck);
-                    case ExtendedMessageType.MessageType.MessageTypePassphraseRequest:
+                    case MessageType.MessageTypePassphraseRequest:
                         return typeof(PassphraseRequest);
-                    case ExtendedMessageType.MessageType.MessageTypePassphraseAck:
+                    case MessageType.MessageTypePassphraseAck:
                         return typeof(PassphraseAck);
                    
-                    case ExtendedMessageType.MessageType.MessageTypeRecoveryDevice:
+                    case MessageType.MessageTypeRecoveryDevice:
                         return typeof(RecoveryDevice);
-                    case ExtendedMessageType.MessageType.MessageTypeGetFeatures:
+                    case MessageType.MessageTypeGetFeatures:
                         return typeof(GetFeatures);
-                    case ExtendedMessageType.MessageType.MessageTypeSetU2FCounter:
+                    case MessageType.MessageTypeSetU2FCounter:
                         return typeof(SetU2FCounter);
-                    case ExtendedMessageType.MessageType.MessageTypeFirmwareErase:
+                    case MessageType.MessageTypeFirmwareErase:
                         return typeof(FirmwareErase);
-                    case ExtendedMessageType.MessageType.MessageTypeFirmwareUpload:
+                    case MessageType.MessageTypeFirmwareUpload:
                         return typeof(FirmwareUpload);
-                    case ExtendedMessageType.MessageType.MessageTypeFirmwareRequest:
+                    case MessageType.MessageTypeFirmwareRequest:
                         return typeof(FirmwareRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeSelfTest:
-                        return typeof(SelfTest);
-                    case ExtendedMessageType.MessageType.MessageTypeGetPublicKey:
+                
+                    case MessageType.MessageTypeGetPublicKey:
                         return typeof(GetPublicKey);
-                    case ExtendedMessageType.MessageType.MessageTypeSignTx:
+                    case MessageType.MessageTypeSignTx:
                         return typeof(SignTx);
-                    case ExtendedMessageType.MessageType.MessageTypeSignMessage:
+                    case MessageType.MessageTypeSignMessage:
                         return typeof(SignMessage);
-                    case ExtendedMessageType.MessageType.MessageTypeMessageSignature:
+                    case MessageType.MessageTypeMessageSignature:
                         return typeof(MessageSignature);
-                    case ExtendedMessageType.MessageType.MessageTypeCipherKeyValue:
+                    case MessageType.MessageTypeCipherKeyValue:
                         return typeof(CipherKeyValue);
-                    case ExtendedMessageType.MessageType.MessageTypeCipheredKeyValue:
+                    case MessageType.MessageTypeCipheredKeyValue:
                         return typeof(CipheredKeyValue);
-                    case ExtendedMessageType.MessageType.MessageTypeSignIdentity:
+                    case MessageType.MessageTypeSignIdentity:
                         return typeof(SignIdentity);
-                    case ExtendedMessageType.MessageType.MessageTypeSignedIdentity:
+                    case MessageType.MessageTypeSignedIdentity:
                         return typeof(SignedIdentity);
-                    case ExtendedMessageType.MessageType.MessageTypeGetECDHSessionKey:
+                    case MessageType.MessageTypeGetECDHSessionKey:
                         return typeof(GetECDHSessionKey);
-                    case ExtendedMessageType.MessageType.MessageTypeECDHSessionKey:
+                    case MessageType.MessageTypeECDHSessionKey:
                         return typeof(ECDHSessionKey);
-                    case ExtendedMessageType.MessageType.MessageTypeCosiCommit:
-                        return typeof(CosiCommit);
-                    case ExtendedMessageType.MessageType.MessageTypeCosiCommitment:
-                        return typeof(CosiCommitment);
-                    case ExtendedMessageType.MessageType.MessageTypeCosiSign:
-                        return typeof(CosiSign);
-                    case ExtendedMessageType.MessageType.MessageTypeCosiSignature:
-                        return typeof(CosiSignature);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkDecision:
+               
+                    case MessageType.MessageTypeDebugLinkDecision:
                         return typeof(DebugLinkDecision);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkGetState:
+                    case MessageType.MessageTypeDebugLinkGetState:
                         return typeof(DebugLinkGetState);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkState:
+                    case MessageType.MessageTypeDebugLinkState:
                         return typeof(DebugLinkState);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkStop:
+                    case MessageType.MessageTypeDebugLinkStop:
                         return typeof(DebugLinkStop);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkLog:
+                    case MessageType.MessageTypeDebugLinkLog:
                         return typeof(DebugLinkLog);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkMemoryRead:
+                    case MessageType.MessageTypeDebugLinkMemoryRead:
                         return typeof(DebugLinkMemoryRead);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkMemory:
+                    case MessageType.MessageTypeDebugLinkMemory:
                         return typeof(DebugLinkMemory);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkMemoryWrite:
+                    case MessageType.MessageTypeDebugLinkMemoryWrite:
                         return typeof(DebugLinkMemoryWrite);
-                    case ExtendedMessageType.MessageType.MessageTypeDebugLinkFlashErase:
+                    case MessageType.MessageTypeDebugLinkFlashErase:
                         return typeof(DebugLinkFlashErase);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumGetAddress:
+                    case MessageType.MessageTypeEthereumGetAddress:
                         return typeof(EthereumGetAddress);
-                     case ExtendedMessageType.MessageType.MessageTypeEthereumSignTx:
+                     case MessageType.MessageTypeEthereumSignTx:
                         return typeof(EthereumSignTx);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumTxRequest:
+                    case MessageType.MessageTypeEthereumTxRequest:
                         return typeof(EthereumTxRequest);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumTxAck:
+                    case MessageType.MessageTypeEthereumTxAck:
                         return typeof(EthereumTxAck);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumSignMessage:
+                    case MessageType.MessageTypeEthereumSignMessage:
                         return typeof(EthereumSignMessage);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumVerifyMessage:
+                    case MessageType.MessageTypeEthereumVerifyMessage:
                         return typeof(EthereumVerifyMessage);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumMessageSignature:
+                    case MessageType.MessageTypeEthereumMessageSignature:
                         return typeof(EthereumMessageSignature);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumSignTxEIP1559:
+                    case MessageType.MessageTypeEthereumTypedDataStructRequest:
+                        return typeof(EthereumTypedDataStructRequest);
+                    case MessageType.MessageTypeEthereumTypedDataStructAck:
+                        return typeof(EthereumTypedDataStructAck);
+                    case MessageType.MessageTypeEthereumTypedDataValueRequest:
+                        return typeof(EthereumTypedDataValueRequest);
+                    case MessageType.MessageTypeEthereumTypedDataValueAck:
+                        return typeof(EthereumTypedDataValueAck);
+                    case MessageType.MessageTypeEthereumTypedDataSignature:
+                        return typeof(EthereumTypedDataSignature);
+                    case MessageType.MessageTypeEthereumSignTypedData:
+                        return typeof(EthereumSignTypedData);
+                    case MessageType.MessageTypeEthereumSignTypedHash:
+                        return typeof(EthereumSignTypedHash);
+                    case MessageType.MessageTypeEthereumSignTxEIP1559:
                         return typeof(EthereumSignTxEIP1559);
-                    case ExtendedMessageType.MessageType.MessageTypeEthereumAddress:
+                    case MessageType.MessageTypeEthereumAddress:
                     return IsOldFirmware.HasValue && IsOldFirmware.Value ? typeof(BackwardsCompatible.EthereumAddress) : typeof(EthereumAddress);
 
                 default:
@@ -380,7 +367,7 @@ namespace Nethereum.Signer.Trezor.Internal
 
             protected override object GetEnumValue(string messageTypeString)
             {
-                var isValid = Enum.TryParse(messageTypeString, out ExtendedMessageType.MessageType messageType);
+                var isValid = Enum.TryParse(messageTypeString, out MessageType messageType);
                 return !isValid ? throw new ManagerException($"{messageTypeString} is not a valid MessageType") : messageType;
             }
 

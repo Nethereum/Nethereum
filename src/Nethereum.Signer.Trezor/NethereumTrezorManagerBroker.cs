@@ -3,10 +3,11 @@ using Microsoft.Extensions.Logging;
 using Trezor.Net;
 using Trezor.Net.Manager;
 using Nethereum.Signer.Trezor.Internal;
+using hw.trezor.messages;
 
 namespace Nethereum.Signer.Trezor
 {
-    public class NethereumTrezorManagerBroker : TrezorManagerBrokerBase<ExtendedTrezorManager, ExtendedMessageType.MessageType>
+    public class NethereumTrezorManagerBroker : TrezorManagerBrokerBase<ExtendedTrezorManager, MessageType>
     {
         public NethereumTrezorManagerBroker(EnterPinArgs enterPinArgs, EnterPinArgs enterPassphraseArgs, int? pollInterval, IDeviceFactory deviceFactory, ICoinUtility coinUtility = null, ILoggerFactory loggerFactory = null)
             : base(enterPinArgs, enterPassphraseArgs, pollInterval, deviceFactory, coinUtility, loggerFactory)

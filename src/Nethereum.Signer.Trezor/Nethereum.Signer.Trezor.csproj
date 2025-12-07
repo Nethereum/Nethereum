@@ -9,6 +9,7 @@
     <AssemblyName>Nethereum.Signer.Trezor</AssemblyName>
     <PackageId>Nethereum.Signer.Trezor</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Trezor</PackageTags>
+	<LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,8 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Device.Net" Version="4.3.0-beta" />
+    <PackageReference Include="Device.Net.LibUsb" Version="4.3.0-beta" />
+    <PackageReference Include="Hardwarewallets.Net" Version="1.2.0" />
     <PackageReference Include="Hid.Net" Version="4.3.0-beta" />
-    <PackageReference Include="Trezor.Net" Version="5.0.0-beta" />
+    <PackageReference Include="protobuf-net" Version="3.2.52" />
+    <PackageReference Include="protobuf-net.Reflection" Version="3.2.52" />
     <PackageReference Include="Usb.Net" Version="4.3.0-beta" />
   </ItemGroup>
 
