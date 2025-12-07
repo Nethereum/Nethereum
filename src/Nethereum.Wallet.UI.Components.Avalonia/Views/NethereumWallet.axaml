@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:dashboardViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Dashboard"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.Core.Localization"
+             xmlns:nethereumLocalizers="clr-namespace:Nethereum.Wallet.UI.Components.NethereumWallet;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             xmlns:objectConverters="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.NethereumWallet"
+             x:DataType="views:NethereumWallet">
+
+    <UserControl.Resources>
+        <converters:StringToBrushConverter x:Key="StringToBrushConverter" />
+        <DataTemplate x:Key="LoginTemplate">
+            <Border Classes="wallet-card">
+                <StackPanel Spacing="16">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <Image Source="{Binding $parent[views:NethereumWallet].GlobalConfig.WelcomeLogoPath}" Width="64" Height="64" IsVisible="{Binding $parent[views:NethereumWallet].GlobalConfig.ShowLogo}" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].GlobalConfig.ApplicationName}" Classes="h4" IsVisible="{Binding $parent[views:NethereumWallet].GlobalConfig.ShowApplicationName}" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].LoginTitle}" Classes="h5" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].LoginSubtitle}" Classes="body2" Classes.text-secondary="True" />
+                    </StackPanel>
+
+                    <viewsShared:WalletTextField Value="{Binding Password}"
+                                                 Label="{Binding $parent[views:NethereumWallet].PasswordLabel}"
+                                                 FieldType="Password"
+                                                 ShowRevealToggle="{Binding $parent[views:NethereumWallet].Config.AllowPasswordVisibilityToggle}"
+                                                 IsRevealed="{Binding $parent[views:NethereumWallet].ShowPassword}"
+                                                 OnToggleRevealCommand="{Binding $parent[views:NethereumWallet].TogglePasswordVisibilityCommand}"
+                                                 Localizer="{Binding $parent[views:NethereumWallet].Localizer}" />
+
+                    <TextBlock Text="{Binding LoginError}" Classes="error" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Button Grid.Column="0" Content="{Binding $parent[views:NethereumWallet].CreateNewWalletLinkText}" Classes="text-button" Command="{Binding $parent[views:NethereumWallet].ShowCreateNewWalletCommand}" />
+                        <Button Grid.Column="1" Content="{Binding $parent[views:NethereumWallet].LoginButton}" Classes="primary-button" Command="{Binding LoginCommand}" IsEnabled="{Binding CanLogin}" />
+                    </Grid>
+
+                    <Button Content="{Binding $parent[views:NethereumWallet].ResetWallet}" Classes="text-button" IsVisible="{Binding $parent[views:NethereumWallet].Config.Behavior.EnableWalletReset}" Command="{Binding ShowResetWalletConfirmationCommand}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="CreateWalletTemplate">
+            <Border Classes="wallet-card">
+                <StackPanel Spacing="16">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <Image Source="{Binding $parent[views:NethereumWallet].GlobalConfig.WelcomeLogoPath}" Width="64" Height="64" IsVisible="{Binding $parent[views:NethereumWallet].GlobalConfig.ShowLogo}" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].GlobalConfig.ApplicationName}" Classes="h4" IsVisible="{Binding $parent[views:NethereumWallet].GlobalConfig.ShowApplicationName}" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].CreateTitle}" Classes="h5" />
+                        <TextBlock Text="{Binding $parent[views:NethereumWallet].CreateSubtitle}" Classes="body2" Classes.text-secondary="True" TextAlignment="Center" />
+                    </StackPanel>
+
+                    <viewsShared:WalletTextField Value="{Binding NewPassword}"
+                                                 Label="{Binding $parent[views:NethereumWallet].CreatePasswordLabel}"
+                                                 FieldType="Password"
+                                                 ShowRevealToggle="{Binding $parent[views:NethereumWallet].Config.AllowPasswordVisibilityToggle}"
+                                                 IsRevealed="{Binding $parent[views:NethereumWallet].ShowNewPassword}"
+                                                 OnToggleRevealCommand="{Binding $parent[views:NethereumWallet].ToggleNewPasswordVisibilityCommand}"
+                                                 HelpText="{Binding $parent[views:NethereumWallet].PasswordHelperText}"
+                                                 Localizer="{Binding $parent[views:NethereumWallet].Localizer}" />
+
+                    <viewsShared:WalletTextField Value="{Binding ConfirmPassword}"
+                                                 Label="{Binding $parent[views:NethereumWallet].ConfirmPasswordLabel}"
+                                                 FieldType="Password"
+                                                 ShowRevealToggle="{Binding $parent[views:NethereumWallet].Config.AllowPasswordVisibilityToggle}"
+                                                 IsRevealed="{Binding $parent[views:NethereumWallet].ShowConfirmPassword}"
+                                                 OnToggleRevealCommand="{Binding $parent[views:NethereumWallet].ToggleConfirmPasswordVisibilityCommand}"
+                                                 Error="{Binding $parent[views:NethereumWallet].PasswordsMatch, Converter={x:Static converters:ObjectConverters.BoolInvert}}"
+                                                 ErrorText="{Binding $parent[views:NethereumWallet].PasswordMismatch}"
+                                                 Localizer="{Binding $parent[views:NethereumWallet].Localizer}" />
+
+                    <StackPanel IsVisible="{Binding ShowPasswordStrengthIndicator}">
+                        <TextBlock Text="Password Strength:" Classes="caption" />
+                        <ProgressBar Value="{Binding PasswordStrength}" Maximum="100" Foreground="{Binding PasswordStrengthColor, Converter={StaticResource StringToBrushConverter}}" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding CreateError}" Classes="error" IsVisible="{Binding CreateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <Button Content="{Binding $parent[views:NethereumWallet].CreateButtonText}"
+                            Classes="primary-button" Command="{Binding CreateWalletCommand}" IsEnabled="{Binding CanCreateWallet}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DashboardTemplate">
+            <dashboardViews:WalletDashboard OnLogoutCommand="{Binding $parent[views:NethereumWallet].OnLogoutCommand}" />
+        </DataTemplate>
+
+        <dataTemplates:WalletStateTemplateSelector x:Key="WalletStateTemplateSelector"
+                                                  LoginTemplate="{StaticResource LoginTemplate}"
+                                                  CreateWalletTemplate="{StaticResource CreateWalletTemplate}"
+                                                  DashboardTemplate="{StaticResource DashboardTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border Classes="wallet-container">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Loading State -->
+                    <viewsShared:LoadingOverlay IsVisible="{Binding IsBusy}" />
+
+                    <!-- Main Content based on Wallet State -->
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource WalletStateTemplateSelector}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

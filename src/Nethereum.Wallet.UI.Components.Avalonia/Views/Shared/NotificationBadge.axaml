@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.Shared"
+             mc:Ignorable="d" d:DesignWidth="50" d:DesignHeight="50"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.NotificationBadge"
+             x:DataType="viewsShared:NotificationBadge">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid>
+        <Button Classes="wallet-icon-button" Command="{Binding HandleNotificationClickCommand}" IsVisible="{Binding ViewModel.HasNotifications}">
+            <Grid>
+                <PathIcon Data="{extensions:IconPath IconName=notifications}" />
+                <TextBlock Text="{Binding ViewModel.NotificationCount}" Classes="badge-content" />
+            </Grid>
+            <ToolTip.Tip>
+                <TextBlock Text="{Binding GetNotificationTitle()}" />
+            </ToolTip.Tip>
+        </Button>
+        <Button Classes="wallet-icon-button" IsVisible="{Binding !ViewModel.HasNotifications}" IsEnabled="False">
+            <PathIcon Data="{extensions:IconPath IconName=notifications_outlined}" />
+            <ToolTip.Tip>
+                <TextBlock Text="{Binding Localizer.GetString(localization:NotificationBadgeLocalizer.Keys.NoNotifications)}" />
+            </ToolTip.Tip>
+        </Button>
+    </Grid>
+</UserControl>

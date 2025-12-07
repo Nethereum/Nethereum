@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletSegmentedControl"
+             x:DataType="viewsShared:WalletSegmentedControl">
+    <UserControl.Resources>
+        <converters:BoolToStringConverter x:Key="BoolToStringConverter" />
+        <converters:IsFirstItemConverter x:Key="IsFirstItemConverter" />
+        <converters:IsLastItemConverter x:Key="IsLastItemConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Border Classes="wallet-segmented-control" IsVisible="{Binding Options.Count, Converter={x:Static converters:ObjectConverters.IsGreaterThan}, ConverterParameter=0}">
+        <ItemsControl ItemsSource="{Binding Options}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Command="{Binding $parent[viewsShared:WalletSegmentedControl].SelectOption}" CommandParameter="{Binding Value}">
+                        <Button.Classes>
+                            <Binding Path="IsSelected" Converter="{StaticResource BoolToStringConverter}" ConverterParameter="selected" />
+                            <MultiBinding Converter="{StaticResource BoolToStringConverter}" ConverterParameter="first">
+                                <Binding Path="." Converter="{StaticResource IsFirstItemConverter}">
+                                    <Binding.ConverterParameter>
+                                        <MultiBinding>
+                                            <Binding Path="." />
+                                            <Binding Path="$parent[ItemsControl].Items" />
+                                        </MultiBinding>
+                                    </Binding.ConverterParameter>
+                                </Binding>
+                            </MultiBinding>
+                            <MultiBinding Converter="{StaticResource BoolToStringConverter}" ConverterParameter="last">
+                                <Binding Path="." Converter="{StaticResource IsLastItemConverter}">
+                                    <Binding.ConverterParameter>
+                                        <MultiBinding>
+                                            <Binding Path="." />
+                                            <Binding Path="$parent[ItemsControl].Items" />
+                                        </MultiBinding>
+                                    </Binding.ConverterParameter>
+                                </Binding>
+                            </MultiBinding>
+                        </Button.Classes>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <PathIcon Data="{Binding Icon, Converter={x:Static converters:ObjectConverters.IconNameToIconData}}" IsVisible="{Binding Icon, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Description}" Classes="text-secondary" IsVisible="{Binding Description, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+</UserControl>

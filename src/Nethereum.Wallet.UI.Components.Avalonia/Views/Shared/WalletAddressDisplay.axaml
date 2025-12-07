@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="50"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletAddressDisplay"
+             x:DataType="viewsShared:WalletAddressDisplay">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Text="{Binding GetDisplayAddress()}" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Classes="wallet-icon-button" Command="{Binding HandleCopyClick}">
+            <PathIcon Data="{extensions:IconPath IconName=content_copy}" />
+        </Button>
+    </Grid>
+</UserControl>

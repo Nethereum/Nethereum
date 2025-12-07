@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletHeader"
+             x:DataType="viewsShared:WalletHeader">
+    <UserControl.Resources>
+        <converters:FormatAddressConverter x:Key="FormatAddressConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Border Classes="wallet-header">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <!-- Left Section: Menu Button (Mobile), Logo, App Name -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                <Button Classes="wallet-icon-button" Command="{Binding OnMenuClickCommand}" IsVisible="{Binding ShowMenuButton}">
+                    <PathIcon Data="{extensions:IconPath IconName=menu}" />
+                </Button>
+                <Image Source="{Binding LogoPath}" Width="32" Height="32" IsVisible="{Binding ShowLogo}" />
+                <TextBlock Text="{Binding AppName}" Classes="h6" IsVisible="{Binding ShowAppName}" />
+            </StackPanel>
+
+            <!-- Center Section: Title and Subtitle -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Title}" Classes="h5" />
+                <TextBlock Text="{Binding Subtitle}" Classes="text-secondary" IsVisible="{Binding Subtitle, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+            <!-- Right Section: Account Info, Network Info, Actions -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="16">
+                <!-- Account Info -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" IsVisible="{Binding ShowAccountInfo}">
+                    <Button Command="{Binding OnAccountClickCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <PathIcon Data="{extensions:IconPath IconName=account_circle}" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding AccountName}" FontWeight="Bold" />
+                                <TextBlock Text="{Binding AccountAddress, Converter={StaticResource FormatAddressConverter}}" Classes="text-secondary" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Network Info -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" IsVisible="{Binding ShowNetworkInfo}">
+                    <Button Command="{Binding OnNetworkClickCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Image Source="{Binding NetworkLogoPath}" Width="24" Height="24" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding NetworkName}" FontWeight="Bold" />
+                                <TextBlock Text="{Binding ChainId}" Classes="text-secondary" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Actions Content -->
+                <ContentControl Content="{Binding ActionsContent}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

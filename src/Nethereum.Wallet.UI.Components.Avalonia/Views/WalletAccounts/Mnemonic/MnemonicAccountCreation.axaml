@@ -1,0 +1,195 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:mnemonicViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.Mnemonic"
+             xmlns:vm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.Core.Localization"
+             xmlns:mnemonicLocalizers="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             xmlns:objectConverters="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.Mnemonic.MnemonicAccountCreation"
+             x:DataType="mnemonicViews:MnemonicAccountCreation">
+    <UserControl.Resources>
+        <converters:BoolToSeverityConverter x:Key="BoolToSeverityConverter" />
+        <converters:BoolToBrushConverter x:Key="BoolToBrushConverter" />
+        <converters:BoolToIconConverter x:Key="BoolToIconConverter" />
+        <converters:BoolToIconDataConverter x:Key="BoolToIconDataConverter" />
+        <DataTemplate x:Key="SetupTemplate">
+            <StackPanel>
+                <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetStepDescription()}" />
+                <viewsShared:WalletFormSection>
+                    <viewsShared:WalletTextField Value="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.MnemonicLabel}"
+                                                 Label="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.WalletNameLabel)}"
+                                                 Placeholder="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountNamePlaceholder)}"
+                                                 HelpText="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.WalletNameHelperText)}"
+                                                 Localizer="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.GenerateTabText)} / {Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.ImportTabText)}">
+                    <viewsShared:WalletSegmentedControl Options="{Binding $parent[mnemonicViews:MnemonicAccountCreation].modeOptions}"
+                                                        SelectedValue="{Binding $parent[mnemonicViews:MnemonicAccountCreation].isGenerateMode}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletInfoCard Severity="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsGenerateMode, Converter={StaticResource BoolToSeverityConverter}, ConverterParameter=Warning}"
+                                            Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetModeTitle()}"
+                                            Description="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetModeDescription()}"
+                                            Icon="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsGenerateMode, Converter={StaticResource BoolToIconConverter}, ConverterParameter='info:warning'}" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="MnemonicTemplate">
+            <StackPanel>
+                <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetStepDescription()}" />
+                <viewsShared:WalletFormSection>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicBehavior.ShowWordCountButtons}">
+                        <Button Content="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.Generate12WordsText)}">
+                            <Button.Classes>
+                                <MultiBinding Converter="{StaticResource BoolToStringConverter}" ConverterParameter="primary">
+                                    <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].ViewModel.WordCount" Converter="{x:Static converters:ObjectConverters.IsEqual}" ConverterParameter="12" />
+                                </MultiBinding>
+                            </Button.Classes>
+                        </Button>
+                        <Button Content="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.Generate24WordsText)}">
+                            <Button.Classes>
+                                <MultiBinding Converter="{StaticResource BoolToStringConverter}" ConverterParameter="primary">
+                                    <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].ViewModel.WordCount" Converter="{x:Static converters:ObjectConverters.IsEqual}" ConverterParameter="24" />
+                                </MultiBinding>
+                            </Button.Classes>
+                        </Button>
+                    </StackPanel>
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsGenerateMode}">
+                    <viewsShared:WalletWordChips Words="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetMnemonicWordsList()}"
+                                                 IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsRevealed}"
+                                                 AllowCopy="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicBehavior.EnableClipboardCopy}"
+                                                 OnCopyCommand="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.CopyToClipboardCommand}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseLabel)}"
+                                             IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicBehavior.EnablePassphraseEntry}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.MnemonicPassphrase}"
+                                                 Label="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseLabel)}"
+                                                 HelpText="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseHelperText)}"
+                                                 FieldType="Password"
+                                                 MaxLength="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicSecurity.MaxPassphraseLength}"
+                                                 Localizer="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection IsVisible="{Binding !$parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsGenerateMode}">
+                    <StackPanel>
+                        <viewsShared:WalletTextField Value="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.Mnemonic}"
+                                                     Label="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.SeedPhraseLabel)}"
+                                                     HelpText="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.SeedPhraseHelperText)}"
+                                                     FieldType="Mnemonic"
+                                                     Lines="4"
+                                                     Localizer="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer}" />
+
+                        <Border Classes="wallet-validation-section" IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.Mnemonic, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}">
+                        <Border Classes="wallet-validation-chip" Background="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsValidMnemonic, Converter={StaticResource BoolToBrushConverter}, ConverterParameter='SuccessBrush:ErrorBrush'}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <PathIcon Data="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsValidMnemonic, Converter={StaticResource BoolToIconDataConverter}, ConverterParameter='check_circle:error'}" />
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                            <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsValidMnemonic, Converter={x:Static converters:BoolToStringConverter}, ConverterParameter='ValidMnemonicMessage:InvalidMnemonicMessage'}" />
+                                            <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].Localizer" />
+                                            <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].ViewModel.WordCount" />
+                                            <Binding Path="$parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.WordCountDisplay)}" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                    </StackPanel>
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseLabel)}"
+                                             IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicBehavior.EnablePassphraseEntry}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.MnemonicPassphrase}"
+                                                 Label="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseLabel)}"
+                                                 HelpText="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.PassphraseHelperText)}"
+                                                 FieldType="Password"
+                                                 MaxLength="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicSecurity.MaxPassphraseLength}"
+                                                 Localizer="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="SecurityTemplate">
+            <StackPanel>
+                <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].GetStepDescription()}" />
+                <viewsShared:WalletFormSection Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountNameLabel)}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.FinalAccountName}"
+                                                 Label="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountNameLabel)}"
+                                                 Placeholder="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountNameDefaultPlaceholder)}"
+                                                 HelpText="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountNameFinalHelperText)}"
+                                                 Localizer="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Configuration.MnemonicBehavior.RequireBackupConfirmation}">
+                    <viewsShared:WalletInfoCard Severity="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsBackedUp, Converter={StaticResource BoolToSeverityConverter}}"
+                                            Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.BackupWarningTitle)}"
+                                            Description="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.BackupWarningMessage)}"
+                                            Icon="warning">
+                        <viewsShared:WalletInfoCard.ChildContent>
+                            <Border Classes="wallet-backup-confirmation">
+                                <CheckBox IsChecked="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.IsBackedUp}"
+                                          Classes="primary">
+                                    <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.BackupConfirmationText)}" />
+                                </CheckBox>
+                            </Border>
+                        </viewsShared:WalletInfoCard.ChildContent>
+                    </viewsShared:WalletInfoCard>
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection Title="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.AccountPreviewTitle)}"
+                                             IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.DerivedAddress, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}">
+                    <Border Classes="wallet-address-preview">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Classes="wallet-address-content">
+                                <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.DerivedAddressLabel)}" Classes="wallet-address-label" />
+                                <TextBlock Text="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.DerivedAddress}" Classes="wallet-address-value" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="wallet-icon-button" Command="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.CopyAddressToClipboardCommand}">
+                                <PathIcon Data="{extensions:IconPath IconName=content_copy}" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </viewsShared:WalletFormSection>
+            </StackPanel>
+        </DataTemplate>
+
+        <dataTemplates:MnemonicFormStepTemplateSelector x:Key="MnemonicFormStepTemplateSelector"
+                                                      SetupTemplate="{StaticResource SetupTemplate}"
+                                                      MnemonicTemplate="{StaticResource MnemonicTemplate}"
+                                                      SecurityTemplate="{StaticResource SecurityTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <views:WalletFormLayout Title="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.DisplayName)}"
+                            Subtitle="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.Description)}"
+                            Steps="{Binding formSteps}"
+                            CurrentStepIndex="{Binding CurrentStep}"
+                            ExitText="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.ExitButtonText)}"
+                            BackText="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.BackButtonText)}"
+                            ContinueText="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.ContinueButtonText)}"
+                            PrimaryText="{Binding Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.CreateAccountButtonText)}"
+                            ShowBack="{Binding ShowBack}"
+                            ShowContinue="{Binding ShowContinue}"
+                            ShowPrimary="{Binding ShowPrimary}"
+                            ContinueDisabled="{Binding !CanProceedToNextStep()}"
+                            PrimaryDisabled="{Binding !ViewModel.CanCreateAccount}"
+                            OnExitCommand="{Binding BackToAccountSelectionCommand}"
+                            OnBackCommand="{Binding GoToPreviousStepCommand}"
+                            OnContinueCommand="{Binding HandleContinueCommand}"
+                            OnPrimaryCommand="{Binding CreateAccountCommand}">
+        <ContentControl Content="{Binding CurrentStep}" ContentTemplate="{StaticResource MnemonicFormStepTemplateSelector}" />
+    </views:WalletFormLayout>
+</UserControl>

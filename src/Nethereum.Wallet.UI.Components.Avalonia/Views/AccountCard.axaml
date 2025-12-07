@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.AccountCard"
+             x:DataType="views:AccountCard">
+    <UserControl.Resources>
+        <converters:AddressToBrushConverter x:Key="AddressToBrushConverter" />
+        <converters:BoolAndObjectEqualsToBoolConverter x:Key="BoolAndObjectEqualsToBoolConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Border Classes="wallet-card" IsVisible="{Binding Account}" Cursor="Hand">
+        <StackPanel>
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                <Border Grid.RowSpan="3" Width="40" Height="40" CornerRadius="20" Background="{Binding Account.Address, Converter={StaticResource AddressToBrushConverter}}" Margin="0,0,16,0" Classes="identicon">
+                    <TextBlock Text="{Binding IdenticonText}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="{Binding AccountDisplayName}" FontWeight="Bold" />
+                <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding EnsName}" IsVisible="{Binding EnsName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource PrimaryBrush}" />
+                <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding FormattedAddress}" Classes="text-secondary address" />
+                <StackPanel Grid.Column="1" Grid.Row="3" Orientation="Horizontal" Spacing="4">
+                    <TextBlock Text="{Binding BalanceInEth, StringFormat='{}{0:F4}'}" />
+                    <TextBlock Text="{Binding CurrencySymbol}" />
+                </StackPanel>
+            </Grid>
+
+            <ContentControl Content="{Binding AdditionalChips}" Grid.Column="1" HorizontalAlignment="Right" />
+            <Grid ColumnDefinitions="*,Auto,Auto" Grid.Row="4" Grid.ColumnSpan="2">
+                <Grid.IsVisible>
+                    <MultiBinding Converter="{StaticResource BoolAndObjectEqualsToBoolConverter}">
+                        <Binding Path="$parent[views:AccountListComponent].DataContext.IsEditingAccount" />
+                        <Binding Path="$parent[views:AccountListComponent].DataContext.EditingAccountAddress" />
+                        <Binding Path="Account.Address" />
+                    </MultiBinding>
+                </Grid.IsVisible>
+                <TextBox Grid.Column="0" Text="{Binding $parent[views:AccountListComponent].DataContext.EditingAccountName}" />
+                <Button Grid.Column="1" Content="Save" Command="{Binding $parent[views:AccountListComponent].DataContext.SaveAccountNameCommand}" />
+                <Button Grid.Column="2" Content="Cancel" Command="{Binding $parent[views:AccountListComponent].DataContext.CancelEditAccountCommand}" />
+            </Grid>
+        </StackPanel>
+    </Border>
+    <UserControl.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="Edit" Command="{Binding OnMenuCommand}" CommandParameter="{Binding Account}" />
+            <MenuItem Header="Delete" Command="{Binding OnMenuCommand}" CommandParameter="{Binding Account}" />
+        </ContextMenu>
+    </UserControl.ContextMenu>
+</UserControl>

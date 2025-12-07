@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletFormSection"
+             x:DataType="viewsShared:WalletFormSection">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <StackPanel Classes="wallet-form-section">
+        <TextBlock Text="{Binding Title}" Classes="wallet-section-title" IsVisible="{Binding !Title, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+        <ContentControl Content="{Binding ChildContent}" />
+    </StackPanel>
+</UserControl>

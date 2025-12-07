@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.WalletFormLayout"
+             x:DataType="views:WalletFormLayout">
+    <UserControl.Resources>
+        <converters:IsLastItemConverter x:Key="IsLastItemConverter" />
+        <converters:IconToPathDataConverter x:Key="IconToPathDataConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="16" Background="{DynamicResource SurfaceBrush}">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="{Binding Title}" Classes="h5" />
+                <TextBlock Text="{Binding Subtitle}" Classes="text-secondary" />
+            </StackPanel>
+        </Border>
+
+        <!-- Step Indicators -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+            <ItemsControl ItemsSource="{Binding Steps}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <PathIcon Data="{Binding Icon, Converter={StaticResource IconToPathDataConverter}}" />
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Path="LocalizationKey" />
+                                        <Binding Path="$parent[UserControl].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=chevron_right}" Margin="8,0,8,0">
+                                <PathIcon.IsVisible>
+                                    <MultiBinding Converter="{StaticResource IsLastItemConverter}">
+                                        <Binding Path="." />
+                                        <Binding Path="$parent[ItemsControl].Items" />
+                                    </MultiBinding>
+                                </PathIcon.IsVisible>
+                            </PathIcon>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <ContentControl Grid.Row="1" Content="{Binding ChildContent}" Margin="16" />
+
+        <!-- Footer Buttons -->
+        <Border Grid.Row="2" Padding="16" Background="{DynamicResource SurfaceBrush}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Content="{Binding ExitText}" IsVisible="{Binding OnExitCommand}" Command="{Binding OnExitCommand}" />
+                <Button Content="{Binding BackText}" IsVisible="{Binding ShowBack}" Command="{Binding OnBackCommand}" />
+                <Button Content="{Binding ContinueText}" IsVisible="{Binding ShowContinue}" Command="{Binding OnContinueCommand}" IsEnabled="{Binding !ContinueDisabled}" />
+                <Button Content="{Binding PrimaryText}" IsVisible="{Binding ShowPrimary}" Command="{Binding OnPrimaryCommand}" IsEnabled="{Binding !PrimaryDisabled}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

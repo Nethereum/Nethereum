@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.AccountTypeCard"
+             x:DataType="views:AccountTypeCard">
+    <UserControl.Resources>
+        <converters:AccountTypeToBrushConverter x:Key="AccountTypeToBrushConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Border Classes="account-type-card" Cursor="Hand" PointerPressed="OnCardPointerPressed">
+        <StackPanel>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="{Binding AccountType, Converter={StaticResource AccountTypeToBrushConverter}}" Margin="0,0,16,0">
+                    <PathIcon Data="{Binding AccountType.Icon, Converter={StaticResource IconMappingConverter}}" Foreground="White" />
+                </Border>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding AccountType.DisplayName}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding AccountType.Description}" Classes="text-secondary" />
+                </StackPanel>
+                <PathIcon Grid.Column="2" Data="{Binding Source='chevron_right', Converter={StaticResource IconMappingConverter}}" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

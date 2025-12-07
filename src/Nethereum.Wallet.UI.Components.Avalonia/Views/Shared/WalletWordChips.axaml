@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletWordChips"
+             x:DataType="viewsShared:WalletWordChips">
+    <UserControl.Resources>
+        <converters:BoolToIconConverter x:Key="BoolToIconConverter" />
+        <converters:BoolAndBoolConverter x:Key="BoolAndBoolConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <StackPanel Classes="wallet-word-chips-container">
+        <Border Classes="wallet-word-chips-header" IsVisible="{Binding ShowHeader}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Classes="wallet-word-chips-info">
+                    <TextBlock Text="{Binding Title}" Classes="wallet-word-chips-title" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="wallet-word-chips-subtitle" IsVisible="{Binding Subtitle, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Classes="wallet-word-chips-actions">
+                    <Button Classes="wallet-icon-button" Command="{Binding ToggleVisibilityCommand}" IsVisible="{Binding AllowToggleVisibility}">
+                        <PathIcon>
+                            <PathIcon.Data>
+                                <MultiBinding Converter="{StaticResource BoolToIconConverter}">
+                                    <Binding Path="IsVisible" />
+                                    <Binding Source="visibility_off" />
+                                    <Binding Source="visibility" />
+                                </MultiBinding>
+                            </PathIcon.Data>
+                        </PathIcon>
+                    </Button>
+                    <Button Classes="wallet-icon-button" Command="{Binding CopyToClipboardCommand}" IsVisible="{Binding AllowCopy}">
+                        <PathIcon Data="{extensions:IconPath IconName=content_copy}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Classes="wallet-word-chips-content">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding GetIndexedWords()}" IsVisible="{Binding IsVisible}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="wallet-word-chip">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding index}" Classes="wallet-word-number" />
+                                    <TextBlock Text="{Binding word}" Classes="wallet-word-text" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Classes="wallet-word-chips-hidden" IsVisible="{Binding !IsVisible}">
+                    <PathIcon Data="{extensions:IconPath IconName=lock}" />
+                    <TextBlock Text="{Binding HiddenMessage}" />
+                </StackPanel>
+
+                <StackPanel Classes="wallet-word-chips-empty">
+                    <StackPanel.IsVisible>
+                        <MultiBinding Converter="{StaticResource BoolAndBoolConverter}">
+                            <Binding Path="Words.Count, Converter={x:Static converters:ObjectConverters.IsEqual}, ConverterParameter=0" />
+                            <Binding Path="!IsVisible" />
+                        </MultiBinding>
+                    </StackPanel.IsVisible>
+                    <TextBlock Text="{Binding EmptyMessage}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:dashboardViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Dashboard"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.Core.Localization"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             xmlns:vm="clr-namespace:Nethereum.Wallet.UI.Components.Dashboard;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:accountListVm="clr-namespace:Nethereum.Wallet.UI.Components.AccountList;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:createAccountVm="clr-namespace:Nethereum.Wallet.UI.Components.CreateAccount;assembly=Nethereum.Wallet.UI.Components"
+             mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Dashboard.WalletDashboard"
+             x:DataType="vm:WalletDashboardViewModel">
+    <UserControl.Resources>
+        <DataTemplate x:Key="AccountListTemplate" DataType="{x:Type accountListVm:AccountListPluginViewModel}">
+            <views:AccountListComponent ViewModel="{Binding}" />
+        </DataTemplate>
+        <DataTemplate x:Key="CreateAccountTemplate" DataType="{x:Type createAccountVm:CreateAccountPluginViewModel}">
+            <views:CreateAccount ViewModel="{Binding}" />
+        </DataTemplate>
+
+        <dataTemplates:DashboardPluginTemplateSelector x:Key="DashboardPluginTemplateSelector"
+                                                      AccountListTemplate="{StaticResource AccountListTemplate}"
+                                                      CreateAccountTemplate="{StaticResource CreateAccountTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid RowDefinitions="*,Auto">
+        <!-- Main Content Area -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" IsVisible="{Binding ShouldShowSidebar()}">
+            <!-- Desktop: Always visible side menu -->
+            <Border Grid.Column="0" Width="{Binding _globalConfig.SidebarWidth}" Background="{DynamicResource SurfaceBrush}" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource DividerBrush}">
+                <StackPanel>
+                    <!-- Sidebar Header -->
+                    <Border Padding="20" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerBrush}" Background="{DynamicResource BackgroundGreyBrush}">
+                        <StackPanel HorizontalAlignment="Center" Spacing="8">
+                            <Image Source="{Binding _globalConfig.LogoPath}" Width="48" Height="48" IsVisible="{Binding _globalConfig.ShowLogo}" />
+                            <TextBlock Text="{Binding _globalConfig.ApplicationName}" Classes="h6" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold" TextAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Navigation Menu -->
+                    <ItemsControl ItemsSource="{Binding AvailablePlugins}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding $parent[dashboardViews:WalletDashboard].OnTabChanged}" CommandParameter="{Binding Index}" Classes="nav-link">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{Binding Plugin.Icon, Converter={x:Static converters:ObjectConverters.IconNameToIconData}}" />
+                                        <TextBlock Text="{Binding Plugin.DisplayName}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Main Content -->
+            <StackPanel Grid.Column="1">
+                <!-- Professional Header -->
+                <viewsShared:WalletHeader Title="{Binding SelectedPlugin.DisplayName}"
+                                          Subtitle="{Binding Subtitle}"
+                                          AppName="{Binding _globalConfig.ApplicationName}"
+                                          LogoPath="{Binding _globalConfig.LogoPath}"
+                                          ShowLogo="{Binding _globalConfig.ShowLogo}"
+                                          ShowAppName="{Binding ShouldShowMobileHeader()}"
+                                          ShowMenuButton="{Binding ShouldShowMobileHeader()}"
+                                          ShowAccountInfo="{Binding _globalConfig.ShowAccountDetailsInHeader}"
+                                          AccountName="{Binding _viewModel.SelectedAccountName}"
+                                          AccountAddress="{Binding _viewModel.SelectedAccountAddress}"
+                                          NetworkName="{Binding _viewModel.SelectedNetworkName}"
+                                          NetworkLogoPath="{Binding _viewModel.SelectedNetworkLogoPath}"
+                                          ChainId="{Binding _viewModel.SelectedChainId}"
+                                          ShowNetworkInfo="True"
+                                          IsMobile="{Binding ShouldShowMobileHeader()}"
+                                          IsCompact="{Binding isCompact}"
+                                          ComponentWidth="{Binding componentWidth}"
+                                          OnMenuClickCommand="{Binding ToggleDrawerCommand}"
+                                          OnAccountClickCommand="{Binding NavigateToAccountDetailsCommand}"
+                                          OnNetworkClickCommand="{Binding NavigateToNetworkDetailsCommand}">
+                    <viewsShared:WalletHeader.ActionsContent>
+                        <viewsShared:NotificationBadge ViewModel="{Binding _viewModel.NotificationBadgeViewModel}" />
+                    </viewsShared:WalletHeader.ActionsContent>
+                </viewsShared:WalletHeader>
+
+                <!-- Plugin Content -->
+                <ContentControl Content="{Binding SelectedPlugin}" ContentTemplate="{StaticResource DashboardPluginTemplateSelector}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Mobile: Overlay menu -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2" IsVisible="{Binding ShouldShowMobileOverlay()}" Background="#80000000">
+            <Border Width="{Binding _globalConfig.SidebarWidth}" Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Left">
+                <StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Margin="12">
+                        <Image Source="{Binding _globalConfig.LogoPath}" Width="48" Height="48" IsVisible="{Binding _globalConfig.ShowLogo}" />
+                        <TextBlock Text="{Binding _globalConfig.ApplicationName}" Classes="h6" Foreground="{DynamicResource PrimaryBrush}" Margin="0,8,0,0" />
+                    </StackPanel>
+                    <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerBrush}" Margin="0,8,0,8" />
+
+                    <ItemsControl ItemsSource="{Binding AvailablePlugins}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding $parent[dashboardViews:WalletDashboard].SelectPluginAndCloseMenuCommand}" CommandParameter="{Binding Index}" Classes="nav-link">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{Binding Plugin.Icon, Converter={x:Static converters:ObjectConverters.IconNameToIconData}}" />
+                                        <TextBlock Text="{Binding Plugin.DisplayName}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

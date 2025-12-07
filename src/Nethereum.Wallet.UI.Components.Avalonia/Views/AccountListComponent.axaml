@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Nethereum.Wallet.UI.Components.AccountList"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.AccountListComponent"
+             x:DataType="vm:AccountListViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <ListBox ItemsSource="{Binding AccountGroups}" Classes="account-list">
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <StackPanel>
+                    <TextBlock Text="{Binding GroupName}" Classes="h6" Margin="0 0 0 8" />
+                    <ListBox ItemsSource="{Binding Accounts}" Classes="account-list">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <views:AccountCard Account="{Binding}"
+                                                   IsSelected="{Binding IsSelected}"
+                                                   AccountDisplayName="{Binding Name}"
+                                                   FormattedAddress="{Binding Address}"
+                                                   BalanceInEth="{Binding BalanceInEth}"
+                                                   CurrencySymbol="{Binding $parent[UserControl].DataContext.CurrencySymbol}"
+                                                   OnViewDetailsCommand="{Binding $parent[UserControl].DataContext.ShowAccountDetailsCommand}"
+                                                   OnSelectCommand="{Binding $parent[UserControl].DataContext.SwitchAccountCommand}">
+                                    <views:AccountCard.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Edit" Command="{Binding $parent[UserControl].DataContext.StartEditAccountCommand}" CommandParameter="{Binding}" />
+                                            <MenuItem Header="Delete" Command="{Binding $parent[UserControl].DataContext.DeleteAccountCommand}" CommandParameter="{Binding}" />
+                                        </ContextMenu>
+                                    </views:AccountCard.ContextMenu>
+                                </views:AccountCard>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</UserControl>

@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:voViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.ViewOnly"
+             xmlns:vm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.ViewOnly.ViewOnlyAccountCreation"
+             x:DataType="voViews:ViewOnlyAccountCreation">
+    <UserControl.Resources>
+        <converters:IconToPathDataConverter x:Key="IconToPathDataConverter" />
+        <converters:LocalizationConverter x:Key="LocalizationConverter" />
+        <DataTemplate x:Key="SetupTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AccountNameLabel)}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[voViews:ViewOnlyAccountCreation].ViewModel.Label}"
+                                                 Label="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AccountNameLabel)}"
+                                                 Placeholder="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AccountNamePlaceholder)}"
+                                                 HelpText="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AccountNameHelperText)}"
+                                                 Localizer="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletInfoCard Severity="Info"
+                                            Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewOnlyAccountTitle)}"
+                                            Description="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewOnlyAccountDescription)}"
+                                            Icon="visibility" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="AddressTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.EnterAddressTitle)}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[voViews:ViewOnlyAccountCreation].ViewModel.ViewOnlyAddress}"
+                                                 Label="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AddressLabel)}"
+                                                 Placeholder="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AddressPlaceholder)}"
+                                                 HelpText="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AddressHelperText)}"
+                                                 RequiredError="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AddressRequired)}"
+                                                 FieldType="Address"
+                                                 Required="True"
+                                                 Class="wallet-monospace"
+                                                 Localizer="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletInfoCard Severity="Success"
+                                            Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ValidAddressText)}"
+                                            Description="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ValidAddressDescription)}"
+                                            Icon="check_circle"
+                                            IsVisible="{Binding $parent[voViews:ViewOnlyAccountCreation].ViewModel.ViewOnlyAddress, Converter={StaticResource IsNotNullOrEmpty}}" />
+
+                <viewsShared:WalletInfoCard Severity="Warning"
+                                            Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.InvalidAddressText)}"
+                                            Description="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.InvalidEthereumAddressError)}"
+                                            Icon="warning"
+                                            IsVisible="{Binding $parent[voViews:ViewOnlyAccountCreation].ViewModel.ViewOnlyAddress, Converter={StaticResource IsNotNullOrEmpty}}" />
+
+                <viewsShared:WalletContentSection Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.WhatYouCanDoTitle)}" Classes="spacing-tight">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=account_balance}" />
+                            <TextBlock Text="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewBalanceText)}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=history}" />
+                            <TextBlock Text="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewTransactionsText)}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=collections}" />
+                            <TextBlock Text="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewNFTsText)}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=analytics}" />
+                            <TextBlock Text="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.TrackPortfolioText)}" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </viewsShared:WalletContentSection>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="ConfirmTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ConfirmDetailsTitle)}">
+                    <StackPanel Spacing="12">
+                        <!-- Account Name -->
+                        <StackPanel>
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Source="AccountNameLabel" />
+                                        <Binding Path="$parent[voViews:ViewOnlyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock Classes="body1">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Path="$parent[voViews:ViewOnlyAccountCreation].ViewModel.Label, Converter={StaticResource IsNullOrEmpty}, ConverterParameter=UnnamedAccount" />
+                                        <Binding Path="$parent[voViews:ViewOnlyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- Address -->
+                        <StackPanel>
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Source="AddressLabel" />
+                                        <Binding Path="$parent[voViews:ViewOnlyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock Classes="body1" Classes.wallet-monospace="True"
+                                       Text="{Binding $parent[voViews:ViewOnlyAccountCreation].ViewModel.ViewOnlyAddress}" />
+                        </StackPanel>
+
+                        <!-- Account Type -->
+                        <StackPanel>
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Source="AccountTypeLabel" />
+                                        <Binding Path="$parent[voViews:ViewOnlyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <Border Classes="wallet-chip" Background="{DynamicResource InfoBrush}">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <PathIcon Data="{Binding Converter={StaticResource IconToPathDataConverter}, ConverterParameter=visibility}" />
+                                    <TextBlock Text="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewOnlyAccountType)}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </viewsShared:WalletFormSection>
+
+                <!-- Security Notice -->
+                <viewsShared:WalletInfoCard Severity="Info"
+                                            Title="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.SecurityNoticeTitle)}"
+                                            Description="{Binding $parent[voViews:ViewOnlyAccountCreation].Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ViewOnlySecurityNotice)}"
+                                            Icon="security" />
+            </StackPanel>
+        </DataTemplate>
+
+        <dataTemplates:ViewOnlyFormStepTemplateSelector x:Key="ViewOnlyFormStepTemplateSelector"
+                                                      SetupTemplate="{StaticResource SetupTemplate}"
+                                                      AddressTemplate="{StaticResource AddressTemplate}"
+                                                      ConfirmTemplate="{StaticResource ConfirmTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <views:WalletFormLayout Title="{Binding GetTitle()}"
+                            Subtitle="{Binding GetSubtitle()}"
+                            Steps="{Binding formSteps}"
+                            CurrentStepIndex="{Binding CurrentStep}"
+                            ExitText="{Binding GetExitText()}"
+                            BackText="{Binding Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.BackButtonText)}"
+                            ContinueText="{Binding Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.ContinueButtonText)}"
+                            PrimaryText="{Binding Localizer.GetString(localization:ViewOnlyAccountEditorLocalizer.Keys.AddAccountText)}"
+                            ShowBack="{Binding ShowBack}"
+                            ShowContinue="{Binding ShowContinue}"
+                            ShowPrimary="{Binding ShowPrimary}"
+                            ContinueDisabled="{Binding !CanContinue()}"
+                            PrimaryDisabled="{Binding !ViewModel.CanCreateAccount}"
+                            OnExitCommand="{Binding HandleExitCommand}"
+                            OnBackCommand="{Binding HandleBackCommand}"
+                            OnContinueCommand="{Binding HandleContinueCommand}"
+                            OnPrimaryCommand="{Binding CreateAccountCommand}">
+        <ContentControl Content="{Binding CurrentStep}" ContentTemplate="{StaticResource ViewOnlyFormStepTemplateSelector}" />
+    </views:WalletFormLayout>
+</UserControl>

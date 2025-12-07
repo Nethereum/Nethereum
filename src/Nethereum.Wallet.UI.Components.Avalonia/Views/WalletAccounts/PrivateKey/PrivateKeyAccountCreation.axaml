@@ -1,0 +1,190 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:pkViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.PrivateKey"
+             xmlns:vm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey"
+             xmlns:localization="clr-namespace:Nethereum.Wallet.UI.Components.Core.Localization"
+             xmlns:privateKeyLocalizers="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.PrivateKey.PrivateKeyAccountCreation"
+             x:DataType="pkViews:PrivateKeyAccountCreation">
+    <UserControl.Resources>
+        <converters:BoolToBrushConverter x:Key="BoolToBrushConverter" />
+        <converters:BoolToIconConverter x:Key="BoolToIconConverter" />
+        <converters:LocalizationConverter x:Key="LocalizationConverter" />
+        <converters:BoolToStringConverter x:Key="BoolToStringConverter" />
+        <DataTemplate x:Key="SetupTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.AccountNameLabel)}">
+                    <viewsShared:WalletTextField Value="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.Label}"
+                                                 Label="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.AccountNameLabel)}"
+                                                 Placeholder="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.AccountNamePlaceholder)}"
+                                                 HelpText="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.AccountNameHelperText)}"
+                                                 Localizer="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletInfoCard Severity="Info"
+                                            Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyImportTitle)}"
+                                            Description="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyImportDescription)}"
+                                            Icon="info" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="PrivateKeyTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyLabel)}">
+                    <StackPanel>
+                        <viewsShared:WalletTextField Value="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.PrivateKey}"
+                                                     Label="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyLabel)}"
+                                                     HelpText="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyHelperText)}"
+                                                     FieldType="PrivateKey"
+                                                     ShowRevealToggle="True"
+                                                     IsRevealed="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.IsRevealed}"
+                                                     OnToggleRevealCommand="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.ToggleRevealCommand}"
+                                                     ToggleRevealAriaLabel="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.ToggleVisibilityLabel)}"
+                                                     Error="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.HasError}"
+                                                     ErrorText="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.ErrorMessage}"
+                                                     Localizer="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer}" />
+
+                        <Border Classes="validation-status" IsVisible="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.HasPrivateKey}">
+                        <Border Classes="wallet-validation-chip" Background="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.IsValidPrivateKey, Converter={StaticResource BoolToBrushConverter}, ConverterParameter='SuccessBrush:ErrorBrush'}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <PathIcon Data="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.IsValidPrivateKey, Converter={StaticResource BoolToIconConverter}, ConverterParameter='check_circle:error'}" />
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                            <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].ViewModel.IsValidPrivateKey" ConverterParameter="ValidFormatText:InvalidFormatText" />
+                                            <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        </Border>
+                    </StackPanel>
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletInfoCard Severity="Warning"
+                                            Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.SecurityWarningTitle)}"
+                                            Description="{Binding $parent[pkViews:PrivateKeyAccountCreation].GetSecurityWarningMessage()}"
+                                            Icon="warning" />
+
+
+                <viewsShared:WalletContentSection Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.SupportedFormatsTitle)}" Classes="spacing-normal">
+                    <StackPanel Classes="format-help">
+                        <TextBlock Classes="format-example">
+                            <Run Text="• " />
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                    <Binding Source="HexWithPrefixExample" />
+                                    <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Classes="format-example">
+                            <Run Text="• " />
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                    <Binding Source="HexWithoutPrefixExample" />
+                                    <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Classes="format-example">
+                            <Run Text="• " />
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                    <Binding Source="LengthRequirement" />
+                                    <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </viewsShared:WalletContentSection>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="ConfirmTemplate">
+            <StackPanel>
+                <viewsShared:WalletFormSection Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.ReviewAccountTitle)}">
+                    <Border Classes="account-review">
+                        <StackPanel Classes="review-field">
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Source="AccountNameLabel" />
+                                        <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock Classes="body1">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizationConverter}">
+                                        <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].ViewModel.Label" />
+                                        <Binding Path="$parent[pkViews:PrivateKeyAccountCreation].Localizer" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.DerivedAddressLabel)}"
+                                             IsVisible="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.HasDerivedAddress}">
+                    <viewsShared:WalletAddressDisplay Address="{Binding $parent[pkViews:PrivateKeyAccountCreation].ViewModel.DerivedAddress}"
+                                                      ComponentWidth="{Binding $parent[pkViews:PrivateKeyAccountCreation].ComponentWidth}"
+                                                      IsCompact="{Binding $parent[pkViews:PrivateKeyAccountCreation].IsCompactMode}"
+                                                      ShowFullAddress="True"
+                                                      OnCopyCommand="{Binding $parent[pkViews:PrivateKeyAccountCreation].HandleAddressCopiedCommand}" />
+                </viewsShared:WalletFormSection>
+
+                <viewsShared:WalletFormSection>
+                    <viewsShared:WalletInfoCard Severity="Warning"
+                                                Title="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.ImportantTitle)}"
+                                                Description="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.PrivateKeyBackupReminder)}"
+                                                Icon="warning">
+                        <viewsShared:WalletInfoCard.ChildContent>
+                            <Border Classes="wallet-backup-confirmation">
+                                <CheckBox IsChecked="{Binding $parent[pkViews:PrivateKeyAccountCreation].confirmBackup}"
+                                          Classes="primary">
+                                    <TextBlock Text="{Binding $parent[pkViews:PrivateKeyAccountCreation].Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.BackupConfirmationText)}" />
+                                </CheckBox>
+                            </Border>
+                        </viewsShared:WalletInfoCard.ChildContent>
+                    </viewsShared:WalletInfoCard>
+                </viewsShared:WalletFormSection>
+            </StackPanel>
+        </DataTemplate>
+
+        <dataTemplates:PrivateKeyFormStepTemplateSelector x:Key="PrivateKeyFormStepTemplateSelector"
+                                                      SetupTemplate="{StaticResource SetupTemplate}"
+                                                      PrivateKeyTemplate="{StaticResource PrivateKeyTemplate}"
+                                                      ConfirmTemplate="{StaticResource ConfirmTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <views:WalletFormLayout Title="{Binding GetTitle()}"
+                            Subtitle="{Binding GetSubtitle()}"
+                            Steps="{Binding formSteps}"
+                            CurrentStepIndex="{Binding CurrentStep}"
+                            ExitText="{Binding GetExitText()}"
+                            BackText="{Binding Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.BackButtonText)}"
+                            ContinueText="{Binding Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.ContinueButtonText)}"
+                            PrimaryText="{Binding Localizer.GetString(privateKeyLocalizers:PrivateKeyAccountEditorLocalizer.Keys.AddAccountText)}"
+                            ShowBack="{Binding ShowBack}"
+                            ShowContinue="{Binding ShowContinue}"
+                            ShowPrimary="{Binding ShowPrimary}"
+                            ContinueDisabled="{Binding !CanContinue()}"
+                            PrimaryDisabled="{Binding !ViewModel.CanCreateAccount}"
+                            OnExitCommand="{Binding HandleExitCommand}"
+                            OnBackCommand="{Binding HandleBackCommand}"
+                            OnContinueCommand="{Binding HandleContinueCommand}"
+                            OnPrimaryCommand="{Binding CreateAccountCommand}">
+        <ContentControl Content="{Binding CurrentStep}" ContentTemplate="{StaticResource PrivateKeyFormStepTemplateSelector}" />
+    </views:WalletFormLayout>
+</UserControl>

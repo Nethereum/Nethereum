@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.LoadingOverlay"
+             IsVisible="{Binding IsLoading}">
+    <UserControl.Styles>
+        <StyleInclude Source="/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Panel Background="{DynamicResource OverlayBrush}">
+        <Border CornerRadius="16" Padding="24" Background="{DynamicResource SurfaceBrush}" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Orientation="Vertical" Spacing="16" HorizontalAlignment="Center">
+                <ProgressBar IsIndeterminate="{Binding Progress, Converter={x:Static converters:ObjectConverters.IsEqual}, ConverterParameter=0.0}" Value="{Binding Progress}" Maximum="100" Width="100" Height="100" />
+                <TextBlock Classes="text-secondary" Text="{Binding LoadingMessage, FallbackValue='Please wait...'}" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Panel>
+</UserControl>

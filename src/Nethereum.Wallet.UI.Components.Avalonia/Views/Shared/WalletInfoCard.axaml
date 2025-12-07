@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletInfoCard"
+             x:DataType="viewsShared:WalletInfoCard">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Border Classes="wallet-info-card">
+        <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Classes="wallet-info-card-content">
+                <Grid ColumnDefinitions="Auto,*" Classes="wallet-info-card-main">
+                    <Border Grid.Column="0" Classes="wallet-info-card-icon" IsVisible="{Binding Icon, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}">
+                        <PathIcon Data="{Binding Icon, Converter={x:Static converters:ObjectConverters.IconNameToIconData}}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Classes="wallet-info-card-text">
+                        <TextBlock Text="{Binding Title}" Classes="wallet-info-card-title" IsVisible="{Binding Title, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Text="{Binding Description}" Classes="wallet-info-card-description" IsVisible="{Binding Description, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+                        <ContentControl Content="{Binding ChildContent}" Classes="wallet-info-card-children" IsVisible="{Binding ChildContent}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+            <ContentControl Grid.Column="1" Content="{Binding Actions}" Classes="wallet-info-card-actions" IsVisible="{Binding Actions}" />
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewsShared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared"
+             xmlns:extensions="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Extensions"
+             xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="100"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.Shared.WalletTextField"
+             x:DataType="viewsShared:WalletTextField">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <StackPanel>
+        <TextBlock Text="{Binding Label}" Classes="label" IsVisible="{Binding Label, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+
+        <!-- DEBUG: Binding Values -->
+        <Border Background="LightYellow" Padding="4" Margin="0,0,0,4">
+            <StackPanel>
+                <TextBlock FontSize="10" Text="{Binding Value, StringFormat='Value: {0}'}" />
+                <TextBlock FontSize="10" Text="{Binding ReadOnly, StringFormat='ReadOnly: {0}'}" />
+                <TextBlock FontSize="10" Text="{Binding Disabled, StringFormat='Disabled: {0}'}" />
+                <TextBlock FontSize="10" Text="{Binding Loading, StringFormat='Loading: {0}'}" />
+                <TextBlock FontSize="10" Text="{Binding MaxLength, StringFormat='MaxLength: {0}'}" />
+                <TextBlock FontSize="10" Text="{Binding Placeholder, StringFormat='Placeholder: {0}'}" />
+            </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0"
+                     Text="{Binding Value, Mode=TwoWay}"
+                     Watermark="{Binding Placeholder}"
+                     IsReadOnly="{Binding ReadOnly}"
+                     IsEnabled="{Binding Disabled, Converter={x:Static converters:ObjectConverters.BoolInvert}}"
+                     AcceptsReturn="{Binding Lines, Converter={x:Static converters:ObjectConverters.IsGreaterThan}, ConverterParameter=1}"
+                     TextWrapping="Wrap"
+                     VerticalContentAlignment="Top"
+                     MinHeight="32"
+                     Height="32"
+                     MaxLength="{Binding MaxLength}"
+                     Classes="wallet-modern-input"
+                     PasswordChar="{Binding ComputedPasswordChar}">
+                <TextBox.Styles>
+                    <Style Selector="TextBox.wallet-modern-input">
+                        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Setter Property="CornerRadius" Value="4" />
+                        <Setter Property="Padding" Value="8" />
+                    </Style>
+                    <Style Selector="TextBox.wallet-modern-input:focus">
+                        <Setter Property="BorderThickness" Value="2" />
+                    </Style>
+                    <Style Selector="TextBox.wallet-modern-input:disabled">
+                        <Setter Property="Opacity" Value="0.5" />
+                    </Style>
+                    <Style Selector="TextBox.wallet-modern-input.error">
+                        <Setter Property="BorderBrush" Value="Red" />
+                    </Style>
+                </TextBox.Styles>
+            </TextBox>
+            <Button Grid.Column="1" Command="{Binding HandleAdornmentClickCommand}" IsVisible="{Binding ComputedActionIcon, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" Classes="adornment-button">
+                <PathIcon Data="{Binding ComputedActionIcon, Converter={x:Static converters:ObjectConverters.IconNameToIconData}}" />
+            </Button>
+        </Grid>
+        <TextBlock Text="{Binding HelpText}" Classes="help-text" IsVisible="{Binding HelpText, Converter={x:Static converters:ObjectConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Text="{Binding ErrorText}" Classes="error-text" IsVisible="{Binding Error}" />
+    </StackPanel>
+</UserControl>

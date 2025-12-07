@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             xmlns:vm="clr-namespace:Nethereum.Wallet.UI.Components.CreateAccount;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:walletAccounts="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:mnemonicVm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:pkVm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:voVm="clr-namespace:Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly;assembly=Nethereum.Wallet.UI.Components"
+             xmlns:mnemonicViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.Mnemonic"
+             xmlns:pkViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.PrivateKey"
+             xmlns:voViews="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.ViewOnly"
+             xmlns:dataTemplates="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.DataTemplates"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.CreateAccount"
+             x:DataType="vm:CreateAccountViewModel">
+    <UserControl.Resources>
+        <DataTemplate x:Key="AccountTypeSelectionTemplate" DataType="{x:Type walletAccounts:IAccountCreationViewModel}">
+            <views:AccountTypeSelectionComponent AvailableAccountTypes="{Binding AvailableCreationViewModels}"
+                                                 IsCompactMode="{Binding $parent[views:CreateAccount].IsCompactMode}"
+                                                 OnAccountTypeSelectedCommand="{Binding SelectAccountTypeCommand}" />
+        </DataTemplate>
+        <DataTemplate x:Key="MnemonicAccountCreationTemplate" DataType="{x:Type mnemonicVm:MnemonicAccountCreationViewModel}">
+            <mnemonicViews:MnemonicAccountCreation ViewModel="{Binding}"
+                                                   OnAccountCreatedCommand="{Binding $parent[views:CreateAccount].OnAccountAddedCommand}"
+                                                   OnBackToAccountSelectionCommand="{Binding $parent[views:CreateAccount].OnBackToAccountSelectionCommand}"
+                                                   OnBackToLoginCommand="{Binding $parent[views:CreateAccount].OnBackToLoginCommand}"
+                                                   IsCompactMode="{Binding $parent[views:CreateAccount].IsCompactMode}" />
+        </DataTemplate>
+        <DataTemplate x:Key="PrivateKeyAccountCreationTemplate" DataType="{x:Type pkVm:PrivateKeyAccountCreationViewModel}">
+            <pkViews:PrivateKeyAccountCreation ViewModel="{Binding}"
+                                               OnAccountCreatedCommand="{Binding $parent[views:CreateAccount].OnAccountAddedCommand}"
+                                               OnBackToAccountSelectionCommand="{Binding $parent[views:CreateAccount].OnBackToAccountSelectionCommand}"
+                                               OnBackToLoginCommand="{Binding $parent[views:CreateAccount].OnBackToLoginCommand}"
+                                               IsCompactMode="{Binding $parent[views:CreateAccount].IsCompactMode}" />
+        </DataTemplate>
+        <DataTemplate x:Key="ViewOnlyAccountCreationTemplate" DataType="{x:Type voVm:ViewOnlyAccountCreationViewModel}">
+            <voViews:ViewOnlyAccountCreation ViewModel="{Binding}"
+                                             OnAccountCreatedCommand="{Binding $parent[views:CreateAccount].OnAccountAddedCommand}"
+                                             OnBackToAccountSelectionCommand="{Binding $parent[views:CreateAccount].OnBackToAccountSelectionCommand}"
+                                             OnBackToLoginCommand="{Binding $parent[views:CreateAccount].OnBackToLoginCommand}"
+                                             IsCompactMode="{Binding $parent[views:CreateAccount].IsCompactMode}" />
+        </DataTemplate>
+
+        <dataTemplates:CreateAccountFormStepTemplateSelector x:Key="CreateAccountFormStepTemplateSelector"
+                                                          AccountTypeSelectionTemplate="{StaticResource AccountTypeSelectionTemplate}"
+                                                          MnemonicAccountCreationTemplate="{StaticResource MnemonicAccountCreationTemplate}"
+                                                          PrivateKeyAccountCreationTemplate="{StaticResource PrivateKeyAccountCreationTemplate}"
+                                                          ViewOnlyAccountCreationTemplate="{StaticResource ViewOnlyAccountCreationTemplate}" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*">
+        <TextBlock Grid.Row="0" Text="Create Account" Classes="h5" IsVisible="{Binding $parent[views:CreateAccount].ShowHeader}" Margin="0,0,0,16" />
+        <ContentControl Grid.Row="1" Content="{Binding SelectedCreationViewModel}" ContentTemplate="{StaticResource CreateAccountFormStepTemplateSelector}" />
+    </Grid>
+</UserControl>

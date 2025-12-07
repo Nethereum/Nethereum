@@ -1,0 +1,114 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Converters">
+    <Styles.Resources>
+        <converters:ColorLightenConverter x:Key="ColorLightenConverter" />
+        <converters:LocalizationConverter x:Key="LocalizationConverter" />
+
+        <Color x:Key="BackgroundGreyColor">#F5F5F5</Color>
+        <SolidColorBrush x:Key="BackgroundGreyBrush" Color="{StaticResource BackgroundGreyColor}" />
+
+        <Color x:Key="DividerColor">#E0E0E0</Color>
+        <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerColor}" />
+
+        <!-- Missing resources for WalletTextField -->
+        <Color x:Key="PrimaryColor">#007ACC</Color>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+
+        <Color x:Key="SurfaceColor">#FFFFFF</Color>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    </Styles.Resources>
+        
+            <Style Selector="Button.nav-link">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Margin" Value="0,4" />
+            </Style>
+        
+            <Style Selector="Button.nav-link:pointerover">
+                <Setter Property="Background" Value="{DynamicResource BackgroundGreyBrush}" />
+            </Style>
+        
+            <Style Selector="Button.nav-link:selected">
+                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                <Setter Property="Foreground" Value="White" />
+            </Style>
+            <Style Selector="TextBlock.h4">
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style Selector="TextBlock.h5">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style Selector="TextBlock.body2">
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="TextBlock.error">
+        <Setter Property="Foreground" Value="Red" />
+    </Style>
+
+    <Style Selector="Button.text-button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Button.primary-button">
+        <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <Style Selector="Border.wallet-card">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="BoxShadow" Value="0 2 4 0 #00000080" />
+    </Style>
+
+    <!-- WalletTextField styles -->
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+
+    <Style Selector="TextBlock.help-text">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <Style Selector="TextBlock.error-text">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="Red" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <Style Selector="Button.adornment-button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+    </Style>
+
+    <Style Selector="Button.adornment-button:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BackgroundGreyBrush}" />
+    </Style>
+</Styles>

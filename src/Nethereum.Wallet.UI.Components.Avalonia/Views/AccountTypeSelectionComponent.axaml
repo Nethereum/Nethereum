@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+             x:Class="Nethereum.Wallet.UI.Components.Avalonia.Views.AccountTypeSelectionComponent"
+             x:DataType="views:AccountTypeSelectionComponent">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Nethereum.Wallet.UI.Components.Avalonia/Themes/DefaultTheme.axaml" />
+    </UserControl.Styles>
+    <ItemsControl ItemsSource="{Binding AvailableAccountTypes}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <views:AccountTypeCard AccountType="{Binding}"
+                                       IsCompactMode="{Binding $parent[UserControl].DataContext.IsCompactMode}"
+                                       OnSelectCommand="{Binding $parent[UserControl].DataContext.OnAccountTypeSelectedCommand}" />
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>
